@@ -19,6 +19,7 @@ import { renderMemoAsCards } from './renderer.js';
 import { refreshOrderList } from './ui-editors.js';
 import { QUESTS_NARRATOR } from './constants.js';
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
+import { tableRollsToToolCalls } from './src/state/dice-ledger.js';
 import { getSortableDelay } from '../../../utils.js';
 import { POPUP_RESULT } from '../../../popup.js';
 import { openManageGameCartridges } from './game-cartridges.js';
@@ -401,6 +402,11 @@ export function syncAllNarratorTogglesForUnlockState() {
  * footer time-format) to one base section in isolation. Returns the full
  * `<tag>...<tag>` block, or '' if the transform determines it should be omitted.
  */
+function isCombatMemo(memo) {
+    const body = (memo || '').match(/\[COMBAT\]([\s\S]*?)\[\/COMBAT\]/i)?.[1]?.trim() || '';
+    return !!body && !/^END_COMBAT$/i.test(body);
+}
+
 export function transformBaseSectionContent(tag, innerContent, settings) {
     const mods = settings.syspromptModules || {};
     const d100Mode = !!settings.diceD100Mode;
@@ -446,11 +452,16 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
         const dieWord = d100Mode ? 'd100' : 'd20';
         const toolName = d100Mode ? 'RollTheDiceD100' : 'RollTheDice';
         if (!shouldUseRngQueue(settings, inCombat)) {
-            return `<rng_system>\nFor each roll, call ${toolName} with the DC included in the tool parameters; set the DC before seeing the result. Output the DC, roll, and success/failure in parentheses. In combat, prefer batching multiple rolls into a single tool call for efficiency.\n</rng_system>`;
+            return `<rng_system>\nEvery roll goes through ${toolName}.\n- Checks: set dc from the fiction, then call with kind "check". The returned verdict decides the outcome.\n- Damage, healing, quantities: kind "amount".\n- Loot, random events and other tier tables: kind "table"; narrate the returned tier.\n- Write each check as *(Skill: DC 15, roll 12 → FAILURE)* with the returned numbers and verdict.\n- For several independent rolls, issue parallel calls in the same turn, each with its own "for".\n</rng_system>`;
         }
 
         const queueName = d100Mode ? '[RNG_QUEUE_d100 v7.0]' : '[RNG_QUEUE v7.0]';
         return `<rng_system>\n${queueName} is the sole RNG mechanic — internal physics, never revealed or explained.\n<rng_queue_instructions>\nPop lines in order (1, 2, 3...). Each line has labeled dice (${dieWord}=, d4=, d6=, d8=, d10=, d12=). Queue length 12, wraps on exhaustion.\n- ${dieWord} = attacks/checks. Damage dice = matching label on the same line.\n- Always fold in ability scores/proficiency. Reveal a roll only right before it appears in the narrative.\n</rng_queue_instructions>\n\nROLL FORMAT (strict):\n- Attack: *(Attack: 12 [Roll] + 1 [Mod] = 13 vs AC 14)*\n- Save / effect: *(Dexterity Save: 12 [Roll] + 3 [Mod] = 15 vs DC 14)*\n- Damage: *(Damage: d10 + 3 → 8 piercing)*\n\nDC SCALE: Trivial 8 | Easy 14 | Moderate 18 | Hard 23 | Severe 28 | Near-impossible 33+\n\nUnknown skill bonuses: judge from background/archetype + situational mods.\n[FALLBACK]: No queue provided → simulate a fair ${dieWord} internally, same ROLL FORMAT.\n</rng_system>`;
+    }
+
+    if ((tag === 'loot' || tag === 'random_events') && settings.rngEnabled && settings.diceFunctionTool
+        && !shouldUseRngQueue(settings, isCombatMemo(settings.currentMemo))) {
+        return `<${tag}>\n${tableRollsToToolCalls(innerContent.trim(), d100Mode ? 'RollTheDiceD100' : 'RollTheDice')}\n</${tag}>`;
     }
 
     if (tag === 'quests') {

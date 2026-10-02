@@ -28,6 +28,7 @@ import { recordSchedulerEvent } from './swipe-scheduler-debug.js';
 import { saveSettings } from './src/app/runtime-bridge.js';
 import { runtimeState } from './src/app/runtime-state.js';
 import { isPercentFormula, resolveDiceCompare } from './src/state/dice-compare.js';
+import { turnKey, ledgerForTurn, findRepeat, parseTable, pickTier, verdictOf, correctVerdicts } from './src/state/dice-ledger.js';
 import { buildCyoaModeBlock, STATE_MEMO_INJECT_PREAMBLE } from './constants.js';
 import { isCyoaEnabled, isLorebookAgentRuntimeActive, isLocationMappingEnabled } from './src/state/section-enabled.js';
 import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/state/narrative-pacing.js';
@@ -521,6 +522,22 @@ export async function doDiceRoll(customDiceFormula, quiet = false) {
 async function executeDiceToolAction(args, opts = {}) {
     const isLegacy = !!opts.isLegacy;
     const requestedFormula = args?.formula || opts.defaultFormula || (isLegacy ? '1d6' : '1d20');
+    const kind = isLegacy ? 'legacy' : (['check', 'amount', 'table'].includes(args?.kind) ? args.kind : 'check');
+    const dc = Number(args?.dc);
+    const rows = kind === 'table' ? parseTable(args?.table) : null;
+
+    if (kind === 'check' && !(Number.isFinite(dc) && dc > 0)) {
+        return 'Nothing was rolled. A check needs its DC (or % chance) set first: call again with dc as a positive number. For damage, healing or quantities use kind "amount"; for a tier table use kind "table".';
+    }
+    if (kind === 'table' && !rows) {
+        return 'Nothing was rolled. Call again with table as contiguous rows, e.g. "1-5 Junk | 6-10 Common | 11-20 Rare".';
+    }
+    if (!isLegacy) {
+        const ledger = diceLedgerStore();
+        const prior = ledger && findRepeat(ledger, { who: args?.who, for: args?.for, kind });
+        if (prior) return `Already rolled this turn; this result stands. ${prior.text}`;
+    }
+
     const roll = await doDiceRoll(requestedFormula, true);
     const total = parseInt(roll.total) || 0;
     const formula = roll.formula || requestedFormula;
@@ -534,23 +551,56 @@ async function executeDiceToolAction(args, opts = {}) {
             : `The result of a ${formula} roll is: ${total}. Individual rolls: ${roll.rolls.join(', ')}`) + invalidNote;
     }
 
-    const dc = Number(args?.dc) || 0;
-    const compare = opts.forceLte ? 'lte' : resolveDiceCompare(args?.compare, formula);
-    const forStr = args.for ? ` (${args.for})` : ''
-    let result = (args.who
-        ? `${args.who}${forStr} rolls a ${formula} against DC ${dc}. The result is: ${total}. Individual rolls: ${roll.rolls.join(', ')}`
-        : `The result${forStr} of a ${formula} roll against DC ${dc} is: ${total}. Individual rolls: ${roll.rolls.join(', ')}`) + invalidNote;
+    const forStr = args.for ? ` (${args.for})` : '';
+    const lead = args.who ? `${args.who}${forStr} rolls a ${formula}` : `A ${formula} roll${forStr}`;
+    const dice = `Result: ${total}. Individual rolls: ${roll.rolls.join(', ')}${invalidNote}`;
+    const entry = { who: args.who, for: args.for, kind, formula, total, rolls: roll.rolls };
 
-    if (dc > 0) {
-        if (compare === 'lte') {
-            const success = total <= dc;
-            result += ` (Result: ${total} ≤ ${dc}% → ${success ? 'HIT' : 'MISS'})`;
-        } else {
-            const success = total >= dc;
-            result += ` (Result: ${success ? 'SUCCESS' : 'FAILURE'})`;
-        }
+    if (kind === 'table') {
+        const tier = pickTier(rows, total);
+        entry.text = `${lead} on the table. ${dice}. Tier: ${tier.label}. Narrate this tier.`;
+    } else if (kind === 'amount') {
+        entry.text = `${lead}. ${dice}. Use this amount as rolled.`;
+    } else {
+        const compare = opts.forceLte ? 'lte' : resolveDiceCompare(args?.compare, formula);
+        const verdict = verdictOf(total, dc, compare);
+        const vs = compare === 'lte' ? `${dc}%` : `DC ${dc}`;
+        Object.assign(entry, { dc, compare, verdict });
+        entry.text = `${lead} against ${vs}. ${dice}. Verdict: ${verdict} (binding). Narrate a ${verdict.toLowerCase()} and write "${verdict}" in the roll parenthetical.`;
     }
-    return result;
+    recordDiceRoll(entry);
+    return entry.text;
+}
+
+function diceLedgerStore() {
+    const ctx = SillyTavern.getContext();
+    if (!ctx?.chatMetadata) return null;
+    const key = turnKey(ctx.chat);
+    ctx.chatMetadata.rpgDiceLedger = ledgerForTurn(ctx.chatMetadata.rpgDiceLedger, key);
+    return ctx.chatMetadata.rpgDiceLedger;
+}
+
+function recordDiceRoll(entry) {
+    const ledger = diceLedgerStore();
+    if (!ledger) return;
+    ledger.rolls.push(entry);
+    const ctx = SillyTavern.getContext();
+    (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
+}
+
+/** MESSAGE_RECEIVED: rewrite roll parentheticals whose verdict contradicts this turn's logged rolls. */
+export function onDiceVerdictMessage(messageId) {
+    const ctx = SillyTavern.getContext();
+    const message = Number.isInteger(messageId) ? ctx?.chat?.[messageId] : null;
+    if (!message || message.is_user || message.is_system) return;
+    const ledger = diceLedgerStore();
+    if (!ledger?.rolls.length) return;
+    const { text, fixes } = correctVerdicts(message.mes, ledger.rolls);
+    if (!fixes) return;
+    applyAssistantMessageText(ctx, message, text);
+    if (typeof toastr !== 'undefined') {
+        toastr.info(`Corrected ${fixes} roll verdict${fixes > 1 ? 's' : ''} to match the dice.`, 'Dice', { timeOut: 3500, positionClass: 'toast-bottom-right' });
+    }
 }
 
 export function registerMapArchitectTool() {
@@ -615,6 +665,10 @@ export function syncLocationMappingRuntime() {
     }
 }
 
+const FOR_DESCRIPTION = 'What is being rolled for, 1-4 words, unique within this turn. For repeated rolls name the target and count, e.g. "attack 2 goblin". A repeated who + for returns the first result.';
+const KIND_PROPERTY = { type: 'string', enum: ['check', 'amount', 'table'], description: '"check" (default): pass/fail against dc, verdict returned. "amount": damage, healing or a quantity, no dc. "table": tier table, pass table; the tier is returned.' };
+const TABLE_PROPERTY = { type: 'string', description: 'For kind "table": contiguous rows "range label" joined by |, e.g. "1-5 Junk | 6-10 Common | 11-15 Useful | 16-19 Rare | 20 Exceptional". Open ends: "≤8 bad", "≥12 good".' };
+
 export function registerDiceFunctionTool() {
     try {
         const ctx = SillyTavern.getContext();
@@ -646,18 +700,20 @@ export function registerDiceFunctionTool() {
                 type: 'object',
                 properties: {
                     who: { type: 'string', description: 'The name of the persona rolling the dice' },
-                    for: { type: 'string', description: 'What is being rolled for, 1-3 words' },
+                    for: { type: 'string', description: FOR_DESCRIPTION },
+                    kind: KIND_PROPERTY,
                     formula: { type: 'string', description: formulaDescription },
-                    dc: { type: 'number', description: 'For skill/attack checks (compare=gte): Difficulty Class — roll ≥ dc = SUCCESS. For percentage / existence checks (compare=lte or formula 1d100): the trigger % chance — roll ≤ dc = HIT. Always pass the probability directly (e.g. 35 for Dangerous-tier existence). Anchors difficulty BEFORE the roll is made.' },
+                    dc: { type: 'number', description: 'Required for kind "check". Skill/attack checks (compare=gte): Difficulty Class — roll ≥ dc = SUCCESS. Percentage / existence checks (compare=lte or formula 1d100): the trigger % chance — roll ≤ dc = HIT. Pass the probability directly (e.g. 35 for Dangerous-tier existence). Set it from the fiction before rolling.' },
                     compare: { type: 'string', description: 'Optional. "gte" (default for non-d100 formulas): roll ≥ dc = SUCCESS. "lte" (default for 1d100 / percentage formulas): roll ≤ dc% = HIT. Use lte for existence checks and other percentage odds.' },
+                    table: TABLE_PROPERTY,
                 },
-                required: ['who', 'for', 'formula', 'dc'],
+                required: ['who', 'for', 'formula'],
             };
 
             registerFunctionTool({
                 name: 'RollTheDice',
                 displayName: isLegacy ? 'Dice Roll' : 'Dice Roll (with DC)',
-                description: 'Rolls dice using the provided formula and returns the numeric result. Use for skill/attack checks (1d20+mod vs DC, compare gte) and percentage / existence checks (1d100 vs %, compare lte). Each invocation takes one formula. For multiple independent rolls, issue parallel invocations in the same turn — never comma-join formulas into one call.',
+                description: 'Rolls dice and returns the result. kind "check": skill/attack checks (1d20+mod vs dc, compare gte) and percentage / existence checks (1d100 vs %, compare lte); the returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
                 parameters: rollDiceSchema,
                 action: async (args) => executeDiceToolAction(args, {
                     defaultFormula: isLegacy ? '1d6' : '1d20',
@@ -677,17 +733,19 @@ export function registerDiceFunctionTool() {
                 type: 'object',
                 properties: {
                     who: { type: 'string', description: 'The name of the persona rolling the dice' },
-                    for: { type: 'string', description: 'What is being rolled for, 1-3 words' },
+                    for: { type: 'string', description: FOR_DESCRIPTION },
+                    kind: KIND_PROPERTY,
                     formula: { type: 'string', description: formulaDescription },
-                    dc: { type: 'number', description: 'The success/trigger percentage chance for this roll (roll-under system). Set this to the actual % probability of success or occurrence (e.g. 83 for an 83% chance to hit/succeed, or 25 for a 25% hazard failure chance). A roll ≤ dc = HIT/SUCCESS/TRIGGER, a roll > dc = MISS/FAILURE/NO-TRIGGER. Do NOT invert the percentage — always pass the probability directly.' },
+                    dc: { type: 'number', description: 'Required for kind "check". The success/trigger percentage chance for this roll (roll-under system): the actual % probability of success or occurrence (e.g. 83 for an 83% chance to hit/succeed, or 25 for a 25% hazard chance). A roll ≤ dc = HIT, a roll > dc = MISS. Pass the probability as stated.' },
+                    table: TABLE_PROPERTY,
                 },
-                required: ['who', 'for', 'formula', 'dc'],
+                required: ['who', 'for', 'formula'],
             };
 
             registerFunctionTool({
                 name: 'RollTheDiceD100',
                 displayName: 'Dice Roll d100 (with DC)',
-                description: 'Rolls a d100 (1-100) using the provided formula and returns the numeric result. Use for percentage-based rulesets (global d100 Mode) and percentage probability checks. Each invocation takes one formula (e.g. "1d100"). For multiple independent rolls, issue parallel invocations in the same turn. The dc parameter is the direct success/trigger percentage (roll ≤ dc = success). In a normal d20 game, prefer RollTheDice with formula "1d100" and compare "lte" instead.',
+                description: 'Rolls dice and returns the result. kind "check": percentage checks, dc = success/trigger % (roll ≤ dc = HIT); the returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation (e.g. "1d100"); for several independent rolls, issue parallel invocations in the same turn.',
                 parameters: rollDiceSchema,
                 action: async (args) => executeDiceToolAction(args, {
                     defaultFormula: '1d100',
