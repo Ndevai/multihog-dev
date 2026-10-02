@@ -31,6 +31,7 @@ import { isPercentFormula, resolveDiceCompare } from './src/state/dice-compare.j
 import { buildCyoaModeBlock, STATE_MEMO_INJECT_PREAMBLE } from './constants.js';
 import { isCyoaEnabled, isLorebookAgentRuntimeActive, isLocationMappingEnabled } from './src/state/section-enabled.js';
 import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/state/narrative-pacing.js';
+import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import {
     buildDungeonRealityInjection,
     buildMappedSitesInjection,
@@ -703,10 +704,11 @@ export function registerDiceFunctionTool() {
 /**
  * Keeps function-tool visibility aligned with managed hybrid RNG context.
  * During combat the queue is the only mechanic, so remove the dice schemas;
- * outside combat restore the user's configured dice tools.
+ * outside combat restore the user's configured dice tools. Strict mode keeps
+ * the dice tools registered in combat because the queue is never injected.
  */
 export function syncDiceFunctionToolForRngContext(memo, manageHybrid = false) {
-    if (!manageHybrid || !isCombatActive(memo)) {
+    if (!manageHybrid || !shouldUseRngQueue(getSettings(), isCombatActive(memo))) {
         registerDiceFunctionTool();
         return;
     }
@@ -1450,10 +1452,10 @@ export function installInterceptor() {
 
             if (settings.enabled) {
                 // Hybrid mode uses live tool calls outside combat and the queue only
-                // while [COMBAT] is active. Queue-only mode continues to inject it for
-                // every response, preserving its existing behavior.
-                const injectRngQueue = settings.rngEnabled
-                    && (!settings.diceFunctionTool || isCombatActive(settings.currentMemo));
+                // while [COMBAT] is active. Strict mode never injects the queue, so the
+                // model commits every DC before it sees a die. Queue-only mode continues
+                // to inject it for every response, preserving its existing behavior.
+                const injectRngQueue = shouldUseRngQueue(settings, isCombatActive(settings.currentMemo));
                 if (injectRngQueue) {
                     if (settings.rngQueueD20) {
                         const queue = makeRngQueue(RNG_QUEUE_LEN, false);

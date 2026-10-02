@@ -518,6 +518,7 @@ const CARTRIDGE_PAYLOAD_KEYS = [
     'npcRelationshipBars',
     'rngEnabled',
     'diceFunctionTool',
+    'strictDiceCommit',
     'diceD100Mode',
     'rngToolD20',
     'rngToolD100',
@@ -593,7 +594,7 @@ export const CARTRIDGE_PAYLOAD_GROUPS = [
         keys: [
             'systemPromptTemplate', 'modules', 'blockOrder', 'stockPrompts',
             'syspromptModules', 'narrativePacing', 'syspromptSectionOrder', 'customSyspromptLibrary',
-            'rngEnabled', 'diceFunctionTool', 'diceD100Mode',
+            'rngEnabled', 'diceFunctionTool', 'strictDiceCommit', 'diceD100Mode',
             'rngToolD20', 'rngToolD100', 'rngQueueD20', 'rngQueueD100',
             'use24hTime', 'useDdMmYyFormat',
         ],

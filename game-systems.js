@@ -18,6 +18,7 @@ import { escapeHtml, memoForGmContext } from './memo-processor.js';
 import { renderMemoAsCards } from './renderer.js';
 import { refreshOrderList } from './ui-editors.js';
 import { QUESTS_NARRATOR } from './constants.js';
+import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import { getSortableDelay } from '../../../utils.js';
 import { POPUP_RESULT } from '../../../popup.js';
 import { openManageGameCartridges } from './game-cartridges.js';
@@ -444,7 +445,7 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
         const inCombat = !!combatBody && !/^END_COMBAT$/i.test(combatBody);
         const dieWord = d100Mode ? 'd100' : 'd20';
         const toolName = d100Mode ? 'RollTheDiceD100' : 'RollTheDice';
-        if (!inCombat) {
+        if (!shouldUseRngQueue(settings, inCombat)) {
             return `<rng_system>\nFor each roll, call ${toolName} with the DC included in the tool parameters; set the DC before seeing the result. Output the DC, roll, and success/failure in parentheses. In combat, prefer batching multiple rolls into a single tool call for efficiency.\n</rng_system>`;
         }
 
@@ -478,7 +479,7 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
             const combatMatch = (settings.currentMemo || '').match(/\[COMBAT\]([\s\S]*?)\[\/COMBAT\]/i);
             const combatBody = combatMatch?.[1]?.trim() || '';
             const inCombat = !!combatBody && !/^END_COMBAT$/i.test(combatBody);
-            const useQueue = !settings.diceFunctionTool || inCombat;
+            const useQueue = shouldUseRngQueue(settings, inCombat);
             const benchEta = useQueue
                 ? `On benching, estimate a return ETA. Just before return (never once already in-scene), pop a ${dieWord} from ${queueName} to resolve task success/failure — DC by task difficulty + character suitability. Critical failure = injured return, no return, or similarly severe outcome. This pop is mandatory, always pre-return.`
                 : `On benching, estimate a return ETA. Just before return (never once already in-scene), call ${toolName} to resolve task success/failure — DC by task difficulty + character suitability. Critical failure = injured return, no return, or similarly severe outcome. This roll is mandatory, always pre-return.`;

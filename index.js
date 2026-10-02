@@ -46,6 +46,7 @@ import {
 } from './npc-library.js';
 import { RENDERING_TAGS_LIBRARY, sectionPages, configureRuntimeActions } from './src/app/runtime-bridge.js';
 import { bindRenderedCardEvents } from './src/ui/panel/card-events.js';
+import { getRngMode, applyRngMode, autoSelectRngTools } from './src/state/rng-mode.js';
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
 import { createMemoRecoveryManager } from './src/features/recovery/memo-recovery.js';
@@ -2092,14 +2093,10 @@ function syncOnboardingUI() {
     if (!onboarding) return;
 
     // RNG Mode Sync
-    const rngHybrid = /** @type {HTMLInputElement|null} */ (onboarding.querySelector('#rt_onboarding_rng_hybrid'));
-    const rngLegacy = /** @type {HTMLInputElement|null} */ (onboarding.querySelector('#rt_onboarding_rng_legacy'));
-    const rngNone = /** @type {HTMLInputElement|null} */ (onboarding.querySelector('#rt_onboarding_rng_none'));
-    if (rngHybrid && rngLegacy && rngNone) {
-        rngHybrid.checked = s.rngEnabled && !!s.diceFunctionTool;
-        rngLegacy.checked = s.rngEnabled && !s.diceFunctionTool;
-        rngNone.checked = !s.rngEnabled;
-    }
+    const onboardingRngMode = getRngMode(s);
+    onboarding.querySelectorAll('input[name="rt_onboarding_rng_mode"]').forEach(input => {
+        /** @type {HTMLInputElement} */ (input).checked = /** @type {HTMLInputElement} */ (input).value === onboardingRngMode;
+    });
 
     const narrativePacing = ['normal', 'shorter_outputs', 'high_agency', 'downtime'].includes(s.narrativePacing) ? s.narrativePacing : 'normal';
     onboarding.querySelectorAll('input[name="rt_onboarding_narrative_pacing"]').forEach(input => {
@@ -4194,6 +4191,7 @@ async function showRngExplanation() {
                 ${card('📋', 'Which system should I use?',
         `<ul style="margin: 4px 0 0 0; padding-left: 20px; text-align: left; list-style-position: outside;">
                         <li style="margin-bottom: 4px;"><b>Pre-Seeded + Tool Calls (recommended without CYOA):</b> Outside combat the model sees only <b>RollTheDice</b>; during an active combat round it sees only the <b>RNG Queue</b>. Prompt and tool schema switch together.</li>
+                        <li style="margin-bottom: 4px;"><b>Tool Calls Only (strict):</b> <b>RollTheDice</b> in and out of combat; the RNG Queue is never injected. The model commits every DC before any die exists, so it cannot pick targets, actions or difficulties to fit dice it has already seen. Costs more tool round-trips in combat.</li>
                         <li style="margin-bottom: 4px;"><b>With CYOA Mode:</b> Prefer the <b>RNG Queue</b> — choice DCs are already committed, so foresight isn't a sycophancy risk.</li>
                         <li><b>Pre-Seeded Only:</b> Queue-only. Use if your model doesn't support function/tool calling. Fine for combat and CYOA; weaker for freeform narrative without CYOA.</li>
                     </ul>`
@@ -11244,27 +11242,12 @@ RULES:
         const rngModeRadios = document.querySelectorAll('input[name="rpg_sysprompt_rng_mode"]');
         if (rngModeRadios.length) {
             const s = getSettings();
-            let currentRngMode = 'hybrid';
-            if (!s.rngEnabled) {
-                currentRngMode = 'none';
-            } else if (s.diceFunctionTool === false) {
-                currentRngMode = 'legacy';
-            }
+            const currentRngMode = getRngMode(s);
             $(`input[name="rpg_sysprompt_rng_mode"][value="${currentRngMode}"]`).prop('checked', true);
 
             $('input[name="rpg_sysprompt_rng_mode"]').on('change', function () {
                 const fresh = getSettings();
-                const val = $(this).val();
-                if (val === 'hybrid') {
-                    fresh.rngEnabled = true;
-                    fresh.diceFunctionTool = true;
-                } else if (val === 'legacy') {
-                    fresh.rngEnabled = true;
-                    fresh.diceFunctionTool = false;
-                } else {
-                    fresh.rngEnabled = false;
-                    fresh.diceFunctionTool = false;
-                }
+                applyRngMode(fresh, String($(this).val()));
                 autoSelectRngToolsFromMode(fresh);
                 registerDiceFunctionTool();
                 saveSettings();
@@ -12750,36 +12733,7 @@ RULES:
         }
 
         function autoSelectRngToolsFromMode(s) {
-            if (!s.rngEnabled) {
-                s.rngToolD20 = false;
-                s.rngToolD100 = false;
-                s.rngQueueD20 = false;
-                s.rngQueueD100 = false;
-            } else if (s.diceFunctionTool === false) {
-                if (s.diceD100Mode) {
-                    s.rngToolD20 = false;
-                    s.rngToolD100 = false;
-                    s.rngQueueD20 = false;
-                    s.rngQueueD100 = true;
-                } else {
-                    s.rngToolD20 = false;
-                    s.rngToolD100 = false;
-                    s.rngQueueD20 = true;
-                    s.rngQueueD100 = false;
-                }
-            } else {
-                if (s.diceD100Mode) {
-                    s.rngToolD20 = false;
-                    s.rngToolD100 = true;
-                    s.rngQueueD20 = false;
-                    s.rngQueueD100 = true;
-                } else {
-                    s.rngToolD20 = true;
-                    s.rngToolD100 = false;
-                    s.rngQueueD20 = true;
-                    s.rngQueueD100 = false;
-                }
-            }
+            autoSelectRngTools(s);
             syncRngToolsUi(s);
         }
 
@@ -12787,12 +12741,7 @@ RULES:
             const s = getSettings();
 
             // RNG toggles
-            let currentRngMode = 'hybrid';
-            if (!s.rngEnabled) {
-                currentRngMode = 'none';
-            } else if (s.diceFunctionTool === false) {
-                currentRngMode = 'legacy';
-            }
+            const currentRngMode = getRngMode(s);
             $(`input[name="rpg_sysprompt_rng_mode"][value="${currentRngMode}"]`).prop('checked', true);
             syncRngToolsUi(s);
             const narrativePacing = ['normal', 'shorter_outputs', 'high_agency', 'downtime'].includes(s.narrativePacing)

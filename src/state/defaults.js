@@ -211,6 +211,10 @@ export function buildDefaultSettings() {
 
         diceFunctionTool: false,
 
+        /** Tool-call RNG in combat too: the model never sees dice before committing a DC. */
+
+        strictDiceCommit: false,
+
         enablePortraits: true,
 
         portraitsFileStorageVersion: 1,

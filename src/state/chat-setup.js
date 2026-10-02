@@ -38,6 +38,7 @@ export const CHAT_SETUP_KEYS = Object.freeze([
     'npcRelationshipBars',
     'rngEnabled',
     'diceFunctionTool',
+    'strictDiceCommit',
     'diceD100Mode',
     'rngToolD20',
     'rngToolD100',
