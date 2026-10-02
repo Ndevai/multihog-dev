@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { turnKey, ledgerForTurn, findRepeat, parseTable, pickTier, verdictOf, correctVerdicts, tableRollsToToolCalls } from '../src/state/dice-ledger.js';
+import { turnKey, ledgerForTurn, findRepeat, parseTable, pickTier, verdictOf, naturalD20, correctVerdicts, tableRollsToToolCalls } from '../src/state/dice-ledger.js';
 
 describe('turn key', () => {
     const chat = [{ is_user: true, mes: 'I pick the lock' }, { is_user: false, mes: 'The lock...' }];
@@ -136,5 +136,27 @@ describe('RollTheDice action order', () => {
         expect(body.indexOf('findRepeat(')).toBeLessThan(rollAt);
         const index = readFileSync(new URL('../index.js', import.meta.url), 'utf8');
         expect(index).toContain('eventSource.on(event_types.MESSAGE_RECEIVED, onDiceVerdictMessage)');
+    });
+});
+
+describe('attacks', () => {
+    it('reads the deciding d20 face', () => {
+        expect(naturalD20('1d20+5', ['1'])).toBe(1);
+        expect(naturalD20('2d20kh1+3', ['4', '20'])).toBe(20);
+        expect(naturalD20('2d20kl1', ['4', '20'])).toBe(4);
+        expect(naturalD20('2d6+3', ['4', '5'])).toBeNull();
+    });
+
+    it('applies the ruleset: natural 1 misses, natural 20 hits, otherwise total vs AC', () => {
+        expect(verdictOf(25, 14, 'attack', 1)).toBe('MISS');
+        expect(verdictOf(21, 25, 'attack', 20)).toBe('HIT');
+        expect(verdictOf(14, 14, 'attack', 9)).toBe('HIT');
+        expect(verdictOf(13, 14, 'attack', 8)).toBe('MISS');
+    });
+
+    it('corrects the stock "vs AC" attack format', () => {
+        const rolls = [{ kind: 'attack', dc: 14, total: 25, verdict: 'MISS' }];
+        expect(correctVerdicts('*(Attack: 1 [Roll] + 24 [Mod] = 25 vs AC 14 → HIT)*', rolls).text)
+            .toBe('*(Attack: 1 [Roll] + 24 [Mod] = 25 vs AC 14 → MISS)*');
     });
 });

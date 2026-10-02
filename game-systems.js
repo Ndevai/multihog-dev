@@ -452,7 +452,7 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
         const dieWord = d100Mode ? 'd100' : 'd20';
         const toolName = d100Mode ? 'RollTheDiceD100' : 'RollTheDice';
         if (!shouldUseRngQueue(settings, inCombat)) {
-            return `<rng_system>\nEvery roll goes through ${toolName}.\n- Checks: set dc from the fiction, then call with kind "check". The returned verdict decides the outcome.\n- Damage, healing, quantities: kind "amount".\n- Loot, random events and other tier tables: kind "table"; narrate the returned tier.\n- Write each check as *(Skill: DC 15, roll 12 → FAILURE)* with the returned numbers and verdict.\n- For several independent rolls, issue parallel calls in the same turn, each with its own "for".\n</rng_system>`;
+            return `<rng_system>\nEvery roll goes through ${toolName}.\n- Checks and saves: set dc from the fiction, then call with kind "check". Attacks: kind "attack", dc = target AC. The returned verdict decides the outcome.\n- Damage, healing, quantities: kind "amount".\n- Loot, random events and other tier tables: kind "table"; narrate the returned tier.\n- Write each check as *(Skill: DC 15, roll 12 → FAILURE)* and each attack as *(Attack: 17 vs AC 14 → HIT)* with the returned numbers and verdict.\n- For several independent rolls, issue parallel calls in the same turn, each with its own "for".\n</rng_system>`;
         }
 
         const queueName = d100Mode ? '[RNG_QUEUE_d100 v7.0]' : '[RNG_QUEUE v7.0]';

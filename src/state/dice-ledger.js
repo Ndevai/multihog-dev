@@ -56,9 +56,25 @@ export function pickTier(rows, total) {
         || (total < rows[0].min ? rows[0] : rows.at(-1));
 }
 
-export function verdictOf(total, dc, compare) {
+export function verdictOf(total, dc, compare, natural = null) {
     if (compare === 'lte') return total <= dc ? 'HIT' : 'MISS';
+    if (compare === 'attack') {
+        if (natural === 1) return 'MISS';
+        if (natural === 20) return 'HIT';
+        return total >= dc ? 'HIT' : 'MISS';
+    }
     return total >= dc ? 'SUCCESS' : 'FAILURE';
+}
+
+/** The d20 face that decides a natural 1/20: 1d20, 2d20kh1 (higher) or 2d20kl1 (lower) as the formula's first group. */
+export function naturalD20(formula, rolls) {
+    const m = String(formula ?? '').replace(/\s+/g, '').match(/^(\d*)d20(k[hl]?1)?(?![\d])/i);
+    if (!m) return null;
+    const count = Number(m[1] || 1);
+    const faces = (rolls || []).slice(0, count).map(Number);
+    if (count === 1 && !m[2]) return faces[0] ?? null;
+    if (count === 2 && m[2]) return /kl/i.test(m[2]) ? Math.min(...faces) : Math.max(...faces);
+    return null;
 }
 
 const FLIP = {
@@ -79,14 +95,14 @@ function matchCase(src, word) {
 }
 
 /**
- * Finds roll parentheticals whose DC and total match a ledger check and whose
+ * Finds roll parentheticals whose DC/AC and total match a ledger check and whose
  * verdict word contradicts it; flips those words. Returns { text, fixes }.
  */
 export function correctVerdicts(text, rolls) {
-    const checks = (rolls || []).filter(r => r.kind === 'check' && r.verdict);
+    const checks = (rolls || []).filter(r => (r.kind === 'check' || r.kind === 'attack') && r.verdict);
     let fixes = 0;
     const out = String(text ?? '').replace(/\(([^()\n]{1,240})\)/g, (whole, inner) => {
-        const dcMatch = inner.match(/\bDC\s*:?\s*(\d+)/i) || inner.match(/(\d+)\s*%/);
+        const dcMatch = inner.match(/\b(?:DC|AC)\s*:?\s*(\d+)/i) || inner.match(/(\d+)\s*%/);
         if (!dcMatch || !WORD.test(inner)) return whole;
         WORD.lastIndex = 0;
         const dc = +dcMatch[1];

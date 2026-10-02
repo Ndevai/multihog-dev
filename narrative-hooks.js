@@ -28,7 +28,7 @@ import { recordSchedulerEvent } from './swipe-scheduler-debug.js';
 import { saveSettings } from './src/app/runtime-bridge.js';
 import { runtimeState } from './src/app/runtime-state.js';
 import { isPercentFormula, resolveDiceCompare } from './src/state/dice-compare.js';
-import { turnKey, ledgerForTurn, findRepeat, parseTable, pickTier, verdictOf, correctVerdicts } from './src/state/dice-ledger.js';
+import { turnKey, ledgerForTurn, findRepeat, parseTable, pickTier, verdictOf, naturalD20, correctVerdicts } from './src/state/dice-ledger.js';
 import { buildCyoaModeBlock, STATE_MEMO_INJECT_PREAMBLE } from './constants.js';
 import { isCyoaEnabled, isLorebookAgentRuntimeActive, isLocationMappingEnabled } from './src/state/section-enabled.js';
 import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/state/narrative-pacing.js';
@@ -522,12 +522,12 @@ export async function doDiceRoll(customDiceFormula, quiet = false) {
 async function executeDiceToolAction(args, opts = {}) {
     const isLegacy = !!opts.isLegacy;
     const requestedFormula = args?.formula || opts.defaultFormula || (isLegacy ? '1d6' : '1d20');
-    const kind = isLegacy ? 'legacy' : (['check', 'amount', 'table'].includes(args?.kind) ? args.kind : 'check');
+    const kind = isLegacy ? 'legacy' : (['check', 'attack', 'amount', 'table'].includes(args?.kind) ? args.kind : 'check');
     const dc = Number(args?.dc);
     const rows = kind === 'table' ? parseTable(args?.table) : null;
 
-    if (kind === 'check' && !(Number.isFinite(dc) && dc > 0)) {
-        return 'Nothing was rolled. A check needs its DC (or % chance) set first: call again with dc as a positive number. For damage, healing or quantities use kind "amount"; for a tier table use kind "table".';
+    if ((kind === 'check' || kind === 'attack') && !(Number.isFinite(dc) && dc > 0)) {
+        return 'Nothing was rolled. A check needs its DC (or % chance) and an attack needs the target AC, set first: call again with dc as a positive number. For damage, healing or quantities use kind "amount"; for a tier table use kind "table".';
     }
     if (kind === 'table' && !rows) {
         return 'Nothing was rolled. Call again with table as contiguous rows, e.g. "1-5 Junk | 6-10 Common | 11-20 Rare".';
@@ -562,11 +562,13 @@ async function executeDiceToolAction(args, opts = {}) {
     } else if (kind === 'amount') {
         entry.text = `${lead}. ${dice}. Use this amount as rolled.`;
     } else {
-        const compare = opts.forceLte ? 'lte' : resolveDiceCompare(args?.compare, formula);
-        const verdict = verdictOf(total, dc, compare);
-        const vs = compare === 'lte' ? `${dc}%` : `DC ${dc}`;
-        Object.assign(entry, { dc, compare, verdict });
-        entry.text = `${lead} against ${vs}. ${dice}. Verdict: ${verdict} (binding). Narrate a ${verdict.toLowerCase()} and write "${verdict}" in the roll parenthetical.`;
+        const compare = opts.forceLte ? 'lte' : kind === 'attack' ? 'attack' : resolveDiceCompare(args?.compare, formula);
+        const natural = compare === 'attack' ? naturalD20(formula, roll.rolls) : null;
+        const verdict = verdictOf(total, dc, compare, natural);
+        const vs = compare === 'lte' ? `${dc}%` : compare === 'attack' ? `AC ${dc}` : `DC ${dc}`;
+        const nat = natural === 20 ? ' Natural 20: critical hit, roll the damage dice twice.' : natural === 1 ? ' Natural 1: automatic miss.' : '';
+        Object.assign(entry, { dc, compare, verdict, natural });
+        entry.text = `${lead} against ${vs}. ${dice}. Verdict: ${verdict} (binding).${nat} Narrate a ${verdict.toLowerCase()} and write "${verdict}" in the roll parenthetical.`;
     }
     recordDiceRoll(entry);
     return entry.text;
@@ -666,7 +668,7 @@ export function syncLocationMappingRuntime() {
 }
 
 const FOR_DESCRIPTION = 'What is being rolled for, 1-4 words, unique within this turn. For repeated rolls name the target and count, e.g. "attack 2 goblin". A repeated who + for returns the first result.';
-const KIND_PROPERTY = { type: 'string', enum: ['check', 'amount', 'table'], description: '"check" (default): pass/fail against dc, verdict returned. "amount": damage, healing or a quantity, no dc. "table": tier table, pass table; the tier is returned.' };
+const KIND_PROPERTY = { type: 'string', enum: ['check', 'attack', 'amount', 'table'], description: '"check" (default): skill check or save against dc, verdict returned. "attack": attack roll, dc = target AC; natural 1 misses, natural 20 is a critical hit. "amount": damage, healing or a quantity, no dc. "table": tier table, pass table; the tier is returned.' };
 const TABLE_PROPERTY = { type: 'string', description: 'For kind "table": contiguous rows "range label" joined by |, e.g. "1-5 Junk | 6-10 Common | 11-15 Useful | 16-19 Rare | 20 Exceptional". Open ends: "≤8 bad", "≥12 good".' };
 
 export function registerDiceFunctionTool() {
@@ -713,7 +715,7 @@ export function registerDiceFunctionTool() {
             registerFunctionTool({
                 name: 'RollTheDice',
                 displayName: isLegacy ? 'Dice Roll' : 'Dice Roll (with DC)',
-                description: 'Rolls dice and returns the result. kind "check": skill/attack checks (1d20+mod vs dc, compare gte) and percentage / existence checks (1d100 vs %, compare lte); the returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
+                description: 'Rolls dice and returns the result. kind "check": skill checks and saves (1d20+mod vs dc, compare gte) and percentage / existence checks (1d100 vs %, compare lte). kind "attack": 1d20+mod vs target AC. The returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
                 parameters: rollDiceSchema,
                 action: async (args) => executeDiceToolAction(args, {
                     defaultFormula: isLegacy ? '1d6' : '1d20',
