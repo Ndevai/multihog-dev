@@ -4191,7 +4191,7 @@ async function showRngExplanation() {
                 ${card('📋', 'Which system should I use?',
         `<ul style="margin: 4px 0 0 0; padding-left: 20px; text-align: left; list-style-position: outside;">
                         <li style="margin-bottom: 4px;"><b>Pre-Seeded + Tool Calls (recommended without CYOA):</b> Outside combat the model sees only <b>RollTheDice</b>; during an active combat round it sees only the <b>RNG Queue</b>. Prompt and tool schema switch together.</li>
-                        <li style="margin-bottom: 4px;"><b>Tool Calls Only (strict):</b> <b>RollTheDice</b> in and out of combat; the RNG Queue is never injected. The model commits every DC before any die exists, so it cannot pick targets, actions or difficulties to fit dice it has already seen. Costs more tool round-trips in combat.</li>
+                        <li style="margin-bottom: 4px;"><b>Tool Calls Only (strict):</b> <b>RollTheDice</b> in and out of combat; the RNG Queue is never injected. More tool calls in combat.</li>
                         <li style="margin-bottom: 4px;"><b>With CYOA Mode:</b> Prefer the <b>RNG Queue</b> — choice DCs are already committed, so foresight isn't a sycophancy risk.</li>
                         <li><b>Pre-Seeded Only:</b> Queue-only. Use if your model doesn't support function/tool calling. Fine for combat and CYOA; weaker for freeform narrative without CYOA.</li>
                     </ul>`

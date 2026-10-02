@@ -704,8 +704,7 @@ export function registerDiceFunctionTool() {
 /**
  * Keeps function-tool visibility aligned with managed hybrid RNG context.
  * During combat the queue is the only mechanic, so remove the dice schemas;
- * outside combat restore the user's configured dice tools. Strict mode keeps
- * the dice tools registered in combat because the queue is never injected.
+ * outside combat restore the user's configured dice tools.
  */
 export function syncDiceFunctionToolForRngContext(memo, manageHybrid = false) {
     if (!manageHybrid || !shouldUseRngQueue(getSettings(), isCombatActive(memo))) {
@@ -1452,9 +1451,8 @@ export function installInterceptor() {
 
             if (settings.enabled) {
                 // Hybrid mode uses live tool calls outside combat and the queue only
-                // while [COMBAT] is active. Strict mode never injects the queue, so the
-                // model commits every DC before it sees a die. Queue-only mode continues
-                // to inject it for every response, preserving its existing behavior.
+                // while [COMBAT] is active. Queue-only mode continues to inject it for
+                // every response, preserving its existing behavior.
                 const injectRngQueue = shouldUseRngQueue(settings, isCombatActive(settings.currentMemo));
                 if (injectRngQueue) {
                     if (settings.rngQueueD20) {
