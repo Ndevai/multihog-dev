@@ -1,0 +1,168 @@
+export const DAY_MIN = 30804 / 60;
+const HOUR = 60 / DAY_MIN;
+
+const BLEED = { femoral: [300, 600], limb_artery: [70, 170], small: [1, 10] };
+const FRACTURE = {
+    arm_spiral: [58.9, 117.8], arm_transverse: [117.8, 235.6],
+    leg_spiral: [117.8, 235.6], leg_transverse: [235.6, 471.1],
+};
+const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
+const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
+const COST = [0, 40, 64, 107, 178, 297, 495, 825, 1375, 2292];
+const FALL_ROWS = [[5.1, 0], [10.1, 0.227], [13.2, 0.44], [16.2, 0.56], [Infinity, 0.78]];
+const PART_FEEDS = {
+    head: ['reaction'], eyes: ['vision', 'reaction'], mouth: ['breathing', 'eating', 'drinking'],
+    torso: ['balance', 'breathing'], arm: ['lifting', 'blocking', 'balance'], hand: ['grip', 'fine manipulation'],
+    leg: ['movement', 'balance', 'blocking'], foot: ['footing', 'movement'],
+};
+
+const between = (rng, [a, b]) => a + (b - a) * rng();
+const round = (x, d = 1) => Math.round(x * 10 ** d) / 10 ** d;
+
+export function newPerson(massKg = 70) {
+    return {
+        mass: massKg, lost: 0, red: 0, wounds: [], nextId: 1, dead: null, deathIn: null, minute: 0,
+        net: { C: 40, N: 0, R: 40, P: 1, F: 0, E: 0, width: 0, maxToday: false },
+    };
+}
+
+export function person(state, who, massKg) {
+    state.people ??= {};
+    state.people[who] ??= newPerson(massKg);
+    return state.people[who];
+}
+
+export const bloodVolume = p => p.mass * 70;
+export const lossFraction = p => p.lost / bloodVolume(p);
+
+export function bloodClass(p) {
+    const f = lossFraction(p);
+    return f > 0.4 ? 4 : f >= 0.3 ? 3 : f >= 0.15 ? 2 : 1;
+}
+
+export function stage(net) {
+    if (net.N >= 13) return { stage: 5, max: 9 };
+    if (net.N >= 2) return { stage: 4, max: 9 };
+    if (net.N === 1) return { stage: 3, max: 6 };
+    return net.C >= 200 ? { stage: 2, max: 3 } : { stage: 1, max: 1 };
+}
+
+export function addWound(p, w, rng = Math.random) {
+    const wound = { id: p.nextId++, part: w.part, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false };
+    if (w.vessel && BLEED[w.vessel]) wound.bleed = round(between(rng, BLEED[w.vessel]));
+    if (w.type === 'fracture') {
+        const kind = FRACTURE[w.fracture] ? w.fracture : (/leg|foot/.test(w.part) ? 'leg_spiral' : 'arm_spiral');
+        wound.fracture = { kind, joins: FRACTURE[kind][0], full: FRACTURE[kind][1], crooked: false,
+            never: rng() < (NONUNION[w.bone] ?? NONUNION.default) };
+        if (w.openGrade && OPEN_FRACTURE_INFECTION[w.openGrade]) wound.openGrade = w.openGrade;
+    }
+    if (['cut', 'puncture', 'bite', 'burn'].includes(w.type) || wound.openGrade) wound.open = true;
+    p.wounds.push(wound);
+    return wound;
+}
+
+function infectionChance(w) {
+    if (w.openGrade) return OPEN_FRACTURE_INFECTION[w.openGrade];
+    const late = w.cleanedAt === null || w.cleanedAt > 8 * HOUR;
+    if (w.type === 'bite') return late ? 0.22 : 0.05;
+    return late ? 0.15 : 0.03;
+}
+
+export function treat(p, id, treatment, rng = Math.random) {
+    const w = p.wounds.find(x => x.id === id);
+    if (treatment === 'transfuse') { p.lost = 0; p.deathIn = null; return 'Blood volume replaced.'; }
+    if (!w) return `No wound ${id}.`;
+    if (treatment === 'stop_bleeding') { w.bleed = 0; return `Wound ${id}: bleeding stopped.`; }
+    if (treatment === 'clean') { w.cleanedAt ??= w.age; return `Wound ${id}: cleaned.`; }
+    if (treatment === 'splint') { w.splinted = true; return `Wound ${id}: splinted.`; }
+    if (treatment === 'load') {
+        if (!w.fracture || w.fracture.joins <= 0 || w.splinted) return `Wound ${id}: loaded, no added risk.`;
+        if (rng() < 0.325) { w.fracture.crooked = true; return `Wound ${id}: bone shifted; it will heal crooked.`; }
+        return `Wound ${id}: loaded; bone held.`;
+    }
+    return `Unknown treatment "${treatment}".`;
+}
+
+function endDay(net) {
+    const gain = net.E > 0 ? 0.2909 * net.E ** 0.4063 : 0;
+    net.width += gain;
+    const grown = Math.floor(net.width);
+    net.width -= grown;
+    net.C += grown;
+    if (net.maxToday && net.F >= 0.4278 * net.C && net.C >= 4000 * (net.N + 1) && net.N < 12) net.N += 1;
+    net.F = 0; net.E = 0; net.maxToday = false;
+}
+
+export function advance(p, minutes, resting, rng = Math.random) {
+    if (p.dead) return;
+    const net = p.net;
+    for (let t = 0; t < minutes; t++) {
+        const bleeding = p.wounds.reduce((s, w) => s + w.bleed, 0);
+        p.lost += bleeding;
+        if (bloodClass(p) === 4) {
+            const mode = bleeding > 0 ? 'bleeding' : 'stopped';
+            if (p.deathIn === null || p.deathMode !== mode) p.deathIn = mode === 'bleeding' ? Math.round(between(rng, [30, 60])) : 120;
+            p.deathMode = mode;
+            if (--p.deathIn <= 0) { p.dead = 'blood loss'; return; }
+        } else p.deathIn = null;
+        if (bleeding === 0 && p.lost > 0) {
+            const refill = Math.min(p.lost, bloodVolume(p) * 0.4 / (4.2 * DAY_MIN));
+            p.lost -= refill; p.red += refill;
+        }
+        p.red = Math.max(0, p.red - 500 / (98.2 * DAY_MIN));
+        if (resting) net.R = Math.min(net.C, net.R + 0.05 * net.C / 60);
+        for (const w of p.wounds) {
+            w.age += 1 / DAY_MIN;
+            if (w.fracture && !w.fracture.never) { w.fracture.joins -= 1 / DAY_MIN; w.fracture.full -= 1 / DAY_MIN; }
+            if (w.open && w.infection === null && w.age >= 12 * HOUR) w.infection = rng() < infectionChance(w);
+        }
+        if (++p.minute >= DAY_MIN) { p.minute -= DAY_MIN; endDay(net); }
+    }
+}
+
+export function cast(p, complexity) {
+    const net = p.net;
+    const { stage: st, max } = stage(net);
+    let cost = COST[complexity] ?? COST[9];
+    if (st === 5 && complexity === 9) cost /= 2;
+    cost = Math.round(cost / net.P);
+    if (net.R < cost) return `Cast does not start: needs ${cost} PE, has ${Math.floor(net.R)}.`;
+    net.R -= cost;
+    if (complexity > max) return `Cast fails: complexity ${complexity} exceeds stage ${st} max ${max}. ${cost} PE lost.`;
+    net.F += cost; net.E += cost;
+    if (complexity === max) net.maxToday = true;
+    return `Cast succeeds: ${cost} PE spent, ${Math.floor(net.R)} PE left.`;
+}
+
+export function fall(p, height, { soft = false, headFirst = false } = {}, rng = Math.random) {
+    let row = FALL_ROWS.findIndex(([h]) => height < h);
+    if (headFirst) row = Math.min(row + 1, FALL_ROWS.length - 1);
+    if (soft) row = Math.max(row - 1, 0);
+    const chance = FALL_ROWS[row][1];
+    if (chance > 0 && rng() < chance) { p.dead = 'fall'; return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — dies.`; }
+    return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — survives. Injuries: narrate, then record with LosicaWound.`;
+}
+
+export function status(who, p) {
+    if (p.dead) return `${who}: dead (${p.dead}).`;
+    const out = [];
+    const f = lossFraction(p);
+    out.push(`${who}: blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]})`);
+    if (p.deathIn !== null) out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
+    if (p.red > 0) out.push(`red-cell deficit ${Math.round(p.red)} mL: endurance lowered`);
+    for (const w of p.wounds) {
+        const bits = [`wound ${w.id} ${w.part} ${w.type}`];
+        if (w.bleed) bits.push(`bleeding ${w.bleed} mL/min`);
+        if (w.fracture) {
+            const fr = w.fracture;
+            bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
+            if (fr.crooked) bits.push('crooked');
+            if (fr.joins > 0 && !fr.never) bits.push(`${w.part} gives no ${(PART_FEEDS[w.part.replace(/_(l|r)$/, '')] || ['use']).join('/')}`);
+        }
+        if (w.infection) bits.push('infected');
+        out.push(bits.join(', '));
+    }
+    const n = p.net, s = stage(n);
+    out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
+    return out.join('. ') + '.';
+}

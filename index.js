@@ -47,6 +47,7 @@ import {
 import { RENDERING_TAGS_LIBRARY, sectionPages, configureRuntimeActions } from './src/app/runtime-bridge.js';
 import { bindRenderedCardEvents } from './src/ui/panel/card-events.js';
 import { getRngMode, applyRngMode, autoSelectRngTools } from './src/state/rng-mode.js';
+import { registerLosicaRulesTools, onLosicaGenerationStarted } from './src/rules/losica-tools.js';
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
 import { createMemoRecoveryManager } from './src/features/recovery/memo-recovery.js';
@@ -8148,6 +8149,7 @@ function organizeConnectionSettingsUI() {
             });
         }
         eventSource.on(event_types.GENERATION_STARTED, onGenerationStarted);
+        eventSource.on(event_types.GENERATION_STARTED, type => { if (getSettings().losicaRules) onLosicaGenerationStarted(type); });
         eventSource.on(event_types.GENERATION_ENDED, onGenerationEnded);
         eventSource.on(event_types.GENERATION_STOPPED, onGenerationEnded);
         if (event_types.MESSAGE_SENT) eventSource.on(event_types.MESSAGE_SENT, onMapUpdaterUserMessage);
@@ -8377,6 +8379,7 @@ function organizeConnectionSettingsUI() {
         }
 
         registerDiceFunctionTool();
+        registerLosicaRulesTools(!!getSettings().losicaRules);
         syncLocationMappingRuntime();
         registerDiceSlashCommand();
 
@@ -11255,6 +11258,12 @@ RULES:
                 scheduleAutoApply();
             });
         }
+        $('#rpg_losica_rules').prop('checked', !!getSettings().losicaRules).on('change', function () {
+            const fresh = getSettings();
+            fresh.losicaRules = !!$(this).prop('checked');
+            registerLosicaRulesTools(fresh.losicaRules);
+            saveSettings();
+        });
 
         // Router Agent Settings
         $('#rpg_tracker_router_enabled').prop('checked', settings.routerEnabled).on('change', function () {
@@ -12745,6 +12754,8 @@ RULES:
             const currentRngMode = getRngMode(s);
             $(`input[name="rpg_sysprompt_rng_mode"][value="${currentRngMode}"]`).prop('checked', true);
             syncRngToolsUi(s);
+            $('#rpg_losica_rules').prop('checked', !!s.losicaRules);
+            registerLosicaRulesTools(!!s.losicaRules);
             const narrativePacing = ['normal', 'shorter_outputs', 'high_agency', 'downtime'].includes(s.narrativePacing)
                 ? s.narrativePacing
                 : 'normal';
