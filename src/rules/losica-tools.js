@@ -1,4 +1,5 @@
-import { person, addWound, treat, advance, cast, fall, status } from './losica-engine.js';
+import { person, addWound, treat, advance, cast, fall, status, seededRng } from './losica-engine.js';
+import { turnKey } from '../state/dice-ledger.js';
 
 const TOOLS = ['LosicaWound', 'LosicaTreat', 'LosicaTime', 'LosicaCast', 'LosicaFall', 'LosicaStatus'];
 const KEEP_SNAPSHOTS = 30;
@@ -6,6 +7,7 @@ const KEEP_SNAPSHOTS = 30;
 function store() {
     const ctx = SillyTavern.getContext();
     ctx.chatMetadata.losicaRules ??= { state: { people: {} }, snapshots: {} };
+    ctx.chatMetadata.losicaRules.salt ??= crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
     return ctx.chatMetadata.losicaRules;
 }
 
@@ -22,16 +24,21 @@ export function onLosicaGenerationStarted(type) {
     const key = userTurns();
     if (type === 'swipe' || type === 'regenerate') {
         if (s.snapshots[key]) s.state = structuredClone(s.snapshots[key]);
+        s.calls = 0;
     } else if (!type || type === 'normal') {
+        s.calls = 0;
         s.snapshots[key] = structuredClone(s.state);
         const keys = Object.keys(s.snapshots).map(Number).sort((a, b) => a - b);
         for (const k of keys.slice(0, -KEEP_SNAPSHOTS)) delete s.snapshots[k];
     }
 }
 
+// Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
 function run(fn) {
     const s = store();
-    const out = fn(s.state);
+    s.calls = (s.calls || 0) + 1;
+    const rng = seededRng(`${s.salt}:${turnKey(SillyTavern.getContext().chat)}:${s.calls}`);
+    const out = fn(s.state, rng);
     save();
     return out;
 }
@@ -58,9 +65,9 @@ export function registerLosicaRulesTools(enabled) {
         fracture: { type: 'string', enum: ['arm_spiral', 'arm_transverse', 'leg_spiral', 'leg_transverse'] },
         bone: { type: 'string', enum: ['default', 'shin', 'wrist'] },
         openGrade: { type: 'string', enum: ['none', 'I', 'II', 'IIIA', 'IIIB', 'IIIC'], description: 'Fracture through the skin: I small wound … IIIC with artery damage.' },
-    }, ['who', 'part', 'type'], a => run(st => {
+    }, ['who', 'part', 'type'], a => run((st, rng) => {
         const p = person(st, a.who);
-        const w = addWound(p, a);
+        const w = addWound(p, a, rng);
         return `Wound ${w.id} recorded. ${status(a.who, p)}`;
     }));
 
@@ -68,18 +75,18 @@ export function registerLosicaRulesTools(enabled) {
         who: str('Character name'),
         wound: { type: 'number', description: 'Wound id' },
         treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load'] },
-    }, ['who', 'wound', 'treatment'], a => run(st => {
+    }, ['who', 'wound', 'treatment'], a => run((st, rng) => {
         const p = person(st, a.who);
-        return `${treat(p, Number(a.wound), a.treatment)} ${status(a.who, p)}`;
+        return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;
     }));
 
     tool('LosicaTime', 'Advance story time for every tracked character. Call before narrating any time passing.', {
         minutes: { type: 'number', description: 'Minutes that pass' },
         resting: { type: 'array', items: { type: 'string' }, description: 'Characters not casting or fighting during this time' },
-    }, ['minutes'], a => run(st => {
+    }, ['minutes'], a => run((st, rng) => {
         const resting = new Set(a.resting || []);
         const lines = Object.entries(st.people || {}).map(([who, p]) => {
-            advance(p, Math.max(0, Math.round(a.minutes)), resting.has(who));
+            advance(p, Math.max(0, Math.round(a.minutes)), resting.has(who), rng);
             return status(who, p);
         });
         return lines.join('\n') || 'No tracked characters.';
@@ -98,9 +105,9 @@ export function registerLosicaRulesTools(enabled) {
         height_m: { type: 'number' },
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
         head_first: { type: 'boolean' },
-    }, ['who', 'height_m'], a => run(st => {
+    }, ['who', 'height_m'], a => run((st, rng) => {
         const p = person(st, a.who);
-        return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first });
+        return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first }, rng);
     }));
 
     tool('LosicaStatus', 'Read a character\'s body and network state.', {

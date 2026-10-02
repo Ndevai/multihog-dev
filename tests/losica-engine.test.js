@@ -99,3 +99,20 @@ it('status reports a disabled part', () => {
     addWound(p, { part: 'hand_l', type: 'fracture' }, fixed(0.9));
     expect(status('Ara', p)).toMatch(/hand_l gives no grip\/fine manipulation/);
 });
+
+describe('seeded draws', () => {
+    it('repeats the same stream for the same seed and differs for another', async () => {
+        const { seededRng } = await import('../src/rules/losica-engine.js');
+        const draw = seed => { const r = seededRng(seed); return [r(), r(), r()]; };
+        expect(draw('salt:3:abc:1')).toEqual(draw('salt:3:abc:1'));
+        expect(draw('salt:3:abc:1')).not.toEqual(draw('salt:3:abc:2'));
+        expect(draw('x').every(v => v >= 0 && v < 1)).toBe(true);
+    });
+
+    it('gives the same fall outcome on a replayed call', async () => {
+        const { newPerson, fall, seededRng } = await import('../src/rules/losica-engine.js');
+        const outcomes = new Set();
+        for (let i = 0; i < 5; i++) outcomes.add(fall(newPerson(), 14, {}, seededRng('turn-7:1')));
+        expect(outcomes.size).toBe(1);
+    });
+});
