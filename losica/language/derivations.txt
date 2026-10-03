@@ -1,0 +1,112 @@
+
+## WEAVE — ambient field of magical energy
+Proto-Losica *kʷarema
+Komuheft:
+   hʷarema        *p *t *k *kʷ > f θ h(~g / V_V) hʷ
+   => /hʷarema/  surface [wəˈɾemə]
+Tegofarela:
+   paɾe̞ma        *kʷ > *fʷ > *f > p
+   pɑ̟ɾɛmɑ̟       *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   pɑ̟ːɛmɑ̟       *r > 0 / V_V (simple form) + retained mora   [READING-T3]
+   => /pɑ̟ːɛmɑ̟/  ⟨paaɛma⟩  stress on syllable 1
+
+## CONDUIT — energy-carrying channel in the soul
+Proto-Losica *tsonek
+Komuheft:
+   onek           *ts > *s > *h > 0
+   oneh           *p *t *k *kʷ > f θ h(~g / V_V) hʷ
+   one            coda: h > 0; kʷ hʷ l > w
+   => /one/  surface [ˈoni]
+Tegofarela:
+   ho̞ne̞k        *ts > *s > h
+   ho̞ne̞k        *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   ho̞ne̞ː        final *β *t *k > 0 + retained mora
+   => /ho̞ne̞ː/  ⟨honee⟩  stress on syllable 1
+
+## NEXUS — knot of fused conduits
+Proto-Losica *gʷadin
+Komuheft:
+   kʷatin         *b *d *g *gʷ > p t k kʷ
+   => /kʷatin/  surface [ˈkʷatin]
+Tegofarela:
+   ʋadin          *gʷ > *vʷ > ʋ / _V   [READING-T1]
+   ʋɑ̟din         *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   => /ʋɑ̟din/  ⟨vadin⟩  stress on syllable 1
+
+## SOUL — the bearer of conduits
+Proto-Losica *amiwo
+Komuheft:
+   => /amiwo/  surface [əˈmiwu]
+Tegofarela:
+   ɑ̟miwo̞        *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   => /ɑ̟miwo̞/  ⟨amiwo⟩  stress on syllable 1
+
+## ENERGY — refined spiritual energy (PE)
+Proto-Losica *bekʼat
+Komuheft:
+   bekʼaθ         *p *t *k *kʷ > f θ h(~g / V_V) hʷ
+   pekʼaθ         *b *d *g *gʷ > p t k kʷ
+   pekaθ          *kʼ > k
+   pekaθi         epenthesis Ø > i / illegal coda
+   => /pekaθi/  surface [piˈkʰaθi]
+Tegofarela:
+   be̞ʔat         *kʼ > ʔ
+   bɛʔɑ̟t         *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   bɛʔɑ̟ː         final *β *t *k > 0 + retained mora
+   => /bɛʔɑ̟ː/  ⟨bɛ'aa⟩  stress on syllable 1
+
+## PURITY — efficiency of the conduit network
+Proto-Losica *ilena
+Komuheft:
+   => /ilena/  surface [iˈlenə]
+Tegofarela:
+   ilɛnɑ̟         *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   => /ilɛnɑ̟/  ⟨ilɛna⟩  stress on syllable 1
+
+## PATTERN — the structure a spell holds
+Proto-Losica *dokʷo
+Komuheft:
+   dokʷe          *kʷo# > *kʷe#
+   dotʃe          *kʷe > *tʃe
+   doʃe           *tʃ > ʃ
+   toʃe           *b *d *g *gʷ > p t k kʷ
+   => /toʃe/  surface [ˈtʰoʃi]
+Tegofarela:
+   do̞po̞         *kʷ > *fʷ > *f > p
+   do̞po̞         *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   => /do̞po̞/  ⟨dopo⟩  stress on syllable 1
+
+## PRACTICE — repeated casting that widens conduits
+Proto-Losica *pagerak
+Komuheft:
+   fagerah        *p *t *k *kʷ > f θ h(~g / V_V) hʷ
+   fakerah        *b *d *g *gʷ > p t k kʷ
+   fakera         coda: h > 0; kʷ hʷ l > w
+   => /fakera/  surface [fəˈkʰeɾə]
+Tegofarela:
+   paɰe̞ɾak       *g > ɰ / V_V
+   pɑ̟ɰɛɾɑ̟k      *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   pɑ̟ɰɛɾɑ̟ː      final *β *t *k > 0 + retained mora
+   pɑ̟ɰɛːɑ̟ː      *r > 0 / V_V (simple form) + retained mora   [READING-T3]
+   => /pɑ̟ɰɛːɑ̟ː/  ⟨pawgɛɛaa⟩  stress on syllable 1
+
+## CORE — condensed energy inside a beast
+Proto-Losica *kʼoβ
+Komuheft:
+   koβ            *kʼ > k
+   kou            *β > *v > u
+   => /kou/  surface [ˈkʰou]
+Tegofarela:
+   ʔo̞β           *kʼ > ʔ
+   ʔo̞β           *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   ʔo̞ː           final *β *t *k > 0 + retained mora
+   => /ʔo̞ː/  ⟨'oo⟩  stress on syllable 1
+
+## LAW — a governing regularity of the world
+Proto-Losica *tatir
+Komuheft:
+   θaθir          *p *t *k *kʷ > f θ h(~g / V_V) hʷ
+   => /θaθir/  surface [ˈθaθi(ɾ)]
+Tegofarela:
+   tɑ̟tiɾ         *a > ɑ̟; *e *o > ɛ ɔ / _C₀a, else e̞ o̞   [READING-T2]
+   => /tɑ̟tiɾ/  ⟨tatir⟩  stress on syllable 1
