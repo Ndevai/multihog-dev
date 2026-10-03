@@ -231,7 +231,7 @@ describe('strikes (rule 576)', () => {
     it('blunt blows record force and a bruise until OPEN-60 is calibrated', async () => {
         const { newPerson, strike } = await import('../src/rules/losica-engine.js');
         const p = newPerson();
-        expect(strike(p, { part: 'mouth', means: 'kick', skill: 'elite' }, null, () => 0.01)).toMatch(/\d+ N, fracture from blows not set \(OPEN-60\) → bruise/);
+        expect(strike(p, { part: 'mouth', means: 'kick', skill: 'elite', landed: true }, null, () => 0.01)).toMatch(/\d+ N, fracture from blows not set \(OPEN-60\) → bruise/);
         expect(p.wounds[0].type).toBe('blunt');
     });
 
@@ -247,10 +247,10 @@ describe('strikes (rule 576)', () => {
     it('blades on limbs open a limb artery 12 % of the time', async () => {
         const { newPerson, strike } = await import('../src/rules/losica-engine.js');
         const p = newPerson();
-        expect(strike(p, { part: 'leg_l', means: 'blade_stab' }, null, () => 0.1)).toMatch(/limb artery opened/);
+        expect(strike(p, { part: 'leg_l', means: 'blade_stab', landed: true }, null, () => 0.1)).toMatch(/limb artery opened/);
         expect(p.wounds[0].bleed).toBeGreaterThanOrEqual(70);
-        expect(strike(p, { part: 'leg_l', means: 'blade_cut' }, null, () => 0.5)).toMatch(/small vessels/);
-        expect(strike(p, { part: 'torso', means: 'blade_stab' }, null, () => 0.1)).toMatch(/OPEN-56/);
+        expect(strike(p, { part: 'leg_l', means: 'blade_cut', landed: true }, null, () => 0.5)).toMatch(/small vessels/);
+        expect(strike(p, { part: 'torso', means: 'blade_stab', landed: true }, null, () => 0.1)).toMatch(/OPEN-56/);
     });
 });
 
@@ -303,5 +303,25 @@ describe('interruptions (NetHack/Pathos structure)', () => {
     it('runs the full span when nothing changes', async () => {
         const { newPerson, advanceAll } = await import('../src/rules/losica-engine.js');
         expect(advanceAll({ A: newPerson() }, 300)).toEqual({ elapsed: 300, events: [] });
+    });
+});
+
+describe('whether an attack lands (NetHack to-hit)', () => {
+    it('adds skill and target states to 1 + AC 10', async () => {
+        const { toHit } = await import('../src/rules/losica-engine.js');
+        expect(toHit({ means: 'fist' })).toBe(12);
+        expect(toHit({ means: 'fist', skill: 'elite' })).toBe(16);
+        expect(toHit({ means: 'blade_stab' })).toBe(7);
+        expect(toHit({ means: 'blade_cut', skill: 'elite', states: ['asleep', 'fleeing', 'asleep'] })).toBe(18);
+        expect(toHit({ means: 'kick', states: ['helpless'] })).toBe(16);
+    });
+
+    it('hits when to-hit exceeds the d20 and records nothing on a miss', async () => {
+        const { newPerson, strike } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        expect(strike(p, { part: 'leg_l', means: 'blade_stab' }, null, () => 0.3)).toMatch(/misses \(to-hit 7 vs d20 7\)/);
+        expect(p.wounds).toHaveLength(0);
+        expect(strike(p, { part: 'leg_l', means: 'blade_stab' }, null, () => 0.25)).toMatch(/puncture to leg_l/);
+        expect(p.wounds).toHaveLength(1);
     });
 });

@@ -292,8 +292,28 @@ export function strikeForce({ means, skill = 'untrained', mass = REF_MASS, part 
     return Math.max(0, mean * (mass / REF_MASS) ** (2 / 3) * ability * (1 + (kick ? KICK_CV : FIST_CV) * gauss(rng)));
 }
 
-/** A blow that has landed: records the wound on the target and returns what happened. */
+// NetHack 3.6 uhitm.c find_roll_to_hit / weapon.c weapon_hit_bonus: hit when 1 + target AC + skill + state > d20.
+// Unarmoured target AC 10 (armour: OPEN-61). Level, Luck and attribute bonuses have no Losica counterpart.
+const UNARMOURED_AC = 10;
+const SKILL_TO_HIT = {
+    bare: { untrained: 1, trained: 3, elite: 5 },
+    blade: { untrained: -4, trained: 0, elite: 3 },
+};
+const STATE_TO_HIT = { stunned: 2, fleeing: 2, asleep: 2, helpless: 4 };
+
+export function toHit({ means, skill = 'untrained', states = [] }) {
+    const table = means === 'blade_cut' || means === 'blade_stab' ? SKILL_TO_HIT.blade : SKILL_TO_HIT.bare;
+    return 1 + UNARMOURED_AC + (table[skill] ?? table.untrained)
+        + [...new Set(states)].reduce((sum, st) => sum + (STATE_TO_HIT[st] || 0), 0);
+}
+
+/** An attack: rolls whether it lands (unless a.landed), then records the wound on the target. */
 export function strike(target, a, attacker = null, rng = Math.random) {
+    if (!a.landed) {
+        const need = toHit(a);
+        const d20 = 1 + Math.floor(rng() * 20);
+        if (!(need > d20)) return `${a.means} at ${a.part}: misses (to-hit ${need} vs d20 ${d20}).`;
+    }
     const base = baseOf(a.part);
     if (a.means === 'blade_cut' || a.means === 'blade_stab') {
         const type = a.means === 'blade_cut' ? 'cut' : 'puncture';

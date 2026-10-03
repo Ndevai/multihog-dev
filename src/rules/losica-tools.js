@@ -104,7 +104,7 @@ export function losicaTurnLog() {
 
 export const LOSICA_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
-- A blow, cut or stab lands → LosicaStrike, then narrate the returned wound.
+- An attack with fist, kick or blade → LosicaStrike; it decides whether it lands and the wound. Narrate what it returns.
 - A burn, bite or accidental cut → LosicaWound.
 - Someone falls → LosicaFall.
 - Time passes in the story → LosicaTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
@@ -141,23 +141,24 @@ export function registerLosicaRulesTools(enabled) {
     }, ['who', 'part', 'type'], a => run((st, rng) => {
         const p = person(st, a.who);
         if (a.type === 'cut' || a.type === 'puncture') {
-            return `${strike(p, { part: a.part, means: a.type === 'cut' ? 'blade_cut' : 'blade_stab' }, null, rng)} ${status(a.who, p)}`;
+            return `${strike(p, { part: a.part, means: a.type === 'cut' ? 'blade_cut' : 'blade_stab', landed: true }, null, rng)} ${status(a.who, p)}`;
         }
         const w = addWound(p, { part: a.part, type: a.type, depth: a.depth, vessel: a.type === 'bite' ? 'small' : undefined }, rng);
         return `Wound ${w.id} recorded. ${status(a.who, p)}`;
     }));
 
-    tool('LosicaStrike', 'Resolve a blow that has landed, before narrating its effect. Returns the force, the fracture chance and the wound it records.', {
+    tool('LosicaStrike', 'Resolve an attack before narrating it: whether it lands, its force and the wound it records. Narrate a miss as a miss.', {
         who: str('Character hit'),
         part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
         means: { type: 'string', enum: ['fist', 'kick', 'blade_cut', 'blade_stab'] },
         attacker: str('Attacker name; a tracked attacker strikes weaker with wounded arms or legs'),
         attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg; 70 for an average adult. A creature of 300 kg hits about 2.6 times harder.' },
         skill: { type: 'string', enum: ['untrained', 'trained', 'elite'], description: 'Fighting training of the attacker' },
+        defender_state: { type: 'array', items: { type: 'string', enum: ['stunned', 'fleeing', 'asleep', 'helpless'] }, description: 'States of the character attacked at this moment; empty when alert. helpless = cannot move (held, bound, unconscious).' },
     }, ['who', 'part', 'means'], a => run((st, rng) => {
         const p = person(st, a.who);
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
-        const out = strike(p, { part: a.part, means: a.means, skill: a.skill, mass: Number(a.attacker_mass_kg) || 70 }, attacker, rng);
+        const out = strike(p, { part: a.part, means: a.means, skill: a.skill, mass: Number(a.attacker_mass_kg) || 70, states: a.defender_state || [] }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
     }));
 
