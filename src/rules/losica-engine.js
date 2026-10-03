@@ -299,7 +299,9 @@ const SKILL_TO_HIT = {
     bare: { untrained: 1, trained: 3, elite: 5 },
     blade: { untrained: -4, trained: 0, elite: 3 },
 };
-const STATE_TO_HIT = { stunned: 2, fleeing: 2, asleep: 2, helpless: 4 };
+const STATE_TO_HIT = { stunned: 2, fleeing: 2 };
+// A miss needs the target to avoid the blow; a sleeping or helpless target cannot (NetHack's +2/+4 replaced).
+const CANNOT_AVOID = ['asleep', 'helpless'];
 
 export function toHit({ means, skill = 'untrained', states = [] }) {
     const table = means === 'blade_cut' || means === 'blade_stab' ? SKILL_TO_HIT.blade : SKILL_TO_HIT.bare;
@@ -309,7 +311,7 @@ export function toHit({ means, skill = 'untrained', states = [] }) {
 
 /** An attack: rolls whether it lands (unless a.landed), then records the wound on the target. */
 export function strike(target, a, attacker = null, rng = Math.random) {
-    if (!a.landed) {
+    if (!a.landed && !(a.states || []).some(st => CANNOT_AVOID.includes(st))) {
         const need = toHit(a);
         const d20 = 1 + Math.floor(rng() * 20);
         if (!(need > d20)) return `${a.means} at ${a.part}: misses (to-hit ${need} vs d20 ${d20}).`;
