@@ -60,6 +60,8 @@ export function person(state, who, massKg) {
 }
 
 export const bloodVolume = p => p.mass * 70;
+// Syverud 1989 (swine, steady femoral bleed 1.0 / 1.25 mL/kg/min): death at 50.2 / 49.8 mL/kg lost.
+const LETHAL_LOSS_ML_KG = 50;
 export const lossFraction = p => p.lost / bloodVolume(p);
 
 export function bloodClass(p) {
@@ -131,6 +133,7 @@ export function advance(p, minutes, resting, rng = Math.random) {
     for (let t = 0; t < minutes; t++) {
         const bleeding = p.wounds.reduce((s, w) => s + w.bleed, 0);
         p.lost += bleeding;
+        if (p.lost >= LETHAL_LOSS_ML_KG * p.mass) { p.lost = LETHAL_LOSS_ML_KG * p.mass; p.dead = 'blood loss'; return; }
         if (bloodClass(p) === 4) {
             const mode = bleeding > 0 ? 'bleeding' : 'stopped';
             if (p.deathIn === null || p.deathMode !== mode) p.deathIn = mode === 'bleeding' ? Math.round(between(rng, [30, 60])) : 120;

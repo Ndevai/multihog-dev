@@ -253,3 +253,23 @@ describe('strikes (rule 576)', () => {
         expect(strike(p, { part: 'torso', means: 'blade_stab' }, null, () => 0.1)).toMatch(/OPEN-56/);
     });
 });
+
+describe('blood loss stays within the body (audit 3 Oct 2026)', () => {
+    it('dies at 50 mL/kg lost and never reports more than that', async () => {
+        const { newPerson, addWound, advance, lossFraction } = await import('../src/rules/losica-engine.js');
+        const run = vessel => {
+            const p = newPerson(70);
+            addWound(p, { part: 'leg_l', type: 'cut', vessel }, () => 0.5);
+            let m = 0;
+            while (!p.dead && m < 600) { advance(p, 1, false, () => 0.5); m++; }
+            return { m, f: lossFraction(p) };
+        };
+        const fem = run('femoral');
+        expect(fem.m).toBe(8);
+        expect(fem.f).toBeCloseTo(50 / 70, 3);
+        const limb = run('limb_artery');
+        expect(limb.m).toBeGreaterThanOrEqual(29);
+        expect(limb.m).toBeLessThanOrEqual(30);
+        expect(limb.f).toBeLessThanOrEqual(50 / 70 + 1e-9);
+    });
+});
