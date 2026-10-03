@@ -303,14 +303,20 @@ const HEAR_DB = 25;                                     // WHO: normal hearing t
 const WAKE_DB = 55, WAKE_MAX_S = 21;                    // young adults: all woke to a 55 dBA alarm within 21 s
 const WAKE_MIN_S = 1.59;                                // Oudiette 2023: median response time from N2 sleep
 const INERTIA_SPEED = 0.79;                             // Newman 2013: response speed 79 % right after waking
+// Body size, not species: the human values above are the 70 kg point of mammal scaling laws (5 g – 5000 kg).
+const EXP_DELAY = 0.21;   // More & Donelan 2018: sensorimotor delay ∝ M^0.21
+const EXP_MOVE = 0.15;    // Heglund & Taylor 1988: stride period ∝ M^0.150–0.156
+const EXP_LENGTH = 1 / 3; // geometric similarity
+const size = (mass, exp) => ((mass || REF_MASS) / REF_MASS) ** exp;
 
 /** Seconds from the start of the attack to impact, or null when the attacker never comes within reach. */
 function impactTime(a, rng) {
-    const dist = a.distance_m ?? REACH_M;
-    const approach = dist <= REACH_M ? 0 : a.approach_speed > 0 ? (dist - REACH_M) / a.approach_speed : null;
+    const reach = REACH_M * size(a.mass, EXP_LENGTH);
+    const dist = a.distance_m ?? reach;
+    const approach = dist <= reach ? 0 : a.approach_speed > 0 ? (dist - reach) / a.approach_speed : null;
     if (approach === null) return null;
     const [mean, sd] = STRIKE_S[a.means] || STRIKE_S.fist;
-    return { approach, strike: Math.max(0.05, mean + sd * gauss(rng)) };
+    return { approach, reach, strike: Math.max(0.05, mean + sd * gauss(rng)) * size(a.mass, EXP_MOVE) };
 }
 
 /**
@@ -320,12 +326,13 @@ function impactTime(a, rng) {
  */
 function defenceDone(a, t, defender, rng) {
     const awake = a.awake !== false;
-    const dist = a.distance_m ?? REACH_M;
+    const dist = a.distance_m ?? t.reach;
     const intentFrom = a.intent_visible ? 0 : t.approach;
-    const rt = channel => RT_S[channel] * Math.max(0.5, 1 + RT_CV * gauss(rng));
+    const m = defender?.mass ?? REF_MASS;
+    const rt = channel => RT_S[channel] * size(m, EXP_DELAY) * Math.max(0.5, 1 + RT_CV * gauss(rng));
     const capacity = defender ? Math.max(abilities(defender).blocking, abilities(defender).movement) : 1;
     if (capacity <= 0) return Infinity;
-    const move = MOVE_S / capacity;
+    const move = MOVE_S * size(m, EXP_MOVE) / capacity;
     const done = [];
     const perceive = (from, reaction) => done.push(Math.max(from, intentFrom) + reaction);
     if (awake && a.facing !== false && a.lit !== false) perceive(0, rt('sight'));
@@ -338,7 +345,7 @@ function defenceDone(a, t, defender, rng) {
     const r = a.sense_range_m || 0;
     if (awake && r > 0) {
         // Senses during sleep: OPEN-63. A range sense perceives the attacker (or its hand) within r.
-        const enter = dist <= r ? 0 : r >= REACH_M ? (dist - r) / a.approach_speed : t.approach + t.strike * (REACH_M - r) / REACH_M;
+        const enter = dist <= r ? 0 : r >= t.reach ? (dist - r) / a.approach_speed : t.approach + t.strike * (t.reach - r) / t.reach;
         perceive(enter, rt('sight'));
     }
     return done.length ? Math.min(...done) + move : Infinity;

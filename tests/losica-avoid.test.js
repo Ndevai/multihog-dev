@@ -67,4 +67,19 @@ describe('a blow lands unless the target notices in time and can move', () => {
     it('8. attacker out of reach with no approach → nothing lands and the tool says why', () => {
         expect(strike(newPerson(), fist({ distance_m: 5 }), null, () => 0.5)).toMatch(/out of reach/);
     });
+
+    it('10. body size, not species: a 5 kg defender dodges a human punch far more often than a human does', () => {
+        const small = rate(fist({}), 4000, () => newPerson(5));
+        expect(small).toBeGreaterThan(rate(fist({})) + 0.2);
+    });
+
+    it('11. a 2000 kg attacker swings slower: a human avoids its blow from reach more often than a human punch', () => {
+        expect(rate(fist({ mass: 2000 }))).toBeGreaterThan(rate(fist({})) + 0.05);
+    });
+
+    it('12. a 300 kg attacker reaches 1.2 m without stepping in; a 70 kg one does not', () => {
+        expect(strike(newPerson(), fist({ mass: 300, distance_m: 1.2 }), null, () => 0.5)).not.toMatch(/out of reach/);
+        expect(strike(newPerson(), fist({ distance_m: 1.2 }), null, () => 0.5)).toMatch(/out of reach/);
+    });
 });
+

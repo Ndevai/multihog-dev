@@ -152,7 +152,8 @@ export function registerLosicaRulesTools(enabled) {
         part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
         means: { type: 'string', enum: ['fist', 'kick', 'blade_cut', 'blade_stab'] },
         attacker: str('Attacker name; a tracked attacker strikes weaker with wounded arms or legs'),
-        attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg; 70 for an average adult. A creature of 300 kg hits about 2.6 times harder.' },
+        attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg; 70 for an average adult human. Mass sets reach, swing time and force for any creature.' },
+        target_mass_kg: { type: 'number', description: 'Body mass of the character hit, in kg, the first time this character appears; sets reaction and movement speed.' },
         skill: { type: 'string', enum: ['untrained', 'trained', 'elite'], description: 'Fighting training of the attacker' },
         awake: { type: 'boolean', description: 'Target awake. Default true.' },
         facing: { type: 'boolean', description: 'Target looking toward the attacker. Default true.' },
@@ -163,7 +164,7 @@ export function registerLosicaRulesTools(enabled) {
         sense_range_m: { type: 'number', description: 'Range of any non-visual sense the target has that detects an approaching attacker (e.g. telepathy), in m.' },
         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
     }, ['who', 'part', 'means'], a => run((st, rng) => {
-        const p = person(st, a.who);
+        const p = person(st, a.who, Number(a.target_mass_kg) || undefined);
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
         const scene = ['awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
         const out = strike(p, { part: a.part, means: a.means, skill: a.skill, mass: Number(a.attacker_mass_kg) || 70,
