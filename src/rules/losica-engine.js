@@ -8,6 +8,8 @@ const FRACTURE = {
 };
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
+// Rule 576 OPEN-43 (onset, Losica days). An OPEN value means the effect does not happen yet.
+const INFECTION_ONSET = null;
 const COST = [0, 40, 64, 107, 178, 297, 495, 825, 1375, 2292];
 const FALL_ROWS = [[5.1, 0], [10.1, 0.227], [13.2, 0.44], [16.2, 0.56], [Infinity, 0.78]];
 const PART_FEEDS = {
@@ -127,7 +129,7 @@ export function advance(p, minutes, resting, rng = Math.random) {
         for (const w of p.wounds) {
             w.age += 1 / DAY_MIN;
             if (w.fracture && !w.fracture.never) { w.fracture.joins -= 1 / DAY_MIN; w.fracture.full -= 1 / DAY_MIN; }
-            if (w.open && w.infection === null && w.age >= 12 * HOUR) w.infection = rng() < infectionChance(w);
+            if (INFECTION_ONSET !== null && w.open && w.infection === null && w.age >= INFECTION_ONSET) w.infection = rng() < infectionChance(w);
         }
         if (++p.minute >= DAY_MIN) { p.minute -= DAY_MIN; endDay(net); }
     }

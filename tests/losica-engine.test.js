@@ -116,3 +116,13 @@ describe('seeded draws', () => {
         expect(outcomes.size).toBe(1);
     });
 });
+
+describe('OPEN values stay inert', () => {
+    it('never starts an infection while OPEN-43 (onset) is unset', async () => {
+        const { newPerson, addWound, advance } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        addWound(p, { part: 'leg_l', type: 'bite' }, () => 0);
+        advance(p, 3 * 513, false, () => 0);
+        expect(p.wounds[0].infection).toBeNull();
+    });
+});
