@@ -16,11 +16,19 @@ const INFECTION_ONSET = { bite: 1, other: 10 };
 const CROOKED_GRIP = 0.51;
 const COST = [0, 40, 64, 107, 178, 297, 495, 825, 1375, 2292];
 const FALL_ROWS = [[10.1, 0.44], [13.2, 0.56], [16.2, 0.78]];
-const PART_FEEDS = {
-    head: ['reaction'], eyes: ['vision', 'reaction'], mouth: ['breathing', 'eating', 'drinking'],
-    torso: ['balance', 'breathing'], arm: ['lifting', 'blocking', 'balance'], hand: ['grip', 'fine manipulation'],
-    leg: ['movement', 'balance', 'blocking'], foot: ['footing', 'movement'],
+// Cataclysm: DDA body_parts.json limb_scores (commit 935fe5f). A person's score = sum over parts.
+const PART_SCORES = {
+    head: { reaction: 0.3 },
+    eyes: { vision: 1, night_vision: 1, reaction: 0.7 },
+    mouth: { breathing: 1, manipulation: 0.05, drinking: 1, eating: 1 },
+    torso: { balance: 0.7 },
+    arm: { manipulation: 0.1, lifting: 0.5, balance: 0.15, blocking: 1, swimming: 0.1, crawling: 0.3 },
+    hand: { grip: 0.5, manipulation: 0.5, swimming: 0.15 },
+    leg: { manipulation: 0.1, movement: 0.5, swimming: 0.15, blocking: 1, crawling: 0.2 },
+    foot: { manipulation: 0.1, footing: 0.5, swimming: 0.1 },
 };
+const PAIRED = ['arm', 'hand', 'leg', 'foot'];
+const WOUND_EXEMPT = ['balance'];
 
 const between = (rng, [a, b]) => a + (b - a) * rng();
 
@@ -175,6 +183,33 @@ export function fall(p, height, opts = {}, rng = Math.random) {
     return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — survives. Injuries: narrate, then record with LosicaWound.`;
 }
 
+const baseOf = part => part.replace(/_(l|r)$/, '');
+
+/** Penalty a wound takes off one score of its part (0–1). Other wound types: OPEN-51. */
+export function woundPenalty(w, score) {
+    const fr = w.fracture;
+    if (fr && !fr.never ? fr.joins > 0 : fr?.never) return 1;
+    if (fr?.crooked && score === 'grip' && /arm|hand/.test(w.part)) return 1 - CROOKED_GRIP;
+    return 0;
+}
+
+/** Each score as a fraction of an unhurt body: part base × max(0, 1 − Σ penalties); balance ignores non-fracture wounds. */
+export function abilities(p) {
+    const total = {}, normal = {};
+    for (const [base, scores] of Object.entries(PART_SCORES)) {
+        const parts = PAIRED.includes(base) ? [`${base}_l`, `${base}_r`] : [base];
+        for (const part of parts) {
+            const wounds = p.wounds.filter(w => w.part === part && !(w.healed && !w.fracture));
+            for (const [score, value] of Object.entries(scores)) {
+                const penalty = wounds.reduce((s, w) => s + (WOUND_EXEMPT.includes(score) && !w.fracture ? 0 : woundPenalty(w, score)), 0);
+                total[score] = (total[score] || 0) + value * Math.max(0, 1 - penalty);
+                normal[score] = (normal[score] || 0) + value;
+            }
+        }
+    }
+    return Object.fromEntries(Object.keys(normal).map(k => [k, round(total[k] / normal[k], 2)]));
+}
+
 export function status(who, p) {
     if (p.dead) return `${who}: dead (${p.dead}).`;
     const out = [];
@@ -192,11 +227,13 @@ export function status(who, p) {
             const fr = w.fracture;
             bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
             if (fr.crooked) bits.push(/arm|hand/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
-            if (fr.joins > 0 && !fr.never) bits.push(`${w.part} gives no ${(PART_FEEDS[w.part.replace(/_(l|r)$/, '')] || ['use']).join('/')}`);
+            if (fr.joins > 0 && !fr.never) bits.push(`${w.part} gives no ${Object.keys(PART_SCORES[baseOf(w.part)] || {}).join('/')}`);
         }
         if (w.infection) bits.push('infected');
         out.push(bits.join(', '));
     }
+    const reduced = Object.entries(abilities(p)).filter(([, v]) => v < 1);
+    if (reduced.length) out.push(`abilities: ${reduced.map(([k, v]) => `${k.replace('_', ' ')} ${Math.round(v * 100)}%`).join(', ')}`);
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
     return out.join('. ') + '.';

@@ -97,7 +97,7 @@ describe('falls', () => {
 it('status reports a disabled part', () => {
     const p = newPerson();
     addWound(p, { part: 'hand_l', type: 'fracture' }, fixed(0.9));
-    expect(status('Ara', p)).toMatch(/hand_l gives no grip\/fine manipulation/);
+    expect(status('Ara', p)).toMatch(/hand_l gives no grip\/manipulation\/swimming/);
 });
 
 describe('seeded draws', () => {
@@ -169,5 +169,38 @@ describe('rule 576 healing, onset, falls, crooked bones (2 Oct 2026 values)', ()
         addWound(p, { part: 'hand_l', type: 'fracture' }, () => 0.5);
         treat(p, 1, 'load', () => 0);
         expect(status('X', p)).toMatch(/crooked: grip 51%/);
+    });
+});
+
+describe('ability scores (Cataclysm: DDA limb scores, 935fe5f)', () => {
+    it('an unhurt body has every score at 100 %', async () => {
+        const { newPerson, abilities } = await import('../src/rules/losica-engine.js');
+        expect(Object.values(abilities(newPerson())).every(v => v === 1)).toBe(true);
+    });
+
+    it('a broken hand removes its share; balance stays for non-fracture wounds', async () => {
+        const { newPerson, addWound, abilities } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        addWound(p, { part: 'hand_l', type: 'fracture' }, () => 0.5);
+        const a = abilities(p);
+        expect(a.grip).toBe(0.5);
+        expect(a.manipulation).toBeCloseTo((1.65 - 0.5) / 1.65, 2);
+        expect(a.balance).toBe(1);
+    });
+
+    it('a crooked hand after joining keeps 51 % of its grip share', async () => {
+        const { newPerson, addWound, treat, advance, abilities, DAY_MIN } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        addWound(p, { part: 'hand_r', type: 'fracture' }, () => 0.5);
+        treat(p, 1, 'load', () => 0);
+        advance(p, Math.ceil(60 * DAY_MIN), true, () => 0.5);
+        expect(abilities(p).grip).toBeCloseTo(0.5 + 0.5 * 0.51, 1);
+    });
+
+    it('cuts change no score until OPEN-51 is set', async () => {
+        const { newPerson, addWound, abilities } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        addWound(p, { part: 'hand_l', type: 'cut' }, () => 0.5);
+        expect(abilities(p).grip).toBe(1);
     });
 });
