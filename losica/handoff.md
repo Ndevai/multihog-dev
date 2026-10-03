@@ -93,15 +93,17 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 25 | wild-magic extra-event probability and event list | decision |
 | Items | 26 | PE for a binding ritual | decision |
 | Beasts | 27 | core-density thresholds per grade 1–9 | decision |
-| Body (576) | 42 | fracture chance in falls < 5.1 m Losica (< 6 m Earth) | research; reference notes no height-banded data |
-| | 43 | infection onset time | research |
-| | 47 | ability lost by a crooked-healed part | research (malunion function) |
+| Body (576) | 42 | fracture chance in falls < 5.1 m Losica (< 6 m Earth) | research; searched 2 Oct, no all-fracture rate per height band found (sources in reference) |
+| | 47 | ability lost by a crooked leg or foot (arm/hand set: 51 % grip, Orbay 2002) | research |
+| | 48 | healing time of punctures and bites | research |
+| | 49 | healing time of blunt wounds | research |
+| | 50 | how much infection slows healing and drains strength | research |
 | Survival (577) | 46 | altitude effect for people born there | research after the native/colonist decision |
 
+Closed 2 Oct 2026 (rule 576 + engine commit 1cf0cf9): OPEN-43 onset (bites 1 Earth day, Talan 1999; other wounds 10 Earth days, laparotomy SSI proxy, Gundel 2018); cut healing by part (Forsch 2017, expert opinion); burn healing by depth (Warby 2023, Lloyd 2012, CHOP); fall deaths 5.1–10.1 m by straight line, all above 16.2 m (engine had unsourced 22.7 % and 78 %); "size" dropped from the wound definition, burns take a depth; the 32.5 % midpoint written into the reference.
+
 Gaps without an OPEN tag:
-- Rule 576 gives no healing time for cuts, punctures, burns or bites; only fractures heal. The engine keeps these wounds open forever.
-- "Infection slows healing and drains strength" has no quantities.
-- Loading an unsplinted fracture: rule gives 25–40 %; the engine uses the midpoint 32.5 %, a process not written in the rule file.
+- Abilities have no numbers: "a part's abilities fall with its wounds" is unquantified, so wounds other than fractures change no ability in code.
 - Engine lacks the stage-5 route (five complex patterns at once, d100 ≤ 15, tribulation every 841.4 days); its cap of 12 nexuses is consistent with the rule.
 
 ## 6. Planet Losica (losica-humans.md)
