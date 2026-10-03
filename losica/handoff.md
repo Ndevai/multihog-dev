@@ -129,6 +129,8 @@ Gaps without an OPEN tag:
 
 Enforcement (3 Oct 2026, engine commit after 29f2c03): severity moved into code (LosicaWound takes cause and place only; vessel and fracture come from code); a standing <rule_engine> brief names the tool per event; after each reply a side pass (State Tracker connection) lists unbacked or contradicted events → one automatic redo as a swipe with the missing calls named → a second failure is shown as a warning. Limits: the checker is itself a model (it can miss events); hit/miss, location and DC still come from the narrator.
 
+Interruptions (3 Oct 2026, from NetHack/Pathos): LosicaTime stops at the first minute in which anyone's blood-loss class rises, dying begins, someone dies or an infection shows; it returns the elapsed and remaining minutes. Next from the same review: one to-hit formula (closes OPEN-52), hunger as counter with levels and per-turn chances (rule 577), rules as data records, creature body traits (blood, limbs, hands, eyes, mind).
+
 Decided by the LLM, not by code (before enforcement): whether it calls a tool at all; wound inputs (vessel, fracture kind, open grade); hit or miss, hit location, DC; minutes passed in LosicaTime; prose after a roll (only roll parentheticals are corrected); D&D hit points still run beside wounds until the cartridge.
 
 ## 6. Planet Losica (losica-humans.md)
