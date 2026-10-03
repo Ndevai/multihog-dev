@@ -211,6 +211,9 @@ export function buildDefaultSettings() {
 
         diceFunctionTool: false,
 
+
+        strictDiceCommit: false,
+
         enablePortraits: true,
 
         portraitsFileStorageVersion: 1,

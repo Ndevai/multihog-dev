@@ -2465,6 +2465,10 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                             <span>Pre-Seeded + Tool Calls (Recommended without CYOA Mode)</span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="rt_onboarding_rng_mode" value="strict" id="rt_onboarding_rng_strict" />
+                            <span>Tool Calls Only — strict, DC committed before every roll</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="radio" name="rt_onboarding_rng_mode" value="legacy" id="rt_onboarding_rng_legacy" />
                             <span>Pre-Seeded Only (Recommended with CYOA Mode)</span>
                         </label>

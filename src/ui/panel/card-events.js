@@ -4,6 +4,7 @@ import { pickGenreCharacterName } from '../../state/character-names.js';
 import { getActiveChatId } from '../../state/chat-persistence.js';
 import { createChatCommitGuard } from '../../state/pass-affinity.js';
 import { setLocationMappingEnabled, LOCATION_MAPPING_SECTION_TAG } from '../../state/section-enabled.js';
+import { getRngMode, applyRngMode, autoSelectRngTools } from '../../state/rng-mode.js';
 import { applyMapArchitectOpenerToUi, normalizeMapArchitectOpener, syncMapArchitectOpenerNestedVisibility } from '../../../map-architect-opener.js';
 
 export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRefresh = null) {
@@ -589,26 +590,11 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
     // RNG Mode Sync
     const onboardingRngInputs = el.querySelectorAll('input[name="rt_onboarding_rng_mode"]');
     onboardingRngInputs.forEach(input => {
-        let expectedValue = 'hybrid';
-        if (!s.rngEnabled) {
-            expectedValue = 'none';
-        } else if (!s.diceFunctionTool) {
-            expectedValue = 'legacy';
-        }
-        input.checked = (input.value === expectedValue);
+        input.checked = (input.value === getRngMode(s));
         input.addEventListener('change', () => {
             syncSettingsAndUI(settings => {
-                if (input.value === 'hybrid') {
-                    settings.rngEnabled = true;
-                    settings.diceFunctionTool = true;
-                } else if (input.value === 'legacy') {
-                    settings.rngEnabled = true;
-                    settings.diceFunctionTool = false;
-                } else {
-                    settings.rngEnabled = false;
-                    settings.diceFunctionTool = false;
-                }
-                autoSelectRngToolsFromMode(settings);
+                applyRngMode(settings, input.value);
+                autoSelectRngTools(settings);
             });
         });
     });

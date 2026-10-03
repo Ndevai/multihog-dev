@@ -23,6 +23,7 @@ import { renderMemoAsCards, MARKER_TYPE_MAP, getMarkerLibraryKeys } from './rend
 import { moveDisplayGroupInOrder, normalizeDisplayGroups } from './src/features/display-groups.js';
 import { applyMapArchitectOpenerToUi, syncMapArchitectOpenerNestedVisibility } from './map-architect-opener.js';
 import { LOCATION_MAPPING_SECTION_TAG } from './src/state/section-enabled.js';
+import { getRngMode } from './src/state/rng-mode.js';
 
 export function handleCategorySettings(tag, targetEl) {
     const existing = document.getElementById('rt-cat-settings-popup');
@@ -1205,18 +1206,12 @@ export function syncSettingsAndUI(updateFn) {
     const fresh = getSettings();
     updateFn(fresh);
 
-    const rngHybrid = /** @type {HTMLInputElement|null} */ (document.getElementById('rpg_rng_hybrid'));
-    const rngLegacy = /** @type {HTMLInputElement|null} */ (document.getElementById('rpg_rng_legacy'));
-    const rngNone = /** @type {HTMLInputElement|null} */ (document.getElementById('rpg_rng_none'));
+    const rngModeRadio = /** @type {HTMLInputElement|null} */ (document.getElementById(`rpg_rng_${getRngMode(fresh)}`));
     const questsCb = /** @type {HTMLInputElement|null} */ (document.getElementById('rpg_sysprompt_mod_quests'));
     const deadlinesCb = /** @type {HTMLInputElement|null} */ (document.getElementById('rpg_quests_deadlines'));
     const frustrationCb = /** @type {HTMLInputElement|null} */ (document.getElementById('rpg_quests_frustration'));
 
-    if (rngHybrid && rngLegacy && rngNone) {
-        rngHybrid.checked = fresh.rngEnabled && !!fresh.diceFunctionTool;
-        rngLegacy.checked = fresh.rngEnabled && !fresh.diceFunctionTool;
-        rngNone.checked = !fresh.rngEnabled;
-    }
+    if (rngModeRadio) rngModeRadio.checked = true;
     if (questsCb) questsCb.checked = fresh.syspromptModules?.quests !== false;
     if (deadlinesCb) deadlinesCb.checked = !!fresh.syspromptModules?.questsDeadlines;
     if (frustrationCb) frustrationCb.checked = !!fresh.syspromptModules?.questsFrustration;
