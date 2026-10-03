@@ -582,6 +582,19 @@ function diceLedgerStore() {
     return ctx.chatMetadata.rpgDiceLedger;
 }
 
+/** Swipes and regenerates of one turn see the same queue, like tool rolls. */
+function turnRngQueue(name, make) {
+    const ledger = diceLedgerStore();
+    if (!ledger) return make();
+    ledger.queues ??= {};
+    if (!ledger.queues[name]) {
+        ledger.queues[name] = make();
+        const ctx = SillyTavern.getContext();
+        (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
+    }
+    return ledger.queues[name];
+}
+
 function recordDiceRoll(entry) {
     const ledger = diceLedgerStore();
     if (!ledger) return;
@@ -1516,12 +1529,12 @@ export function installInterceptor() {
                 const injectRngQueue = shouldUseRngQueue(settings, isCombatActive(settings.currentMemo));
                 if (injectRngQueue) {
                     if (settings.rngQueueD20) {
-                        const queue = makeRngQueue(RNG_QUEUE_LEN, false);
+                        const queue = turnRngQueue('d20', () => makeRngQueue(RNG_QUEUE_LEN, false));
                         injections += buildRngBlock(queue, false);
                         if (settings.debugMode) console.log("RNG Queue (d20) generated for injection.");
                     }
                     if (settings.rngQueueD100) {
-                        const queue = makeRngQueue(30, true);
+                        const queue = turnRngQueue('d100', () => makeRngQueue(30, true));
                         injections += buildRngBlock(queue, true);
                         if (settings.debugMode) console.log("RNG Queue (d100) generated for injection.");
                     }

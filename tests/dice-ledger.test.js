@@ -137,6 +137,14 @@ describe('RollTheDice action order', () => {
         const index = readFileSync(new URL('../index.js', import.meta.url), 'utf8');
         expect(index).toContain('eventSource.on(event_types.MESSAGE_RECEIVED, onDiceVerdictMessage)');
     });
+
+    it('injects the per-turn queue, so a swipe in queue modes sees the same dice', async () => {
+        const { readFileSync } = await import('node:fs');
+        const src = readFileSync(new URL('../narrative-hooks.js', import.meta.url), 'utf8');
+        expect(src).toContain("turnRngQueue('d20', () => makeRngQueue(RNG_QUEUE_LEN, false))");
+        expect(src).toContain("turnRngQueue('d100', () => makeRngQueue(30, true))");
+        expect(ledgerForTurn({ turn: 'a', rolls: [], queues: { d20: [1] } }, 'b').queues).toBeUndefined();
+    });
 });
 
 describe('attacks', () => {
