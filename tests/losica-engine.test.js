@@ -306,29 +306,4 @@ describe('interruptions (NetHack/Pathos structure)', () => {
     });
 });
 
-describe('whether an attack lands (NetHack to-hit)', () => {
-    it('adds skill and target states to 1 + AC 10', async () => {
-        const { toHit } = await import('../src/rules/losica-engine.js');
-        expect(toHit({ means: 'fist' })).toBe(12);
-        expect(toHit({ means: 'fist', skill: 'elite' })).toBe(16);
-        expect(toHit({ means: 'blade_stab' })).toBe(7);
-        expect(toHit({ means: 'blade_cut', skill: 'elite', states: ['stunned', 'fleeing', 'fleeing'] })).toBe(18);
-    });
 
-    it('hits when to-hit exceeds the d20 and records nothing on a miss', async () => {
-        const { newPerson, strike } = await import('../src/rules/losica-engine.js');
-        const p = newPerson();
-        expect(strike(p, { part: 'leg_l', means: 'blade_stab' }, null, () => 0.3)).toMatch(/misses \(to-hit 7 vs d20 7\)/);
-        expect(p.wounds).toHaveLength(0);
-        expect(strike(p, { part: 'leg_l', means: 'blade_stab' }, null, () => 0.25)).toMatch(/puncture to leg_l/);
-        expect(p.wounds).toHaveLength(1);
-    });
-
-    it('always lands on a sleeping or helpless target', async () => {
-        const { newPerson, strike } = await import('../src/rules/losica-engine.js');
-        for (const states of [['asleep'], ['helpless']]) {
-            const p = newPerson();
-            expect(strike(p, { part: 'leg_l', means: 'blade_stab', states }, null, () => 0.99)).toMatch(/puncture to leg_l/);
-        }
-    });
-});

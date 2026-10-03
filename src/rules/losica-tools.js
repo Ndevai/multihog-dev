@@ -154,11 +154,20 @@ export function registerLosicaRulesTools(enabled) {
         attacker: str('Attacker name; a tracked attacker strikes weaker with wounded arms or legs'),
         attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg; 70 for an average adult. A creature of 300 kg hits about 2.6 times harder.' },
         skill: { type: 'string', enum: ['untrained', 'trained', 'elite'], description: 'Fighting training of the attacker' },
-        defender_state: { type: 'array', items: { type: 'string', enum: ['stunned', 'fleeing', 'asleep', 'helpless'] }, description: 'States of the character attacked at this moment; empty when alert. helpless = cannot move (held, bound, unconscious).' },
+        awake: { type: 'boolean', description: 'Target awake. Default true.' },
+        facing: { type: 'boolean', description: 'Target looking toward the attacker. Default true.' },
+        lit: { type: 'boolean', description: 'Enough light for the target to see the attacker. Default true.' },
+        noise_db: { type: 'number', description: 'Sound level of the attacker at the target in dB(A). 0 = silent.' },
+        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Omit when already within arm\'s reach.' },
+        approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
+        sense_range_m: { type: 'number', description: 'Range of any non-visual sense the target has that detects an approaching attacker (e.g. telepathy), in m.' },
+        intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
     }, ['who', 'part', 'means'], a => run((st, rng) => {
         const p = person(st, a.who);
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
-        const out = strike(p, { part: a.part, means: a.means, skill: a.skill, mass: Number(a.attacker_mass_kg) || 70, states: a.defender_state || [] }, attacker, rng);
+        const scene = ['awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
+        const out = strike(p, { part: a.part, means: a.means, skill: a.skill, mass: Number(a.attacker_mass_kg) || 70,
+            ...Object.fromEntries(scene.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
     }));
 

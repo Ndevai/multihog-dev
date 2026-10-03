@@ -292,29 +292,66 @@ export function strikeForce({ means, skill = 'untrained', mass = REF_MASS, part 
     return Math.max(0, mean * (mass / REF_MASS) ** (2 / 3) * ability * (1 + (kick ? KICK_CV : FIST_CV) * gauss(rng)));
 }
 
-// NetHack 3.6 uhitm.c find_roll_to_hit / weapon.c weapon_hit_bonus: hit when 1 + target AC + skill + state > d20.
-// Unarmoured target AC 10 (armour: OPEN-61). Level, Luck and attribute bonuses have no Losica counterpart.
-const UNARMOURED_AC = 10;
-const SKILL_TO_HIT = {
-    bare: { untrained: 1, trained: 3, elite: 5 },
-    blade: { untrained: -4, trained: 0, elite: 3 },
-};
-const STATE_TO_HIT = { stunned: 2, fleeing: 2 };
-// A miss needs the target to avoid the blow; a sleeping or helpless target cannot (NetHack's +2/+4 replaced).
-const CANNOT_AVOID = ['asleep', 'helpless'];
+// Whether an attack lands: it does unless the target detects it and finishes a defensive move before impact.
+// Seconds. Sources and proxies: rule 576 reference.
+const REACH_M = 0.88;                                   // FAA 2006-08 functional reach, men 50th %ile
+const STRIKE_S = { fist: [0.357, 0.178], kick: [0.477, 0.203], blade_cut: [0.357, 0.178], blade_stab: [0.357, 0.178] }; // Piorkowski 2011 jab; kick = hook, blade = jab (proxies)
+const RT_S = { sight: 0.331, hearing: 0.284 };          // Shelton & Kumar 2010
+const RT_CV = 36.42 / 297;                              // Petri 2020 spread
+const MOVE_S = 0.242;                                   // VencesBrito 2011 karate punch, proxy for a defensive move
+const HEAR_DB = 25;                                     // WHO: normal hearing threshold at or below 25 dB
+const WAKE_DB = 55, WAKE_MAX_S = 21;                    // young adults: all woke to a 55 dBA alarm within 21 s
+const WAKE_MIN_S = 1.59;                                // Oudiette 2023: median response time from N2 sleep
+const INERTIA_SPEED = 0.79;                             // Newman 2013: response speed 79 % right after waking
 
-export function toHit({ means, skill = 'untrained', states = [] }) {
-    const table = means === 'blade_cut' || means === 'blade_stab' ? SKILL_TO_HIT.blade : SKILL_TO_HIT.bare;
-    return 1 + UNARMOURED_AC + (table[skill] ?? table.untrained)
-        + [...new Set(states)].reduce((sum, st) => sum + (STATE_TO_HIT[st] || 0), 0);
+/** Seconds from the start of the attack to impact, or null when the attacker never comes within reach. */
+function impactTime(a, rng) {
+    const dist = a.distance_m ?? REACH_M;
+    const approach = dist <= REACH_M ? 0 : a.approach_speed > 0 ? (dist - REACH_M) / a.approach_speed : null;
+    if (approach === null) return null;
+    const [mean, sd] = STRIKE_S[a.means] || STRIKE_S.fist;
+    return { approach, strike: Math.max(0.05, mean + sd * gauss(rng)) };
 }
 
-/** An attack: rolls whether it lands (unless a.landed), then records the wound on the target. */
+/**
+ * Earliest second (from attack start) at which the target finishes a defensive move, or Infinity.
+ * A channel perceives the attacker from some second on; the attack itself is recognisable from second 0
+ * when intent is visible, otherwise only once the strike starts (t.approach).
+ */
+function defenceDone(a, t, defender, rng) {
+    const awake = a.awake !== false;
+    const dist = a.distance_m ?? REACH_M;
+    const intentFrom = a.intent_visible ? 0 : t.approach;
+    const rt = channel => RT_S[channel] * Math.max(0.5, 1 + RT_CV * gauss(rng));
+    const capacity = defender ? Math.max(abilities(defender).blocking, abilities(defender).movement) : 1;
+    if (capacity <= 0) return Infinity;
+    const move = MOVE_S / capacity;
+    const done = [];
+    const perceive = (from, reaction) => done.push(Math.max(from, intentFrom) + reaction);
+    if (awake && a.facing !== false && a.lit !== false) perceive(0, rt('sight'));
+    if (awake && (a.noise_db || 0) > HEAR_DB) perceive(0, rt('hearing'));
+    if (!awake && (a.noise_db || 0) >= WAKE_DB) {
+        const woke = WAKE_MIN_S + rng() * (WAKE_MAX_S - WAKE_MIN_S);
+        // Once awake the target sees or hears like anyone awake, slowed by sleep inertia.
+        perceive(woke, rt(a.facing !== false && a.lit !== false ? 'sight' : 'hearing') / INERTIA_SPEED);
+    }
+    const r = a.sense_range_m || 0;
+    if (awake && r > 0) {
+        // Senses during sleep: OPEN-63. A range sense perceives the attacker (or its hand) within r.
+        const enter = dist <= r ? 0 : r >= REACH_M ? (dist - r) / a.approach_speed : t.approach + t.strike * (REACH_M - r) / REACH_M;
+        perceive(enter, rt('sight'));
+    }
+    return done.length ? Math.min(...done) + move : Infinity;
+}
+
+/** An attack: decides whether it lands (unless a.landed), then records the wound on the target. */
 export function strike(target, a, attacker = null, rng = Math.random) {
-    if (!a.landed && !(a.states || []).some(st => CANNOT_AVOID.includes(st))) {
-        const need = toHit(a);
-        const d20 = 1 + Math.floor(rng() * 20);
-        if (!(need > d20)) return `${a.means} at ${a.part}: misses (to-hit ${need} vs d20 ${d20}).`;
+    if (!a.landed) {
+        const t = impactTime(a, rng);
+        if (!t) return `${a.means} at ${a.part}: out of reach (${a.distance_m} m, no approach). Nothing lands.`;
+        const impact = t.approach + t.strike;
+        const done = defenceDone(a, t, target, rng);
+        if (done <= impact) return `${a.means} at ${a.part}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
     }
     const base = baseOf(a.part);
     if (a.means === 'blade_cut' || a.means === 'blade_stab') {

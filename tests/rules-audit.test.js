@@ -78,7 +78,7 @@ describe('the loop: check, redo once, then show', () => {
         reply('Her fist bruises his mouth.');
         const d = deps('{"events":[]}');
         expect(await onRulesAuditMessage(1, d)).toEqual([]);
-        expect(d.calls.prompts[0]).toMatch(/1\. LosicaStrike: fist (to mouth: \d+ N|at mouth: misses)/);
+        expect(d.calls.prompts[0]).toMatch(/1\. LosicaStrike: fist (to mouth: \d+ N|at mouth: avoided)/);
         expect(d.calls.generate).toEqual([]);
     });
 
