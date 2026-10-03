@@ -273,3 +273,35 @@ describe('blood loss stays within the body (audit 3 Oct 2026)', () => {
         expect(limb.f).toBeLessThanOrEqual(50 / 70 + 1e-9);
     });
 });
+
+describe('interruptions (NetHack/Pathos structure)', () => {
+    it('stops time at the minute a bleed crosses into class II', async () => {
+        const { newPerson, addWound, advanceAll, bloodClass } = await import('../src/rules/losica-engine.js');
+        const p = newPerson(70);
+        addWound(p, { part: 'arm_l', type: 'cut', vessel: 'limb_artery' }, () => 0.5);
+        const { elapsed, events } = advanceAll({ Mira: p }, 600, new Set(), () => 0.5);
+        expect(events).toEqual(['Mira reaches blood-loss class II']);
+        expect(elapsed).toBe(Math.ceil(0.15 * 4900 / 120));
+        expect(bloodClass(p)).toBe(2);
+    });
+
+    it('stops for every tracked person at the same minute, and reports infection and death', async () => {
+        const { newPerson, addWound, advanceAll } = await import('../src/rules/losica-engine.js');
+        const a = newPerson(), b = newPerson();
+        addWound(b, { part: 'leg_l', type: 'bite' }, () => 0);
+        const r = advanceAll({ A: a, B: b }, 10 * 513, new Set(), () => 0);
+        expect(r.events).toEqual(['B: wound 1 is infected']);
+        expect(a.minute).toBe(b.minute);
+        const c = newPerson();
+        addWound(c, { part: 'leg_l', type: 'cut', vessel: 'femoral' }, () => 0.5);
+        const seen = [];
+        let left = 60;
+        while (left > 0) { const s = advanceAll({ C: c }, left, new Set(), () => 0.5); seen.push(...s.events); left -= s.elapsed; if (!s.events.length) break; }
+        expect(seen.at(-1)).toBe('C dies (blood loss)');
+    });
+
+    it('runs the full span when nothing changes', async () => {
+        const { newPerson, advanceAll } = await import('../src/rules/losica-engine.js');
+        expect(advanceAll({ A: newPerson() }, 300)).toEqual({ elapsed: 300, events: [] });
+    });
+});

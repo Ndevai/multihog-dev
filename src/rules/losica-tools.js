@@ -1,4 +1,4 @@
-import { person, addWound, treat, advance, cast, fall, status, seededRng, strike } from './losica-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike } from './losica-engine.js';
 import { turnKey } from '../state/dice-ledger.js';
 
 const TOOLS = ['LosicaWound', 'LosicaStrike', 'LosicaTreat', 'LosicaTime', 'LosicaCast', 'LosicaFall', 'LosicaStatus'];
@@ -107,7 +107,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - A blow, cut or stab lands → LosicaStrike, then narrate the returned wound.
 - A burn, bite or accidental cut → LosicaWound.
 - Someone falls → LosicaFall.
-- Time passes in the story → LosicaTime with the minutes, before narrating the later moment.
+- Time passes in the story → LosicaTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
 - A spell is cast → LosicaCast. A treatment is applied → LosicaTreat.
 - A check or attack roll → RollTheDice.
 - Describe a character's injuries, blood loss or energy from LosicaStatus.
@@ -170,16 +170,17 @@ export function registerLosicaRulesTools(enabled) {
         return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;
     }));
 
-    tool('LosicaTime', 'Advance story time for every tracked character. Call before narrating any time passing.', {
+    tool('LosicaTime', 'Advance story time for every tracked character. Call before narrating any time passing. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
         minutes: { type: 'number', description: 'Minutes that pass' },
         resting: { type: 'array', items: { type: 'string' }, description: 'Characters not casting or fighting during this time' },
     }, ['minutes'], a => run((st, rng) => {
-        const resting = new Set(a.resting || []);
-        const lines = Object.entries(st.people || {}).map(([who, p]) => {
-            advance(p, Math.max(0, Math.round(a.minutes)), resting.has(who), rng);
-            return status(who, p);
-        });
-        return lines.join('\n') || 'No tracked characters.';
+        const asked = Math.max(0, Math.round(a.minutes));
+        const { elapsed, events } = advanceAll(st.people || {}, asked, new Set(a.resting || []), rng);
+        const head = events.length
+            ? `Time stopped after ${elapsed} of ${asked} minutes: ${events.join('; ')}. ${asked - elapsed} minutes remain.`
+            : `${elapsed} minutes passed.`;
+        const lines = Object.entries(st.people || {}).map(([who, p]) => status(who, p));
+        return [head, ...lines].join('\n');
     }));
 
     tool('LosicaCast', 'Resolve a spell cast before narrating it.', {

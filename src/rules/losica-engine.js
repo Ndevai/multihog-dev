@@ -311,3 +311,35 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         : chance === null ? 'fracture threshold not set (OPEN-57)' : `fracture chance ${Math.round(chance * 100)}%`;
     return `${a.means} to ${a.part}: ${Math.round(force)} N, ${odds} → ${broke ? 'fracture' : 'bruise'}. Wound ${w.id}.`;
 }
+
+// Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
+const watch = p => ({
+    dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null,
+    infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
+});
+
+function changes(who, a, b) {
+    const out = [];
+    if (b.dead && !a.dead) out.push(`${who} dies (${b.dead})`);
+    else {
+        if (b.cls > a.cls) out.push(`${who} reaches blood-loss class ${['I', 'II', 'III', 'IV'][b.cls - 1]}`);
+        if (b.dying && !a.dying) out.push(`${who} is dying`);
+        for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
+    }
+    return out;
+}
+
+/** Advances everyone minute by minute; stops at the end of the first minute in which a condition changes. */
+export function advanceAll(people, minutes, resting = new Set(), rng = Math.random) {
+    const total = Math.max(0, Math.round(minutes));
+    for (let m = 1; m <= total; m++) {
+        const events = [];
+        for (const [who, p] of Object.entries(people)) {
+            const before = watch(p);
+            advance(p, 1, resting.has(who), rng);
+            events.push(...changes(who, before, watch(p)));
+        }
+        if (events.length) return { elapsed: m, events };
+    }
+    return { elapsed: total, events: [] };
+}
