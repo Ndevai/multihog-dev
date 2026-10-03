@@ -98,12 +98,13 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 48 | healing time of punctures and bites | research |
 | | 49 | healing time of blunt wounds | research |
 | | 50 | how much infection slows healing and drains strength | research |
+| | 51 | ability penalty per wound type and score (framework set: Cataclysm: DDA limb scores) | research per injury |
 | Survival (577) | 46 | altitude effect for people born there | research after the native/colonist decision |
 
 Closed 2 Oct 2026 (rule 576 + engine commit 1cf0cf9): OPEN-43 onset (bites 1 Earth day, Talan 1999; other wounds 10 Earth days, laparotomy SSI proxy, Gundel 2018); cut healing by part (Forsch 2017, expert opinion); burn healing by depth (Warby 2023, Lloyd 2012, CHOP); fall deaths 5.1–10.1 m by straight line, all above 16.2 m (engine had unsourced 22.7 % and 78 %); "size" dropped from the wound definition, burns take a depth; the 32.5 % midpoint written into the reference.
 
 Gaps without an OPEN tag:
-- Abilities have no numbers: "a part's abilities fall with its wounds" is unquantified, so wounds other than fractures change no ability in code.
+- Abilities: framework set 2 Oct (rule 576 = Cataclysm: DDA limb scores, commit 935fe5f; share = value × (1 − Σ penalties)). Only unjoined fractures (1) and crooked arm/hand grip (0.49) have penalties; all other wounds wait on OPEN-51.
 - Engine lacks the stage-5 route (five complex patterns at once, d100 ≤ 15, tribulation every 841.4 days); its cap of 12 nexuses is consistent with the rule.
 
 ## 6. Planet Losica (losica-humans.md)
