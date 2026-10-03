@@ -127,7 +127,9 @@ Gaps without an OPEN tag:
 | Strike force → fracture | disabled | direct comparison gave 94 % jaw fracture per untrained punch vs 27 facial fractures in 301 bare-knuckle bouts | disabled until OPEN-60 |
 | Magic, network | fiction | no reality to compare | internal consistency only |
 
-Decided by the LLM, not by code: whether it calls a tool at all; wound inputs (vessel, fracture kind, open grade); hit or miss, hit location, DC; minutes passed in LosicaTime; prose after a roll (only roll parentheticals are corrected); D&D hit points still run beside wounds until the cartridge.
+Enforcement (3 Oct 2026, engine commit after 29f2c03): severity moved into code (LosicaWound takes cause and place only; vessel and fracture come from code); a standing <rule_engine> brief names the tool per event; after each reply a side pass (State Tracker connection) lists unbacked or contradicted events → one automatic redo as a swipe with the missing calls named → a second failure is shown as a warning. Limits: the checker is itself a model (it can miss events); hit/miss, location and DC still come from the narrator.
+
+Decided by the LLM, not by code (before enforcement): whether it calls a tool at all; wound inputs (vessel, fracture kind, open grade); hit or miss, hit location, DC; minutes passed in LosicaTime; prose after a roll (only roll parentheticals are corrected); D&D hit points still run beside wounds until the cartridge.
 
 ## 6. Planet Losica (losica-humans.md)
 - Star 1.07 M☉, 1.371 L☉ (kept), age 5.3 Gyr at Z = 0.02, Teff 5,895 K (physics.json's 6,079 K is wrong).
