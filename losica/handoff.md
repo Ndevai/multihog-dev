@@ -116,6 +116,19 @@ Gaps without an OPEN tag:
 - Abilities: framework set 2 Oct (rule 576 = Cataclysm: DDA limb scores, commit 935fe5f; share = value × (1 − Σ penalties)). Only unjoined fractures (1) and crooked arm/hand grip (0.49) have penalties; all other wounds wait on OPEN-51.
 - Engine lacks the stage-5 route (five complex patterns at once, d100 ≤ 15, tribulation every 841.4 days); its cap of 12 nexuses is consistent with the rule.
 
+## 5b. Reality audit (3 Oct 2026): engine output vs independent data
+| Rule | Engine gives | Independent data | Result |
+|---|---|---|---|
+| Untreated arterial bleeding | alive at min 40 with 18 L lost (367 % of 4.9 L) | Syverud 1989 swine: death at 50 mL/kg lost | FAILED → fixed (death at 50 mL/kg; femoral 6–12 min, limb artery 21–50 min) |
+| Leg fracture union (Perkins) | shin joins at 6 (spiral) / 12 (transverse) Earth weeks | Oni 1988, 100 closed tibial shaft fractures: 19 not united at 20 weeks, 4 still not at 30 | FAILED, open: joins too early; replace with measured union times per bone |
+| Treatments | stop_bleeding stops any bleed instantly, always; transfuse resets all loss at once; clean always works | tourniquets, packing and transfusion take time, supplies and skill and can fail | FAILED, open: need success rates and times |
+| Cut healing | closed at suture-removal time, then off the list | a closed wound has ~a small fraction of its final strength at that point | approximation, flagged |
+| Ability scores | Cataclysm: DDA game values | none measured | unvalidated (game structure) |
+| Strike force → fracture | disabled | direct comparison gave 94 % jaw fracture per untrained punch vs 27 facial fractures in 301 bare-knuckle bouts | disabled until OPEN-60 |
+| Magic, network | fiction | no reality to compare | internal consistency only |
+
+Decided by the LLM, not by code: whether it calls a tool at all; wound inputs (vessel, fracture kind, open grade); hit or miss, hit location, DC; minutes passed in LosicaTime; prose after a roll (only roll parentheticals are corrected); D&D hit points still run beside wounds until the cartridge.
+
 ## 6. Planet Losica (losica-humans.md)
 - Star 1.07 M☉, 1.371 L☉ (kept), age 5.3 Gyr at Z = 0.02, Teff 5,895 K (physics.json's 6,079 K is wrong).
 - Orbit a 1.1625 AU, e 0.447, obliquity 44.6°, periapsis near northern summer; flux 3.32× to 0.48× Earth. Day 8.557 h; year 1241.42 days (442.6 Earth days); moon synodic 17.87 days.
