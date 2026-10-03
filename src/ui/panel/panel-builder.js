@@ -7168,6 +7168,7 @@ ${namingRule}`;
         // Direct Prompt and runStateModelPass handle archiving when they produce new states.
         s.currentMemo = snapshot;
         s.historyIndex = runtimeState.historyViewIndex;
+        globalThis._rpgOnMemoRestored?.(snapshot);
         runtimeState.historyViewIndex = -1;
         runtimeState.dungeonMapHistoryOverlay = null;
         runtimeState.liveDungeonMapBackup = null;

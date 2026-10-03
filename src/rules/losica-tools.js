@@ -50,8 +50,36 @@ export function onLosicaSwiped(messageId) {
     const msg = ctx.chat?.[messageId];
     const saved = msg?.extra?.losicaResult?.[msg.swipe_id ?? 0];
     if (!ctx.chatMetadata || !saved) return;
+    restore(saved);
+}
+
+const isReply = m => m && !m.is_user && !m.is_system && !m.extra?.tool_invocations;
+
+function restore(saved) {
     store().state = structuredClone(saved);
     save();
+}
+
+/** CHAT_CHANGED / MESSAGE_DELETED: state = what the last reply ended with, so a branch or deletion starts from its own point. */
+export function syncLosicaToChat() {
+    const ctx = SillyTavern.getContext();
+    if (!ctx.chatMetadata) return;
+    const msg = [...(ctx.chat || [])].reverse().find(isReply);
+    const saved = msg?.extra?.losicaResult?.[msg.swipe_id ?? 0];
+    if (saved) restore(saved);
+}
+
+/** Linear Stone restore: find the reply whose State Tracker result is this memo and take its Losica state. */
+export function restoreLosicaForMemo(memo) {
+    const ctx = SillyTavern.getContext();
+    if (!ctx.chatMetadata) return false;
+    for (const msg of [...(ctx.chat || [])].reverse()) {
+        const results = msg?.extra?.rpgMemoResult;
+        if (!isReply(msg) || !results) continue;
+        const swipe = Object.keys(results).find(k => results[k] === memo && msg.extra.losicaResult?.[k]);
+        if (swipe !== undefined) { restore(msg.extra.losicaResult[swipe]); return true; }
+    }
+    return false;
 }
 
 // Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
