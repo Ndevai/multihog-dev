@@ -8,10 +8,14 @@ const FRACTURE = {
 };
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
-// Rule 576 OPEN-43 (onset, Losica days). An OPEN value means the effect does not happen yet.
-const INFECTION_ONSET = null;
+const EARTH_DAY = 86400 / 30804;
+// Rule 576, Earth days; converted with EARTH_DAY. Missing types are OPEN-48/49: they do not close yet.
+const CUT_HEAL = { eyes: [3, 5], mouth: [3, 5], head: [7, 10], arm: [7, 10], torso: [10, 14], leg: [10, 14], hand: [10, 14], foot: [10, 14] };
+const BURN_HEAL = { superficial: [5, 10], partial: [7, 21], deep_partial: [21, 56], full: null };
+const INFECTION_ONSET = { bite: 1, other: 10 };
+const CROOKED_GRIP = 0.51;
 const COST = [0, 40, 64, 107, 178, 297, 495, 825, 1375, 2292];
-const FALL_ROWS = [[5.1, 0], [10.1, 0.227], [13.2, 0.44], [16.2, 0.56], [Infinity, 0.78]];
+const FALL_ROWS = [[10.1, 0.44], [13.2, 0.56], [16.2, 0.78]];
 const PART_FEEDS = {
     head: ['reaction'], eyes: ['vision', 'reaction'], mouth: ['breathing', 'eating', 'drinking'],
     torso: ['balance', 'breathing'], arm: ['lifting', 'blocking', 'balance'], hand: ['grip', 'fine manipulation'],
@@ -63,7 +67,10 @@ export function stage(net) {
 }
 
 export function addWound(p, w, rng = Math.random) {
-    const wound = { id: p.nextId++, part: w.part, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false };
+    const wound = { id: p.nextId++, part: w.part, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
+    const healRange = w.type === 'cut' ? CUT_HEAL[w.part.replace(/_(l|r)$/, '')] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
+    if (w.type === 'burn') wound.depth = BURN_HEAL[w.depth] !== undefined ? w.depth : null;
+    if (healRange) wound.heals = round(between(rng, healRange) * EARTH_DAY);
     if (w.vessel && BLEED[w.vessel]) wound.bleed = round(between(rng, BLEED[w.vessel]));
     if (w.type === 'fracture') {
         const kind = FRACTURE[w.fracture] ? w.fracture : (/leg|foot/.test(w.part) ? 'leg_spiral' : 'arm_spiral');
@@ -129,7 +136,9 @@ export function advance(p, minutes, resting, rng = Math.random) {
         for (const w of p.wounds) {
             w.age += 1 / DAY_MIN;
             if (w.fracture && !w.fracture.never) { w.fracture.joins -= 1 / DAY_MIN; w.fracture.full -= 1 / DAY_MIN; }
-            if (INFECTION_ONSET !== null && w.open && w.infection === null && w.age >= INFECTION_ONSET) w.infection = rng() < infectionChance(w);
+            if (w.heals !== null && !w.healed && w.age >= w.heals) { w.healed = true; w.bleed = 0; }
+            const onset = INFECTION_ONSET[w.type === 'bite' ? 'bite' : 'other'] * EARTH_DAY;
+            if (w.open && w.infection === null && w.age >= onset) w.infection = rng() < infectionChance(w);
         }
         if (++p.minute >= DAY_MIN) { p.minute -= DAY_MIN; endDay(net); }
     }
@@ -149,11 +158,19 @@ export function cast(p, complexity) {
     return `Cast succeeds: ${cost} PE spent, ${Math.floor(net.R)} PE left.`;
 }
 
-export function fall(p, height, { soft = false, headFirst = false } = {}, rng = Math.random) {
-    let row = FALL_ROWS.findIndex(([h]) => height < h);
-    if (headFirst) row = Math.min(row + 1, FALL_ROWS.length - 1);
-    if (soft) row = Math.max(row - 1, 0);
-    const chance = FALL_ROWS[row][1];
+// Rows: < 10.1 m (0 % below 5.1 m, straight line to 44 % at 10.1 m), 10.1, 13.2, exactly 16.2, above 16.2 (all).
+export function fallDeathChance(height, { soft = false, headFirst = false } = {}) {
+    const chances = [null, ...FALL_ROWS.map(r => r[1]), 1];
+    let row = FALL_ROWS.filter(([h]) => height >= h).length;
+    if (height > FALL_ROWS.at(-1)[0]) row = chances.length - 1;
+    const shifted = headFirst ? Math.min(row + 1, chances.length - 1) : soft ? Math.max(row - 1, 0) : row;
+    if (shifted > 0) return chances[shifted];
+    if (row > 0 || height < 5.1) return 0;
+    return FALL_ROWS[0][1] * (height - 5.1) / (FALL_ROWS[0][0] - 5.1);
+}
+
+export function fall(p, height, opts = {}, rng = Math.random) {
+    const chance = fallDeathChance(height, opts);
     if (chance > 0 && rng() < chance) { p.dead = 'fall'; return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — dies.`; }
     return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — survives. Injuries: narrate, then record with LosicaWound.`;
 }
@@ -166,12 +183,15 @@ export function status(who, p) {
     if (p.deathIn !== null) out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
     if (p.red > 0) out.push(`red-cell deficit ${Math.round(p.red)} mL: endurance lowered`);
     for (const w of p.wounds) {
-        const bits = [`wound ${w.id} ${w.part} ${w.type}`];
+        if (w.healed && !w.infection) continue;
+        const bits = [`wound ${w.id} ${w.part} ${w.type}${w.depth ? ` (${w.depth.replace('_', ' ')})` : ''}`];
         if (w.bleed) bits.push(`bleeding ${w.bleed} mL/min`);
+        if (w.heals !== null && !w.healed) bits.push(`closes in ${round(w.heals - w.age)} days`);
+        if (w.type === 'burn' && w.depth === 'full') bits.push('closes only with a skin graft');
         if (w.fracture) {
             const fr = w.fracture;
             bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
-            if (fr.crooked) bits.push('crooked');
+            if (fr.crooked) bits.push(/arm|hand/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
             if (fr.joins > 0 && !fr.never) bits.push(`${w.part} gives no ${(PART_FEEDS[w.part.replace(/_(l|r)$/, '')] || ['use']).join('/')}`);
         }
         if (w.infection) bits.push('infected');

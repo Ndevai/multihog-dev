@@ -117,12 +117,57 @@ describe('seeded draws', () => {
     });
 });
 
-describe('OPEN values stay inert', () => {
-    it('never starts an infection while OPEN-43 (onset) is unset', async () => {
+describe('rule 576 healing, onset, falls, crooked bones (2 Oct 2026 values)', () => {
+    const E = 86400 / 30804;
+    const days = n => Math.round(n * DAY_MIN);
+
+    it('decides a bite infection at 1 Earth day and other wounds at 10', async () => {
         const { newPerson, addWound, advance } = await import('../src/rules/losica-engine.js');
         const p = newPerson();
         addWound(p, { part: 'leg_l', type: 'bite' }, () => 0);
-        advance(p, 3 * 513, false, () => 0);
-        expect(p.wounds[0].infection).toBeNull();
+        addWound(p, { part: 'leg_r', type: 'cut' }, () => 0);
+        advance(p, days(1 * E) - 2, false, () => 0);
+        expect(p.wounds.map(w => w.infection)).toEqual([null, null]);
+        advance(p, 4, false, () => 0);
+        expect(p.wounds.map(w => w.infection)).toEqual([true, null]);
+        advance(p, days(10 * E), false, () => 0);
+        expect(p.wounds[1].infection).toBe(true);
+    });
+
+    it('closes cuts by part and burns by depth; full burns need a graft', async () => {
+        const { newPerson, addWound, advance, status } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        const face = addWound(p, { part: 'mouth', type: 'cut' }, () => 0);
+        const leg = addWound(p, { part: 'leg_l', type: 'cut' }, () => 0.999);
+        const burn = addWound(p, { part: 'arm_r', type: 'burn', depth: 'full' }, () => 0);
+        const punct = addWound(p, { part: 'torso', type: 'puncture' }, () => 0);
+        expect(face.heals).toBeCloseTo(3 * E, 1);
+        expect(leg.heals).toBeCloseTo(14 * E, 0);
+        expect(burn.heals).toBeNull();
+        expect(punct.heals).toBeNull();
+        advance(p, days(3 * E) + 2, false, () => 0.99);
+        expect(face.healed).toBe(true);
+        expect(leg.healed).toBe(false);
+        expect(status('X', p)).toMatch(/closes only with a skin graft/);
+        expect(status('X', p)).not.toMatch(/wound 1 /);
+    });
+
+    it('fall deaths follow the table, interpolate 5.1–10.1 m, and kill all above 16.2 m', async () => {
+        const { fallDeathChance } = await import('../src/rules/losica-engine.js');
+        expect(fallDeathChance(4)).toBe(0);
+        expect(fallDeathChance(7.6)).toBeCloseTo(0.22, 5);
+        expect(fallDeathChance(10.1)).toBe(0.44);
+        expect(fallDeathChance(16.2)).toBe(0.78);
+        expect(fallDeathChance(16.3)).toBe(1);
+        expect(fallDeathChance(7.6, { headFirst: true })).toBe(0.44);
+        expect(fallDeathChance(12, { soft: true })).toBe(0);
+    });
+
+    it('shows 51 % grip for a crooked arm or hand', async () => {
+        const { newPerson, addWound, treat, status } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        addWound(p, { part: 'hand_l', type: 'fracture' }, () => 0.5);
+        treat(p, 1, 'load', () => 0);
+        expect(status('X', p)).toMatch(/crooked: grip 51%/);
     });
 });

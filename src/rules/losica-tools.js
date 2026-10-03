@@ -110,6 +110,7 @@ export function registerLosicaRulesTools(enabled) {
         who: str('Character name'),
         part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
         type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'fracture', 'burn', 'bite'] },
+        depth: { type: 'string', enum: ['superficial', 'partial', 'deep_partial', 'full'], description: 'Burns: superficial = red, no blisters; partial = blisters; deep_partial = pale, scars; full = through the skin.' },
         vessel: { type: 'string', enum: ['none', 'small', 'limb_artery', 'femoral'], description: 'Vessel opened. femoral = groin, armpit or neck.' },
         fracture: { type: 'string', enum: ['arm_spiral', 'arm_transverse', 'leg_spiral', 'leg_transverse'] },
         bone: { type: 'string', enum: ['default', 'shin', 'wrist'] },
