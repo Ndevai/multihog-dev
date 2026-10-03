@@ -99,6 +99,15 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 49 | healing time of blunt wounds | research |
 | | 50 | how much infection slows healing and drains strength | research |
 | | 51 | ability penalty per wound type and score (framework set: Cataclysm: DDA limb scores) | research per injury |
+| Strikes (576) | 52 | whether a blow lands (narrator's dice check meanwhile) | research or decision |
+| | 53 | hit location when not aimed | research (assault injury distributions) |
+| | 54 | club/tool force: contact stiffness per part to turn measured energy (Siegenthaler 2018) into force | research |
+| | 55 | share of limb arterial injuries in the femoral bleeding class | research |
+| | 56 | blade wounds to head, eyes, mouth, torso: organs, deep vessels | research |
+| | 57 | fracture force for torso (ribs), hand, foot | research |
+| | 58 | healing time of skull, face and torso fractures | research |
+| | 59 | concussion and knockout from head blows | research |
+| | 60 | calibration of blow force vs fracture thresholds (uncalibrated: untrained punch breaks the jaw 94 %) | research: landed head strikes per bare-knuckle bout vs 27 facial fractures in 301 bouts |
 | Survival (577) | 46 | altitude effect for people born there | research after the native/colonist decision |
 
 Closed 2 Oct 2026 (rule 576 + engine commit 1cf0cf9): OPEN-43 onset (bites 1 Earth day, Talan 1999; other wounds 10 Earth days, laparotomy SSI proxy, Gundel 2018); cut healing by part (Forsch 2017, expert opinion); burn healing by depth (Warby 2023, Lloyd 2012, CHOP); fall deaths 5.1–10.1 m by straight line, all above 16.2 m (engine had unsourced 22.7 % and 78 %); "size" dropped from the wound definition, burns take a depth; the 32.5 % midpoint written into the reference.
