@@ -33,6 +33,27 @@ export function onLosicaGenerationStarted(type) {
     }
 }
 
+/** MESSAGE_RECEIVED: keep the state each swipe ended with, like Multihog's rpgMemoResult. */
+export function onLosicaMessageReceived(messageId) {
+    const ctx = SillyTavern.getContext();
+    const msg = ctx.chat?.[messageId];
+    if (!ctx.chatMetadata || !msg || msg.is_user || msg.is_system) return;
+    msg.extra ??= {};
+    msg.extra.losicaResult ??= {};
+    msg.extra.losicaResult[msg.swipe_id ?? 0] = structuredClone(store().state);
+    (ctx.saveChatDebounced || ctx.saveChat)?.();
+}
+
+/** MESSAGE_SWIPED: returning to an earlier swipe restores the state it ended with. */
+export function onLosicaSwiped(messageId) {
+    const ctx = SillyTavern.getContext();
+    const msg = ctx.chat?.[messageId];
+    const saved = msg?.extra?.losicaResult?.[msg.swipe_id ?? 0];
+    if (!ctx.chatMetadata || !saved) return;
+    store().state = structuredClone(saved);
+    save();
+}
+
 // Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
 function run(fn) {
     const s = store();
