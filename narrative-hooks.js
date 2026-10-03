@@ -33,6 +33,8 @@ import { buildCyoaModeBlock, STATE_MEMO_INJECT_PREAMBLE } from './constants.js';
 import { isCyoaEnabled, isLorebookAgentRuntimeActive, isLocationMappingEnabled } from './src/state/section-enabled.js';
 import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/state/narrative-pacing.js';
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
+import { LOSICA_BRIEF } from './src/rules/losica-tools.js';
+import { takeAuditNote } from './src/rules/rules-audit.js';
 import {
     buildDungeonRealityInjection,
     buildMappedSitesInjection,
@@ -1543,6 +1545,11 @@ export function installInterceptor() {
                 if (settings.currentMemo) {
                     const memoText = stripMemoHtml(memoForGmContext(settings.currentMemo)).trim();
                     injections += `${STATE_MEMO_INJECT_PREAMBLE}\n\n## TRACKER STATE 0 (Current)\n${memoText}\n\n`;
+                }
+
+                if (settings.losicaRules) {
+                    const note = takeAuditNote();
+                    injections += `${LOSICA_BRIEF}\n\n${note ? `${note}\n\n` : ''}`;
                 }
 
                 // Quest deadline check — fires before state model pass, deterministically

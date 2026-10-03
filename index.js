@@ -47,6 +47,7 @@ import {
 import { RENDERING_TAGS_LIBRARY, sectionPages, configureRuntimeActions } from './src/app/runtime-bridge.js';
 import { bindRenderedCardEvents } from './src/ui/panel/card-events.js';
 import { getRngMode, applyRngMode, autoSelectRngTools } from './src/state/rng-mode.js';
+import { onRulesAuditMessage } from './src/rules/rules-audit.js';
 import { registerLosicaRulesTools, onLosicaGenerationStarted, onLosicaMessageReceived, onLosicaSwiped, syncLosicaToChat, restoreLosicaForMemo } from './src/rules/losica-tools.js';
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
@@ -8151,6 +8152,16 @@ function organizeConnectionSettingsUI() {
         eventSource.on(event_types.GENERATION_STARTED, onGenerationStarted);
         eventSource.on(event_types.GENERATION_STARTED, type => { if (getSettings().losicaRules) onLosicaGenerationStarted(type); });
         if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, id => { if (getSettings().losicaRules) onLosicaMessageReceived(id); });
+        if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, ignoreChatCancellation(async id => {
+            if (!getSettings().losicaRules) return;
+            const ownsChat = createChatCommitGuard(getActiveChatId(), getActiveChatId);
+            await onRulesAuditMessage(id, {
+                send: (system, user) => sendStateRequest(getSettings(), system, user, null, { debugSource: 'Rules Audit' }),
+                ownsChat,
+                generate: type => setTimeout(() => { if (ownsChat()) void Promise.resolve(SillyTavern.getContext().generate(type)).catch(e => console.error('[RPG Tracker] Rules Audit redo failed:', e)); }, 75),
+                toast: text => toastr.warning(text, 'Rule check', { timeOut: 12000 }),
+            }).catch(e => console.warn('[RPG Tracker] Rules Audit skipped:', e));
+        }));
         if (event_types.MESSAGE_SWIPED) eventSource.on(event_types.MESSAGE_SWIPED, id => { if (getSettings().losicaRules) onLosicaSwiped(id); });
         if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => { if (getSettings().losicaRules) syncLosicaToChat(); });
         if (event_types.MESSAGE_DELETED) eventSource.on(event_types.MESSAGE_DELETED, () => { if (getSettings().losicaRules) syncLosicaToChat(); });

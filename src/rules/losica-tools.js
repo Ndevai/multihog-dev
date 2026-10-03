@@ -25,8 +25,10 @@ export function onLosicaGenerationStarted(type) {
     if (type === 'swipe' || type === 'regenerate') {
         if (s.snapshots[key]) s.state = structuredClone(s.snapshots[key]);
         s.calls = 0;
+        s.log = [];
     } else if (!type || type === 'normal') {
         s.calls = 0;
+        s.log = [];
         s.snapshots[key] = structuredClone(s.state);
         const keys = Object.keys(s.snapshots).map(Number).sort((a, b) => a - b);
         for (const k of keys.slice(0, -KEEP_SNAPSHOTS)) delete s.snapshots[k];
@@ -94,6 +96,23 @@ function run(fn) {
 
 const str = d => ({ type: 'string', description: d });
 
+/** Tool results of the generation in progress, for the reply check. */
+export function losicaTurnLog() {
+    const ctx = SillyTavern.getContext();
+    return ctx.chatMetadata?.losicaRules?.log || [];
+}
+
+export const LOSICA_BRIEF = `<rule_engine>
+Outcomes come from the rule-engine tools; narrate what they return.
+- A blow, cut or stab lands → LosicaStrike, then narrate the returned wound.
+- A burn, bite or accidental cut → LosicaWound.
+- Someone falls → LosicaFall.
+- Time passes in the story → LosicaTime with the minutes, before narrating the later moment.
+- A spell is cast → LosicaCast. A treatment is applied → LosicaTreat.
+- A check or attack roll → RollTheDice.
+- Describe a character's injuries, blood loss or energy from LosicaStatus.
+</rule_engine>`;
+
 export function registerLosicaRulesTools(enabled) {
     const { registerFunctionTool, unregisterFunctionTool } = SillyTavern.getContext();
     if (!registerFunctionTool || !unregisterFunctionTool) return;
@@ -103,21 +122,28 @@ export function registerLosicaRulesTools(enabled) {
     const tool = (name, description, properties, required, action) => registerFunctionTool({
         name, displayName: name, description,
         parameters: { type: 'object', properties, required },
-        action, formatMessage: () => '',
+        action: async args => {
+            const out = await action(args);
+            const s = store();
+            (s.log ??= []).push({ tool: name, args, result: out });
+            save();
+            return out;
+        },
+        formatMessage: () => '',
     });
 
-    tool('LosicaWound', 'Record a wound the moment it happens. Returns the body state.', {
+    // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
+    tool('LosicaWound', 'Record a wound from a burn, a bite or an accident the moment it happens. Returns what the wound is and the body state.', {
         who: str('Character name'),
         part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
-        type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'fracture', 'burn', 'bite'] },
+        type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'burn', 'bite'] },
         depth: { type: 'string', enum: ['superficial', 'partial', 'deep_partial', 'full'], description: 'Burns: superficial = red, no blisters; partial = blisters; deep_partial = pale, scars; full = through the skin.' },
-        vessel: { type: 'string', enum: ['none', 'small', 'limb_artery', 'femoral'], description: 'Vessel opened. femoral = groin, armpit or neck.' },
-        fracture: { type: 'string', enum: ['arm_spiral', 'arm_transverse', 'leg_spiral', 'leg_transverse'] },
-        bone: { type: 'string', enum: ['default', 'shin', 'wrist'] },
-        openGrade: { type: 'string', enum: ['none', 'I', 'II', 'IIIA', 'IIIB', 'IIIC'], description: 'Fracture through the skin: I small wound … IIIC with artery damage.' },
     }, ['who', 'part', 'type'], a => run((st, rng) => {
         const p = person(st, a.who);
-        const w = addWound(p, a, rng);
+        if (a.type === 'cut' || a.type === 'puncture') {
+            return `${strike(p, { part: a.part, means: a.type === 'cut' ? 'blade_cut' : 'blade_stab' }, null, rng)} ${status(a.who, p)}`;
+        }
+        const w = addWound(p, { part: a.part, type: a.type, depth: a.depth, vessel: a.type === 'bite' ? 'small' : undefined }, rng);
         return `Wound ${w.id} recorded. ${status(a.who, p)}`;
     }));
 
