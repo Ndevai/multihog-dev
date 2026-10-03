@@ -58,7 +58,7 @@ Hard-rule world system for LLM roleplay. Rules a model cannot bend: quantities, 
 - Annotated reference = same rules with sources and reasons, kept out of the lorebook.
 - Open values: see section 5a. CONFLICT-1 (cantrips): the source calls complexity-1 Healing the cheapest spell, the cost table is the same for every school → school costs (OPEN-17) or drop the line. CONFLICT-2 (signatures): mutated Demonic also shows gray, so gray = Neutral OR mutated Demonic. Gold vs metal (traced to 金 jīn) is OPEN-15, not a CONFLICT. Non-magic entries (barghest, devils, genasi, kalashtar…) still use "soul"/"affinity" in the everyday sense. Faerûn places (Waterdeep, Lords' Alliance) still to be moved onto Losica.
 
-## 5a. OPEN register (scan of both rule files, 2 Oct; OPEN-3 marked closed in the reference; the lorebook and reference list the same 35 open ids)
+## 5a. OPEN register (scan of both rule files, 2 Oct; OPEN-3 marked closed in the reference; 34 open ids, the same in the lorebook and the reference)
 Convention in both files: an OPEN value means the effect it governs does not happen.
 
 | Rule | OPEN | Value needed | Kind |
