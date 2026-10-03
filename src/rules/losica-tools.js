@@ -1,7 +1,7 @@
-import { person, addWound, treat, advance, cast, fall, status, seededRng } from './losica-engine.js';
+import { person, addWound, treat, advance, cast, fall, status, seededRng, strike } from './losica-engine.js';
 import { turnKey } from '../state/dice-ledger.js';
 
-const TOOLS = ['LosicaWound', 'LosicaTreat', 'LosicaTime', 'LosicaCast', 'LosicaFall', 'LosicaStatus'];
+const TOOLS = ['LosicaWound', 'LosicaStrike', 'LosicaTreat', 'LosicaTime', 'LosicaCast', 'LosicaFall', 'LosicaStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -119,6 +119,20 @@ export function registerLosicaRulesTools(enabled) {
         const p = person(st, a.who);
         const w = addWound(p, a, rng);
         return `Wound ${w.id} recorded. ${status(a.who, p)}`;
+    }));
+
+    tool('LosicaStrike', 'Resolve a blow that has landed, before narrating its effect. Returns the force, the fracture chance and the wound it records.', {
+        who: str('Character hit'),
+        part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
+        means: { type: 'string', enum: ['fist', 'kick', 'blade_cut', 'blade_stab'] },
+        attacker: str('Attacker name; a tracked attacker strikes weaker with wounded arms or legs'),
+        attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg; 70 for an average adult. A creature of 300 kg hits about 2.6 times harder.' },
+        skill: { type: 'string', enum: ['untrained', 'trained', 'elite'], description: 'Fighting training of the attacker' },
+    }, ['who', 'part', 'means'], a => run((st, rng) => {
+        const p = person(st, a.who);
+        const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
+        const out = strike(p, { part: a.part, means: a.means, skill: a.skill, mass: Number(a.attacker_mass_kg) || 70 }, attacker, rng);
+        return `${out} ${status(a.who, p)}`;
     }));
 
     tool('LosicaTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {

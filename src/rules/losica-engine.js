@@ -81,9 +81,11 @@ export function addWound(p, w, rng = Math.random) {
     if (healRange) wound.heals = round(between(rng, healRange) * EARTH_DAY);
     if (w.vessel && BLEED[w.vessel]) wound.bleed = round(between(rng, BLEED[w.vessel]));
     if (w.type === 'fracture') {
-        const kind = FRACTURE[w.fracture] ? w.fracture : (/leg|foot/.test(w.part) ? 'leg_spiral' : 'arm_spiral');
-        wound.fracture = { kind, joins: FRACTURE[kind][0], full: FRACTURE[kind][1], crooked: false,
-            never: rng() < (NONUNION[w.bone] ?? NONUNION.default) };
+        // Head, eyes, mouth and torso have no timetable (OPEN-58): joins stays null.
+        const limb = /arm|hand|leg|foot/.test(w.part);
+        const kind = FRACTURE[w.fracture] ? w.fracture : !limb ? null : /leg|foot/.test(w.part) ? 'leg_spiral' : 'arm_spiral';
+        wound.fracture = { kind, joins: kind ? FRACTURE[kind][0] : null, full: kind ? FRACTURE[kind][1] : null, crooked: false,
+            never: kind ? rng() < (NONUNION[w.bone] ?? NONUNION.default) : false };
         if (w.openGrade && OPEN_FRACTURE_INFECTION[w.openGrade]) wound.openGrade = w.openGrade;
     }
     if (['cut', 'puncture', 'bite', 'burn'].includes(w.type) || wound.openGrade) wound.open = true;
@@ -143,7 +145,7 @@ export function advance(p, minutes, resting, rng = Math.random) {
         if (resting) net.R = Math.min(net.C, net.R + 0.05 * net.C / 60);
         for (const w of p.wounds) {
             w.age += 1 / DAY_MIN;
-            if (w.fracture && !w.fracture.never) { w.fracture.joins -= 1 / DAY_MIN; w.fracture.full -= 1 / DAY_MIN; }
+            if (w.fracture && !w.fracture.never && w.fracture.joins !== null) { w.fracture.joins -= 1 / DAY_MIN; w.fracture.full -= 1 / DAY_MIN; }
             if (w.heals !== null && !w.healed && w.age >= w.heals) { w.healed = true; w.bleed = 0; }
             const onset = INFECTION_ONSET[w.type === 'bite' ? 'bite' : 'other'] * EARTH_DAY;
             if (w.open && w.infection === null && w.age >= onset) w.infection = rng() < infectionChance(w);
@@ -188,7 +190,7 @@ const baseOf = part => part.replace(/_(l|r)$/, '');
 /** Penalty a wound takes off one score of its part (0–1). Other wound types: OPEN-51. */
 export function woundPenalty(w, score) {
     const fr = w.fracture;
-    if (fr && !fr.never ? fr.joins > 0 : fr?.never) return 1;
+    if (fr && (fr.never || fr.joins === null || fr.joins > 0)) return 1;
     if (fr?.crooked && score === 'grip' && /arm|hand/.test(w.part)) return 1 - CROOKED_GRIP;
     return 0;
 }
@@ -225,9 +227,9 @@ export function status(who, p) {
         if (w.type === 'burn' && w.depth === 'full') bits.push('closes only with a skin graft');
         if (w.fracture) {
             const fr = w.fracture;
-            bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
+            bits.push(fr.never ? 'will not join' : fr.joins === null ? 'healing time not set (OPEN-58)' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
             if (fr.crooked) bits.push(/arm|hand/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
-            if (fr.joins > 0 && !fr.never) bits.push(`${w.part} gives no ${Object.keys(PART_SCORES[baseOf(w.part)] || {}).join('/')}`);
+            if ((fr.joins === null || fr.joins > 0) && !fr.never) bits.push(`${w.part} gives no ${Object.keys(PART_SCORES[baseOf(w.part)] || {}).join('/')}`);
         }
         if (w.infection) bits.push('infected');
         out.push(bits.join(', '));
@@ -237,4 +239,72 @@ export function status(who, p) {
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
     return out.join('. ') + '.';
+}
+
+// Rule 576 strikes. Forces: Smith 2000 punches (untrained/trained/elite = novice/intermediate/elite),
+// spread = Walilko 2005 SD/mean; O'Sullivan 2009 turning kicks (elite), lower skill scaled by the punch ratio.
+const FIST = { untrained: 2381, trained: 3722, elite: 4800 };
+const FIST_CV = 811 / 3427;
+const KICK_ELITE = { high: 5419, body: 6400 };
+const KICK_CV = 898 / 6400;
+const HIGH_PARTS = ['head', 'eyes', 'mouth'];
+// Fracture force per part: normal [mean, SD], uniform [min, max] (range only), or fixed mean. Missing parts: OPEN-57.
+const BREAK = {
+    head: { normal: [3944, 1287] },
+    eyes: { uniform: [930, 2850] },
+    mouth: { uniform: [625, 1980] },
+    arm: { fixed: 1370 },
+    leg: { uniform: [1190, 7070] },
+};
+const BLADE_LIMB_ARTERY = 0.12;
+// OPEN-60: rigid-impactor thresholds vs real blows. Uncalibrated, an untrained punch breaks a jaw 94 % of the time;
+// bare-knuckle bouts show 27 facial fractures in 301 bouts. Until set, blunt strikes record bruises only.
+const BLUNT_CALIBRATION = null;
+const REF_MASS = 70;
+
+function gauss(rng) {
+    return Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng());
+}
+
+function phi(z) {
+    const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2);
+    const erf = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z / 2);
+    return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
+}
+
+export function fractureChance(base, force) {
+    const b = BREAK[base];
+    if (!b) return null;
+    if (b.normal) return phi((force - b.normal[0]) / b.normal[1]);
+    if (b.uniform) return Math.min(1, Math.max(0, (force - b.uniform[0]) / (b.uniform[1] - b.uniform[0])));
+    return force >= b.fixed ? 1 : 0;
+}
+
+/** Peak force (N): skill mean × (mass ÷ 70)^(2/3) × attacker's lifting (fist) or movement (kick) × (1 + CV·z). */
+export function strikeForce({ means, skill = 'untrained', mass = REF_MASS, part }, attacker, rng) {
+    const fist = FIST[skill] ?? FIST.untrained;
+    const kick = means === 'kick';
+    const mean = kick ? KICK_ELITE[HIGH_PARTS.includes(baseOf(part)) ? 'high' : 'body'] * fist / FIST.elite : fist;
+    const ability = attacker ? abilities(attacker)[kick ? 'movement' : 'lifting'] : 1;
+    return Math.max(0, mean * (mass / REF_MASS) ** (2 / 3) * ability * (1 + (kick ? KICK_CV : FIST_CV) * gauss(rng)));
+}
+
+/** A blow that has landed: records the wound on the target and returns what happened. */
+export function strike(target, a, attacker = null, rng = Math.random) {
+    const base = baseOf(a.part);
+    if (a.means === 'blade_cut' || a.means === 'blade_stab') {
+        const type = a.means === 'blade_cut' ? 'cut' : 'puncture';
+        const artery = ['arm', 'hand', 'leg', 'foot'].includes(base) && rng() < BLADE_LIMB_ARTERY;
+        const w = addWound(target, { part: a.part, type, vessel: artery ? 'limb_artery' : 'small' }, rng);
+        const organs = ['arm', 'hand', 'leg', 'foot'].includes(base) ? '' : ' Organ and deep-vessel damage: not set (OPEN-56).';
+        return `${type} to ${a.part}${artery ? ', limb artery opened' : ', small vessels'}. Wound ${w.id}.${organs}`;
+    }
+    const force = strikeForce(a, attacker, rng);
+    const chance = BLUNT_CALIBRATION === null ? null : fractureChance(base, force);
+    const broke = chance !== null && rng() < chance;
+    const kind = base === 'arm' ? 'arm_transverse' : base === 'leg' ? 'leg_transverse' : undefined;
+    const w = addWound(target, broke ? { part: a.part, type: 'fracture', fracture: kind } : { part: a.part, type: 'blunt' }, rng);
+    const odds = BLUNT_CALIBRATION === null ? 'fracture from blows not set (OPEN-60)'
+        : chance === null ? 'fracture threshold not set (OPEN-57)' : `fracture chance ${Math.round(chance * 100)}%`;
+    return `${a.means} to ${a.part}: ${Math.round(force)} N, ${odds} → ${broke ? 'fracture' : 'bruise'}. Wound ${w.id}.`;
 }

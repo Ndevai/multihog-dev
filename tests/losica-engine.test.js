@@ -204,3 +204,52 @@ describe('ability scores (Cataclysm: DDA limb scores, 935fe5f)', () => {
         expect(abilities(p).grip).toBe(1);
     });
 });
+
+describe('strikes (rule 576)', () => {
+    const mid = () => 0.5;
+
+    it('scales force with skill, mass^(2/3) and the attacker\'s arm ability', async () => {
+        const { strikeForce, newPerson, addWound } = await import('../src/rules/losica-engine.js');
+        const zero = (() => { const seq = [0.5, 0.25]; let i = 0; return () => seq[i++ % 2]; })();
+        const f = strikeForce({ means: 'fist', skill: 'untrained', part: 'head' }, null, zero);
+        expect(f).toBeCloseTo(2381, 0);
+        expect(strikeForce({ means: 'fist', skill: 'untrained', mass: 300, part: 'head' }, null, zero)).toBeCloseTo(2381 * (300 / 70) ** (2 / 3), 0);
+        const hurt = newPerson();
+        addWound(hurt, { part: 'arm_r', type: 'fracture' }, mid);
+        expect(strikeForce({ means: 'fist', part: 'head' }, hurt, zero)).toBeLessThan(f);
+    });
+
+    it('turns force into a fracture chance per part', async () => {
+        const { fractureChance } = await import('../src/rules/losica-engine.js');
+        expect(fractureChance('head', 3944)).toBeCloseTo(0.5, 2);
+        expect(fractureChance('eyes', 1890)).toBeCloseTo(0.5, 2);
+        expect(fractureChance('arm', 1369)).toBe(0);
+        expect(fractureChance('arm', 1370)).toBe(1);
+        expect(fractureChance('torso', 9000)).toBeNull();
+    });
+
+    it('blunt blows record force and a bruise until OPEN-60 is calibrated', async () => {
+        const { newPerson, strike } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        expect(strike(p, { part: 'mouth', means: 'kick', skill: 'elite' }, null, () => 0.01)).toMatch(/\d+ N, fracture from blows not set \(OPEN-60\) → bruise/);
+        expect(p.wounds[0].type).toBe('blunt');
+    });
+
+    it('fractures of parts without a timetable stay unjoined (OPEN-58)', async () => {
+        const { newPerson, addWound, abilities, status } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        addWound(p, { part: 'head', type: 'fracture' }, mid);
+        expect(p.wounds[0].fracture.joins).toBeNull();
+        expect(abilities(p).reaction).toBeCloseTo(0.7, 5);
+        expect(status('X', p)).toMatch(/OPEN-58/);
+    });
+
+    it('blades on limbs open a limb artery 12 % of the time', async () => {
+        const { newPerson, strike } = await import('../src/rules/losica-engine.js');
+        const p = newPerson();
+        expect(strike(p, { part: 'leg_l', means: 'blade_stab' }, null, () => 0.1)).toMatch(/limb artery opened/);
+        expect(p.wounds[0].bleed).toBeGreaterThanOrEqual(70);
+        expect(strike(p, { part: 'leg_l', means: 'blade_cut' }, null, () => 0.5)).toMatch(/small vessels/);
+        expect(strike(p, { part: 'torso', means: 'blade_stab' }, null, () => 0.1)).toMatch(/OPEN-56/);
+    });
+});
