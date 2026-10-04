@@ -36,6 +36,7 @@ import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import { RULES_BRIEF } from './src/rules/rules-tools.js';
 import { bodyMemo, trackedPeople } from './src/rules/body-sheet.js';
 import { rulesDiceSpec, RULES_SECTIONS } from './src/rules/rules-mode.js';
+import { PLAYER_TURN_PROMPT } from './src/features/player-turn.js';
 import { takeAuditNote } from './src/rules/rules-audit.js';
 import {
     buildDungeonRealityInjection,
@@ -1557,6 +1558,8 @@ export function installInterceptor() {
                     const memoText = stripMemoHtml(settings.rulesEngine ? bodyMemo(memoForGmContext(settings.currentMemo), trackedPeople()) : memoForGmContext(settings.currentMemo)).trim();
                     injections += `${STATE_MEMO_INJECT_PREAMBLE}\n\n## TRACKER STATE 0 (Current)\n${memoText}\n\n`;
                 }
+
+                if (settings.playerTurn) injections += `${PLAYER_TURN_PROMPT}\n\n`;
 
                 if (settings.rulesEngine) {
                     const note = takeAuditNote();

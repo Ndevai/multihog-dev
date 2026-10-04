@@ -50,6 +50,7 @@ import { getRngMode, applyRngMode, autoSelectRngTools } from './src/state/rng-mo
 import { onRulesAuditMessage } from './src/rules/rules-audit.js';
 import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, restoreRulesForMemo } from './src/rules/rules-tools.js';
 import { rulesTrackerTemplate } from './src/rules/rules-mode.js';
+import { onPlayerTurnMessage, onPlayerTurnSent, onPlayerTurnChatChanged } from './src/features/player-turn.js';
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
 import { createMemoRecoveryManager } from './src/features/recovery/memo-recovery.js';
@@ -8153,6 +8154,10 @@ function organizeConnectionSettingsUI() {
             });
         }
         eventSource.on(event_types.GENERATION_STARTED, onGenerationStarted);
+        // Player turn runs first so every other reader sees the reply without its tag.
+        if (event_types.MESSAGE_RECEIVED) eventSource.makeFirst(event_types.MESSAGE_RECEIVED, id => { if (getSettings().playerTurn) onPlayerTurnMessage(id); });
+        if (event_types.MESSAGE_SENT) eventSource.on(event_types.MESSAGE_SENT, () => { if (getSettings().playerTurn) onPlayerTurnSent(); });
+        if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => { if (getSettings().playerTurn) onPlayerTurnChatChanged(); });
         eventSource.on(event_types.GENERATION_STARTED, type => { if (getSettings().rulesEngine) onRulesGenerationStarted(type); });
         if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, id => { if (getSettings().rulesEngine) onRulesMessageReceived(id); });
         if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, ignoreChatCancellation(async id => {
@@ -11281,6 +11286,13 @@ RULES:
                 scheduleAutoApply();
             });
         }
+        $('#rpg_player_turn').prop('checked', !!getSettings().playerTurn).on('change', function () {
+            const fresh = getSettings();
+            fresh.playerTurn = !!$(this).prop('checked');
+            if (fresh.playerTurn) onPlayerTurnChatChanged();
+            else document.getElementById('rt_player_turn_banner')?.remove();
+            saveSettings();
+        });
         $('#rpg_rules_engine').prop('checked', !!getSettings().rulesEngine).on('change', function () {
             const fresh = getSettings();
             fresh.rulesEngine = !!$(this).prop('checked');
@@ -12780,6 +12792,7 @@ RULES:
             $(`input[name="rpg_sysprompt_rng_mode"][value="${currentRngMode}"]`).prop('checked', true);
             syncRngToolsUi(s);
             $('#rpg_rules_engine').prop('checked', !!s.rulesEngine);
+            $('#rpg_player_turn').prop('checked', !!s.playerTurn);
             registerRulesTools(!!s.rulesEngine);
             const narrativePacing = ['normal', 'shorter_outputs', 'high_agency', 'downtime'].includes(s.narrativePacing)
                 ? s.narrativePacing

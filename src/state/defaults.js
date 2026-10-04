@@ -214,6 +214,7 @@ export function buildDefaultSettings() {
 
         strictDiceCommit: false,
         rulesEngine: false,
+        playerTurn: false,
 
         enablePortraits: true,
 
