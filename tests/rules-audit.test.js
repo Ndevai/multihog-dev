@@ -74,10 +74,11 @@ describe('the loop: check, redo once, then show', () => {
 
     it('tool results of the turn reach the checker; a backed reply passes', async () => {
         onLosicaGenerationStarted('normal');
-        await tools.LosicaStrike.action({ who: 'Guard', part: 'mouth', means: 'fist' });
-        reply('Her fist bruises his mouth.');
+        const result = await tools.LosicaStrike.action({ who: 'Guard', part: 'mouth', means: 'fist' });
+        ctx.chat.push({ is_system: true, mes: 'tool call', extra: { tool_invocations: [{ name: 'LosicaStrike', result }] } });
+        ctx.chat.push({ is_user: false, mes: 'Her fist bruises his mouth.', swipe_id: 0, extra: {} });
         const d = deps('{"events":[]}');
-        expect(await onRulesAuditMessage(1, d)).toEqual([]);
+        expect(await onRulesAuditMessage(2, d)).toEqual([]);
         expect(d.calls.prompts[0]).toMatch(/1\. LosicaStrike: fist (to mouth: \d+ N|at mouth: avoided)/);
         expect(d.calls.generate).toEqual([]);
     });

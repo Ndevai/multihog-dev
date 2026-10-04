@@ -2,7 +2,6 @@
 // Code then redoes the reply once with the missing calls named; a second failure is shown to the user.
 
 import { turnKey } from '../state/dice-ledger.js';
-import { losicaTurnLog } from './losica-tools.js';
 
 const MAX_RETRIES = 1;
 
@@ -39,10 +38,14 @@ export function correctionNote(events) {
     return `<rule_engine_correction>\nThe previous draft of this reply narrated these without engine results. Call the named tool for each, then narrate what it returns:\n${items}\n</rule_engine_correction>`;
 }
 
-/** Results of this turn: every Losica tool call plus every dice roll of the current user turn. */
+/** Results of this turn: the rule tools' invocations stored in the chat since the last user message. */
 export function turnResults(ctx) {
-    const rolls = ctx.chatMetadata?.rpgDiceLedger?.turn === turnKey(ctx.chat) ? ctx.chatMetadata.rpgDiceLedger.rolls : [];
-    return [...losicaTurnLog(), ...rolls.map(r => ({ tool: 'RollTheDice', result: r.text }))];
+    const chat = ctx.chat || [];
+    const from = chat.findLastIndex(m => m.is_user) + 1;
+    return chat.slice(from)
+        .flatMap(m => m.extra?.tool_invocations || [])
+        .filter(t => TOOLS.has(t.name))
+        .map(t => ({ tool: t.name, result: String(t.result) }));
 }
 
 let pendingNote = null;
@@ -61,7 +64,7 @@ export function takeAuditNote() {
 export async function onRulesAuditMessage(messageId, deps) {
     const ctx = SillyTavern.getContext();
     const msg = Number.isInteger(messageId) ? ctx.chat?.[messageId] : null;
-    if (!msg || msg.is_user || msg.is_system || msg.extra?.tool_invocations || !ctx.chatMetadata) return null;
+    if (!msg || msg.is_user || msg.is_system || msg.extra?.tool_invocations || !String(msg.mes ?? '').trim() || !ctx.chatMetadata) return null;
     const key = turnKey(ctx.chat);
     const reply = msg.mes;
     const raw = await deps.send(AUDIT_SYSTEM, buildAuditPrompt(reply, turnResults(ctx)));

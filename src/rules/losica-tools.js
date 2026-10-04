@@ -16,20 +16,27 @@ function save() {
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
 }
 
-const userTurns = () => (SillyTavern.getContext().chat || []).filter(m => m.is_user).length;
-
+/**
+ * GENERATION_STARTED. State is saved per chat position: the message about to be written sits at
+ * chat.length, a swipe or regenerate rewrites the last one. After tool calls SillyTavern stores the
+ * results as a message and starts a second 'normal' generation for the reply; that one is saved at
+ * its own position, so a swipe of the reply keeps the tools' effects.
+ */
 export function onLosicaGenerationStarted(type) {
-    if (!SillyTavern.getContext().chatMetadata) return;
+    const ctx = SillyTavern.getContext();
+    if (!ctx.chatMetadata) return;
     const s = store();
-    const key = userTurns();
-    if (type === 'swipe' || type === 'regenerate') {
-        if (s.snapshots[key]) s.state = structuredClone(s.snapshots[key]);
-        s.calls = 0;
-        s.log = [];
+    const chat = ctx.chat || [];
+    const rewrites = (type === 'swipe' || type === 'regenerate') && chat.length && !chat.at(-1).is_user;
+    if (rewrites) {
+        const snap = s.snapshots[chat.length - 1];
+        if (snap) {
+            s.state = structuredClone(snap.state ?? snap);
+            s.calls = snap.calls ?? 0;
+        }
     } else if (!type || type === 'normal') {
-        s.calls = 0;
-        s.log = [];
-        s.snapshots[key] = structuredClone(s.state);
+        if (chat.at(-1)?.is_user) s.calls = 0;
+        s.snapshots[chat.length] = { state: structuredClone(s.state), calls: s.calls || 0 };
         const keys = Object.keys(s.snapshots).map(Number).sort((a, b) => a - b);
         for (const k of keys.slice(0, -KEEP_SNAPSHOTS)) delete s.snapshots[k];
     }
@@ -96,12 +103,6 @@ function run(fn) {
 
 const str = d => ({ type: 'string', description: d });
 
-/** Tool results of the generation in progress, for the reply check. */
-export function losicaTurnLog() {
-    const ctx = SillyTavern.getContext();
-    return ctx.chatMetadata?.losicaRules?.log || [];
-}
-
 export const LOSICA_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
 - An attack with fist, kick or blade → LosicaStrike; it decides whether it lands and the wound. Narrate what it returns.
@@ -125,9 +126,6 @@ export function registerLosicaRulesTools(enabled) {
         parameters: { type: 'object', properties, required },
         action: async args => {
             const out = await action(args);
-            const s = store();
-            (s.log ??= []).push({ tool: name, args, result: out });
-            save();
             globalThis._rpgRefreshRenderedView?.();
             return out;
         },

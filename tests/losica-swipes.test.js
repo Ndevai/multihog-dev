@@ -100,3 +100,39 @@ describe('host wiring', () => {
         expect(panel).toContain('globalThis._rpgOnMemoRestored?.(snapshot);');
     });
 });
+
+describe('SillyTavern tool flow: tool calls are stored as a chat message, then a second generation writes the reply', () => {
+    async function toolTurn() {
+        onLosicaGenerationStarted('normal');
+        const result = await tools.LosicaWound.action({ who: 'Mira', part: 'arm_l', type: 'cut' });
+        ctx.chat.push({ is_system: true, is_user: false, mes: 'tool call', extra: { tool_invocations: [{ name: 'LosicaWound', parameters: '{}', result }] } });
+        onLosicaGenerationStarted('normal');
+        ctx.chat.push({ is_user: false, swipe_id: 0, swipes: ['Mira is cut.'], mes: 'Mira is cut.', extra: {} });
+        onLosicaMessageReceived(2);
+        return result;
+    }
+
+    it('the reply generation keeps the state the tools produced', async () => {
+        await toolTurn();
+        expect(people()).toEqual(['Mira']);
+    });
+
+    it('the rule check finds the turn\'s tool results in the chat, also after a swipe', async () => {
+        const { turnResults } = await import('../src/rules/rules-audit.js');
+        const result = await toolTurn();
+        expect(turnResults(ctx)).toEqual([{ tool: 'LosicaWound', result }]);
+        onLosicaGenerationStarted('swipe');
+        expect(people()).toEqual(['Mira']);
+        expect(turnResults(ctx)).toEqual([{ tool: 'LosicaWound', result }]);
+        ctx.chat.push({ is_user: true, mes: 'I run' });
+        expect(turnResults(ctx)).toEqual([]);
+    });
+
+    it('the rule check skips a message with no text', async () => {
+        const { onRulesAuditMessage } = await import('../src/rules/rules-audit.js');
+        ctx.chat.push({ is_user: false, mes: '', extra: {} });
+        let sent = false;
+        expect(await onRulesAuditMessage(1, { send: async () => { sent = true; return '{"events":[]}'; }, ownsChat: () => true })).toBeNull();
+        expect(sent).toBe(false);
+    });
+});
