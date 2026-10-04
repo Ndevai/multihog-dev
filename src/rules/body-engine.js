@@ -1,7 +1,7 @@
 import { creature } from './df/index.js';
 import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, shot } from './df/combat.js';
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
-import { sublocationsOf } from './df/sublocations.js';
+import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -452,7 +452,9 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const tc = creatureOf(target);
     const ac = creature(attacker?.species ?? a.species ?? 'HUMAN');
     if (!tc || !ac) return 'Creature data is not loaded. Nothing recorded.';
-    let part = findPart(tc, a.part);
+    const aMass = attacker?.mass ?? a.mass ?? ac.size / 1000;
+    let part = a.part ? findPart(tc, a.part)
+        : randomHitPart(tc, rng, { attackerCm3: aMass * 1000, flies: ac.parts.some(x => x.flags.includes('FLIER')) });
     if (!part || part.flags.includes('INTERNAL')) return `${tc.name} has no part "${a.part}" to aim at. Parts: ${aimable(tc).join(', ')}. Nothing recorded.`;
     const mass = attacker?.mass ?? a.mass ?? ac.size / 1000;
     const iSize = mass * 1000;

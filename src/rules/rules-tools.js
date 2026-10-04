@@ -187,7 +187,7 @@ export function registerRulesTools(enabled) {
     tool('BodyStrike', 'Resolve an attack before narrating it: whether it lands, which tissue layers it cuts or smashes, and the wounds it records. Narrate a miss as a miss.', {
         who: str('Character hit'),
         species,
-        part: partArg,
+        part: str('Body part aimed at, by name (head, throat, upper body, right upper arm, left eye…). Omit when the blow is not aimed at a part: the location is then drawn.'),
         attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…). Omit for a shot.'),
         weapon: str('Melee weapon used, if any: short sword, long sword, two-handed sword, scimitar, dagger, battle axe, great axe, war hammer, maul, mace, morningstar, flail, spear, pike, halberd, pick, whip, scourge.'),
         material: str('Material of the weapon or of the ammunition: iron, steel, bronze, bismuth bronze, copper, silver, bone, wood. Default iron.'),
