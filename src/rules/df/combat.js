@@ -6,6 +6,9 @@ export const SKILL_LEVELS = ['Dabbling', 'Novice', 'Adequate', 'Competent', 'Ski
     'Professional', 'Accomplished', 'Great', 'Master', 'High Master', 'Grand Master', 'Legendary'];
 export const STYLES = { normal: 1, quick: 0.5, heavy: 1.5, wild: 1.5 };
 const Q = 1;
+// Blunt test on rigid tissue (STRUCTURAL, not FUNCTIONAL) × this factor. Fit (docs/df-body-engine.md §4.6): a
+// Professional 70 kg human's punch breaks the skull on 0.153 % of landed head punches (27 facial fractures, 301 bouts).
+export const RIGID_BLUNT_FACTOR = 19.985;
 
 export const skillFactor = level => 1 + Math.min(Math.max(0, SKILL_LEVELS.indexOf(level)), 14) / 14;
 export const partSize = (c, part, iSize) => iSize * part.relsize / c.relTotal;
@@ -73,7 +76,9 @@ export function penetrate(c, struck, iSize, w, M, rng) {
                 M *= Math.min(1, m.SHEAR_STRAIN_AT_YIELD / 50000);
                 edged = false;
             }
-            const need = (2 * m.IMPACT_FRACTURE - m.IMPACT_YIELD) / 1e6 * (2 + 0.4 * Q) * A;
+            const flags = tissueOf(c, layer)?.flags || [];
+            const rigid = flags.includes('STRUCTURAL') && !flags.includes('FUNCTIONAL');
+            const need = (2 * m.IMPACT_FRACTURE - m.IMPACT_YIELD) / 1e6 * (2 + 0.4 * Q) * A * (rigid ? RIGID_BLUNT_FACTOR : 1);
             if (M >= need) { tested.push({ part, layer, result: 'smashed' }); M *= 0.95; continue; }
             M *= Math.min(1, m.IMPACT_STRAIN_AT_YIELD / 50000);
             tested.push({ part, layer, result: 'held' });

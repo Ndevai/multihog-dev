@@ -79,6 +79,7 @@ Layers of the struck part are tested outermost first. A = min(weapon contact are
 | edged | M ≥ (rSY + (A + 1) × rSF) × (10 + 2 Qa) ÷ (S × Qw) | layer **cut**; M × 0.95; next layer |
 | edged fails | — | M × min(1, layer `SHEAR_STRAIN_AT_YIELD` ÷ 50000); the attack is blunt from here; blunt test on this layer |
 | blunt | M ≥ (2 IF − IY) × (2 + 0.4 Qa) × A, IF and IY = layer `IMPACT_FRACTURE`, `IMPACT_YIELD` ÷ 10⁶ | layer **smashed**; M × 0.95; next layer |
+| blunt, rigid layer (tissue `STRUCTURAL`, not `FUNCTIONAL`: bone, tooth, cartilage, nail) | threshold above × 19.985 | §4.6 fit |
 | blunt fails | — | layer undamaged; M × min(1, layer `IMPACT_STRAIN_AT_YIELD` ÷ 50000); next layer |
 
 rSY, rSF = layer ÷ weapon `SHEAR_YIELD`, `SHEAR_FRACTURE`. S = weapon `MAX_EDGE` ÷ 10000 (gives the wiki's 1× metals, 2× obsidian, 10× adamantine, 0.1× bone). Qa = Qw = 1 (ordinary quality; no armour quality on tissue) [WIKI / ASSUMED].
@@ -91,6 +92,26 @@ Armour: not applied yet (OPEN-75). Penetration depth (`ATTACK_PENETRATION_PERC`,
 - A part that `BP_RELATION … AROUND` the chosen one is tested first with chance = the relation's % (skull around brain 100 %, each rib around heart or lung 5 %) [RAW relation; DFHACK names the number `relation_bp_amount`, "coverage"; using it as a chance ASSUMED].
 - Parts that can be aimed at: every part without `INTERNAL` (eyes, throat, mouth and fingers included).
 - Severed: an edged attack cuts every layer of a part that is not upper or lower body, and its contact area ≥ the part's area [ASSUMED from the wiki: "severing when the part is thinner than the contact edge"].
+
+### 4.6 Blunt damage to bone: fitted factor
+
+DF records bone fractures as compressive damage [DFHACK `wound_damage_flags1`: `broken` = `COMPRESSIVE_BROKEN`]; its test is unpublished. The blunt threshold on rigid layers is multiplied by one factor fitted to fight data.
+
+| Step | Value | Label |
+|---|---|---|
+| facial fractures | 27 in 301 bare-knuckle bouts (BKFC, June 2018 – March 2022) | J Oral Maxillofac Surg 2022, "Maxillofacial Trauma Patterns in Bare-Knuckle Fighting" |
+| bout length | mean 5.189 min over 222 BKFC 2022 bouts ((round − 1) × 2 min + time) | Wikipedia "2022 in Bare Knuckle Fighting Championship" results |
+| punches landed per fighter per minute | 17 per 3-min round = 5.667 | CompuBox junior middleweight average (gloved boxing; proxy) |
+| every landed punch is a head punch | — | [ASSUMED] |
+| head punches landed | 301 × 2 × 5.667 × 5.189 = 17701 | |
+| fracture chance per landed head punch | 27 ÷ 17701 = 0.153 % | |
+| fighter | 70 kg human (junior middleweight = 69.9 kg), skill Professional | [ASSUMED] skill |
+| DF head fracture | a punch to the head breaks the skull; facial bones = skull (DF has no separate facial bones) | [ASSUMED] |
+| punch momentum at the skull | 100.2 × 0.95³ = 85.9 (three soft layers smashed) | §4.2 |
+| unscaled skull threshold | (2 × 200 − 200) ÷ 1000 × 2.4 × min(15.24 hand, 28.07 skull) = 7.31 | §4.4 |
+| factor | 85.9 × (1 + 0.237 × 2.963) ÷ 7.31 = 19.985; 2.963 = z at 0.153 % | spread §4.2 |
+
+Resulting skull-fracture chance per landed punch, 70 kg human: Dabbling 2 × 10⁻¹⁴, Competent 2 × 10⁻⁸, Professional 0.153 %, Grand Master 4.7 %.
 
 ## 5. Wounds from layers
 
@@ -166,29 +187,30 @@ Attacker at its species' adult size, target a 70 kg human, landed, Dabbling, nor
 
 | Attacker, attack | Result |
 |---|---|
-| HUMAN {"attack":"punch","part":"head"} | punch (right hand) to head: momentum 61. head: skin smashed, fat smashed, muscle smashed; skull: bone smashed. Wounds 1, 2. |
-| HUMAN {"attack":"punch","part":"upper body"} | punch (right hand) to upper body: momentum 61. upper body: skin smashed, fat smashed, muscle smashed; middle spine: bone smashed, nerve smashed. Wounds 1, 2, 3. |
-| HUMAN {"attack":"kick","part":"right lower leg"} | kick (right foot) to right lower leg: momentum 63.7. right lower leg: skin smashed, fat smashed, muscle smashed, bone smashed; right knee: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
+| HUMAN {"attack":"punch","part":"head"} | punch (right hand) to head: momentum 61. head: skin smashed, fat smashed, muscle smashed; skull: bone held. Wound 1. |
+| HUMAN {"attack":"punch","part":"upper body"} | punch (right hand) to upper body: momentum 61. upper body: skin smashed, fat smashed, muscle smashed; middle spine: bone held, nerve held. Wound 1. |
+| HUMAN {"attack":"kick","part":"right lower leg"} | kick (right foot) to right lower leg: momentum 63.7. right lower leg: skin smashed, fat smashed, muscle smashed, bone held; right knee: muscle held, bone held. Wound 1. |
 | HUMAN {"attack":"bite","part":"right hand"} | bite (head (first upper right incisor)) to right hand: momentum 68. right hand: skin cut, fat cut, muscle cut, bone held; right wrist: muscle held, bone held. Wound 1. |
 | HUMAN {"weapon":"short sword","attack":"slash","part":"right upper arm"} | slash (iron short sword) to right upper arm: momentum 85. right upper arm: skin cut, fat cut, muscle cut, bone held; right shoulder: muscle held, bone held. Wound 1. |
 | HUMAN {"weapon":"short sword","attack":"stab","part":"upper body"} | stab (iron short sword) to upper body: momentum 68. upper body: skin cut, fat cut, muscle cut; middle spine: bone held, nerve held. Wound 1. |
 | HUMAN {"weapon":"short sword","attack":"slash","part":"throat"} | slash (iron short sword) to throat: momentum 85. throat: skin cut; throat severed. Wound 1. |
-| HUMAN {"weapon":"mace","attack":"bash","part":"head"} | bash (iron mace) to head: momentum 138.5. head: skin smashed, fat smashed, muscle smashed; skull: bone smashed. Wounds 1, 2. |
+| HUMAN {"weapon":"mace","attack":"bash","part":"head"} | bash (iron mace) to head: momentum 138.5. head: skin smashed, fat smashed, muscle smashed; skull: bone held. Wound 1. |
 | WOLF {"attack":"bite","part":"right lower leg"} | bite (head (first tooth)) to right lower leg: momentum 38.7. right lower leg: skin smashed, fat smashed, muscle smashed, bone smashed; right knee: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
 | GRIZZLY BEAR {"attack":"scratch","part":"upper body"} | scratch (right front foot (first right front toe)) to upper body: momentum 180.6. upper body: skin cut, fat cut, muscle cut; middle spine: bone held, nerve held. Wound 1. |
 
 What these show:
-- Edged attacks match DF play: a sword, a human bite and a bear's claws cut skin, fat and muscle and stop at bone; a stab reaches the spine and is held.
-- A wolf bite does not cut (momentum 38.7 against an edged threshold of 48.6 for skin), because its teeth are tiny parts with edge 0.1×.
-- Every blunt blow (punch, kick, mace) still breaks the first bone it meets. DF keeps three kinds of layer damage: cut (shear), smashed (impact) and broken (compressive) [DFHACK `wound_damage_flags1`]. Bone fractures are the compressive kind, and no published source gives that test (OPEN-74).
+- Edged attacks: a sword, a human bite and a bear's claws cut skin, fat and muscle and stop at bone; a stab reaches the spine and is held.
+- Blunt attacks (punch, kick, mace) smash soft tissue and the bone holds at median force; bone breaks in the tail of the spread (§4.6).
+- A wolf bite fails to cut skin (momentum 38.7 against 48.6; teeth are tiny parts with edge 0.1×), then acts as a blunt blow through a tooth-sized contact area and breaks the shin. DF in play has wolves tearing skin; the gap sits in the unpublished unarmed momentum (OPEN-79).
 
 ## 10. Open items added
 
 | Id | Gap |
 |---|---|
 | OPEN-73 | CHIMERA, CENTAUR, GRIFFON bodies do not resolve |
-| OPEN-74 | blunt damage to bone: DF's compressive ("broken") test is unpublished; the impact test stands in for it, so every blunt blow breaks the first bone. Fit target found: 27 facial fractures in 301 bare-knuckle bouts (J Oral Maxillofac Surg 2022, "Maxillofacial Trauma Patterns in Bare-Knuckle Fighting"). Missing: head strikes landed per bare-knuckle bout (no published count found; CompuBox counts gloved boxing, about 17 landed per 3-min round at junior middleweight) |
+| OPEN-74 | closed by the fit in §4.6; replace the CompuBox proxy when a count of head punches landed per bare-knuckle bout is published |
 | OPEN-75 | armour layers (coverage, quality, deflection 2·Sw·IYw < A·Da) |
 | OPEN-76 | penetration depth vs layer thickness |
 | OPEN-77 | suffocation timing; pain (`PAIN_RECEPTORS`) and unconsciousness |
+| OPEN-79 | unarmed momentum: DF's own formula for body-part attacks is unpublished; wolf bites do not cut skin under the copied formula |
 | OPEN-78 | `HEALING_RATE`: non-human healing uses human days |
