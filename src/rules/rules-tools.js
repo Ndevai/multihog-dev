@@ -170,11 +170,10 @@ export function registerRulesTools(enabled) {
         skill: { type: 'string', enum: SKILL_LEVELS, description: 'Attacker\'s fighting skill level. Dabbling = untrained.' },
         style: { type: 'string', enum: Object.keys(STYLES), description: 'quick = fast weak blow; heavy or wild = full-force blow.' },
         prone: { type: 'boolean', description: 'Target lying on the ground.' },
-        target_shield: str('Shield the character hit holds ready, as quality + material + shield or buckler ("wooden shield", "iron buckler").'),
         from: { type: 'string', enum: ['front', 'back', 'left', 'right'], description: 'Where the attacker strikes from, relative to the way the target faces. Default: front, or back when facing is false.' },
         target_armor: {
             type: 'array',
-            description: 'Every item the character hit wears ([E] in [INVENTORY]).',
+            description: 'Every item the character hit wears or holds ready ([E] in [INVENTORY]): armour, clothing, a shield, a held board or door.',
             items: {
                 type: 'object',
                 properties: {
@@ -195,6 +194,9 @@ export function registerRulesTools(enabled) {
                         },
                     },
                     layer: { type: 'string', enum: ['UNDER', 'OVER', 'ARMOR', 'COVER'], description: 'Worn under clothing, over it, as armour, or as an outer cover.' },
+                    held_in: str('Body part holding the item ready (left hand); a held item guards what it is in front of, and a defence in time puts it in the blow\'s way.'),
+                    size_cm: { type: 'array', items: { type: 'number' }, description: 'Held item size: [diameter] or [width, height] in cm (round shield [85], door [80, 200]).' },
+                    thickness_cm: { type: 'number', description: 'Held item thickness in cm; default 0.9.' },
                     flexible: { type: 'boolean', description: 'Woven or linked (mail, cloth): a blow it stops still passes through as blunt force.' },
                 },
                 required: ['item'],
@@ -220,7 +222,7 @@ export function registerRulesTools(enabled) {
         const p = person(st, a.who, Number(a.target_mass_kg) || undefined, sp);
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
         const keys = ['weapon', 'material', 'skill', 'style', 'prone', 'from', 'awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
-        const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || undefined, armor: a.target_armor, shield: a.target_shield,
+        const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || undefined, armor: a.target_armor,
             ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
     }));

@@ -142,7 +142,7 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = [], side = 'front'
                 const mat = p.mat ?? it.mat;
                 let m = { IMPACT_FRACTURE: mat.IMPACT_YIELD, SHEAR_FRACTURE: mat.SHEAR_YIELD, ...mat };
                 if (p.elastic ?? it.elastic) m = { ...m, SHEAR_STRAIN_AT_YIELD: 50000, IMPACT_STRAIN_AT_YIELD: 50000 };
-                const cm3 = it.parts ? size * shareOf(part, p.subs) * Math.min(p.coverage, 100) / 100 : armorSize(size, it);
+                const cm3 = it.held ? it.size : it.parts ? size * shareOf(part, p.subs) * Math.min(p.coverage, 100) / 100 : armorSize(size, it);
                 tested.push({ part, layer: { tissue: p.mat ? `${it.name} (${p.mat.name})` : it.name }, armor: true, result: test(m, Math.min(w.contact, area(cm3)), it.quality, 1, Math.min(w.bluntContact ?? w.contact, area(cm3))) });
             }
         }

@@ -110,7 +110,7 @@ export function armor(db, text) {
     return {
         id: best.id, kind: best.kind, name: `${q ? `${q} ` : ''}${mat.name} ${best.n}`, quality: QUALITY[q] ?? 1,
         layer: best.list.find(t => t[0] === 'LAYER')?.[1] ?? 'ARMOR', coverage: num('COVERAGE') || 100,
-        ubstep: num('UBSTEP'), lbstep: num('LBSTEP'), upstep: num('UPSTEP'), mat, elastic, blockChance: num('BLOCKCHANCE'),
+        ubstep: num('UBSTEP'), lbstep: num('LBSTEP'), upstep: num('UPSTEP'), mat, elastic,
     };
 }
 

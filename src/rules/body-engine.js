@@ -282,6 +282,10 @@ export function status(who, p) {
 // this value. Fit (docs/df-body-engine.md §6.1): a Professional 70 kg punch knocks out on 0.743 % of landed head punches
 // (97 KOs in 222 BKFC 2022 bouts). Without breathing: death after 5 min (Merck Manual, respiratory arrest).
 const KO_MOMENTUM = 158.0;
+// Default face area of held DF items: shield Ø 85 cm (Viking round shields 80–90 cm, Hurstwic); buckler Ø 30 cm
+// (reenactment guidance "10–12 in upwards", Vikings wiki). Thickness 0.9 cm (surviving shields 6–12 mm, Hurstwic).
+const HELD_FACE_CM2 = { ITEM_SHIELD_SHIELD: Math.PI * 42.5 ** 2, ITEM_SHIELD_BUCKLER: Math.PI * 15 ** 2 };
+const HELD_THICK_CM = 0.9;
 const APNEA_DEATH_MIN = 5;
 
 // Spread of a blow's momentum: Walilko 2005 punch force SD ÷ mean (rule 576), applied to every attack.
@@ -404,10 +408,25 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     // Worn gear: a DF item ("iron helm") gives the defaults; covers (CDDA-style portions: part, sub-locations, coverage %,
     // material), layer and flexible replace them.
     const pct = x => Math.max(0, Math.min(150, Number(x)));
+    const works = worksFn(target, tc);
+    const notes = [];
     for (const g of a.armor || []) {
         const spec = typeof g === 'string' ? { item: g } : g || {};
-        const it = armorOf(spec.item) ?? (spec.covers?.length ? customGearOf(spec.item) : null);
-        if (!it) return `No gear "${spec.item}": name a DF item with its material ("iron helm", "leather armor"), or give covers with a material first ("iron skullcap"). Nothing recorded.`;
+        const it = armorOf(spec.item) ?? (spec.covers?.length || spec.held_in || spec.size_cm ? customGearOf(spec.item) : null);
+        if (!it) return `No gear "${spec.item}": name a DF item with its material ("iron helm", "leather armor"), or give covers, held_in or size_cm with a material first ("iron skullcap"). Nothing recorded.`;
+        // Held: in the named part, else a working GRASP part for DF shields; dropped from the hit when no holding part works.
+        if (spec.held_in || it.kind === 'ITEM_SHIELD') {
+            const holder = spec.held_in ? findPart(tc, spec.held_in) : tc.parts.find(x => x.flags.includes('GRASP') && works(x));
+            if (spec.held_in && !holder) return `${tc.name} has no part "${spec.held_in}". Nothing recorded.`;
+            if (!holder || !works(holder)) { notes.push(`${it.name} not held (no working hand)`); continue; }
+            it.held = holder;
+            const dims = (spec.size_cm || []).map(Number).filter(x => x > 0);
+            const face = dims.length >= 2 ? dims[0] * dims[1] : dims.length === 1 ? Math.PI * (dims[0] / 2) ** 2
+                : HELD_FACE_CM2[it.id] ?? null;
+            if (!face) return `${it.name}: give size_cm (diameter, or width and height). Nothing recorded.`;
+            it.face = face;
+            it.thick = Number(spec.thickness_cm) || HELD_THICK_CM;
+        }
         if (spec.layer) it.layer = spec.layer;
         if (spec.flexible !== undefined) it.elastic = !!spec.flexible;
         if (spec.covers?.length) {
@@ -425,13 +444,18 @@ export function strike(target, a, attacker = null, rng = Math.random) {
                 (it.parts[pt.id] ??= []).push({ subs, sides, coverage: pct(cv.coverage ?? 100), ...(mat ? { mat, elastic: mat.kind === 'thread' } : {}) });
             }
         }
+        // A held item without covers guards the front of the holding limb, torso and head: coverage = its face area ÷ their
+        // frontal area, each part's frontal area = (part size cm³)^(2/3) [geometric similarity].
+        if (it.held && !spec.covers?.length) {
+            const chain = [];
+            for (let q = it.held; q && !q.flags.includes('UPPERBODY'); q = tc.parts.find(x => x.id === q.parent)) chain.push(q);
+            const guarded = [...chain, ...tc.parts.filter(x => ['UPPERBODY', 'LOWERBODY', 'HEAD'].some(f => x.flags.includes(f)))];
+            const front = guarded.reduce((s, x) => s + (target.mass * 1000 * x.relsize / tc.relTotal) ** (2 / 3), 0);
+            const cov = Math.min(100, 100 * it.face / front);
+            it.parts = Object.fromEntries(guarded.map(x => [x.id, [{ subs: null, sides: ['front'], coverage: cov }]]));
+            it.size = it.face * it.thick;
+        }
         worn.push(it);
-    }
-    // A held shield (DF item_shield): a blow that is not avoided meets it with chance = BLOCKCHANCE %, if a GRASP part works.
-    let shield = null;
-    if (a.shield) {
-        shield = armorOf(a.shield);
-        if (!shield || shield.kind !== 'ITEM_SHIELD') return `No DF shield "${a.shield}" (material + shield or buckler, e.g. "wooden shield", "iron buckler"). Nothing recorded.`;
     }
     let w, verb, means, bite = false;
     if (a.weapon) {
@@ -460,12 +484,15 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         if (!t) return `${verb} at ${part.name}: out of reach (${a.distance_m} m, no approach). Nothing lands.`;
         const impact = t.approach + t.strike;
         const done = defenceDone(at, t, target, rng);
-        if (done <= impact) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
+        if (done <= impact) {
+            // In time with a held item: it is put in the blow's way (block); without one: the body moves away (dodge).
+            const held = worn.find(x => x.held);
+            if (!held) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
+            held.blocking = true;
+            notes.push(`blocked with ${held.name} (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s)`);
+        }
     }
     const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
-    const holds = shield && tc.parts.some(x => x.flags.includes('GRASP') && worksFn(target, tc)(x));
-    const blocked = holds && rng() * 100 < shield.blockChance;
-    if (blocked) worn.push({ ...shield, blocking: true });
     // Side hit: the one facing the attacker; a blow from the left or right lands front or back alike (equal halves).
     const from = a.from ?? (a.facing === false ? 'back' : 'front');
     const side = from === 'front' || from === 'back' ? from : rng() < 0.5 ? 'front' : 'back';
@@ -492,7 +519,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const parts = [...new Set(r.tested.map(t => t.part))];
     const layers = parts.map(pt => `${pt.name}: ${r.tested.filter(t => t.part === pt).map(t => `${t.layer.tissue.toLowerCase()} ${t.result}`).join(', ')}`).join('; ');
     const wounds = made.length ? ` Wound${made.length > 1 ? 's' : ''} ${made.map(x => x.id).join(', ')}.` : ' No wound.';
-    return `${verb} (${w.name}) to ${part.name} (${[r.side, r.sub].filter(Boolean).join(', ')}): momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}${ko ? ' Knocked out.' : ''}`;
+    return `${notes.length ? `${notes.join('; ')}. ` : ''}${verb} (${w.name}) to ${part.name} (${[r.side, r.sub].filter(Boolean).join(', ')}): momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}${ko ? ' Knocked out.' : ''}`;
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
