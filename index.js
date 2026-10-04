@@ -8187,7 +8187,19 @@ function organizeConnectionSettingsUI() {
             }).catch(e => console.warn('[RPG Tracker] Rules Audit skipped:', e));
         }));
         if (event_types.MESSAGE_SWIPED) eventSource.on(event_types.MESSAGE_SWIPED, id => { if (getSettings().rulesEngine) onRulesSwiped(id); });
-        if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => { if (getSettings().rulesEngine) syncRulesToChat(); });
+        if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => {
+            const saved = SillyTavern.getContext().chatMetadata?.rtRulesEngine;
+            const s = getSettings();
+            if (typeof saved === 'boolean' && saved !== !!s.rulesEngine) {
+                s.rulesEngine = saved;
+                $('#rpg_rules_engine').prop('checked', saved);
+                registerRulesTools(saved);
+                registerDiceFunctionTool();
+                saveSettings();
+                scheduleAutoApply();
+            }
+            if (s.rulesEngine) syncRulesToChat();
+        });
         if (event_types.MESSAGE_DELETED) eventSource.on(event_types.MESSAGE_DELETED, () => { if (getSettings().rulesEngine) syncRulesToChat(); });
         globalThis._rpgOnMemoRestored = memo => {
             if (getSettings().rulesEngine && !restoreRulesForMemo(memo)) {
@@ -11318,6 +11330,9 @@ RULES:
         $('#rpg_rules_engine').prop('checked', !!getSettings().rulesEngine).on('change', function () {
             const fresh = getSettings();
             fresh.rulesEngine = !!$(this).prop('checked');
+            // Per chat: the open chat remembers the choice; other chats keep theirs (new chats take the last one used).
+            const ctx = SillyTavern.getContext();
+            if (ctx.chatMetadata) { ctx.chatMetadata.rtRulesEngine = fresh.rulesEngine; (ctx.saveMetadataDebounced || ctx.saveMetadata)?.(); }
             registerRulesTools(fresh.rulesEngine);
             registerDiceFunctionTool();
             saveSettings();
