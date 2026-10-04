@@ -193,12 +193,15 @@ FORMAT FOR EVERY ITEM: thematic emoji, rarity tag ([Common], [Uncommon], [Rare],
 
 EQUIPPED ITEMS: Tag any actively worn or held item with [E] immediately after the rarity tag. An item in 'Gear:' without [E] is carried, not worn or held.
 
+CONTAINERS: list each item inside a bag, chest or other container on its own line directly under that container, indented by two spaces; the container's line holds only the container itself.
+
 Example format:
 [INVENTORY]
 Gear:
 - 🗡️ [Common] [E] Item name (steel blade) (~X currency)
 Other Items:
-- 🪢 [Common] Item name (hemp rope, 15 m) (~X currency)
+- 🎒 [Common] Item name (leather backpack) (~X currency)
+  - 🪢 [Common] Item name (hemp rope, 15 m) (~X currency)
 - 💰 N coins
 [/INVENTORY]`,
 

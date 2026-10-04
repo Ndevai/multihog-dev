@@ -6,6 +6,8 @@ import { isResolvedCombatantStatusLine, parseCombatSideHeader } from './src/stat
 import { buildDisplayGroupRenderPlan } from './src/features/display-groups.js';
 import { bodyMemo, trackedPeople } from './src/rules/body-sheet.js';
 
+const INSIDE_MARK = '\u0001';
+
 // ── Renderer module: pure HTML string producers, localStorage helpers ──
 // No live DOM mutations. All functions return strings or void (localStorage).
 
@@ -1428,6 +1430,7 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
 
     export function blockToItems(tag, content, renderTypeOverride = null) {
         const rawLines = content.split('\n').map(l => l.trim()).filter(Boolean);
+        const indented = content.split('\n').filter(l => l.trim()).map(l => /^\s{2,}/.test(l));
         const lines = rawLines.map(line => {
             // Strip leading bullet markers (-, *, +, •, en-dash, em-dash)
             // but only if followed by space(s) or a letter (prevents stripping negative numbers like -5)
@@ -1813,11 +1816,15 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                     const worthRx = /\s*\(~([^)]+)\)\s*$|\s*\(Worth:\s*([^)]+)\)\s*$/i;
 
                     pendingBullets.forEach(i => {
+                        // Items indented under a container are drawn inside it.
+                        const inside = i.startsWith(INSIDE_MARK);
+                        if (inside) i = i.slice(1);
+                        const insideClass = inside ? ' rt-inventory-item--inside' : '';
                         // ── Equipped tag: detect [E] and strip from display ──────────────────
                         const equippedRx = /\s*\[E\]\s*/i;
                         const isEquipped = equippedRx.test(i);
                         if (isEquipped) i = i.replace(equippedRx, ' ').trim();
-                        const equippedClass = isEquipped ? ' rt-inventory-item--equipped' : '';
+                        const equippedClass = (isEquipped ? ' rt-inventory-item--equipped' : '') + insideClass;
 
                         const worthMatch = i.match(worthRx);
                         let displayText = i;
@@ -1874,9 +1881,9 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                                 const c = matchedCoin.color;
                                 // Same outer wrapper as all other inventory items → keeps bullet • styling
                                 // Same badge style as display-mode worth badges → consistent shininess
-                                inventoryResults.push(`<div class="rt-card-item rt-inventory-item"><span class="rt-coin-badge" style="color:${c}; font-weight:bold; background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:10px; border:1px solid ${c}44; font-size:0.85em; white-space:nowrap;">${escapeHtmlWithColor(cleanText)}</span></div>`);
+                                inventoryResults.push(`<div class="rt-card-item rt-inventory-item${insideClass}"><span class="rt-coin-badge" style="color:${c}; font-weight:bold; background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:10px; border:1px solid ${c}44; font-size:0.85em; white-space:nowrap;">${escapeHtmlWithColor(cleanText)}</span></div>`);
                             } else {
-                                inventoryResults.push(`<div class="rt-card-item rt-inventory-item">${escapeHtmlWithColor(cleanText)}</div>`);
+                                inventoryResults.push(`<div class="rt-card-item rt-inventory-item${insideClass}">${escapeHtmlWithColor(cleanText)}</div>`);
                             }
                         } else {
                             inventoryResults.push(`<div class="rt-card-item rt-inventory-item${equippedClass}">${escapeHtmlWithColor(displayText)}</div>`);
@@ -1907,7 +1914,7 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                     // commas (e.g. "Runekind, Quarterstaff +2") and must stay intact.
                     const bulletRx = /^\s*[-*+•–—](?:\s+|(?=[A-Za-z]))/;
                     if (bulletRx.test(rawLine)) {
-                        pendingBullets.push(rawLine.replace(bulletRx, '').trim());
+                        pendingBullets.push((indented[invIdx] ? INSIDE_MARK : '') + rawLine.replace(bulletRx, '').trim());
                     } else {
                         // Preserve legacy non-bulleted, comma-separated inventory lines.
                         // Do not split thousands separators or commas inside parentheses.

@@ -10941,3 +10941,9 @@ dialog .rt-dungeon-graph-asset-tip,
     cursor: pointer;
     white-space: pre-wrap;
 }
+
+/* Inventory items inside a container */
+.rt-inventory-item--inside {
+    margin-left: 1.2em;
+    opacity: 0.9;
+}

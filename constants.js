@@ -226,6 +226,8 @@ MANDATORY FORMAT FOR EVERY ITEM:
 EQUIPPED ITEMS: Tag any actively worn or held item with [E] immediately after the rarity tag.
 - An item in 'Gear:' without [E] is carried but NOT currently worn or held.
 
+CONTAINERS: list each item inside a bag, chest or other container on its own line directly under that container, indented by two spaces; the container's line holds only the container itself.
+
 Example:
 [INVENTORY]
 Gear:
