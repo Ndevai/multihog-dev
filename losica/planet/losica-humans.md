@@ -133,7 +133,8 @@ Runs: the 1-D energy-balance model, the 2-D energy-balance model, the old v0.9 p
 
 ## 8. Decisions open to you
 
-- **D1 — Origin.**
+- **D1a — Biology: decided 3 Oct 2026.** Losica's humans are anatomically and physiologically modern humans (Homo sapiens). Human measurements (reaction times, strike forces and times, bleeding, healing, fracture tolerances) apply to them as data, not as assumptions. Only Losica's environment (gravity 1.18 g, 50.5 kPa air, 25.4 % O₂, light, sound in thinner air) acts on them differently.
+- **D1b — Origin.** Still open: same biology either way.
   - **Earth colonists:** the proto-language descends from an Earth language.
   - **Native humans:** no Earth ancestor.
 - **D2 — Food base.** 25 % O₂ implies photosynthesizing life. Whether humans can eat it is undefined.
