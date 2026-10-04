@@ -296,7 +296,13 @@ export function strikeForce({ means, skill = 'untrained', mass = REF_MASS, part 
 // Seconds. Sources and proxies: rule 576 reference.
 const REACH_M = 0.88;                                   // FAA 2006-08 functional reach, men 50th %ile
 const STRIKE_S = { fist: [0.357, 0.178], kick: [0.477, 0.203], blade_cut: [0.357, 0.178], blade_stab: [0.357, 0.178] }; // Piorkowski 2011 jab; kick = hook, blade = jab (proxies)
-const RT_S = { sight: 0.331, hearing: 0.284 };          // Shelton & Kumar 2010
+// Reaction = sense organ → cortex + brain decision + synapse + nerve path ÷ conduction speed + muscle activation + force rise.
+// Human check: sight 0.056 + 0.204 + 0.070 = 0.330 s (measured 0.331); hearing 0.011 + 0.204 + 0.070 = 0.285 s (measured 0.284).
+const SENSE_S = { sight: 0.056, hearing: 0.0109 };     // Foxe & Simpson 2002 V1 onset; Brugge 2008 A1 onset
+const DECIDE_S = 0.2037;                               // human: measured RT minus all other parts, sight 0.2046 / hearing 0.2027
+const NERVE_MPS = 49;                                  // Chen 2016 AANEM: median/ulnar motor conduction lower limit
+const SYNAPSE_S = 0.0007;                              // More & Donelan 2018
+const twitch = mass => 0.0043 * mass ** 0.21 + 0.0176 * mass ** 0.20; // More & Donelan 2018: electromechanical + force generation
 const RT_CV = 36.42 / 297;                              // Petri 2020 spread
 const MOVE_S = 0.242;                                   // VencesBrito 2011 karate punch, proxy for a defensive move
 const HEAR_DB = 25;                                     // WHO: normal hearing threshold at or below 25 dB
@@ -304,7 +310,6 @@ const WAKE_DB = 55, WAKE_MAX_S = 21;                    // young adults: all wok
 const WAKE_MIN_S = 1.59;                                // Oudiette 2023: median response time from N2 sleep
 const INERTIA_SPEED = 0.79;                             // Newman 2013: response speed 79 % right after waking
 // Body size, not species: the human values above are the 70 kg point of mammal scaling laws (5 g – 5000 kg).
-const EXP_DELAY = 0.21;   // More & Donelan 2018: sensorimotor delay ∝ M^0.21
 const EXP_MOVE = 0.15;    // Heglund & Taylor 1988: stride period ∝ M^0.150–0.156
 const EXP_LENGTH = 1 / 3; // geometric similarity
 const size = (mass, exp) => ((mass || REF_MASS) / REF_MASS) ** exp;
@@ -329,7 +334,10 @@ function defenceDone(a, t, defender, rng) {
     const dist = a.distance_m ?? t.reach;
     const intentFrom = a.intent_visible ? 0 : t.approach;
     const m = defender?.mass ?? REF_MASS;
-    const rt = channel => RT_S[channel] * size(m, EXP_DELAY) * Math.max(0.5, 1 + RT_CV * gauss(rng));
+    const body = defender?.body || {};
+    const motor = SYNAPSE_S + (body.limb_m ?? REACH_M * size(m, EXP_LENGTH)) / (body.nerve_mps ?? NERVE_MPS) + twitch(m);
+    const rt = channel => ((body.sense_s?.[channel] ?? SENSE_S[channel]) + (body.decide_s ?? DECIDE_S) + motor)
+        * Math.max(0.5, 1 + RT_CV * gauss(rng));
     const capacity = defender ? Math.max(abilities(defender).blocking, abilities(defender).movement) : 1;
     if (capacity <= 0) return Infinity;
     const move = MOVE_S * size(m, EXP_MOVE) / capacity;

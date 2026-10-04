@@ -68,9 +68,13 @@ describe('a blow lands unless the target notices in time and can move', () => {
         expect(strike(newPerson(), fist({ distance_m: 5 }), null, () => 0.5)).toMatch(/out of reach/);
     });
 
-    it('10. body size, not species: a 5 kg defender dodges a human punch far more often than a human does', () => {
-        const small = rate(fist({}), 4000, () => newPerson(5));
-        expect(small).toBeGreaterThan(rate(fist({})) + 0.2);
+    it('10. a 5 kg body with a human-speed mind dodges a human punch more often (shorter nerves, faster muscles)', () => {
+        expect(rate(fist({}), 4000, () => newPerson(5))).toBeGreaterThan(rate(fist({})) + 0.05);
+    });
+
+    it('10b. decision time belongs to the mind: the same body with a faster brain dodges more', () => {
+        const quick = () => Object.assign(newPerson(70), { body: { decide_s: 0.1 } });
+        expect(rate(fist({}), 4000, quick)).toBeGreaterThan(rate(fist({})) + 0.1);
     });
 
     it('11. a 2000 kg attacker swings slower: a human avoids its blow from reach more often than a human punch', () => {
