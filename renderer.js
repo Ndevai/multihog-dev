@@ -1664,7 +1664,7 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                 // parseTimeStr removed, using shared parseInWorldTime from memo-processor.js
 
                 for (let line of lines) {
-                    if (line.toLowerCase().startsWith('last rest:')) continue;
+                    if (/^last (rest|woke):/i.test(line)) continue;
                     if (!parsedCurrent) {
                         const t = parseInWorldTime(line);
                         if (t !== null) {
@@ -1675,7 +1675,8 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                 }
 
                 return lines.map((line, idx) => {
-                    if (line.toLowerCase().startsWith('last rest:')) {
+                    if (/^last (rest|woke):/i.test(line)) {
+                        const restLabel = line.slice(0, line.indexOf(':')).trim();
                         const restVal = line.substring(line.indexOf(':') + 1).trim();
                         let append = "";
                         if (parsedCurrent && !isRestTimeUnset(restVal)) {
@@ -1687,7 +1688,7 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                                 }
                             }
                         }
-                        return `<div class="rt-card-line"><b>Last Rest:</b>&nbsp;${escapeHtmlWithColor(restVal)}${append}</div>`;
+                        return `<div class="rt-card-line"><b>${escapeHtml(restLabel)}:</b>&nbsp;${escapeHtmlWithColor(restVal)}${append}</div>`;
                     }
                     const asMarker = tryRenderMarker(line, tag, '', idx);
                     if (asMarker !== null) return asMarker;

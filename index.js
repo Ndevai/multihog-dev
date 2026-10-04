@@ -52,10 +52,13 @@ import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, o
 import { rulesTrackerTemplate } from './src/rules/rules-mode.js';
 import { onPlayerTurnMessage, onPlayerTurnSent, onPlayerTurnChatChanged } from './src/features/player-turn.js';
 import { openPartyTurn } from './src/features/party-turn.js';
+import { openJournal, openCalendar } from './src/features/journal-calendar.js';
 
 // Wand-menu entries of the smaller play features: [element id, Font Awesome icon, label, open()].
 const WAND_FEATURES = [
     ['rt_party_turn_wand', 'fa-users', 'Party turn', openPartyTurn],
+    ['rt_journal_wand', 'fa-book-open', 'Journal', openJournal],
+    ['rt_calendar_wand', 'fa-calendar-days', 'Calendar', openCalendar],
 ];
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';

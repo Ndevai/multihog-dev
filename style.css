@@ -10951,3 +10951,11 @@ dialog .rt-dungeon-graph-asset-tip,
 /* Party turn planner */
 .rt-party-turn-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
 .rt-party-turn-row span { min-width: 8em; text-align: left; }
+
+/* Journal and calendar */
+.rt-notes { text-align: left; }
+.rt-notes-body { display: flex; flex-direction: column; gap: 6px; }
+.rt-notes-entry { border-top: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.1)); padding-top: 6px; }
+.rt-notes-meta { opacity: 0.7; font-size: 0.85em; }
+.rt-notes-text { white-space: pre-wrap; }
+.rt-notes-past { opacity: 0.5; }

@@ -199,7 +199,7 @@ export function highlightNumbers(text) {
 export function extractCurrentTimeStr(timeBlockContent) {
     if (!timeBlockContent) return '';
     const lines = timeBlockContent.split('\n').map(l => l.trim()).filter(Boolean);
-    const timeLine = lines.find(line => !line.toLowerCase().startsWith('last rest:'));
+    const timeLine = lines.find(line => !/^last (rest|woke):/i.test(line));
     if (!timeLine) return '';
     return timeLine.replace(/^(?:current\s+)?time:\s*/i, '').trim();
 }

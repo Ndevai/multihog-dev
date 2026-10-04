@@ -37,6 +37,7 @@ import { RULES_BRIEF } from './src/rules/rules-tools.js';
 import { bodyMemo, trackedPeople } from './src/rules/body-sheet.js';
 import { rulesDiceSpec, RULES_SECTIONS } from './src/rules/rules-mode.js';
 import { PLAYER_TURN_PROMPT } from './src/features/player-turn.js';
+import { calendarInjection } from './src/features/journal-calendar.js';
 
 const SCENE_CAST_RULE = `<scene_cast>\nCharacters listed as Present in [SCENE] act and speak in person; Remote ones speak only through their channel; Arriving ones enter when their time comes; everyone else is elsewhere and acts off-scene.\n</scene_cast>`;
 import { takeAuditNote } from './src/rules/rules-audit.js';
@@ -1563,6 +1564,8 @@ export function installInterceptor() {
 
                 if (settings.playerTurn) injections += `${PLAYER_TURN_PROMPT}\n\n`;
                 if (settings.modules?.scene) injections += `${SCENE_CAST_RULE}\n\n`;
+                const calendar = calendarInjection(settings.currentMemo);
+                if (calendar) injections += `${calendar}\n\n`;
 
                 if (settings.rulesEngine) {
                     const note = takeAuditNote();
