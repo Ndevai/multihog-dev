@@ -48,6 +48,8 @@ Hard-rule world system for LLM roleplay. Rules a model cannot bend: quantities, 
 - Body model (rules/body-model.md, sources in rules/body-model-sources.md, 3 Oct): the engine is to know properties and laws only; a creature = a species record. Human record = rule 576/577 tables + bone, muscle, blood, brain values. Insect, tree and fungus records hold measured values; fiction creatures need records (real values copied, the rest lore decisions).
   - Human record vs current engine: identical except §4, which adds fractures for pinned or crushed parts from measured failure moments (femur 395, humerus 230, tibia 312, forearm 89 N·m); free-limb blows stay OPEN-60.
 
+- 4 Oct 2026 (rules-engine, pushed): Earth units (24 h day, Earth fall heights); neutral names (BodyStrike, BodyWound, BodyCheck, BodyTreat, BodyFall, BodyStatus, PassTime, CastSpell; setting rulesEngine); rules/rules-lorebook.json = entries 564-577 in Earth units. Rule check reads tool results from the chat (bug found in SillyTavern 1.19). Features from other extensions, written independently: Player turn, inventory containers, [SCENE] module (present/remote/arriving/left), Party turn, Journal, Calendar, Lorebook suggestions, Library, Phone, Scene memory, Whereabouts. Wand menu holds the popups. None run in SillyTavern; old tests still check Losica values.
+
 ## 4. Next, in order
 1. Engine on the body model: species registry; the human record built from today's constants; tools take a species on a character's first appearance; status labels from the record.
 2. Clock (day 8.557 h, year 1241.42 days).
