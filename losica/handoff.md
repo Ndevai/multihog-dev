@@ -41,7 +41,7 @@ Hard-rule world system for LLM roleplay. Rules a model cannot bend: quantities, 
 - Losica mode (rules-engine 296def8, src/rules/losica-mode.js): with `losicaRules` on, D&D mechanics are replaced where they are written, not hidden afterwards.
   - Narrator: sections weapon_proficiencies, attacks_per_round, saving_throws, xp_system, level_up_protocol, homebrew_and_custom_classes omitted; role, rng_system, combat, loot, resting, [PARTY]_mechanics, constraints, state_memo, footer replaced. Footer: status from [BODY] + location + clock; no XP or level.
   - State Tracker: [CHARACTER]/[PARTY]/[COMBAT] = "Name (N kg)" + training, senses, affinities, spells, conditions; [INVENTORY] items described physically; [SPELLS] = name (school, complexity); [TIME] tracks Last Woke; [XP] and [ABILITIES] off. Core prompt: conditions by story time, no buffs/AC/slots. Body state only in the code-written [BODY].
-  - RollTheDice: kinds check | amount | table. Attacks by fist, kick or blade → LosicaStrike; by other means → check, then LosicaWound.
+  - Checks: LosicaCheck (rule 576 Checks): chance from share × body (capacity against demand, normal ogive, force spread 0.19 from Dodds 2014 grip; blood-loss class limits). RollTheDice: kinds amount | table. Attacks by fist, kick or blade → LosicaStrike; by other means → LosicaCheck, then LosicaWound.
   - Choices examples, character creation (no levels, no BAB guide, no +N gear) and the sheet (a "Name (N kg)" line starts an entry) follow.
   - Still D&D-shaped with Losica on: NPC memory combat-profile guidance (src/state/lorebook-runtime-fragments.js, module-instructions.js), the attribute roll panel in onboarding, realistic/horror genre hints in character creation.
 
@@ -119,6 +119,7 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 63 | senses during sleep: does a magical sense work and wake the sleeper | decision |
 | | 64 | attacker tracking a moving target; room to evade; aim information from sound | research or decision |
 | | 65 | sensory thresholds (hearing, waking) for non-human bodies: depend on the ear, not on size | research per sense organ |
+| | 66 | checks: effect of a partial non-force ability (manipulation, vision, reaction, balance) on the chance | research (task performance vs impairment) |
 | Survival (577) | 46 | altitude effect for people born there | research: long-resident highlander data (Andean, Tibetan) |
 
 Closed 2 Oct 2026 (rule 576 + engine commit 1cf0cf9): OPEN-43 onset (bites 1 Earth day, Talan 1999; other wounds 10 Earth days, laparotomy SSI proxy, Gundel 2018); cut healing by part (Forsch 2017, expert opinion); burn healing by depth (Warby 2023, Lloyd 2012, CHOP); fall deaths 5.1–10.1 m by straight line, all above 16.2 m (engine had unsourced 22.7 % and 78 %); "size" dropped from the wound definition, burns take a depth; the 32.5 % midpoint written into the reference.
