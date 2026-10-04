@@ -113,7 +113,7 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 63 | senses during sleep: does a magical sense work and wake the sleeper | decision |
 | | 64 | attacker tracking a moving target; room to evade; aim information from sound | research or decision |
 | | 65 | sensory thresholds (hearing, waking) for non-human bodies: depend on the ear, not on size | research per sense organ |
-| Survival (577) | 46 | altitude effect for people born there | research: modern humans, so Earth highlander data (Andean, Tibetan) applies if generations live there; lowlander data otherwise |
+| Survival (577) | 46 | altitude effect for people born there | research: long-resident highlander data (Andean, Tibetan); many generations inferred from the language history |
 
 Closed 2 Oct 2026 (rule 576 + engine commit 1cf0cf9): OPEN-43 onset (bites 1 Earth day, Talan 1999; other wounds 10 Earth days, laparotomy SSI proxy, Gundel 2018); cut healing by part (Forsch 2017, expert opinion); burn healing by depth (Warby 2023, Lloyd 2012, CHOP); fall deaths 5.1–10.1 m by straight line, all above 16.2 m (engine had unsourced 22.7 % and 78 %); "size" dropped from the wound definition, burns take a depth; the 32.5 % midpoint written into the reference.
 
@@ -146,7 +146,7 @@ Decided by the LLM, not by code (before enforcement): whether it calls a tool at
 - Gravity 11.61 m/s² (1.18 g); surface pressure 50.5 kPa; O₂ 25.4 %; sea level = 4,200 m Earth equivalent oxygen; water boils at 81 °C.
 - Map: Orogen (maph.zip) is the chosen geography; land 59.1 M km² (9.7 %). The old v0.9 climate package is discarded; its problems are not the user's to fix.
 - Climate: north uninhabitable (summer land 150 °C+ in the GCM). Homeland = S-polar continent, 10.1 M km², 51–81°S, 174° of longitude. Southern mean temperature ≈ 9.9 °C (run 37047323550, approximate; seasonal range unknown until the calendar fault in section 3 is fixed). Polar day 580 / night 119 days at 60°S.
-- Humans: body clock ~24.2 h, cannot entrain to the 8.557 h day → sleep set socially. Decided 3 Oct 2026: biology = modern humans, so human measurements are data for them. Open decisions: origin (Earth colonists or native; affects the language); food base; way of life.
+- Humans: body clock ~24.2 h, cannot entrain to the 8.557 h day → sleep set socially. Decided 3 Oct 2026: biology = modern humans, so human measurements are data for them. Origin: colonists, not from Earth; irrelevant to the rules. Many generations on Losica (inferred from the language history), so OPEN-46 uses long-resident highlander data. Open decisions: food base; way of life.
 
 ## 7. Languages
 - Komuheft and Tegofarela descend from Pre-Proto-Losica via Proto-Losica. Only phonology exists; no words yet. Current files: Komuheft-5.md, richtext_converted_to_markdown.md (Tegofarela). An older tegofarela.md had examples; the CSV in losica_project is outdated.

@@ -134,9 +134,8 @@ Runs: the 1-D energy-balance model, the 2-D energy-balance model, the old v0.9 p
 ## 8. Decisions open to you
 
 - **D1a — Biology: decided 3 Oct 2026.** Losica's humans are anatomically and physiologically modern humans (Homo sapiens). Human measurements (reaction times, strike forces and times, bleeding, healing, fracture tolerances) apply to them as data, not as assumptions. Only Losica's environment (gravity 1.18 g, 50.5 kPa air, 25.4 % O₂, light, sound in thinner air) acts on them differently.
-- **D1b — Origin.** Still open: same biology either way.
-  - **Earth colonists:** the proto-language descends from an Earth language.
-  - **Native humans:** no Earth ancestor.
+- **D1b — Origin: decided.** Colonists, not from Earth. Where they came from does not enter the rules.
+- **Settlement length (inferred 3 Oct 2026):** two daughter languages descend from Pre-Proto-Losica via Proto-Losica on Losica, which takes many centuries, so humans have lived at Losica's air pressure for many generations. Altitude rules use data from long-resident high-altitude human populations (Andean, Tibetan), not lowlander data.
 - **D2 — Food base.** 25 % O₂ implies photosynthesizing life. Whether humans can eat it is undefined.
 - **D3 — Way of life** at the proto-language stage. For example: mobile foragers, sedentary groups, or herders.
 
