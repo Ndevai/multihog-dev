@@ -110,9 +110,22 @@ export function armor(db, text) {
     return {
         id: best.id, kind: best.kind, name: `${q ? `${q} ` : ''}${mat.name} ${best.n}`, quality: QUALITY[q] ?? 1,
         layer: best.list.find(t => t[0] === 'LAYER')?.[1] ?? 'ARMOR', coverage: num('COVERAGE') || 100,
-        ubstep: num('UBSTEP'), lbstep: num('LBSTEP'), upstep: num('UPSTEP'),
-        mat: elastic ? { ...mat, SHEAR_STRAIN_AT_YIELD: 50000, IMPACT_STRAIN_AT_YIELD: 50000 } : mat,
+        ubstep: num('UBSTEP'), lbstep: num('LBSTEP'), upstep: num('UPSTEP'), mat, elastic,
     };
+}
+
+/** Gear with no DF item name ("iron skullcap"): quality + material words + any name. Its coverage comes from the caller. */
+export function customGear(db, text) {
+    let words = String(text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const q = Object.keys(QUALITY).find(k => words.startsWith(`${k} `));
+    if (q) words = words.slice(q.length + 1);
+    const parts = words.split(' ');
+    for (const n of [2, 1]) {
+        const mat = parts.length > n ? gearMaterial(db, parts.slice(0, n).join(' ')) : null;
+        if (mat) return { id: null, kind: null, name: `${q ? `${q} ` : ''}${words}`, quality: QUALITY[q] ?? 1, layer: mat.kind === 'metal' ? 'ARMOR' : 'OVER',
+            coverage: 100, ubstep: 0, lbstep: 0, upstep: 0, mat, elastic: mat.kind === 'thread' };
+    }
+    return null;
 }
 
 /** A weapon (ITEM_WEAPON id or its name, e.g. "short sword"): size and attacks. */

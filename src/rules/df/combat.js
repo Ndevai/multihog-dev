@@ -95,7 +95,7 @@ export function momentum(c, iSize, w, { skill, style = 'normal', prone = false }
  * part's tissue layers outermost first, then one internal part. Returns
  * { tested: [{ part, layer, result: 'cut'|'smashed'|'held', armor? }], hits (tissue only), severed, left }.
  */
-export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
+export function penetrate(c, struck, iSize, w, M, rng, worn = [], side = 'front') {
     const tested = [];
     let edged = w.edge;
     // One layer test (wiki Material science); returns 'cut' | 'smashed' | 'held' and updates M and edged.
@@ -115,12 +115,21 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
     const visit = part => {
         const size = partSize(c, part, iSize);
         if (part === struck) {
-            const items = worn.filter(it => covers(c, it, part)).sort((x, y) => LAYER_ORDER.indexOf(x.layer) - LAYER_ORDER.indexOf(y.layer));
-            for (const it of items) {
+            // Chance a blow on this side of the part meets the item: the covered share of that side (explicit), else DF's coverage.
+            const chance = it => {
+                if (!it.parts) return covers(c, it, part) ? it.coverage : 0;
+                const cv = it.parts[part.id];
+                return cv ? (side === 'back' ? cv.back : cv.front) : 0;
+            };
+            const items = worn.map(it => [it, chance(it)]).filter(([, ch]) => ch > 0)
+                .sort(([x], [y]) => LAYER_ORDER.indexOf(x.layer) - LAYER_ORDER.indexOf(y.layer));
+            for (const [it, ch] of items) {
                 if (M <= 0) return;
-                if (rng() * 100 >= it.coverage) continue;
-                const m = { IMPACT_FRACTURE: it.mat.IMPACT_YIELD, SHEAR_FRACTURE: it.mat.SHEAR_YIELD, ...it.mat };
-                tested.push({ part, layer: { tissue: it.name }, armor: true, result: test(m, Math.min(w.contact, area(armorSize(size, it))), it.quality, 1) });
+                if (rng() * 100 >= ch) continue;
+                let m = { IMPACT_FRACTURE: it.mat.IMPACT_YIELD, SHEAR_FRACTURE: it.mat.SHEAR_YIELD, ...it.mat };
+                if (it.elastic) m = { ...m, SHEAR_STRAIN_AT_YIELD: 50000, IMPACT_STRAIN_AT_YIELD: 50000 };
+                const cm3 = it.parts ? size * Math.min(ch, 100) / 100 : armorSize(size, it);
+                tested.push({ part, layer: { tissue: it.name }, armor: true, result: test(m, Math.min(w.contact, area(cm3)), it.quality, 1) });
             }
         }
         const A = Math.min(w.contact, area(size));

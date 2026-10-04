@@ -193,6 +193,8 @@ FORMAT FOR EVERY ITEM: thematic emoji, rarity tag ([Common], [Uncommon], [Rare],
 - Magic items add their school, complexity and activation condition when known: (bone wand; Healing, complexity 2; activates on a spoken word).
 - Bare currency goes under Other Items without a rarity tag: "💰" for coins, "💵" for paper money.
 
+WORN PROTECTION: for each worn item that covers the body, the parentheses also state which body parts it covers and any holes, cut-outs or damage with their place (iron helm, open at the back; leather jerkin, left sleeve torn off).
+
 EQUIPPED ITEMS: Tag any actively worn or held item with [E] immediately after the rarity tag. An item in 'Gear:' without [E] is carried, not worn or held.
 
 CONTAINERS: list each item inside a bag, chest or other container on its own line directly under that container, indented by two spaces; the container's line holds only the container itself.

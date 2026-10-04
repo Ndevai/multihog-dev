@@ -1,6 +1,6 @@
 import { creature } from './df/index.js';
 import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf } from './df/combat.js';
-import { weaponOf, metalOf, armorOf } from './df/index.js';
+import { weaponOf, metalOf, armorOf, customGearOf } from './df/index.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -383,9 +383,23 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const mass = attacker?.mass ?? a.mass ?? ac.size / 1000;
     const iSize = mass * 1000;
     const worn = [];
-    for (const text of a.armor || []) {
-        const it = armorOf(text);
-        if (!it) return `No DF armor "${text}" (material + item, e.g. "iron breastplate", "leather armor", "steel helm"). Nothing recorded.`;
+    // Worn gear: a DF item ("iron helm") gives the defaults; covers (part, front %, back %), layer and flexible replace them.
+    const pct = x => Math.max(0, Math.min(150, Number(x)));
+    for (const g of a.armor || []) {
+        const spec = typeof g === 'string' ? { item: g } : g || {};
+        const it = armorOf(spec.item) ?? (spec.covers?.length ? customGearOf(spec.item) : null);
+        if (!it) return `No gear "${spec.item}": name a DF item with its material ("iron helm", "leather armor"), or give covers with a material first ("iron skullcap"). Nothing recorded.`;
+        if (spec.layer) it.layer = spec.layer;
+        if (spec.flexible !== undefined) it.elastic = !!spec.flexible;
+        if (spec.covers?.length) {
+            it.parts = {};
+            for (const cv of spec.covers) {
+                const pt = findPart(tc, cv.part);
+                if (!pt) return `${tc.name} has no part "${cv.part}" for ${it.name}. Nothing recorded.`;
+                const front = pct(cv.front ?? 100);
+                it.parts[pt.id] = { front, back: pct(cv.back ?? front) };
+            }
+        }
         worn.push(it);
     }
     let w, verb, means, bite = false;
@@ -418,7 +432,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         if (done <= impact) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
     }
     const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
-    const r = penetrate(tc, part, target.mass * 1000, w, M, rng, worn);
+    const r = penetrate(tc, part, target.mass * 1000, w, M, rng, worn, a.facing === false ? 'back' : 'front');
     const made = [];
     const touched = [...new Set(r.hits.map(h => h.part))];
     for (const hp of touched) {

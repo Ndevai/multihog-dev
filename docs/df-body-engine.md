@@ -98,6 +98,8 @@ Worn items come from DF's armour files (`item_armor`, `item_helm`, `item_gloves`
 | body armour | upper and lower body; `UBSTEP:n` adds neck and limb parts up to n steps from the upper body; `LBSTEP:n` adds leg parts up to n steps below the lower body; `MAX` = all | [WIKI] |
 | pants | lower body + `LBSTEP` | [WIKI] |
 
+- What is present decides coverage. An item given with `covers` (each part, % of its front and back covered) uses those numbers: a helm open at the back = head front 100, back 0. The blow's side is the back when the target faces away (`facing` false), else the front [ASSUMED: two sides]. Without `covers`, a DF item uses DF's reach and `COVERAGE` (table above) [RAW]. An item outside DF's lists needs `covers`; its material is read from its first words ("iron skullcap"), layer ARMOR for metal and OVER otherwise, flexible for cloth, silk and wool [ASSUMED defaults]; `layer` and `flexible` override.
+- Armour size for an item with `covers` = part size × covered % ÷ 100 [WIKI first factor; the step factor applies to DF items only].
 - Order on a part, outermost first: COVER, ARMOR, OVER, UNDER [WIKI "Under, Over, Armor, Cover"].
 - Each item is met with chance = `COVERAGE` % (cap 50 %, mittens 150 % = always) [WIKI].
 - An item is one more layer in §4.4 with its material, Qa = quality (ordinary 1, well-crafted 1.2, finely-crafted 1.4, superior 1.6, exceptional 1.8, masterwork 2, artifact 3) [WIKI], and contact area = (armour size ÷ 10)^(2/3) [DFHACK], armour size = part size × coverage ÷ 100 × (1 + (UPSTEP + UBSTEP + LBSTEP) ÷ 4), MAX counted as 3 [WIKI].

@@ -170,7 +170,24 @@ export function registerRulesTools(enabled) {
         skill: { type: 'string', enum: SKILL_LEVELS, description: 'Attacker\'s fighting skill level. Dabbling = untrained.' },
         style: { type: 'string', enum: Object.keys(STYLES), description: 'quick = fast weak blow; heavy or wild = full-force blow.' },
         prone: { type: 'boolean', description: 'Target lying on the ground.' },
-        target_armor: { type: 'array', items: { type: 'string' }, description: 'Every item the character hit wears ([E] in [INVENTORY]) as quality + material + item: "steel breastplate", "iron mail shirt", "leather armor", "iron helm", "leather cap", "cloth trousers", "iron gauntlets", "leather high boots". Quality words: well-crafted, finely-crafted, superior, exceptional, masterwork, artifact.' },
+        target_armor: {
+            type: 'array',
+            description: 'Every item the character hit wears ([E] in [INVENTORY]).',
+            items: {
+                type: 'object',
+                properties: {
+                    item: str('Quality + material + item: "steel breastplate", "iron mail shirt", "leather armor", "iron helm", "cloth trousers", "leather high boots". Quality words: well-crafted, finely-crafted, superior, exceptional, masterwork, artifact. With covers, any item name after the material ("iron skullcap").'),
+                    covers: {
+                        type: 'array',
+                        description: 'What the item physically covers, from its description: each body part and the % of that part\'s front and back it covers. Give it whenever the item differs from the standard one (holes, damage, cut-outs, odd shapes); a helm with an open back = head front 100, back 0.',
+                        items: { type: 'object', properties: { part: str('Body part name'), front: { type: 'number' }, back: { type: 'number' } }, required: ['part'] },
+                    },
+                    layer: { type: 'string', enum: ['UNDER', 'OVER', 'ARMOR', 'COVER'], description: 'Worn under clothing, over it, as armour, or as an outer cover.' },
+                    flexible: { type: 'boolean', description: 'Woven or linked (mail, cloth): a blow it stops still passes through as blunt force.' },
+                },
+                required: ['item'],
+            },
+        },
         attacker: str('Attacker name; a tracked attacker uses its own species, mass and wounds'),
         attacker_species: str('Attacker\'s DF creature when the attacker is not tracked. Default human.'),
         attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg when not tracked; default the species\' adult mass.' },
