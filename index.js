@@ -51,6 +51,12 @@ import { onRulesAuditMessage } from './src/rules/rules-audit.js';
 import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, restoreRulesForMemo } from './src/rules/rules-tools.js';
 import { rulesTrackerTemplate } from './src/rules/rules-mode.js';
 import { onPlayerTurnMessage, onPlayerTurnSent, onPlayerTurnChatChanged } from './src/features/player-turn.js';
+import { openPartyTurn } from './src/features/party-turn.js';
+
+// Wand-menu entries of the smaller play features: [element id, Font Awesome icon, label, open()].
+const WAND_FEATURES = [
+    ['rt_party_turn_wand', 'fa-users', 'Party turn', openPartyTurn],
+];
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
 import { createMemoRecoveryManager } from './src/features/recovery/memo-recovery.js';
@@ -13044,6 +13050,16 @@ RULES:
         });
 
         wandContainer.appendChild(btn);
+
+        for (const [id, icon, label, open] of WAND_FEATURES) {
+            if (document.getElementById(id)) continue;
+            const item = document.createElement('div');
+            item.id = id;
+            item.classList.add('list-group-item', 'flex-container', 'flexGap5');
+            item.innerHTML = `<div class="fa-solid ${icon} extensionsMenuExtensionButton"></div><span>${label}</span>`;
+            item.addEventListener('click', () => void open());
+            wandContainer.appendChild(item);
+        }
 
         if (!document.getElementById('rpg_tracker_debug_wand_button')) {
             const debugBtn = document.createElement('div');

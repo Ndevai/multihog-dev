@@ -10947,3 +10947,7 @@ dialog .rt-dungeon-graph-asset-tip,
     margin-left: 1.2em;
     opacity: 0.9;
 }
+
+/* Party turn planner */
+.rt-party-turn-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.rt-party-turn-row span { min-width: 8em; text-align: left; }
