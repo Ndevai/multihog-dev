@@ -421,7 +421,8 @@ export function strike(target, a, attacker = null, rng = Math.random) {
                 if (bad) return `${pt.name} has no sub-location "${bad}"${known.length ? ` (${known.join(', ')})` : ''}. Nothing recorded.`;
                 const mat = cv.material ? gearMaterialOf(cv.material) : null;
                 if (cv.material && !mat) return `No material "${cv.material}". Nothing recorded.`;
-                (it.parts[pt.id] ??= []).push({ subs, coverage: pct(cv.coverage ?? 100), ...(mat ? { mat, elastic: mat.kind === 'thread' } : {}) });
+                const sides = cv.sides?.length ? cv.sides.filter(x => x === 'front' || x === 'back') : null;
+                (it.parts[pt.id] ??= []).push({ subs, sides, coverage: pct(cv.coverage ?? 100), ...(mat ? { mat, elastic: mat.kind === 'thread' } : {}) });
             }
         }
         worn.push(it);
@@ -456,7 +457,10 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         if (done <= impact) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
     }
     const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
-    const r = penetrate(tc, part, target.mass * 1000, w, M, rng, worn);
+    // Side hit: the one facing the attacker; a blow from the left or right lands front or back alike (equal halves).
+    const from = a.from ?? (a.facing === false ? 'back' : 'front');
+    const side = from === 'front' || from === 'back' ? from : rng() < 0.5 ? 'front' : 'back';
+    const r = penetrate(tc, part, target.mass * 1000, w, M, rng, worn, side);
     const made = [];
     const touched = [...new Set(r.hits.map(h => h.part))];
     for (const hp of touched) {
@@ -479,7 +483,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const parts = [...new Set(r.tested.map(t => t.part))];
     const layers = parts.map(pt => `${pt.name}: ${r.tested.filter(t => t.part === pt).map(t => `${t.layer.tissue.toLowerCase()} ${t.result}`).join(', ')}`).join('; ');
     const wounds = made.length ? ` Wound${made.length > 1 ? 's' : ''} ${made.map(x => x.id).join(', ')}.` : ' No wound.';
-    return `${verb} (${w.name}) to ${part.name}${r.sub ? ` (${r.sub})` : ''}: momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}${ko ? ' Knocked out.' : ''}`;
+    return `${verb} (${w.name}) to ${part.name} (${[r.side, r.sub].filter(Boolean).join(', ')}): momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}${ko ? ' Knocked out.' : ''}`;
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.

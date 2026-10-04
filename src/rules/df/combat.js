@@ -104,10 +104,10 @@ export function momentum(c, iSize, w, { skill, style = 'normal', prone = false }
  * part's tissue layers outermost first, then one internal part. Returns
  * { tested: [{ part, layer, result: 'cut'|'smashed'|'held', armor? }], hits (tissue only), severed, left }.
  */
-export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
+export function penetrate(c, struck, iSize, w, M, rng, worn = [], side = 'front') {
     const tested = [];
     // CDDA outfit::absorb_damage: the hit lands on one sub-location; one roll 1–100 decides every worn layer.
-    const sub = randomSublocation(struck, rng);
+    const sub = randomSublocation(struck, rng, side);
     const first = { M: 0, edged: w.edge };  // momentum and edge reaching the struck part's tissue, after armour
     const roll = rng() * 100;
     let edged = w.edge;
@@ -131,7 +131,7 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
             // The item's portion over the hit sub-location: explicit portions (CDDA armor portions), else DF's item coverage.
             const portion = it => {
                 if (!it.parts) return covers(c, it, part) ? { coverage: it.coverage, subs: null } : null;
-                return (it.parts[part.id] || []).find(p => !p.subs || !sub || p.subs.includes(sub)) ?? null;
+                return (it.parts[part.id] || []).find(p => (!p.subs || !sub || p.subs.includes(sub)) && (!p.sides || p.sides.includes(side))) ?? null;
             };
             const items = worn.map(it => [it, portion(it)]).filter(([, p]) => p && p.coverage > 0)
                 .sort(([x], [y]) => LAYER_ORDER.indexOf(x.layer) - LAYER_ORDER.indexOf(y.layer));
@@ -173,5 +173,5 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
             if (M > 0) visit(pick);
         }
     }
-    return { tested, hits: tested.filter(t => t.result !== 'held' && !t.armor), severed, left: M, sub, first };
+    return { tested, hits: tested.filter(t => t.result !== 'held' && !t.armor), severed, left: M, sub, side, first };
 }

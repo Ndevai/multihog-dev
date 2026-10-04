@@ -11,12 +11,18 @@ export const SUBLOCATIONS = {
     FOOT: { sole: 25, arch: 25, ankle: 20, heel: 20 },
 };
 
+// Side of a sub-location; others face both ways. Front and back halves are equal in area for every region (rule of
+// nines, adult: head 4.5/4.5 %, torso 18/18 %, each arm 4.5/4.5 %, each leg 9/9 %).
+const SIDE = { forehead: 'front', nape: 'back', palm: 'front', 'back of hand': 'back' };
+export const sideOf = name => SIDE[name] ?? 'both';
+
 export const sublocationsOf = part => part.cats.map(k => SUBLOCATIONS[k]).find(Boolean) ?? null;
 
-/** A sub-location of the part chosen with weight = its share (CDDA random_sub_part); null for a part without any. */
-export function randomSublocation(part, rng) {
-    const subs = sublocationsOf(part);
-    if (!subs) return null;
+/** A sub-location of the part on the hit side, chosen with weight = its share (CDDA random_sub_part); null for a part without any. */
+export function randomSublocation(part, rng, side = 'front') {
+    const all = sublocationsOf(part);
+    if (!all) return null;
+    const subs = Object.fromEntries(Object.entries(all).filter(([k]) => sideOf(k) === 'both' || sideOf(k) === side));
     const total = Object.values(subs).reduce((s, x) => s + x, 0);
     let r = rng() * total;
     return Object.keys(subs).find(k => (r -= subs[k]) < 0) ?? Object.keys(subs).at(-1);
