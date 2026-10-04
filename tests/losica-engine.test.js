@@ -231,7 +231,7 @@ describe('strikes (rule 576)', () => {
     it('blunt blows record force and a bruise until OPEN-60 is calibrated', async () => {
         const { newPerson, strike } = await import('../src/rules/losica-engine.js');
         const p = newPerson();
-        expect(strike(p, { part: 'mouth', means: 'kick', skill: 'elite', landed: true }, null, () => 0.01)).toMatch(/\d+ N, fracture from blows not set \(OPEN-60\) → bruise/);
+        expect(strike(p, { part: 'mouth', means: 'kick', skill: 'elite', landed: true }, null, () => 0.01)).toMatch(/: \d+ N → bruise\. Wound 1\.$/);
         expect(p.wounds[0].type).toBe('blunt');
     });
 
@@ -241,7 +241,7 @@ describe('strikes (rule 576)', () => {
         addWound(p, { part: 'head', type: 'fracture' }, mid);
         expect(p.wounds[0].fracture.joins).toBeNull();
         expect(abilities(p).reaction).toBeCloseTo(0.7, 5);
-        expect(status('X', p)).toMatch(/OPEN-58/);
+        expect(status('X', p)).not.toMatch(/OPEN|joins in|healed/);
     });
 
     it('blades on limbs open a limb artery 12 % of the time', async () => {
@@ -250,7 +250,7 @@ describe('strikes (rule 576)', () => {
         expect(strike(p, { part: 'leg_l', means: 'blade_stab', landed: true }, null, () => 0.1)).toMatch(/limb artery opened/);
         expect(p.wounds[0].bleed).toBeGreaterThanOrEqual(70);
         expect(strike(p, { part: 'leg_l', means: 'blade_cut', landed: true }, null, () => 0.5)).toMatch(/small vessels/);
-        expect(strike(p, { part: 'torso', means: 'blade_stab', landed: true }, null, () => 0.1)).toMatch(/OPEN-56/);
+        expect(strike(p, { part: 'torso', means: 'blade_stab', landed: true }, null, () => 0.1)).toMatch(/^puncture to torso, small vessels\. Wound \d+\.$/);
     });
 });
 
@@ -307,3 +307,12 @@ describe('interruptions (NetHack/Pathos structure)', () => {
 });
 
 
+
+describe('narrator-facing text', () => {
+    it('tool results and the lorebook copy name no OPEN ids', async () => {
+        const { readFileSync } = await import('node:fs');
+        const src = readFileSync(new URL('../src/rules/losica-engine.js', import.meta.url), 'utf8');
+        const strings = src.split('\n').filter(l => !l.trim().startsWith('//') && !l.trim().startsWith('*') && !l.trim().startsWith('/**'));
+        expect(strings.join('\n')).not.toMatch(/['`][^'`]*OPEN-\d+/);
+    });
+});

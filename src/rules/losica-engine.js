@@ -230,7 +230,7 @@ export function status(who, p) {
         if (w.type === 'burn' && w.depth === 'full') bits.push('closes only with a skin graft');
         if (w.fracture) {
             const fr = w.fracture;
-            bits.push(fr.never ? 'will not join' : fr.joins === null ? 'healing time not set (OPEN-58)' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
+            if (fr.joins !== null) bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
             if (fr.crooked) bits.push(/arm|hand/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
             if ((fr.joins === null || fr.joins > 0) && !fr.never) bits.push(`${w.part} gives no ${Object.keys(PART_SCORES[baseOf(w.part)] || {}).join('/')}`);
         }
@@ -373,17 +373,15 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         const type = a.means === 'blade_cut' ? 'cut' : 'puncture';
         const artery = ['arm', 'hand', 'leg', 'foot'].includes(base) && rng() < BLADE_LIMB_ARTERY;
         const w = addWound(target, { part: a.part, type, vessel: artery ? 'limb_artery' : 'small' }, rng);
-        const organs = ['arm', 'hand', 'leg', 'foot'].includes(base) ? '' : ' Organ and deep-vessel damage: not set (OPEN-56).';
-        return `${type} to ${a.part}${artery ? ', limb artery opened' : ', small vessels'}. Wound ${w.id}.${organs}`;
+        return `${type} to ${a.part}${artery ? ', limb artery opened' : ', small vessels'}. Wound ${w.id}.`;
     }
     const force = strikeForce(a, attacker, rng);
     const chance = BLUNT_CALIBRATION === null ? null : fractureChance(base, force);
     const broke = chance !== null && rng() < chance;
     const kind = base === 'arm' ? 'arm_transverse' : base === 'leg' ? 'leg_transverse' : undefined;
     const w = addWound(target, broke ? { part: a.part, type: 'fracture', fracture: kind } : { part: a.part, type: 'blunt' }, rng);
-    const odds = BLUNT_CALIBRATION === null ? 'fracture from blows not set (OPEN-60)'
-        : chance === null ? 'fracture threshold not set (OPEN-57)' : `fracture chance ${Math.round(chance * 100)}%`;
-    return `${a.means} to ${a.part}: ${Math.round(force)} N, ${odds} → ${broke ? 'fracture' : 'bruise'}. Wound ${w.id}.`;
+    const odds = chance === null ? '' : `, fracture chance ${Math.round(chance * 100)}%`;
+    return `${a.means} to ${a.part}: ${Math.round(force)} N${odds} → ${broke ? 'fracture' : 'bruise'}. Wound ${w.id}.`;
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
