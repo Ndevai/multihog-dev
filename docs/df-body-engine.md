@@ -368,7 +368,7 @@ What these show:
 | OPEN-74 | closed by the fit in §4.6; replace the CompuBox proxy when a count of head punches landed per bare-knuckle bout is published |
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
-| OPEN-76 | penetration depth vs layer thickness |
+| OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 12 species and the bird median; 60-dB ranges for 30. Missing lowest thresholds: dog, cat, horse, cattle, pig, goat, sheep, elephant (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |
 | OPEN-81 | knockout and choke length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more; Hutchison 2014 gives 3.5 s from impact to referee stoppage, not time unconscious; the choke study above gives time to unconsciousness only) |
