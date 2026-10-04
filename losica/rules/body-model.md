@@ -62,7 +62,7 @@ The engine knows properties and laws only, never a creature's name. A creature =
 
 ## 6. Delivery and death
 
-- A species with no compartment gets delivery by diffusion only: valid IF its thickest radius r ≤ √(6 K P₀ ÷ A), with K = tissue diffusion constant, P₀ = outside oxygen partial pressure (atm), A = oxygen use per tissue volume (cm³ O₂ cm⁻³ min⁻¹). Losica sea level: P₀ = 0.124 atm.
+- A species with no compartment gets delivery by diffusion only: valid IF its thickest radius r ≤ √(6 K P₀ ÷ A), with K = tissue diffusion constant, P₀ = outside oxygen partial pressure (atm), A = oxygen use per tissue volume (cm³ O₂ cm⁻³ min⁻¹). Losica sea level: P₀ = 12.85 kPa = 0.127 atm (planet/physics.json).
 - Delivery to a vital part stops IF: its compartment lost ≥ λ × V, OR the part that drives the compartment has i = 0, OR breathing F = 0, OR no module remains.
 - IF delivery to a vital part has been stopped for t_anox → the organism dies. Delivery restored before t_anox → it lives.
 - A species may replace this with measured timings (human: rule 576, class IV death in 30–60 min while bleeding, 2 h after bleeding stops).

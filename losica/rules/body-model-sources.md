@@ -29,7 +29,7 @@ Each line: rule value → source → what was read. "Abstract" = only the abstra
 
 ## §6 Delivery and death
 - r ≤ √(6 K P₀ / A): Harvey EN 1928, J Gen Physiol 11:469, doi:10.1085/jgp.11.5.469, "Co = Ar²/6D for a sphere"; K = 1.15 × 10⁻⁵ cm² atm⁻¹ min⁻¹ (Krogh 1919, connective tissue) (full text, Europe PMC PMC2141004).
-- Losica P₀ 0.124 atm: rule 577 (a Losica sea-level breath = 4,200 m on Earth) × ISA pressure at 4,200 m (101.325 kPa × (1 − 2.25577 × 10⁻⁵ × 4200)^5.25588 = 60.1 kPa, ISO 2533) × 0.2095 O₂.
+- Losica P₀ 12.85 kPa = 0.127 atm: oxygen partial pressure in planet/physics.json (50.52 kPa × 25.43 % O₂).
 - Human brain 3–5 min → Onuki 2023, No Shinkei Geka 51:969 (English abstract). Recovery after 30 min in pigs with controlled reperfusion → McKenzie et al. 2026 (PMC13516838): t_anox depends on treatment; the record keeps 3–5 min for untreated cases.
 - Locust < 4 h at 30 °C → Ravn et al. 2019, J Exp Biol 222:jeb190850 (abstract). Drosophila 6 h kills most → De Lazzari et al. 2022, Antioxidants, doi:10.3390/antiox11081527 (full text). Maize root tips 8–9 h unacclimated, > 22 h acclimated → Saglio, Drew & Pradet 1988, Plant Physiol 86:61 (abstract).
 - Modules: Physarum 1 × 1 cm pieces live and fuse → Nakagaki et al. 2004, Proc R Soc B 271:2305; 2000, Nature 407:470. Planarian fragments down to 1/279 of the body, < 10,000 cells → Ivankovic et al. 2019, Development 146:dev167684. Mycelial fragments grow as separate mycelia → Heitman 2006, Curr Biol 16:R711 (via Wikipedia "Fungus"). Plants regrow from buds plus reserves → Clarke et al. 2013, New Phytol 197:19 (abstract). Minimum fragment sizes for fungi and Physarum: not found → OPEN-69.
