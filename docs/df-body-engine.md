@@ -77,6 +77,16 @@ Rule 576 timing: the defender perceives the attack (sight, hearing, range senses
 
 The defender takes the least harmful move that finishes before impact: dodge, else block with a held item, else block with the forearm [ASSUMED order]. A creature without `STANCE` parts dodges at capacity 1; without `GRASP` parts it cannot block.
 
+Senses: sight needs sight ability > 0 (a working `SIGHT` part), facing and light; hearing needs hearing ability > 0 (a working `HEAR` part). Partial loss (one eye, one ear) changes nothing: OPEN-66.
+
+Hearing by species (src/rules/hearing.js; behavioural audiograms, free field, dB SPL):
+
+- A sound of level L is heard awake when L − shift > 25 dB and wakes a sleeper when L − shift ≥ 55 dB. shift = species lowest threshold − human lowest threshold (−10 dB, Jackson et al. 1999: human 60-dB range 31 Hz–17.6 kHz, best −10 dB at 2 and 4 kHz). Shift on the waking level [ASSUMED].
+- A tone (`noise_khz`) outside the species' 60-dB range is not heard at 60 dB SPL or less (definition of the range). Above 60 dB it is treated as audible [ASSUMED].
+- Lowest thresholds (dB SPL): red fox −15 (Malkemper et al. 2015), human −10, whitetail deer −3, alpaca −0.5, fox squirrel 1, Japanese macaque 1 (for the rhesus macaque [ASSUMED genus]), budgerigar 1.1 (DF parakeet [ASSUMED]), chicken 2.6, mallard 12.5, African pygmy hedgehog 21 (DF hedgehog [ASSUMED family]), naked mole rat 35; birds without an audiogram 8.1, the median of 16 terrestrial species (Dooling 1980). Shift 0 for the rest (OPEN-65).
+- 60-dB ranges (Hz): dog, wolf, dingo 63–47 000 (Heffner 1983); cat 55–79 000 (Heffner 2004); horse 55–33 500, cattle 23–35 000 (Heffner & Heffner 1983); pig, wild boar 42–40 500, goat 78–37 000 (Heffner & Heffner 1990); sheep 125–42 000 (Kendrick 2008); elephant 17–10 500 (Heffner & Heffner 1980, Asian); chinchilla 50–33 000 (1991); peafowl 29–7065 (2020); guineafowl 24.6–6860 (2024); rabbit 360–42 000, rat 200–76 000, guinea pig 54–50 000, raccoon 100–40 000, opossum 500–64 000, bat 2000–110 000, cockatiel 250–8000, owl 200–12 000 (Fay 1988 compilation via LSU, level not stated); the rest as listed in the file.
+- Giant forms and animal people use the base species [ASSUMED]. Creatures not listed hear as humans (OPEN-65).
+
 Results, 70 kg humans, 2000 attacks each: punch to the head blocked 11.7 %; sword slash against a held shield blocked 12.5 %; wolf bite blocked 8.1 %; iron arrow, watched archer: 10 m — no defence; 30 m — forearm blocks 94.8 %; 60 m — dodged 100 %.
 
 ### 4.4 Layers [WIKI, Material science]
@@ -352,6 +362,7 @@ What these show:
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
 | OPEN-76 | penetration depth vs layer thickness |
+| OPEN-65 | hearing: lowest thresholds found for 12 species and the bird median; 60-dB ranges for 30. Missing lowest thresholds: dog, cat, horse, cattle, pig, goat, sheep, elephant (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |
 | OPEN-81 | knockout and choke length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more; Hutchison 2014 gives 3.5 s from impact to referee stoppage, not time unconscious; the choke study above gives time to unconsciousness only) |
 | OPEN-79 | closed by the fit in §4.7; replace when DF's formula for body-part attacks is published |

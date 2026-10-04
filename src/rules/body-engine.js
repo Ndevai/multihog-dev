@@ -2,6 +2,7 @@ import { creature } from './df/index.js';
 import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, shot } from './df/combat.js';
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
+import { hearingShift, inRange } from './hearing.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -436,12 +437,17 @@ function defenceDone(a, t, defender, rng) {
         * Math.max(0.5, 1 + RT_CV * gauss(rng));
     const done = [];
     const perceive = (from, reaction) => done.push(Math.max(from, intentFrom) + reaction);
-    if (awake && a.facing !== false && a.lit !== false) perceive(0, rt('sight'));
-    if (awake && (a.noise_db || 0) > HEAR_DB) perceive(0, rt('hearing'));
-    if (!awake && (a.noise_db || 0) >= WAKE_DB) {
+    // Sense organs: a creature with no working eye or ear has no such channel; thresholds shift by the species' audiogram.
+    const ab = defender ? abilities(defender) : { sight: 1, hearing: 1 };
+    const sees = ab.sight > 0 && a.facing !== false && a.lit !== false;
+    const db = a.noise_db || 0, level = db - hearingShift(defender?.species);
+    const audible = ab.hearing > 0 && inRange(defender?.species, db, a.noise_khz);
+    if (awake && sees) perceive(0, rt('sight'));
+    if (awake && audible && level > HEAR_DB) perceive(0, rt('hearing'));
+    if (!awake && audible && level >= WAKE_DB) {
         const woke = WAKE_MIN_S + rng() * (WAKE_MAX_S - WAKE_MIN_S);
         // Once awake the target sees or hears like anyone awake, slowed by sleep inertia.
-        perceive(woke, rt(a.facing !== false && a.lit !== false ? 'sight' : 'hearing') / INERTIA_SPEED);
+        perceive(woke, rt(sees ? 'sight' : 'hearing') / INERTIA_SPEED);
     }
     const r = a.sense_range_m || 0;
     if (awake && r > 0) {
