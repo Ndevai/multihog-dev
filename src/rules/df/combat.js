@@ -130,11 +130,12 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = [], side = 'front'
         if (part === struck) {
             // The item's portion over the hit sub-location: explicit portions (CDDA armor portions), else DF's item coverage.
             const portion = it => {
+                if (it.blocking) return { coverage: 100, subs: null };
                 if (!it.parts) return covers(c, it, part) ? { coverage: it.coverage, subs: null } : null;
                 return (it.parts[part.id] || []).find(p => (!p.subs || !sub || p.subs.includes(sub)) && (!p.sides || p.sides.includes(side))) ?? null;
             };
             const items = worn.map(it => [it, portion(it)]).filter(([, p]) => p && p.coverage > 0)
-                .sort(([x], [y]) => LAYER_ORDER.indexOf(x.layer) - LAYER_ORDER.indexOf(y.layer));
+                .sort(([x], [y]) => (y.blocking ? 1 : 0) - (x.blocking ? 1 : 0) || LAYER_ORDER.indexOf(x.layer) - LAYER_ORDER.indexOf(y.layer));
             for (const [it, p] of items) {
                 if (M <= 0) return;
                 if (roll >= p.coverage) continue;

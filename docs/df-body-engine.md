@@ -110,6 +110,7 @@ Worn items come from DF's armour files (`item_armor`, `item_helm`, `item_gloves`
 - An item is one more layer in §4.4 with its material, Qa = quality (ordinary 1, well-crafted 1.2, finely-crafted 1.4, superior 1.6, exceptional 1.8, masterwork 2, artifact 3) [WIKI], and contact area = (armour size ÷ 10)^(2/3) [DFHACK], armour size = part size × coverage ÷ 100 × (1 + (UPSTEP + UBSTEP + LBSTEP) ÷ 4), MAX counted as 3 [WIKI].
 - `STRUCTURAL_ELASTICITY_CHAIN_ALL`, `_CHAIN_METAL` (metal items), `_WOVEN_THREAD` (silk, cloth, wool items): both strains at yield = 50000, so a blow the item stops passes on undiminished as blunt [WIKI "elastic armor, such as a mail shirt"; per-token reach RAW].
 - Materials: DF metals by name; leather, silk, cloth (linen, cotton, hemp), wool, wood, bone, shell, chitin by DF material template [RAW].
+- Shields (`item_shield`: shield `BLOCKCHANCE` 20, buckler 10) [RAW]: a blow that the timing test (§4.3) does not avoid meets a held shield with chance = `BLOCKCHANCE` %, while at least one `GRASP` part works; the shield is then the outermost layer, of its material and quality, met in full. Material does not change the chance (wiki Shield: "wood and leather … are just as effective for blocking") [WIKI]. The shield skill's effect on the chance is unpublished (OPEN-80); projectiles (block chance doubled, wiki) wait for ranged attacks.
 - Rigid-tissue factor (§4.6) applies to body tissue only.
 - Left out: blunt deflection 2·Sw·IYw < A·Da. With the wiki's units every mace bounces off iron armour, against the wiki's own notes that blunt weapons go through iron (User:Shinziril); the talk page reports the formula fails tests (OPEN-75). Shields and blocking: OPEN-80. Armour wear: not tracked.
 
@@ -291,7 +292,7 @@ What these show:
 | OPEN-73 | CHIMERA, CENTAUR, GRIFFON bodies do not resolve |
 | OPEN-74 | closed by the fit in §4.6; replace the CompuBox proxy when a count of head punches landed per bare-knuckle bout is published |
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
-| OPEN-80 | shields and blocking |
+| OPEN-80 | shield skill: DF raises block frequency with skill; the formula is unpublished |
 | OPEN-76 | penetration depth vs layer thickness |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found |
 | OPEN-81 | knockout length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more) |

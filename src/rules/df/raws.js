@@ -5,7 +5,7 @@
 export const RAW_FILES = [
     'body_default.txt', 'body_rcp.txt', 'b_detail_plan_default.txt', 'tissue_template_default.txt',
     'material_template_default.txt', 'c_variation_default.txt', 'item_weapon.txt', 'inorganic_metal.txt',
-    'item_armor.txt', 'item_helm.txt', 'item_gloves.txt', 'item_shoes.txt', 'item_pants.txt',
+    'item_armor.txt', 'item_helm.txt', 'item_gloves.txt', 'item_shoes.txt', 'item_pants.txt', 'item_shield.txt',
     'creature_amphibians.txt', 'creature_annelids.txt', 'creature_birds.txt', 'creature_birds_new.txt',
     'creature_bug_slug_new.txt', 'creature_desert_new.txt', 'creature_domestic.txt', 'creature_equipment.txt',
     'creature_fanciful.txt', 'creature_insects.txt', 'creature_large_mountain.txt', 'creature_large_ocean.txt',
@@ -22,7 +22,7 @@ const TISSUE_NUM = ['RELATIVE_THICKNESS', 'HEALING_RATE', 'VASCULAR', 'PAIN_RECE
 const TISSUE_FLAGS = ['STRUCTURAL', 'FUNCTIONAL', 'ARTERIES', 'MAJOR_ARTERIES', 'COSMETIC', 'SETTABLE', 'SPLINTABLE', 'CONNECTIVE_TISSUE_ANCHOR', 'SCARS', 'CONNECTS'];
 const TISSUE_OTHER = ['TISSUE_MATERIAL', 'SUBORDINATE_TO_TISSUE', 'TISSUE_NAME', 'TISSUE_SHAPE', 'TISSUE_LEAKS', 'TISSUE_MAT_STATE',
     'THICKENS_ON_STRENGTH', 'THICKENS_ON_ENERGY_STORAGE', 'STYLEABLE', 'INSULATION', 'TISSUE_STYLE_UNIT', 'TISSUE_COLOR'];
-const ARMOR_KINDS = ['ITEM_ARMOR', 'ITEM_HELM', 'ITEM_GLOVES', 'ITEM_SHOES', 'ITEM_PANTS'];
+const ARMOR_KINDS = ['ITEM_ARMOR', 'ITEM_HELM', 'ITEM_GLOVES', 'ITEM_SHOES', 'ITEM_PANTS', 'ITEM_SHIELD'];
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth'];
 
 export function tokens(text) {
@@ -110,7 +110,7 @@ export function armor(db, text) {
     return {
         id: best.id, kind: best.kind, name: `${q ? `${q} ` : ''}${mat.name} ${best.n}`, quality: QUALITY[q] ?? 1,
         layer: best.list.find(t => t[0] === 'LAYER')?.[1] ?? 'ARMOR', coverage: num('COVERAGE') || 100,
-        ubstep: num('UBSTEP'), lbstep: num('LBSTEP'), upstep: num('UPSTEP'), mat, elastic,
+        ubstep: num('UBSTEP'), lbstep: num('LBSTEP'), upstep: num('UPSTEP'), mat, elastic, blockChance: num('BLOCKCHANCE'),
     };
 }
 

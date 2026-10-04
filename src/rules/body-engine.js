@@ -427,6 +427,12 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         }
         worn.push(it);
     }
+    // A held shield (DF item_shield): a blow that is not avoided meets it with chance = BLOCKCHANCE %, if a GRASP part works.
+    let shield = null;
+    if (a.shield) {
+        shield = armorOf(a.shield);
+        if (!shield || shield.kind !== 'ITEM_SHIELD') return `No DF shield "${a.shield}" (material + shield or buckler, e.g. "wooden shield", "iron buckler"). Nothing recorded.`;
+    }
     let w, verb, means, bite = false;
     if (a.weapon) {
         const wp = weaponOf(a.weapon);
@@ -457,6 +463,9 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         if (done <= impact) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
     }
     const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
+    const holds = shield && tc.parts.some(x => x.flags.includes('GRASP') && worksFn(target, tc)(x));
+    const blocked = holds && rng() * 100 < shield.blockChance;
+    if (blocked) worn.push({ ...shield, blocking: true });
     // Side hit: the one facing the attacker; a blow from the left or right lands front or back alike (equal halves).
     const from = a.from ?? (a.facing === false ? 'back' : 'front');
     const side = from === 'front' || from === 'back' ? from : rng() < 0.5 ? 'front' : 'back';
