@@ -112,7 +112,7 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 50 | how much infection slows healing and drains strength | research |
 | | 51 | CLOSED 4 Oct (Earth fork, DF engine): abilities = share of working DF parts per flag | — |
 | Strikes (576) | 52 | CLOSED 3 Oct: lands unless the target recognises it and completes a defensive move before impact (timings sourced; replaces NetHack d20) | — |
-| | 53 | hit location when not aimed | research (assault injury distributions) |
+| | 53 | CLOSED 4 Oct (Earth fork): CDDA hit sizes over DF parts; small attackers hit low | — |
 | | 54 | CLOSED 4 Oct: DF momentum and layer tests for every weapon | — |
 | | 55 | CLOSED 4 Oct: DF TL_MAJOR_ARTERIES layers give the major class; muscle ARTERIES 12 % limb artery | — |
 | | 56 | CLOSED 4 Oct: DF layers and internal parts | — |
