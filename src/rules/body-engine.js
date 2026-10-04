@@ -10,7 +10,14 @@ const BLEED = { femoral: [300, 600], limb_artery: [70, 170], small: [1, 10] };
 const FRACTURE = {
     arm_spiral: [21, 42], arm_transverse: [42, 84],
     leg_spiral: [42, 84], leg_transverse: [84, 168],
+    // Ribs: "at least 6 weeks", complete by 12 weeks (Guttentag & Salwen 1999). Nose: stable 3–5 weeks, fused 4–8 weeks
+    // (Wikipedia "Nasal fracture"); midpoints.
+    rib: [42, 84], nose: [28, 42],
 };
+// Small-vessel bleeding stops by clotting within the normal bleeding time: under 5 min, up to 8 min in some texts (Ivy and
+// template methods). A bruise clears in 13 days (mild contusion, Jackson & Feagin classification).
+const CLOT_MIN = [0, 8];
+const BRUISE_DAYS = [13, 13];
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
 // Rule 576, days. Missing types are OPEN-48/49: they do not close yet.
@@ -84,18 +91,21 @@ export function stage(net) {
 export function addWound(p, w, rng = Math.random) {
     const row = rowOf(w.part);
     const wound = { id: p.nextId++, part: w.part.name, pid: w.part.id, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
-    const healRange = ['cut', 'puncture', 'bite', 'blunt'].includes(w.type) || w.functionLost ? CUT_HEAL[row] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
+    const healRange = w.type === 'blunt' && !w.functionLost ? BRUISE_DAYS
+        : ['cut', 'puncture', 'bite', 'blunt'].includes(w.type) || w.functionLost ? CUT_HEAL[row] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
     if (w.type === 'burn') wound.depth = BURN_HEAL[w.depth] !== undefined ? w.depth : null;
     // DF HEALING_RATE scales the human days: soft tissue relative to 100, bone relative to 1000 (human templates).
     const factor = w.healFactor ?? 1;
     if (healRange) wound.heals = round(between(rng, healRange) * factor);
     if (w.vessel && BLEED[w.vessel] && bloodVolume(p)) wound.bleed = round(between(rng, BLEED[w.vessel]));
+    if (w.vessel === 'small' && wound.bleed) wound.clotIn = Math.round(between(rng, CLOT_MIN));
     if (w.functionLost) wound.functionLost = true;
     if (w.permanent) wound.permanent = true;
     if (w.type === 'severed') wound.severed = true;
     if (w.type === 'fracture') {
         // Parts outside the arm and leg rows have no timetable (OPEN-58): joins stays null.
-        const kind = BONE_ROW[row] ? `${BONE_ROW[row]}_${w.fracture || 'transverse'}` : null;
+        const kind = w.part.cats.some(k => k.startsWith('RIB_')) ? 'rib' : w.part.cats.includes('NOSE') ? 'nose'
+            : BONE_ROW[row] ? `${BONE_ROW[row]}_${w.fracture || 'transverse'}` : null;
         const bone = w.part.cats.includes('LEG_LOWER') ? 'shin' : 'default';
         wound.fracture = { kind, joins: kind ? FRACTURE[kind][0] * factor : null, full: kind ? FRACTURE[kind][1] * factor : null, crooked: false,
             never: kind ? rng() < NONUNION[bone] : false };
@@ -178,6 +188,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             w.age += 1 / DAY_MIN;
             if (w.fracture && !w.fracture.never && w.fracture.joins !== null) { w.fracture.joins -= 1 / DAY_MIN; w.fracture.full -= 1 / DAY_MIN; }
             if (w.heals !== null && !w.healed && w.age >= w.heals) { w.healed = true; w.bleed = 0; }
+            if (w.clotIn != null && w.bleed && --w.clotIn <= 0) { w.bleed = 0; w.clotIn = null; }
             const onset = INFECTION_ONSET[w.type === 'bite' ? 'bite' : 'other'];
             if (w.open && w.infection === null && w.age >= onset) w.infection = rng() < infectionChance(w);
         }
