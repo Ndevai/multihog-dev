@@ -10,6 +10,12 @@ const Q = 1;
 // Blunt test on rigid tissue (STRUCTURAL, not FUNCTIONAL) × this factor. Fit (docs/df-body-engine.md §4.6): a
 // Professional 70 kg human's punch breaks the skull on 0.153 % of landed head punches (27 facial fractures, 301 bouts).
 export const RIGID_BLUNT_FACTOR = 19.985;
+// Momentum × this factor for natural cutting attacks (bites, scratches, gores). Fit (docs/df-body-engine.md §4.7): a dog's
+// bite to a human forearm breaks the skin on 87.4 % of bites (475 ED-treated adult dog bites, Morzycki 2019).
+export const NATURAL_EDGE_FACTOR = 2.243;
+// Share of the striking part's contact area a natural cutting attack crushes with once it stops cutting. Fit (§4.7):
+// 2 % of those dog bites fracture bone (Morzycki 2019).
+export const CRUSH_AREA_SHARE = 0.232;
 
 export const skillFactor = level => 1 + Math.min(Math.max(0, SKILL_LEVELS.indexOf(level)), 14) / 14;
 export const partSize = (c, part, iSize) => iSize * part.relsize / c.relTotal;
@@ -41,7 +47,9 @@ export function bodyWeapon(c, attack, iSize, works = () => true) {
             name: tip === base ? base.name : `${base.name} (${tip.name})`,
             size: partSize(c, base, iSize), density: partDensity(c, base),
             contact: attack.contactPerc / 100 * area(partSize(c, tip, iSize)),
-            penetration: attack.penetrationPerc, edge: attack.edge, velocity: attack.velocity / 1000, mat: mat || {},
+            // a cutting attack that stops cutting crushes with the whole striking part (jaw, paw) [ASSUMED]
+            bluntContact: attack.edge ? attack.contactPerc / 100 * area(partSize(c, base, iSize)) * CRUSH_AREA_SHARE : undefined,
+            penetration: attack.penetrationPerc, edge: attack.edge, velocity: attack.velocity / 1000, mat: mat || {}, natural: true,
         };
     }
     return null;
@@ -88,7 +96,7 @@ export const armorSize = (partCm3, item) => partCm3 * item.coverage / 100 * (1 +
 /** M = Skill × Size × Str × Vel ÷ (10⁶ × (1 + i_Size ÷ (w_density × w_size))) × style × prone. */
 export function momentum(c, iSize, w, { skill, style = 'normal', prone = false } = {}) {
     return skillFactor(skill) * c.size * c.strength * w.velocity / (1e6 * (1 + iSize / (w.density * w.size)))
-        * (STYLES[style] ?? 1) * (prone ? 2 : 1);
+        * (STYLES[style] ?? 1) * (prone ? 2 : 1) * (w.natural && w.edge ? NATURAL_EDGE_FACTOR : 1);
 }
 
 /**
@@ -104,7 +112,7 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
     const roll = rng() * 100;
     let edged = w.edge;
     // One layer test (wiki Material science); returns 'cut' | 'smashed' | 'held' and updates M and edged.
-    const test = (m, A, Qa, factor) => {
+    const test = (m, A, Qa, factor, Ablunt = A) => {
         if (edged) {
             const S = (w.mat.MAX_EDGE ?? 10000) / 10000;
             const need = (m.SHEAR_YIELD / w.mat.SHEAR_YIELD + (A + 1) * m.SHEAR_FRACTURE / w.mat.SHEAR_FRACTURE) * (10 + 2 * Qa) / (S * Q);
@@ -112,7 +120,7 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
             M *= Math.min(1, m.SHEAR_STRAIN_AT_YIELD / 50000);
             edged = false;
         }
-        const need = (2 * m.IMPACT_FRACTURE - m.IMPACT_YIELD) / 1e6 * (2 + 0.4 * Qa) * A * factor;
+        const need = (2 * m.IMPACT_FRACTURE - m.IMPACT_YIELD) / 1e6 * (2 + 0.4 * Qa) * Ablunt * factor;
         if (M >= need) { M *= 0.95; return 'smashed'; }
         M *= Math.min(1, m.IMPACT_STRAIN_AT_YIELD / 50000);
         return 'held';
@@ -134,16 +142,17 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
                 let m = { IMPACT_FRACTURE: mat.IMPACT_YIELD, SHEAR_FRACTURE: mat.SHEAR_YIELD, ...mat };
                 if (p.elastic ?? it.elastic) m = { ...m, SHEAR_STRAIN_AT_YIELD: 50000, IMPACT_STRAIN_AT_YIELD: 50000 };
                 const cm3 = it.parts ? size * shareOf(part, p.subs) * Math.min(p.coverage, 100) / 100 : armorSize(size, it);
-                tested.push({ part, layer: { tissue: p.mat ? `${it.name} (${p.mat.name})` : it.name }, armor: true, result: test(m, Math.min(w.contact, area(cm3)), it.quality, 1) });
+                tested.push({ part, layer: { tissue: p.mat ? `${it.name} (${p.mat.name})` : it.name }, armor: true, result: test(m, Math.min(w.contact, area(cm3)), it.quality, 1, Math.min(w.bluntContact ?? w.contact, area(cm3))) });
             }
         }
         if (part === struck) { first.M = M; first.edged = edged; }
         const A = Math.min(w.contact, area(size));
+        const Ab = Math.min(w.bluntContact ?? w.contact, area(size));
         for (const layer of [...liveLayers(c, part)].reverse()) {
             if (M <= 0) return;
             const flags = tissueOf(c, layer)?.flags || [];
             const rigid = flags.includes('STRUCTURAL') && !flags.includes('FUNCTIONAL');
-            tested.push({ part, layer, result: test(materialOf(c, layer), A, Q, rigid ? RIGID_BLUNT_FACTOR : 1) });
+            tested.push({ part, layer, result: test(materialOf(c, layer), A, Q, rigid ? RIGID_BLUNT_FACTOR : 1, Ab) });
         }
     };
     visit(struck);
