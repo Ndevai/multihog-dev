@@ -127,6 +127,7 @@ export function registerLosicaRulesTools(enabled) {
             const s = store();
             (s.log ??= []).push({ tool: name, args, result: out });
             save();
+            globalThis._rpgRefreshRenderedView?.();
             return out;
         },
         formatMessage: () => '',

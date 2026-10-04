@@ -4,6 +4,7 @@ import { escapeHtml, decodeHtml, highlightParens, highlightNumbers, parseInWorld
 import { BLOCK_ICONS, BLOCK_ORDER, PAGE_SIZE, NO_PAGINATE, renderStartingGearTierOptions } from './constants.js';
 import { isResolvedCombatantStatusLine, parseCombatSideHeader } from './src/state/combat-persistence.js';
 import { buildDisplayGroupRenderPlan } from './src/features/display-groups.js';
+import { losicaMemo, trackedPeople } from './src/rules/losica-sheet.js';
 
 // ── Renderer module: pure HTML string producers, localStorage helpers ──
 // No live DOM mutations. All functions return strings or void (localStorage).
@@ -1983,6 +1984,7 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
     }
 
     export function renderMemoAsCards(memo, filterTag, sectionPages, uiOptions = {}) {
+        if (getSettings().losicaRules && memo && memo.trim()) memo = losicaMemo(memo, trackedPeople());
         if (!memo || !memo.trim()) {
             const obSettings = getSettings();
             const useDdMmYy = !!obSettings.useDdMmYyFormat;
@@ -2937,6 +2939,7 @@ function renderBenchedPartyPanel(benchedContent, isPanelCollapsed, expandedNames
  */
 export function renderTabModeView(memo, sectionPages, questsCtx = null) {
     if (!memo || !memo.trim()) return renderMemoAsCards(memo, null, sectionPages);
+    if (getSettings().losicaRules && memo && memo.trim()) memo = losicaMemo(memo, trackedPeople());
 
     const blocks = ensurePartyShellForBenchedRoster(parseMemoBlocks(memo));
     if (Object.keys(blocks).length === 0) {

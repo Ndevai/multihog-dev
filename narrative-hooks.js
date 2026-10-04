@@ -34,6 +34,7 @@ import { isCyoaEnabled, isLorebookAgentRuntimeActive, isLocationMappingEnabled }
 import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/state/narrative-pacing.js';
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import { LOSICA_BRIEF } from './src/rules/losica-tools.js';
+import { losicaMemo, trackedPeople } from './src/rules/losica-sheet.js';
 import { takeAuditNote } from './src/rules/rules-audit.js';
 import {
     buildDungeonRealityInjection,
@@ -1543,7 +1544,7 @@ export function installInterceptor() {
                 }
 
                 if (settings.currentMemo) {
-                    const memoText = stripMemoHtml(memoForGmContext(settings.currentMemo)).trim();
+                    const memoText = stripMemoHtml(settings.losicaRules ? losicaMemo(memoForGmContext(settings.currentMemo), trackedPeople()) : memoForGmContext(settings.currentMemo)).trim();
                     injections += `${STATE_MEMO_INJECT_PREAMBLE}\n\n## TRACKER STATE 0 (Current)\n${memoText}\n\n`;
                 }
 

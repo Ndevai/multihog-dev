@@ -3582,6 +3582,7 @@ globalThis._rpgResetRouterAutoTick = resetRouterAutoTick;
 globalThis._rpgResetTrackerUi = resetTrackerUi;
 // Expose live prefix derivation for any module that needs the current prefix.
 globalThis._rpgGetCurrentPrefix = () => getEffectiveRouterCampaignPrefix(SillyTavern.getContext().chatId || '');
+globalThis._rpgRefreshRenderedView = () => refreshRenderedView();
 globalThis._rpgUpdateUIMemo = (text) => {
     if (typeof updateUIMemo === 'function') updateUIMemo(text);
     if (typeof syncMemoView === 'function') syncMemoView();

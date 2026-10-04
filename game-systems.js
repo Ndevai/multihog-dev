@@ -520,6 +520,11 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
         if (settings.useDdMmYyFormat) {
             footerContent = footerContent.replace(/Day\s+\[X\]/g, '[DD/MM/YYYY]');
         }
+        if (settings.losicaRules) {
+            footerContent = footerContent
+                .replace(/\(Status: \[HP\]\)/g, '(Status: [{{user}}\'s wounds and blood-loss class from BODY, a few words])')
+                .replace(/\{\{user\}\}'s HP\/XP/g, "{{user}}'s status/XP");
+        }
         return footerContent;
     }
 
