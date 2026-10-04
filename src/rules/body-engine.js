@@ -1,5 +1,5 @@
 import { creature } from './df/index.js';
-import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, shot } from './df/combat.js';
+import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot } from './df/combat.js';
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
@@ -382,7 +382,10 @@ function vesselOf(c, layers, rng) {
 /** A cut, puncture or bite through every layer of a part, recorded without an attack (BodyWound). */
 export function openWound(p, part, type, rng = Math.random) {
     const c = creatureOf(p);
-    const w = addWound(p, { part, type, vessel: vesselOf(c, part.layers, rng) }, rng);
+    // Through every layer: organ (FUNCTIONAL) tissue stops working, for good when it has no HEALING_RATE (as in strike).
+    const organ = liveLayers(c, part).map(l => tissueOf(c, l)).filter(t => t?.flags.includes('FUNCTIONAL'));
+    const w = addWound(p, { part, type, vessel: vesselOf(c, part.layers, rng), functionLost: organ.length > 0,
+        permanent: organ.some(t => t.HEALING_RATE == null) }, rng);
     checkDeath(p);
     return w;
 }
@@ -437,11 +440,18 @@ function defenceDone(a, t, defender, rng) {
         * Math.max(0.5, 1 + RT_CV * gauss(rng));
     const done = [];
     const perceive = (from, reaction) => done.push(Math.max(from, intentFrom) + reaction);
-    // Sense organs: a creature with no working eye or ear has no such channel; thresholds shift by the species' audiogram.
-    const ab = defender ? abilities(defender) : { sight: 1, hearing: 1 };
-    const sees = ab.sight > 0 && a.facing !== false && a.lit !== false;
-    const db = a.noise_db || 0, level = db - hearingShift(defender?.species);
-    const audible = ab.hearing > 0 && inRange(defender?.species, db, a.noise_khz);
+    // Sense organs. Human monocular field 107° temporal, 60° nasal (Rönne 1915): a blow from the side (90°) is seen only by
+    // the eye on that side, from behind by none. One ear lost: thresholds +3 dB (binaural summation, Baker et al. 2020).
+    const c = defender ? creatureOf(defender) : null;
+    const works = c ? worksFn(defender, c) : () => true;
+    const organs = flag => c ? c.parts.filter(x => x.flags.includes(flag)) : [{ flags: [] }];
+    const eyes = organs('SIGHT').filter(works), ears = organs('HEAR'), earsOk = ears.filter(works).length;
+    const dir = a.from ?? (a.facing === false ? 'back' : 'front');
+    const sideFlag = { left: 'LEFT', right: 'RIGHT' }[dir];
+    const eyeSees = e => sideFlag ? e.flags.includes(sideFlag) || !e.flags.some(f => f === 'LEFT' || f === 'RIGHT') : a.facing !== false;
+    const sees = a.lit !== false && dir !== 'back' && eyes.some(eyeSees);
+    const db = a.noise_db || 0, level = db - hearingShift(defender?.species) - (earsOk < ears.length ? 3 : 0);
+    const audible = earsOk > 0 && inRange(defender?.species, db, a.noise_khz);
     if (awake && sees) perceive(0, rt('sight'));
     if (awake && audible && level > HEAR_DB) perceive(0, rt('hearing'));
     if (!awake && audible && level >= WAKE_DB) {

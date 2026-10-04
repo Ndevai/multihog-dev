@@ -77,7 +77,14 @@ Rule 576 timing: the defender perceives the attack (sight, hearing, range senses
 
 The defender takes the least harmful move that finishes before impact: dodge, else block with a held item, else block with the forearm [ASSUMED order]. A creature without `STANCE` parts dodges at capacity 1; without `GRASP` parts it cannot block.
 
-Senses: sight needs sight ability > 0 (a working `SIGHT` part), facing and light; hearing needs hearing ability > 0 (a working `HEAR` part). Partial loss (one eye, one ear) changes nothing: OPEN-66.
+Senses:
+
+| Sense | Rule | Source |
+|---|---|---|
+| sight | light, and a working `SIGHT` part that covers the direction: from the front, any eye while facing the attacker; from the left or right (90°), only an eye with that side's flag (or an unsided eye); from behind, none | human monocular field 60° nasal, 107° temporal (Rönne 1915, via Wikipedia "Visual field"); field of eyes on the sides of the head (horse, rabbit) not modelled [ASSUMED human field] |
+| hearing | a working `HEAR` part; with fewer working than the creature has, thresholds rise by 3 dB | binaural summation at detection threshold ≈ 3 dB, the classical finding replicated by Baker et al. 2020 (Sci Rep 10:3560: 4.47 dB) |
+
+DF marks the outer ear as the `HEAR` part (cartilage and skin): a fractured or severed outer ear stops hearing on that side [RAW]; real inner-ear injury is not modelled (OPEN-66).
 
 Hearing by species (src/rules/hearing.js; behavioural audiograms, free field, dB SPL):
 
@@ -303,7 +310,7 @@ Results: no water at rest → 5 % on day 2.3, 8 % on day 3.7, dead day 9.1; acti
 | all | species and mass on first appearance: the tool arguments, else the State Tracker profile (`Name (N kg)` header and its `Species:` line), else human at the species' adult mass |
 | all (argument) | `species`: DF creature id or name ("HUMAN", "wolf", "giant wolf"); used when the character first appears; default human |
 | BodyStrike | `part` = a part name of the target (free text); `attack` = the attacker's natural attack (punch, kick, bite, scratch…) or the weapon's attack verb (slash, stab, bash…); `weapon` = DF weapon name; `material` = metal; `skill` = DF level name; `style`; `prone`; `attacker_species`. Removed: `means`, untrained/trained/elite |
-| BodyWound | `part` = a part name; cut or puncture: vessel class as §5 for a cut through every layer [ASSUMED] |
+| BodyWound | `part` = a part name; cut, puncture or bite: a wound through every layer [ASSUMED]: vessel class as §5, and organ (`FUNCTIONAL`) tissue stops working, for good without `HEALING_RATE`, as in §5 |
 | BodyCheck | `uses` = grasp, stance, sight, hearing, smell, breathing |
 | BodyChoke | `who`, `holder`, `seconds` held: §6.1 choke rows |
 | unknown part / attack / species | the tool returns the valid names; nothing recorded |
