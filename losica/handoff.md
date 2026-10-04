@@ -109,7 +109,7 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 47 | ability lost by a crooked leg or foot (arm/hand set: 51 % grip, Orbay 2002) | research |
 | | 48 | Earth fork: punctures and bites use cut rows [ASSUMED]; small-vessel bleeding clots in 0–8 min | research |
 | | 49 | CLOSED 4 Oct (Earth fork): bruise clears in 13 days (mild contusion) | — |
-| | 50 | how much infection slows healing and drains strength | research |
+| | 50 | Earth fork: infected wound closes 10.5 days later (SSI hospital-stay proxy); strength drain and death risk open | research |
 | | 51 | CLOSED 4 Oct (Earth fork, DF engine): abilities = share of working DF parts per flag | — |
 | Strikes (576) | 52 | CLOSED 3 Oct: lands unless the target recognises it and completes a defensive move before impact (timings sourced; replaces NetHack d20) | — |
 | | 53 | CLOSED 4 Oct (Earth fork): CDDA hit sizes over DF parts; small attackers hit low | — |
