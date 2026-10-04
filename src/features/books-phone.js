@@ -1,6 +1,6 @@
 // Books library (in-world books written by the model, kept per chat) and phone (text threads with
 // NPCs; the NPC answers in character from its lorebook entry and the recent chat). Texts exchanged
-// since the narrator's last reply are shown to the narrator once.
+// since the user's last message are shown to the narrator for every generation of that turn.
 
 import { getSettings } from '../../state-manager.js';
 import { escapeHtml, cleanMessageContent } from '../../memo-processor.js';
@@ -101,7 +101,15 @@ export async function openPhone() {
     return popup;
 }
 
-/** Narrator injection: texts not yet shown to the narrator; marks them shown. */
+/** MESSAGE_SENT: texts shown during the previous turn count as known to the story. */
+export function markPhoneTold() {
+    const threads = meta()?.[PHONE];
+    if (!threads) return;
+    for (const thread of Object.values(threads)) for (const t of thread) t.shown && (t.told = true);
+    save();
+}
+
+/** Narrator injection: texts not yet part of a finished turn. */
 export function takePhoneInjection() {
     const threads = meta()?.[PHONE];
     if (!threads) return '';
@@ -110,10 +118,9 @@ export function takePhoneInjection() {
         for (const t of thread) {
             if (t.told) continue;
             lines.push(`${t.from === 'user' ? `{{user}} → ${name}` : `${name} → {{user}}`}: ${t.text}`);
-            t.told = true;
+            t.shown = true;
         }
     }
     if (!lines.length) return '';
-    save();
     return `<phone>\nText messages exchanged since the last reply (they happened in the story):\n${lines.join('\n')}\n</phone>`;
 }

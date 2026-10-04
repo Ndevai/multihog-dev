@@ -54,7 +54,7 @@ import { onPlayerTurnMessage, onPlayerTurnSent, onPlayerTurnChatChanged } from '
 import { openPartyTurn } from './src/features/party-turn.js';
 import { openJournal, openCalendar } from './src/features/journal-calendar.js';
 import { openLoreSuggestions } from './src/features/lore-suggest.js';
-import { openBooks, openPhone } from './src/features/books-phone.js';
+import { openBooks, openPhone, markPhoneTold } from './src/features/books-phone.js';
 
 // Wand-menu entries of the smaller play features: [element id, Font Awesome icon, label, open()].
 const WAND_FEATURES = [
@@ -8170,7 +8170,7 @@ function organizeConnectionSettingsUI() {
         eventSource.on(event_types.GENERATION_STARTED, onGenerationStarted);
         // Player turn runs first so every other reader sees the reply without its tag.
         if (event_types.MESSAGE_RECEIVED) eventSource.makeFirst(event_types.MESSAGE_RECEIVED, id => { if (getSettings().playerTurn) onPlayerTurnMessage(id); });
-        if (event_types.MESSAGE_SENT) eventSource.on(event_types.MESSAGE_SENT, () => { if (getSettings().playerTurn) onPlayerTurnSent(); });
+        if (event_types.MESSAGE_SENT) eventSource.on(event_types.MESSAGE_SENT, () => { if (getSettings().playerTurn) onPlayerTurnSent(); markPhoneTold(); });
         if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => { if (getSettings().playerTurn) onPlayerTurnChatChanged(); });
         eventSource.on(event_types.GENERATION_STARTED, type => { if (getSettings().rulesEngine) onRulesGenerationStarted(type); });
         if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, id => { if (getSettings().rulesEngine) onRulesMessageReceived(id); });
