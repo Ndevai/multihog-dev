@@ -480,6 +480,8 @@ You may be asked to use Markers: ((PLS)), ((B)), ((XB)), ((BDG)), ((HGT)). These
 
             time: true,
 
+            scene: false,
+
             xp: true,
 
             quests: true,

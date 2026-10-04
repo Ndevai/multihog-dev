@@ -103,6 +103,16 @@ Status: Healthy
 [/PARTY]
 
 SPELL AND ABILITY USE: track PARTY spell slots and ability use accurately.`,
+  scene: `Who is in the current scene besides {{user}} and the [PARTY] members with {{user}}. Use this format, leaving out empty lines:
+[SCENE]
+Present: Name, Name
+Remote: Name (channel), Name (channel)
+Arriving: Name (when)
+Left: Name (where to)
+[/SCENE]
+
+- Present: physically in the scene. Remote: reachable right now through a channel (phone, letter, radio, spell). Arriving: on the way, with when they arrive. Left: left the scene this turn.
+- Output [SCENE] on every turn where the cast changes. A move to a new location starts a new cast.`,
   'benched party': `Members temporarily separated from {{user}} while reunion remains plausible. Code moves their full [PARTY] stat sheet automatically — never output stat blocks here.
 
 Output [BENCHED PARTY] only when a bench or unbench occurs this turn; otherwise omit entirely. Always close the block: \`[/BENCHED PARTY]\`. Do NOT also output [PARTY] on a bench/unbench turn — code handles roster moves. If other [PARTY] members had real changes (HP, gear, status, etc.), output [PARTY] for those changes only; still do not list the benched/unbenched member there.
@@ -1597,7 +1607,7 @@ Firearms (modern/realistic homebrew): when assigning damage on new characters/ge
 export const BLOCK_ICONS = {
   TIME: '🕒', XP: '🌟', CHARACTER: '🧙', PARTY: '👥', 'BENCHED PARTY': '⛺',
   COMBAT: '⚔️', INVENTORY: '🎒', ABILITIES: '✨', SPELLS: '📖',
-  QUESTS: '📋',
+  QUESTS: '📋', SCENE: '🎭',
 };
 
 // NOTE: 'BENCHED PARTY' has its OWN enable toggle + editable prompt (settings.modules['benched
@@ -1607,7 +1617,7 @@ export const BLOCK_ICONS = {
 // (renderer.js), and [BENCHED PARTY] is intentionally never its own top-level tab/card — it
 // always renders folded into PARTY's own section as a compact roster sub-panel, since visually
 // it's a sub-state of party membership, not an independent trackable system.
-export const BLOCK_ORDER = ['COMBAT', 'CHARACTER', 'PARTY', 'INVENTORY', 'ABILITIES', 'SPELLS', 'XP', 'TIME', 'QUESTS'];
+export const BLOCK_ORDER = ['COMBAT', 'SCENE', 'CHARACTER', 'PARTY', 'INVENTORY', 'ABILITIES', 'SPELLS', 'XP', 'TIME', 'QUESTS'];
 
 export const PAGE_SIZE = 8;
 
