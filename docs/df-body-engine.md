@@ -2,7 +2,7 @@
 
 Result: bodies and attacks come from Dwarf Fortress. Any DF creature can be a character; its parts, tissue layers, materials, size, strength and natural attacks are read from DF's raw files. An attack's outcome is DF's layer-by-layer penetration test. Blood, healing, infection, falls, checks, time and magic stay as in rule 576.
 
-Labels: **[RAW]** a value or token read from the DF 0.47.04 raws · **[WIKI]** a formula from the DF wiki (reverse-engineered by players) · **[576]** today's rule-576 value · **[ASSUMED]** a choice this spec makes where no source states it · **OPEN-n** a known gap.
+Labels: **[RAW]** a value or token read from the DF 0.47.04 raws · **[WIKI]** a formula from the DF wiki (reverse-engineered by players) · **[576]** today's rule-576 value · **[DFHACK]** DF's internal structures as documented by DFHack (github.com/DFHack/df-structures) · **[ASSUMED]** a choice this spec makes where no source states it · **OPEN-n** a known gap.
 
 ## 1. Data
 
@@ -37,7 +37,7 @@ Human result: size 70000 cm³, strength 1000, 129 parts, relative sizes summing 
 |---|---|---|
 | individual size i_Size (cm³) | body mass kg × 1000 | [WIKI] "size in cm³ ≈ weight in grams" |
 | part size (cm³) | i_Size × part relsize ÷ Σ relsize of all parts | [WIKI] |
-| part area | part size^(2/3) | [ASSUMED] OPEN-74 |
+| part contact area | (part size ÷ 10)^(2/3) | [DFHACK] `unit_wound_layerst`: "Body parts and non-weapon items have contact=(size/10)^(2/3)" |
 | part density (kg/m³) | Σ(layer thickness × layer material `SOLID_DENSITY`) ÷ Σ thickness | [ASSUMED] |
 | cosmetic tissues (hair, eyebrows) | not tested by attacks | [ASSUMED from `COSMETIC`] |
 
@@ -72,7 +72,7 @@ Unchanged timing model (rule 576 strikes): impact time vs the target's defence t
 
 ### 4.4 Layers [WIKI, Material science]
 
-Layers of the struck part are tested outermost first. A = min(weapon contact area, struck part's area).
+Layers of the struck part are tested outermost first. A = min(weapon contact area, struck part's contact area) [WIKI; DFHACK: a wound's contact area "is initially the lesser of the weapon or body part contact areas"].
 
 | Test | Passes when | Then |
 |---|---|---|
@@ -88,7 +88,7 @@ Armour: not applied yet (OPEN-75). Penetration depth (`ATTACK_PENETRATION_PERC`,
 ### 4.5 Into the body
 
 - After the struck part's last layer, with M > 0: one `INTERNAL` part attached to it is chosen, weight = relsize [ASSUMED]; its layers are tested the same way.
-- A part that `BP_RELATION … AROUND` the chosen one is tested first with chance = the relation's % (skull around brain 100 %, each rib around heart or lung 5 %) [RAW relation; chance meaning ASSUMED].
+- A part that `BP_RELATION … AROUND` the chosen one is tested first with chance = the relation's % (skull around brain 100 %, each rib around heart or lung 5 %) [RAW relation; DFHACK names the number `relation_bp_amount`, "coverage"; using it as a chance ASSUMED].
 - Parts that can be aimed at: every part without `INTERNAL` (eyes, throat, mouth and fingers included).
 - Severed: an edged attack cuts every layer of a part that is not upper or lower body, and its contact area ≥ the part's area [ASSUMED from the wiki: "severing when the part is thinner than the contact edge"].
 
@@ -169,22 +169,25 @@ Attacker at its species' adult size, target a 70 kg human, landed, Dabbling, nor
 | HUMAN {"attack":"punch","part":"head"} | punch (right hand) to head: momentum 61. head: skin smashed, fat smashed, muscle smashed; skull: bone smashed. Wounds 1, 2. |
 | HUMAN {"attack":"punch","part":"upper body"} | punch (right hand) to upper body: momentum 61. upper body: skin smashed, fat smashed, muscle smashed; middle spine: bone smashed, nerve smashed. Wounds 1, 2, 3. |
 | HUMAN {"attack":"kick","part":"right lower leg"} | kick (right foot) to right lower leg: momentum 63.7. right lower leg: skin smashed, fat smashed, muscle smashed, bone smashed; right knee: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
-| HUMAN {"attack":"bite","part":"right hand"} | bite (head (first upper right incisor)) to right hand: momentum 68. right hand: skin smashed, fat smashed, muscle smashed, bone smashed; right wrist: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
-| HUMAN {"weapon":"short sword","attack":"slash","part":"right upper arm"} | slash (iron short sword) to right upper arm: momentum 85. right upper arm: skin smashed, fat smashed, muscle smashed, bone smashed; right shoulder: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
+| HUMAN {"attack":"bite","part":"right hand"} | bite (head (first upper right incisor)) to right hand: momentum 68. right hand: skin cut, fat cut, muscle cut, bone held; right wrist: muscle held, bone held. Wound 1. |
+| HUMAN {"weapon":"short sword","attack":"slash","part":"right upper arm"} | slash (iron short sword) to right upper arm: momentum 85. right upper arm: skin cut, fat cut, muscle cut, bone held; right shoulder: muscle held, bone held. Wound 1. |
 | HUMAN {"weapon":"short sword","attack":"stab","part":"upper body"} | stab (iron short sword) to upper body: momentum 68. upper body: skin cut, fat cut, muscle cut; middle spine: bone held, nerve held. Wound 1. |
 | HUMAN {"weapon":"short sword","attack":"slash","part":"throat"} | slash (iron short sword) to throat: momentum 85. throat: skin cut; throat severed. Wound 1. |
 | HUMAN {"weapon":"mace","attack":"bash","part":"head"} | bash (iron mace) to head: momentum 138.5. head: skin smashed, fat smashed, muscle smashed; skull: bone smashed. Wounds 1, 2. |
 | WOLF {"attack":"bite","part":"right lower leg"} | bite (head (first tooth)) to right lower leg: momentum 38.7. right lower leg: skin smashed, fat smashed, muscle smashed, bone smashed; right knee: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
-| GRIZZLY BEAR {"attack":"scratch","part":"upper body"} | scratch (right front foot (first right front toe)) to upper body: momentum 180.6. upper body: skin smashed, fat smashed, muscle smashed; middle spine: bone smashed, nerve smashed. Wounds 1, 2, 3. |
+| GRIZZLY BEAR {"attack":"scratch","part":"upper body"} | scratch (right front foot (first right front toe)) to upper body: momentum 180.6. upper body: skin cut, fat cut, muscle cut; middle spine: bone held, nerve held. Wound 1. |
 
-What these show: with the published formulas and the assumed part area, every unarmed blow and every mace blow breaks the first bone it meets (skull, spine, shin), a sword slash does not cut skin on a limb, and teeth (edge 0.1×) never cut. DF in play does not behave this way, so DF has steps the wiki does not publish; the part-area unit (OPEN-74) decides most of it.
+What these show:
+- Edged attacks match DF play: a sword, a human bite and a bear's claws cut skin, fat and muscle and stop at bone; a stab reaches the spine and is held.
+- A wolf bite does not cut (momentum 38.7 against an edged threshold of 48.6 for skin), because its teeth are tiny parts with edge 0.1×.
+- Every blunt blow (punch, kick, mace) still breaks the first bone it meets. DF keeps three kinds of layer damage: cut (shear), smashed (impact) and broken (compressive) [DFHACK `wound_damage_flags1`]. Bone fractures are the compressive kind, and no published source gives that test (OPEN-74).
 
 ## 10. Open items added
 
 | Id | Gap |
 |---|---|
 | OPEN-73 | CHIMERA, CENTAUR, GRIFFON bodies do not resolve |
-| OPEN-74 | part contact area: DF does not publish it; size^(2/3) chosen |
+| OPEN-74 | blunt damage to bone: DF's compressive ("broken") test is unpublished; the impact test stands in for it, so every blunt blow breaks the first bone |
 | OPEN-75 | armour layers (coverage, quality, deflection 2·Sw·IYw < A·Da) |
 | OPEN-76 | penetration depth vs layer thickness |
 | OPEN-77 | suffocation timing; pain (`PAIN_RECEPTORS`) and unconsciousness |

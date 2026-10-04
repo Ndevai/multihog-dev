@@ -9,7 +9,8 @@ const Q = 1;
 
 export const skillFactor = level => 1 + Math.min(Math.max(0, SKILL_LEVELS.indexOf(level)), 14) / 14;
 export const partSize = (c, part, iSize) => iSize * part.relsize / c.relTotal;
-export const area = size => size ** (2 / 3);
+// DFHack df-structures unit_wound_layerst: "Body parts and non-weapon items have contact=(size/10)^(2/3)."
+export const area = size => (size / 10) ** (2 / 3);
 export const tissueOf = (c, layer) => c.tissues[layer.tissue];
 export const materialOf = (c, layer) => c.materials[tissueOf(c, layer)?.material] || {};
 export const liveLayers = (c, part) => part.layers.filter(l => !tissueOf(c, l)?.flags.includes('COSMETIC'));
