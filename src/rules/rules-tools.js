@@ -1,5 +1,5 @@
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake } from './body-engine.js';
-import { loadRaws, creatureId } from './df/index.js';
+import { loadRaws, creatureId, creature } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
@@ -130,6 +130,8 @@ function who(st, name, speciesArg, massArg) {
     const text = speciesArg || t.species;
     const sp = speciesOf(text);
     if (!sp) return { error: noSpecies(text) };
+    // DF names some creatures only in legends ([DOES_NOT_EXIST], no body): chimera, centaur, griffon.
+    if (!known && !creature(sp)?.parts.length) return { error: `DF defines no body for "${text}" (a creature of legend only). Nothing recorded.` };
     return { p: person(st, name, Number(massArg) || t.mass, sp) };
 }
 

@@ -27,7 +27,7 @@ Labels: **[RAW]** a value or token read from the DF 0.47.04 raws · **[WIKI]** a
 5. Sizes: `BODY_SIZE` (last entry, cm³) × each `CHANGE_BODY_SIZE_PERC`; `GRAVITATE_BODY_SIZE:g` → (size + g) ÷ 2 [ASSUMED meaning].
 6. Strength = median (4th value) of `PHYS_ATT_RANGE:STRENGTH`, else 1000 (DF default range) [WIKI].
 7. Blood = the creature has a `BLOOD` token.
-8. Not resolved (no parts): CHIMERA, CENTAUR, GRIFFON (OPEN-73).
+8. CHIMERA, CENTAUR, GRIFFON have no body in DF (`DOES_NOT_EXIST`, legend names only); the tools refuse them.
 
 Human result: size 70000 cm³, strength 1000, 129 parts, relative sizes summing to 9414.
 
@@ -343,7 +343,7 @@ What these show:
 
 | Id | Gap |
 |---|---|
-| OPEN-73 | CHIMERA, CENTAUR, GRIFFON bodies do not resolve |
+| OPEN-73 | closed: CHIMERA, CENTAUR and GRIFFON carry `DOES_NOT_EXIST` and no body in DF (legend names only); the tools refuse them |
 | OPEN-74 | closed by the fit in §4.6; replace the CompuBox proxy when a count of head punches landed per bare-knuckle bout is published |
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
