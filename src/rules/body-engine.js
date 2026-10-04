@@ -1,6 +1,6 @@
 import { creature } from './df/index.js';
 import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf } from './df/combat.js';
-import { weaponOf, metalOf } from './df/index.js';
+import { weaponOf, metalOf, armorOf } from './df/index.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -371,7 +371,7 @@ function defenceDone(a, t, defender, rng) {
 }
 
 /**
- * An attack (docs/df-body-engine.md §4–5). a: { part, attack, weapon?, material?, skill?, style?, prone?, species?, mass?,
+ * An attack (docs/df-body-engine.md §4–5). a: { part, attack, weapon?, material?, armor? (worn items, text), skill?, style?, prone?, species?, mass?,
  * landed?, scene fields }. The attacker's species and mass come from the tracked attacker when there is one.
  */
 export function strike(target, a, attacker = null, rng = Math.random) {
@@ -382,6 +382,12 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     if (!part || part.flags.includes('INTERNAL')) return `${tc.name} has no part "${a.part}" to aim at. Parts: ${aimable(tc).join(', ')}. Nothing recorded.`;
     const mass = attacker?.mass ?? a.mass ?? ac.size / 1000;
     const iSize = mass * 1000;
+    const worn = [];
+    for (const text of a.armor || []) {
+        const it = armorOf(text);
+        if (!it) return `No DF armor "${text}" (material + item, e.g. "iron breastplate", "leather armor", "steel helm"). Nothing recorded.`;
+        worn.push(it);
+    }
     let w, verb, means, bite = false;
     if (a.weapon) {
         const wp = weaponOf(a.weapon);
@@ -412,7 +418,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         if (done <= impact) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
     }
     const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
-    const r = penetrate(tc, part, target.mass * 1000, w, M, rng);
+    const r = penetrate(tc, part, target.mass * 1000, w, M, rng, worn);
     const made = [];
     const touched = [...new Set(r.hits.map(h => h.part))];
     for (const hp of touched) {

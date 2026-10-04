@@ -170,6 +170,7 @@ export function registerRulesTools(enabled) {
         skill: { type: 'string', enum: SKILL_LEVELS, description: 'Attacker\'s fighting skill level. Dabbling = untrained.' },
         style: { type: 'string', enum: Object.keys(STYLES), description: 'quick = fast weak blow; heavy or wild = full-force blow.' },
         prone: { type: 'boolean', description: 'Target lying on the ground.' },
+        target_armor: { type: 'array', items: { type: 'string' }, description: 'Every item the character hit wears ([E] in [INVENTORY]) as quality + material + item: "steel breastplate", "iron mail shirt", "leather armor", "iron helm", "leather cap", "cloth trousers", "iron gauntlets", "leather high boots". Quality words: well-crafted, finely-crafted, superior, exceptional, masterwork, artifact.' },
         attacker: str('Attacker name; a tracked attacker uses its own species, mass and wounds'),
         attacker_species: str('Attacker\'s DF creature when the attacker is not tracked. Default human.'),
         attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg when not tracked; default the species\' adult mass.' },
@@ -190,7 +191,7 @@ export function registerRulesTools(enabled) {
         const p = person(st, a.who, Number(a.target_mass_kg) || undefined, sp);
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
         const keys = ['weapon', 'material', 'skill', 'style', 'prone', 'awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
-        const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || undefined,
+        const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || undefined, armor: a.target_armor,
             ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
     }));

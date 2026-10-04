@@ -51,6 +51,39 @@ export function itemWeapon(w, attack, metal) {
         penetration: attack.penetration, edge: attack.edge, velocity: attack.velocity / 1000, mat: metal };
 }
 
+const LAYER_ORDER = ['COVER', 'ARMOR', 'OVER', 'UNDER'];
+const external = p => !p.flags.includes('INTERNAL') && !p.flags.includes('EMBEDDED');
+
+/** Steps from an ancestor along the CON chain, or Infinity when anc is not above part. */
+function steps(c, part, anc) {
+    let n = 0;
+    for (let q = part; q; q = c.parts.find(x => x.id === q.parent), n++) if (q === anc) return n;
+    return Infinity;
+}
+
+/** Whether a worn item covers a part (wiki Armor: helms the head; gloves and shoes the hands and feet + UPSTEP; body armor the torso + UBSTEP / LBSTEP; pants the lower body + LBSTEP). */
+export function covers(c, item, part) {
+    if (!external(part)) return false;
+    const has = f => part.flags.includes(f);
+    const roots = f => c.parts.filter(x => x.flags.includes(f));
+    const limbish = has('LIMB') || part.cats.includes('NECK');
+    const extremity = f => roots(f).some(r => r === part || (part.parent === r.id && has('DIGIT')) || (has('LIMB') && steps(c, r, part) <= item.upstep));
+    const down = (root, n) => root.some(r => limbish && !has('GRASP') && !has('STANCE') && steps(c, part, r) <= n);
+    const up = n => roots('UPPERBODY').some(r => limbish && !has('GRASP') && !has('STANCE') && !has('HEAD') && steps(c, part, r) <= n
+        && !roots('LOWERBODY').some(l => steps(c, part, l) < Infinity));
+    switch (item.kind) {
+        case 'ITEM_HELM': return has('HEAD');
+        case 'ITEM_GLOVES': return extremity('GRASP');
+        case 'ITEM_SHOES': return extremity('STANCE');
+        case 'ITEM_PANTS': return has('LOWERBODY') || down(roots('LOWERBODY'), item.lbstep);
+        case 'ITEM_ARMOR': return has('UPPERBODY') || has('LOWERBODY') || up(item.ubstep) || down(roots('LOWERBODY'), item.lbstep);
+        default: return false;
+    }
+}
+
+/** Armor size [WIKI]: part size × coverage/100 × (1 + (UPSTEP + UBSTEP + LBSTEP) ÷ 4), MAX counted as 3. */
+export const armorSize = (partCm3, item) => partCm3 * item.coverage / 100 * (1 + [item.upstep, item.ubstep, item.lbstep].reduce((s, x) => s + Math.min(x, 3), 0) / 4);
+
 /** M = Skill × Size × Str × Vel ÷ (10⁶ × (1 + i_Size ÷ (w_density × w_size))) × style × prone. */
 export function momentum(c, iSize, w, { skill, style = 'normal', prone = false } = {}) {
     return skillFactor(skill) * c.size * c.strength * w.velocity / (1e6 * (1 + iSize / (w.density * w.size)))
@@ -58,30 +91,44 @@ export function momentum(c, iSize, w, { skill, style = 'normal', prone = false }
 }
 
 /**
- * Tests the struck part's layers outermost first, then one internal part. Returns
- * { hits: [{ part, layer, result: 'cut'|'smashed' }], tested: [{ part, layer, result }], severed, left }.
+ * Tests worn armor covering the struck part (outermost layer first, each met with chance = coverage), then the struck
+ * part's tissue layers outermost first, then one internal part. Returns
+ * { tested: [{ part, layer, result: 'cut'|'smashed'|'held', armor? }], hits (tissue only), severed, left }.
  */
-export function penetrate(c, struck, iSize, w, M, rng) {
+export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
     const tested = [];
     let edged = w.edge;
+    // One layer test (wiki Material science); returns 'cut' | 'smashed' | 'held' and updates M and edged.
+    const test = (m, A, Qa, factor) => {
+        if (edged) {
+            const S = (w.mat.MAX_EDGE ?? 10000) / 10000;
+            const need = (m.SHEAR_YIELD / w.mat.SHEAR_YIELD + (A + 1) * m.SHEAR_FRACTURE / w.mat.SHEAR_FRACTURE) * (10 + 2 * Qa) / (S * Q);
+            if (M >= need) { M *= 0.95; return 'cut'; }
+            M *= Math.min(1, m.SHEAR_STRAIN_AT_YIELD / 50000);
+            edged = false;
+        }
+        const need = (2 * m.IMPACT_FRACTURE - m.IMPACT_YIELD) / 1e6 * (2 + 0.4 * Qa) * A * factor;
+        if (M >= need) { M *= 0.95; return 'smashed'; }
+        M *= Math.min(1, m.IMPACT_STRAIN_AT_YIELD / 50000);
+        return 'held';
+    };
     const visit = part => {
-        const A = Math.min(w.contact, area(partSize(c, part, iSize)));
+        const size = partSize(c, part, iSize);
+        if (part === struck) {
+            const items = worn.filter(it => covers(c, it, part)).sort((x, y) => LAYER_ORDER.indexOf(x.layer) - LAYER_ORDER.indexOf(y.layer));
+            for (const it of items) {
+                if (M <= 0) return;
+                if (rng() * 100 >= it.coverage) continue;
+                const m = { IMPACT_FRACTURE: it.mat.IMPACT_YIELD, SHEAR_FRACTURE: it.mat.SHEAR_YIELD, ...it.mat };
+                tested.push({ part, layer: { tissue: it.name }, armor: true, result: test(m, Math.min(w.contact, area(armorSize(size, it))), it.quality, 1) });
+            }
+        }
+        const A = Math.min(w.contact, area(size));
         for (const layer of [...liveLayers(c, part)].reverse()) {
             if (M <= 0) return;
-            const m = materialOf(c, layer);
-            if (edged) {
-                const S = (w.mat.MAX_EDGE ?? 10000) / 10000;
-                const need = (m.SHEAR_YIELD / w.mat.SHEAR_YIELD + (A + 1) * m.SHEAR_FRACTURE / w.mat.SHEAR_FRACTURE) * (10 + 2 * Q) / (S * Q);
-                if (M >= need) { tested.push({ part, layer, result: 'cut' }); M *= 0.95; continue; }
-                M *= Math.min(1, m.SHEAR_STRAIN_AT_YIELD / 50000);
-                edged = false;
-            }
             const flags = tissueOf(c, layer)?.flags || [];
             const rigid = flags.includes('STRUCTURAL') && !flags.includes('FUNCTIONAL');
-            const need = (2 * m.IMPACT_FRACTURE - m.IMPACT_YIELD) / 1e6 * (2 + 0.4 * Q) * A * (rigid ? RIGID_BLUNT_FACTOR : 1);
-            if (M >= need) { tested.push({ part, layer, result: 'smashed' }); M *= 0.95; continue; }
-            M *= Math.min(1, m.IMPACT_STRAIN_AT_YIELD / 50000);
-            tested.push({ part, layer, result: 'held' });
+            tested.push({ part, layer, result: test(materialOf(c, layer), A, Q, rigid ? RIGID_BLUNT_FACTOR : 1) });
         }
     };
     visit(struck);
@@ -102,5 +149,5 @@ export function penetrate(c, struck, iSize, w, M, rng) {
             if (M > 0) visit(pick);
         }
     }
-    return { tested, hits: tested.filter(t => t.result !== 'held'), severed, left: M };
+    return { tested, hits: tested.filter(t => t.result !== 'held' && !t.armor), severed, left: M };
 }

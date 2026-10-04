@@ -5,6 +5,7 @@
 export const RAW_FILES = [
     'body_default.txt', 'body_rcp.txt', 'b_detail_plan_default.txt', 'tissue_template_default.txt',
     'material_template_default.txt', 'c_variation_default.txt', 'item_weapon.txt', 'inorganic_metal.txt',
+    'item_armor.txt', 'item_helm.txt', 'item_gloves.txt', 'item_shoes.txt', 'item_pants.txt',
     'creature_amphibians.txt', 'creature_annelids.txt', 'creature_birds.txt', 'creature_birds_new.txt',
     'creature_bug_slug_new.txt', 'creature_desert_new.txt', 'creature_domestic.txt', 'creature_equipment.txt',
     'creature_fanciful.txt', 'creature_insects.txt', 'creature_large_mountain.txt', 'creature_large_ocean.txt',
@@ -21,6 +22,7 @@ const TISSUE_NUM = ['RELATIVE_THICKNESS', 'HEALING_RATE', 'VASCULAR', 'PAIN_RECE
 const TISSUE_FLAGS = ['STRUCTURAL', 'FUNCTIONAL', 'ARTERIES', 'MAJOR_ARTERIES', 'COSMETIC', 'SETTABLE', 'SPLINTABLE', 'CONNECTIVE_TISSUE_ANCHOR', 'SCARS', 'CONNECTS'];
 const TISSUE_OTHER = ['TISSUE_MATERIAL', 'SUBORDINATE_TO_TISSUE', 'TISSUE_NAME', 'TISSUE_SHAPE', 'TISSUE_LEAKS', 'TISSUE_MAT_STATE',
     'THICKENS_ON_STRENGTH', 'THICKENS_ON_ENERGY_STORAGE', 'STYLEABLE', 'INSULATION', 'TISSUE_STYLE_UNIT', 'TISSUE_COLOR'];
+const ARMOR_KINDS = ['ITEM_ARMOR', 'ITEM_HELM', 'ITEM_GLOVES', 'ITEM_SHOES', 'ITEM_PANTS'];
 const ORDINAL = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth'];
 
 export function tokens(text) {
@@ -28,15 +30,18 @@ export function tokens(text) {
 }
 
 export function indexRaws(files) {
-    const db = { ITEM_WEAPON: {}, cache: {}, expanded: {} };
+    const db = { ITEM_WEAPON: {}, ARMOR: {}, cache: {}, expanded: {} };
     for (const h of HEADS) db[h] = {};
     for (const text of Object.values(files)) {
         let type = null, cur = null;
         for (const t of tokens(text)) {
             if (t[0] === 'OBJECT') { type = t[1]; cur = null; continue; }
-            const head = type === 'ITEM' ? 'ITEM_WEAPON' : type;
-            if (t[0] === head && db[head]) { cur = db[head][t[1]] = []; continue; }
-            if (type === 'ITEM' && t[0].startsWith('ITEM_')) { cur = null; continue; }
+            if (type === 'ITEM' && t.length === 2 && /^ITEM_[A-Z]+$/.test(t[0])) {
+                if (t[0] === 'ITEM_WEAPON') cur = db.ITEM_WEAPON[t[1]] = [];
+                else if (ARMOR_KINDS.includes(t[0])) { cur = []; db.ARMOR[t[1]] = { kind: t[0], tokens: cur }; } else cur = null;
+                continue;
+            }
+            if (t[0] === type && db[type] && type !== 'ITEM') { cur = db[type][t[1]] = []; continue; }
             cur?.push(t);
         }
     }
@@ -63,6 +68,51 @@ export function metal(db, text) {
     const key = String(text || '').trim().toUpperCase();
     const id = db.INORGANIC[key] ? key : Object.keys(db.INORGANIC).find(k => materialFrom(db.INORGANIC[k], db).name?.toUpperCase() === key);
     return id ? { id, ...materialFrom(db.INORGANIC[id], db) } : null;
+}
+
+// Material words → DF material template, for non-metal gear.
+const TEMPLATE_WORDS = {
+    leather: 'LEATHER_TEMPLATE', hide: 'LEATHER_TEMPLATE', silk: 'SILK_TEMPLATE', cloth: 'THREAD_PLANT_TEMPLATE', linen: 'THREAD_PLANT_TEMPLATE',
+    cotton: 'THREAD_PLANT_TEMPLATE', hemp: 'THREAD_PLANT_TEMPLATE', wool: 'HAIR_TEMPLATE', yarn: 'HAIR_TEMPLATE', wood: 'WOOD_TEMPLATE',
+    wooden: 'WOOD_TEMPLATE', bone: 'BONE_TEMPLATE', shell: 'SHELL_TEMPLATE', chitin: 'CHITIN_TEMPLATE',
+};
+const THREAD = ['SILK_TEMPLATE', 'THREAD_PLANT_TEMPLATE', 'HAIR_TEMPLATE'];
+export const QUALITY = { ordinary: 1, 'well-crafted': 1.2, 'finely-crafted': 1.4, superior: 1.6, exceptional: 1.8, masterwork: 2, artifact: 3 };
+
+/** A gear material by name: a metal ("iron", "steel") or a word in TEMPLATE_WORDS ("leather", "cloth"). */
+export function gearMaterial(db, text) {
+    const m = metal(db, text);
+    if (m) return { ...m, kind: 'metal' };
+    const tpl = TEMPLATE_WORDS[String(text || '').trim().toLowerCase()];
+    return tpl ? { ...materialTemplate(db, tpl), name: String(text).trim().toLowerCase(), kind: THREAD.includes(tpl) ? 'thread' : 'other' } : null;
+}
+
+/** A worn item from text like "masterwork steel breastplate", "leather armor", "iron mail shirt"; null when no DF armor name ends the text. */
+export function armor(db, text) {
+    let words = String(text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const q = Object.keys(QUALITY).find(k => words.startsWith(`${k} `));
+    if (q) words = words.slice(q.length + 1);
+    let best = null;
+    for (const [id, { kind, tokens: list }] of Object.entries(db.ARMOR)) {
+        const name = list.find(t => t[0] === 'NAME');
+        for (const n of [name?.[1], name?.[2]].filter(Boolean)) {
+            if ((words === n || words.endsWith(` ${n}`)) && (!best || n.length > best.n.length)) best = { id, kind, list, n };
+        }
+    }
+    if (!best) return null;
+    const matText = words.slice(0, words.length - best.n.length).trim() || (best.list.some(t => t[0] === 'METAL') ? 'iron' : 'leather');
+    const mat = gearMaterial(db, matText);
+    if (!mat) return null;
+    const num = k => { const t = best.list.find(x => x[0] === k); return !t ? 0 : t[1] === 'MAX' ? Infinity : Number(t[1]); };
+    const flag = k => best.list.some(t => t[0] === k);
+    const elastic = flag('STRUCTURAL_ELASTICITY_CHAIN_ALL') || (flag('STRUCTURAL_ELASTICITY_CHAIN_METAL') && mat.kind === 'metal')
+        || (flag('STRUCTURAL_ELASTICITY_WOVEN_THREAD') && mat.kind === 'thread');
+    return {
+        id: best.id, kind: best.kind, name: `${q ? `${q} ` : ''}${mat.name} ${best.n}`, quality: QUALITY[q] ?? 1,
+        layer: best.list.find(t => t[0] === 'LAYER')?.[1] ?? 'ARMOR', coverage: num('COVERAGE') || 100,
+        ubstep: num('UBSTEP'), lbstep: num('LBSTEP'), upstep: num('UPSTEP'),
+        mat: elastic ? { ...mat, SHEAR_STRAIN_AT_YIELD: 50000, IMPACT_STRAIN_AT_YIELD: 50000 } : mat,
+    };
 }
 
 /** A weapon (ITEM_WEAPON id or its name, e.g. "short sword"): size and attacks. */

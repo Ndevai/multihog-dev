@@ -84,9 +84,29 @@ Layers of the struck part are tested outermost first. A = min(weapon contact are
 
 rSY, rSF = layer ÷ weapon `SHEAR_YIELD`, `SHEAR_FRACTURE`. S = weapon `MAX_EDGE` ÷ 10000 (gives the wiki's 1× metals, 2× obsidian, 10× adamantine, 0.1× bone). Qa = Qw = 1 (ordinary quality; no armour quality on tissue) [WIKI / ASSUMED].
 
-Armour: not applied yet (OPEN-75). Penetration depth (`ATTACK_PENETRATION_PERC`, weapon penetration): not used; layers are tested until M runs out (OPEN-76).
+Armour: §4.5. Penetration depth (`ATTACK_PENETRATION_PERC`, weapon penetration): not used; layers are tested until M runs out (OPEN-76).
 
-### 4.5 Into the body
+### 4.5 Armour
+
+Worn items come from DF's armour files (`item_armor`, `item_helm`, `item_gloves`, `item_shoes`, `item_pants`) [RAW]; BodyStrike takes them as text, "quality material item" ("steel breastplate", "iron mail shirt", "leather armor").
+
+| Item kind | Covers | Label |
+|---|---|---|
+| helm | the part with flag `HEAD`; face parts (eyes, mouth, nose, cheeks) stay bare | [WIKI Armor] |
+| gloves | `GRASP` parts and their digits; `UPSTEP:n` adds n limb parts up (gauntlets: lower arms) | [WIKI] |
+| shoes | `STANCE` parts and their digits; `UPSTEP` as gloves (high boots: lower legs) | [WIKI] |
+| body armour | upper and lower body; `UBSTEP:n` adds neck and limb parts up to n steps from the upper body; `LBSTEP:n` adds leg parts up to n steps below the lower body; `MAX` = all | [WIKI] |
+| pants | lower body + `LBSTEP` | [WIKI] |
+
+- Order on a part, outermost first: COVER, ARMOR, OVER, UNDER [WIKI "Under, Over, Armor, Cover"].
+- Each item is met with chance = `COVERAGE` % (cap 50 %, mittens 150 % = always) [WIKI].
+- An item is one more layer in §4.4 with its material, Qa = quality (ordinary 1, well-crafted 1.2, finely-crafted 1.4, superior 1.6, exceptional 1.8, masterwork 2, artifact 3) [WIKI], and contact area = (armour size ÷ 10)^(2/3) [DFHACK], armour size = part size × coverage ÷ 100 × (1 + (UPSTEP + UBSTEP + LBSTEP) ÷ 4), MAX counted as 3 [WIKI].
+- `STRUCTURAL_ELASTICITY_CHAIN_ALL`, `_CHAIN_METAL` (metal items), `_WOVEN_THREAD` (silk, cloth, wool items): both strains at yield = 50000, so a blow the item stops passes on undiminished as blunt [WIKI "elastic armor, such as a mail shirt"; per-token reach RAW].
+- Materials: DF metals by name; leather, silk, cloth (linen, cotton, hemp), wool, wood, bone, shell, chitin by DF material template [RAW].
+- Rigid-tissue factor (§4.6) applies to body tissue only.
+- Left out: blunt deflection 2·Sw·IYw < A·Da. With the wiki's units every mace bounces off iron armour, against the wiki's own notes that blunt weapons go through iron (User:Shinziril); the talk page reports the formula fails tests (OPEN-75). Shields and blocking: OPEN-80. Armour wear: not tracked.
+
+### 4.5b Into the body
 
 - After the struck part's last layer, with M > 0: one `INTERNAL` part attached to it is chosen, weight = relsize [ASSUMED]; its layers are tested the same way.
 - A part that `BP_RELATION … AROUND` the chosen one is tested first with chance = the relation's % (skull around brain 100 %, each rib around heart or lung 5 %) [RAW relation; DFHACK names the number `relation_bp_amount`, "coverage"; using it as a chance ASSUMED].
@@ -197,10 +217,18 @@ Attacker at its species' adult size, target a 70 kg human, landed, Dabbling, nor
 | HUMAN {"weapon":"mace","attack":"bash","part":"head"} | bash (iron mace) to head: momentum 138.5. head: skin smashed, fat smashed, muscle smashed; skull: bone held. Wound 1. |
 | WOLF {"attack":"bite","part":"right lower leg"} | bite (head (first tooth)) to right lower leg: momentum 38.7. right lower leg: skin smashed, fat smashed, muscle smashed, bone smashed; right knee: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
 | GRIZZLY BEAR {"attack":"scratch","part":"upper body"} | scratch (right front foot (first right front toe)) to upper body: momentum 180.6. upper body: skin cut, fat cut, muscle cut; middle spine: bone held, nerve held. Wound 1. |
+| HUMAN {"weapon":"short sword","attack":"slash","part":"upper body","armor":["iron breastplate"]} | slash (iron short sword) to upper body: momentum 85. upper body: iron breastplate held, skin held, fat held, muscle held; left lung: lung held. No wound. |
+| HUMAN {"weapon":"short sword","attack":"stab","part":"upper body","armor":["iron mail shirt"]} | stab (iron short sword) to upper body: momentum 68. upper body: iron mail shirt held, skin smashed, fat smashed, muscle smashed; left lung: lung smashed. Wounds 1, 2. |
+| HUMAN {"weapon":"short sword","attack":"slash","part":"right upper arm","armor":["iron mail shirt"]} | slash (iron short sword) to right upper arm: momentum 85. right upper arm: iron mail shirt held, skin smashed, fat smashed, muscle smashed, bone held; right shoulder: muscle held, bone held. Wound 1. |
+| HUMAN {"weapon":"short sword","attack":"slash","part":"right upper arm","armor":["leather armor"]} | slash (iron short sword) to right upper arm: momentum 85. right upper arm: leather armor cut, skin cut, fat cut, muscle cut, bone held; right shoulder: muscle held, bone held. Wound 1. |
+| HUMAN {"weapon":"mace","attack":"bash","part":"head","armor":["iron helm"]} | bash (iron mace) to head: momentum 138.5. head: iron helm smashed, skin smashed, fat smashed, muscle smashed; skull: bone held; brain: brain held. Wound 1. |
+| HUMAN {"weapon":"short sword","attack":"slash","part":"left lower leg","armor":["steel greaves"]} | slash (iron short sword) to left lower leg: momentum 85. left lower leg: steel greaves held, skin held, fat held, muscle held, bone held; left knee: muscle held, bone held. No wound. |
+| WOLF {"attack":"bite","part":"right lower leg","armor":["leather high boots"]} | bite (head (first tooth)) to right lower leg: momentum 38.7. right lower leg: leather high boots smashed, skin smashed, fat smashed, muscle smashed, bone smashed; right knee: muscle smashed, bone smashed. Wounds 1, 2, 3, 4. |
 
 What these show:
 - Edged attacks: a sword, a human bite and a bear's claws cut skin, fat and muscle and stop at bone; a stab reaches the spine and is held.
 - Blunt attacks (punch, kick, mace) smash soft tissue and the bone holds at median force; bone breaks in the tail of the spread (§4.6).
+- Armour: an iron breastplate or steel greaves stop a sword slash; mail stops the cut and passes a bruise; leather armour is cut through; a mace through an iron helm bruises and the skull holds.
 - A wolf bite fails to cut skin (momentum 38.7 against 48.6; teeth are tiny parts with edge 0.1×), then acts as a blunt blow through a tooth-sized contact area and breaks the shin. DF in play has wolves tearing skin; the gap sits in the unpublished unarmed momentum (OPEN-79).
 
 ## 10. Open items added
@@ -209,7 +237,8 @@ What these show:
 |---|---|
 | OPEN-73 | CHIMERA, CENTAUR, GRIFFON bodies do not resolve |
 | OPEN-74 | closed by the fit in §4.6; replace the CompuBox proxy when a count of head punches landed per bare-knuckle bout is published |
-| OPEN-75 | armour layers (coverage, quality, deflection 2·Sw·IYw < A·Da) |
+| OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
+| OPEN-80 | shields and blocking |
 | OPEN-76 | penetration depth vs layer thickness |
 | OPEN-77 | suffocation timing; pain (`PAIN_RECEPTORS`) and unconsciousness |
 | OPEN-79 | unarmed momentum: DF's own formula for body-part attacks is unpublished; wolf bites do not cut skin under the copied formula |
