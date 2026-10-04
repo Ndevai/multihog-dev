@@ -1,21 +1,20 @@
-export const DAY_MIN = 30804 / 60;
+export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
 
 const BLEED = { femoral: [300, 600], limb_artery: [70, 170], small: [1, 10] };
 const FRACTURE = {
-    arm_spiral: [58.9, 117.8], arm_transverse: [117.8, 235.6],
-    leg_spiral: [117.8, 235.6], leg_transverse: [235.6, 471.1],
+    arm_spiral: [21, 42], arm_transverse: [42, 84],
+    leg_spiral: [42, 84], leg_transverse: [84, 168],
 };
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
-const EARTH_DAY = 86400 / 30804;
-// Rule 576, Earth days; converted with EARTH_DAY. Missing types are OPEN-48/49: they do not close yet.
+// Rule 576, days. Missing types are OPEN-48/49: they do not close yet.
 const CUT_HEAL = { eyes: [3, 5], mouth: [3, 5], head: [7, 10], arm: [7, 10], torso: [10, 14], leg: [10, 14], hand: [10, 14], foot: [10, 14] };
 const BURN_HEAL = { superficial: [5, 10], partial: [7, 21], deep_partial: [21, 56], full: null };
 const INFECTION_ONSET = { bite: 1, other: 10 };
 const CROOKED_GRIP = 0.51;
 const COST = [0, 40, 64, 107, 178, 297, 495, 825, 1375, 2292];
-const FALL_ROWS = [[10.1, 0.44], [13.2, 0.56], [16.2, 0.78]];
+const FALL_ROWS = [[12.0, 0.44], [15.6, 0.56], [19.2, 0.78]];
 // Cataclysm: DDA body_parts.json limb_scores (commit 935fe5f). A person's score = sum over parts.
 const PART_SCORES = {
     head: { reaction: 0.3 },
@@ -80,7 +79,7 @@ export function addWound(p, w, rng = Math.random) {
     const wound = { id: p.nextId++, part: w.part, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
     const healRange = w.type === 'cut' ? CUT_HEAL[w.part.replace(/_(l|r)$/, '')] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
     if (w.type === 'burn') wound.depth = BURN_HEAL[w.depth] !== undefined ? w.depth : null;
-    if (healRange) wound.heals = round(between(rng, healRange) * EARTH_DAY);
+    if (healRange) wound.heals = round(between(rng, healRange));
     if (w.vessel && BLEED[w.vessel]) wound.bleed = round(between(rng, BLEED[w.vessel]));
     if (w.type === 'fracture') {
         // Head, eyes, mouth and torso have no timetable (OPEN-58): joins stays null.
@@ -118,12 +117,12 @@ export function treat(p, id, treatment, rng = Math.random) {
 }
 
 function endDay(net) {
-    const gain = net.E > 0 ? 0.2909 * net.E ** 0.4063 : 0;
+    const gain = net.E > 0 ? 0.5366 * net.E ** 0.4063 : 0;
     net.width += gain;
     const grown = Math.floor(net.width);
     net.width -= grown;
     net.C += grown;
-    if (net.maxToday && net.F >= 0.4278 * net.C && net.C >= 4000 * (net.N + 1) && net.N < 12) net.N += 1;
+    if (net.maxToday && net.F >= 1.2 * net.C && net.C >= 4000 * (net.N + 1) && net.N < 12) net.N += 1;
     net.F = 0; net.E = 0; net.maxToday = false;
 }
 
@@ -141,16 +140,16 @@ export function advance(p, minutes, resting, rng = Math.random) {
             if (--p.deathIn <= 0) { p.dead = 'blood loss'; return; }
         } else p.deathIn = null;
         if (bleeding === 0 && p.lost > 0) {
-            const refill = Math.min(p.lost, bloodVolume(p) * 0.4 / (4.2 * DAY_MIN));
+            const refill = Math.min(p.lost, bloodVolume(p) * 0.4 / (1.5 * DAY_MIN));
             p.lost -= refill; p.red += refill;
         }
-        p.red = Math.max(0, p.red - 500 / (98.2 * DAY_MIN));
+        p.red = Math.max(0, p.red - 500 / (35 * DAY_MIN));
         if (resting) net.R = Math.min(net.C, net.R + 0.05 * net.C / 60);
         for (const w of p.wounds) {
             w.age += 1 / DAY_MIN;
             if (w.fracture && !w.fracture.never && w.fracture.joins !== null) { w.fracture.joins -= 1 / DAY_MIN; w.fracture.full -= 1 / DAY_MIN; }
             if (w.heals !== null && !w.healed && w.age >= w.heals) { w.healed = true; w.bleed = 0; }
-            const onset = INFECTION_ONSET[w.type === 'bite' ? 'bite' : 'other'] * EARTH_DAY;
+            const onset = INFECTION_ONSET[w.type === 'bite' ? 'bite' : 'other'];
             if (w.open && w.infection === null && w.age >= onset) w.infection = rng() < infectionChance(w);
         }
         if (++p.minute >= DAY_MIN) { p.minute -= DAY_MIN; endDay(net); }
@@ -171,15 +170,15 @@ export function cast(p, complexity) {
     return `Cast succeeds: ${cost} PE spent, ${Math.floor(net.R)} PE left.`;
 }
 
-// Rows: < 10.1 m (0 % below 5.1 m, straight line to 44 % at 10.1 m), 10.1, 13.2, exactly 16.2, above 16.2 (all).
+// Rows: < 12 m (0 % below 6 m, straight line to 44 % at 12 m), 12, 15.6, exactly 19.2, above 19.2 (all).
 export function fallDeathChance(height, { soft = false, headFirst = false } = {}) {
     const chances = [null, ...FALL_ROWS.map(r => r[1]), 1];
     let row = FALL_ROWS.filter(([h]) => height >= h).length;
     if (height > FALL_ROWS.at(-1)[0]) row = chances.length - 1;
     const shifted = headFirst ? Math.min(row + 1, chances.length - 1) : soft ? Math.max(row - 1, 0) : row;
     if (shifted > 0) return chances[shifted];
-    if (row > 0 || height < 5.1) return 0;
-    return FALL_ROWS[0][1] * (height - 5.1) / (FALL_ROWS[0][0] - 5.1);
+    if (row > 0 || height < 6) return 0;
+    return FALL_ROWS[0][1] * (height - 6) / (FALL_ROWS[0][0] - 6);
 }
 
 export function fall(p, height, opts = {}, rng = Math.random) {
