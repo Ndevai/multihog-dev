@@ -14,6 +14,7 @@ import { buildInstantActionPromptSection, extractInstantActionLevel, normalizeIn
 import { findCharacterCreatorPresetByName, upsertCharacterCreatorPreset } from './src/features/character-creator/presets.js';
 import { getCharacterCreationConnectionSettings } from './character-creation-connection.js';
 import { createChatCommitGuard } from './src/state/pass-affinity.js';
+import { effectiveModules, LOSICA_CREATION } from './src/rules/losica-mode.js';
 
 /**
  * sendDirectPrompt already refuses memo commits after a chat switch, but callers
@@ -129,9 +130,10 @@ export function buildCharacterGenerationPrompt(opts) {
     // opts.level === null means "no numeric levels" (custom system) was chosen.
     // Instant Action Initial Setup can still override that below if it names a level.
     const gearTier = opts.gearTier || s.onboardingGearTier || 'auto';
-    const useCombatScalingGuide = opts.useCombatScalingGuide !== undefined
+    const losica = !!s.losicaRules;
+    const useCombatScalingGuide = !losica && opts.useCombatScalingGuide !== undefined
         ? !!opts.useCombatScalingGuide
-        : (s.onboardingUseCombatScalingGuide !== false);
+        : !losica && (s.onboardingUseCombatScalingGuide !== false);
     const classRaw = opts.classRaw || '__story__';
     const classOtherVal = (opts.classOtherVal || '').trim();
     const traitsVal = (opts.traitsVal || '').trim();
@@ -143,7 +145,7 @@ export function buildCharacterGenerationPrompt(opts) {
     const instantActionPromptSection = buildInstantActionPromptSection(instantActionInstructions);
     const extractedLevel = extractInstantActionLevel(instantActionInstructions);
     // An explicit Initial Setup level wins over the onboarding dropdown, including "no levels".
-    const noLevel = extractedLevel === null && opts.level === null;
+    const noLevel = losica || (extractedLevel === null && opts.level === null);
     const level = noLevel ? null : (extractedLevel ?? (opts.level || 1));
     const instantActionLevelFallback = !!instantActionInstructions && extractedLevel === null && !noLevel;
 
@@ -187,14 +189,14 @@ export function buildCharacterGenerationPrompt(opts) {
         ? (s.initialDate && s.initialDate !== 'Day 1' ? s.initialDate : '01/01/2026')
         : 'Day 1';
 
-    const mods = s.modules || {};
+    const mods = effectiveModules(s);
     const hasXp = !!mods['xp'];
     const hasTime = !!mods['time'];
     const hasInventory = !!mods['inventory'];
     const hasSpells = !!mods['spells'];
     const hasAbilities = !!mods['abilities'];
 
-    const levelPrefix = noLevel
+    const levelPrefix = losica ? LOSICA_CREATION : noLevel
         ? `LEVEL SYSTEM: This character creation system does not use numeric character levels. Do NOT invent, assign, or output a level number, an [XP] block, or any D&D-style level indicator — balance the character using the setting's own internal logic instead.`
         : instantActionLevelFallback
             ? (hasXp
@@ -208,7 +210,9 @@ export function buildCharacterGenerationPrompt(opts) {
         ? buildOnboardingXpHint(level, { allowInitialSetupOverride: instantActionLevelFallback })
         : '';
     const TIME_FORMAT_HINT = hasTime ? buildOnboardingTimeHint(startDateVal, s.initialTime || '08:00 AM') : '';
-    const magicGearHint = buildStartingGearHint(noLevel ? 1 : level, genre, hasInventory, gearTier);
+    const magicGearHint = losica
+        ? buildStartingGearHint(null, '', hasInventory, gearTier)
+        : buildStartingGearHint(noLevel ? 1 : level, genre, hasInventory, gearTier);
 
     const activeBlocks = buildOnboardingActiveBlocks(s);
     const closingTagExamples = activeBlocks.map(b => `[/${b}]`).join(', ');
@@ -239,8 +243,7 @@ Species:      ${f(speciesVal, '(your choice)')}
 Ethnicity:    ${f(ethnicityVal, '(your choice)')}
 ${classLine}
 Traits:       ${f(traitsVal, '(invent 2–3 distinctive traits)')}
-Level:        ${noLevel ? 'N/A — this system has no numeric levels' : (instantActionLevelFallback ? `${level} (fallback — if the Initial Setup specifies a different level, follow the Initial Setup instead)` : level)}
-${hasAbilities ? `Abilities:    ${f(abilitiesVal, '(generate fitting, creative abilities)')}\n` : ''}Background:   ${f(backgroundVal, '(invent a brief origin)')}
+${losica ? '' : `Level:        ${noLevel ? 'N/A — this system has no numeric levels' : (instantActionLevelFallback ? `${level} (fallback — if the Initial Setup specifies a different level, follow the Initial Setup instead)` : level)}\n`}${hasAbilities ? `Abilities:    ${f(abilitiesVal, '(generate fitting, creative abilities)')}\n` : ''}Background:   ${f(backgroundVal, '(invent a brief origin)')}
 Appearance:   ${f(appearanceVal, '(invent a memorable appearance)')}
 ${additionalVal ? `Additional:   ${additionalVal}` : ''}
 ${cardSnippet ? `\n--- CHARACTER CARD CONTEXT ---${cardSnippet}` : ''}
@@ -257,7 +260,7 @@ ${nameVal ? `• Use the provided name "${nameVal}" exactly; do not alter or rep
     : (isOther || isStoryFitting ? 'Invent the most fitting class for the setting and context.' : `Use the chosen class "${classRaw}" exactly as given — do not rename or substitute it.`)}
 • If the setting is non-fantasy and no class was specified, create a class that feels natural to the world — not a fantasy D&D class name.
 ${noLevel
-    ? `• There is no numeric level for this character. All stats, gear, and saves must be internally consistent and appropriately balanced for the setting.${magicGearHint}`
+    ? `• ${losica ? 'Body mass, training, gear and spells' : 'There is no numeric level for this character. All stats, gear, and saves'} must be internally consistent and appropriately balanced for the setting.${magicGearHint}`
     : instantActionLevelFallback
         ? `• Treat Level ${level} as a fallback. If the Initial Setup specifies or clearly implies a different level, follow the Initial Setup instead. All stats, gear, and saves${hasXp ? ', and XP' : ''} must be consistent with the chosen level.${magicGearHint}`
         : `• All stats, gear, and saves${hasXp ? ', and XP' : ''} must be consistent with Level ${level}.${magicGearHint}`}

@@ -18,6 +18,7 @@ import { escapeHtml, memoForGmContext } from './memo-processor.js';
 import { renderMemoAsCards } from './renderer.js';
 import { refreshOrderList } from './ui-editors.js';
 import { QUESTS_NARRATOR } from './constants.js';
+import { losicaSection } from './src/rules/losica-mode.js';
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import { tableRollsToToolCalls } from './src/state/dice-ledger.js';
 import { getSortableDelay } from '../../../utils.js';
@@ -411,6 +412,13 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
     const mods = settings.syspromptModules || {};
     const d100Mode = !!settings.diceD100Mode;
 
+    if (settings.losicaRules) {
+        const useQueue = !settings.diceFunctionTool || shouldUseRngQueue(settings, isCombatMemo(settings.currentMemo));
+        const losica = losicaSection(tag, innerContent, settings, useQueue);
+        if (losica?.final !== undefined) return losica.final;
+        if (losica?.inner !== undefined) innerContent = losica.inner;
+    }
+
     if (tag === 'narrative') {
         return buildNarrativePacingSection(settings.narrativePacing);
     }
@@ -491,9 +499,12 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
             const combatBody = combatMatch?.[1]?.trim() || '';
             const inCombat = !!combatBody && !/^END_COMBAT$/i.test(combatBody);
             const useQueue = shouldUseRngQueue(settings, inCombat);
+            const failure = settings.losicaRules
+                ? 'A failure = injured return (wounds through LosicaWound), no return, or a similarly severe outcome.'
+                : 'Critical failure = injured return, no return, or similarly severe outcome.';
             const benchEta = useQueue
-                ? `On benching, estimate a return ETA. Just before return (never once already in-scene), pop a ${dieWord} from ${queueName} to resolve task success/failure — DC by task difficulty + character suitability. Critical failure = injured return, no return, or similarly severe outcome. This pop is mandatory, always pre-return.`
-                : `On benching, estimate a return ETA. Just before return (never once already in-scene), call ${toolName} to resolve task success/failure — DC by task difficulty + character suitability. Critical failure = injured return, no return, or similarly severe outcome. This roll is mandatory, always pre-return.`;
+                ? `On benching, estimate a return ETA. Just before return (never once already in-scene), pop a ${dieWord} from ${queueName} to resolve task success/failure — DC by task difficulty + character suitability. ${failure} This pop is mandatory, always pre-return.`
+                : `On benching, estimate a return ETA. Just before return (never once already in-scene), call ${toolName} to resolve task success/failure — DC by task difficulty + character suitability. ${failure} This roll is mandatory, always pre-return.`;
             content = content.replace(
                 /<bench_ETA_system>[\s\S]*?<\/bench_ETA_system>/i,
                 `<bench_ETA_system>\n${benchEta}\n</bench_ETA_system>`,
@@ -519,11 +530,6 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
         }
         if (settings.useDdMmYyFormat) {
             footerContent = footerContent.replace(/Day\s+\[X\]/g, '[DD/MM/YYYY]');
-        }
-        if (settings.losicaRules) {
-            footerContent = footerContent
-                .replace(/\(Status: \[HP\]\)/g, '(Status: [{{user}}\'s wounds and blood-loss class from BODY, a few words])')
-                .replace(/\{\{user\}\}'s HP\/XP/g, "{{user}}'s status/XP");
         }
         return footerContent;
     }

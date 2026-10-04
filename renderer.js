@@ -1586,6 +1586,15 @@ function formatValueToCurrency(totalCp, detectedCurrency) {
                         continue;
                     }
 
+                    // 2a. Body-mass anchor: "Name (72 kg)" starts an entity in sheets without hit points.
+                    const massMatch = !hpMatch && line.match(/^([^:()]+?)\s*\((\d+(?:\.\d+)?\s*kg)\)\s*$/i);
+                    if (massMatch) {
+                        currentEntity = massMatch[1].trim();
+                        lastEntityIdx = results.length;
+                        results.push(`<div class="rt-entity-row"><div class="rt-entity-name">${escapeHtmlWithColor(currentEntity)}</div><span class="rt-hp-label" style="opacity:0.75; font-size:0.9em;">${escapeHtmlWithColor(massMatch[2])}</span></div>`);
+                        continue;
+                    }
+
                     // 2b. CHARACTER/PARTY plain-name fallback anchor:
                     // If no HP pattern matched and this is a CHARACTER or PARTY block
                     // and we have no active entity yet, treat the first line as the entity name

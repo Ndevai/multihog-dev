@@ -49,6 +49,7 @@ import { bindRenderedCardEvents } from './src/ui/panel/card-events.js';
 import { getRngMode, applyRngMode, autoSelectRngTools } from './src/state/rng-mode.js';
 import { onRulesAuditMessage } from './src/rules/rules-audit.js';
 import { registerLosicaRulesTools, onLosicaGenerationStarted, onLosicaMessageReceived, onLosicaSwiped, syncLosicaToChat, restoreLosicaForMemo } from './src/rules/losica-tools.js';
+import { losicaTrackerTemplate } from './src/rules/losica-mode.js';
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
 import { createMemoRecoveryManager } from './src/features/recovery/memo-recovery.js';
@@ -3226,6 +3227,7 @@ async function runStateModelPass(narrativeOutput, isFullContext = false, overrid
         const modulesText = buildModulesInstructionText(settings);
         const coreTemplate = settings.fullReviewStateMode ? FULL_REVIEW_STATE_SYSTEM_PROMPT : settings.systemPromptTemplate;
         let systemPrompt = coreTemplate.replace('{{modulesText}}', modulesText);
+        if (settings.losicaRules) systemPrompt = losicaTrackerTemplate(systemPrompt);
         if (settings.npcRelationshipBars && getRelationshipUpdateMode(settings) === RELATIONSHIP_UPDATE_MODES.STATE_TRACKER) {
             systemPrompt += `\n\n${buildStateTrackerRelationshipCommandInstruction(
                 getNpcRelationshipMax(settings),
@@ -3680,7 +3682,7 @@ export async function sendDirectPrompt(message, options = {}) {
 
         const modulesText = buildModulesInstructionText(settings);
         let systemPrompt = buildDirectPromptSystemPrompt(
-            settings,
+            settings.losicaRules ? { ...settings, systemPromptTemplate: losicaTrackerTemplate(settings.systemPromptTemplate) } : settings,
             modulesText,
             options.systemPromptMode || DIRECT_PROMPT_SYSTEM_MODES.STATE_EXTRACTOR,
         );
@@ -11283,7 +11285,9 @@ RULES:
             const fresh = getSettings();
             fresh.losicaRules = !!$(this).prop('checked');
             registerLosicaRulesTools(fresh.losicaRules);
+            registerDiceFunctionTool();
             saveSettings();
+            scheduleAutoApply();
         });
 
         // Router Agent Settings

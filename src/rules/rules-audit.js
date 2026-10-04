@@ -8,7 +8,7 @@ const MAX_RETRIES = 1;
 
 export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the rule-engine results of the same turn.
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
-Engine-governed events: a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a skill check, save or attack succeeding or failing; story time passing (minutes, hours, days); a spell being cast; a treatment working.
+Engine-governed events: a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a check succeeding or failing; an attack landing or missing; story time passing (minutes, hours, days); a spell being cast; a treatment working.
 An event is backed when an engine result of the matching tool describes it. Intentions, threats, dialogue and misses described as misses are not events.
 Reply with JSON only: {"events":[{"quote":"exact words from the reply","tool":"LosicaStrike|LosicaWound|LosicaFall|LosicaTime|LosicaCast|LosicaTreat|RollTheDice","problem":"unbacked|contradicts"}]}. An empty list means every event is backed.`;
 

@@ -3,6 +3,7 @@ import { runtimeState } from '../../app/runtime-state.js';
 import { pickGenreCharacterName } from '../../state/character-names.js';
 import { getActiveChatId } from '../../state/chat-persistence.js';
 import { createChatCommitGuard } from '../../state/pass-affinity.js';
+import { effectiveModules, LOSICA_CREATION, LOSICA_ARCHETYPES } from '../../rules/losica-mode.js';
 import { setLocationMappingEnabled, LOCATION_MAPPING_SECTION_TAG } from '../../state/section-enabled.js';
 import { getRngMode, applyRngMode, autoSelectRngTools } from '../../state/rng-mode.js';
 import { applyMapArchitectOpenerToUi, normalizeMapArchitectOpener, syncMapArchitectOpenerNestedVisibility } from '../../../map-architect-opener.js';
@@ -305,7 +306,8 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
             const archetype = btn.dataset.archetype;
             const levelSelectEl = el.querySelector('#rt-starting-level');
             const levelRawVal = String(levelSelectEl?.value ?? getSettings().onboardingLevel ?? 1);
-            const noLevel = levelRawVal === 'none';
+            const losica = !!getSettings().losicaRules;
+            const noLevel = losica || levelRawVal === 'none';
             const level = noLevel ? null : (parseInt(levelRawVal, 10) || 1);
             getSettings().onboardingLevel = noLevel ? 'none' : level;
             const gearTierEl = /** @type {HTMLSelectElement|null} */ (el.querySelector('#rt-onboarding-gear-tier'));
@@ -341,14 +343,14 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
             const selectedName = selectedOnboardingName;
             const selectedNameInstruction = ` The character's name MUST be "${selectedName}" exactly.`;
             // Gate optional blocks on enabled modules
-            const _mods = getSettings().modules || {};
+            const _mods = effectiveModules(getSettings());
             const _hasXp        = !!_mods['xp'];
             const _hasTime      = !!_mods['time'];
             const _hasInventory = !!_mods['inventory'];
             const _hasAbilities = !!_mods['abilities'];
             const _hasSpells    = !!_mods['spells'];
 
-            const levelPrefix = noLevel
+            const levelPrefix = losica ? LOSICA_CREATION : noLevel
                 ? `LEVEL SYSTEM: This character creation system does not use numeric character levels. Do NOT invent, assign, or output a level number, an [XP] block, or any D&D-style level indicator — balance the character using the setting's own internal logic instead.`
                 : _hasXp
                     ? `STARTING LEVEL: ${level} (mandatory — the character MUST be exactly Level ${level}).`
@@ -356,8 +358,12 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
 
             const xpHint = (_hasXp && !noLevel) ? buildOnboardingXpHint(level) : '';
             const TIME_FORMAT_HINT = _hasTime ? buildOnboardingTimeHint(startDateVal, getSettings().initialTime || '08:00 AM') : '';
-            const magicGearHint = buildStartingGearHint(noLevel ? 1 : level, getSettings().onboardingGenre || 'fantasy', _hasInventory, gearTier);
-            const combatSkillHint = getSettings().onboardingUseCombatScalingGuide !== false ? buildCombatAndSkillScalingHint() : '';
+            const magicGearHint = losica
+                ? buildStartingGearHint(null, '', _hasInventory, gearTier)
+                : buildStartingGearHint(noLevel ? 1 : level, getSettings().onboardingGenre || 'fantasy', _hasInventory, gearTier);
+            const combatSkillHint = !losica && getSettings().onboardingUseCombatScalingGuide !== false ? buildCombatAndSkillScalingHint() : '';
+            const losicaPrompt = what => `${LOSICA_CREATION} ${what} Output ${_blockListStr} blocks.${CHARACTER_FORMAT_HINT}${TIME_FORMAT_HINT}${magicGearHint}`;
+            const adaptLine = losica ? 'Adapt the name, facts, description, gear, and spells (if any)' : 'Adapt the name, attributes, description, gear, and spells (if any)';
             // Fixed quick-roll archetype templates (magic/melee/rogue/etc.) below hardcode
             // "Level N" in their own copy — substitute a neutral filler level for them when
             // "no levels" was chosen so they don't render "Level null". Custom and Persona
@@ -429,6 +435,12 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
                 horror_survivor:  `${levelPrefix} Generate a random Level ${templateLevel} horror survivor character. Give them a realistic name (do NOT use {{user}}). Output ${_blockListStr} blocks. Focus on resourcefulness, improvised weapons/tools, and fragile but resilient stats consistent with Level ${templateLevel}.${CHARACTER_FORMAT_HINT}${xpHint}${TIME_FORMAT_HINT}${HORROR_HINT}`
             };
 
+            if (losica) {
+                for (const [key, label] of Object.entries(LOSICA_ARCHETYPES)) {
+                    prompts[key] = losicaPrompt(`Generate a random ${label} character with a name fitting the world (not {{user}}).`);
+                }
+            }
+
             // ── Custom archetype: freeform character based entirely on custom instructions ──
             if (archetype === 'custom') {
                 if (!customInstructions) {
@@ -437,7 +449,9 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
                 }
                 el.querySelectorAll('.rt-random-char-btn').forEach(b => b.disabled = true);
                 btn.textContent = labels.custom;
-                let customPrompt = noLevel
+                let customPrompt = losica
+                    ? losicaPrompt(`Generate a character based entirely on these custom instructions: "${customInstructions}".${selectedNameInstruction}`)
+                    : noLevel
                     ? `${levelPrefix} Generate a character based entirely on these custom instructions: "${customInstructions}".${selectedNameInstruction} Output ${_blockListStr} blocks${_hasSpells ? " (and [SPELLS] if appropriate for the class, using 'Cantrips:' for level 0 spells)" : ''}. Adapt all attributes, skills, saves, descriptions, and gear to match the setting and instructions perfectly — do not invent a numeric level.${CHARACTER_FORMAT_HINT}${xpHint}${TIME_FORMAT_HINT}${magicGearHint}`
                     : `${levelPrefix} Generate a random Level ${level} character based entirely on these custom instructions: "${customInstructions}".${selectedNameInstruction} Output ${_blockListStr} blocks${_hasSpells ? " (and [SPELLS] if appropriate for the class, using 'Cantrips:' for level 0 spells)" : ''}. Adapt all attributes, skills, saves, descriptions, and gear to match the setting and instructions perfectly.${CHARACTER_FORMAT_HINT}${xpHint}${TIME_FORMAT_HINT}${magicGearHint}`;
                 if (isCalendar) {
@@ -482,11 +496,13 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
                 const nameClause = personaName
                     ? ` The character's name MUST be "${personaName}" (the active persona name).`
                     : '';
-                let personaPrompt = noLevel
+                let personaPrompt = losica
+                    ? `${losicaPrompt(`Using the following persona description as the basis for the player character, create a character that faithfully embodies this persona.${nameClause}`)}\n\nPersona${personaName ? ` — ${personaName}` : ''}:\n${resolvedPersona}`
+                    : noLevel
                     ? `${levelPrefix} Using the following persona description as the basis for the player character, create a character that faithfully embodies this persona.${nameClause} Translate the personality, background, and traits into appropriate stats, class, race, and equipment. Output ${_blockListStr} blocks${_hasSpells ? " (and [SPELLS] if the class is a spellcaster, using 'Cantrips:' for level 0 spells)" : ''}. Do not invent a numeric level — balance using the setting's own logic.${CHARACTER_FORMAT_HINT}${xpHint}${TIME_FORMAT_HINT}${magicGearHint}\n\nPersona${personaName ? ` — ${personaName}` : ''}:\n${resolvedPersona}`
                     : `${levelPrefix} Using the following persona description as the basis for the player character, create a Level ${level} character that faithfully embodies this persona.${nameClause} Translate the personality, background, and traits into appropriate stats, class, race, and equipment. Output ${_blockListStr} blocks${_hasSpells ? " (and [SPELLS] if the class is a spellcaster, using 'Cantrips:' for level 0 spells)" : ''}. All attributes and gear should be consistent with Level ${level}.${CHARACTER_FORMAT_HINT}${xpHint}${TIME_FORMAT_HINT}${magicGearHint}\n\nPersona${personaName ? ` — ${personaName}` : ''}:\n${resolvedPersona}`;
                 if (customInstructions) {
-                    personaPrompt += `\n\nAdditional setting/instruction constraints: ${customInstructions}. Adapt the name, attributes, description, gear, and spells (if any) to match this setting/instruction perfectly.`;
+                    personaPrompt += `\n\nAdditional setting/instruction constraints: ${customInstructions}. ${adaptLine} to match this setting/instruction perfectly.`;
                 }
                 try {
                     syncOnboardingPersonaPrefsFromDom(el);
@@ -517,7 +533,7 @@ export function bindRenderedCardEvents(el, memo, isDetachedContext = false, onRe
             btn.textContent = labels[archetype] || '🎲 Rolling...';
             let promptText = prompts[archetype] + selectedNameInstruction;
             if (customInstructions) {
-                promptText += `\n\nAdditional setting/instruction constraints: ${customInstructions}. Adapt the name, attributes, description, gear, and spells (if any) to match this setting/instruction perfectly.`;
+                promptText += `\n\nAdditional setting/instruction constraints: ${customInstructions}. ${adaptLine} to match this setting/instruction perfectly.`;
             }
             try {
                 syncOnboardingPersonaPrefsFromDom(el);

@@ -4,6 +4,8 @@
  * Imported by: state-manager.js, memo-processor.js, renderer.js, panel.js, settings-ui.js
  */
 
+import { LOSICA_CYOA_EXAMPLES } from './src/rules/losica-mode.js';
+
 // ── Example strings shown in the custom field editor ──────────────────────────
 
 export const EXAMPLES = `((B)) Health: 45/100
@@ -1127,10 +1129,10 @@ export const DEFAULT_CYOA_SLOTS = [
  * @param {object} [config] settings.cyoaConfig
  * @returns {string}
  */
-export function buildCyoaModeBlock(config = {}) {
+export function buildCyoaModeBlock(config = {}, opts = {}) {
     const promptText = (config.useCustomPrompt && config.customPromptText?.trim())
         ? config.customPromptText.trim()
-        : buildCyoaPrompt(config);
+        : buildCyoaPrompt(config, opts);
     return `<CYOA_mode>\n${promptText}\n</CYOA_mode>`;
 }
 
@@ -1139,7 +1141,7 @@ export function buildCyoaModeBlock(config = {}) {
  * @param {object} config  settings.cyoaConfig
  * @returns {string}
  */
-export function buildCyoaPrompt(config = {}) {
+export function buildCyoaPrompt(config = {}, { losica = false } = {}) {
     const slots = (Array.isArray(config.slots) && config.slots.length > 0
         ? config.slots
         : DEFAULT_CYOA_SLOTS
@@ -1174,7 +1176,9 @@ export function buildCyoaPrompt(config = {}) {
     reqLines.push('- When a site map is attached: do not invent obstacles in choices (locked doors, traps, barricades, sealed passages, etc.) unless they already exist on that map. Offering such a check makes the obstacle real if chosen — keep choices map-real.');
     reqLines.push('- A resource must be >0 (not depleted) in TRACKER STATE 0 (Current) to be eligible for a choice.');
     reqLines.push('- Vary approaches across turns — avoid repeating the same stats, traits, abilities, or narrative actions as the previous turn.');
-    reqLines.push('- Wrap mechanical details (rolls, modifiers, DC/AC targets, resource costs, uses remaining) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained, CHA +0) DC 13]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.');
+    reqLines.push(losica
+        ? '- Wrap mechanical details (checks with training and DC, strikes, energy and item costs) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained) DC 13]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.'
+        : '- Wrap mechanical details (rolls, modifiers, DC/AC targets, resource costs, uses remaining) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained, CHA +0) DC 13]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.');
 
     const intro = `[END OF OUTPUT REQUIREMENT]\n${reqLines.join('\n')}`;
 
@@ -1189,7 +1193,7 @@ export function buildCyoaPrompt(config = {}) {
 (Style/variety references — counts may differ. STRICT GENERATION ORDER below is authoritative for how many choices you output.)
 
 Example 1 (high-stakes scenario):
-${wrapBlock([
+${wrapBlock(losica ? LOSICA_CYOA_EXAMPLES.high : [
         '1. 🎯 Fire with Dead-Eye Focus — [2/3 per short rest] [Attack (+12) vs AC 15]',
         '2. 💣 Throw a Smoke Bomb — [-1 Smoke Bomb]',
         '3. 🥷 Slip along the hull\'s shadows — [Stealth (+6: Void-Runner) DC 14]',
@@ -1200,7 +1204,7 @@ ${wrapBlock([
     ])}
 
 Example 2 (low-stakes/downtime scenario):
-${wrapBlock([
+${wrapBlock(losica ? LOSICA_CYOA_EXAMPLES.low : [
         '1. 🍺 Buy a round for the table and swap stories — [-20 GP]',
         '2. 🗣️ "What happened to your face? That\'s the longest scar I\'ve seen."',
         '3. 🎵 Hum along to the tune the bard is playing',
@@ -1525,7 +1529,7 @@ export function buildStartingGearHint(level, genre, hasInventory, gearTier = 'au
             : 'Above-average kit — quality armor, tools, or weapons suited to a seasoned professional, with backup gear, supplies, and meaningful cash.',
         heroic: isFantasy
             ? getFantasyGearTierGuidance('heroic', lvl)
-            : `Elite signature kit for Level ${lvl} — custom, rare, or top-tier named equipment befitting a standout hero.`,
+            : `Elite signature kit${level === null ? '' : ` for Level ${lvl}`} — custom, rare, or top-tier named equipment befitting a standout hero.`,
     };
 
     let guidance = tier === 'auto' ? getAutoGearGuidanceByLevel(lvl, g) : (tierGuidance[tier] || getAutoGearGuidanceByLevel(lvl, g));

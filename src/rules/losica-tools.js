@@ -105,11 +105,12 @@ export function losicaTurnLog() {
 export const LOSICA_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
 - An attack with fist, kick or blade → LosicaStrike; it decides whether it lands and the wound. Narrate what it returns.
-- A burn, bite or accidental cut → LosicaWound.
+- An attack by any other means (bow, sling, club, claw, firearm, thrown object) → RollTheDice kind "check", dc from range, cover, light and the attacker's training; a hit → LosicaWound with the part and wound type.
+- A burn, a bite, an accident or a fall injury → LosicaWound.
 - Someone falls → LosicaFall.
 - Time passes in the story → LosicaTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
 - A spell is cast → LosicaCast. A treatment is applied → LosicaTreat.
-- A check or attack roll → RollTheDice.
+- Any other action with an uncertain outcome → RollTheDice kind "check".
 - Describe a character's injuries, blood loss or energy from LosicaStatus.
 </rule_engine>`;
 
@@ -134,7 +135,7 @@ export function registerLosicaRulesTools(enabled) {
     });
 
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
-    tool('LosicaWound', 'Record a wound from a burn, a bite or an accident the moment it happens. Returns what the wound is and the body state.', {
+    tool('LosicaWound', 'Record a wound the moment it happens when LosicaStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon LosicaStrike does not cover (arrow, club, bullet). Returns what the wound is and the body state.', {
         who: str('Character name'),
         part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
         type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'burn', 'bite'] },

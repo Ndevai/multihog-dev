@@ -35,6 +35,7 @@ import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/stat
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import { LOSICA_BRIEF } from './src/rules/losica-tools.js';
 import { losicaMemo, trackedPeople } from './src/rules/losica-sheet.js';
+import { losicaDiceSpec, LOSICA_SECTIONS } from './src/rules/losica-mode.js';
 import { takeAuditNote } from './src/rules/rules-audit.js';
 import {
     buildDungeonRealityInjection,
@@ -193,7 +194,7 @@ function resolveEndOfOutputFooterSection(settings) {
     if (liveMatch) return { enabled: true, inner: liveMatch[1].trim() };
 
     // Fallback: shipped default body with the same time/date transforms as transformBaseSectionContent.
-    let inner = `ALWAYS end every output (even after tool chains) with:
+    let inner = settings.losicaRules ? LOSICA_SECTIONS.end_of_output_footer : `ALWAYS end every output (even after tool chains) with:
 *(Status: [HP]) | (XP: [current]/[next level]) | (Location: [Main, Sub, Sub-sub, etc])*
 *Level [X] | [HH:MM AM/PM], Day [X]*
 Footer shows ONLY {{user}}'s HP/XP/level/location — never party/NPC status or names.
@@ -530,7 +531,9 @@ async function executeDiceToolAction(args, opts = {}) {
     const rows = kind === 'table' ? parseTable(args?.table) : null;
 
     if ((kind === 'check' || kind === 'attack') && !(Number.isFinite(dc) && dc > 0)) {
-        return 'Nothing was rolled. A check needs its DC (or % chance) and an attack needs the target AC, set first: call again with dc as a positive number. For damage, healing or quantities use kind "amount"; for a tier table use kind "table".';
+        return getSettings().losicaRules
+            ? 'Nothing was rolled. A check needs its DC (or % chance), set first: call again with dc as a positive number. For quantities use kind "amount"; for a tier table use kind "table".'
+            : 'Nothing was rolled. A check needs its DC (or % chance) and an attack needs the target AC, set first: call again with dc as a positive number. For damage, healing or quantities use kind "amount"; for a tier table use kind "table".';
     }
     if (kind === 'table' && !rows) {
         return 'Nothing was rolled. Call again with table as contiguous rows, e.g. "1-5 Junk | 6-10 Common | 11-20 Rare".';
@@ -707,6 +710,7 @@ export function registerDiceFunctionTool() {
             const baseFormula = '1d20';
             const formulaDescription = `A SINGLE dice formula to roll per invocation, e.g. "${baseFormula}", "1d100", "2d6+3", "${baseFormula}+5". Supports one or more die groups joined by + or - (e.g. "${baseFormula}+1d4+2"), and keep/drop modifiers (e.g. "2d20kh1" for advantage, "2d20kl1" for disadvantage). Provide EXACTLY ONE formula string per call — do NOT comma-separate multiple formulas in one invocation. When several independent rolls are needed, issue multiple parallel RollTheDice invocations in the same turn (e.g. initiative for each combatant, existence check then detection, or random-event occurrence + type). Use formula "1d100" with compare "lte" for percentage / existence checks.`;
 
+            const losica = settings.losicaRules ? losicaDiceSpec(false) : null;
             const rollDiceSchema = isLegacy ? {
                 type: 'object',
                 properties: {
@@ -718,10 +722,10 @@ export function registerDiceFunctionTool() {
                 type: 'object',
                 properties: {
                     who: { type: 'string', description: 'The name of the persona rolling the dice' },
-                    for: { type: 'string', description: FOR_DESCRIPTION },
-                    kind: KIND_PROPERTY,
-                    formula: { type: 'string', description: formulaDescription },
-                    dc: { type: 'number', description: 'Required for kind "check". Skill/attack checks (compare=gte): Difficulty Class — roll ≥ dc = SUCCESS. Percentage / existence checks (compare=lte or formula 1d100): the trigger % chance — roll ≤ dc = HIT. Pass the probability directly (e.g. 35 for Dangerous-tier existence). Set it from the fiction before rolling.' },
+                    for: losica?.for ?? { type: 'string', description: FOR_DESCRIPTION },
+                    kind: losica?.kind ?? KIND_PROPERTY,
+                    formula: losica?.formula ?? { type: 'string', description: formulaDescription },
+                    dc: losica?.dc ?? { type: 'number', description: 'Required for kind "check". Skill/attack checks (compare=gte): Difficulty Class — roll ≥ dc = SUCCESS. Percentage / existence checks (compare=lte or formula 1d100): the trigger % chance — roll ≤ dc = HIT. Pass the probability directly (e.g. 35 for Dangerous-tier existence). Set it from the fiction before rolling.' },
                     compare: { type: 'string', description: 'Optional. "gte" (default for non-d100 formulas): roll ≥ dc = SUCCESS. "lte" (default for 1d100 / percentage formulas): roll ≤ dc% = HIT. Use lte for existence checks and other percentage odds.' },
                     table: TABLE_PROPERTY,
                 },
@@ -731,7 +735,7 @@ export function registerDiceFunctionTool() {
             registerFunctionTool({
                 name: 'RollTheDice',
                 displayName: isLegacy ? 'Dice Roll' : 'Dice Roll (with DC)',
-                description: 'Rolls dice and returns the result. kind "check": skill checks and saves (1d20+mod vs dc, compare gte) and percentage / existence checks (1d100 vs %, compare lte). kind "attack": 1d20+mod vs target AC. The returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
+                description: losica?.description ?? 'Rolls dice and returns the result. kind "check": skill checks and saves (1d20+mod vs dc, compare gte) and percentage / existence checks (1d100 vs %, compare lte). kind "attack": 1d20+mod vs target AC. The returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
                 parameters: rollDiceSchema,
                 action: async (args) => executeDiceToolAction(args, {
                     defaultFormula: isLegacy ? '1d6' : '1d20',
@@ -747,14 +751,15 @@ export function registerDiceFunctionTool() {
             const baseFormula = '1d100';
             const formulaDescription = `A SINGLE dice formula to roll per invocation, e.g. "${baseFormula}", "2d6+3", "${baseFormula}+5". Supports one or more die groups joined by + or - (e.g. "${baseFormula}+1d4+2"), and keep/drop modifiers. Provide EXACTLY ONE formula string per call — do NOT comma-separate multiple formulas in one invocation. When several independent rolls are needed, issue multiple parallel RollTheDiceD100 invocations in the same turn.`;
 
+            const losica = settings.losicaRules ? losicaDiceSpec(true) : null;
             const rollDiceSchema = {
                 type: 'object',
                 properties: {
                     who: { type: 'string', description: 'The name of the persona rolling the dice' },
-                    for: { type: 'string', description: FOR_DESCRIPTION },
-                    kind: KIND_PROPERTY,
-                    formula: { type: 'string', description: formulaDescription },
-                    dc: { type: 'number', description: 'Required for kind "check". The success/trigger percentage chance for this roll (roll-under system): the actual % probability of success or occurrence (e.g. 83 for an 83% chance to hit/succeed, or 25 for a 25% hazard chance). A roll ≤ dc = HIT, a roll > dc = MISS. Pass the probability as stated.' },
+                    for: losica?.for ?? { type: 'string', description: FOR_DESCRIPTION },
+                    kind: losica?.kind ?? KIND_PROPERTY,
+                    formula: losica?.formula ?? { type: 'string', description: formulaDescription },
+                    dc: losica?.dc ?? { type: 'number', description: 'Required for kind "check". The success/trigger percentage chance for this roll (roll-under system): the actual % probability of success or occurrence (e.g. 83 for an 83% chance to hit/succeed, or 25 for a 25% hazard chance). A roll ≤ dc = HIT, a roll > dc = MISS. Pass the probability as stated.' },
                     table: TABLE_PROPERTY,
                 },
                 required: ['who', 'for', 'formula'],
@@ -763,7 +768,7 @@ export function registerDiceFunctionTool() {
             registerFunctionTool({
                 name: 'RollTheDiceD100',
                 displayName: 'Dice Roll d100 (with DC)',
-                description: 'Rolls dice and returns the result. kind "check": percentage checks, dc = success/trigger % (roll ≤ dc = HIT); the returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation (e.g. "1d100"); for several independent rolls, issue parallel invocations in the same turn.',
+                description: losica?.description ?? 'Rolls dice and returns the result. kind "check": percentage checks, dc = success/trigger % (roll ≤ dc = HIT); the returned verdict is binding. kind "amount": damage, healing, quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation (e.g. "1d100"); for several independent rolls, issue parallel invocations in the same turn.',
                 parameters: rollDiceSchema,
                 action: async (args) => executeDiceToolAction(args, {
                     defaultFormula: '1d100',
@@ -1512,7 +1517,7 @@ export function installInterceptor() {
             const modeTags = buildNarrativeModeTags(settings.narrativePacing);
             if (modeTags) bundleParts.push(modeTags);
             if (cyoaActive) {
-                let cyoaBlock = buildCyoaModeBlock(settings.cyoaConfig || {});
+                let cyoaBlock = buildCyoaModeBlock(settings.cyoaConfig || {}, { losica: !!settings.losicaRules });
                 if (isLocationMappingEnabled(settings) && isMapArchitectTextOpener(settings) && !narrationContinue) {
                     cyoaBlock = applyMapArchitectTextOpenerCyoaCaveat(cyoaBlock);
                 }
