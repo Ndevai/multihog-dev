@@ -193,7 +193,7 @@ FORMAT FOR EVERY ITEM: thematic emoji, rarity tag ([Common], [Uncommon], [Rare],
 - Magic items add their school, complexity and activation condition when known: (bone wand; Healing, complexity 2; activates on a spoken word).
 - Bare currency goes under Other Items without a rarity tag: "💰" for coins, "💵" for paper money.
 
-WORN PROTECTION: for each worn item that covers the body, the parentheses also state which body parts it covers and any holes, cut-outs or damage with their place (iron helm, open at the back; leather jerkin, left sleeve torn off).
+WORN PROTECTION: for each worn item that covers the body, the parentheses also state which body parts and sub-locations it covers (head: forehead, crown, nape; arms: shoulder, upper arm, elbow, forearm; hands: wrist, palm, back; legs: hip, thigh, knee, shin; feet: sole, arch, ankle, heel) and any holes, gaps or damage with their place (iron helm, forehead and crown, open at the nape; leather jerkin, left sleeve torn off).
 
 EQUIPPED ITEMS: Tag any actively worn or held item with [E] immediately after the rarity tag. An item in 'Gear:' without [E] is carried, not worn or held.
 

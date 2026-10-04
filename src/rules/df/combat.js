@@ -1,6 +1,7 @@
 // DF attack resolution: momentum (wiki: Weapon) and layer-by-layer penetration (wiki: Material science).
 // Spec: docs/df-body-engine.md §3–4.
 import { select } from './raws.js';
+import { randomSublocation, shareOf } from './sublocations.js';
 
 export const SKILL_LEVELS = ['Dabbling', 'Novice', 'Adequate', 'Competent', 'Skilled', 'Proficient', 'Talented', 'Adept', 'Expert',
     'Professional', 'Accomplished', 'Great', 'Master', 'High Master', 'Grand Master', 'Legendary'];
@@ -95,8 +96,11 @@ export function momentum(c, iSize, w, { skill, style = 'normal', prone = false }
  * part's tissue layers outermost first, then one internal part. Returns
  * { tested: [{ part, layer, result: 'cut'|'smashed'|'held', armor? }], hits (tissue only), severed, left }.
  */
-export function penetrate(c, struck, iSize, w, M, rng, worn = [], side = 'front') {
+export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
     const tested = [];
+    // CDDA outfit::absorb_damage: the hit lands on one sub-location; one roll 1–100 decides every worn layer.
+    const sub = randomSublocation(struck, rng);
+    const roll = rng() * 100;
     let edged = w.edge;
     // One layer test (wiki Material science); returns 'cut' | 'smashed' | 'held' and updates M and edged.
     const test = (m, A, Qa, factor) => {
@@ -115,21 +119,21 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = [], side = 'front'
     const visit = part => {
         const size = partSize(c, part, iSize);
         if (part === struck) {
-            // Chance a blow on this side of the part meets the item: the covered share of that side (explicit), else DF's coverage.
-            const chance = it => {
-                if (!it.parts) return covers(c, it, part) ? it.coverage : 0;
-                const cv = it.parts[part.id];
-                return cv ? (side === 'back' ? cv.back : cv.front) : 0;
+            // The item's portion over the hit sub-location: explicit portions (CDDA armor portions), else DF's item coverage.
+            const portion = it => {
+                if (!it.parts) return covers(c, it, part) ? { coverage: it.coverage, subs: null } : null;
+                return (it.parts[part.id] || []).find(p => !p.subs || !sub || p.subs.includes(sub)) ?? null;
             };
-            const items = worn.map(it => [it, chance(it)]).filter(([, ch]) => ch > 0)
+            const items = worn.map(it => [it, portion(it)]).filter(([, p]) => p && p.coverage > 0)
                 .sort(([x], [y]) => LAYER_ORDER.indexOf(x.layer) - LAYER_ORDER.indexOf(y.layer));
-            for (const [it, ch] of items) {
+            for (const [it, p] of items) {
                 if (M <= 0) return;
-                if (rng() * 100 >= ch) continue;
-                let m = { IMPACT_FRACTURE: it.mat.IMPACT_YIELD, SHEAR_FRACTURE: it.mat.SHEAR_YIELD, ...it.mat };
-                if (it.elastic) m = { ...m, SHEAR_STRAIN_AT_YIELD: 50000, IMPACT_STRAIN_AT_YIELD: 50000 };
-                const cm3 = it.parts ? size * Math.min(ch, 100) / 100 : armorSize(size, it);
-                tested.push({ part, layer: { tissue: it.name }, armor: true, result: test(m, Math.min(w.contact, area(cm3)), it.quality, 1) });
+                if (roll >= p.coverage) continue;
+                const mat = p.mat ?? it.mat;
+                let m = { IMPACT_FRACTURE: mat.IMPACT_YIELD, SHEAR_FRACTURE: mat.SHEAR_YIELD, ...mat };
+                if (p.elastic ?? it.elastic) m = { ...m, SHEAR_STRAIN_AT_YIELD: 50000, IMPACT_STRAIN_AT_YIELD: 50000 };
+                const cm3 = it.parts ? size * shareOf(part, p.subs) * Math.min(p.coverage, 100) / 100 : armorSize(size, it);
+                tested.push({ part, layer: { tissue: p.mat ? `${it.name} (${p.mat.name})` : it.name }, armor: true, result: test(m, Math.min(w.contact, area(cm3)), it.quality, 1) });
             }
         }
         const A = Math.min(w.contact, area(size));
@@ -158,5 +162,5 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = [], side = 'front'
             if (M > 0) visit(pick);
         }
     }
-    return { tested, hits: tested.filter(t => t.result !== 'held' && !t.armor), severed, left: M };
+    return { tested, hits: tested.filter(t => t.result !== 'held' && !t.armor), severed, left: M, sub };
 }

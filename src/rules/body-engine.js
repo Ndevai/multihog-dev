@@ -1,6 +1,7 @@
 import { creature } from './df/index.js';
 import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf } from './df/combat.js';
-import { weaponOf, metalOf, armorOf, customGearOf } from './df/index.js';
+import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf } from './df/index.js';
+import { sublocationsOf } from './df/sublocations.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -383,7 +384,8 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const mass = attacker?.mass ?? a.mass ?? ac.size / 1000;
     const iSize = mass * 1000;
     const worn = [];
-    // Worn gear: a DF item ("iron helm") gives the defaults; covers (part, front %, back %), layer and flexible replace them.
+    // Worn gear: a DF item ("iron helm") gives the defaults; covers (CDDA-style portions: part, sub-locations, coverage %,
+    // material), layer and flexible replace them.
     const pct = x => Math.max(0, Math.min(150, Number(x)));
     for (const g of a.armor || []) {
         const spec = typeof g === 'string' ? { item: g } : g || {};
@@ -396,8 +398,13 @@ export function strike(target, a, attacker = null, rng = Math.random) {
             for (const cv of spec.covers) {
                 const pt = findPart(tc, cv.part);
                 if (!pt) return `${tc.name} has no part "${cv.part}" for ${it.name}. Nothing recorded.`;
-                const front = pct(cv.front ?? 100);
-                it.parts[pt.id] = { front, back: pct(cv.back ?? front) };
+                const known = Object.keys(sublocationsOf(pt) || {});
+                const subs = cv.sublocations?.length ? cv.sublocations.map(x => String(x).trim().toLowerCase()) : null;
+                const bad = subs?.find(x => !known.includes(x));
+                if (bad) return `${pt.name} has no sub-location "${bad}"${known.length ? ` (${known.join(', ')})` : ''}. Nothing recorded.`;
+                const mat = cv.material ? gearMaterialOf(cv.material) : null;
+                if (cv.material && !mat) return `No material "${cv.material}". Nothing recorded.`;
+                (it.parts[pt.id] ??= []).push({ subs, coverage: pct(cv.coverage ?? 100), ...(mat ? { mat, elastic: mat.kind === 'thread' } : {}) });
             }
         }
         worn.push(it);
@@ -432,7 +439,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         if (done <= impact) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
     }
     const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
-    const r = penetrate(tc, part, target.mass * 1000, w, M, rng, worn, a.facing === false ? 'back' : 'front');
+    const r = penetrate(tc, part, target.mass * 1000, w, M, rng, worn);
     const made = [];
     const touched = [...new Set(r.hits.map(h => h.part))];
     for (const hp of touched) {
@@ -453,7 +460,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const parts = [...new Set(r.tested.map(t => t.part))];
     const layers = parts.map(pt => `${pt.name}: ${r.tested.filter(t => t.part === pt).map(t => `${t.layer.tissue.toLowerCase()} ${t.result}`).join(', ')}`).join('; ');
     const wounds = made.length ? ` Wound${made.length > 1 ? 's' : ''} ${made.map(x => x.id).join(', ')}.` : ' No wound.';
-    return `${verb} (${w.name}) to ${part.name}: momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}`;
+    return `${verb} (${w.name}) to ${part.name}${r.sub ? ` (${r.sub})` : ''}: momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}`;
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.

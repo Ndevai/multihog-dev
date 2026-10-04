@@ -179,8 +179,17 @@ export function registerRulesTools(enabled) {
                     item: str('Quality + material + item: "steel breastplate", "iron mail shirt", "leather armor", "iron helm", "cloth trousers", "leather high boots". Quality words: well-crafted, finely-crafted, superior, exceptional, masterwork, artifact. With covers, any item name after the material ("iron skullcap").'),
                     covers: {
                         type: 'array',
-                        description: 'What the item physically covers, from its description: each body part and the % of that part\'s front and back it covers. Give it whenever the item differs from the standard one (holes, damage, cut-outs, odd shapes); a helm with an open back = head front 100, back 0.',
-                        items: { type: 'object', properties: { part: str('Body part name'), front: { type: 'number' }, back: { type: 'number' } }, required: ['part'] },
+                        description: 'What the item physically covers, from its description, as portions. Give it whenever the item differs from the standard one (holes, damage, cut-outs, odd shapes). A helm open at the back = {part: head, sublocations: [forehead, crown], coverage: 100}. Sub-locations: head forehead/crown/nape; upper arm shoulder/upper arm; lower arm elbow/forearm; hand wrist/palm/back of hand; upper leg hip/thigh; lower leg knee/shin; foot sole/arch/ankle/heel.',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                part: str('Body part name'),
+                                sublocations: { type: 'array', items: { type: 'string' }, description: 'Covered sub-locations of the part; omit for the whole part.' },
+                                coverage: { type: 'number', description: '% of those sub-locations the portion covers (gaps, holes, mesh); default 100.' },
+                                material: str('Material of this portion when it differs from the item\'s (a leather nape guard on an iron helm).'),
+                            },
+                            required: ['part'],
+                        },
                     },
                     layer: { type: 'string', enum: ['UNDER', 'OVER', 'ARMOR', 'COVER'], description: 'Worn under clothing, over it, as armour, or as an outer cover.' },
                     flexible: { type: 'boolean', description: 'Woven or linked (mail, cloth): a blow it stops still passes through as blunt force.' },
