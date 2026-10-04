@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { registerLosicaRulesTools, onLosicaGenerationStarted, onLosicaMessageReceived, onLosicaSwiped, syncLosicaToChat, restoreLosicaForMemo } from '../src/rules/losica-tools.js';
+import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, restoreRulesForMemo } from '../src/rules/rules-tools.js';
 
 let ctx;
 const tools = {};
@@ -12,103 +12,103 @@ beforeEach(() => {
         unregisterFunctionTool: () => {},
     };
     globalThis.SillyTavern = { getContext: () => ctx };
-    registerLosicaRulesTools(true);
+    registerRulesTools(true);
 });
 
 function reply(swipeId, text) {
     const msg = ctx.chat[1] || (ctx.chat[1] = { is_user: false, swipes: [], extra: {} });
     msg.swipe_id = swipeId;
     msg.mes = text;
-    onLosicaMessageReceived(1);
+    onRulesMessageReceived(1);
 }
 
-const people = () => Object.keys(ctx.chatMetadata.losicaRules.state.people);
+const people = () => Object.keys(ctx.chatMetadata.rulesEngine.state.people);
 
-describe('Losica state follows swipes like the State Tracker memo', () => {
+describe('Rules-engine state follows swipes like the State Tracker memo', () => {
     it('restores each swipe\'s own state when navigating back and forth', async () => {
-        onLosicaGenerationStarted('normal');
-        await tools.LosicaWound.action({ who: 'Mira', part: 'arm_l', type: 'cut' });
+        onRulesGenerationStarted('normal');
+        await tools.BodyWound.action({ who: 'Mira', part: 'arm_l', type: 'cut' });
         reply(0, 'Mira is cut.');
 
-        onLosicaGenerationStarted('swipe');
+        onRulesGenerationStarted('swipe');
         expect(people()).toEqual([]);
-        await tools.LosicaWound.action({ who: 'Tov', part: 'leg_l', type: 'blunt' });
+        await tools.BodyWound.action({ who: 'Tov', part: 'leg_l', type: 'blunt' });
         reply(1, 'Tov is bruised.');
 
         ctx.chat[1].swipe_id = 0;
-        onLosicaSwiped(1);
+        onRulesSwiped(1);
         expect(people()).toEqual(['Mira']);
 
         ctx.chat[1].swipe_id = 1;
-        onLosicaSwiped(1);
+        onRulesSwiped(1);
         expect(people()).toEqual(['Tov']);
     });
 
     it('repeats a random outcome when a swipe makes the same call', async () => {
-        onLosicaGenerationStarted('normal');
-        const first = await tools.LosicaFall.action({ who: 'Mira', height_m: 14 });
+        onRulesGenerationStarted('normal');
+        const first = await tools.BodyFall.action({ who: 'Mira', height_m: 14 });
         reply(0, 'She falls.');
-        onLosicaGenerationStarted('swipe');
-        expect(await tools.LosicaFall.action({ who: 'Mira', height_m: 14 })).toBe(first);
+        onRulesGenerationStarted('swipe');
+        expect(await tools.BodyFall.action({ who: 'Mira', height_m: 14 })).toBe(first);
     });
 });
 
-describe('Losica state follows branches, deletions and Linear Stone restores', () => {
+describe('Rules-engine state follows branches, deletions and Linear Stone restores', () => {
     async function twoTurns() {
-        onLosicaGenerationStarted('normal');
-        await tools.LosicaWound.action({ who: 'Mira', part: 'arm_l', type: 'cut' });
+        onRulesGenerationStarted('normal');
+        await tools.BodyWound.action({ who: 'Mira', part: 'arm_l', type: 'cut' });
         reply(0, 'Mira is cut.');
         ctx.chat[1].extra.rpgMemoResult = { 0: 'MEMO-1' };
         ctx.chat.push({ is_user: true, mes: 'Tov steps in' });
-        onLosicaGenerationStarted('normal');
-        await tools.LosicaWound.action({ who: 'Tov', part: 'leg_l', type: 'blunt' });
+        onRulesGenerationStarted('normal');
+        await tools.BodyWound.action({ who: 'Tov', part: 'leg_l', type: 'blunt' });
         ctx.chat.push({ is_user: false, swipe_id: 0, mes: 'Tov is hit.', extra: { rpgMemoResult: { 0: 'MEMO-2' } } });
-        onLosicaMessageReceived(3);
+        onRulesMessageReceived(3);
     }
 
     it('a branch cut after the first reply starts with that reply\'s state', async () => {
         await twoTurns();
         ctx.chat = ctx.chat.slice(0, 2);
-        syncLosicaToChat();
+        syncRulesToChat();
         expect(people()).toEqual(['Mira']);
     });
 
     it('deleting the last exchange returns to the previous reply\'s state', async () => {
         await twoTurns();
         ctx.chat.splice(2);
-        syncLosicaToChat();
+        syncRulesToChat();
         expect(people()).toEqual(['Mira']);
     });
 
     it('restoring a Linear Stone takes the state of the reply that produced that memo', async () => {
         await twoTurns();
-        expect(restoreLosicaForMemo('MEMO-1')).toBe(true);
+        expect(restoreRulesForMemo('MEMO-1')).toBe(true);
         expect(people()).toEqual(['Mira']);
-        expect(restoreLosicaForMemo('MEMO-2')).toBe(true);
+        expect(restoreRulesForMemo('MEMO-2')).toBe(true);
         expect(people()).toEqual(['Mira', 'Tov']);
-        expect(restoreLosicaForMemo('hand-edited memo')).toBe(false);
+        expect(restoreRulesForMemo('hand-edited memo')).toBe(false);
     });
 });
 
 describe('host wiring', () => {
-    it('calls the Losica sync on chat change, deletion and stone restore', async () => {
+    it('calls the rules sync on chat change, deletion and stone restore', async () => {
         const { readFileSync } = await import('node:fs');
         const index = readFileSync(new URL('../index.js', import.meta.url), 'utf8');
         const panel = readFileSync(new URL('../src/ui/panel/panel-builder.js', import.meta.url), 'utf8');
-        expect(index).toMatch(/CHAT_CHANGED, \(\) => \{ if \(getSettings\(\)\.losicaRules\) syncLosicaToChat\(\)/);
-        expect(index).toMatch(/MESSAGE_DELETED, \(\) => \{ if \(getSettings\(\)\.losicaRules\) syncLosicaToChat\(\)/);
+        expect(index).toMatch(/CHAT_CHANGED, \(\) => \{ if \(getSettings\(\)\.rulesEngine\) syncRulesToChat\(\)/);
+        expect(index).toMatch(/MESSAGE_DELETED, \(\) => \{ if \(getSettings\(\)\.rulesEngine\) syncRulesToChat\(\)/);
         expect(panel).toContain('globalThis._rpgOnMemoRestored?.(snapshot);');
     });
 });
 
 describe('SillyTavern tool flow: tool calls are stored as a chat message, then a second generation writes the reply', () => {
     async function toolTurn() {
-        onLosicaGenerationStarted('normal');
-        const result = await tools.LosicaWound.action({ who: 'Mira', part: 'arm_l', type: 'cut' });
-        ctx.chat.push({ is_system: true, is_user: false, mes: 'tool call', extra: { tool_invocations: [{ name: 'LosicaWound', parameters: '{}', result }] } });
-        onLosicaGenerationStarted('normal');
+        onRulesGenerationStarted('normal');
+        const result = await tools.BodyWound.action({ who: 'Mira', part: 'arm_l', type: 'cut' });
+        ctx.chat.push({ is_system: true, is_user: false, mes: 'tool call', extra: { tool_invocations: [{ name: 'BodyWound', parameters: '{}', result }] } });
+        onRulesGenerationStarted('normal');
         ctx.chat.push({ is_user: false, swipe_id: 0, swipes: ['Mira is cut.'], mes: 'Mira is cut.', extra: {} });
-        onLosicaMessageReceived(2);
+        onRulesMessageReceived(2);
         return result;
     }
 
@@ -120,10 +120,10 @@ describe('SillyTavern tool flow: tool calls are stored as a chat message, then a
     it('the rule check finds the turn\'s tool results in the chat, also after a swipe', async () => {
         const { turnResults } = await import('../src/rules/rules-audit.js');
         const result = await toolTurn();
-        expect(turnResults(ctx)).toEqual([{ tool: 'LosicaWound', result }]);
-        onLosicaGenerationStarted('swipe');
+        expect(turnResults(ctx)).toEqual([{ tool: 'BodyWound', result }]);
+        onRulesGenerationStarted('swipe');
         expect(people()).toEqual(['Mira']);
-        expect(turnResults(ctx)).toEqual([{ tool: 'LosicaWound', result }]);
+        expect(turnResults(ctx)).toEqual([{ tool: 'BodyWound', result }]);
         ctx.chat.push({ is_user: true, mes: 'I run' });
         expect(turnResults(ctx)).toEqual([]);
     });

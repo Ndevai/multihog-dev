@@ -1,7 +1,7 @@
 // Plain-sense cases for "does an attack land", written before the rule.
 // A blow lands unless the target detects it in time AND can move out of the way.
 import { describe, it, expect } from 'vitest';
-import { newPerson, addWound, strike, seededRng } from '../src/rules/losica-engine.js';
+import { newPerson, addWound, strike, seededRng } from '../src/rules/body-engine.js';
 
 const fist = extra => ({ part: 'torso', means: 'fist', ...extra });
 const lands = out => !/avoided|out of reach/.test(out);

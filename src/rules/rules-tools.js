@@ -1,14 +1,14 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check } from './losica-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check } from './body-engine.js';
 import { turnKey } from '../state/dice-ledger.js';
 
-const TOOLS = ['LosicaCheck', 'LosicaWound', 'LosicaStrike', 'LosicaTreat', 'LosicaTime', 'LosicaCast', 'LosicaFall', 'LosicaStatus'];
+const TOOLS = ['BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
     const ctx = SillyTavern.getContext();
-    ctx.chatMetadata.losicaRules ??= { state: { people: {} }, snapshots: {} };
-    ctx.chatMetadata.losicaRules.salt ??= crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
-    return ctx.chatMetadata.losicaRules;
+    ctx.chatMetadata.rulesEngine ??= { state: { people: {} }, snapshots: {} };
+    ctx.chatMetadata.rulesEngine.salt ??= crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+    return ctx.chatMetadata.rulesEngine;
 }
 
 function save() {
@@ -22,7 +22,7 @@ function save() {
  * results as a message and starts a second 'normal' generation for the reply; that one is saved at
  * its own position, so a swipe of the reply keeps the tools' effects.
  */
-export function onLosicaGenerationStarted(type) {
+export function onRulesGenerationStarted(type) {
     const ctx = SillyTavern.getContext();
     if (!ctx.chatMetadata) return;
     const s = store();
@@ -43,21 +43,21 @@ export function onLosicaGenerationStarted(type) {
 }
 
 /** MESSAGE_RECEIVED: keep the state each swipe ended with, like Multihog's rpgMemoResult. */
-export function onLosicaMessageReceived(messageId) {
+export function onRulesMessageReceived(messageId) {
     const ctx = SillyTavern.getContext();
     const msg = ctx.chat?.[messageId];
     if (!ctx.chatMetadata || !msg || msg.is_user || msg.is_system) return;
     msg.extra ??= {};
-    msg.extra.losicaResult ??= {};
-    msg.extra.losicaResult[msg.swipe_id ?? 0] = structuredClone(store().state);
+    msg.extra.rulesResult ??= {};
+    msg.extra.rulesResult[msg.swipe_id ?? 0] = structuredClone(store().state);
     (ctx.saveChatDebounced || ctx.saveChat)?.();
 }
 
 /** MESSAGE_SWIPED: returning to an earlier swipe restores the state it ended with. */
-export function onLosicaSwiped(messageId) {
+export function onRulesSwiped(messageId) {
     const ctx = SillyTavern.getContext();
     const msg = ctx.chat?.[messageId];
-    const saved = msg?.extra?.losicaResult?.[msg.swipe_id ?? 0];
+    const saved = msg?.extra?.rulesResult?.[msg.swipe_id ?? 0];
     if (!ctx.chatMetadata || !saved) return;
     restore(saved);
 }
@@ -70,23 +70,23 @@ function restore(saved) {
 }
 
 /** CHAT_CHANGED / MESSAGE_DELETED: state = what the last reply ended with, so a branch or deletion starts from its own point. */
-export function syncLosicaToChat() {
+export function syncRulesToChat() {
     const ctx = SillyTavern.getContext();
     if (!ctx.chatMetadata) return;
     const msg = [...(ctx.chat || [])].reverse().find(isReply);
-    const saved = msg?.extra?.losicaResult?.[msg.swipe_id ?? 0];
+    const saved = msg?.extra?.rulesResult?.[msg.swipe_id ?? 0];
     if (saved) restore(saved);
 }
 
-/** Linear Stone restore: find the reply whose State Tracker result is this memo and take its Losica state. */
-export function restoreLosicaForMemo(memo) {
+/** Linear Stone restore: find the reply whose State Tracker result is this memo and take its rule-engine state. */
+export function restoreRulesForMemo(memo) {
     const ctx = SillyTavern.getContext();
     if (!ctx.chatMetadata) return false;
     for (const msg of [...(ctx.chat || [])].reverse()) {
         const results = msg?.extra?.rpgMemoResult;
         if (!isReply(msg) || !results) continue;
-        const swipe = Object.keys(results).find(k => results[k] === memo && msg.extra.losicaResult?.[k]);
-        if (swipe !== undefined) { restore(msg.extra.losicaResult[swipe]); return true; }
+        const swipe = Object.keys(results).find(k => results[k] === memo && msg.extra.rulesResult?.[k]);
+        if (swipe !== undefined) { restore(msg.extra.rulesResult[swipe]); return true; }
     }
     return false;
 }
@@ -103,19 +103,19 @@ function run(fn) {
 
 const str = d => ({ type: 'string', description: d });
 
-export const LOSICA_BRIEF = `<rule_engine>
+export const RULES_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
-- An attack with fist, kick or blade → LosicaStrike; it decides whether it lands and the wound. Narrate what it returns.
-- An attack by any other means (bow, sling, club, claw, firearm, thrown object) → LosicaCheck; a hit → LosicaWound with the part and wound type.
-- A burn, a bite, an accident or a fall injury → LosicaWound.
-- Someone falls → LosicaFall.
-- Time passes in the story → LosicaTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → LosicaCast. A treatment is applied → LosicaTreat.
-- Any other action with an uncertain outcome → LosicaCheck.
-- Describe a character's injuries, blood loss or energy from LosicaStatus.
+- An attack with fist, kick or blade → BodyStrike; it decides whether it lands and the wound. Narrate what it returns.
+- An attack by any other means (bow, sling, club, claw, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
+- A burn, a bite, an accident or a fall injury → BodyWound.
+- Someone falls → BodyFall.
+- Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat.
+- Any other action with an uncertain outcome → BodyCheck.
+- Describe a character's injuries, blood loss or energy from BodyStatus.
 </rule_engine>`;
 
-export function registerLosicaRulesTools(enabled) {
+export function registerRulesTools(enabled) {
     const { registerFunctionTool, unregisterFunctionTool } = SillyTavern.getContext();
     if (!registerFunctionTool || !unregisterFunctionTool) return;
     TOOLS.forEach(n => unregisterFunctionTool(n));
@@ -133,7 +133,7 @@ export function registerLosicaRulesTools(enabled) {
     });
 
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
-    tool('LosicaWound', 'Record a wound the moment it happens when LosicaStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon LosicaStrike does not cover (arrow, club, bullet). Returns what the wound is and the body state.', {
+    tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, club, bullet). Returns what the wound is and the body state.', {
         who: str('Character name'),
         part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
         type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'burn', 'bite'] },
@@ -147,7 +147,7 @@ export function registerLosicaRulesTools(enabled) {
         return `Wound ${w.id} recorded. ${status(a.who, p)}`;
     }));
 
-    tool('LosicaStrike', 'Resolve an attack before narrating it: whether it lands, its force and the wound it records. Narrate a miss as a miss.', {
+    tool('BodyStrike', 'Resolve an attack before narrating it: whether it lands, its force and the wound it records. Narrate a miss as a miss.', {
         who: str('Character hit'),
         part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
         means: { type: 'string', enum: ['fist', 'kick', 'blade_cut', 'blade_stab'] },
@@ -172,7 +172,7 @@ export function registerLosicaRulesTools(enabled) {
         return `${out} ${status(a.who, p)}`;
     }));
 
-    tool('LosicaCheck', 'Resolve an action with an uncertain outcome that no other Losica tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
+    tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
         who: str('Character acting'),
         task: str('The task in a few words'),
         share: { type: 'number', description: 'Fraction 0–1 of people with this character\'s training who succeed at this task in these conditions, unhurt.' },
@@ -181,7 +181,7 @@ export function registerLosicaRulesTools(enabled) {
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
     }, ['who', 'task', 'share'], a => run((st, rng) => check(person(st, a.who), a, rng)));
 
-    tool('LosicaTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
+    tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
         wound: { type: 'number', description: 'Wound id' },
         treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load'] },
@@ -190,7 +190,7 @@ export function registerLosicaRulesTools(enabled) {
         return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;
     }));
 
-    tool('LosicaTime', 'Advance story time for every tracked character. Call before narrating any time passing. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
+    tool('PassTime', 'Advance story time for every tracked character. Call before narrating any time passing. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
         minutes: { type: 'number', description: 'Minutes that pass' },
         resting: { type: 'array', items: { type: 'string' }, description: 'Characters not casting or fighting during this time' },
     }, ['minutes'], a => run((st, rng) => {
@@ -203,7 +203,7 @@ export function registerLosicaRulesTools(enabled) {
         return [head, ...lines].join('\n');
     }));
 
-    tool('LosicaCast', 'Resolve a spell cast before narrating it.', {
+    tool('CastSpell', 'Resolve a spell cast before narrating it.', {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },
     }, ['who', 'complexity'], a => run(st => {
@@ -211,7 +211,7 @@ export function registerLosicaRulesTools(enabled) {
         return `${cast(p, Math.max(1, Math.min(9, Math.round(a.complexity))))} ${status(a.who, p)}`;
     }));
 
-    tool('LosicaFall', 'Resolve a fall before narrating its outcome.', {
+    tool('BodyFall', 'Resolve a fall before narrating its outcome.', {
         who: str('Character name'),
         height_m: { type: 'number' },
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
@@ -221,7 +221,7 @@ export function registerLosicaRulesTools(enabled) {
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first }, rng);
     }));
 
-    tool('LosicaStatus', 'Read a character\'s body and network state.', {
+    tool('BodyStatus', 'Read a character\'s body and network state.', {
         who: str('Character name'),
     }, ['who'], a => run(st => status(a.who, person(st, a.who))));
 }

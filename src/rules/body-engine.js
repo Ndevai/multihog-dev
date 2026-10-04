@@ -184,7 +184,7 @@ export function fallDeathChance(height, { soft = false, headFirst = false } = {}
 export function fall(p, height, opts = {}, rng = Math.random) {
     const chance = fallDeathChance(height, opts);
     if (chance > 0 && rng() < chance) { p.dead = 'fall'; return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — dies.`; }
-    return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — survives. Injuries: narrate, then record with LosicaWound.`;
+    return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — survives. Injuries: narrate, then record with BodyWound.`;
 }
 
 const baseOf = part => part.replace(/_(l|r)$/, '');

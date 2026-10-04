@@ -39,7 +39,7 @@ export const CHAT_SETUP_KEYS = Object.freeze([
     'rngEnabled',
     'diceFunctionTool',
     'strictDiceCommit',
-    'losicaRules',
+    'rulesEngine',
     'diceD100Mode',
     'rngToolD20',
     'rngToolD100',

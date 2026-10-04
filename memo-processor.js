@@ -11,7 +11,7 @@
 
 import { getSettings } from './state-manager.js';
 import { DEFAULT_STOCK_PROMPTS, resolveTimePromptKey } from './constants.js';
-import { effectiveModules, losicaTimePrompt, LOSICA_TRACKER_PROMPTS } from './src/rules/losica-mode.js';
+import { effectiveModules, rulesTimePrompt, RULES_TRACKER_PROMPTS } from './src/rules/rules-mode.js';
 import {
     partitionResolvedCombatants,
     stripResolvedCombatantsFromMemo,
@@ -1744,8 +1744,8 @@ export async function buildLorebookContext() {
  */
 export function buildModulesInstructionText(settings) {
     let modulesText = "";
-    const promptsMap = settings.losicaRules
-        ? { ...(settings.stockPrompts || DEFAULT_STOCK_PROMPTS), ...LOSICA_TRACKER_PROMPTS, time: losicaTimePrompt(settings) }
+    const promptsMap = settings.rulesEngine
+        ? { ...(settings.stockPrompts || DEFAULT_STOCK_PROMPTS), ...RULES_TRACKER_PROMPTS, time: rulesTimePrompt(settings) }
         : settings.stockPrompts || DEFAULT_STOCK_PROMPTS;
     const modules = effectiveModules(settings);
 
@@ -1779,7 +1779,7 @@ export function buildModulesInstructionText(settings) {
             }
 
             // ── Dynamic prompt swap for Time Module ─────────────────────────
-            if (key === 'time' && !settings.losicaRules) {
+            if (key === 'time' && !settings.rulesEngine) {
                 const timeKey = resolveTimePromptKey(settings);
                 if (timeKey !== 'time') {
                     p = promptsMap[timeKey] || DEFAULT_STOCK_PROMPTS[timeKey];

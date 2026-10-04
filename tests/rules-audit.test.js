@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseAudit, buildAuditPrompt, correctionNote, onRulesAuditMessage, takeAuditNote } from '../src/rules/rules-audit.js';
-import { registerLosicaRulesTools, onLosicaGenerationStarted, LOSICA_BRIEF } from '../src/rules/losica-tools.js';
+import { registerRulesTools, onRulesGenerationStarted, RULES_BRIEF } from '../src/rules/rules-tools.js';
 
 let ctx;
 const tools = {};
@@ -14,7 +14,7 @@ beforeEach(() => {
         unregisterFunctionTool: () => {},
     };
     globalThis.SillyTavern = { getContext: () => ctx };
-    registerLosicaRulesTools(true);
+    registerRulesTools(true);
     takeAuditNote();
 });
 
@@ -33,17 +33,17 @@ const deps = answer => {
     };
 };
 
-const BROKEN_JAW = JSON.stringify({ events: [{ quote: 'his jaw cracked', tool: 'LosicaStrike', problem: 'unbacked' }] });
+const BROKEN_JAW = JSON.stringify({ events: [{ quote: 'his jaw cracked', tool: 'BodyStrike', problem: 'unbacked' }] });
 
 describe('reading the checker', () => {
     it('keeps known tools and drops the rest', () => {
-        expect(parseAudit(`Here: {"events":[{"quote":"a","tool":"LosicaFall"},{"quote":"b","tool":"Magic"}]}`)).toEqual([{ quote: 'a', tool: 'LosicaFall' }]);
+        expect(parseAudit(`Here: {"events":[{"quote":"a","tool":"BodyFall"},{"quote":"b","tool":"Magic"}]}`)).toEqual([{ quote: 'a', tool: 'BodyFall' }]);
         expect(parseAudit('{"events":[]}')).toEqual([]);
         expect(parseAudit('no json')).toBeNull();
     });
 
     it('shows the checker every engine result of the turn', () => {
-        expect(buildAuditPrompt('He falls.', [{ tool: 'LosicaFall', result: 'Fall 3 m: survives.' }])).toContain('1. LosicaFall: Fall 3 m: survives.');
+        expect(buildAuditPrompt('He falls.', [{ tool: 'BodyFall', result: 'Fall 3 m: survives.' }])).toContain('1. BodyFall: Fall 3 m: survives.');
         expect(buildAuditPrompt('x', [])).toContain('(no engine results this turn)');
     });
 });
@@ -56,14 +56,14 @@ describe('the loop: check, redo once, then show', () => {
         expect(events).toHaveLength(1);
         expect(d.calls.generate).toEqual(['swipe']);
         const note = takeAuditNote();
-        expect(note).toContain('"his jaw cracked" → LosicaStrike');
+        expect(note).toContain('"his jaw cracked" → BodyStrike');
         expect(takeAuditNote()).toBeNull();
     });
 
     it('a second unbacked reply in the same turn is shown to the user, not redone', async () => {
         reply('She swings and his jaw cracked.');
         await onRulesAuditMessage(1, deps(BROKEN_JAW));
-        onLosicaGenerationStarted('swipe');
+        onRulesGenerationStarted('swipe');
         reply('His jaw cracked again.');
         const d = deps(BROKEN_JAW);
         await onRulesAuditMessage(1, d);
@@ -73,13 +73,13 @@ describe('the loop: check, redo once, then show', () => {
     });
 
     it('tool results of the turn reach the checker; a backed reply passes', async () => {
-        onLosicaGenerationStarted('normal');
-        const result = await tools.LosicaStrike.action({ who: 'Guard', part: 'mouth', means: 'fist' });
-        ctx.chat.push({ is_system: true, mes: 'tool call', extra: { tool_invocations: [{ name: 'LosicaStrike', result }] } });
+        onRulesGenerationStarted('normal');
+        const result = await tools.BodyStrike.action({ who: 'Guard', part: 'mouth', means: 'fist' });
+        ctx.chat.push({ is_system: true, mes: 'tool call', extra: { tool_invocations: [{ name: 'BodyStrike', result }] } });
         ctx.chat.push({ is_user: false, mes: 'Her fist bruises his mouth.', swipe_id: 0, extra: {} });
         const d = deps('{"events":[]}');
         expect(await onRulesAuditMessage(2, d)).toEqual([]);
-        expect(d.calls.prompts[0]).toMatch(/1\. LosicaStrike: fist (to mouth: \d+ N|at mouth: avoided)/);
+        expect(d.calls.prompts[0]).toMatch(/1\. BodyStrike: fist (to mouth: \d+ N|at mouth: avoided)/);
         expect(d.calls.generate).toEqual([]);
     });
 
@@ -104,22 +104,22 @@ describe('the loop: check, redo once, then show', () => {
 
 describe('severity is code-side', () => {
     it('the narrator cannot choose vessel or fracture', () => {
-        const props = tools.LosicaWound.parameters.properties;
+        const props = tools.BodyWound.parameters.properties;
         expect(props.vessel).toBeUndefined();
         expect(props.fracture).toBeUndefined();
         expect(props.type.enum).not.toContain('fracture');
     });
 
-    it('a cut through LosicaWound gets its vessel from code', async () => {
-        onLosicaGenerationStarted('normal');
-        expect(await tools.LosicaWound.action({ who: 'Ara', part: 'leg_l', type: 'cut' })).toMatch(/cut to leg_l, (limb artery opened|small vessels)/);
+    it('a cut through BodyWound gets its vessel from code', async () => {
+        onRulesGenerationStarted('normal');
+        expect(await tools.BodyWound.action({ who: 'Ara', part: 'leg_l', type: 'cut' })).toMatch(/cut to leg_l, (limb artery opened|small vessels)/);
     });
 
     it('the brief and the correction reach the narrator prompt', () => {
         const hooks = readFileSync(new URL('../narrative-hooks.js', import.meta.url), 'utf8');
-        expect(hooks).toContain('injections += `${LOSICA_BRIEF}');
-        expect(LOSICA_BRIEF).toContain('LosicaStrike');
-        expect(correctionNote([{ quote: 'q', tool: 'LosicaTime', problem: 'contradicts' }])).toContain('(narrate what it returns)');
+        expect(hooks).toContain('injections += `${RULES_BRIEF}');
+        expect(RULES_BRIEF).toContain('BodyStrike');
+        expect(correctionNote([{ quote: 'q', tool: 'PassTime', problem: 'contradicts' }])).toContain('(narrate what it returns)');
         const index = readFileSync(new URL('../index.js', import.meta.url), 'utf8');
         expect(index).toContain('await onRulesAuditMessage(id, {');
     });

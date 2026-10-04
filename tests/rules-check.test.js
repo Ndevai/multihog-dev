@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newPerson, addWound, checkChance, check } from '../src/rules/losica-engine.js';
+import { newPerson, addWound, checkChance, check } from '../src/rules/body-engine.js';
 
 const hurt = (parts, type = 'fracture') => {
     const p = newPerson();

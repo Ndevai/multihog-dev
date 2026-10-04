@@ -1,4 +1,4 @@
-// With the Losica rules on, these texts replace the D&D sections of the narrator prompt and the
+// With the rules engine on, these texts replace the D&D sections of the narrator prompt and the
 // D&D block formats of the State Tracker. Body state (wounds, blood, network energy) belongs to the
 // rule engine and reaches both models only through the code-written [BODY] block.
 
@@ -13,12 +13,12 @@ Spells: Spell name (School, complexity N), one entry per spell known; omit the l
 
 const BODY_NOTE = 'Wounds, blood, abilities and network energy are written by code in [BODY]; this block holds only the fields above.';
 
-/** Sections with no Losica counterpart are omitted; the rest get Losica text. */
-export const LOSICA_DROPPED_SECTIONS = new Set([
+/** Sections with no rules-engine counterpart are omitted; the rest get rules-engine text. */
+export const RULES_DROPPED_SECTIONS = new Set([
     'weapon_proficiencies', 'attacks_per_round', 'saving_throws', 'xp_system', 'level_up_protocol', 'homebrew_and_custom_classes',
 ]);
 
-export const LOSICA_SECTIONS = {
+export const RULES_SECTIONS = {
     role: `Narrator and world simulator. Narrate the world, simulate NPCs and apply the rules of this prompt and the rule-engine tools. In a fight, simulate every NPC's actions (not {{user}}'s) in the order they happen in time.`,
 
     combat: `<combatants>
@@ -43,7 +43,7 @@ A fight's danger follows from what the story establishes: numbers, mass, trainin
 - Narrate the tier, what the item physically is (material, make, condition; for a weapon its kind: blade, blunt, bow, firearm) and its approximate value for the Tracker. For a magic item: its school, complexity and activation condition when known.
 - Use narrative consistency/logic for the loot range. For instance, a bandit camp shouldn't have amazing loot even with a high roll.`,
 
-    resting: `Rest and sleep pass through LosicaTime with the minutes and the characters resting; network energy recovers only during hours without casting or fighting. In a dangerous place, a tier table with the odds the danger sets decides whether the rest is interrupted; time then runs only up to the interruption.`,
+    resting: `Rest and sleep pass through PassTime with the minutes and the characters resting; network energy recovers only during hours without casting or fighting. In a dangerous place, a tier table with the odds the danger sets decides whether the rest is interrupted; time then runs only up to the interruption.`,
 
     constraints: `<resolution_constraints>
 Never skip/reinterpret a roll. Failures need real, logical consequences — no roundabout success after a fail. A second attempt after failure is allowed only with a genuinely different approach; otherwise reject and prompt another action.
@@ -72,34 +72,34 @@ Location is coarse-to-fine and may be four or more tiers.
 };
 
 /** Profile a joining member is declared with; the bench rules of the section follow it unchanged. */
-export const LOSICA_PARTY_JOIN = `On joining: state *(Name joins the party)* and declare their profile:
+export const RULES_PARTY_JOIN = `On joining: state *(Name joins the party)* and declare their profile:
 [PARTY]
 Name (N kg)
 ${PROFILE_FIELDS}
 [/PARTY]`;
 
 /**
- * Losica form of one base sysprompt section: { final } is the finished section ('' = omitted),
+ * Rules-engine form of one base sysprompt section: { final } is the finished section ('' = omitted),
  * { inner } replaces the section body before the usual transforms, null leaves the section as it is.
  */
-export function losicaSection(tag, innerContent, settings, useQueue) {
-    if (!settings?.losicaRules) return null;
-    if (LOSICA_DROPPED_SECTIONS.has(tag)) return { final: '' };
+export function rulesSection(tag, innerContent, settings, useQueue) {
+    if (!settings?.rulesEngine) return null;
+    if (RULES_DROPPED_SECTIONS.has(tag)) return { final: '' };
     if (tag === 'rng_system') {
-        return { final: losicaRngSystem({ rngEnabled: !!settings.rngEnabled, useQueue, d100Mode: !!settings.diceD100Mode }) };
+        return { final: rulesRngSystem({ rngEnabled: !!settings.rngEnabled, useQueue, d100Mode: !!settings.diceD100Mode }) };
     }
     if (tag === '[PARTY]_mechanics') {
         const at = String(innerContent).search(/<leaving_vs_benching>/i);
-        return { inner: at < 0 ? LOSICA_PARTY_JOIN : `${LOSICA_PARTY_JOIN}\n\n${String(innerContent).slice(at).trim()}` };
+        return { inner: at < 0 ? RULES_PARTY_JOIN : `${RULES_PARTY_JOIN}\n\n${String(innerContent).slice(at).trim()}` };
     }
-    return tag in LOSICA_SECTIONS ? { inner: LOSICA_SECTIONS[tag] } : null;
+    return tag in RULES_SECTIONS ? { inner: RULES_SECTIONS[tag] } : null;
 }
 
-/** rng_system: checks through LosicaCheck in every mode; dice only for quantities and tier tables. */
-export function losicaRngSystem({ rngEnabled, useQueue, d100Mode }) {
+/** rng_system: checks through BodyCheck in every mode; dice only for quantities and tier tables. */
+export function rulesRngSystem({ rngEnabled, useQueue, d100Mode }) {
     const die = d100Mode ? 'd100' : 'd20';
     const tool = d100Mode ? 'RollTheDiceD100' : 'RollTheDice';
-    const checks = `Every check goes through LosicaCheck: an action whose outcome is uncertain and that no other Losica tool resolves.
+    const checks = `Every check goes through BodyCheck: an action whose outcome is uncertain and that no other rule tool resolves.
 - share = the fraction of people with the actor's training who would succeed at this task in these conditions, unhurt. The tool applies the body state.
 - Narrate the returned verdict. Write each check as *(Climb: 60% → SUCCESS)* with the returned chance.`;
     let dice;
@@ -112,7 +112,7 @@ export function losicaRngSystem({ rngEnabled, useQueue, d100Mode }) {
     return `<rng_system>\n${checks}\n\n${dice}\n</rng_system>`;
 }
 
-export const LOSICA_TRACKER_PROMPTS = {
+export const RULES_TRACKER_PROMPTS = {
     character: `{{user}}'s lasting facts that the rule tools and checks take as input. Use this format:
 [CHARACTER]
 {{user}} (N kg)
@@ -211,7 +211,7 @@ Spell name (School, complexity N)
 };
 
 /** [TIME] prompt in the active clock and calendar format; the last waking time feeds the sleep need. */
-export function losicaTimePrompt(settings) {
+export function rulesTimePrompt(settings) {
     const clock = settings.use24hTime ? 'HH:MM' : 'HH:MM AM/PM';
     const date = settings.useDdMmYyFormat ? 'DD/MM/YYYY' : 'Day N';
     return `Current time and day grabbed from the status footer, and the time {{user}} last woke. Update condition durations by comparing to the PRIOR MEMO's time.
@@ -221,22 +221,22 @@ Last Woke: ${clock}, ${date}
 Current Time: ${clock}, ${date}`;
 }
 
-/** RollTheDice / RollTheDiceD100 schema parts: quantities and tier tables; checks go through LosicaCheck. */
-export function losicaDiceSpec(d100) {
+/** RollTheDice / RollTheDiceD100 schema parts: quantities and tier tables; checks go through BodyCheck. */
+export function rulesDiceSpec(d100) {
     return {
-        description: 'Rolls dice and returns the result. kind "amount": quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. Checks go through LosicaCheck. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
+        description: 'Rolls dice and returns the result. kind "amount": quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. Checks go through BodyCheck. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
         kind: { type: 'string', enum: ['amount', 'table'], description: '"amount": a quantity. "table": tier table, pass table; the tier is returned.' },
         formula: { type: 'string', description: `ONE dice formula per invocation, e.g. "${d100 ? '1d100' : '1d20'}", "2d6". For several independent rolls, issue parallel invocations in the same turn.` },
         for: { type: 'string', description: 'What is being rolled for, 1-4 words, unique within this turn. For repeated rolls name the target and count, e.g. "loot 2 chest". A repeated who + for returns the first result.' },
     };
 }
 
-/** Modules with no Losica counterpart are off whatever the user's toggles say. */
-export const LOSICA_OFF_MODULES = ['xp', 'abilities'];
+/** Modules with no rules-engine counterpart are off whatever the user's toggles say. */
+export const RULES_OFF_MODULES = ['xp', 'abilities'];
 
 export function effectiveModules(settings) {
     const mods = { ...(settings?.modules || {}) };
-    if (settings?.losicaRules) for (const k of LOSICA_OFF_MODULES) mods[k] = false;
+    if (settings?.rulesEngine) for (const k of RULES_OFF_MODULES) mods[k] = false;
     return mods;
 }
 
@@ -246,8 +246,8 @@ const TRACKER_BLOCKS = {
     list_formatting: ['list_formatting', 'For list sections ([INVENTORY], [SPELLS]): one item per line, in the item format of its module.'],
 };
 
-/** The State Tracker core prompt with its D&D parts replaced by Losica ones. */
-export function losicaTrackerTemplate(template) {
+/** The State Tracker core prompt with its D&D parts replaced by rules-engine ones. */
+export function rulesTrackerTemplate(template) {
     let out = String(template || '');
     for (const [tag, [newTag, text]] of Object.entries(TRACKER_BLOCKS)) {
         out = out.replace(new RegExp(`<${tag}>[\\s\\S]*?</${tag}>`), `<${newTag}>\n${text}\n</${newTag}>`);
@@ -258,15 +258,15 @@ export function losicaTrackerTemplate(template) {
 }
 
 /** Character-creation instructions in place of levels, classes and stat scaling. */
-export const LOSICA_CREATION = 'This world has no levels, hit points or attribute scores. Describe the character through the module formats below: body mass in kg, training levels, senses, affinities and spells known.';
+export const RULES_CREATION = 'This world has no levels, hit points or attribute scores. Describe the character through the module formats below: body mass in kg, training levels, senses, affinities and spells known.';
 
-export const LOSICA_ARCHETYPES = {
+export const RULES_ARCHETYPES = {
     magic: 'spellcaster', melee: 'melee fighter', rogue: 'rogue or thief', professional: 'professional specialist',
     survivor: 'survivor', scholar: 'scholar', scifi_pilot: 'pilot', scifi_engineer: 'engineer', scifi_marine: 'soldier',
     horror_investigator: 'investigator', horror_occultist: 'occultist', horror_survivor: 'survivor',
 };
 
-export const LOSICA_CYOA_EXAMPLES = {
+export const RULES_CYOA_EXAMPLES = {
     high: [
         '1. 🗡️ Stab the lookout while he faces the sea — [Strike: blade, trained]',
         '2. 💣 Throw a Smoke Bomb — [-1 Smoke Bomb]',

@@ -1,5 +1,5 @@
-// With the Losica rules on, the engine's body state is shown on the sheet and in the narrator's state memo.
-import { status } from './losica-engine.js';
+// With the rules engine on, the engine's body state is shown on the sheet and in the narrator's state memo.
+import { status } from './body-engine.js';
 
 /** "[BODY] … [/BODY]" with one line per tracked character, or '' when nobody is tracked. */
 export function bodyBlock(people) {
@@ -7,12 +7,12 @@ export function bodyBlock(people) {
     return lines.length ? `[BODY]\n${lines.join('\n')}\n[/BODY]` : '';
 }
 
-export function losicaMemo(memo, people) {
+export function bodyMemo(memo, people) {
     const body = bodyBlock(people);
     const text = String(memo ?? '');
     return body ? `${text.trimEnd()}\n${body}` : text;
 }
 
 export function trackedPeople() {
-    return globalThis.SillyTavern?.getContext?.()?.chatMetadata?.losicaRules?.state?.people || {};
+    return globalThis.SillyTavern?.getContext?.()?.chatMetadata?.rulesEngine?.state?.people || {};
 }

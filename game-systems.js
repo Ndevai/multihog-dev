@@ -18,7 +18,7 @@ import { escapeHtml, memoForGmContext } from './memo-processor.js';
 import { renderMemoAsCards } from './renderer.js';
 import { refreshOrderList } from './ui-editors.js';
 import { QUESTS_NARRATOR } from './constants.js';
-import { losicaSection } from './src/rules/losica-mode.js';
+import { rulesSection } from './src/rules/rules-mode.js';
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import { tableRollsToToolCalls } from './src/state/dice-ledger.js';
 import { getSortableDelay } from '../../../utils.js';
@@ -412,11 +412,11 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
     const mods = settings.syspromptModules || {};
     const d100Mode = !!settings.diceD100Mode;
 
-    if (settings.losicaRules) {
+    if (settings.rulesEngine) {
         const useQueue = !settings.diceFunctionTool || shouldUseRngQueue(settings, isCombatMemo(settings.currentMemo));
-        const losica = losicaSection(tag, innerContent, settings, useQueue);
-        if (losica?.final !== undefined) return losica.final;
-        if (losica?.inner !== undefined) innerContent = losica.inner;
+        const rulesOn = rulesSection(tag, innerContent, settings, useQueue);
+        if (rulesOn?.final !== undefined) return rulesOn.final;
+        if (rulesOn?.inner !== undefined) innerContent = rulesOn.inner;
     }
 
     if (tag === 'narrative') {
@@ -500,8 +500,8 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
             const inCombat = !!combatBody && !/^END_COMBAT$/i.test(combatBody);
             const useQueue = shouldUseRngQueue(settings, inCombat);
             const failure = 'Critical failure = injured return, no return, or similarly severe outcome.';
-            const benchEta = settings.losicaRules
-                ? 'On benching, estimate a return ETA. Just before return (never once already in-scene), call LosicaCheck for the task (share from its difficulty and the member\'s training). A failure = injured return (wounds through LosicaWound), no return, or a similarly severe outcome. This check is mandatory, always pre-return.'
+            const benchEta = settings.rulesEngine
+                ? 'On benching, estimate a return ETA. Just before return (never once already in-scene), call BodyCheck for the task (share from its difficulty and the member\'s training). A failure = injured return (wounds through BodyWound), no return, or a similarly severe outcome. This check is mandatory, always pre-return.'
                 : useQueue
                 ? `On benching, estimate a return ETA. Just before return (never once already in-scene), pop a ${dieWord} from ${queueName} to resolve task success/failure — DC by task difficulty + character suitability. ${failure} This pop is mandatory, always pre-return.`
                 : `On benching, estimate a return ETA. Just before return (never once already in-scene), call ${toolName} to resolve task success/failure — DC by task difficulty + character suitability. ${failure} This roll is mandatory, always pre-return.`;

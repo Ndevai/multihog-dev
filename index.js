@@ -48,8 +48,8 @@ import { RENDERING_TAGS_LIBRARY, sectionPages, configureRuntimeActions } from '.
 import { bindRenderedCardEvents } from './src/ui/panel/card-events.js';
 import { getRngMode, applyRngMode, autoSelectRngTools } from './src/state/rng-mode.js';
 import { onRulesAuditMessage } from './src/rules/rules-audit.js';
-import { registerLosicaRulesTools, onLosicaGenerationStarted, onLosicaMessageReceived, onLosicaSwiped, syncLosicaToChat, restoreLosicaForMemo } from './src/rules/losica-tools.js';
-import { losicaTrackerTemplate } from './src/rules/losica-mode.js';
+import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, restoreRulesForMemo } from './src/rules/rules-tools.js';
+import { rulesTrackerTemplate } from './src/rules/rules-mode.js';
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
 import { createMemoRecoveryManager } from './src/features/recovery/memo-recovery.js';
@@ -3227,7 +3227,7 @@ async function runStateModelPass(narrativeOutput, isFullContext = false, overrid
         const modulesText = buildModulesInstructionText(settings);
         const coreTemplate = settings.fullReviewStateMode ? FULL_REVIEW_STATE_SYSTEM_PROMPT : settings.systemPromptTemplate;
         let systemPrompt = coreTemplate.replace('{{modulesText}}', modulesText);
-        if (settings.losicaRules) systemPrompt = losicaTrackerTemplate(systemPrompt);
+        if (settings.rulesEngine) systemPrompt = rulesTrackerTemplate(systemPrompt);
         if (settings.npcRelationshipBars && getRelationshipUpdateMode(settings) === RELATIONSHIP_UPDATE_MODES.STATE_TRACKER) {
             systemPrompt += `\n\n${buildStateTrackerRelationshipCommandInstruction(
                 getNpcRelationshipMax(settings),
@@ -3682,7 +3682,7 @@ export async function sendDirectPrompt(message, options = {}) {
 
         const modulesText = buildModulesInstructionText(settings);
         let systemPrompt = buildDirectPromptSystemPrompt(
-            settings.losicaRules ? { ...settings, systemPromptTemplate: losicaTrackerTemplate(settings.systemPromptTemplate) } : settings,
+            settings.rulesEngine ? { ...settings, systemPromptTemplate: rulesTrackerTemplate(settings.systemPromptTemplate) } : settings,
             modulesText,
             options.systemPromptMode || DIRECT_PROMPT_SYSTEM_MODES.STATE_EXTRACTOR,
         );
@@ -8153,10 +8153,10 @@ function organizeConnectionSettingsUI() {
             });
         }
         eventSource.on(event_types.GENERATION_STARTED, onGenerationStarted);
-        eventSource.on(event_types.GENERATION_STARTED, type => { if (getSettings().losicaRules) onLosicaGenerationStarted(type); });
-        if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, id => { if (getSettings().losicaRules) onLosicaMessageReceived(id); });
+        eventSource.on(event_types.GENERATION_STARTED, type => { if (getSettings().rulesEngine) onRulesGenerationStarted(type); });
+        if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, id => { if (getSettings().rulesEngine) onRulesMessageReceived(id); });
         if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, ignoreChatCancellation(async id => {
-            if (!getSettings().losicaRules) return;
+            if (!getSettings().rulesEngine) return;
             const ownsChat = createChatCommitGuard(getActiveChatId(), getActiveChatId);
             await onRulesAuditMessage(id, {
                 send: (system, user) => sendStateRequest(getSettings(), system, user, null, { debugSource: 'Rules Audit' }),
@@ -8165,12 +8165,12 @@ function organizeConnectionSettingsUI() {
                 toast: text => toastr.warning(text, 'Rule check', { timeOut: 12000 }),
             }).catch(e => console.warn('[RPG Tracker] Rules Audit skipped:', e));
         }));
-        if (event_types.MESSAGE_SWIPED) eventSource.on(event_types.MESSAGE_SWIPED, id => { if (getSettings().losicaRules) onLosicaSwiped(id); });
-        if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => { if (getSettings().losicaRules) syncLosicaToChat(); });
-        if (event_types.MESSAGE_DELETED) eventSource.on(event_types.MESSAGE_DELETED, () => { if (getSettings().losicaRules) syncLosicaToChat(); });
+        if (event_types.MESSAGE_SWIPED) eventSource.on(event_types.MESSAGE_SWIPED, id => { if (getSettings().rulesEngine) onRulesSwiped(id); });
+        if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => { if (getSettings().rulesEngine) syncRulesToChat(); });
+        if (event_types.MESSAGE_DELETED) eventSource.on(event_types.MESSAGE_DELETED, () => { if (getSettings().rulesEngine) syncRulesToChat(); });
         globalThis._rpgOnMemoRestored = memo => {
-            if (getSettings().losicaRules && !restoreLosicaForMemo(memo)) {
-                toastr.info('Losica state unchanged: no reply in this chat produced that snapshot.', 'RPG Tracker');
+            if (getSettings().rulesEngine && !restoreRulesForMemo(memo)) {
+                toastr.info('Rule-engine state unchanged: no reply in this chat produced that snapshot.', 'RPG Tracker');
             }
         };
         eventSource.on(event_types.GENERATION_ENDED, onGenerationEnded);
@@ -8402,7 +8402,7 @@ function organizeConnectionSettingsUI() {
         }
 
         registerDiceFunctionTool();
-        registerLosicaRulesTools(!!getSettings().losicaRules);
+        registerRulesTools(!!getSettings().rulesEngine);
         syncLocationMappingRuntime();
         registerDiceSlashCommand();
 
@@ -11281,10 +11281,10 @@ RULES:
                 scheduleAutoApply();
             });
         }
-        $('#rpg_losica_rules').prop('checked', !!getSettings().losicaRules).on('change', function () {
+        $('#rpg_rules_engine').prop('checked', !!getSettings().rulesEngine).on('change', function () {
             const fresh = getSettings();
-            fresh.losicaRules = !!$(this).prop('checked');
-            registerLosicaRulesTools(fresh.losicaRules);
+            fresh.rulesEngine = !!$(this).prop('checked');
+            registerRulesTools(fresh.rulesEngine);
             registerDiceFunctionTool();
             saveSettings();
             scheduleAutoApply();
@@ -12779,8 +12779,8 @@ RULES:
             const currentRngMode = getRngMode(s);
             $(`input[name="rpg_sysprompt_rng_mode"][value="${currentRngMode}"]`).prop('checked', true);
             syncRngToolsUi(s);
-            $('#rpg_losica_rules').prop('checked', !!s.losicaRules);
-            registerLosicaRulesTools(!!s.losicaRules);
+            $('#rpg_rules_engine').prop('checked', !!s.rulesEngine);
+            registerRulesTools(!!s.rulesEngine);
             const narrativePacing = ['normal', 'shorter_outputs', 'high_agency', 'downtime'].includes(s.narrativePacing)
                 ? s.narrativePacing
                 : 'normal';

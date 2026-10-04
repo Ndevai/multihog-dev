@@ -519,7 +519,7 @@ const CARTRIDGE_PAYLOAD_KEYS = [
     'rngEnabled',
     'diceFunctionTool',
     'strictDiceCommit',
-    'losicaRules',
+    'rulesEngine',
     'diceD100Mode',
     'rngToolD20',
     'rngToolD100',
@@ -595,7 +595,7 @@ export const CARTRIDGE_PAYLOAD_GROUPS = [
         keys: [
             'systemPromptTemplate', 'modules', 'blockOrder', 'stockPrompts',
             'syspromptModules', 'narrativePacing', 'syspromptSectionOrder', 'customSyspromptLibrary',
-            'rngEnabled', 'diceFunctionTool', 'strictDiceCommit', 'losicaRules', 'diceD100Mode',
+            'rngEnabled', 'diceFunctionTool', 'strictDiceCommit', 'rulesEngine', 'diceD100Mode',
             'rngToolD20', 'rngToolD100', 'rngQueueD20', 'rngQueueD100',
             'use24hTime', 'useDdMmYyFormat',
         ],

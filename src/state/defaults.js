@@ -213,7 +213,7 @@ export function buildDefaultSettings() {
 
 
         strictDiceCommit: false,
-        losicaRules: false,
+        rulesEngine: false,
 
         enablePortraits: true,
 

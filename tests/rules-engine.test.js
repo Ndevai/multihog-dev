@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newPerson, addWound, advance, treat, cast, fall, stage, bloodClass, status, DAY_MIN } from '../src/rules/losica-engine.js';
+import { newPerson, addWound, advance, treat, cast, fall, stage, bloodClass, status, DAY_MIN } from '../src/rules/body-engine.js';
 
 const fixed = v => () => v;
 
@@ -87,7 +87,7 @@ describe('network', () => {
 });
 
 describe('falls', () => {
-    it('uses Losica rows and shifts for head-first landings', () => {
+    it('uses the fall rows and shifts for head-first landings', () => {
         const p = newPerson();
         expect(fall(p, 4, {}, fixed(0))).toMatch(/0%/);
         expect(fall(newPerson(), 12, { headFirst: true }, fixed(0.99))).toMatch(/56%/);
@@ -102,7 +102,7 @@ it('status reports a disabled part', () => {
 
 describe('seeded draws', () => {
     it('repeats the same stream for the same seed and differs for another', async () => {
-        const { seededRng } = await import('../src/rules/losica-engine.js');
+        const { seededRng } = await import('../src/rules/body-engine.js');
         const draw = seed => { const r = seededRng(seed); return [r(), r(), r()]; };
         expect(draw('salt:3:abc:1')).toEqual(draw('salt:3:abc:1'));
         expect(draw('salt:3:abc:1')).not.toEqual(draw('salt:3:abc:2'));
@@ -110,7 +110,7 @@ describe('seeded draws', () => {
     });
 
     it('gives the same fall outcome on a replayed call', async () => {
-        const { newPerson, fall, seededRng } = await import('../src/rules/losica-engine.js');
+        const { newPerson, fall, seededRng } = await import('../src/rules/body-engine.js');
         const outcomes = new Set();
         for (let i = 0; i < 5; i++) outcomes.add(fall(newPerson(), 14, {}, seededRng('turn-7:1')));
         expect(outcomes.size).toBe(1);
@@ -122,7 +122,7 @@ describe('rule 576 healing, onset, falls, crooked bones (2 Oct 2026 values)', ()
     const days = n => Math.round(n * DAY_MIN);
 
     it('decides a bite infection at 1 Earth day and other wounds at 10', async () => {
-        const { newPerson, addWound, advance } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, advance } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         addWound(p, { part: 'leg_l', type: 'bite' }, () => 0);
         addWound(p, { part: 'leg_r', type: 'cut' }, () => 0);
@@ -135,7 +135,7 @@ describe('rule 576 healing, onset, falls, crooked bones (2 Oct 2026 values)', ()
     });
 
     it('closes cuts by part and burns by depth; full burns need a graft', async () => {
-        const { newPerson, addWound, advance, status } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, advance, status } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         const face = addWound(p, { part: 'mouth', type: 'cut' }, () => 0);
         const leg = addWound(p, { part: 'leg_l', type: 'cut' }, () => 0.999);
@@ -153,7 +153,7 @@ describe('rule 576 healing, onset, falls, crooked bones (2 Oct 2026 values)', ()
     });
 
     it('fall deaths follow the table, interpolate 5.1–10.1 m, and kill all above 16.2 m', async () => {
-        const { fallDeathChance } = await import('../src/rules/losica-engine.js');
+        const { fallDeathChance } = await import('../src/rules/body-engine.js');
         expect(fallDeathChance(4)).toBe(0);
         expect(fallDeathChance(7.6)).toBeCloseTo(0.22, 5);
         expect(fallDeathChance(10.1)).toBe(0.44);
@@ -164,7 +164,7 @@ describe('rule 576 healing, onset, falls, crooked bones (2 Oct 2026 values)', ()
     });
 
     it('shows 51 % grip for a crooked arm or hand', async () => {
-        const { newPerson, addWound, treat, status } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, treat, status } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         addWound(p, { part: 'hand_l', type: 'fracture' }, () => 0.5);
         treat(p, 1, 'load', () => 0);
@@ -174,12 +174,12 @@ describe('rule 576 healing, onset, falls, crooked bones (2 Oct 2026 values)', ()
 
 describe('ability scores (Cataclysm: DDA limb scores, 935fe5f)', () => {
     it('an unhurt body has every score at 100 %', async () => {
-        const { newPerson, abilities } = await import('../src/rules/losica-engine.js');
+        const { newPerson, abilities } = await import('../src/rules/body-engine.js');
         expect(Object.values(abilities(newPerson())).every(v => v === 1)).toBe(true);
     });
 
     it('a broken hand removes its share; balance stays for non-fracture wounds', async () => {
-        const { newPerson, addWound, abilities } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, abilities } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         addWound(p, { part: 'hand_l', type: 'fracture' }, () => 0.5);
         const a = abilities(p);
@@ -189,7 +189,7 @@ describe('ability scores (Cataclysm: DDA limb scores, 935fe5f)', () => {
     });
 
     it('a crooked hand after joining keeps 51 % of its grip share', async () => {
-        const { newPerson, addWound, treat, advance, abilities, DAY_MIN } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, treat, advance, abilities, DAY_MIN } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         addWound(p, { part: 'hand_r', type: 'fracture' }, () => 0.5);
         treat(p, 1, 'load', () => 0);
@@ -198,7 +198,7 @@ describe('ability scores (Cataclysm: DDA limb scores, 935fe5f)', () => {
     });
 
     it('cuts change no score until OPEN-51 is set', async () => {
-        const { newPerson, addWound, abilities } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, abilities } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         addWound(p, { part: 'hand_l', type: 'cut' }, () => 0.5);
         expect(abilities(p).grip).toBe(1);
@@ -209,7 +209,7 @@ describe('strikes (rule 576)', () => {
     const mid = () => 0.5;
 
     it('scales force with skill, mass^(2/3) and the attacker\'s arm ability', async () => {
-        const { strikeForce, newPerson, addWound } = await import('../src/rules/losica-engine.js');
+        const { strikeForce, newPerson, addWound } = await import('../src/rules/body-engine.js');
         const zero = (() => { const seq = [0.5, 0.25]; let i = 0; return () => seq[i++ % 2]; })();
         const f = strikeForce({ means: 'fist', skill: 'untrained', part: 'head' }, null, zero);
         expect(f).toBeCloseTo(2381, 0);
@@ -220,7 +220,7 @@ describe('strikes (rule 576)', () => {
     });
 
     it('turns force into a fracture chance per part', async () => {
-        const { fractureChance } = await import('../src/rules/losica-engine.js');
+        const { fractureChance } = await import('../src/rules/body-engine.js');
         expect(fractureChance('head', 3944)).toBeCloseTo(0.5, 2);
         expect(fractureChance('eyes', 1890)).toBeCloseTo(0.5, 2);
         expect(fractureChance('arm', 1369)).toBe(0);
@@ -229,14 +229,14 @@ describe('strikes (rule 576)', () => {
     });
 
     it('blunt blows record force and a bruise until OPEN-60 is calibrated', async () => {
-        const { newPerson, strike } = await import('../src/rules/losica-engine.js');
+        const { newPerson, strike } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         expect(strike(p, { part: 'mouth', means: 'kick', skill: 'elite', landed: true }, null, () => 0.01)).toMatch(/: \d+ N → bruise\. Wound 1\.$/);
         expect(p.wounds[0].type).toBe('blunt');
     });
 
     it('fractures of parts without a timetable stay unjoined (OPEN-58)', async () => {
-        const { newPerson, addWound, abilities, status } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, abilities, status } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         addWound(p, { part: 'head', type: 'fracture' }, mid);
         expect(p.wounds[0].fracture.joins).toBeNull();
@@ -245,7 +245,7 @@ describe('strikes (rule 576)', () => {
     });
 
     it('blades on limbs open a limb artery 12 % of the time', async () => {
-        const { newPerson, strike } = await import('../src/rules/losica-engine.js');
+        const { newPerson, strike } = await import('../src/rules/body-engine.js');
         const p = newPerson();
         expect(strike(p, { part: 'leg_l', means: 'blade_stab', landed: true }, null, () => 0.1)).toMatch(/limb artery opened/);
         expect(p.wounds[0].bleed).toBeGreaterThanOrEqual(70);
@@ -256,7 +256,7 @@ describe('strikes (rule 576)', () => {
 
 describe('blood loss stays within the body (audit 3 Oct 2026)', () => {
     it('dies at 50 mL/kg lost and never reports more than that', async () => {
-        const { newPerson, addWound, advance, lossFraction } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, advance, lossFraction } = await import('../src/rules/body-engine.js');
         const run = vessel => {
             const p = newPerson(70);
             addWound(p, { part: 'leg_l', type: 'cut', vessel }, () => 0.5);
@@ -276,7 +276,7 @@ describe('blood loss stays within the body (audit 3 Oct 2026)', () => {
 
 describe('interruptions (NetHack/Pathos structure)', () => {
     it('stops time at the minute a bleed crosses into class II', async () => {
-        const { newPerson, addWound, advanceAll, bloodClass } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, advanceAll, bloodClass } = await import('../src/rules/body-engine.js');
         const p = newPerson(70);
         addWound(p, { part: 'arm_l', type: 'cut', vessel: 'limb_artery' }, () => 0.5);
         const { elapsed, events } = advanceAll({ Mira: p }, 600, new Set(), () => 0.5);
@@ -286,7 +286,7 @@ describe('interruptions (NetHack/Pathos structure)', () => {
     });
 
     it('stops for every tracked person at the same minute, and reports infection and death', async () => {
-        const { newPerson, addWound, advanceAll } = await import('../src/rules/losica-engine.js');
+        const { newPerson, addWound, advanceAll } = await import('../src/rules/body-engine.js');
         const a = newPerson(), b = newPerson();
         addWound(b, { part: 'leg_l', type: 'bite' }, () => 0);
         const r = advanceAll({ A: a, B: b }, 10 * 513, new Set(), () => 0);
@@ -301,7 +301,7 @@ describe('interruptions (NetHack/Pathos structure)', () => {
     });
 
     it('runs the full span when nothing changes', async () => {
-        const { newPerson, advanceAll } = await import('../src/rules/losica-engine.js');
+        const { newPerson, advanceAll } = await import('../src/rules/body-engine.js');
         expect(advanceAll({ A: newPerson() }, 300)).toEqual({ elapsed: 300, events: [] });
     });
 });
@@ -311,7 +311,7 @@ describe('interruptions (NetHack/Pathos structure)', () => {
 describe('narrator-facing text', () => {
     it('tool results and the lorebook copy name no OPEN ids', async () => {
         const { readFileSync } = await import('node:fs');
-        const src = readFileSync(new URL('../src/rules/losica-engine.js', import.meta.url), 'utf8');
+        const src = readFileSync(new URL('../src/rules/body-engine.js', import.meta.url), 'utf8');
         const strings = src.split('\n').filter(l => !l.trim().startsWith('//') && !l.trim().startsWith('*') && !l.trim().startsWith('/**'));
         expect(strings.join('\n')).not.toMatch(/['`][^'`]*OPEN-\d+/);
     });
