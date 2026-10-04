@@ -1,3 +1,7 @@
+import { creature } from './df/index.js';
+import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf } from './df/combat.js';
+import { weaponOf, metalOf } from './df/index.js';
+
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
 
@@ -15,19 +19,14 @@ const INFECTION_ONSET = { bite: 1, other: 10 };
 const CROOKED_GRIP = 0.51;
 const COST = [0, 40, 64, 107, 178, 297, 495, 825, 1375, 2292];
 const FALL_ROWS = [[12.0, 0.44], [15.6, 0.56], [19.2, 0.78]];
-// Cataclysm: DDA body_parts.json limb_scores (commit 935fe5f). A person's score = sum over parts.
-const PART_SCORES = {
-    head: { reaction: 0.3 },
-    eyes: { vision: 1, night_vision: 1, reaction: 0.7 },
-    mouth: { breathing: 1, manipulation: 0.05, drinking: 1, eating: 1 },
-    torso: { balance: 0.7 },
-    arm: { manipulation: 0.1, lifting: 0.5, balance: 0.15, blocking: 1, swimming: 0.1, crawling: 0.3 },
-    hand: { grip: 0.5, manipulation: 0.5, swimming: 0.15 },
-    leg: { manipulation: 0.1, movement: 0.5, swimming: 0.15, blocking: 1, crawling: 0.2 },
-    foot: { manipulation: 0.1, footing: 0.5, swimming: 0.1 },
-};
-const PAIRED = ['arm', 'hand', 'leg', 'foot'];
-const WOUND_EXEMPT = ['balance'];
+// Abilities = share of working parts with a DF body-part flag (docs/df-body-engine.md §6).
+export const FUNCTIONS = { grasp: 'GRASP', stance: 'STANCE', sight: 'SIGHT', hearing: 'HEAR', smell: 'SMELL', breathing: 'BREATHE' };
+// DF part category → rule-576 healing row (cuts) and fracture row.
+const CUT_ROW = { EYE: 'eyes', EYELID: 'eyes', MOUTH: 'mouth', LIP: 'mouth', TONGUE: 'mouth', TOOTH: 'mouth', HEAD: 'head', NOSE: 'head', EAR: 'head',
+    CHEEK: 'head', BODY_UPPER: 'torso', BODY_LOWER: 'torso', BODY: 'torso', ARM_UPPER: 'arm', ARM_LOWER: 'arm', ARM: 'arm', HAND: 'hand', FINGER: 'hand',
+    LEG_UPPER: 'leg', LEG_LOWER: 'leg', LEG: 'leg', LEG_FRONT: 'leg', LEG_REAR: 'leg', FOOT: 'foot', FOOT_FRONT: 'foot', FOOT_REAR: 'foot', TOE: 'foot' };
+const BONE_ROW = { arm: 'arm', hand: 'arm', leg: 'leg', foot: 'leg' };
+const rowOf = part => part?.cats?.map(k => CUT_ROW[k]).find(Boolean) ?? null;
 
 const between = (rng, [a, b]) => a + (b - a) * rng();
 
@@ -45,23 +44,28 @@ export function seededRng(seed) {
 }
 const round = (x, d = 1) => Math.round(x * 10 ** d) / 10 ** d;
 
-export function newPerson(massKg = 70) {
+export function newPerson(massKg = 70, species = 'HUMAN') {
     return {
-        mass: massKg, lost: 0, red: 0, wounds: [], nextId: 1, dead: null, deathIn: null, minute: 0,
+        species, mass: massKg, lost: 0, red: 0, wounds: [], nextId: 1, dead: null, deathIn: null, minute: 0,
         net: { C: 40, N: 0, R: 40, P: 1, F: 0, E: 0, width: 0, maxToday: false },
     };
 }
 
-export function person(state, who, massKg) {
+export const creatureOf = p => creature(p?.species ?? 'HUMAN');
+
+export function person(state, who, massKg, species = 'HUMAN') {
     state.people ??= {};
-    state.people[who] ??= newPerson(massKg);
+    if (!state.people[who]) {
+        const c = creature(species);
+        state.people[who] = newPerson(massKg || (c ? c.size / 1000 : 70), species);
+    }
     return state.people[who];
 }
 
-export const bloodVolume = p => p.mass * 70;
+export const bloodVolume = p => creatureOf(p)?.blood === false ? 0 : p.mass * 70;
 // Syverud 1989 (swine, steady femoral bleed 1.0 / 1.25 mL/kg/min): death at 50.2 / 49.8 mL/kg lost.
 const LETHAL_LOSS_ML_KG = 50;
-export const lossFraction = p => p.lost / bloodVolume(p);
+export const lossFraction = p => bloodVolume(p) ? p.lost / bloodVolume(p) : 0;
 
 export function bloodClass(p) {
     const f = lossFraction(p);
@@ -75,21 +79,25 @@ export function stage(net) {
     return net.C >= 200 ? { stage: 2, max: 3 } : { stage: 1, max: 1 };
 }
 
+/** w.part = a DF part of the person's creature. */
 export function addWound(p, w, rng = Math.random) {
-    const wound = { id: p.nextId++, part: w.part, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
-    const healRange = w.type === 'cut' ? CUT_HEAL[w.part.replace(/_(l|r)$/, '')] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
+    const row = rowOf(w.part);
+    const wound = { id: p.nextId++, part: w.part.name, pid: w.part.id, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
+    const healRange = ['cut', 'puncture', 'bite', 'blunt'].includes(w.type) || w.functionLost ? CUT_HEAL[row] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
     if (w.type === 'burn') wound.depth = BURN_HEAL[w.depth] !== undefined ? w.depth : null;
     if (healRange) wound.heals = round(between(rng, healRange));
-    if (w.vessel && BLEED[w.vessel]) wound.bleed = round(between(rng, BLEED[w.vessel]));
+    if (w.vessel && BLEED[w.vessel] && bloodVolume(p)) wound.bleed = round(between(rng, BLEED[w.vessel]));
+    if (w.functionLost) wound.functionLost = true;
+    if (w.type === 'severed') wound.severed = true;
     if (w.type === 'fracture') {
-        // Head, eyes, mouth and torso have no timetable (OPEN-58): joins stays null.
-        const limb = /arm|hand|leg|foot/.test(w.part);
-        const kind = FRACTURE[w.fracture] ? w.fracture : !limb ? null : /leg|foot/.test(w.part) ? 'leg_spiral' : 'arm_spiral';
+        // Parts outside the arm and leg rows have no timetable (OPEN-58): joins stays null.
+        const kind = BONE_ROW[row] ? `${BONE_ROW[row]}_${w.fracture || 'transverse'}` : null;
+        const bone = w.part.cats.includes('LEG_LOWER') ? 'shin' : 'default';
         wound.fracture = { kind, joins: kind ? FRACTURE[kind][0] : null, full: kind ? FRACTURE[kind][1] : null, crooked: false,
-            never: kind ? rng() < (NONUNION[w.bone] ?? NONUNION.default) : false };
+            never: kind ? rng() < NONUNION[bone] : false };
         if (w.openGrade && OPEN_FRACTURE_INFECTION[w.openGrade]) wound.openGrade = w.openGrade;
     }
-    if (['cut', 'puncture', 'bite', 'burn'].includes(w.type) || wound.openGrade) wound.open = true;
+    if (['cut', 'puncture', 'bite', 'burn', 'severed'].includes(w.type) || wound.openGrade || w.open) wound.open = true;
     p.wounds.push(wound);
     return wound;
 }
@@ -187,38 +195,49 @@ export function fall(p, height, opts = {}, rng = Math.random) {
     return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — survives. Injuries: narrate, then record with BodyWound.`;
 }
 
-const baseOf = part => part.replace(/_(l|r)$/, '');
-
-/** Penalty a wound takes off one score of its part (0–1). Other wound types: OPEN-51. */
-export function woundPenalty(w, score) {
-    const fr = w.fracture;
-    if (fr && (fr.never || fr.joins === null || fr.joins > 0)) return 1;
-    if (fr?.crooked && score === 'grip' && /arm|hand/.test(w.part)) return 1 - CROOKED_GRIP;
-    return 0;
+/** part → whether it works: no severing, unjoined fracture or lost function on it or above it on its CON chain. */
+export function worksFn(p, c = creatureOf(p)) {
+    if (!c) return () => true;
+    const down = new Set();
+    for (const w of p.wounds) {
+        const fr = w.fracture;
+        if (w.severed || (fr && (fr.never || fr.joins === null || fr.joins > 0)) || (w.functionLost && !w.healed)) down.add(w.pid);
+    }
+    const byId = Object.fromEntries(c.parts.map(x => [x.id, x]));
+    const chain = part => { for (let q = part; q; q = byId[q.parent]) if (down.has(q.id)) return false; return true; };
+    const nerves = c.parts.filter(x => x.flags.includes('NERVOUS') && !chain(x));
+    const neck = nerves.some(n => byId[n.parent]?.cats.includes('NECK'));
+    return part => chain(part) && !(nerves.length && part.flags.includes('STANCE')) && !(neck && part.flags.includes('GRASP'));
 }
 
-/** Each score as a fraction of an unhurt body: part base × max(0, 1 − Σ penalties); balance ignores non-fracture wounds. */
+/** Each ability as the share of the creature's parts with its flag that work; absent when the creature has none. */
 export function abilities(p) {
-    const total = {}, normal = {};
-    for (const [base, scores] of Object.entries(PART_SCORES)) {
-        const parts = PAIRED.includes(base) ? [`${base}_l`, `${base}_r`] : [base];
-        for (const part of parts) {
-            const wounds = p.wounds.filter(w => w.part === part && !(w.healed && !w.fracture));
-            for (const [score, value] of Object.entries(scores)) {
-                const penalty = wounds.reduce((s, w) => s + (WOUND_EXEMPT.includes(score) && !w.fracture ? 0 : woundPenalty(w, score)), 0);
-                total[score] = (total[score] || 0) + value * Math.max(0, 1 - penalty);
-                normal[score] = (normal[score] || 0) + value;
-            }
-        }
+    const c = creatureOf(p);
+    if (!c) return {};
+    const works = worksFn(p, c);
+    const out = {};
+    for (const [name, flag] of Object.entries(FUNCTIONS)) {
+        const parts = c.parts.filter(x => x.flags.includes(flag));
+        if (parts.length) out[name] = round(parts.filter(works).length / parts.length, 2);
     }
-    return Object.fromEntries(Object.keys(normal).map(k => [k, round(total[k] / normal[k], 2)]));
+    return out;
+}
+
+/** Dies when a THOUGHT part stops working. */
+function checkDeath(p) {
+    const c = creatureOf(p);
+    if (!c || p.dead) return;
+    const works = worksFn(p, c);
+    const brains = c.parts.filter(x => x.flags.includes('THOUGHT'));
+    if (brains.length && brains.every(b => !works(b))) p.dead = 'brain destroyed';
 }
 
 export function status(who, p) {
     if (p.dead) return `${who}: dead (${p.dead}).`;
     const out = [];
     const f = lossFraction(p);
-    out.push(`${who}: blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]})`);
+    const c = creatureOf(p);
+    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]})` : `${who} (${c?.name ?? p.species}): no blood`);
     if (p.deathIn !== null) out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
     if (p.red > 0) out.push(`red-cell deficit ${Math.round(p.red)} mL: endurance lowered`);
     for (const w of p.wounds) {
@@ -230,65 +249,57 @@ export function status(who, p) {
         if (w.fracture) {
             const fr = w.fracture;
             if (fr.joins !== null) bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
-            if (fr.crooked) bits.push(/arm|hand/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
-            if ((fr.joins === null || fr.joins > 0) && !fr.never) bits.push(`${w.part} gives no ${Object.keys(PART_SCORES[baseOf(w.part)] || {}).join('/')}`);
+            if (fr.crooked) bits.push(/arm|hand|finger/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
         }
+        if (w.functionLost && !w.healed) bits.push('function lost until it closes');
         if (w.infection) bits.push('infected');
         out.push(bits.join(', '));
     }
+    if (c) {
+        const works = worksFn(p, c);
+        const down = c.parts.filter(x => !works(x) && (x.flags.some(f => Object.values(FUNCTIONS).includes(f)) || x.flags.includes('LIMB')));
+        if (down.length) out.push(`not working: ${down.map(x => x.name).join(', ')}`);
+    }
     const reduced = Object.entries(abilities(p)).filter(([, v]) => v < 1);
-    if (reduced.length) out.push(`abilities: ${reduced.map(([k, v]) => `${k.replace('_', ' ')} ${Math.round(v * 100)}%`).join(', ')}`);
+    if (reduced.length) out.push(`abilities: ${reduced.map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(', ')}`);
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
     return out.join('. ') + '.';
 }
 
-// Rule 576 strikes. Forces: Smith 2000 punches (untrained/trained/elite = novice/intermediate/elite),
-// spread = Walilko 2005 SD/mean; O'Sullivan 2009 turning kicks (elite), lower skill scaled by the punch ratio.
-const FIST = { untrained: 2381, trained: 3722, elite: 4800 };
-const FIST_CV = 811 / 3427;
-const KICK_ELITE = { high: 5419, body: 6400 };
-const KICK_CV = 898 / 6400;
-const HIGH_PARTS = ['head', 'eyes', 'mouth'];
-// Fracture force per part: normal [mean, SD], uniform [min, max] (range only), or fixed mean. Missing parts: OPEN-57.
-const BREAK = {
-    head: { normal: [3944, 1287] },
-    eyes: { uniform: [930, 2850] },
-    mouth: { uniform: [625, 1980] },
-    arm: { fixed: 1370 },
-    leg: { uniform: [1190, 7070] },
-};
+// Spread of a blow's momentum: Walilko 2005 punch force SD ÷ mean (rule 576), applied to every attack.
+const SPREAD = 0.237;
 const BLADE_LIMB_ARTERY = 0.12;
-// OPEN-60: rigid-impactor thresholds vs real blows. Uncalibrated, an untrained punch breaks a jaw 94 % of the time;
-// bare-knuckle bouts show 27 facial fractures in 301 bouts. Until set, blunt strikes record bruises only.
-const BLUNT_CALIBRATION = null;
 const REF_MASS = 70;
 
 function gauss(rng) {
     return Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng());
 }
 
-function phi(z) {
-    const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2);
-    const erf = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z / 2);
-    return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
+const norm = t => String(t || '').trim().toLowerCase().replace(/[_\s]+/g, ' ');
+
+/** A part of creature c by name or DF id ("right upper arm", "RUA"); null when none. */
+export function findPart(c, text) {
+    const key = norm(text);
+    return c.parts.find(x => norm(x.name) === key) ?? c.parts.find(x => norm(x.id) === key) ?? null;
 }
 
-export function fractureChance(base, force) {
-    const b = BREAK[base];
-    if (!b) return null;
-    if (b.normal) return phi((force - b.normal[0]) / b.normal[1]);
-    if (b.uniform) return Math.min(1, Math.max(0, (force - b.uniform[0]) / (b.uniform[1] - b.uniform[0])));
-    return force >= b.fixed ? 1 : 0;
+export const aimable = c => c.parts.filter(x => !x.flags.includes('INTERNAL')).map(x => x.name);
+
+/** Vessel class of the cut layers (rule 576 rates; DF marks which layers carry arteries). */
+function vesselOf(c, layers, rng) {
+    const tis = l => c.tissues[l.tissue];
+    if (layers.some(l => l.major)) return 'femoral';
+    if (layers.some(l => tis(l)?.flags.includes('ARTERIES')) && rng() < BLADE_LIMB_ARTERY) return 'limb_artery';
+    return layers.some(l => (tis(l)?.VASCULAR ?? 0) > 0) ? 'small' : undefined;
 }
 
-/** Peak force (N): skill mean × (mass ÷ 70)^(2/3) × attacker's lifting (fist) or movement (kick) × (1 + CV·z). */
-export function strikeForce({ means, skill = 'untrained', mass = REF_MASS, part }, attacker, rng) {
-    const fist = FIST[skill] ?? FIST.untrained;
-    const kick = means === 'kick';
-    const mean = kick ? KICK_ELITE[HIGH_PARTS.includes(baseOf(part)) ? 'high' : 'body'] * fist / FIST.elite : fist;
-    const ability = attacker ? abilities(attacker)[kick ? 'movement' : 'lifting'] : 1;
-    return Math.max(0, mean * (mass / REF_MASS) ** (2 / 3) * ability * (1 + (kick ? KICK_CV : FIST_CV) * gauss(rng)));
+/** A cut, puncture or bite through every layer of a part, recorded without an attack (BodyWound). */
+export function openWound(p, part, type, rng = Math.random) {
+    const c = creatureOf(p);
+    const w = addWound(p, { part, type, vessel: vesselOf(c, part.layers, rng) }, rng);
+    checkDeath(p);
+    return w;
 }
 
 // Whether an attack lands: it does unless the target detects it and finishes a defensive move before impact.
@@ -337,7 +348,8 @@ function defenceDone(a, t, defender, rng) {
     const motor = SYNAPSE_S + (body.limb_m ?? REACH_M * size(m, EXP_LENGTH)) / (body.nerve_mps ?? NERVE_MPS) + twitch(m);
     const rt = channel => ((body.sense_s?.[channel] ?? SENSE_S[channel]) + (body.decide_s ?? DECIDE_S) + motor)
         * Math.max(0.5, 1 + RT_CV * gauss(rng));
-    const capacity = defender ? Math.max(abilities(defender).blocking, abilities(defender).movement) : 1;
+    const ab = defender ? abilities(defender) : {};
+    const capacity = 'grasp' in ab || 'stance' in ab ? Math.max(ab.grasp ?? 0, ab.stance ?? 0) : 1;
     if (capacity <= 0) return Infinity;
     const move = MOVE_S * size(m, EXP_MOVE) / capacity;
     const done = [];
@@ -358,29 +370,70 @@ function defenceDone(a, t, defender, rng) {
     return done.length ? Math.min(...done) + move : Infinity;
 }
 
-/** An attack: decides whether it lands (unless a.landed), then records the wound on the target. */
+/**
+ * An attack (docs/df-body-engine.md §4–5). a: { part, attack, weapon?, material?, skill?, style?, prone?, species?, mass?,
+ * landed?, scene fields }. The attacker's species and mass come from the tracked attacker when there is one.
+ */
 export function strike(target, a, attacker = null, rng = Math.random) {
+    const tc = creatureOf(target);
+    const ac = creature(attacker?.species ?? a.species ?? 'HUMAN');
+    if (!tc || !ac) return 'Creature data is not loaded. Nothing recorded.';
+    const part = findPart(tc, a.part);
+    if (!part || part.flags.includes('INTERNAL')) return `${tc.name} has no part "${a.part}" to aim at. Parts: ${aimable(tc).join(', ')}. Nothing recorded.`;
+    const mass = attacker?.mass ?? a.mass ?? ac.size / 1000;
+    const iSize = mass * 1000;
+    let w, verb, means, bite = false;
+    if (a.weapon) {
+        const wp = weaponOf(a.weapon);
+        if (!wp) return `No weapon "${a.weapon}". Nothing recorded.`;
+        const metal = metalOf(a.material || 'iron');
+        if (!metal) return `No metal "${a.material}". Nothing recorded.`;
+        const atk = wp.attacks.find(x => norm(x.verb) === norm(a.attack)) ?? wp.attacks[0];
+        w = itemWeapon(wp, atk, metal);
+        w.piercing = atk.contact < atk.penetration;
+        verb = atk.verb;
+        means = 'blade_cut';
+    } else {
+        const atk = ac.attacks.find(x => norm(x.id) === norm(a.attack) || norm(x.verb) === norm(a.attack));
+        if (!atk) return `${ac.name} has no attack "${a.attack}". Attacks: ${ac.attacks.map(x => x.verb).join(', ') || 'none'}. Nothing recorded.`;
+        w = bodyWeapon(ac, atk, iSize, attacker ? worksFn(attacker, ac) : () => true);
+        if (!w) return `The attacker cannot ${atk.verb} now: no working part for it. Nothing recorded.`;
+        w.piercing = atk.contactPerc < atk.penetrationPerc;
+        verb = atk.verb;
+        bite = atk.id === 'BITE';
+        means = atk.sel[1] === 'STANCE' ? 'kick' : 'fist';
+    }
     if (!a.landed) {
-        const t = impactTime(a, rng);
-        if (!t) return `${a.means} at ${a.part}: out of reach (${a.distance_m} m, no approach). Nothing lands.`;
+        const at = { ...a, means, mass };
+        const t = impactTime(at, rng);
+        if (!t) return `${verb} at ${part.name}: out of reach (${a.distance_m} m, no approach). Nothing lands.`;
         const impact = t.approach + t.strike;
-        const done = defenceDone(a, t, target, rng);
-        if (done <= impact) return `${a.means} at ${a.part}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
+        const done = defenceDone(at, t, target, rng);
+        if (done <= impact) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
     }
-    const base = baseOf(a.part);
-    if (a.means === 'blade_cut' || a.means === 'blade_stab') {
-        const type = a.means === 'blade_cut' ? 'cut' : 'puncture';
-        const artery = ['arm', 'hand', 'leg', 'foot'].includes(base) && rng() < BLADE_LIMB_ARTERY;
-        const w = addWound(target, { part: a.part, type, vessel: artery ? 'limb_artery' : 'small' }, rng);
-        return `${type} to ${a.part}${artery ? ', limb artery opened' : ', small vessels'}. Wound ${w.id}.`;
+    const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
+    const r = penetrate(tc, part, target.mass * 1000, w, M, rng);
+    const made = [];
+    const touched = [...new Set(r.hits.map(h => h.part))];
+    for (const hp of touched) {
+        const hits = r.hits.filter(h => h.part === hp);
+        const flags = h => tissueOf(tc, h.layer)?.flags || [];
+        const rigid = h => flags(h).includes('STRUCTURAL') && !flags(h).includes('FUNCTIONAL');
+        const cuts = hits.filter(h => h.result === 'cut').map(h => h.layer);
+        const soft = hits.filter(h => !rigid(h));
+        const functionLost = hits.some(h => flags(h).includes('FUNCTIONAL'));
+        const severed = r.severed && hp === part;
+        if (soft.length || severed) {
+            const type = severed ? 'severed' : cuts.length ? (bite ? 'bite' : w.piercing ? 'puncture' : 'cut') : 'blunt';
+            made.push(addWound(target, { part: hp, type, vessel: cuts.length ? vesselOf(tc, cuts, rng) : undefined, functionLost }, rng));
+        }
+        if (hits.some(rigid)) made.push(addWound(target, { part: hp, type: 'fracture', open: cuts.length > 0 }, rng));
     }
-    const force = strikeForce(a, attacker, rng);
-    const chance = BLUNT_CALIBRATION === null ? null : fractureChance(base, force);
-    const broke = chance !== null && rng() < chance;
-    const kind = base === 'arm' ? 'arm_transverse' : base === 'leg' ? 'leg_transverse' : undefined;
-    const w = addWound(target, broke ? { part: a.part, type: 'fracture', fracture: kind } : { part: a.part, type: 'blunt' }, rng);
-    const odds = chance === null ? '' : `, fracture chance ${Math.round(chance * 100)}%`;
-    return `${a.means} to ${a.part}: ${Math.round(force)} N${odds} → ${broke ? 'fracture' : 'bruise'}. Wound ${w.id}.`;
+    checkDeath(target);
+    const parts = [...new Set(r.tested.map(t => t.part))];
+    const layers = parts.map(pt => `${pt.name}: ${r.tested.filter(t => t.part === pt).map(t => `${t.layer.tissue.toLowerCase()} ${t.result}`).join(', ')}`).join('; ');
+    const wounds = made.length ? ` Wound${made.length > 1 ? 's' : ''} ${made.map(x => x.id).join(', ')}.` : ' No wound.';
+    return `${verb} (${w.name}) to ${part.name}: momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}`;
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
@@ -418,7 +471,7 @@ export function advanceAll(people, minutes, resting = new Set(), rng = Math.rand
 // Checks: success when capacity ≥ demand (stress–strength interference; IRT normal ogive). `share` = fraction of
 // people with the actor's training who succeed unhurt; demand sits where that share of capacities lies above it.
 const CAPACITY_CV = 0.19;  // Dodds 2014 grip: peak 51 / 31 kg, weak cut 27 / 16 kg = peak − 2.5 SD → SD / mean 0.19
-const FORCE_SCORES = ['lifting', 'grip', 'movement', 'footing', 'blocking', 'swimming', 'crawling'];
+const FORCE_SCORES = ['grasp', 'stance'];
 const EXERTION_FAILS_AT = { heavy: 2 };  // blood-loss class II: heavy exertion fails
 
 // Abramowitz & Stegun 7.1.26 (error < 1.5e-7); Acklam's inverse (relative error < 1.2e-9).
@@ -445,15 +498,17 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) 
     const cls = bloodClass(p);
     if (cls === 4 || (cls >= 3 && on_feet) || cls >= (EXERTION_FAILS_AT[exertion] ?? 5)) return { chance: 0, limit: `blood-loss class ${['I', 'II', 'III', 'IV'][cls - 1]}` };
     const scores = abilities(p);
+    const lacking = uses.find(u => u in FUNCTIONS && !(u in scores));
+    if (lacking) return { chance: 0, limit: `no ${lacking}` };
     const used = uses.filter(u => u in scores);
     const zero = used.find(u => scores[u] === 0);
-    if (zero) return { chance: 0, limit: `${zero.replace('_', ' ')} 0%` };
+    if (zero) return { chance: 0, limit: `${zero} 0%` };
     const force = used.filter(u => FORCE_SCORES.includes(u)).sort((x, y) => scores[x] - scores[y])[0];
     const s = force ? scores[force] : 1;
     const base = Math.max(0, Math.min(1, Number(share) || 0));
     if (s >= 1 || base === 0) return { chance: base };
     const demand = 1 - normInv(Math.min(0.999, base)) * CAPACITY_CV;
-    return { chance: normCdf((s - demand) / (s * CAPACITY_CV)), limit: `${force.replace('_', ' ')} ${Math.round(s * 100)}%` };
+    return { chance: normCdf((s - demand) / (s * CAPACITY_CV)), limit: `${force} ${Math.round(s * 100)}%` };
 }
 
 export const checkChance = (p, task) => checkOdds(p, task).chance;

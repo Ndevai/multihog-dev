@@ -1,4 +1,6 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check } from './body-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS } from './body-engine.js';
+import { loadRaws, creatureId } from './df/index.js';
+import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 
 const TOOLS = ['BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
@@ -102,11 +104,18 @@ function run(fn) {
 }
 
 const str = d => ({ type: 'string', description: d });
+const species = str('DF creature of this character, by name or id (human, wolf, horse, giant wolf); read when the character first appears. Default human.');
+const partArg = str('Body part by its name: e.g. head, throat, upper body, lower body, right upper arm, left hand, right lower leg, left eye.');
+
+/** Species id from a tool argument: 'HUMAN' when absent, null when no DF creature matches. */
+const speciesOf = text => text ? creatureId(text) : 'HUMAN';
+const noSpecies = text => `No DF creature "${text}". Nothing recorded.`;
 
 export const RULES_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
-- An attack with fist, kick or blade → BodyStrike; it decides whether it lands and the wound. Narrate what it returns.
-- An attack by any other means (bow, sling, club, claw, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
+- A character's first rule-tool call names its species (a Dwarf Fortress creature: human, wolf, horse…).
+- An attack with the body (punch, kick, bite, scratch) or a melee weapon (sword, axe, mace, spear, dagger…) → BodyStrike; it decides whether it lands and the wounds. Narrate what it returns.
+- An attack by any other means (bow, crossbow, sling, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
 - A burn, a bite, an accident or a fall injury → BodyWound.
 - Someone falls → BodyFall.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
@@ -125,6 +134,7 @@ export function registerRulesTools(enabled) {
         name, displayName: name, description,
         parameters: { type: 'object', properties, required },
         action: async args => {
+            await loadRaws();
             const out = await action(args);
             globalThis._rpgRefreshRenderedView?.();
             return out;
@@ -133,60 +143,74 @@ export function registerRulesTools(enabled) {
     });
 
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
-    tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, club, bullet). Returns what the wound is and the body state.', {
+    // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
+    tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, bolt, bullet). Returns what the wound is and the body state.', {
         who: str('Character name'),
-        part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
+        species,
+        part: partArg,
         type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'burn', 'bite'] },
         depth: { type: 'string', enum: ['superficial', 'partial', 'deep_partial', 'full'], description: 'Burns: superficial = red, no blisters; partial = blisters; deep_partial = pale, scars; full = through the skin.' },
     }, ['who', 'part', 'type'], a => run((st, rng) => {
-        const p = person(st, a.who);
-        if (a.type === 'cut' || a.type === 'puncture') {
-            return `${strike(p, { part: a.part, means: a.type === 'cut' ? 'blade_cut' : 'blade_stab', landed: true }, null, rng)} ${status(a.who, p)}`;
-        }
-        const w = addWound(p, { part: a.part, type: a.type, depth: a.depth, vessel: a.type === 'bite' ? 'small' : undefined }, rng);
+        const sp = speciesOf(a.species);
+        if (!sp) return noSpecies(a.species);
+        const p = person(st, a.who, undefined, sp);
+        const part = findPart(creatureOf(p), a.part);
+        if (!part) return `${a.who} has no part "${a.part}". Parts: ${creatureOf(p).parts.map(x => x.name).join(', ')}. Nothing recorded.`;
+        const w = ['cut', 'puncture', 'bite'].includes(a.type) ? openWound(p, part, a.type, rng) : addWound(p, { part, type: a.type, depth: a.depth }, rng);
         return `Wound ${w.id} recorded. ${status(a.who, p)}`;
     }));
 
-    tool('BodyStrike', 'Resolve an attack before narrating it: whether it lands, its force and the wound it records. Narrate a miss as a miss.', {
+    tool('BodyStrike', 'Resolve an attack before narrating it: whether it lands, which tissue layers it cuts or smashes, and the wounds it records. Narrate a miss as a miss.', {
         who: str('Character hit'),
-        part: { type: 'string', enum: ['head', 'eyes', 'mouth', 'torso', 'arm_l', 'arm_r', 'hand_l', 'hand_r', 'leg_l', 'leg_r', 'foot_l', 'foot_r'] },
-        means: { type: 'string', enum: ['fist', 'kick', 'blade_cut', 'blade_stab'] },
-        attacker: str('Attacker name; a tracked attacker strikes weaker with wounded arms or legs'),
-        attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg; 70 for an average adult human. Mass sets reach, swing time and force for any creature.' },
-        target_mass_kg: { type: 'number', description: 'Body mass of the character hit, in kg, the first time this character appears; sets reaction and movement speed.' },
-        skill: { type: 'string', enum: ['untrained', 'trained', 'elite'], description: 'Fighting training of the attacker' },
+        species,
+        part: partArg,
+        attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…).'),
+        weapon: str('Melee weapon used, if any: short sword, long sword, two-handed sword, scimitar, dagger, battle axe, great axe, war hammer, maul, mace, morningstar, flail, spear, pike, halberd, pick, whip, scourge.'),
+        material: str('Metal of the weapon: iron, steel, bronze, bismuth bronze, copper, silver. Default iron.'),
+        skill: { type: 'string', enum: SKILL_LEVELS, description: 'Attacker\'s fighting skill level. Dabbling = untrained.' },
+        style: { type: 'string', enum: Object.keys(STYLES), description: 'quick = fast weak blow; heavy or wild = full-force blow.' },
+        prone: { type: 'boolean', description: 'Target lying on the ground.' },
+        attacker: str('Attacker name; a tracked attacker uses its own species, mass and wounds'),
+        attacker_species: str('Attacker\'s DF creature when the attacker is not tracked. Default human.'),
+        attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg when not tracked; default the species\' adult mass.' },
+        target_mass_kg: { type: 'number', description: 'Body mass of the character hit, in kg, the first time this character appears; default the species\' adult mass.' },
         awake: { type: 'boolean', description: 'Target awake. Default true.' },
         facing: { type: 'boolean', description: 'Target looking toward the attacker. Default true.' },
         lit: { type: 'boolean', description: 'Enough light for the target to see the attacker. Default true.' },
         noise_db: { type: 'number', description: 'Sound level of the attacker at the target in dB(A). 0 = silent.' },
-        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Omit when already within arm\'s reach.' },
+        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Omit when already within reach.' },
         approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
         sense_range_m: { type: 'number', description: 'Range of any non-visual sense the target has that detects an approaching attacker (e.g. telepathy), in m.' },
         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
-    }, ['who', 'part', 'means'], a => run((st, rng) => {
-        const p = person(st, a.who, Number(a.target_mass_kg) || undefined);
+    }, ['who', 'part', 'attack'], a => run((st, rng) => {
+        const sp = speciesOf(a.species);
+        if (!sp) return noSpecies(a.species);
+        const asp = speciesOf(a.attacker_species);
+        if (!asp) return noSpecies(a.attacker_species);
+        const p = person(st, a.who, Number(a.target_mass_kg) || undefined, sp);
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
-        const scene = ['awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
-        const out = strike(p, { part: a.part, means: a.means, skill: a.skill, mass: Number(a.attacker_mass_kg) || 70,
-            ...Object.fromEntries(scene.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
+        const keys = ['weapon', 'material', 'skill', 'style', 'prone', 'awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
+        const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || undefined,
+            ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
         who: str('Character acting'),
+        species,
         task: str('The task in a few words'),
         share: { type: 'number', description: 'Fraction 0–1 of people with this character\'s training who succeed at this task in these conditions, unhurt.' },
-        uses: { type: 'array', items: { type: 'string', enum: ['lifting', 'grip', 'movement', 'footing', 'blocking', 'swimming', 'crawling', 'manipulation', 'balance', 'vision', 'night_vision', 'reaction', 'breathing'] }, description: 'Body abilities the task depends on' },
+        uses: { type: 'array', items: { type: 'string', enum: Object.keys(FUNCTIONS) }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing' },
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
-    }, ['who', 'task', 'share'], a => run((st, rng) => check(person(st, a.who), a, rng)));
+    }, ['who', 'task', 'share'], a => run((st, rng) => check(person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN'), a, rng)));
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
         wound: { type: 'number', description: 'Wound id' },
         treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load'] },
     }, ['who', 'wound', 'treatment'], a => run((st, rng) => {
-        const p = person(st, a.who);
+        const p = person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN');
         return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;
     }));
 
@@ -207,21 +231,23 @@ export function registerRulesTools(enabled) {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },
     }, ['who', 'complexity'], a => run(st => {
-        const p = person(st, a.who);
+        const p = person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN');
         return `${cast(p, Math.max(1, Math.min(9, Math.round(a.complexity))))} ${status(a.who, p)}`;
     }));
 
     tool('BodyFall', 'Resolve a fall before narrating its outcome.', {
         who: str('Character name'),
+        species,
         height_m: { type: 'number' },
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
         head_first: { type: 'boolean' },
     }, ['who', 'height_m'], a => run((st, rng) => {
-        const p = person(st, a.who);
+        const p = person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN');
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first }, rng);
     }));
 
     tool('BodyStatus', 'Read a character\'s body and network state.', {
         who: str('Character name'),
-    }, ['who'], a => run(st => status(a.who, person(st, a.who))));
+        species,
+    }, ['who'], a => run(st => status(a.who, person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN'))));
 }

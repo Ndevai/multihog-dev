@@ -2,7 +2,8 @@
 // D&D block formats of the State Tracker. Body state (wounds, blood, network energy) belongs to the
 // rule engine and reaches both models only through the code-written [BODY] block.
 
-const CHARACTER_FIELDS = `Training: fighting untrained|trained|elite; each other trained activity with its level (e.g. climbing trained)
+const CHARACTER_FIELDS = `Species: the Dwarf Fortress creature (human, dwarf, elf, goblin, wolf, horse…)
+Training: fighting skill as a Dwarf Fortress level (Dabbling, Novice, Adequate, Competent, Skilled, Proficient, Talented, Adept, Expert, Professional, Accomplished, Great, Master, High Master, Grand Master, Legendary); each other trained activity with its level (e.g. climbing trained)
 Senses: senses beyond sight and hearing, each with its range in m; omit the line when there are none
 Affinities: affinity channels by name (fire, water, earth, air, wood, gold, metal); omit the line for non-casters
 Conditions: lasting states [BODY] does not hold, each with its duration or end event (e.g. bound, until untied)`;
@@ -52,7 +53,7 @@ Never skip/reinterpret a roll. Failures need real, logical consequences — no r
 Out-of-range attack attempt → note {{user}} couldn't attack due to range; ask for another action. Max active [PARTY] size = 5 + {{user}} (no more added); cap doesn't apply to [BENCHED PARTY].
 </spatial_and_entity_constraints>
 <inventory_and_resource_constraints>
-An item exists only when [INVENTORY] or the scene holds it; otherwise narrate the lack. Equip/unequip is always narrated explicitly; Gear items without [E] are carried, not worn or held. Equipment works only through a body that can use it: a part whose scores are 0 in [BODY] uses nothing, and gear beyond the body's lifting fails. Impossible equips are blocked and narrated; awkward ones work with their physical consequences.
+An item exists only when [INVENTORY] or the scene holds it; otherwise narrate the lack. Equip/unequip is always narrated explicitly; Gear items without [E] are carried, not worn or held. Equipment works only through a body that can use it: a part listed as not working in [BODY] uses nothing, and a creature without grasp holds nothing in hand. Impossible equips are blocked and narrated; awkward ones work with their physical consequences.
 </inventory_and_resource_constraints>
 <cheese_and_abuse>
 If the player is clearly abusing the rules to get something like infinite energy or immortality, stop them and create a narrative reason why it doesn't work.
@@ -163,8 +164,9 @@ Bench ETAs: when the narrative states when a character returns (a day, a duratio
 
 ENEMIES:
 Name (N kg)
-Training: fighting untrained|trained|elite
-Weapons: what the combatant fights with (fist, kick, blade, bow, club, claws, firearm)
+Species: the Dwarf Fortress creature
+Training: fighting skill as a Dwarf Fortress level (Dabbling … Legendary)
+Weapons: what the combatant fights with (punch, kick, bite, a melee weapon with its metal, bow, firearm)
 Senses: senses beyond sight and hearing, each with its range in m; omit the line when there are none
 Spells: Spell name (School, complexity N); omit the line for non-casters
 Distance: metres from {{user}}
