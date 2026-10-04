@@ -115,7 +115,8 @@ export const RULES_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
 - A character's first rule-tool call names its species (a Dwarf Fortress creature: human, wolf, horse…).
 - An attack with the body (punch, kick, bite, scratch) or a melee weapon (sword, axe, mace, spear, dagger…) → BodyStrike; it decides whether it lands and the wounds. Narrate what it returns.
-- An attack by any other means (bow, crossbow, sling, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
+- A shot with a bow, crossbow or blowgun → BodyCheck for the aim; on target → BodyStrike with launcher and the distance.
+- An attack by any other means (sling, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
 - A burn, a bite, an accident or a fall injury → BodyWound.
 - Someone falls → BodyFall.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
@@ -164,9 +165,10 @@ export function registerRulesTools(enabled) {
         who: str('Character hit'),
         species,
         part: partArg,
-        attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…).'),
+        attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…). Omit for a shot.'),
         weapon: str('Melee weapon used, if any: short sword, long sword, two-handed sword, scimitar, dagger, battle axe, great axe, war hammer, maul, mace, morningstar, flail, spear, pike, halberd, pick, whip, scourge.'),
-        material: str('Metal of the weapon: iron, steel, bronze, bismuth bronze, copper, silver. Default iron.'),
+        material: str('Material of the weapon or of the ammunition: iron, steel, bronze, bismuth bronze, copper, silver, bone, wood. Default iron.'),
+        launcher: str('For a shot: bow, crossbow or blowgun (the ammunition is its arrow, bolt or dart in material). Call it after the shot is on target (BodyCheck for aim); the target can still dodge or block it.'),
         skill: { type: 'string', enum: SKILL_LEVELS, description: 'Attacker\'s fighting skill level. Dabbling = untrained.' },
         style: { type: 'string', enum: Object.keys(STYLES), description: 'quick = fast weak blow; heavy or wild = full-force blow.' },
         prone: { type: 'boolean', description: 'Target lying on the ground.' },
@@ -214,14 +216,14 @@ export function registerRulesTools(enabled) {
         approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
         sense_range_m: { type: 'number', description: 'Range of any non-visual sense the target has that detects an approaching attacker (e.g. telepathy), in m.' },
         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
-    }, ['who', 'part', 'attack'], a => run((st, rng) => {
+    }, ['who', 'part'], a => run((st, rng) => {
         const sp = speciesOf(a.species);
         if (!sp) return noSpecies(a.species);
         const asp = speciesOf(a.attacker_species);
         if (!asp) return noSpecies(a.attacker_species);
         const p = person(st, a.who, Number(a.target_mass_kg) || undefined, sp);
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
-        const keys = ['weapon', 'material', 'skill', 'style', 'prone', 'from', 'awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
+        const keys = ['weapon', 'launcher', 'material', 'skill', 'style', 'prone', 'from', 'awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
         const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || undefined, armor: a.target_armor,
             ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;

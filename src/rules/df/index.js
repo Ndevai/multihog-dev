@@ -1,5 +1,5 @@
 // Loads the DF raws once (browser fetch, or files passed in by Node) and hands out resolved creatures.
-import { RAW_FILES, indexRaws, resolveCreature, findCreature, weapon, metal, armor, customGear, gearMaterial } from './raws.js';
+import { RAW_FILES, indexRaws, resolveCreature, findCreature, weapon, metal, armor, customGear, gearMaterial, ammo } from './raws.js';
 
 let db = null;
 let loading = null;
@@ -26,3 +26,4 @@ export const metalOf = text => db ? metal(db, text) : null;
 export const armorOf = text => db ? armor(db, text) : null;
 export const customGearOf = text => db ? customGear(db, text) : null;
 export const gearMaterialOf = text => db ? gearMaterial(db, text) : null;
+export const ammoOf = cls => db ? ammo(db, cls) : null;

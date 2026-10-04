@@ -5,7 +5,7 @@
 export const RAW_FILES = [
     'body_default.txt', 'body_rcp.txt', 'b_detail_plan_default.txt', 'tissue_template_default.txt',
     'material_template_default.txt', 'c_variation_default.txt', 'item_weapon.txt', 'inorganic_metal.txt',
-    'item_armor.txt', 'item_helm.txt', 'item_gloves.txt', 'item_shoes.txt', 'item_pants.txt', 'item_shield.txt',
+    'item_armor.txt', 'item_helm.txt', 'item_gloves.txt', 'item_shoes.txt', 'item_pants.txt', 'item_shield.txt', 'item_ammo.txt',
     'creature_amphibians.txt', 'creature_annelids.txt', 'creature_birds.txt', 'creature_birds_new.txt',
     'creature_bug_slug_new.txt', 'creature_desert_new.txt', 'creature_domestic.txt', 'creature_equipment.txt',
     'creature_fanciful.txt', 'creature_insects.txt', 'creature_large_mountain.txt', 'creature_large_ocean.txt',
@@ -30,7 +30,7 @@ export function tokens(text) {
 }
 
 export function indexRaws(files) {
-    const db = { ITEM_WEAPON: {}, ARMOR: {}, cache: {}, expanded: {} };
+    const db = { ITEM_WEAPON: {}, ITEM_AMMO: {}, ARMOR: {}, cache: {}, expanded: {} };
     for (const h of HEADS) db[h] = {};
     for (const text of Object.values(files)) {
         let type = null, cur = null;
@@ -38,6 +38,7 @@ export function indexRaws(files) {
             if (t[0] === 'OBJECT') { type = t[1]; cur = null; continue; }
             if (type === 'ITEM' && t.length === 2 && /^ITEM_[A-Z]+$/.test(t[0])) {
                 if (t[0] === 'ITEM_WEAPON') cur = db.ITEM_WEAPON[t[1]] = [];
+                else if (t[0] === 'ITEM_AMMO') cur = db.ITEM_AMMO[t[1]] = [];
                 else if (ARMOR_KINDS.includes(t[0])) { cur = []; db.ARMOR[t[1]] = { kind: t[0], tokens: cur }; } else cur = null;
                 continue;
             }
@@ -137,7 +138,21 @@ export function weapon(db, text) {
         const attacks = list.filter(t => t[0] === 'ATTACK').map(t => ({
             edge: t[1] === 'EDGE', contact: Number(t[2]), penetration: Number(t[3]), verb: t[4], noun: t[6], velocity: Number(t[7] ?? 1000),
         }));
-        return { id, name, size: Number(list.find(t => t[0] === 'SIZE')?.[1]), skill: list.find(t => t[0] === 'SKILL')?.[1], attacks };
+        const ranged = list.find(t => t[0] === 'RANGED');
+        const num = k => Number(list.find(t => t[0] === k)?.[1]);
+        return { id, name, size: num('SIZE'), skill: list.find(t => t[0] === 'SKILL')?.[1], attacks,
+            ranged: ranged ? { ammoClass: ranged[2], force: num('SHOOT_FORCE'), maxvel: num('SHOOT_MAXVEL') } : null };
+    }
+    return null;
+}
+
+/** The DF ammunition item of a class (BOLT, ARROW, BLOWDART): size and attack. */
+export function ammo(db, ammoClass) {
+    for (const [id, list] of Object.entries(db.ITEM_AMMO)) {
+        if (list.find(t => t[0] === 'CLASS')?.[1] !== ammoClass) continue;
+        const at = list.find(t => t[0] === 'ATTACK');
+        return { id, name: list.find(t => t[0] === 'NAME')?.[1], size: Number(list.find(t => t[0] === 'SIZE')?.[1]),
+            attack: { edge: at[1] === 'EDGE', contact: Number(at[2]), penetration: Number(at[3]), verb: at[4] } };
     }
     return null;
 }

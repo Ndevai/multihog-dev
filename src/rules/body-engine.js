@@ -1,6 +1,6 @@
 import { creature } from './df/index.js';
-import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf } from './df/combat.js';
-import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf } from './df/index.js';
+import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, shot } from './df/combat.js';
+import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf } from './df/sublocations.js';
 
 export const DAY_MIN = 24 * 60;
@@ -287,6 +287,8 @@ const KO_MOMENTUM = 158.0;
 const HELD_FACE_CM2 = { ITEM_SHIELD_SHIELD: Math.PI * 42.5 ** 2, ITEM_SHIELD_BUCKLER: Math.PI * 15 ** 2 };
 const HELD_THICK_CM = 0.9;
 const APNEA_DEATH_MIN = 5;
+// Flight speed of a shot: 47.23 m/s, a 102 g arrow from a 144 lbf yew self bow (Stretton et al. 2010), for every launcher.
+const SHOT_MPS = 47.23;
 
 // Spread of a blow's momentum: Walilko 2005 punch force SD ÷ mean (rule 576), applied to every attack.
 const SPREAD = 0.237;
@@ -335,7 +337,8 @@ const NERVE_MPS = 49;                                  // Chen 2016 AANEM: media
 const SYNAPSE_S = 0.0007;                              // More & Donelan 2018
 const twitch = mass => 0.0043 * mass ** 0.21 + 0.0176 * mass ** 0.20; // More & Donelan 2018: electromechanical + force generation
 const RT_CV = 36.42 / 297;                              // Petri 2020 spread
-const MOVE_S = 0.242;                                   // VencesBrito 2011 karate punch, proxy for a defensive move
+const LIMB_MOVE_S = 0.242;                              // VencesBrito 2011 karate punch: moving a limb (block)
+const BODY_MOVE_S = 0.715;                              // Wakatsuki & Yamada 2020: reactive side-step movement time (dodge)
 const HEAR_DB = 25;                                     // WHO: normal hearing threshold at or below 25 dB
 const WAKE_DB = 55, WAKE_MAX_S = 21;                    // young adults: all woke to a 55 dBA alarm within 21 s
 const WAKE_MIN_S = 1.59;                                // Oudiette 2023: median response time from N2 sleep
@@ -370,10 +373,6 @@ function defenceDone(a, t, defender, rng) {
     const motor = SYNAPSE_S + (body.limb_m ?? REACH_M * size(m, EXP_LENGTH)) / (body.nerve_mps ?? NERVE_MPS) + twitch(m);
     const rt = channel => ((body.sense_s?.[channel] ?? SENSE_S[channel]) + (body.decide_s ?? DECIDE_S) + motor)
         * Math.max(0.5, 1 + RT_CV * gauss(rng));
-    const ab = defender ? abilities(defender) : {};
-    const capacity = 'grasp' in ab || 'stance' in ab ? Math.max(ab.grasp ?? 0, ab.stance ?? 0) : 1;
-    if (capacity <= 0) return Infinity;
-    const move = MOVE_S * size(m, EXP_MOVE) / capacity;
     const done = [];
     const perceive = (from, reaction) => done.push(Math.max(from, intentFrom) + reaction);
     if (awake && a.facing !== false && a.lit !== false) perceive(0, rt('sight'));
@@ -389,7 +388,16 @@ function defenceDone(a, t, defender, rng) {
         const enter = dist <= r ? 0 : r >= t.reach ? (dist - r) / a.approach_speed : t.approach + t.strike * (t.reach - r) / t.reach;
         perceive(enter, rt('sight'));
     }
-    return done.length ? Math.min(...done) + move : Infinity;
+    return done.length ? Math.min(...done) : Infinity;
+}
+
+/** Seconds a defensive move takes: a limb (block) or the whole body (dodge), ÷ the ability that drives it. */
+function moveTime(defender, kind) {
+    const ab = defender ? abilities(defender) : {};
+    const key = kind === 'block' ? 'grasp' : 'stance';
+    const capacity = key in ab ? ab[key] : kind === 'block' ? 0 : 1;
+    if (capacity <= 0) return Infinity;
+    return (kind === 'block' ? LIMB_MOVE_S : BODY_MOVE_S) * size(defender?.mass ?? REF_MASS, EXP_MOVE) / capacity;
 }
 
 /**
@@ -400,7 +408,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const tc = creatureOf(target);
     const ac = creature(attacker?.species ?? a.species ?? 'HUMAN');
     if (!tc || !ac) return 'Creature data is not loaded. Nothing recorded.';
-    const part = findPart(tc, a.part);
+    let part = findPart(tc, a.part);
     if (!part || part.flags.includes('INTERNAL')) return `${tc.name} has no part "${a.part}" to aim at. Parts: ${aimable(tc).join(', ')}. Nothing recorded.`;
     const mass = attacker?.mass ?? a.mass ?? ac.size / 1000;
     const iSize = mass * 1000;
@@ -458,7 +466,16 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         worn.push(it);
     }
     let w, verb, means, bite = false;
-    if (a.weapon) {
+    if (a.launcher) {
+        const lw = weaponOf(a.launcher);
+        if (!lw?.ranged) return `No DF launcher "${a.launcher}" (bow, crossbow, blowgun). Nothing recorded.`;
+        const am = ammoOf(lw.ranged.ammoClass);
+        const mat = gearMaterialOf(a.material || 'iron');
+        if (!am || !mat) return `No ammunition for ${a.launcher}${a.material ? ` in ${a.material}` : ''}. Nothing recorded.`;
+        w = shot(lw, am, mat);
+        verb = 'shot';
+        means = 'shot';
+    } else if (a.weapon) {
         const wp = weaponOf(a.weapon);
         if (!wp) return `No weapon "${a.weapon}". Nothing recorded.`;
         const metal = metalOf(a.material || 'iron');
@@ -480,19 +497,28 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     }
     if (!a.landed) {
         const at = { ...a, means, mass };
-        const t = impactTime(at, rng);
+        const t = means === 'shot'
+            ? { approach: 0, reach: a.distance_m ?? 10, strike: (a.distance_m ?? 10) / SHOT_MPS }
+            : impactTime(at, rng);
         if (!t) return `${verb} at ${part.name}: out of reach (${a.distance_m} m, no approach). Nothing lands.`;
         const impact = t.approach + t.strike;
-        const done = defenceDone(at, t, target, rng);
-        if (done <= impact) {
-            // In time with a held item: it is put in the blow's way (block); without one: the body moves away (dodge).
-            const held = worn.find(x => x.held);
-            if (!held) return `${verb} at ${part.name}: avoided (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s).`;
-            held.blocking = true;
-            notes.push(`blocked with ${held.name} (defence done at ${done.toFixed(2)} s, impact at ${impact.toFixed(2)} s)`);
+        // The defender reacts at `ready`, then moves: a dodge moves the body out of the way; a block puts a limb in the
+        // blow's way (with the held item, else the forearm itself).
+        const ready = defenceDone(at, t, target, rng);
+        const works = worksFn(target, tc);
+        const held = worn.find(x => x.held);
+        const forearm = tc.parts.find(x => x.flags.includes('LIMB') && works(x) && tc.parts.some(g => g.parent === x.id && g.flags.includes('GRASP') && works(g)));
+        const blockAt = held || forearm ? ready + moveTime(target, 'block') : Infinity;
+        const dodgeAt = ready + moveTime(target, 'dodge');
+        const at2 = s => `${s.toFixed(2)} s, impact at ${impact.toFixed(2)} s`;
+        // Least harm first: a dodge that finishes in time, else a block with a held item, else with the forearm.
+        if (dodgeAt <= impact) return `${verb} at ${part.name}: dodged (dodge done at ${at2(dodgeAt)}).`;
+        if (blockAt <= impact) {
+            if (held) { held.blocking = true; notes.push(`blocked with ${held.name} (block done at ${at2(blockAt)})`); }
+            else { notes.push(`blocked with the ${forearm.name} (block done at ${at2(blockAt)})`); part = forearm; }
         }
     }
-    const M = momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
+    const M = means === 'shot' ? w.M : momentum(ac, iSize, w, a) * Math.max(0, 1 + SPREAD * gauss(rng));
     // Side hit: the one facing the attacker; a blow from the left or right lands front or back alike (equal halves).
     const from = a.from ?? (a.facing === false ? 'back' : 'front');
     const side = from === 'front' || from === 'back' ? from : rng() < 0.5 ? 'front' : 'back';

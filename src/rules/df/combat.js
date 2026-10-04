@@ -93,6 +93,18 @@ export function covers(c, item, part) {
 /** Armor size [WIKI]: part size × coverage/100 × (1 + (UPSTEP + UBSTEP + LBSTEP) ÷ 4), MAX counted as 3. */
 export const armorSize = (partCm3, item) => partCm3 * item.coverage / 100 * (1 + [item.upstep, item.ubstep, item.lbstep].reduce((s, x) => s + Math.min(x, 3), 0) / 4);
 
+/**
+ * A shot (wiki Material science): ammo mass = density × SIZE ÷ 100000 (the unit that reproduces the wiki's figures: iron
+ * bolts at momentum 50, threshold density 1667); momentum = min(SHOOT_FORCE ÷ 20, mass × SHOOT_MAXVEL ÷ 10), independent
+ * of the shooter. The ammo's attack and material go through the layers like a melee weapon.
+ */
+export function shot(launcher, am, mat) {
+    const mass = mat.SOLID_DENSITY * am.size / 1e5;
+    const M = Math.min(launcher.ranged.force / 20, mass * launcher.ranged.maxvel / 10);
+    return { name: `${mat.name} ${am.name} from a ${launcher.name}`, contact: am.attack.contact, penetration: am.attack.penetration,
+        edge: am.attack.edge, mat, M, verb: am.attack.verb, piercing: am.attack.contact < am.attack.penetration };
+}
+
 /** M = Skill × Size × Str × Vel ÷ (10⁶ × (1 + i_Size ÷ (w_density × w_size))) × style × prone. */
 export function momentum(c, iSize, w, { skill, style = 'normal', prone = false } = {}) {
     return skillFactor(skill) * c.size * c.strength * w.velocity / (1e6 * (1 + iSize / (w.density * w.size)))
