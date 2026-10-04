@@ -266,7 +266,7 @@ export function rulesTrackerTemplate(template) {
 }
 
 /** Character-creation instructions in place of levels, classes and stat scaling. */
-export const RULES_CREATION = 'This world has no levels, hit points or attribute scores. Describe the character through the module formats below: body mass in kg, training levels, senses, affinities and spells known.';
+export const RULES_CREATION = 'This world has no levels, hit points or attribute scores. Describe the character through the module formats below: body mass in kg, species (a Dwarf Fortress creature), languages, fighting skill as a Dwarf Fortress level (Dabbling to Legendary) and other training, senses, affinities, spells known, and worn gear with its material and the parts it covers.';
 
 export const RULES_ARCHETYPES = {
     magic: 'spellcaster', melee: 'melee fighter', rogue: 'rogue or thief', professional: 'professional specialist',
@@ -276,7 +276,7 @@ export const RULES_ARCHETYPES = {
 
 export const RULES_CYOA_EXAMPLES = {
     high: [
-        '1. 🗡️ Stab the lookout while he faces the sea — [Strike: blade, trained]',
+        '1. 🗡️ Stab the lookout in the back while he faces the sea — [Strike: dagger stab, Competent]',
         '2. 💣 Throw a Smoke Bomb — [-1 Smoke Bomb]',
         '3. 🥷 Slip along the hull\'s shadows — [Stealth (trained) 60%]',
         '4. 🗣️ Shout a warning to the rest of your crew',

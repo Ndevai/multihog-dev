@@ -127,8 +127,24 @@ export function expandRelationshipPctPlaceholders(template, max) {
  * @param {'basic'|'agent'} [mode]
  * @returns {string}
  */
+const RULES_PROFILE_EXAMPLE = 'Grey wolf (40 kg)\\nSpecies: wolf\\nTraining: fighting Novice\\nWeapons: bite, scratch\\nSenses: smell 300 m';
+const RULES_PROFILE_COMMON = `
+## COMBAT PROFILE (rule engine)
+- A Combat Profile is one combatant's lasting description from ## ACTIVE COMBAT STATE: the "Name (N kg)" line and its Species, Training, Weapons, Senses and Spells lines; leave out Distance and Status (they change each scene). Injuries live in the rule engine, not in the profile.
+- Copy those lines verbatim; never invent values from GM prose.
+${COMBAT_SCOPE_RULE.replace('their "Name: HP" line through their "Status:" line', 'their "Name (N kg)" line through their last lasting line')}`;
+const RULES_PROFILE_GUIDANCE = {
+    basic: `${RULES_PROFILE_COMMON}
+- **Existing NPCs**: \`[[UPDATE_CORE: NPC Name | Combat Profile | lines]]\`. **Brand-new combatants**: \`Combat Profile:\` inside \`[CORE]\` of a new \`[[NPC:...]]\`.
+- Example: \`[[UPDATE_CORE: Grey wolf | Combat Profile | ${RULES_PROFILE_EXAMPLE}]]\``,
+    agent: `${RULES_PROFILE_COMMON}
+- **Existing NPCs**: \`commit({"core": [{"id": "Book::UID or NPC Name", "field": "Combat Profile", "content": "lines"}]})\`. **Brand-new combatants**: \`Combat Profile:\` inside \`[CORE]\` in a \`record\` item.
+- Example: \`commit({"core": [{"id": "Grey wolf", "field": "Combat Profile", "content": "${RULES_PROFILE_EXAMPLE}"}]})\``,
+};
+
 export function resolveCombatProfileGuidance(settings, hasMechanicalStats, mode = 'basic') {
     if (!hasMechanicalStats) return '';
+    if (settings?.rulesEngine) return RULES_PROFILE_GUIDANCE[mode === 'agent' ? 'agent' : 'basic'];
     const key = mode === 'agent'
         ? 'routerCombatProfileGuidanceAgentTemplate'
         : 'routerCombatProfileGuidanceBasicTemplate';
