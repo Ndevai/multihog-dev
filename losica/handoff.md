@@ -45,10 +45,14 @@ Hard-rule world system for LLM roleplay. Rules a model cannot bend: quantities, 
   - Choices examples, character creation (no levels, no BAB guide, no +N gear) and the sheet (a "Name (N kg)" line starts an entry) follow.
   - Still D&D-shaped with Losica on: NPC memory combat-profile guidance (src/state/lorebook-runtime-fragments.js, module-instructions.js), the attribute roll panel in onboarding, realistic/horror genre hints in character creation.
 
+- Body model (rules/body-model.md, sources in rules/body-model-sources.md, 3 Oct): the engine is to know properties and laws only; a creature = a species record. Human record = rule 576/577 tables + bone, muscle, blood, brain values. Insect, tree and fungus records hold measured values; fiction creatures need records (real values copied, the rest lore decisions).
+  - Human record vs current engine: identical except §4, which adds fractures for pinned or crushed parts from measured failure moments (femur 395, humerus 230, tibia 312, forearm 89 N·m); free-limb blows stay OPEN-60.
+
 ## 4. Next, in order
-1. Clock (day 8.557 h, year 1241.42 days).
-2. Survival needs in the engine (water, food, sleep, core temperature).
-3. NPC memory combat profiles in Losica terms.
+1. Engine on the body model: species registry; the human record built from today's constants; tools take a species on a character's first appearance; status labels from the record.
+2. Clock (day 8.557 h, year 1241.42 days).
+3. Survival needs from §7 energy (water, food, sleep, core temperature).
+4. NPC memory combat profiles in Losica terms.
 
 ## 5. Rules (lorebook Faerun_weave-rules.json, entries 564–577)
 - Source: Faerûn lorebook Faerun__4_.json (574 entries). Magic entries 564, 566–574 rewritten as hard rules; 575 network, 576 body and injury, 577 survival needs are new. Durations converted to Losica days with absolute seconds kept.
@@ -120,6 +124,11 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 64 | attacker tracking a moving target; room to evade; aim information from sound | research or decision |
 | | 65 | sensory thresholds (hearing, waking) for non-human bodies: depend on the ear, not on size | research per sense organ |
 | | 66 | checks: effect of a partial non-force ability (manipulation, vision, reaction, balance) on the chance | research (task performance vs impairment) |
+| Body model (body-model.md) | 67 | lethal hemolymph loss fraction λ for insects | research (one weak study: deaths at ~40 %) |
+| | 68 | starvation death limit for groups other than mammals and birds | research per group |
+| | 69 | minimum surviving fragment mass for fungi and slime molds | research |
+| | 71 | impact force on each part in a fall (stopping distance) | research or stated process |
+| | 72 | energy source, rate and end of bodies not powered by metabolism (undead, constructs) | lore decision |
 | Survival (577) | 46 | altitude effect for people born there | research: long-resident highlander data (Andean, Tibetan) |
 
 Closed 2 Oct 2026 (rule 576 + engine commit 1cf0cf9): OPEN-43 onset (bites 1 Earth day, Talan 1999; other wounds 10 Earth days, laparotomy SSI proxy, Gundel 2018); cut healing by part (Forsch 2017, expert opinion); burn healing by depth (Warby 2023, Lloyd 2012, CHOP); fall deaths 5.1–10.1 m by straight line, all above 16.2 m (engine had unsourced 22.7 % and 78 %); "size" dropped from the wound definition, burns take a depth; the 32.5 % midpoint written into the reference.
