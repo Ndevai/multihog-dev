@@ -107,7 +107,7 @@ export function stopWorldProgressionPass() {
  * Returns the current campaign prefix (user override in settings, else chat id).
  * Returns '' only if there is no usable prefix.
  */
-function getLivePrefix() {
+export function getLivePrefix() {
     return getEffectiveRouterCampaignPrefix(getActiveChatId() || '');
 }
 
@@ -3983,7 +3983,7 @@ function parseBasicTags(text, archiveBooks) {
 /**
  * Shared helper to add an entry to a specific lorebook.
  */
-async function addLorebookEntry(lorebookName, entryData, allNames, canCommit = createChatCommitGuard(getActiveChatId(), getActiveChatId)) {
+export async function addLorebookEntry(lorebookName, entryData, allNames, canCommit = createChatCommitGuard(getActiveChatId(), getActiveChatId)) {
     assertChatCommit(canCommit);
     const ctx = SillyTavern.getContext();
     if (!allNames) allNames = chatCommitResult(canCommit, await getWorldInfoNamesSafe());
