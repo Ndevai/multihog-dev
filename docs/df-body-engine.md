@@ -187,7 +187,7 @@ What these show:
 | Id | Gap |
 |---|---|
 | OPEN-73 | CHIMERA, CENTAUR, GRIFFON bodies do not resolve |
-| OPEN-74 | blunt damage to bone: DF's compressive ("broken") test is unpublished; the impact test stands in for it, so every blunt blow breaks the first bone |
+| OPEN-74 | blunt damage to bone: DF's compressive ("broken") test is unpublished; the impact test stands in for it, so every blunt blow breaks the first bone. Fit target found: 27 facial fractures in 301 bare-knuckle bouts (J Oral Maxillofac Surg 2022, "Maxillofacial Trauma Patterns in Bare-Knuckle Fighting"). Missing: head strikes landed per bare-knuckle bout (no published count found; CompuBox counts gloved boxing, about 17 landed per 3-min round at junior middleweight) |
 | OPEN-75 | armour layers (coverage, quality, deflection 2·Sw·IYw < A·Da) |
 | OPEN-76 | penetration depth vs layer thickness |
 | OPEN-77 | suffocation timing; pain (`PAIN_RECEPTORS`) and unconsciousness |
