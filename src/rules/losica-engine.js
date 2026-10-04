@@ -415,3 +415,52 @@ export function advanceAll(people, minutes, resting = new Set(), rng = Math.rand
     }
     return { elapsed: total, events: [] };
 }
+
+// Checks: success when capacity ≥ demand (stress–strength interference; IRT normal ogive). `share` = fraction of
+// people with the actor's training who succeed unhurt; demand sits where that share of capacities lies above it.
+const CAPACITY_CV = 0.19;  // Dodds 2014 grip: peak 51 / 31 kg, weak cut 27 / 16 kg = peak − 2.5 SD → SD / mean 0.19
+const FORCE_SCORES = ['lifting', 'grip', 'movement', 'footing', 'blocking', 'swimming', 'crawling'];
+const EXERTION_FAILS_AT = { heavy: 2 };  // blood-loss class II: heavy exertion fails
+
+// Abramowitz & Stegun 7.1.26 (error < 1.5e-7); Acklam's inverse (relative error < 1.2e-9).
+function normCdf(x) {
+    const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
+    const e = 1 - t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * Math.exp(-x * x / 2);
+    return x >= 0 ? (1 + e) / 2 : (1 - e) / 2;
+}
+function normInv(p) {
+    const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+    const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+    const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+    const tail = q => (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    if (p < 0.02425) return tail(Math.sqrt(-2 * Math.log(p)));
+    if (p > 1 - 0.02425) return -tail(Math.sqrt(-2 * Math.log(1 - p)));
+    const q = p - 0.5, r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
+/** Chance of success and the ability that limits it. Non-force abilities between 0 and 1 change nothing yet (OPEN-66). */
+function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) {
+    if (p.dead) return { chance: 0 };
+    const cls = bloodClass(p);
+    if (cls === 4 || (cls >= 3 && on_feet) || cls >= (EXERTION_FAILS_AT[exertion] ?? 5)) return { chance: 0, limit: `blood-loss class ${['I', 'II', 'III', 'IV'][cls - 1]}` };
+    const scores = abilities(p);
+    const used = uses.filter(u => u in scores);
+    const zero = used.find(u => scores[u] === 0);
+    if (zero) return { chance: 0, limit: `${zero.replace('_', ' ')} 0%` };
+    const force = used.filter(u => FORCE_SCORES.includes(u)).sort((x, y) => scores[x] - scores[y])[0];
+    const s = force ? scores[force] : 1;
+    const base = Math.max(0, Math.min(1, Number(share) || 0));
+    if (s >= 1 || base === 0) return { chance: base };
+    const demand = 1 - normInv(Math.min(0.999, base)) * CAPACITY_CV;
+    return { chance: normCdf((s - demand) / (s * CAPACITY_CV)), limit: `${force.replace('_', ' ')} ${Math.round(s * 100)}%` };
+}
+
+export const checkChance = (p, task) => checkOdds(p, task).chance;
+
+export function check(p, task, rng = Math.random) {
+    const { chance, limit } = checkOdds(p, task);
+    const ok = rng() < chance;
+    return `${task.task}: chance ${round(chance * 100, chance < 0.01 && chance > 0 ? 2 : 0)}%${limit ? ` (${limit})` : ''} → ${ok ? 'SUCCESS' : 'FAILURE'}.`;
+}

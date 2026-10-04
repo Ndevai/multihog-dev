@@ -10,7 +10,7 @@ export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the r
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
 Engine-governed events: a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a check succeeding or failing; an attack landing or missing; story time passing (minutes, hours, days); a spell being cast; a treatment working.
 An event is backed when an engine result of the matching tool describes it. Intentions, threats, dialogue and misses described as misses are not events.
-Reply with JSON only: {"events":[{"quote":"exact words from the reply","tool":"LosicaStrike|LosicaWound|LosicaFall|LosicaTime|LosicaCast|LosicaTreat|RollTheDice","problem":"unbacked|contradicts"}]}. An empty list means every event is backed.`;
+Reply with JSON only: {"events":[{"quote":"exact words from the reply","tool":"LosicaCheck|LosicaStrike|LosicaWound|LosicaFall|LosicaTime|LosicaCast|LosicaTreat|RollTheDice","problem":"unbacked|contradicts"}]}. An empty list means every event is backed.`;
 
 export function buildAuditPrompt(reply, results) {
     const lines = results.length
@@ -19,7 +19,7 @@ export function buildAuditPrompt(reply, results) {
     return `ENGINE RESULTS\n${lines}\n\nREPLY\n${reply}`;
 }
 
-const TOOLS = new Set(['LosicaStrike', 'LosicaWound', 'LosicaFall', 'LosicaTime', 'LosicaCast', 'LosicaTreat', 'RollTheDice']);
+const TOOLS = new Set(['LosicaCheck', 'LosicaStrike', 'LosicaWound', 'LosicaFall', 'LosicaTime', 'LosicaCast', 'LosicaTreat', 'RollTheDice']);
 
 /** Events from the checker's text; null when the text holds no readable JSON (the check is then skipped). */
 export function parseAudit(text) {

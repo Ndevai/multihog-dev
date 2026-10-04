@@ -1177,7 +1177,7 @@ export function buildCyoaPrompt(config = {}, { losica = false } = {}) {
     reqLines.push('- A resource must be >0 (not depleted) in TRACKER STATE 0 (Current) to be eligible for a choice.');
     reqLines.push('- Vary approaches across turns — avoid repeating the same stats, traits, abilities, or narrative actions as the previous turn.');
     reqLines.push(losica
-        ? '- Wrap mechanical details (checks with training and DC, strikes, energy and item costs) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained) DC 13]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.'
+        ? '- Wrap mechanical details (checks with training and chance, strikes, energy and item costs) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained) 25%]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.'
         : '- Wrap mechanical details (rolls, modifiers, DC/AC targets, resource costs, uses remaining) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained, CHA +0) DC 13]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.');
 
     const intro = `[END OF OUTPUT REQUIREMENT]\n${reqLines.join('\n')}`;

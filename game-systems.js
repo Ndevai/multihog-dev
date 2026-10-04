@@ -499,10 +499,10 @@ export function transformBaseSectionContent(tag, innerContent, settings) {
             const combatBody = combatMatch?.[1]?.trim() || '';
             const inCombat = !!combatBody && !/^END_COMBAT$/i.test(combatBody);
             const useQueue = shouldUseRngQueue(settings, inCombat);
-            const failure = settings.losicaRules
-                ? 'A failure = injured return (wounds through LosicaWound), no return, or a similarly severe outcome.'
-                : 'Critical failure = injured return, no return, or similarly severe outcome.';
-            const benchEta = useQueue
+            const failure = 'Critical failure = injured return, no return, or similarly severe outcome.';
+            const benchEta = settings.losicaRules
+                ? 'On benching, estimate a return ETA. Just before return (never once already in-scene), call LosicaCheck for the task (share from its difficulty and the member\'s training). A failure = injured return (wounds through LosicaWound), no return, or a similarly severe outcome. This check is mandatory, always pre-return.'
+                : useQueue
                 ? `On benching, estimate a return ETA. Just before return (never once already in-scene), pop a ${dieWord} from ${queueName} to resolve task success/failure — DC by task difficulty + character suitability. ${failure} This pop is mandatory, always pre-return.`
                 : `On benching, estimate a return ETA. Just before return (never once already in-scene), call ${toolName} to resolve task success/failure — DC by task difficulty + character suitability. ${failure} This roll is mandatory, always pre-return.`;
             content = content.replace(

@@ -1,7 +1,7 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike } from './losica-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check } from './losica-engine.js';
 import { turnKey } from '../state/dice-ledger.js';
 
-const TOOLS = ['LosicaWound', 'LosicaStrike', 'LosicaTreat', 'LosicaTime', 'LosicaCast', 'LosicaFall', 'LosicaStatus'];
+const TOOLS = ['LosicaCheck', 'LosicaWound', 'LosicaStrike', 'LosicaTreat', 'LosicaTime', 'LosicaCast', 'LosicaFall', 'LosicaStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -105,12 +105,12 @@ export function losicaTurnLog() {
 export const LOSICA_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
 - An attack with fist, kick or blade → LosicaStrike; it decides whether it lands and the wound. Narrate what it returns.
-- An attack by any other means (bow, sling, club, claw, firearm, thrown object) → RollTheDice kind "check", dc from range, cover, light and the attacker's training; a hit → LosicaWound with the part and wound type.
+- An attack by any other means (bow, sling, club, claw, firearm, thrown object) → LosicaCheck; a hit → LosicaWound with the part and wound type.
 - A burn, a bite, an accident or a fall injury → LosicaWound.
 - Someone falls → LosicaFall.
 - Time passes in the story → LosicaTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
 - A spell is cast → LosicaCast. A treatment is applied → LosicaTreat.
-- Any other action with an uncertain outcome → RollTheDice kind "check".
+- Any other action with an uncertain outcome → LosicaCheck.
 - Describe a character's injuries, blood loss or energy from LosicaStatus.
 </rule_engine>`;
 
@@ -173,6 +173,15 @@ export function registerLosicaRulesTools(enabled) {
             ...Object.fromEntries(scene.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
     }));
+
+    tool('LosicaCheck', 'Resolve an action with an uncertain outcome that no other Losica tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
+        who: str('Character acting'),
+        task: str('The task in a few words'),
+        share: { type: 'number', description: 'Fraction 0–1 of people with this character\'s training who succeed at this task in these conditions, unhurt.' },
+        uses: { type: 'array', items: { type: 'string', enum: ['lifting', 'grip', 'movement', 'footing', 'blocking', 'swimming', 'crawling', 'manipulation', 'balance', 'vision', 'night_vision', 'reaction', 'breathing'] }, description: 'Body abilities the task depends on' },
+        exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
+        on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
+    }, ['who', 'task', 'share'], a => run((st, rng) => check(person(st, a.who), a, rng)));
 
     tool('LosicaTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),

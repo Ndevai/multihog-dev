@@ -96,10 +96,14 @@ describe('Losica State Tracker prompt', () => {
 });
 
 describe('Losica dice tool, choices, audit and creation', () => {
-    it('dice tool offers checks, quantities and tables only', () => {
+    it('checks go through LosicaCheck in every RNG mode; dice give quantities and tables only', () => {
+        for (const s of [losica, { ...losica, rngEnabled: false }, { ...losica, diceD100Mode: true }]) {
+            for (const queue of [false, true]) expect(narrator(s, queue)).toContain('Every check goes through LosicaCheck');
+        }
+        expect(LOSICA_BRIEF).toContain('Any other action with an uncertain outcome → LosicaCheck.');
         for (const d100 of [false, true]) {
             const spec = losicaDiceSpec(d100);
-            expect(spec.kind.enum).toEqual(['check', 'amount', 'table']);
+            expect(spec.kind.enum).toEqual(['amount', 'table']);
             expect(JSON.stringify(spec).match(DND)?.[0] ?? null).toBeNull();
             expect(JSON.stringify(spec)).not.toMatch(/attack|damage|heal/i);
         }

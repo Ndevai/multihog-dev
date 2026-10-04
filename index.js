@@ -10118,7 +10118,7 @@ RULES:
         }
 
         function isCyoaMechanicalBracket(inner) {
-            return /\bDC\s*\d+|vs\s*AC|AC\s*\d+|\(\s*[+\-]?\d|GP\b|per\s+(short|long)\s+rest|untrained|timeskip|hour|\d+\s*\/\s*\d+/i.test(inner);
+            return /\bDC\s*\d+|\d+\s*%|vs\s*AC|AC\s*\d+|\(\s*[+\-]?\d|GP\b|per\s+(short|long)\s+rest|untrained|timeskip|hour|\d+\s*\/\s*\d+/i.test(inner);
         }
 
         function formatCyoaMechanicalBracket(inner) {

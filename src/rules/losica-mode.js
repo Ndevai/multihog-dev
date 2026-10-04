@@ -43,7 +43,7 @@ A fight's danger follows from what the story establishes: numbers, mass, trainin
 - Narrate the tier, what the item physically is (material, make, condition; for a weapon its kind: blade, blunt, bow, firearm) and its approximate value for the Tracker. For a magic item: its school, complexity and activation condition when known.
 - Use narrative consistency/logic for the loot range. For instance, a bandit camp shouldn't have amazing loot even with a high roll.`,
 
-    resting: `Rest and sleep pass through LosicaTime with the minutes and the characters resting; network energy recovers only during hours without casting or fighting. In a dangerous place, a check against a dc set by the danger decides whether the rest is interrupted; time then runs only up to the interruption.`,
+    resting: `Rest and sleep pass through LosicaTime with the minutes and the characters resting; network energy recovers only during hours without casting or fighting. In a dangerous place, a tier table with the odds the danger sets decides whether the rest is interrupted; time then runs only up to the interruption.`,
 
     constraints: `<resolution_constraints>
 Never skip/reinterpret a roll. Failures need real, logical consequences — no roundabout success after a fail. A second attempt after failure is allowed only with a genuinely different approach; otherwise reject and prompt another action.
@@ -95,36 +95,21 @@ export function losicaSection(tag, innerContent, settings, useQueue) {
     return tag in LOSICA_SECTIONS ? { inner: LOSICA_SECTIONS[tag] } : null;
 }
 
-/** rng_system for the active mode: live tool, pre-rolled queue, or no RNG. */
+/** rng_system: checks through LosicaCheck in every mode; dice only for quantities and tier tables. */
 export function losicaRngSystem({ rngEnabled, useQueue, d100Mode }) {
     const die = d100Mode ? 'd100' : 'd20';
     const tool = d100Mode ? 'RollTheDiceD100' : 'RollTheDice';
-    const dcFrom = 'Set the DC from the fiction: the task, the actor\'s training, the body state in [BODY].';
-    const format = d100Mode ? '*(Stealth: 35%, roll 52 → FAILURE)*' : '*(Stealth: DC 14, roll 12 → FAILURE)*';
-    let body;
-    if (!rngEnabled) {
-        body = `Checks are actions whose outcome is uncertain and that no Losica tool resolves. Resolve each with a fair ${die} simulated internally. ${dcFrom}\nWrite each check as ${format}.`;
-    } else if (!useQueue) {
-        body = `Every check goes through ${tool}: an action whose outcome is uncertain and that no Losica tool resolves.
-- ${dcFrom} Call with kind "check"; the returned verdict decides the outcome.
-- Quantities: kind "amount".
-- Loot, random events and other tier tables: kind "table"; narrate the returned tier.
-- Write each check as ${format} with the returned numbers and verdict.
-- For several independent rolls, issue parallel calls in the same turn, each with its own "for".`;
-    } else {
+    const checks = `Every check goes through LosicaCheck: an action whose outcome is uncertain and that no other Losica tool resolves.
+- share = the fraction of people with the actor's training who would succeed at this task in these conditions, unhurt. The tool applies the body state.
+- Narrate the returned verdict. Write each check as *(Climb: 60% → SUCCESS)* with the returned chance.`;
+    let dice;
+    if (!rngEnabled) dice = `Quantities and tier tables: simulate a fair ${die} internally.`;
+    else if (!useQueue) dice = `Quantities: ${tool} kind "amount". Loot, random events and other tier tables: ${tool} kind "table"; narrate the returned tier. For several independent rolls, issue parallel calls in the same turn, each with its own "for".`;
+    else {
         const queue = d100Mode ? '[RNG_QUEUE_d100 v7.0]' : '[RNG_QUEUE v7.0]';
-        body = `${queue} is the sole dice mechanic — internal physics, never revealed or explained.
-<rng_queue_instructions>
-Pop lines in order (1, 2, 3...). Each line has labeled dice (${die}=, d4=, d6=, d8=, d10=, d12=). Queue length ${d100Mode ? 30 : 12}, wraps on exhaustion.
-- ${die} = checks: actions whose outcome is uncertain and that no Losica tool resolves. Other dice = quantities, matching label on the same line.
-- Reveal a roll only right before it appears in the narrative.
-</rng_queue_instructions>
-
-ROLL FORMAT (strict): ${format}
-${d100Mode ? '' : 'DC SCALE: Trivial 8 | Easy 14 | Moderate 18 | Hard 23 | Severe 28 | Near-impossible 33+\n'}${dcFrom}
-[FALLBACK]: No queue provided → simulate a fair ${die} internally, same ROLL FORMAT.`;
+        dice = `${queue} supplies quantities and tier tables — internal physics, never revealed or explained. Pop lines in order (1, 2, 3...); each line has labeled dice (${die}=, d4=, d6=, d8=, d10=, d12=); queue length ${d100Mode ? 30 : 12}, wraps on exhaustion. Reveal a roll only right before it appears in the narrative. No queue provided → simulate a fair ${die} internally.`;
     }
-    return `<rng_system>\n${body}\n</rng_system>`;
+    return `<rng_system>\n${checks}\n\n${dice}\n</rng_system>`;
 }
 
 export const LOSICA_TRACKER_PROMPTS = {
@@ -236,17 +221,13 @@ Last Woke: ${clock}, ${date}
 Current Time: ${clock}, ${date}`;
 }
 
-/** RollTheDice / RollTheDiceD100 schema parts: checks, quantities and tables; attacks go through the Losica tools. */
+/** RollTheDice / RollTheDiceD100 schema parts: quantities and tier tables; checks go through LosicaCheck. */
 export function losicaDiceSpec(d100) {
-    const percent = 'Use formula "1d100" with compare "lte" for percentage / existence checks.';
     return {
-        description: `Rolls dice and returns the result. kind "check": an action whose outcome is uncertain and that no Losica tool resolves, ${d100 ? 'dc = success or trigger % (roll ≤ dc = HIT)' : 'against dc (1d20, roll ≥ dc = SUCCESS) or a % chance (1d100, compare lte)'}; the returned verdict is binding. kind "amount": quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.`,
-        kind: { type: 'string', enum: ['check', 'amount', 'table'], description: '"check" (default): against dc, verdict returned. "amount": a quantity, no dc. "table": tier table, pass table; the tier is returned.' },
-        formula: { type: 'string', description: `ONE dice formula per invocation, e.g. "${d100 ? '1d100' : '1d20'}", "2d6". For several independent rolls, issue parallel invocations in the same turn.${d100 ? '' : ` ${percent}`}` },
-        dc: { type: 'number', description: d100
-            ? 'Required for kind "check": the % chance of success or occurrence; roll ≤ dc = HIT. Set it from the fiction before rolling.'
-            : 'Required for kind "check": the Difficulty Class (roll ≥ dc = SUCCESS), or with compare "lte" the % chance (roll ≤ dc = HIT). Set it from the task, the actor\'s training and the body state in [BODY] before rolling.' },
-        for: { type: 'string', description: 'What is being rolled for, 1-4 words, unique within this turn. For repeated rolls name the target and count, e.g. "climb 2 wall". A repeated who + for returns the first result.' },
+        description: 'Rolls dice and returns the result. kind "amount": quantities. kind "table": loot, random events and other tier tables; the returned tier is binding. Checks go through LosicaCheck. One formula per invocation; for several independent rolls, issue parallel invocations in the same turn.',
+        kind: { type: 'string', enum: ['amount', 'table'], description: '"amount": a quantity. "table": tier table, pass table; the tier is returned.' },
+        formula: { type: 'string', description: `ONE dice formula per invocation, e.g. "${d100 ? '1d100' : '1d20'}", "2d6". For several independent rolls, issue parallel invocations in the same turn.` },
+        for: { type: 'string', description: 'What is being rolled for, 1-4 words, unique within this turn. For repeated rolls name the target and count, e.g. "loot 2 chest". A repeated who + for returns the first result.' },
     };
 }
 
@@ -289,9 +270,9 @@ export const LOSICA_CYOA_EXAMPLES = {
     high: [
         '1. 🗡️ Stab the lookout while he faces the sea — [Strike: blade, trained]',
         '2. 💣 Throw a Smoke Bomb — [-1 Smoke Bomb]',
-        '3. 🥷 Slip along the hull\'s shadows — [Stealth (trained) DC 14]',
+        '3. 🥷 Slip along the hull\'s shadows — [Stealth (trained) 60%]',
         '4. 🗣️ Shout a warning to the rest of your crew',
-        '5. 🛰️ Try to talk the hostile crew into standing down — [Persuasion (untrained) DC 13]',
+        '5. 🛰️ Try to talk the hostile crew into standing down — [Persuasion (untrained) 25%]',
         '6. 🔥 Cast a complexity-2 spell at the rigging — [64 PE]',
         '7. 🚪 Back away and hope the standoff cools down',
     ],
@@ -299,8 +280,8 @@ export const LOSICA_CYOA_EXAMPLES = {
         '1. 🍺 Buy a round for the table and swap stories — [-20 GP]',
         '2. 🗣️ "What happened to your face? That\'s the longest scar I\'ve seen."',
         '3. 🎵 Hum along to the tune the bard is playing',
-        '4. 📜 Show him the bounty notice from your pack — [Intimidation (trained) DC 10] (evidence lowers the DC)',
-        '5. ♣️ Join the card game at the corner table — [Bluff (untrained) DC 18] (experienced players)',
+        '4. 📜 Show him the bounty notice from your pack — [Intimidation (trained) 70%] (evidence raises the chance)',
+        '5. ♣️ Join the card game at the corner table — [Bluff (untrained) 15%] (experienced players)',
         '6. 🚪 Excuse yourself and head back to your ship',
         '7. 🕖 Spend the evening drinking because why the hell not? — [5-hour timeskip]',
     ],

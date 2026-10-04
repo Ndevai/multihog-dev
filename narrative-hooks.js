@@ -532,7 +532,7 @@ async function executeDiceToolAction(args, opts = {}) {
 
     if ((kind === 'check' || kind === 'attack') && !(Number.isFinite(dc) && dc > 0)) {
         return getSettings().losicaRules
-            ? 'Nothing was rolled. A check needs its DC (or % chance), set first: call again with dc as a positive number. For quantities use kind "amount"; for a tier table use kind "table".'
+            ? 'Nothing was rolled. Checks go through LosicaCheck. For quantities use kind "amount"; for a tier table use kind "table".'
             : 'Nothing was rolled. A check needs its DC (or % chance) and an attack needs the target AC, set first: call again with dc as a positive number. For damage, healing or quantities use kind "amount"; for a tier table use kind "table".';
     }
     if (kind === 'table' && !rows) {
@@ -725,12 +725,16 @@ export function registerDiceFunctionTool() {
                     for: losica?.for ?? { type: 'string', description: FOR_DESCRIPTION },
                     kind: losica?.kind ?? KIND_PROPERTY,
                     formula: losica?.formula ?? { type: 'string', description: formulaDescription },
-                    dc: losica?.dc ?? { type: 'number', description: 'Required for kind "check". Skill/attack checks (compare=gte): Difficulty Class — roll ≥ dc = SUCCESS. Percentage / existence checks (compare=lte or formula 1d100): the trigger % chance — roll ≤ dc = HIT. Pass the probability directly (e.g. 35 for Dangerous-tier existence). Set it from the fiction before rolling.' },
+                    dc: { type: 'number', description: 'Required for kind "check". Skill/attack checks (compare=gte): Difficulty Class — roll ≥ dc = SUCCESS. Percentage / existence checks (compare=lte or formula 1d100): the trigger % chance — roll ≤ dc = HIT. Pass the probability directly (e.g. 35 for Dangerous-tier existence). Set it from the fiction before rolling.' },
                     compare: { type: 'string', description: 'Optional. "gte" (default for non-d100 formulas): roll ≥ dc = SUCCESS. "lte" (default for 1d100 / percentage formulas): roll ≤ dc% = HIT. Use lte for existence checks and other percentage odds.' },
                     table: TABLE_PROPERTY,
                 },
                 required: ['who', 'for', 'formula'],
             };
+            if (losica) {
+                delete rollDiceSchema.properties.dc;
+                delete rollDiceSchema.properties.compare;
+            }
 
             registerFunctionTool({
                 name: 'RollTheDice',
@@ -759,11 +763,12 @@ export function registerDiceFunctionTool() {
                     for: losica?.for ?? { type: 'string', description: FOR_DESCRIPTION },
                     kind: losica?.kind ?? KIND_PROPERTY,
                     formula: losica?.formula ?? { type: 'string', description: formulaDescription },
-                    dc: losica?.dc ?? { type: 'number', description: 'Required for kind "check". The success/trigger percentage chance for this roll (roll-under system): the actual % probability of success or occurrence (e.g. 83 for an 83% chance to hit/succeed, or 25 for a 25% hazard chance). A roll ≤ dc = HIT, a roll > dc = MISS. Pass the probability as stated.' },
+                    dc: { type: 'number', description: 'Required for kind "check". The success/trigger percentage chance for this roll (roll-under system): the actual % probability of success or occurrence (e.g. 83 for an 83% chance to hit/succeed, or 25 for a 25% hazard chance). A roll ≤ dc = HIT, a roll > dc = MISS. Pass the probability as stated.' },
                     table: TABLE_PROPERTY,
                 },
                 required: ['who', 'for', 'formula'],
             };
+            if (losica) delete rollDiceSchema.properties.dc;
 
             registerFunctionTool({
                 name: 'RollTheDiceD100',
