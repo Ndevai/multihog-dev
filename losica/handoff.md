@@ -107,8 +107,8 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | Beasts | 27 | core-density thresholds per grade 1–9 | decision |
 | Body (576) | 42 | fracture chance in falls < 5.1 m Losica (< 6 m Earth) | research; searched 2 Oct, no all-fracture rate per height band found (sources in reference) |
 | | 47 | ability lost by a crooked leg or foot (arm/hand set: 51 % grip, Orbay 2002) | research |
-| | 48 | healing time of punctures and bites | research |
-| | 49 | healing time of blunt wounds | research |
+| | 48 | Earth fork: punctures and bites use cut rows [ASSUMED]; small-vessel bleeding clots in 0–8 min | research |
+| | 49 | CLOSED 4 Oct (Earth fork): bruise clears in 13 days (mild contusion) | — |
 | | 50 | how much infection slows healing and drains strength | research |
 | | 51 | CLOSED 4 Oct (Earth fork, DF engine): abilities = share of working DF parts per flag | — |
 | Strikes (576) | 52 | CLOSED 3 Oct: lands unless the target recognises it and completes a defensive move before impact (timings sourced; replaces NetHack d20) | — |
@@ -117,7 +117,7 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 55 | CLOSED 4 Oct: DF TL_MAJOR_ARTERIES layers give the major class; muscle ARTERIES 12 % limb artery | — |
 | | 56 | CLOSED 4 Oct: DF layers and internal parts | — |
 | | 57 | CLOSED 4 Oct: DF layer tests with the bare-knuckle-fitted rigid factor | — |
-| | 58 | healing time of skull, face and torso fractures | research |
+| | 58 | Earth fork: ribs 42/84 days, nose 28/42 days; skull and other face bones open | research |
 | | 59 | CLOSED 4 Oct: knockout at momentum 158 (97 KO in 222 BKFC bouts); length is Earth OPEN-81 | — |
 | | 60 | CLOSED 4 Oct: rigid factor 19.985 fitted to 27 facial fractures in 301 BKFC bouts (CompuBox proxy) | — |
 | | 61 | CLOSED 4 Oct: DF armour items, CDDA sub-locations, held items | — |
