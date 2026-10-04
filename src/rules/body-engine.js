@@ -86,15 +86,18 @@ export function addWound(p, w, rng = Math.random) {
     const wound = { id: p.nextId++, part: w.part.name, pid: w.part.id, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
     const healRange = ['cut', 'puncture', 'bite', 'blunt'].includes(w.type) || w.functionLost ? CUT_HEAL[row] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
     if (w.type === 'burn') wound.depth = BURN_HEAL[w.depth] !== undefined ? w.depth : null;
-    if (healRange) wound.heals = round(between(rng, healRange));
+    // DF HEALING_RATE scales the human days: soft tissue relative to 100, bone relative to 1000 (human templates).
+    const factor = w.healFactor ?? 1;
+    if (healRange) wound.heals = round(between(rng, healRange) * factor);
     if (w.vessel && BLEED[w.vessel] && bloodVolume(p)) wound.bleed = round(between(rng, BLEED[w.vessel]));
     if (w.functionLost) wound.functionLost = true;
+    if (w.permanent) wound.permanent = true;
     if (w.type === 'severed') wound.severed = true;
     if (w.type === 'fracture') {
         // Parts outside the arm and leg rows have no timetable (OPEN-58): joins stays null.
         const kind = BONE_ROW[row] ? `${BONE_ROW[row]}_${w.fracture || 'transverse'}` : null;
         const bone = w.part.cats.includes('LEG_LOWER') ? 'shin' : 'default';
-        wound.fracture = { kind, joins: kind ? FRACTURE[kind][0] : null, full: kind ? FRACTURE[kind][1] : null, crooked: false,
+        wound.fracture = { kind, joins: kind ? FRACTURE[kind][0] * factor : null, full: kind ? FRACTURE[kind][1] * factor : null, crooked: false,
             never: kind ? rng() < NONUNION[bone] : false };
         if (w.openGrade && OPEN_FRACTURE_INFECTION[w.openGrade]) wound.openGrade = w.openGrade;
     }
@@ -206,7 +209,7 @@ export function worksFn(p, c = creatureOf(p)) {
     const down = new Set();
     for (const w of p.wounds) {
         const fr = w.fracture;
-        if (w.severed || (fr && (fr.never || fr.joins === null || fr.joins > 0)) || (w.functionLost && !w.healed)) down.add(w.pid);
+        if (w.severed || (fr && (fr.never || fr.joins === null || fr.joins > 0)) || (w.functionLost && (!w.healed || w.permanent))) down.add(w.pid);
     }
     const byId = Object.fromEntries(c.parts.map(x => [x.id, x]));
     const chain = part => { for (let q = part; q; q = byId[q.parent]) if (down.has(q.id)) return false; return true; };
@@ -262,7 +265,8 @@ export function status(who, p) {
             if (fr.joins !== null) bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : fr.full > 0 ? `light use; full in ${round(fr.full)} days` : 'healed');
             if (fr.crooked) bits.push(/arm|hand|finger/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
         }
-        if (w.functionLost && !w.healed) bits.push('function lost until it closes');
+        if (w.functionLost && w.permanent) bits.push('function lost for good (tissue that never heals)');
+        else if (w.functionLost && !w.healed) bits.push('function lost until it closes');
         if (w.infection) bits.push('infected');
         out.push(bits.join(', '));
     }
@@ -533,11 +537,16 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         const soft = hits.filter(h => !rigid(h));
         const functionLost = hits.some(h => flags(h).includes('FUNCTIONAL'));
         const severed = r.severed && hp === part;
+        // DF HEALING_RATE: lower heals faster, absent never heals (wiki Tissue definition token).
+        const rate = h => h.layer.healing ?? tissueOf(tc, h.layer)?.HEALING_RATE;
+        const slowest = (hs, ref) => hs.length && hs.every(h => rate(h) != null) ? Math.max(...hs.map(rate)) / ref : 1;
+        const permanent = hits.some(h => flags(h).includes('FUNCTIONAL') && rate(h) == null);
         if (soft.length || severed) {
             const type = severed ? 'severed' : cuts.length ? (bite ? 'bite' : w.piercing ? 'puncture' : 'cut') : 'blunt';
-            made.push(addWound(target, { part: hp, type, vessel: cuts.length ? vesselOf(tc, cuts, rng) : undefined, functionLost }, rng));
+            made.push(addWound(target, { part: hp, type, vessel: cuts.length ? vesselOf(tc, cuts, rng) : undefined, functionLost, permanent,
+                healFactor: slowest(soft.filter(h => rate(h) != null), 100) }, rng));
         }
-        if (hits.some(rigid)) made.push(addWound(target, { part: hp, type: 'fracture', open: cuts.length > 0 }, rng));
+        if (hits.some(rigid)) made.push(addWound(target, { part: hp, type: 'fracture', open: cuts.length > 0, healFactor: slowest(hits.filter(rigid).filter(h => rate(h) != null), 1000) }, rng));
     }
     checkDeath(target);
     const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && r.first.M >= KO_MOMENTUM;

@@ -205,6 +205,8 @@ Healing days and fracture timetables: rule 576 rows, chosen by the part's DF cat
 | LEG_UPPER, LEG_LOWER, LEG, LEG_FRONT, LEG_REAR, FOOT*, TOE | leg (cuts on FOOT*, TOE: foot) |
 | others (neck, organs, ribs, spine, skull) | none: does not close / no timetable (OPEN-48, OPEN-58) |
 
+Healing speed: DF `HEALING_RATE` ("lower is faster; omitting the token will result in a tissue that never heals", wiki Tissue definition token) scales the rule-576 days: a soft wound by its slowest damaged tissue ÷ 100, a fracture by its bone tissue ÷ 1000 (the human template values, so human days are unchanged) [RAW, WIKI]. Damage to a `FUNCTIONAL` tissue without `HEALING_RATE` (nerve, brain) loses the part's function for good: a cut spinal cord paralyses for good.
+
 Fracture kind: transverse [576 "blunt blow" row, also used for edged; ASSUMED]. Never-joins chance: LEG_LOWER uses the shin row; others 2 % [576].
 
 ## 6. What a body can do
@@ -315,4 +317,4 @@ What these show:
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found |
 | OPEN-81 | knockout length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more) |
 | OPEN-79 | closed by the fit in §4.7; replace when DF's formula for body-part attacks is published |
-| OPEN-78 | `HEALING_RATE`: non-human healing uses human days |
+| OPEN-78 | closed: healing days scale by DF `HEALING_RATE`; tissue without it never heals |
