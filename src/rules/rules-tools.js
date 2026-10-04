@@ -256,6 +256,7 @@ export function registerRulesTools(enabled) {
         who: str('Character name'),
         water_l: { type: 'number', description: 'Water drunk, litres (a cup 0.25, a bottle 0.5–1)' },
         food_kcal: { type: 'number', description: 'Food energy eaten, kcal (bread slice 80, apple 95, meal 600–900)' },
+        alcohol_g: { type: 'number', description: 'Pure alcohol drunk, grams (beer 330 mL 13 g, wine glass 150 mL 14 g, spirit shot 40 mL 13 g)' },
     }, ['who'], a => run(st => {
         const { p, error } = who(st, a.who);
         if (error) return error;
@@ -282,7 +283,7 @@ export function registerRulesTools(enabled) {
         species,
         task: str('The task in a few words'),
         share: { type: 'number', description: 'Fraction 0–1 of people with this character\'s training who succeed at this task in these conditions, unhurt.' },
-        uses: { type: 'array', items: { type: 'string', enum: Object.keys(FUNCTIONS) }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing' },
+        uses: { type: 'array', items: { type: 'string', enum: [...Object.keys(FUNCTIONS), 'alertness'] }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing; alertness for tasks needing attention, judgment or quick reactions (driving, aiming, spotting, fine work).' },
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
     }, ['who', 'task', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), a, rng)));

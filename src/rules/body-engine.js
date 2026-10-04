@@ -166,6 +166,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             n.waterL += WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             n.kcal += KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
+            if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
             if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }
             if (n.kcal >= n.foodDeath * KCAL_DAY.rest * kleiber(p)) { p.dead = 'starvation'; return; }
         }
@@ -306,6 +307,7 @@ export function status(who, p) {
         if (pct >= 2) out.push(`water lost ${round(nd.waterL, 1)} L (${round(pct)} % of body mass${pct >= 8 ? ': weak, dizzy, faint; heavy exertion fails' : pct >= 5 ? ': headache, irritable, light-headed' : ''})`);
         if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)`);
         if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
+        if (nd.alcohol > 0) out.push(`blood alcohol ${round(nd.alcohol, 3)} %`);
     }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
@@ -330,6 +332,12 @@ const KCAL_DAY = { rest: 1400, active: 2400 };
 const SLEEP_RESET_MIN = 7 * 60;
 // Other body masses scale water and energy use by (mass ÷ 70 kg)^0.75 (Kleiber's metabolic scaling law).
 const kleiber = p => (p.mass / 70) ** 0.75;
+// Alertness: impairment as blood-alcohol level = drinking (Widmark: grams ÷ (0.68 × body g) × 100, eliminated 0.015 %/h)
+// + hours awake. Odds of failing × the crash odds ratio exp(40.7 × BAC^1.345), the curve through NHTSA 2015 (Compton & Berning,
+// case-control) adjusted odds ratios 2.07 at 0.05 % and 3.93 at 0.08 %, and 1 at 0.
+const WIDMARK_R = 0.68, ELIM_PER_MIN = 0.015 / 60;
+export const crashRisk = bac => Math.exp(40.7 * Math.max(0, bac) ** 1.345);
+export const impairmentBac = p => (p.needs?.alcohol || 0) + awakeBac((p.needs?.awake || 0) / 60);
 export const awakeBac = h => Math.max(0, 0.05 + (h - 17) * 0.05 / 7);
 // Flight speed of a shot: 47.23 m/s, a 102 g arrow from a 144 lbf yew self bow (Stretton et al. 2010), for every launcher.
 const SHOT_MPS = 47.23;
@@ -606,8 +614,9 @@ export function strike(target, a, attacker = null, rng = Math.random) {
  * know their languages, share one. Gesture: the listener has a working SIGHT part and light.
  */
 /** Drinking and eating: water in L, food in kcal, taken off the deficits (never below 0). */
-export function intake(p, { water_l = 0, food_kcal = 0 } = {}) {
+export function intake(p, { water_l = 0, food_kcal = 0, alcohol_g = 0 } = {}) {
     p.needs ??= { waterL: 0, kcal: 0, awake: 0, slept: 0, waterDeath: null, foodDeath: null };
+    p.needs.alcohol = (p.needs.alcohol || 0) + Math.max(0, Number(alcohol_g) || 0) / (WIDMARK_R * p.mass * 1000) * 100;
     p.needs.waterL = Math.max(0, p.needs.waterL - Math.max(0, Number(water_l) || 0));
     p.needs.kcal = Math.max(0, p.needs.kcal - Math.max(0, Number(food_kcal) || 0));
 }
@@ -706,14 +715,18 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) 
     const lacking = uses.find(u => u in FUNCTIONS && !(u in scores));
     if (lacking) return { chance: 0, limit: `no ${lacking}` };
     const used = uses.filter(u => u in scores);
+    const risk = uses.includes('alertness') ? crashRisk(impairmentBac(p)) : 1;
     const zero = used.find(u => scores[u] === 0);
     if (zero) return { chance: 0, limit: `${zero} 0%` };
     const force = used.filter(u => FORCE_SCORES.includes(u)).sort((x, y) => scores[x] - scores[y])[0];
     const s = force ? scores[force] : 1;
     const base = Math.max(0, Math.min(1, Number(share) || 0));
-    if (s >= 1 || base === 0) return { chance: base };
+    const alert = (r, limit) => risk > 1.005
+        ? { chance: r >= 1 ? 1 : r / (r + (1 - r) * risk), limit: [limit, `alertness: blood alcohol equivalent ${round(impairmentBac(p), 3)} %, odds of failing × ${round(risk, 2)}`].filter(Boolean).join('; ') }
+        : { chance: r, limit };
+    if (s >= 1 || base === 0) return alert(base);
     const demand = 1 - normInv(Math.min(0.999, base)) * CAPACITY_CV;
-    return { chance: normCdf((s - demand) / (s * CAPACITY_CV)), limit: `${force} ${Math.round(s * 100)}%` };
+    return alert(normCdf((s - demand) / (s * CAPACITY_CV)), `${force} ${Math.round(s * 100)}%`);
 }
 
 export const checkChance = (p, task) => checkOdds(p, task).chance;
