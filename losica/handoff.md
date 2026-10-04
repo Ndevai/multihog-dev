@@ -110,17 +110,17 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 48 | healing time of punctures and bites | research |
 | | 49 | healing time of blunt wounds | research |
 | | 50 | how much infection slows healing and drains strength | research |
-| | 51 | ability penalty per wound type and score (framework set: Cataclysm: DDA limb scores) | research per injury |
+| | 51 | CLOSED 4 Oct (Earth fork, DF engine): abilities = share of working DF parts per flag | — |
 | Strikes (576) | 52 | CLOSED 3 Oct: lands unless the target recognises it and completes a defensive move before impact (timings sourced; replaces NetHack d20) | — |
 | | 53 | hit location when not aimed | research (assault injury distributions) |
-| | 54 | club/tool force: contact stiffness per part to turn measured energy (Siegenthaler 2018) into force | research |
-| | 55 | share of limb arterial injuries in the femoral bleeding class | research |
-| | 56 | blade wounds to head, eyes, mouth, torso: organs, deep vessels | research |
-| | 57 | fracture force for torso (ribs), hand, foot | research |
+| | 54 | CLOSED 4 Oct: DF momentum and layer tests for every weapon | — |
+| | 55 | CLOSED 4 Oct: DF TL_MAJOR_ARTERIES layers give the major class; muscle ARTERIES 12 % limb artery | — |
+| | 56 | CLOSED 4 Oct: DF layers and internal parts | — |
+| | 57 | CLOSED 4 Oct: DF layer tests with the bare-knuckle-fitted rigid factor | — |
 | | 58 | healing time of skull, face and torso fractures | research |
-| | 59 | concussion and knockout from head blows | research |
-| | 60 | calibration of blow force vs fracture thresholds (uncalibrated: untrained punch breaks the jaw 94 %) | research: landed head strikes per bare-knuckle bout vs 27 facial fractures in 301 bouts |
-| | 61 | armour: AC per armour type | research or game values |
+| | 59 | CLOSED 4 Oct: knockout at momentum 158 (97 KO in 222 BKFC bouts); length is Earth OPEN-81 | — |
+| | 60 | CLOSED 4 Oct: rigid factor 19.985 fitted to 27 facial fractures in 301 BKFC bouts (CompuBox proxy) | — |
+| | 61 | CLOSED 4 Oct: DF armour items, CDDA sub-locations, held items | — |
 | | 62 | trained defender reading cues before the strike starts (anticipation lead) | research (karate/boxing anticipation timing) |
 | | 63 | senses during sleep: does a magical sense work and wake the sleeper | decision |
 | | 64 | attacker tracking a moving target; room to evade; aim information from sound | research or decision |
