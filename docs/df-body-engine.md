@@ -254,7 +254,8 @@ Pain: DF's wiki states only that pain halves rolls and may knock out "depending 
 
 | Tool | Change |
 |---|---|
-| all | `species`: DF creature id or name ("HUMAN", "wolf", "giant wolf"); used when the character first appears; default human |
+| all | species and mass on first appearance: the tool arguments, else the State Tracker profile (`Name (N kg)` header and its `Species:` line), else human at the species' adult mass |
+| all (argument) | `species`: DF creature id or name ("HUMAN", "wolf", "giant wolf"); used when the character first appears; default human |
 | BodyStrike | `part` = a part name of the target (free text); `attack` = the attacker's natural attack (punch, kick, bite, scratch…) or the weapon's attack verb (slash, stab, bash…); `weapon` = DF weapon name; `material` = metal; `skill` = DF level name; `style`; `prone`; `attacker_species`. Removed: `means`, untrained/trained/elite |
 | BodyWound | `part` = a part name; cut or puncture: vessel class as §5 for a cut through every layer [ASSUMED] |
 | BodyCheck | `uses` = grasp, stance, sight, hearing, smell, breathing |

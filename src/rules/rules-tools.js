@@ -2,6 +2,7 @@ import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, str
 import { loadRaws, creatureId } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
+import { getSettings } from '../../state-manager.js';
 
 const TOOLS = ['BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
@@ -111,9 +112,29 @@ const partArg = str('Body part by its name: e.g. head, throat, upper body, lower
 const speciesOf = text => text ? creatureId(text) : 'HUMAN';
 const noSpecies = text => `No DF creature "${text}". Nothing recorded.`;
 
+/** Species and mass from the State Tracker profile of `name`: its "Name (N kg)" header and the "Species:" line below it. */
+function fromTracker(name) {
+    const memo = String(getSettings()?.currentMemo || '');
+    const esc = String(name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!esc) return {};
+    const m = memo.match(new RegExp(`^[\\s*-]*${esc}\\s*\\(([\\d.]+)\\s*kg\\)[^\\n]*\\n((?:[^\\n]*\\S[^\\n]*(?:\\n|$)){0,12})`, 'mi'));
+    if (!m) return {};
+    return { mass: Number(m[1]) || undefined, species: m[2].match(/^\s*Species:\s*(.+)$/mi)?.[1]?.trim() };
+}
+
+/** The tracked person `name`; on first appearance species and mass come from the arguments, else the tracker, else human. */
+function who(st, name, speciesArg, massArg) {
+    const known = st.people?.[name];
+    const t = known ? {} : fromTracker(name);
+    const text = speciesArg || t.species;
+    const sp = speciesOf(text);
+    if (!sp) return { error: noSpecies(text) };
+    return { p: person(st, name, Number(massArg) || t.mass, sp) };
+}
+
 export const RULES_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools; narrate what they return.
-- A character's first rule-tool call names its species (a Dwarf Fortress creature: human, wolf, horse…).
+- A character's species and mass come from its tracker profile ("Name (N kg)" and "Species:"); give species in the first rule-tool call for a character without a profile.
 - An attack with the body (punch, kick, bite, scratch) or a melee weapon (sword, axe, mace, spear, dagger…) → BodyStrike; it decides whether it lands and the wounds. Narrate what it returns.
 - A shot with a bow, crossbow or blowgun → BodyCheck for the aim; on target → BodyStrike with launcher and the distance.
 - An attack by any other means (sling, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
@@ -152,9 +173,8 @@ export function registerRulesTools(enabled) {
         type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'burn', 'bite'] },
         depth: { type: 'string', enum: ['superficial', 'partial', 'deep_partial', 'full'], description: 'Burns: superficial = red, no blisters; partial = blisters; deep_partial = pale, scars; full = through the skin.' },
     }, ['who', 'part', 'type'], a => run((st, rng) => {
-        const sp = speciesOf(a.species);
-        if (!sp) return noSpecies(a.species);
-        const p = person(st, a.who, undefined, sp);
+        const { p, error } = who(st, a.who, a.species);
+        if (error) return error;
         const part = findPart(creatureOf(p), a.part);
         if (!part) return `${a.who} has no part "${a.part}". Parts: ${creatureOf(p).parts.map(x => x.name).join(', ')}. Nothing recorded.`;
         const w = ['cut', 'puncture', 'bite'].includes(a.type) ? openWound(p, part, a.type, rng) : addWound(p, { part, type: a.type, depth: a.depth }, rng);
@@ -217,14 +237,14 @@ export function registerRulesTools(enabled) {
         sense_range_m: { type: 'number', description: 'Range of any non-visual sense the target has that detects an approaching attacker (e.g. telepathy), in m.' },
         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
     }, ['who', 'part'], a => run((st, rng) => {
-        const sp = speciesOf(a.species);
-        if (!sp) return noSpecies(a.species);
-        const asp = speciesOf(a.attacker_species);
-        if (!asp) return noSpecies(a.attacker_species);
-        const p = person(st, a.who, Number(a.target_mass_kg) || undefined, sp);
+        const { p, error } = who(st, a.who, a.species, a.target_mass_kg);
+        if (error) return error;
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;
+        const ta = attacker || !a.attacker ? {} : fromTracker(a.attacker);
+        const asp = speciesOf(a.attacker_species || ta.species);
+        if (!asp) return noSpecies(a.attacker_species || ta.species);
         const keys = ['weapon', 'launcher', 'material', 'skill', 'style', 'prone', 'from', 'awake', 'facing', 'lit', 'noise_db', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
-        const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || undefined, armor: a.target_armor,
+        const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || ta.mass, armor: a.target_armor,
             ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
     }));
@@ -237,14 +257,14 @@ export function registerRulesTools(enabled) {
         uses: { type: 'array', items: { type: 'string', enum: Object.keys(FUNCTIONS) }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing' },
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
-    }, ['who', 'task', 'share'], a => run((st, rng) => check(person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN'), a, rng)));
+    }, ['who', 'task', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), a, rng)));
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
         wound: { type: 'number', description: 'Wound id' },
         treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load'] },
     }, ['who', 'wound', 'treatment'], a => run((st, rng) => {
-        const p = person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN');
+        const p = (who(st, a.who, a.species).p ?? person(st, a.who));
         return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;
     }));
 
@@ -265,7 +285,7 @@ export function registerRulesTools(enabled) {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },
     }, ['who', 'complexity'], a => run(st => {
-        const p = person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN');
+        const p = (who(st, a.who, a.species).p ?? person(st, a.who));
         return `${cast(p, Math.max(1, Math.min(9, Math.round(a.complexity))))} ${status(a.who, p)}`;
     }));
 
@@ -276,12 +296,12 @@ export function registerRulesTools(enabled) {
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
         head_first: { type: 'boolean' },
     }, ['who', 'height_m'], a => run((st, rng) => {
-        const p = person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN');
+        const p = (who(st, a.who, a.species).p ?? person(st, a.who));
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first }, rng);
     }));
 
     tool('BodyStatus', 'Read a character\'s body and network state.', {
         who: str('Character name'),
         species,
-    }, ['who'], a => run(st => status(a.who, person(st, a.who, undefined, speciesOf(a.species) || 'HUMAN'))));
+    }, ['who'], a => run(st => status(a.who, (who(st, a.who, a.species).p ?? person(st, a.who)))));
 }
