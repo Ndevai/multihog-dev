@@ -191,6 +191,29 @@ A part **works** unless it, or a part above it on its `CON` chain, has a severin
 - All `BREATHE` parts stopped: suffocation time OPEN-77.
 - Defence time divides by the better of grasp and stance (was blocking and movement).
 
+### 6.1 Unconsciousness
+
+| Cause | Rule | Label |
+|---|---|---|
+| knockout | a blow to a part with flag `HEAD` that reaches the head's tissue as blunt (after armour) with momentum ≥ 158.0 | fit below |
+| knockout ends | when story time passes (PassTime) | [ASSUMED] OPEN-81 |
+| not breathing | every `BREATHE` part stops working (creatures without `NOBREATHE`) → unconscious at once; death after 5 min | Merck Manual Professional, Respiratory Arrest (2026): patients "are either unconscious or will soon lose consciousness"; "death is almost certain if more than five minutes" (Wikipedia, citing Merck) |
+| unconscious | every check fails; no defence against attacks; PassTime stops when someone loses or regains consciousness | |
+
+Knockout fit (same chain as §4.6):
+
+| Step | Value | Source |
+|---|---|---|
+| knockouts | 97 KO in 222 BKFC 2022 bouts | Wikipedia "2022 in Bare Knuckle Fighting Championship" results |
+| head punches landed | 222 × 2 × 5.667 × 5.189 = 13056 | CompuBox proxy, bout length §4.6 |
+| knockout chance per landed head punch | 0.743 % | |
+| Professional 70 kg punch momentum | 100.17 | §4.2 |
+| threshold | 100.17 × (1 + 0.237 × 2.436) = 158.0; 2.436 = z at 0.743 % | |
+
+Resulting knockout chance per landed head punch: Dabbling 10⁻¹¹, Competent 10⁻⁶, Professional 0.743 %, Grand Master 10.6 %; untrained swing of an iron mace 27.6 %. A helm that holds passes on momentum × its strain ÷ 50000 and stops knockouts; one that is smashed passes 95 %.
+
+Pain: DF's wiki states only that pain halves rolls and may knock out "depending on toughness"; CDDA's pain values are game-tuned. No measured mechanism found (OPEN-77 keeps pain).
+
 ## 7. Tools
 
 | Tool | Change |
@@ -246,6 +269,7 @@ What these show:
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | shields and blocking |
 | OPEN-76 | penetration depth vs layer thickness |
-| OPEN-77 | suffocation timing; pain (`PAIN_RECEPTORS`) and unconsciousness |
+| OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found |
+| OPEN-81 | knockout length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more) |
 | OPEN-79 | unarmed momentum: DF's own formula for body-part attacks is unpublished; wolf bites do not cut skin under the copied formula |
 | OPEN-78 | `HEALING_RATE`: non-human healing uses human days |

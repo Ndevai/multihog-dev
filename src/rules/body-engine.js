@@ -138,7 +138,11 @@ function endDay(net) {
 export function advance(p, minutes, resting, rng = Math.random) {
     if (p.dead) return;
     const net = p.net;
+    // A knockout lasts until story time passes (its length is OPEN-81).
+    if (minutes > 0 && p.unconscious === 'knocked out') p.unconscious = null;
     for (let t = 0; t < minutes; t++) {
+        checkDeath(p);
+        if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = 'suffocation'; return; }
         const bleeding = p.wounds.reduce((s, w) => s + w.bleed, 0);
         p.lost += bleeding;
         if (p.lost >= LETHAL_LOSS_ML_KG * p.mass) { p.lost = LETHAL_LOSS_ML_KG * p.mass; p.dead = 'blood loss'; return; }
@@ -224,18 +228,24 @@ export function abilities(p) {
     return out;
 }
 
-/** Dies when a THOUGHT part stops working. */
+/** Dies when a THOUGHT part stops working; stops breathing (unconscious) when every BREATHE part stops working. */
 function checkDeath(p) {
     const c = creatureOf(p);
     if (!c || p.dead) return;
     const works = worksFn(p, c);
     const brains = c.parts.filter(x => x.flags.includes('THOUGHT'));
-    if (brains.length && brains.every(b => !works(b))) p.dead = 'brain destroyed';
+    if (brains.length && brains.every(b => !works(b))) { p.dead = 'brain destroyed'; return; }
+    const lungs = c.parts.filter(x => x.flags.includes('BREATHE'));
+    const apneic = lungs.length > 0 && !c.flags.includes('NOBREATHE') && lungs.every(l => !works(l));
+    if (apneic && p.apnea == null) { p.apnea = 0; p.unconscious = 'not breathing'; }
+    if (!apneic && p.apnea != null) { p.apnea = null; if (p.unconscious === 'not breathing') p.unconscious = null; }
 }
 
 export function status(who, p) {
     if (p.dead) return `${who}: dead (${p.dead}).`;
     const out = [];
+    if (p.apnea != null) out.push(`${who}: not breathing, unconscious; dies in ${APNEA_DEATH_MIN - p.apnea} min`);
+    else if (p.unconscious) out.push(`${who}: unconscious (${p.unconscious})`);
     const f = lossFraction(p);
     const c = creatureOf(p);
     out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]})` : `${who} (${c?.name ?? p.species}): no blood`);
@@ -267,6 +277,12 @@ export function status(who, p) {
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
     return out.join('. ') + '.';
 }
+
+// Knockout: a blunt blow to a HEAD part knocks out when the momentum reaching the head's tissue (after armour) is at least
+// this value. Fit (docs/df-body-engine.md §6.1): a Professional 70 kg punch knocks out on 0.743 % of landed head punches
+// (97 KOs in 222 BKFC 2022 bouts). Without breathing: death after 5 min (Merck Manual, respiratory arrest).
+const KO_MOMENTUM = 158.0;
+const APNEA_DEATH_MIN = 5;
 
 // Spread of a blow's momentum: Walilko 2005 punch force SD ÷ mean (rule 576), applied to every attack.
 const SPREAD = 0.237;
@@ -341,6 +357,7 @@ function impactTime(a, rng) {
  * when intent is visible, otherwise only once the strike starts (t.approach).
  */
 function defenceDone(a, t, defender, rng) {
+    if (defender?.unconscious) return Infinity;
     const awake = a.awake !== false;
     const dist = a.distance_m ?? t.reach;
     const intentFrom = a.intent_visible ? 0 : t.approach;
@@ -457,15 +474,17 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         if (hits.some(rigid)) made.push(addWound(target, { part: hp, type: 'fracture', open: cuts.length > 0 }, rng));
     }
     checkDeath(target);
+    const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && r.first.M >= KO_MOMENTUM;
+    if (ko && !target.unconscious) target.unconscious = 'knocked out';
     const parts = [...new Set(r.tested.map(t => t.part))];
     const layers = parts.map(pt => `${pt.name}: ${r.tested.filter(t => t.part === pt).map(t => `${t.layer.tissue.toLowerCase()} ${t.result}`).join(', ')}`).join('; ');
     const wounds = made.length ? ` Wound${made.length > 1 ? 's' : ''} ${made.map(x => x.id).join(', ')}.` : ' No wound.';
-    return `${verb} (${w.name}) to ${part.name}${r.sub ? ` (${r.sub})` : ''}: momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}`;
+    return `${verb} (${w.name}) to ${part.name}${r.sub ? ` (${r.sub})` : ''}: momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}${ko ? ' Knocked out.' : ''}`;
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
 const watch = p => ({
-    dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null,
+    dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null,
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
 });
 
@@ -475,6 +494,8 @@ function changes(who, a, b) {
     else {
         if (b.cls > a.cls) out.push(`${who} reaches blood-loss class ${['I', 'II', 'III', 'IV'][b.cls - 1]}`);
         if (b.dying && !a.dying) out.push(`${who} is dying`);
+        if (a.out && !b.out) out.push(`${who} comes to`);
+        if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
     }
     return out;
@@ -522,6 +543,7 @@ function normInv(p) {
 /** Chance of success and the ability that limits it. Non-force abilities between 0 and 1 change nothing yet (OPEN-66). */
 function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) {
     if (p.dead) return { chance: 0 };
+    if (p.unconscious) return { chance: 0, limit: `unconscious (${p.unconscious})` };
     const cls = bloodClass(p);
     if (cls === 4 || (cls >= 3 && on_feet) || cls >= (EXERTION_FAILS_AT[exertion] ?? 5)) return { chance: 0, limit: `blood-loss class ${['I', 'II', 'III', 'IV'][cls - 1]}` };
     const scores = abilities(p);

@@ -100,6 +100,7 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
     const tested = [];
     // CDDA outfit::absorb_damage: the hit lands on one sub-location; one roll 1–100 decides every worn layer.
     const sub = randomSublocation(struck, rng);
+    const first = { M: 0, edged: w.edge };  // momentum and edge reaching the struck part's tissue, after armour
     const roll = rng() * 100;
     let edged = w.edge;
     // One layer test (wiki Material science); returns 'cut' | 'smashed' | 'held' and updates M and edged.
@@ -136,6 +137,7 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
                 tested.push({ part, layer: { tissue: p.mat ? `${it.name} (${p.mat.name})` : it.name }, armor: true, result: test(m, Math.min(w.contact, area(cm3)), it.quality, 1) });
             }
         }
+        if (part === struck) { first.M = M; first.edged = edged; }
         const A = Math.min(w.contact, area(size));
         for (const layer of [...liveLayers(c, part)].reverse()) {
             if (M <= 0) return;
@@ -162,5 +164,5 @@ export function penetrate(c, struck, iSize, w, M, rng, worn = []) {
             if (M > 0) visit(pick);
         }
     }
-    return { tested, hits: tested.filter(t => t.result !== 'held' && !t.armor), severed, left: M, sub };
+    return { tested, hits: tested.filter(t => t.result !== 'held' && !t.armor), severed, left: M, sub, first };
 }
