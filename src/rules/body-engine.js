@@ -557,6 +557,35 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     return `${notes.length ? `${notes.join('; ')}. ` : ''}${verb} (${w.name}) to ${part.name} (${[r.side, r.sub].filter(Boolean).join(', ')}): momentum ${round(M)}. ${layers}${r.severed ? `; ${part.name} severed` : ''}.${wounds}${ko ? ' Knocked out.' : ''}`;
 }
 
+/**
+ * What a message carries from speaker to listener. Speech: the speaker's species can talk (DF CAN_SPEAK, or INTELLIGENT =
+ * CAN_SPEAK + CAN_LEARN), it is conscious, a BREATHE part and a MOUTH part work (a TONGUE part not working slurs it);
+ * the listener is conscious with a working HEAR part; words carry meaning only to a species that can talk and, when both
+ * know their languages, share one. Gesture: the listener has a working SIGHT part and light.
+ */
+export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null] } = {}) {
+    const sc = creatureOf(s), lc = creatureOf(l);
+    if (!sc || !lc) return 'Creature data is not loaded.';
+    const talks = c => c.flags.includes('CAN_SPEAK') || c.flags.includes('INTELLIGENT');
+    const anyWorks = (p, c, test) => { const parts = c.parts.filter(test); const w = worksFn(p, c); return parts.length ? parts.some(w) : null; };
+    const flag = f => x => x.flags.includes(f);
+    if (l.dead || l.unconscious) return `${ls} perceives nothing (${l.dead ? 'dead' : 'unconscious'}).`;
+    if (means === 'gesture') {
+        if (anyWorks(l, lc, flag('SIGHT')) === false || !lit) return `${ls} cannot see the gesture.`;
+        return `${ls} sees the gesture${talks(lc) ? '' : `; it reads posture and movement as its species does (${lc.name}: cannot talk)`}.`;
+    }
+    if (s.dead || s.unconscious) return `${sp} makes no sound (${s.dead ? 'dead' : 'unconscious'}).`;
+    if (!talks(sc)) return `${sp} cannot produce speech (${sc.name}: cannot talk); it makes its species' own sounds.`;
+    if (anyWorks(s, sc, flag('BREATHE')) === false) return `${sp} has no voice: not breathing.`;
+    if (anyWorks(s, sc, flag('MOUTH')) === false) return `${sp}'s speech is unintelligible: mouth not working.`;
+    const slurred = anyWorks(s, sc, x => x.cats.includes('TONGUE')) === false;
+    if (anyWorks(l, lc, flag('HEAR')) === false) return `${ls} cannot hear it.`;
+    if (!talks(lc)) return `${ls} hears the sounds and their tone; the words carry no meaning (${lc.name}: cannot talk).`;
+    const [a, b] = languages;
+    if (a?.length && b?.length && !a.some(x => b.includes(x))) return `${ls} hears speech in a language it does not know (${a.join(', ')}); only tone and gestures carry.`;
+    return `${ls} hears and understands ${sp}${slurred ? ', slurred (tongue not working): short, simple words only' : ''}.`;
+}
+
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
 const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null,

@@ -250,6 +250,21 @@ Resulting knockout chance per landed head punch: Dabbling 10⁻¹¹, Competent 1
 
 Pain: DF's wiki states only that pain halves rolls and may knock out "depending on toughness"; CDDA's pain values are game-tuned. No measured mechanism found (OPEN-77 keeps pain).
 
+### 6.2 Communication
+
+Communicate decides what a message carries before the narrator writes a reply or reaction.
+
+| Step | Rule | Label |
+|---|---|---|
+| speaking species | DF `CAN_SPEAK` ("Can talk") or `INTELLIGENT` (CAN_SPEAK + CAN_LEARN): humans, dwarves, elves, goblins, animal people; wolves, dogs, horses cannot talk | [RAW], [WIKI] |
+| speaker | conscious; a `BREATHE` part works (voice needs breath); a `MOUTH` part works, else unintelligible; every `TONGUE` part not working → slurred, short simple words only | [ASSUMED from the parts speech uses] |
+| listener | conscious; a `HEAR` part works | |
+| meaning | words carry meaning only to a species that can talk; a species that cannot talk gets the sounds and their tone | [RAW] |
+| language | when both tracker profiles list `Languages:`, they must share one; else tone and gestures only | |
+| gesture | the listener has a working `SIGHT` part and light; a species that cannot talk reads posture and movement as its species does | |
+
+A tongue stops working only when severed (its muscle and skin are neither `STRUCTURAL` nor `FUNCTIONAL`).
+
 ## 7. Tools
 
 | Tool | Change |

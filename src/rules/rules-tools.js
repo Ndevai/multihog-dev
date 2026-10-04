@@ -1,10 +1,10 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS } from './body-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate } from './body-engine.js';
 import { loadRaws, creatureId } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -119,7 +119,8 @@ function fromTracker(name) {
     if (!esc) return {};
     const m = memo.match(new RegExp(`^[\\s*-]*${esc}\\s*\\(([\\d.]+)\\s*kg\\)[^\\n]*\\n((?:[^\\n]*\\S[^\\n]*(?:\\n|$)){0,12})`, 'mi'));
     if (!m) return {};
-    return { mass: Number(m[1]) || undefined, species: m[2].match(/^\s*Species:\s*(.+)$/mi)?.[1]?.trim() };
+    const languages = m[2].match(/^\s*Languages?:\s*(.+)$/mi)?.[1]?.split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+    return { mass: Number(m[1]) || undefined, species: m[2].match(/^\s*Species:\s*(.+)$/mi)?.[1]?.trim(), languages };
 }
 
 /** The tracked person `name`; on first appearance species and mass come from the arguments, else the tracker, else human. */
@@ -142,6 +143,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Someone falls → BodyFall.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
 - A spell is cast → CastSpell. A treatment is applied → BodyTreat.
+- A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
 - Describe a character's injuries, blood loss or energy from BodyStatus.
 </rule_engine>`;
@@ -247,6 +249,20 @@ export function registerRulesTools(enabled) {
         const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || ta.mass, armor: a.target_armor,
             ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
+    }));
+
+    tool('Communicate', 'Decide what a message carries from one character to another (speech or gesture) before narrating a reply or reaction. Returns whether the words, only the tone, or nothing reaches the listener.', {
+        speaker: str('Character sending the message'),
+        listener: str('Character receiving it'),
+        means: { type: 'string', enum: ['speech', 'gesture'] },
+        lit: { type: 'boolean', description: 'Enough light to see a gesture. Default true.' },
+        speaker_species: str('Speaker\'s DF creature when it has no tracker profile.'),
+        listener_species: str('Listener\'s DF creature when it has no tracker profile.'),
+    }, ['speaker', 'listener'], a => run(st => {
+        const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
+        if (s.error || l.error) return s.error || l.error;
+        const langs = [fromTracker(a.speaker).languages, fromTracker(a.listener).languages];
+        return communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs });
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {

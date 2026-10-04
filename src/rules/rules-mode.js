@@ -3,6 +3,7 @@
 // rule engine and reaches both models only through the code-written [BODY] block.
 
 const CHARACTER_FIELDS = `Species: the Dwarf Fortress creature (human, dwarf, elf, goblin, wolf, horse…)
+Languages: the languages the character speaks or understands, comma-separated; omit for creatures that cannot talk
 Training: fighting skill as a Dwarf Fortress level (Dabbling, Novice, Adequate, Competent, Skilled, Proficient, Talented, Adept, Expert, Professional, Accomplished, Great, Master, High Master, Grand Master, Legendary); each other trained activity with its level (e.g. climbing trained)
 Senses: senses beyond sight and hearing, each with its range in m; omit the line when there are none
 Affinities: affinity channels by name (fire, water, earth, air, wood, gold, metal); omit the line for non-casters
