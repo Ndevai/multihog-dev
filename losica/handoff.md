@@ -38,11 +38,17 @@ Hard-rule world system for LLM roleplay. Rules a model cannot bend: quantities, 
 - Known Multihog holes: HP hardcoded ~75× in renderer.js and constants.js; clock assumes Earth days; d100 mode with the queue keeps the 1–20 loot and event thresholds after rewriting "d20" to "d100".
 - Code style: comment density at or below the codebase (6–12 %); prompts and tool descriptions as positive statements.
 
+- Losica mode (rules-engine 296def8, src/rules/losica-mode.js): with `losicaRules` on, D&D mechanics are replaced where they are written, not hidden afterwards.
+  - Narrator: sections weapon_proficiencies, attacks_per_round, saving_throws, xp_system, level_up_protocol, homebrew_and_custom_classes omitted; role, rng_system, combat, loot, resting, [PARTY]_mechanics, constraints, state_memo, footer replaced. Footer: status from [BODY] + location + clock; no XP or level.
+  - State Tracker: [CHARACTER]/[PARTY]/[COMBAT] = "Name (N kg)" + training, senses, affinities, spells, conditions; [INVENTORY] items described physically; [SPELLS] = name (school, complexity); [TIME] tracks Last Woke; [XP] and [ABILITIES] off. Core prompt: conditions by story time, no buffs/AC/slots. Body state only in the code-written [BODY].
+  - RollTheDice: kinds check | amount | table. Attacks by fist, kick or blade → LosicaStrike; by other means → check, then LosicaWound.
+  - Choices examples, character creation (no levels, no BAB guide, no +N gear) and the sheet (a "Name (N kg)" line starts an entry) follow.
+  - Still D&D-shaped with Losica on: NPC memory combat-profile guidance (src/state/lorebook-runtime-fragments.js, module-instructions.js), the attribute roll panel in onboarding, realistic/horror genre hints in character creation.
+
 ## 4. Next, in order
-1. Losica cartridge: trackers for body parts/wounds, network (C, N, R, P), needs, replacing HP/AC/XP/ability scores/spell slots; prompt states when to call each Losica tool.
-2. Clock (day 8.557 h, year 1241.42 days).
-3. Display (wound list per part instead of HP bars); follows the cartridge's tracker format.
-4. Survival needs in the engine (water, food, sleep, core temperature).
+1. Clock (day 8.557 h, year 1241.42 days).
+2. Survival needs in the engine (water, food, sleep, core temperature).
+3. NPC memory combat profiles in Losica terms.
 
 ## 5. Rules (lorebook Faerun_weave-rules.json, entries 564–577)
 - Source: Faerûn lorebook Faerun__4_.json (574 entries). Magic entries 564, 566–574 rewritten as hard rules; 575 network, 576 body and injury, 577 survival needs are new. Durations converted to Losica days with absolute seconds kept.
