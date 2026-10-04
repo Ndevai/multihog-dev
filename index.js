@@ -54,6 +54,7 @@ import { onPlayerTurnMessage, onPlayerTurnSent, onPlayerTurnChatChanged } from '
 import { openPartyTurn } from './src/features/party-turn.js';
 import { openJournal, openCalendar } from './src/features/journal-calendar.js';
 import { openLoreSuggestions } from './src/features/lore-suggest.js';
+import { openBooks, openPhone } from './src/features/books-phone.js';
 
 // Wand-menu entries of the smaller play features: [element id, Font Awesome icon, label, open()].
 const WAND_FEATURES = [
@@ -61,6 +62,8 @@ const WAND_FEATURES = [
     ['rt_journal_wand', 'fa-book-open', 'Journal', openJournal],
     ['rt_calendar_wand', 'fa-calendar-days', 'Calendar', openCalendar],
     ['rt_lore_suggest_wand', 'fa-lightbulb', 'Lorebook suggestions', openLoreSuggestions],
+    ['rt_books_wand', 'fa-book', 'Library', openBooks],
+    ['rt_phone_wand', 'fa-mobile-screen', 'Phone', openPhone],
 ];
 import { createDetachedPanel } from './src/ui/panel/detached-panel.js';
 import { scalePanelBackgroundImage, getPanelBgConfig, applyPanelBackgroundToDom, applyTrackerThemeToDom, PANEL_BG_TRACKER_KEYS, PANEL_BG_AGENT_KEYS } from './src/ui/panel/panel-appearance.js';
