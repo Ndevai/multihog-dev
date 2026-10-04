@@ -125,7 +125,7 @@ Convention in both files: an OPEN value means the effect it governs does not hap
 | | 63 | senses during sleep: does a magical sense work and wake the sleeper | decision |
 | | 64 | attacker tracking a moving target; room to evade; aim information from sound | research or decision |
 | | 65 | sensory thresholds (hearing, waking) for non-human bodies: depend on the ear, not on size | research per sense organ |
-| | 66 | checks: effect of a partial non-force ability (manipulation, vision, reaction, balance) on the chance | research (task performance vs impairment) |
+| | 66 | Earth fork: alertness done (alcohol + sleep loss as NHTSA crash odds ratios); partial senses (one eye, one ear) open | research (task performance vs impairment) |
 | Body model (body-model.md) | 67 | lethal hemolymph loss fraction λ for insects | research (one weak study: deaths at ~40 %) |
 | | 68 | starvation death limit for groups other than mammals and birds | research per group |
 | | 69 | minimum surviving fragment mass for fungi and slime molds | research |
