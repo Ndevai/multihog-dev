@@ -230,7 +230,7 @@ A part **works** unless it, or a part above it on its `CON` chain, has a severin
 - Alertness (BodyCheck `uses: alertness`, tasks needing attention, judgment or quick reactions): impairment as a blood-alcohol level = drinking (BodyIntake `alcohol_g`; Widmark: g ÷ (0.68 × body g) × 100, eliminated 0.015 %/h) + the sleep-loss equivalent (§6.3) [ASSUMED additive, male Widmark factor]. The odds of failing are multiplied by exp(40.7 × BAC^1.345), the curve through the NHTSA 2015 case-control adjusted odds ratios (Compton & Berning: 2.07 at 0.05 %, 3.93 at 0.08 %) and 1 at 0; it gives 23.9 at 0.15 % [crash odds as task-failure odds: ASSUMED]. Example: a task at 80 % sober → 49 % after 39 g of alcohol (three beers, 70 kg) or after 22 h awake.
 - Force abilities for the check model = grasp, stance [576 model, CV 0.19]. Others between 0 and 1 change nothing yet (OPEN-66). A creature without any part of a flag has no such ability: a task that uses it fails.
 - A `THOUGHT` part (brain) that stops working, or is severed with the part above it → death.
-- All `BREATHE` parts stopped: suffocation time OPEN-77.
+- All `BREATHE` parts stopped: unconscious at once, death after 5 min (§6.1).
 - Defence time divides by the better of grasp and stance (was blocking and movement).
 
 ### 6.1 Unconsciousness
@@ -240,6 +240,9 @@ A part **works** unless it, or a part above it on its `CON` chain, has a severin
 | knockout | a blow to a part with flag `HEAD` that reaches the head's tissue as blunt (after armour) with momentum ≥ 158.0 | fit below |
 | knockout ends | when story time passes (PassTime) | [ASSUMED] OPEN-81 |
 | not breathing | every `BREATHE` part stops working (creatures without `NOBREATHE`) → unconscious at once; death after 5 min | Merck Manual Professional, Respiratory Arrest (2026): patients "are either unconscious or will soon lose consciousness"; "death is almost certain if more than five minutes" (Wikipedia, citing Merck) |
+| choke | a hold locked on a part with category `NECK` or flag `THROAT` (holder needs grasp > 0): unconscious at a time drawn uniformly from 6.2–10.5 s (mean of the study 9.0 s, 95 % CI 8.3–9.9) | "Time to unconsciousness from sportive chokes in fully resisting highly trained combatants", Int J Perf Anal Sport (2020): 81 chokes to loss of consciousness, means by choke 6.2 s (bulldog) to 10.5 s (von Flue); neck-only and arm-in chokes timed alike; uniform draw and human times for every species [ASSUMED] |
+| choke held on | held 5 min → dead (strangulation) | same limit as not breathing [ASSUMED] |
+| choke ends | released and story time passes → awake | [ASSUMED] OPEN-81 |
 | unconscious | every check fails; no defence against attacks; PassTime stops when someone loses or regains consciousness | |
 
 Knockout fit (same chain as §4.6):
@@ -292,6 +295,7 @@ Results: no water at rest → 5 % on day 2.3, 8 % on day 3.7, dead day 9.1; acti
 | BodyStrike | `part` = a part name of the target (free text); `attack` = the attacker's natural attack (punch, kick, bite, scratch…) or the weapon's attack verb (slash, stab, bash…); `weapon` = DF weapon name; `material` = metal; `skill` = DF level name; `style`; `prone`; `attacker_species`. Removed: `means`, untrained/trained/elite |
 | BodyWound | `part` = a part name; cut or puncture: vessel class as §5 for a cut through every layer [ASSUMED] |
 | BodyCheck | `uses` = grasp, stance, sight, hearing, smell, breathing |
+| BodyChoke | `who`, `holder`, `seconds` held: §6.1 choke rows |
 | unknown part / attack / species | the tool returns the valid names; nothing recorded |
 
 ## 8. Unchanged
@@ -348,7 +352,7 @@ What these show:
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
 | OPEN-76 | penetration depth vs layer thickness |
-| OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found |
-| OPEN-81 | knockout length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more) |
+| OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |
+| OPEN-81 | knockout and choke length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more; Hutchison 2014 gives 3.5 s from impact to referee stoppage, not time unconscious; the choke study above gives time to unconsciousness only) |
 | OPEN-79 | closed by the fit in §4.7; replace when DF's formula for body-part attacks is published |
 | OPEN-78 | closed: healing days scale by DF `HEALING_RATE`; tissue without it never heals |

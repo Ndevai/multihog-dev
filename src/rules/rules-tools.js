@@ -1,10 +1,10 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake } from './body-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke } from './body-engine.js';
 import { loadRaws, creatureId, creature } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyChoke', 'BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -142,7 +142,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - A shot with a bow, crossbow or blowgun → BodyCheck for the aim; on target → BodyStrike with launcher and the distance.
 - An attack by any other means (sling, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
 - A burn, a bite, an accident or a fall injury → BodyWound.
-- Someone falls → BodyFall.
+- Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
 - A spell is cast → CastSpell. A treatment is applied → BodyTreat. Someone drinks or eats → BodyIntake.
 - PassTime lists who is active (walking, working, fighting, in heat) and who sleeps.
@@ -252,6 +252,17 @@ export function registerRulesTools(enabled) {
         const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || ta.mass, armor: a.target_armor,
             ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
+    }));
+
+    tool('BodyChoke', 'Resolve a choke or strangling hold on the neck once the hold is locked, before narrating its effect.', {
+        who: str('Character choked'),
+        holder: str('Character holding the choke'),
+        seconds: { type: 'number', description: 'Seconds the locked hold is kept on' },
+    }, ['who', 'seconds'], a => run((st, rng) => {
+        const { p, error } = who(st, a.who);
+        if (error) return error;
+        const holder = a.holder && st.people?.[a.holder] ? st.people[a.holder] : null;
+        return `${choke(p, a.seconds, holder, rng)} ${status(a.who, p)}`;
     }));
 
     tool('BodyIntake', 'Record drinking or eating the moment it happens.', {

@@ -159,7 +159,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
     n.waterDeath ??= 15 + 5 * rng();
     n.foodDeath ??= 40 + 20 * rng();
     // A knockout lasts until story time passes (its length is OPEN-81).
-    if (minutes > 0 && p.unconscious === 'knocked out') p.unconscious = null;
+    if (minutes > 0 && (p.unconscious === 'knocked out' || p.unconscious === 'choked')) p.unconscious = null;
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = 'suffocation'; return; }
@@ -324,6 +324,9 @@ export function status(who, p) {
 // this value. Fit (docs/df-body-engine.md §6.1): a Professional 70 kg punch knocks out on 0.743 % of landed head punches
 // (97 KOs in 222 BKFC 2022 bouts). Without breathing: death after 5 min (Merck Manual, respiratory arrest).
 const KO_MOMENTUM = 158.0;
+// Chokes: unconscious after 6.2–10.5 s of a locked hold on the neck (by choke type; mean 9.0 s, 81 chokes on fully resisting
+// trained fighters, Int J Perf Anal Sport 2020); held 5 min → dead (no gas exchange, as APNEA_DEATH_MIN).
+const CHOKE_LOC_S = [6.2, 10.5];
 // Default face area of held DF items: shield Ø 85 cm (Viking round shields 80–90 cm, Hurstwic); buckler Ø 30 cm
 // (reenactment guidance "10–12 in upwards", Vikings wiki). Thickness 0.9 cm (surviving shields 6–12 mm, Hurstwic).
 const HELD_FACE_CM2 = { ITEM_SHIELD_SHIELD: Math.PI * 42.5 ** 2, ITEM_SHIELD_BUCKLER: Math.PI * 15 ** 2 };
@@ -619,6 +622,19 @@ export function strike(target, a, attacker = null, rng = Math.random) {
  * the listener is conscious with a working HEAR part; words carry meaning only to a species that can talk and, when both
  * know their languages, share one. Gesture: the listener has a working SIGHT part and light.
  */
+/** A choke held for `seconds` on a creature with a neck: unconscious past its threshold, dead past 5 min. */
+export function choke(p, seconds, holder = null, rng = Math.random) {
+    const c = creatureOf(p);
+    if (!c?.parts.some(x => x.cats.includes('NECK') || x.flags.includes('THROAT'))) return 'No neck to choke.';
+    if (holder && abilities(holder).grasp === 0) return 'The holder has no working hand to hold a choke.';
+    if (p.dead) return 'Already dead.';
+    const s = Math.max(0, Number(seconds) || 0);
+    const at = between(rng, CHOKE_LOC_S);
+    if (s >= APNEA_DEATH_MIN * 60) { p.dead = 'strangulation'; return `Choke held ${s} s: dead (strangulation).`; }
+    if (s >= at) { p.unconscious = 'choked'; return `Choke held ${s} s: unconscious at ${round(at)} s.`; }
+    return `Choke held ${s} s: still conscious (would black out at ${round(at)} s).`;
+}
+
 /** Drinking and eating: water in L, food in kcal, taken off the deficits (never below 0). */
 export function intake(p, { water_l = 0, food_kcal = 0, alcohol_g = 0 } = {}) {
     p.needs ??= { waterL: 0, kcal: 0, awake: 0, slept: 0, waterDeath: null, foodDeath: null };
