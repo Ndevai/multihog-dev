@@ -138,14 +138,27 @@ function endDay(net) {
     net.F = 0; net.E = 0; net.maxToday = false;
 }
 
-export function advance(p, minutes, resting, rng = Math.random) {
+export function advance(p, minutes, resting, rng = Math.random, { active = false, sleeping = false } = {}) {
     if (p.dead) return;
     const net = p.net;
+    const c = creatureOf(p);
+    const needs = !c || c.blood;
+    p.needs ??= { waterL: 0, kcal: 0, awake: 0, slept: 0, waterDeath: null, foodDeath: null };
+    const n = p.needs;
+    n.waterDeath ??= 15 + 5 * rng();
+    n.foodDeath ??= 40 + 20 * rng();
     // A knockout lasts until story time passes (its length is OPEN-81).
     if (minutes > 0 && p.unconscious === 'knocked out') p.unconscious = null;
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = 'suffocation'; return; }
+        if (needs) {
+            n.waterL += WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
+            n.kcal += KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
+            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
+            if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }
+            if (n.kcal >= n.foodDeath * KCAL_DAY.rest * kleiber(p)) { p.dead = 'starvation'; return; }
+        }
         const bleeding = p.wounds.reduce((s, w) => s + w.bleed, 0);
         p.lost += bleeding;
         if (p.lost >= LETHAL_LOSS_ML_KG * p.mass) { p.lost = LETHAL_LOSS_ML_KG * p.mass; p.dead = 'blood loss'; return; }
@@ -277,6 +290,12 @@ export function status(who, p) {
     }
     const reduced = Object.entries(abilities(p)).filter(([, v]) => v < 1);
     if (reduced.length) out.push(`abilities: ${reduced.map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(', ')}`);
+    if (p.needs) {
+        const nd = p.needs, pct = nd.waterL / p.mass * 100, hours = nd.awake / 60;
+        if (pct >= 2) out.push(`water lost ${round(nd.waterL, 1)} L (${round(pct)} % of body mass${pct >= 8 ? ': weak, dizzy, faint; heavy exertion fails' : pct >= 5 ? ': headache, irritable, light-headed' : ''})`);
+        if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)`);
+        if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
+    }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
     return out.join('. ') + '.';
@@ -291,6 +310,16 @@ const KO_MOMENTUM = 158.0;
 const HELD_FACE_CM2 = { ITEM_SHIELD_SHIELD: Math.PI * 42.5 ** 2, ITEM_SHIELD_BUCKLER: Math.PI * 15 ** 2 };
 const HELD_THICK_CM = 0.9;
 const APNEA_DEATH_MIN = 5;
+// Survival (Tipton & Montgomery 2025, Exp Physiol "The physiology of survival: fluid and food"): net water loss 1.5 L/day at
+// rest, 4 L/day active or in heat; water lost 5 % of body mass → headache, light-headedness; 8 % → performance significantly
+// impaired; death at 15–20 %. Energy use 1400 kcal/day at rest, 2400 active; total starvation kills in 40–60 days.
+// Awake hours (NIOSH, from Dawson & Reid 1997): 17 h ≈ BAC 0.05 %, 24 h ≈ 0.10 %. Sleep of 7 h (AASM adult minimum) resets.
+const WATER_L_DAY = { rest: 1.5, active: 4 };
+const KCAL_DAY = { rest: 1400, active: 2400 };
+const SLEEP_RESET_MIN = 7 * 60;
+// Other body masses scale water and energy use by (mass ÷ 70 kg)^0.75 (Kleiber's metabolic scaling law).
+const kleiber = p => (p.mass / 70) ** 0.75;
+export const awakeBac = h => Math.max(0, 0.05 + (h - 17) * 0.05 / 7);
 // Flight speed of a shot: 47.23 m/s, a 102 g arrow from a 144 lbf yew self bow (Stretton et al. 2010), for every launcher.
 const SHOT_MPS = 47.23;
 
@@ -563,6 +592,13 @@ export function strike(target, a, attacker = null, rng = Math.random) {
  * the listener is conscious with a working HEAR part; words carry meaning only to a species that can talk and, when both
  * know their languages, share one. Gesture: the listener has a working SIGHT part and light.
  */
+/** Drinking and eating: water in L, food in kcal, taken off the deficits (never below 0). */
+export function intake(p, { water_l = 0, food_kcal = 0 } = {}) {
+    p.needs ??= { waterL: 0, kcal: 0, awake: 0, slept: 0, waterDeath: null, foodDeath: null };
+    p.needs.waterL = Math.max(0, p.needs.waterL - Math.max(0, Number(water_l) || 0));
+    p.needs.kcal = Math.max(0, p.needs.kcal - Math.max(0, Number(food_kcal) || 0));
+}
+
 export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null] } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc) return 'Creature data is not loaded.';
@@ -587,8 +623,9 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
+const waterStage = p => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };
 const watch = p => ({
-    dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null,
+    dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
 });
 
@@ -599,6 +636,7 @@ function changes(who, a, b) {
         if (b.cls > a.cls) out.push(`${who} reaches blood-loss class ${['I', 'II', 'III', 'IV'][b.cls - 1]}`);
         if (b.dying && !a.dying) out.push(`${who} is dying`);
         if (a.out && !b.out) out.push(`${who} comes to`);
+        if (b.thirst > a.thirst) out.push(`${who} is ${b.thirst === 2 ? 'severely dehydrated (8 % of body mass)' : 'dehydrated (5 % of body mass)'}`);
         if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
     }
@@ -606,13 +644,13 @@ function changes(who, a, b) {
 }
 
 /** Advances everyone minute by minute; stops at the end of the first minute in which a condition changes. */
-export function advanceAll(people, minutes, resting = new Set(), rng = Math.random) {
+export function advanceAll(people, minutes, resting = new Set(), rng = Math.random, { active = new Set(), sleeping = new Set() } = {}) {
     const total = Math.max(0, Math.round(minutes));
     for (let m = 1; m <= total; m++) {
         const events = [];
         for (const [who, p] of Object.entries(people)) {
             const before = watch(p);
-            advance(p, 1, resting.has(who), rng);
+            advance(p, 1, resting.has(who), rng, { active: active.has(who), sleeping: sleeping.has(who) });
             events.push(...changes(who, before, watch(p)));
         }
         if (events.length) return { elapsed: m, events };
@@ -648,6 +686,7 @@ function normInv(p) {
 function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) {
     if (p.dead) return { chance: 0 };
     if (p.unconscious) return { chance: 0, limit: `unconscious (${p.unconscious})` };
+    if (exertion === 'heavy' && p.needs && p.needs.waterL / p.mass * 100 >= 8) return { chance: 0, limit: 'dehydrated 8 % of body mass' };
     const cls = bloodClass(p);
     if (cls === 4 || (cls >= 3 && on_feet) || cls >= (EXERTION_FAILS_AT[exertion] ?? 5)) return { chance: 0, limit: `blood-loss class ${['I', 'II', 'III', 'IV'][cls - 1]}` };
     const scores = abilities(p);

@@ -1,10 +1,10 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate } from './body-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake } from './body-engine.js';
 import { loadRaws, creatureId } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -142,7 +142,8 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - A burn, a bite, an accident or a fall injury → BodyWound.
 - Someone falls → BodyFall.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Someone drinks or eats → BodyIntake.
+- PassTime lists who is active (walking, working, fighting, in heat) and who sleeps.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
 - Describe a character's injuries, blood loss or energy from BodyStatus.
@@ -251,6 +252,17 @@ export function registerRulesTools(enabled) {
         return `${out} ${status(a.who, p)}`;
     }));
 
+    tool('BodyIntake', 'Record drinking or eating the moment it happens.', {
+        who: str('Character name'),
+        water_l: { type: 'number', description: 'Water drunk, litres (a cup 0.25, a bottle 0.5–1)' },
+        food_kcal: { type: 'number', description: 'Food energy eaten, kcal (bread slice 80, apple 95, meal 600–900)' },
+    }, ['who'], a => run(st => {
+        const { p, error } = who(st, a.who);
+        if (error) return error;
+        intake(p, a);
+        return status(a.who, p);
+    }));
+
     tool('Communicate', 'Decide what a message carries from one character to another (speech or gesture) before narrating a reply or reaction. Returns whether the words, only the tone, or nothing reaches the listener.', {
         speaker: str('Character sending the message'),
         listener: str('Character receiving it'),
@@ -287,9 +299,11 @@ export function registerRulesTools(enabled) {
     tool('PassTime', 'Advance story time for every tracked character. Call before narrating any time passing. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
         minutes: { type: 'number', description: 'Minutes that pass' },
         resting: { type: 'array', items: { type: 'string' }, description: 'Characters not casting or fighting during this time' },
+        active: { type: 'array', items: { type: 'string' }, description: 'Characters walking, working, fighting or in heat during this time (more water and food used)' },
+        sleeping: { type: 'array', items: { type: 'string' }, description: 'Characters asleep during this time' },
     }, ['minutes'], a => run((st, rng) => {
         const asked = Math.max(0, Math.round(a.minutes));
-        const { elapsed, events } = advanceAll(st.people || {}, asked, new Set(a.resting || []), rng);
+        const { elapsed, events } = advanceAll(st.people || {}, asked, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []) });
         const head = events.length
             ? `Time stopped after ${elapsed} of ${asked} minutes: ${events.join('; ')}. ${asked - elapsed} minutes remain.`
             : `${elapsed} minutes passed.`;
