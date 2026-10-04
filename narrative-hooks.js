@@ -39,6 +39,7 @@ import { rulesDiceSpec, RULES_SECTIONS } from './src/rules/rules-mode.js';
 import { PLAYER_TURN_PROMPT } from './src/features/player-turn.js';
 import { calendarInjection } from './src/features/journal-calendar.js';
 import { takePhoneInjection } from './src/features/books-phone.js';
+import { sceneMemoryInjection, updateWhereabouts, whereaboutsInjection } from './src/features/scene-memory.js';
 
 const SCENE_CAST_RULE = `<scene_cast>\nCharacters listed as Present in [SCENE] act and speak in person; Remote ones speak only through their channel; Arriving ones enter when their time comes; everyone else is elsewhere and acts off-scene.\n</scene_cast>`;
 import { takeAuditNote } from './src/rules/rules-audit.js';
@@ -1569,6 +1570,15 @@ export function installInterceptor() {
                 if (calendar) injections += `${calendar}\n\n`;
                 const phone = takePhoneInjection();
                 if (phone) injections += `${phone}\n\n`;
+                if (settings.sceneMemory) {
+                    const scenes = sceneMemoryInjection();
+                    if (scenes) injections += `${scenes}\n\n`;
+                }
+                if (settings.modules?.scene) {
+                    updateWhereabouts(settings.currentMemo);
+                    const where = whereaboutsInjection();
+                    if (where) injections += `${where}\n\n`;
+                }
 
                 if (settings.rulesEngine) {
                     const note = takeAuditNote();

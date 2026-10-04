@@ -215,6 +215,8 @@ export function buildDefaultSettings() {
         strictDiceCommit: false,
         rulesEngine: false,
         playerTurn: false,
+        sceneMemory: false,
+        sceneMemoryHide: false,
 
         enablePortraits: true,
 

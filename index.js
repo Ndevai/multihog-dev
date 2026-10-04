@@ -55,6 +55,7 @@ import { openPartyTurn } from './src/features/party-turn.js';
 import { openJournal, openCalendar } from './src/features/journal-calendar.js';
 import { openLoreSuggestions } from './src/features/lore-suggest.js';
 import { openBooks, openPhone, markPhoneTold } from './src/features/books-phone.js';
+import { onSceneMemoryMessage } from './src/features/scene-memory.js';
 
 // Wand-menu entries of the smaller play features: [element id, Font Awesome icon, label, open()].
 const WAND_FEATURES = [
@@ -8171,6 +8172,7 @@ function organizeConnectionSettingsUI() {
         // Player turn runs first so every other reader sees the reply without its tag.
         if (event_types.MESSAGE_RECEIVED) eventSource.makeFirst(event_types.MESSAGE_RECEIVED, id => { if (getSettings().playerTurn) onPlayerTurnMessage(id); });
         if (event_types.MESSAGE_SENT) eventSource.on(event_types.MESSAGE_SENT, () => { if (getSettings().playerTurn) onPlayerTurnSent(); markPhoneTold(); });
+        if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, id => { if (getSettings().sceneMemory) onSceneMemoryMessage(id).catch(e => console.warn('[RPG Tracker] Scene memory skipped:', e)); });
         if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => { if (getSettings().playerTurn) onPlayerTurnChatChanged(); });
         eventSource.on(event_types.GENERATION_STARTED, type => { if (getSettings().rulesEngine) onRulesGenerationStarted(type); });
         if (event_types.MESSAGE_RECEIVED) eventSource.on(event_types.MESSAGE_RECEIVED, id => { if (getSettings().rulesEngine) onRulesMessageReceived(id); });
@@ -11300,6 +11302,12 @@ RULES:
                 scheduleAutoApply();
             });
         }
+        for (const [sel, key] of [['#rpg_scene_memory', 'sceneMemory'], ['#rpg_scene_memory_hide', 'sceneMemoryHide']]) {
+            $(sel).prop('checked', !!getSettings()[key]).on('change', function () {
+                getSettings()[key] = !!$(this).prop('checked');
+                saveSettings();
+            });
+        }
         $('#rpg_player_turn').prop('checked', !!getSettings().playerTurn).on('change', function () {
             const fresh = getSettings();
             fresh.playerTurn = !!$(this).prop('checked');
@@ -12807,6 +12815,8 @@ RULES:
             syncRngToolsUi(s);
             $('#rpg_rules_engine').prop('checked', !!s.rulesEngine);
             $('#rpg_player_turn').prop('checked', !!s.playerTurn);
+            $('#rpg_scene_memory').prop('checked', !!s.sceneMemory);
+            $('#rpg_scene_memory_hide').prop('checked', !!s.sceneMemoryHide);
             registerRulesTools(!!s.rulesEngine);
             const narrativePacing = ['normal', 'shorter_outputs', 'high_agency', 'downtime'].includes(s.narrativePacing)
                 ? s.narrativePacing
