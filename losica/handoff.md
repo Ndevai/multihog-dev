@@ -172,6 +172,7 @@ Decided by the LLM, not by code (before enforcement): whether it calls a tool at
 - Next: speakers' communicative needs from section 6 → categories → words.
 
 ## 8. Working conditions
+- No tests (4 Oct 2026): write no new tests and run none; push code changes directly.
 - User is on mobile; weekly Claude limit is a constraint (75 % used on Oct 2).
 - Background processes in the cloud session stop when a turn ends; long runs go to GitHub Actions.
 - Evaluations need evidence levels; vibe-based judgments are rejected. Scans and lists are exhaustive.
