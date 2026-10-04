@@ -17,6 +17,7 @@ const FRACTURE = {
 // Small-vessel bleeding stops by clotting within the normal bleeding time: under 5 min, up to 8 min in some texts (Ivy and
 // template methods). A bruise clears in 13 days (mild contusion, Jackson & Feagin classification).
 const CLOT_MIN = [0, 8];
+const INFECTION_DELAY_DAYS = 10.5;
 const BRUISE_DAYS = [13, 13];
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
@@ -191,7 +192,12 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             if (w.heals !== null && !w.healed && w.age >= w.heals) { w.healed = true; w.bleed = 0; }
             if (w.clotIn != null && w.bleed && --w.clotIn <= 0) { w.bleed = 0; w.clotIn = null; }
             const onset = INFECTION_ONSET[w.type === 'bite' ? 'bite' : 'other'];
-            if (w.open && w.infection === null && w.age >= onset) w.infection = rng() < infectionChance(w);
+            if (w.open && w.infection === null && w.age >= onset) {
+                w.infection = rng() < infectionChance(w);
+                // An infected wound closes 10.5 days later (surgical-site infection adds 10–11 hospital days; StatPearls,
+                // Berríos-Torres 2017 — hospital stay as the proxy for healing).
+                if (w.infection && w.heals !== null) { w.heals = Math.max(w.heals, w.age) + INFECTION_DELAY_DAYS; w.healed = false; }
+            }
         }
         if (++p.minute >= DAY_MIN) { p.minute -= DAY_MIN; endDay(net); }
     }
