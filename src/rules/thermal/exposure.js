@@ -138,13 +138,26 @@ export function thermalMinute(p, { active = false, sleeping = false, restL = 0 }
     // thickness [ASSUMED threshold]. Immersed segments: the skin surface at the water temperature, as in the constant-
     // temperature hot-water exposures that define the endpoint (Moritz & Henriques 1947); otherwise the skin node [ASSUMED].
     const burned = [];
-    skin.map((t, i) => water?.segs[i] ? Math.max(t, water.tc) : t).forEach((t, i) => burned.push(...burnDose(p, i, t, 60)));
+    skin.map((t, i) => water?.segs[i] ? Math.max(t, water.tc) : clo[i] > 0 ? t : surfaceT(t, e.tdb, e.tr ?? e.tdb, e.v ?? 0.1)).forEach((t, i) => burned.push(...burnDose(p, i, t, 60)));
     th.core = Math.round(coreOf(run)[4] * 100) / 100;
     th.skinMin = Math.round(Math.min(...skin) * 10) / 10;
     th.coldest = SEGMENTS[skin.indexOf(Math.min(...skin))];
     const waterL = Math.max(0, restL - body.neutralWaterGs * 60 / 1000) + r.waterGs * 60 / 1000;
     // Food energy: JOS-3 total metabolic heat (basal, work, shivering, non-shivering), W × 60 s ÷ 4184 J/kcal.
     return { core: th.core, skin, waterL, frozen, burned, kcal: r.qTotal * 60 / 4184 };
+}
+
+// Bare skin surface: steady balance of conduction from the JOS-3 skin node (k 0.37 W/m/K over 1 mm, 370 W/m²K [ASSUMED depth]),
+// convection hc = 8.3 v^0.6, at least 3.1 W/m²K (ASHRAE, seated), and radiation ε σ (Tr⁴ − Ts⁴), ε 0.98. Clothed skin is
+// shielded [ASSUMED].
+function surfaceT(node, ta, tr, v) {
+    const hk = 370, hc = Math.max(3.1, 8.3 * v ** 0.6), K = 273.15;
+    let ts = node;
+    for (let k = 0; k < 30; k++) {
+        const q = 0.98 * 5.670374e-8 * ((tr + K) ** 4 - (ts + K) ** 4);
+        ts = (hk * node + hc * ta + q) / (hk + hc);
+    }
+    return ts;
 }
 
 /** Adds Henriques damage for segment i held at surface temperature t (°C) for `seconds`; returns new burns [{ seg, depth }]. */

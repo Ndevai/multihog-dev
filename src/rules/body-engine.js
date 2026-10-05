@@ -242,6 +242,8 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         if (heat) {
             const st = coreStage(heat.core);
             if (st === 'hypothermia IV') { p.dead = 'hypothermia'; return; }
+            // Above the highest core temperature anyone survived, 46.5 °C (Wikipedia, Hyperthermia: 10 July 1980) → dead [ASSUMED ceiling].
+            if (heat.core > 46.5) { p.dead = 'hyperthermia'; return; }
             // Heat stroke: survived when core is back under 40 °C within 30 min (PMC11438465); past that, death 26.5 % if
             // exertional, 63.2 % classic (MedLink), 1–3 days later [ASSUMED timing]. The roll stands after cooling.
             if (st === 'heat stroke' || p.heatStroke?.min >= 30) {
