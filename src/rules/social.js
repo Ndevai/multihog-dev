@@ -31,3 +31,10 @@ export const OBEY = { 'victim out of sight': 0.65, 'victim in the same room': 0.
 // rates from the asks needed, Flynn & Lake 2008 (J Pers Soc Psychol 95:128), as reported by ScienceBlog (2026): about 10 asks for
 // 5 questionnaires, 6 for 3 phone loans, just over 2 for 1 escort [targets 5, 3, 1 as recalled] → 48 %, 48 %, 43 %; mean 46 %.
 export const SMALL_REQUEST_YES = 0.46;
+
+// Romantic interest after a brief first meeting (yes to seeing the person again): Fisman, Iyengar, Kamenica & Simonson 2006 (Q J
+// Econ 121:673; 392 subjects, 6276 four-minute meetings): in sessions with fewer than 15 partners about half got a yes from
+// either sex; in larger sessions men stayed at about 50 %, women fell to about one-third; overall yes rate 0.43.
+export function interestChance(sex, manyOptions = false) {
+    return sex === 'female' && manyOptions ? 1 / 3 : 0.5;
+}

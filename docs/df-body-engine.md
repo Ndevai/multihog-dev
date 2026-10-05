@@ -547,6 +547,8 @@ Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 1
 
 | small request to a stranger (AskStranger) | yes 46 % | Flynn & Lake 2008, J Pers Soc Psychol 95:128 (via ScienceBlog): about 10 asks for 5 questionnaires, 6 for 3 phone loans, just over 2 for 1 escort to a gym [targets 5, 3, 1 as recalled] → 48, 48, 43 % |
 
+| interest after a first meeting (FirstImpression) | wants to meet again: 50 %; women meeting 15 or more prospects at once 33 % | Fisman, Iyengar, Kamenica & Simonson 2006, Q J Econ 121:673: 392 subjects, 14 sessions, 6276 four-minute meetings; small sessions about half yes for both sexes, large sessions men about 50 %, women about one-third; overall 0.43. Attractiveness raised a yes by 0.119–0.140 per rating point (1–10), not used: ratings would be the narrator's guess |
+
 Limits (OPEN-89): evidence, prior suspicion, relationship and training are not inputs (the meta-analysis found detection rates vary little between studies); the speaker's skill at lying is not modelled.
 
 ### 6.10 Grip: hanging on and carrying by hand

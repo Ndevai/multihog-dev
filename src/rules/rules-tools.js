@@ -1,6 +1,6 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
 import { LIGHT } from './vision.js';
-import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES } from './social.js';
+import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance } from './social.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -11,7 +11,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -152,7 +152,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look. A character might suspect a lie → JudgeStatement. A bystander might help → Bystander. An order to hurt someone → ObeyOrder. A small favour asked of a stranger → AskStranger. Hanging on or carrying by hand → HoldOn. A chase on foot → Chase. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look. A character might suspect a lie → JudgeStatement. A bystander might help → Bystander. An order to hurt someone → ObeyOrder. A small favour asked of a stranger → AskStranger. Hanging on or carrying by hand → HoldOn. A chase on foot → Chase. Romantic interest after a first meeting → FirstImpression. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
@@ -429,6 +429,15 @@ export function registerRulesTools(enabled) {
         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
         if (p.error || f.error) return p.error || f.error;
         return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m);
+    }));
+
+    tool('FirstImpression', 'Decide whether a character, after a brief first meeting, wants to see someone again romantically, before narrating their reaction.', {
+        who: str('Character whose interest is decided'),
+        sex: { type: 'string', enum: ['male', 'female'] },
+        many_options: { type: 'boolean', description: 'They are meeting many prospective partners at once (15 or more), e.g. a ball, a festival, a dating event' },
+    }, ['who', 'sex'], a => run((st, rng) => {
+        const pr = interestChance(a.sex, !!a.many_options);
+        return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'} (${Math.round(pr * 100)} %; Fisman et al. 2006 speed-dating study).`;
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
