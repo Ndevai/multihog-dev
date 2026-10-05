@@ -19,6 +19,11 @@ const FRACTURE = {
     // Ribs: "at least 6 weeks", complete by 12 weeks (Guttentag & Salwen 1999). Nose: stable 3–5 weeks, fused 4–8 weeks
     // (Wikipedia "Nasal fracture"); midpoints.
     rib: [42, 84], nose: [28, 42],
+    // Joints and spine, as [weight-bearing or cast off, healed]: wrist (distal radius) cast 6 weeks, healing "a year or two";
+    // ankle weight off 6 weeks, significant recovery within 4 months; hip 3–6 months (Wikipedia: Distal radius, Ankle, Hip
+    // fracture). Spine: pain eases at about 4 weeks, resolves at about 12 (Merck, vertebral compression fractures) [ASSUMED pain
+    // course = healing].
+    wrist: [42, 365], ankle: [42, 120], hip: [90, 180], spine: [28, 84],
 };
 // Small-vessel bleeding stops by clotting within the normal bleeding time: under 5 min, up to 8 min in some texts (Ivy and
 // template methods). A bruise clears in 13 days (mild contusion, Jackson & Feagin classification).
@@ -113,10 +118,11 @@ export function addWound(p, w, rng = Math.random) {
     if (w.permanent) wound.permanent = true;
     if (w.type === 'severed') wound.severed = true;
     if (w.type === 'fracture') {
-        // Parts outside the arm and leg rows have no timetable (OPEN-58): joins stays null.
+        // Shoulder, elbow, knee and skull have no timetable (OPEN-58): joins stays null.
+        const joint = w.part.cats.includes('JOINT') && ['wrist', 'ankle', 'hip'].find(j => w.part.name.includes(j));
         const kind = w.part.cats.some(k => k.startsWith('RIB_')) ? 'rib' : w.part.cats.includes('NOSE') ? 'nose'
-            : BONE_ROW[row] ? `${BONE_ROW[row]}_${w.fracture || 'transverse'}` : null;
-        const bone = w.part.cats.includes('LEG_LOWER') ? 'shin' : 'default';
+            : joint ? joint : w.part.cats.includes('SPINE') ? 'spine' : BONE_ROW[row] ? `${BONE_ROW[row]}_${w.fracture || 'transverse'}` : null;
+        const bone = w.part.cats.includes('LEG_LOWER') ? 'shin' : joint === 'wrist' ? 'wrist' : 'default';
         wound.fracture = { kind, joins: kind ? FRACTURE[kind][0] * factor : null, full: kind ? FRACTURE[kind][1] * factor : null, crooked: false,
             never: kind ? rng() < NONUNION[bone] : false };
         if (w.openGrade && OPEN_FRACTURE_INFECTION[w.openGrade]) wound.openGrade = w.openGrade;
