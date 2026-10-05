@@ -433,7 +433,11 @@ Limits for a 25-year-old man: 3.8 MET (road walk) 10.3 h, 5.0 MET (20 kg on a di
 
 Running (70 kg, road): 8 km/h 8.6 MET, kept 2.1 h; 10 km/h 10.5 MET, 1.1 h; 12 km/h 12.4 MET, 36 min; 10 km/h up 5 % 12.7 MET, 33 min.
 
-Open (OPEN-87): rest between bouts and partial recovery, downhill cost (Santee et al. 2001 model; equation not reachable), running.
+Downhill: Pandolf at the negative grade minus the Santee et al. 2001 correction, CF = η [G (W + L) V ÷ 3.5 − (W + L)(G + 6)² ÷ W + 25 − V²], recalled, not checked against the paper [ASSUMED]. With 70 kg + 20 kg at 1.34 m/s: level 386 W, −5 % 320 W, −10 % 298 W, −20 % 467 W (cost is lowest near −10 %).
+
+Available VO2max = VO2max × altitude factor (§6.6) − 4 mL/min per g of haemoglobin missing (Schmidt & Prommer 2010, Exerc Sport Sci Rev 38:68). Haemoglobin 150 g/L men, 135 g/L women [ASSUMED typical]; missing blood = blood lost + red-cell deficit. A 450 mL loss: 54.4 → 50.5 mL/kg/min (−7 %), a 5-MET walk lasts 6.2 h instead of 7.0 h; 3000 m: 5.2 h. Heavy-exertion checks use available ÷ normal VO2max as the 'aerobic' capacity.
+
+Open (OPEN-87): rest between bouts and partial recovery; check the Santee correction against the paper.
 
 ## 7. Tools
 

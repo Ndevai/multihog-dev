@@ -5,7 +5,7 @@ import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom } from './venom.js';
-import { relativeLoad, mawtHours } from './work.js';
+import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
@@ -439,7 +439,7 @@ export function status(who, p) {
     const c = creatureOf(p);
     out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]})` : `${who} (${c?.name ?? p.species}): no blood`);
     if (p.deathIn !== null) out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
-    if (p.red > 0) out.push(`red-cell deficit ${Math.round(p.red)} mL: endurance lowered`);
+    if (p.red > 0 || p.lost > 0) out.push(`aerobic capacity ${Math.round(vo2avail(p) / vo2max(p) * 100)} % (altitude and missing red cells)`);
     for (const w of p.wounds) {
         if (w.healed && !w.infection) continue;
         const bits = [`wound ${w.id} ${w.part} ${w.type}${w.depth ? ` (${w.depth.replace('_', ' ')})` : ''}`];
@@ -948,10 +948,8 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // in activity (Maggiorini et al. 1998) → heavy exertion fails [ASSUMED].
     if (p.sepsis && exertion === 'heavy') return { chance: 0, limit: 'sepsis' };
     if (p.exhausted && exertion !== 'none') return { chance: 0, limit: 'exhausted' };
-    if (p.altitude && exertion === 'heavy') {
-        if (p.altitude.ams || p.altitude.oedema) return { chance: 0, limit: 'altitude sickness' };
-        scores.aerobic = aerobicFactor(p.altitude.m);
-    }
+    if (p.altitude && exertion === 'heavy' && (p.altitude.ams || p.altitude.oedema)) return { chance: 0, limit: 'altitude sickness' };
+    if (exertion === 'heavy' && thermalCapable(p.species)) { const a = vo2avail(p) / vo2max(p); if (a < 1) scores.aerobic = a; }
     // Heat: no slowing measured at 38.6 °C core (reaction 40 ms faster; Barry et al. 2022, Appl Physiol Nutr Metab 47:261);
     // heat stroke is defined by nervous-system dysfunction (disorientation): attention tasks fail [ASSUMED from the definition].
     if (uses.includes('alertness') && p.env && coreStage(p.thermal?.stageCore ?? p.thermal?.core) === 'heat stroke') return { chance: 0, limit: 'heat stroke: disoriented' };

@@ -1,15 +1,19 @@
+import { aerobicFactor } from './thermal/altitude.js';
 // Walking with a load (docs/df-body-engine.md §6.7): Pandolf, Givoni & Goldman 1977 (J Appl Physiol 43:577), as given on
 // Wikipedia "Pandolf equation": M (W) = 1.5 W + 2.0 (W + L)(L / W)² + η (W + L)(1.5 V² + 0.35 V G); W body kg, L load kg,
 // V m/s, G grade %. Terrain η: Soule & Goldman 1972 (J Appl Physiol 32:706).
 export const TERRAIN = { road: 1.0, 'dirt road': 1.1, 'light brush': 1.2, 'heavy brush': 1.5, swamp: 1.8, 'loose sand': 2.1,
     'snow 15 cm': 2.5, 'snow 25 cm': 3.3, 'snow 35 cm': 4.1 };
 
-/** Metabolic rate (W) walking; downhill grades count as level [ASSUMED: Pandolf is for level and uphill]. */
+// Downhill: Pandolf with the negative grade, minus the Santee et al. 2001 correction CF = η [G (W + L) V ÷ 3.5 − (W + L)
+// (G + 6)² ÷ W + 25 − V²] (as recalled; −5 % at 1.34 m/s gives 82 % of level cost, −10 % gives 77 %) [ASSUMED: unverified].
+/** Metabolic rate (W) walking. */
 export function pandolf(bodyKg, loadKg, speedMs, gradePct = 0, terrain = 'dirt road') {
     const eta = TERRAIN[terrain];
     if (eta == null) throw new Error(`Unknown terrain "${terrain}". Known: ${Object.keys(TERRAIN).join(', ')}.`);
-    const W = bodyKg, L = loadKg || 0, V = speedMs, G = Math.max(0, gradePct || 0);
-    return 1.5 * W + 2.0 * (W + L) * (L / W) ** 2 + eta * (W + L) * (1.5 * V ** 2 + 0.35 * V * G);
+    const W = bodyKg, L = loadKg || 0, V = speedMs, G = gradePct || 0;
+    const m = 1.5 * W + 2.0 * (W + L) * (L / W) ** 2 + eta * (W + L) * (1.5 * V ** 2 + 0.35 * V * G);
+    return G >= 0 ? m : m - eta * (G * (W + L) * V / 3.5 - (W + L) * (G + 6) ** 2 / W + 25 - V ** 2);
 }
 
 // Running: ACSM running equation, VO2 (mL/kg/min) = 0.2 v + 0.9 v × grade + 3.5, v in m/min, grade as a fraction (as given
@@ -35,5 +39,11 @@ export function vo2max(p, gauss) {
     const female = p.sex === 'female';
     return (female ? 43.0 : 54.4) + (p.fitZ ?? 0) * (female ? 7.7 : 8.4) - 3.5 * Math.max(0, ((p.age ?? 25) - 25) / 10);
 }
-export const relativeLoad = (met, p, gauss) => Math.max(0, (met - 1) / (Math.max(10.5, vo2max(p, gauss)) / 3.5 - 1));
+// Available VO2max: × the altitude factor (§6.6), minus 4 mL/min per g of haemoglobin missing (Schmidt & Prommer 2010, Exerc
+// Sport Sci Rev 38:68). Haemoglobin 150 g/L men, 135 women [ASSUMED typical]; missing blood = lost + red-cell deficit (§5).
+export function vo2avail(p, gauss) {
+    const hbG = ((p.lost ?? 0) + (p.red ?? 0)) / 1000 * (p.sex === 'female' ? 135 : 150);
+    return Math.max(3.5, vo2max(p, gauss) * aerobicFactor(p.altitude?.m ?? 0) - 4 * hbG / p.mass);
+}
+export const relativeLoad = (met, p, gauss) => Math.max(0, (met - 1) / (Math.max(10.5, vo2avail(p, gauss)) / 3.5 - 1));
 export const mawtHours = load => 26.12 * Math.exp(-4.81 * load);
