@@ -414,7 +414,9 @@ function altitudeMinute(p, rng) {
         a.oedema = a.hace;
     }
     if (a.ams && a.min >= a.amsEnd) a.ams = false;
-    if (a.hapeAt && a.min >= a.hapeAt) { a.hape = true; a.oedema = true; a.hapeAt = null; }
+    // HAPE: half die without descent (WMS), "fatal within a few hours" (Medscape 300716): 2–6 h after onset [ASSUMED range].
+    if (a.hapeAt && a.min >= a.hapeAt) { a.hape = true; a.oedema = true; a.hapeAt = null; if (rng() < 0.5) a.hapeDeath = a.min + Math.round((2 + 4 * rng()) * 60); }
+    if (a.hapeDeath && a.min >= a.hapeDeath) p.dead = 'high-altitude pulmonary oedema';
     if (a.hace && a.min >= a.haceDeath - 60) p.unconscious ??= 'cerebral oedema';
     if (a.hace && a.min >= a.haceDeath) p.dead = 'high-altitude cerebral oedema';
     if (a.sudden && a.tuc === undefined) { const r = tucRange(a.m, a.decompression); a.tuc = r ? r[0] + rng() * (r[1] - r[0]) : null; }
