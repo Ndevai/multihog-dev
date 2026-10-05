@@ -1,3 +1,4 @@
+import { NOISE, BARRIER } from './acoustics.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -332,13 +333,17 @@ export function registerRulesTools(enabled) {
         listener: str('Character receiving it'),
         means: { type: 'string', enum: ['speech', 'gesture'] },
         lit: { type: 'boolean', description: 'Enough light to see a gesture. Default true.' },
+        distance_m: { type: 'number', description: 'Distance between them, m. Default 1.' },
+        effort: { type: 'string', enum: ['normal', 'raised', 'loud', 'shout'], description: 'Vocal effort. Default normal; whisper is not modelled.' },
+        noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
+        barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between them. Default none.' },
         speaker_species: str('Speaker\'s DF creature when it has no tracker profile.'),
         listener_species: str('Listener\'s DF creature when it has no tracker profile.'),
     }, ['speaker', 'listener'], a => run(st => {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (s.error || l.error) return s.error || l.error;
         const langs = [fromTracker(a.speaker).languages, fromTracker(a.listener).languages];
-        return communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs });
+        return communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort: a.effort ?? 'normal', noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
