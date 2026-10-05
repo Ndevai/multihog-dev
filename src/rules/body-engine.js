@@ -297,6 +297,18 @@ function checkDeath(p) {
     if (!apneic && p.apnea != null && !p.drowning) { p.apnea = null; if (p.unconscious === 'not breathing') p.unconscious = null; }
 }
 
+/**
+ * °C the core is below 36.7 (humans: JOS-3 core; animals: the same distance below their own set point). Coleshaw et al. 1983
+ * (J Appl Physiol 55:27): from 36.7 °C new-information registration and calculation speed fall; at 34–35 °C 70 % of new
+ * information is lost and speed is −50 %; recall and accuracy hold. Linear to 34.5 °C, held there below [ASSUMED].
+ */
+function coolCore(p) {
+    const t = p.env ? p.thermal?.stageCore ?? p.thermal?.core : null;
+    return t == null ? 0 : Math.min(2.2, Math.max(0, 36.7 - t));
+}
+const thinkSpeed = p => 1 - 0.5 * coolCore(p) / 2.2;
+const keepsNew = p => 1 - 0.7 * coolCore(p) / 2.2;
+
 // Frostbite most often strikes cheeks, ears, nose, fingers and toes (Wikipedia "Frostbite", citing McIntosh 2014): when the
 // head, a hand or a foot segment's skin freezes, those DF parts take it; other segments freeze as their DF part [ASSUMED].
 const SEG_CATS = { head: ['NOSE', 'EAR', 'CHEEK'], neck: ['NECK'], chest: ['BODY_UPPER'], back: ['BODY_UPPER'], pelvis: ['BODY_LOWER'],
@@ -394,6 +406,8 @@ export function status(who, p) {
     const th = p.thermal;
     if (p.env && th?.core != null) {
         const st = coreStage(th.stageCore ?? th.core);
+        const cc = coolCore(p);
+        if (cc > 0) out.push(`cold brain: mental tasks take ${round(1 / thinkSpeed(p), 2)} × as long (accuracy holds), keeps ${Math.round(keepsNew(p) * 100)} % of new information (recall of known things intact)`);
         out.push(`core ${round(th.core, 1)} °C${th.set != null ? ` (normal ${round(th.set, 1)})` : ''}${st ? ` (${st})` : ''}${th.coldest ? `, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})` : ''}`);
     }
     const n = p.net, s = stage(n);
@@ -829,7 +843,7 @@ function normInv(p) {
 }
 
 /** Chance of success and the ability that limits it. Non-force abilities between 0 and 1 change nothing yet (OPEN-66). */
-function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) {
+function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, timed = false }) {
     if (p.dead) return { chance: 0 };
     if (p.unconscious) return { chance: 0, limit: `unconscious (${p.unconscious})` };
     if (exertion === 'heavy' && p.needs && p.needs.waterL / p.mass * 100 >= 8) return { chance: 0, limit: 'dehydrated 8 % of body mass' };
@@ -839,13 +853,17 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) 
     // Cold limbs lower force capacity (§6.4).
     if ('grasp' in scores) scores.grasp *= forceFactor(limbCold(p, 'arm'));
     if ('stance' in scores) scores.stance *= forceFactor(limbCold(p, 'leg'));
+    // Low core temperature slows thinking; accuracy holds given time (Coleshaw et al. 1983). A timed task treats the speed
+    // as a capacity with the force spread [ASSUMED].
+    if (timed && uses.includes('alertness') && coolCore(p) > 0) scores.thinking = thinkSpeed(p);
     const lacking = uses.find(u => u in FUNCTIONS && !(u in scores));
     if (lacking) return { chance: 0, limit: `no ${lacking}` };
     const used = uses.filter(u => u in scores);
     const risk = uses.includes('alertness') ? crashRisk(impairmentBac(p)) : 1;
     const zero = used.find(u => scores[u] === 0);
     if (zero) return { chance: 0, limit: `${zero} 0%` };
-    const force = used.filter(u => FORCE_SCORES.includes(u)).sort((x, y) => scores[x] - scores[y])[0];
+    if ('thinking' in scores) used.push('thinking');
+    const force = used.filter(u => FORCE_SCORES.includes(u) || u === 'thinking').sort((x, y) => scores[x] - scores[y])[0];
     const s = force ? scores[force] : 1;
     const base = Math.max(0, Math.min(1, Number(share) || 0));
     const alert = (r, limit) => risk > 1.005
