@@ -366,6 +366,7 @@ export function resolveCreature(db, id) {
             case 'GRAVITATE_BODY_SIZE': c.gravitate = Number(t[1]); break;
             case 'PHYS_ATT_RANGE': if (t[1] === 'STRENGTH') c.strength = Number(t[5]); break;
             case 'BLOOD': c.blood = true; break;
+            case 'HOMEOTHERM': c.homeotherm = Number(t[1]); break;
             case 'NAME': c.name = t[1]; break;
             case 'ATTACK': {
                 const kind = t[2];

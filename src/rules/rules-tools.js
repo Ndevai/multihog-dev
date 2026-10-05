@@ -297,7 +297,7 @@ export function registerRulesTools(enabled) {
             if (error) { out.push(error); continue; }
             if (a.clear) { setEnvironment(p, null); out.push(`${name}: conditions cleared.`); continue; }
             if (a.air_c == null) return 'air_c is required.';
-            if (!thermalCapable(p.species)) { out.push(`${name}: body temperature is simulated only for human body plans (human, dwarf, elf, goblin); not recorded.`); continue; }
+            if (!thermalCapable(p.species) && !creatureOf(p)?.homeotherm) { out.push(`${name}: cold-blooded; body temperature not simulated; not recorded.`); continue; }
             try {
                 setEnvironment(p, { ...a, clothing: { ensemble: a.ensemble, garments: a.garments } });
             } catch (e) { return `${e.message} Nothing recorded.`; }

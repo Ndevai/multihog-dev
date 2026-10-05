@@ -3,6 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
+import { endothermMinute } from './thermal/endotherm.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
@@ -168,14 +169,21 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
-        const heat = p.env && thermalCapable(p.species) ? thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng)) : null;
+        let heat = null;
+        if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
+        else if (p.env && c?.homeotherm) {
+            const r = endothermMinute(p, c, { met: p.env.met ?? (sleeping ? 0.95 : active ? 3.5 : 1.3) });
+            // Stages at the human distances from the set point (−2, −5, −9, −13, +3 °C) [ASSUMED].
+            p.thermal.stageCore = round(r.core - r.set + 37, 2);
+            heat = { core: p.thermal.stageCore, frozen: [], kcal: r.kcal, waterL: WATER_L_DAY.rest * kleiber(p) / DAY_MIN + r.evapL };
+        }
         if (heat) {
             const st = coreStage(heat.core);
             if (st === 'hypothermia IV') { p.dead = 'hypothermia'; return; }
             if (st === 'hypothermia III') p.unconscious ??= 'hypothermia';
             else if (p.unconscious === 'hypothermia') p.unconscious = null;
             for (const seg of heat.frozen) for (const part of frostParts(c, seg)) addWound(p, { part, type: 'frostbite' }, rng);
-            water(p, rng);
+            if (thermalCapable(p.species)) water(p, rng);
         }
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
@@ -385,8 +393,8 @@ export function status(who, p) {
     }
     const th = p.thermal;
     if (p.env && th?.core != null) {
-        const st = coreStage(th.core);
-        out.push(`core ${th.core} °C${st ? ` (${st})` : ''}, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})`);
+        const st = coreStage(th.stageCore ?? th.core);
+        out.push(`core ${round(th.core, 1)} °C${th.set != null ? ` (normal ${round(th.set, 1)})` : ''}${st ? ` (${st})` : ''}${th.coldest ? `, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})` : ''}`);
     }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
@@ -759,7 +767,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
 const waterStage = p => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };
 const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
-    heat: coreStage(p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
+    heat: coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
 });
 

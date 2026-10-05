@@ -310,7 +310,7 @@ Characters given conditions with BodyEnvironment are simulated minute by minute 
 | Input | Rule | Source |
 |---|---|---|
 | body | mass 20–200 kg; height 1.72 m × (mass ÷ 74.43)^(1/3); age 20; male | JOS-3 defaults; geometric similarity [ASSUMED] |
-| species | human, dwarf, elf, goblin use the human model; other species are not simulated | [ASSUMED] OPEN-82 |
+| species | human, dwarf, elf, goblin use the human model; other warm-blooded creatures §6.5; cold-blooded are not simulated | [ASSUMED] OPEN-82 |
 | wind | weather wind (10 m) × 0.68 = air speed at the body (1.1 m), log profile, open terrain z0 = 0.01 m | Oke 1987, as in pythermalcomfort scale_wind_speed_log |
 | clothing | measured ensembles: local clo for the 17 segments (54 ensembles) | Juyoun et al.; Nomoto et al. (pythermalcomfort) |
 | garments | whole-body clo (ASHRAE 55 table) spread over the covered segments: local = clo × body area ÷ covered area; garments add up | ASHRAE 55 via CBE Thermal Comfort Tool; spreading rule [ASSUMED] |
@@ -343,6 +343,28 @@ Added to JOS-3:
 | head under water | submerged, or swim failure or unconscious without flotation: breath held N(24.3, 11.4) s (≥ 5 s), then water is breathed in → unconscious, dead after 5 min (not-breathing rule); head out before then → breathing resumes, unconscious ("near-drowning") until time passes | Barwood et al. 2006, Aviat Space Environ Med 77:1136 (maximal breath-hold on immersion in 11 °C water, 32 subjects); the same hold in warmer water [ASSUMED] | partial-thickness burn row [ASSUMED proxy]; depth by duration OPEN-84 |
 
 Results (70 kg, scratch runs): nude at 0 °C in 25 km/h wind, resting: stage I at 1.5 h, stage II at 2.9 h, unconscious at 3.7 h, dead at 4.5 h. Nude at −20 °C in 40 km/h wind: lower legs freeze at 10 min, fingers at 15, toes at 21, the face at 29, unconscious at 1.4 h, dead at 1.8 h. Jacket ensemble at −20 °C in 50 km/h wind, walking, bare face and hands: face and fingers frozen at 20 min, core 36.9 °C. Down suit with hood and gloves at −30 °C, walking: core 37.7 °C; bare face frozen at 9 min. Swimming in 12 °C water without a life jacket: arms fail at 41 min, dead (drowning) at 46 min; with a life jacket the swimmer stops and floats. Unclothed, floating in 5 °C water: unconscious at 129 min; with a life jacket dead of hypothermia at 167 min, without one dead of drowning at 134 min. Head under in 10 °C water: unconscious at 1 min, dead at 6 min. Whole body in still water (75 kg, wet jacket clothing): 0 °C: stage I 1.0 h, unconscious 2.5 h, dead 3.2 h; 5 °C: 1.4 h, 3.8 h, 4.6 h; 10 °C: stage I at 2.7 h, alive at 24 h; 15 and 20 °C: no stage in 24 h. Published guidance puts unconsciousness from hypothermia at about 1 h in ice water (Giesbrecht's 1-10-1 rule): the model cools about half as fast there. Deaths in the first minutes (cold shock gasp, swim failure, drowning) are outside it (OPEN-84). Rope climb at 80 % share (grasp): nude at 0 °C in 25 km/h wind: forearms 6.2 °C below set point at 0.5 h → 58 %, 12.1 °C at 2 h → 28 %; jacket at −20 °C in 50 km/h wind: 5.8 °C at 2 h → 60 %. Desert at 45 °C, sun (radiant 60 °C), 20 % RH, walking in T-shirt and shorts: 5.1 L water lost in 6 h (5 % of body mass at 4.2 h), core 38.5 °C. 22 °C indoors, resting, 24 h: 1.4 L.
+
+### 6.5 Body temperature of other warm-blooded creatures
+
+Creatures with DF `HOMEOTHERM` (body temperature in Urist degrees: °C = (°U − 9968 − 32) × 5/9; 10067 → 37.2 °C) other than human body plans use a whole-body heat balance (src/rules/thermal/endotherm.js).
+
+| Step | Rule | Source |
+|---|---|---|
+| heat loss | NicheMapR ellipsoid endotherm model: core → body → fur → air by convection (free and forced, wind) and radiation; ellipsoid of the creature's mass at density 1000 kg/m³, shape ratio 4.5, fur conductivity 0.04 W/mK | Porter & Kearney 2009, PNAS 106:19666; NicheMapR ellipsoid_endo.R (GPL-3) |
+| fur depth | fitted per mass so the still-air (0.1 m/s) conductance equals the allometric minimal wet conductance: birds 0.702 M^−0.519 mL O2 g⁻¹ h⁻¹ °C⁻¹ (M in g), mammals × 1.5; the model's fur resistance peaks with depth, so the thinnest fur that reaches the target (else the fur of least conductance) | Schleucher & Withers 2001, Comp Biochem Physiol A 129:821 (birds; mammals about 50 % higher); 20.1 J per mL O2 |
+| above 5 kg | the 5 kg fur | Scholander et al. 1950, Biol Bull 99:225: insulation about the same from a 5 kg fox to a 500 kg moose |
+| bird or mammal | bird = has a FEATHER tissue | DF raws |
+| basal heat | Kleiber 70 M^0.75 kcal/day (M in kg) | as NicheMapR |
+| activity | basal × METs (sleeping 0.95, resting 1.3, active 3.5, or given) | human Compendium values [ASSUMED for all] |
+| heat production | rises to cover heat loss, up to 4.9 × basal plus activity | Eyolfson et al. 2001 (human) [ASSUMED for all] |
+| core | changes by (production − loss) × 60 s ÷ (mass × 3470 J/kg/K) | specific heat of body tissue [ASSUMED human value] |
+| heat | evaporation removes any surplus without limit; water lost = that heat ÷ latent heat + breath water (NicheMapR, O2 extraction 20 %) + the resting 1.5 L/day × (M ÷ 70)^0.75 | NicheMapR ellipsoid; §6.3 |
+| stages | the human stages at the same distances from the creature's own set point: −2, −5, −9, −13, +3 °C | [ASSUMED] |
+| food | heat production each minute | — |
+
+Fitted fur and lower critical temperature (still air): 20 g mouse 14 mm, 32 °C (allometry 29.9); 0.3 kg rat 42 mm, 22 °C; 4 kg cat 28 mm, 6.5 °C; 40 kg wolf 29 mm, −12 °C (−8 °C in 18 km/h wind); 500 kg horse −35.5 °C; 2 kg chicken 84 mm (feathers), 5.5 °C. Scratch runs: wolf at −30 °C in 40 km/h wind holds its core for 12 h; a rat at −30 °C holds its core and loses 9 % of its mass in water by breathing in 10 h.
+
+Limits (OPEN-82): one shape and one fur conductivity for all; the allometry is an average over climates (a temperate rat gets arctic-grade fur, LCT 22 °C against about 28–30 measured); no sun, water immersion or wet fur for animals; evaporation without limit (no heat stroke in animals).
 
 ## 7. Tools
 
@@ -410,7 +432,7 @@ What these show:
 | OPEN-74 | closed by the fit in §4.6; replace the CompuBox proxy when a count of head punches landed per bare-knuckle bout is published |
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
-| OPEN-82 | body temperature of non-human-shaped species (JOS-3 is a human model) |
+| OPEN-82 | animals (§6.5): per-species fur, shape and summit metabolism; sun, water and wet fur; limited evaporation and heat stroke; cold-blooded creatures |
 | OPEN-83 | effects of hypothermia II and heat stroke on checks; touch and fine finger work from skin temperature (Heus et al. 1995: 15 °C local hand skin as the minimum criterion) |
 | OPEN-84 | frostbite depth from time frozen; cold shock and swim failure in cold water; cooling in ice water about half the published rate; clothing wet in air (rain, sweat); head under water |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
