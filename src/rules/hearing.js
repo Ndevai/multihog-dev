@@ -3,9 +3,9 @@
 const H = (best, lo, hi, src) => ({ best, lo, hi, src });
 export const HEARING = {
     HUMAN: H(-10, 31, 17600, 'Jackson et al. 1999, J Acoust Soc Am 106:3017'),
-    DOG: H(null, 63, 47000, 'Heffner 1983, Behav Neurosci 97:310, via Guérineau et al. 2024, Vet Sci 11:67'),
+    DOG: H(-0.5, 67, 45000, 'Heffner 1983, Behav Neurosci 97:310: 60 dB range from the text; best = mean of four dogs at 8 kHz read from Fig. 3 (4, 1, −2, −5 dB)'),
     FOX: H(-15, 51, 48000, 'Malkemper et al. 2015, Hear Res 320:30'),
-    CAT: H(null, 55, 79000, 'Heffner 2004, Anat Rec 281A:1111; Malkemper et al. 2020, J Anat 236'),
+    CAT: H(-4, 55, 78000, 'Heffner & Heffner 1985, Hear Res 19:85: 60 dB limits from the text; best = mean of two cats at 8 kHz read from Fig. 2'),
     HORSE: H(null, 55, 33500, 'Heffner & Heffner 1983, Behav Neurosci 97:299, via Olczak et al. 2023, Animals 13:2307'),
     COW: H(null, 23, 35000, 'Heffner & Heffner 1983, via Olczak et al. 2023'),
     PIG: H(null, 42, 40500, 'Heffner & Heffner 1990, Hear Res 48:231'),

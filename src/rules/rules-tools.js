@@ -346,6 +346,7 @@ export function registerRulesTools(enabled) {
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
         timed: { type: 'boolean', description: 'The task must be done within a time that leaves no slack (a lock picked before the guard turns, a sum shouted in a race)' },
+        fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
     }, ['who', 'task', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), a, rng)));
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {

@@ -7,7 +7,7 @@ import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
-import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
+import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -1004,7 +1004,7 @@ function normInv(p) {
 }
 
 /** Chance of success and the ability that limits it. Non-force abilities between 0 and 1 change nothing yet (OPEN-66). */
-function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, timed = false }) {
+function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, timed = false, fine = false }) {
     if (p.dead) return { chance: 0 };
     if (p.unconscious) return { chance: 0, limit: `unconscious (${p.unconscious})` };
     if (exertion === 'heavy' && p.needs && p.needs.waterL / p.mass * 100 >= 8) return { chance: 0, limit: 'dehydrated 8 % of body mass' };
@@ -1014,6 +1014,8 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // Cold limbs lower force capacity (§6.4).
     if ('grasp' in scores) scores.grasp *= forceFactor(limbCold(p, 'arm'));
     if ('stance' in scores) scores.stance *= forceFactor(limbCold(p, 'leg'));
+    // Fine finger work: × finger dexterity at the hand skin temperature (Daanen 2009) (§6.4).
+    if (fine && 'grasp' in scores) scores.grasp *= fineFactor(handSkin(p));
     // Low core temperature slows thinking; accuracy holds given time (Coleshaw et al. 1983). A timed task treats the speed
     // as a capacity with the force spread [ASSUMED].
     if (timed && uses.includes('alertness') && coolCore(p) > 0) scores.thinking = thinkSpeed(p);

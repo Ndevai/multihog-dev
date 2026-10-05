@@ -166,6 +166,18 @@ export function limbCold(p, limb) {
     const core = coreOf({ t: th.t });
     return Math.max(0, idx.reduce((a, i) => a + body.setCr[i] - core[i], 0) / idx.length);
 }
+/** Hand skin temperature (°C), mean of both hands; null without a thermal state. */
+export function handSkin(p) {
+    const th = p?.thermal;
+    if (!p?.env || !th?.t) return null;
+    const sk = skinOf({ t: th.t });
+    return (sk[SEGMENTS.indexOf('left_hand')] + sk[SEGMENTS.indexOf('right_hand')]) / 2;
+}
+// Fine finger dexterity from finger skin temperature: Purdue pegboard score read from Daanen 2009 (Industrial Health 47:262,
+// Fig. 4; 18 group means, 12 men) and fitted with a hinge at 13.5 °C: 25.12 + 0.902 per °C below, + 0.191 per °C above;
+// share of the 30 °C score (28.27), at most 1. Below 7.7 °C (the lowest point) the line is extended [ASSUMED]. Hand skin node
+// as finger skin [ASSUMED].
+export const fineFactor = t => t == null ? 1 : Math.max(0, Math.min(1, (25.12 + 0.902 * Math.min(t - 13.5, 0) + 0.191 * Math.max(t - 13.5, 0)) / 28.27));
 export const forceFactor = dT => Math.max(0, 1 - 0.02 * dT);
 export const speedFactor = dT => Math.max(0, 1 - 0.05 * dT);
 export const NERVE_PER_C = 2.2;
