@@ -178,7 +178,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         }
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
-            n.kcal += KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
+            n.kcal += heat ? heat.kcal : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
             if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
             if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }

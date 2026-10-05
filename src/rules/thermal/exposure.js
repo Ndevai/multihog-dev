@@ -117,7 +117,8 @@ export function thermalMinute(p, { active = false, sleeping = false, restL = 0 }
     th.skinMin = Math.round(Math.min(...skin) * 10) / 10;
     th.coldest = SEGMENTS[skin.indexOf(Math.min(...skin))];
     const waterL = Math.max(0, restL - body.neutralWaterGs * 60 / 1000) + r.waterGs * 60 / 1000;
-    return { core: th.core, skin, waterL, frozen };
+    // Food energy: JOS-3 total metabolic heat (basal, work, shivering, non-shivering), W × 60 s ÷ 4184 J/kcal.
+    return { core: th.core, skin, waterL, frozen, kcal: r.qTotal * 60 / 4184 };
 }
 
 // Core temperature stages (pelvis core node as rectal temperature [ASSUMED]). Hypothermia: Brown et al. 2012, NEJM 367:1930
