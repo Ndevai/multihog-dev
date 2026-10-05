@@ -528,6 +528,9 @@ Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 1
 |---|---|---|
 | lie or truth (JudgeStatement) | a lie is judged a lie with chance 0.47; a truth is judged a lie with chance 0.39; one roll | Bond & DePaulo 2006, Pers Soc Psychol Rev 10:214: 206 documents, 24 483 judges, no aids or training: 47 % of lies classified deceptive, 61 % of truths nondeceptive, 54 % correct |
 
+| bystander helps (Bystander) | alone 85 %, one other witness 62 %, four or more 31 % (linear between [ASSUMED]); dangerous emergencies: 85 % at any number [ASSUMED from "did not occur"] | Darley & Latané 1968, J Pers Soc Psychol 8:377 (via Wikipedia, Diffusion of responsibility); Fischer et al. 2011, Psychol Bull 137:517 (7700 participants, g = −0.35, attenuated when dangerous) |
+| order to harm (ObeyOrder) | carries it out to the end: victim out of sight 65 %; same room 40 %; must physically force 30 %; orders by phone 21 %; ordinary business 47.5 %; peers refuse 10 %; a peer obeys 92.5 % | Milgram's variations (Wikipedia, Milgram experiment); Blass: replications 28–91 %, US mean 61 %, elsewhere 66 % |
+
 Limits (OPEN-89): evidence, prior suspicion, relationship and training are not inputs (the meta-analysis found detection rates vary little between studies); the speaker's skill at lying is not modelled.
 
 ## 7. Tools
