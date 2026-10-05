@@ -3,7 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
-import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND } from './thermal/exposure.js';
+import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -481,7 +481,8 @@ function defenceDone(a, t, defender, rng) {
     const intentFrom = a.intent_visible ? 0 : t.approach;
     const m = defender?.mass ?? REF_MASS;
     const body = defender?.body || {};
-    const motor = SYNAPSE_S + (body.limb_m ?? REACH_M * size(m, EXP_LENGTH)) / (body.nerve_mps ?? NERVE_MPS) + twitch(m);
+    const nerve = Math.max(1, (body.nerve_mps ?? NERVE_MPS) - NERVE_PER_C * limbCold(defender, 'arm'));
+    const motor = SYNAPSE_S + (body.limb_m ?? REACH_M * size(m, EXP_LENGTH)) / nerve + twitch(m);
     const rt = channel => ((body.sense_s?.[channel] ?? SENSE_S[channel]) + (body.decide_s ?? DECIDE_S) + motor)
         * Math.max(0.5, 1 + RT_CV * gauss(rng));
     const done = [];
@@ -518,7 +519,7 @@ function defenceDone(a, t, defender, rng) {
 function moveTime(defender, kind) {
     const ab = defender ? abilities(defender) : {};
     const key = kind === 'block' ? 'grasp' : 'stance';
-    const capacity = key in ab ? ab[key] : kind === 'block' ? 0 : 1;
+    const capacity = (key in ab ? ab[key] : kind === 'block' ? 0 : 1) * speedFactor(limbCold(defender, kind === 'block' ? 'arm' : 'leg'));
     if (capacity <= 0) return Infinity;
     return (kind === 'block' ? LIMB_MOVE_S : BODY_MOVE_S) * size(defender?.mass ?? REF_MASS, EXP_MOVE) / capacity;
 }
@@ -800,6 +801,9 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false }) 
     const cls = bloodClass(p);
     if (cls === 4 || (cls >= 3 && on_feet) || cls >= (EXERTION_FAILS_AT[exertion] ?? 5)) return { chance: 0, limit: `blood-loss class ${['I', 'II', 'III', 'IV'][cls - 1]}` };
     const scores = abilities(p);
+    // Cold limbs lower force capacity (§6.4).
+    if ('grasp' in scores) scores.grasp *= forceFactor(limbCold(p, 'arm'));
+    if ('stance' in scores) scores.stance *= forceFactor(limbCold(p, 'leg'));
     const lacking = uses.find(u => u in FUNCTIONS && !(u in scores));
     if (lacking) return { chance: 0, limit: `no ${lacking}` };
     const used = uses.filter(u => u in scores);

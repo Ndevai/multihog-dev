@@ -133,4 +133,20 @@ export function coreStage(core) {
     return null;
 }
 
+// Limb temperature effects (JOS-3 limb core node as muscle temperature [ASSUMED]): per °C below the model's set point, maximal
+// isometric force −2 % and power and speed −4 to −6 % (5 % used) (Bergh & Ekblom 1979, Acta Physiol Scand 107:33, muscle
+// 30–39 °C); motor nerve conduction −2.2 m/s (median nerve correction, Notermans et al. 1994, Muscle Nerve 17:516).
+const LIMBS = { arm: ['left_arm', 'right_arm'], leg: ['left_leg', 'right_leg'] };
+export function limbCold(p, limb) {
+    const th = p?.thermal;
+    if (!p?.env || !th?.t) return 0;
+    const body = modelOf(th.params);
+    const idx = LIMBS[limb].map(s => SEGMENTS.indexOf(s));
+    const core = coreOf({ t: th.t });
+    return Math.max(0, idx.reduce((a, i) => a + body.setCr[i] - core[i], 0) / idx.length);
+}
+export const forceFactor = dT => Math.max(0, 1 - 0.02 * dT);
+export const speedFactor = dT => Math.max(0, 1 - 0.05 * dT);
+export const NERVE_PER_C = 2.2;
+
 export { SEGMENTS };
