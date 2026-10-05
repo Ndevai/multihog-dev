@@ -522,6 +522,14 @@ Set with BodyEnvironment `co_ppm`; treated with BodyTreat `oxygen` or `hyperbari
 
 Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 145 min; 1600 ppm 44 / 62 min (table: death in under 2 h); 3200 ppm 22 / 29 min; 12 800 ppm 6 / 7 min (table: unconscious after 2–3 breaths, dead in under 3 min — faster than CO binding explains). After 60 min at 1600 ppm (39 %): 80 min on oxygen → 20 %.
 
+### 6.9 Social judgments
+
+| Judgment | Rule | Source |
+|---|---|---|
+| lie or truth (JudgeStatement) | a lie is judged a lie with chance 0.47; a truth is judged a lie with chance 0.39; one roll | Bond & DePaulo 2006, Pers Soc Psychol Rev 10:214: 206 documents, 24 483 judges, no aids or training: 47 % of lies classified deceptive, 61 % of truths nondeceptive, 54 % correct |
+
+Limits (OPEN-89): evidence, prior suspicion, relationship and training are not inputs (the meta-analysis found detection rates vary little between studies); the speaker's skill at lying is not modelled.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -594,6 +602,7 @@ What these show:
 | OPEN-85 | altitude: acclimatization rule is a pace guideline turned into a model (no incidence by ascent rate), loss of acclimatization after descent, HAPE death time measured, death after hypoxic unconsciousness, effects on thinking, cold and air pressure in the heat model |
 | OPEN-86 | venom: copperhead yield and LD50 (only "an estimated lethal dose around 100 mg" found); venom-yield allometry (isometric assumed); mechanical effects of DF symptoms other than paralysis; SEV dilution by body size (SIZE_DILUTES) |
 | OPEN-88 | sound outdoors: ground and weather attenuation (ISO 9613-2 ground term), impulse temporal integration, species audiogram shapes per band; sight: contrast and camouflage, motion, species acuity, attention |
+| OPEN-89 | social judgments: lie detection with evidence or suspicion; persuasion, compliance and fear/morale rates |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 17 species and the bird median; 60-dB ranges for 34 (frogs and toads as the bullfrog, 100 Hz–2.5 kHz). Missing lowest thresholds: pig, goat, sheep, elephant, frogs (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |

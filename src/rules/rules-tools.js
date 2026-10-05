@@ -1,5 +1,6 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
 import { LIGHT } from './vision.js';
+import { judgeStatement } from './social.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -10,7 +11,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -151,7 +152,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look. A character might suspect a lie → JudgeStatement. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
@@ -372,6 +373,15 @@ export function registerRulesTools(enabled) {
         const v = who(st, a.viewer, a.viewer_species);
         if (v.error) return v.error;
         return look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: a.light ?? 'daylight', visibility_m: a.visibility_m ?? 20000 }, rng);
+    }));
+
+    tool('JudgeStatement', 'Decide whether a character takes a statement they just heard as a lie or as true, before narrating their reaction. Use when someone could be lying or could be suspected of lying, and the listener has no proof either way.', {
+        listener: str('Character judging the statement'),
+        speaker: str('Character who made it'),
+        is_lie: { type: 'boolean', description: 'Whether the statement is in fact a lie (known from the story)' },
+    }, ['listener', 'speaker', 'is_lie'], a => run((st, rng) => {
+        const r = judgeStatement(!!a.is_lie, rng);
+        return `${a.listener} ${r.judgedLie ? 'judges it a lie' : 'believes it'} (people without proof catch ${a.is_lie ? '47 % of lies' : 'truths as lies 39 % of the time'}; Bond & DePaulo 2006). Narrate ${a.listener}'s reaction from that judgment.`;
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
