@@ -1261,7 +1261,20 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
 
 export const checkChance = (p, task) => checkOdds(p, task).chance;
 
+// Tasks a specialist tool decides from data (§7.1): BodyCheck refuses them so the narrator's `share` estimate is not used.
+const ROUTES = [[/\b(hear|hears|heard|listen|overhear|noise)\b/i, 'Listen (sounds) or Communicate (speech)'],
+    [/\b(see|sees|spot|spots|notice|notices|recogni[sz]e|identify|sight)\b/i, 'Look'],
+    [/\b(swim|swims|drown|tread water)\b/i, 'BodyEnvironment (immersed, swimming, swimmer)'],
+    [/\b(hang|hangs|hold on|holding on|carry|carries|grip)\b/i, 'HoldOn'],
+    [/\b(chase|outrun|catch up|run away|flee|escape on foot)\b/i, 'Chase'],
+    [/\b(lie|lying|deceive|bluff|believe)\b/i, 'JudgeStatement'],
+    [/\b(shoot|shot|arrow|bolt|aim)\b/i, 'BodyStrike (launcher, skill, distance_m)'],
+    [/\b(tourniquet|stop the bleeding|bleed)\b/i, 'BodyTreat (stop_bleeding, training)'],
+    [/\b(attracted|interested in|ask (him|her|them) out|date)\b/i, 'FirstImpression']];
+
 export function check(p, task, rng = Math.random) {
+    const route = ROUTES.find(([re]) => re.test(task.task ?? ''));
+    if (route && !task.override) return `${task.task}: decided by ${route[1]}, not BodyCheck. Call that tool. (If this task is genuinely different, call BodyCheck again with override: true.)`;
     const { chance, limit } = checkOdds(p, task);
     const ok = rng() < chance;
     return `${task.task}: chance ${round(chance * 100, chance < 0.01 && chance > 0 ? 2 : 0)}%${limit ? ` (${limit})` : ''} → ${ok ? 'SUCCESS' : 'FAILURE'}.`;

@@ -581,6 +581,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Tool | Input | Kind | Status |
 |---|---|---|---|
 | BodyCheck | `share` (fraction who succeed) | outcome guess | open: the main remaining guess (OPEN-90) |
+| BodyCheck | task text | routing | a task whose words match a specialist tool (hear/listen → Listen or Communicate; see/spot/notice → Look; swim → BodyEnvironment; hang/carry/grip → HoldOn; chase/flee → Chase; lie/bluff → JudgeStatement; shoot/aim → BodyStrike; tourniquet/bleed → BodyTreat; date/attracted → FirstImpression) is refused and named; `override: true` passes a genuinely different task |
 | BodyCheck | `uses`, `exertion`, `on_feet`, `timed`, `fine` | scene facts (what the task involves) | — |
 | BodyWound | `type`, `depth` for accidents | outcome guess | partly replaced: burns by BodyContact and heat, falls by BodyFall, attacks by BodyStrike |
 | BodyStrike | `noise_db` | estimate | `noise_sound` (Listen presets, level from distance) replaces it when the sound is listed |
