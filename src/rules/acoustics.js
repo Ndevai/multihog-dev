@@ -48,7 +48,7 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
     let sii = 0, audible = false;
     e.forEach((ei, i) => {
         if (deaf.includes(i)) return;
-        const z = Math.max(n[i], ei - 24), d = Math.max(z, XI[i] + shift);
+        const z = Math.max(n[i], ei - 24), d = Math.max(z, XI[i] + (Array.isArray(shift) ? shift[i] : shift));
         const l = Math.min(1, 1 - (ei - SPEECH.normal[i] - 10) / 160);
         const k = Math.min(1, Math.max(0, (ei - d + 15) / 30));
         sii += IMPORTANCE[i] * l * k;
@@ -67,7 +67,7 @@ export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet 
     e.forEach((ei, i) => {
         if (deaf.includes(i)) return;
         const n = nDb - 10 * Math.log10(6) - DELTA[i];
-        margin = Math.max(margin, ei + 15 - Math.max(n, XI[i] + shift));
+        margin = Math.max(margin, ei + 15 - Math.max(n, XI[i] + (Array.isArray(shift) ? shift[i] : shift)));
     });
     return { audible: margin > 0, margin: Math.round(margin) };
 }

@@ -2,7 +2,7 @@ import { creature } from './df/index.js';
 import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot } from './df/combat.js';
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
-import { hearingShift, inRange, hearingOf } from './hearing.js';
+import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
 import { reach, hearSound, SOUNDS, BAND_HZ } from './acoustics.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
@@ -989,7 +989,8 @@ function earOf(l, lc) {
     const ears = lc.parts.filter(x => x.flags.includes('HEAR')), earsOk = ears.filter(worksFn(l, lc)).length;
     const h = hearingOf(l.species);
     const deaf = h?.lo ? BAND_HZ.map((f, i) => f < h.lo || f > h.hi ? i : -1).filter(i => i >= 0) : [];
-    return { shift: hearingShift(l.species) + (ears.length > 1 && earsOk < ears.length ? 3 : 0), deaf, earsOk, ears: ears.length };
+    const one = ears.length > 1 && earsOk < ears.length ? 3 : 0;
+    return { shift: bandShift(l.species).map(x => x + one), deaf, earsOk, ears: ears.length };
 }
 
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
