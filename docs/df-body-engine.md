@@ -494,6 +494,20 @@ Available VO2max = VO2max × altitude factor (§6.6) − 4 mL/min per g of haemo
 
 Open (OPEN-87): recovery rate is glycogen's, not measured on work capacity; check the Santee correction against the paper.
 
+### 6.8 Carbon monoxide
+
+Set with BodyEnvironment `co_ppm`; treated with BodyTreat `oxygen` or `hyperbaric_oxygen`.
+
+| Quantity | Rule | Source |
+|---|---|---|
+| uptake | Coburn-Forster-Kane: d[COHb]/dt = Vco/Vb + PICO/(B·Vb) − [COHb]·PcO2/(M·B·Vb·[O2Hb]); B = 1/DL + PL/VA; DL 30 mL/min/mmHg, PL 713 mmHg, M 218, PcO2 100 mmHg, Vco 0.007 mL/min, O2 capacity 0.207 mL/mL; Vb = blood volume (§5); VA 6000 mL/min × METs [ASSUMED scaling]; PICO = ppm × (air pressure − 47) | standard CFK constants |
+| clearance | out of the gas: half-life 320 min on room air, 80 min on 100 % oxygen, 23 min hyperbaric (3 atm) | Wikipedia, Carbon monoxide poisoning |
+| unconscious | COHb ≥ 30 % [fit: 800 ppm "insensible within 2 hours" → 97 min; "30 % COHb is considered severe"] | same |
+| death | COHb ≥ 40 % [fit: 3200 ppm "death within 30 minutes" → 29 min]; the highest non-fatal level reported is 73 % | same |
+| none | `NOBREATHE` creatures; bloodless creatures | [RAW] |
+
+Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 145 min; 1600 ppm 44 / 62 min (table: death in under 2 h); 3200 ppm 22 / 29 min; 12 800 ppm 6 / 7 min (table: unconscious after 2–3 breaths, dead in under 3 min — faster than CO binding explains). After 60 min at 1600 ppm (39 %): 80 min on oxygen → 20 %.
+
 ## 7. Tools
 
 | Tool | Change |

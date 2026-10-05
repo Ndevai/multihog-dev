@@ -149,7 +149,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. Someone drinks or eats → BodyIntake.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
@@ -294,6 +294,7 @@ export function registerRulesTools(enabled) {
         altitude_m: { type: 'number', description: 'Altitude above sea level, m, whenever it changes by 500 m or more. 0 = sea level' },
         sudden_ascent: { type: 'boolean', description: 'Arrived at this altitude within minutes (aircraft, magic, a fall upward) rather than by climbing' },
         decompression: { type: 'boolean', description: 'A pressurized cabin or enclosure suddenly opened at this altitude (breath torn out; shorter time conscious)' },
+        co_ppm: { type: 'number', description: 'Carbon monoxide in the air, ppm (fire smoke in a room 1000–10 000; car exhaust in a closed garage several thousand; a faulty heater 100–1000); 0 = fresh air' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },
     }, ['who'], a => run(st => {
         const out = [];
@@ -352,8 +353,8 @@ export function registerRulesTools(enabled) {
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
-        wound: { type: 'number', description: 'Wound id (not needed for antivenom, antibiotics, laparotomy or transfuse)' },
-        treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load', 'antivenom', 'antibiotics', 'laparotomy'] },
+        wound: { type: 'number', description: 'Wound id (not needed for antivenom, antibiotics, laparotomy, oxygen or transfuse)' },
+        treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load', 'antivenom', 'antibiotics', 'laparotomy', 'oxygen', 'hyperbaric_oxygen'] },
     }, ['who', 'treatment'], a => run((st, rng) => {
         const p = (who(st, a.who, a.species).p ?? person(st, a.who));
         return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;

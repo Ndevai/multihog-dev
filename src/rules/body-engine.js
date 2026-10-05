@@ -6,7 +6,7 @@ import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
-import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
+import { pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp, burnedTBSA } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
@@ -197,6 +197,11 @@ export function treat(p, id, treatment, rng = Math.random) {
         if (!p.peritonitis.repaired) { p.peritonitis.repaired = true; p.peritonitis.fatal = p.peritonitis.fatal && rng() < 0.045 / 0.87; }
         return 'Laparotomy: the opened gut is repaired.';
     }
+    if (treatment === 'oxygen' || treatment === 'hyperbaric_oxygen') {
+        if (!p.co) return 'Oxygen given; no carbon monoxide recorded.';
+        p.co.o2 = treatment === 'oxygen' ? 'oxygen' : 'hyperbaric';
+        return `${treatment === 'oxygen' ? '100 % oxygen' : 'Hyperbaric oxygen'} given: carboxyhaemoglobin half-life ${CO_HALF[p.co.o2]} min once out of the gas.`;
+    }
     if (treatment === 'antivenom') {
         if (!p.venom) return 'No venom recorded.';
         p.venom.fatal = false;
@@ -240,6 +245,8 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
+        coMinute(p);
+        if (p.dead) return;
         if (p.sepsis && ++p.sepsis.min >= p.sepsis.deathMin && p.sepsis.fatal) { p.dead = 'sepsis'; return; }
         if (p.peritonitis && ++p.peritonitis.min >= p.peritonitis.deathMin && p.peritonitis.fatal) { p.dead = 'peritonitis'; return; }
         if (p.burnDeath && ++p.burnDeath.min >= (p.burnDeath.deathMin ?? Infinity) && p.burnDeath.fatal) { p.dead = 'burns'; return; }
@@ -469,6 +476,29 @@ function venomMinute(p) {
 
 /** Altitude (§6.6): AMS and oedema rolled after the first night (12 h) at a new altitude; sudden arrival above 18 000 ft
  * (aircraft, magic) → unconscious once the time of useful consciousness runs out. */
+// Carbon monoxide (§6.8). Uptake: Coburn-Forster-Kane equation, d[COHb]/dt = Vco/Vb + PICO/(B Vb) − [COHb] PcO2/(M B Vb [O2Hb]),
+// B = 1/DL + PL/VA; DL 30 mL/min/mmHg, PL 713 mmHg, M 218, PcO2 100 mmHg, Vco 0.007 mL/min, O2 capacity 0.207 mL/mL, blood
+// volume as §5, VA 6000 mL/min × METs [ASSUMED scaling]; PICO = ppm × (PB − 47). With no CO in the air, COHb falls with the
+// half-life 320 min on room air, 80 on 100 % oxygen, 23 hyperbaric (Wikipedia, Carbon monoxide poisoning). Unconscious at
+// 30 % ("30 % COHb is considered severe"; fits 800 ppm "insensible within 2 hours": 97 min), dead at 40 % (fits 3200 ppm
+// "death within 30 minutes": 29 min) [fit].
+const CO_HALF = { air: 320, oxygen: 80, hyperbaric: 23 };
+function coMinute(p) {
+    const ppm = p.env?.co ?? 0, c = p.co;
+    if (!ppm && !c) return;
+    if (has(p, 'NOBREATHE') || !bloodVolume(p)) return;
+    const k = p.co ??= { hb: 0, o2: 'air' }, cap = 0.207, vb = bloodVolume(p);
+    if (ppm > 0) {
+        const pb = p.altitude ? pressureTorr(p.altitude.m) : 760, va = 6000 * Math.max(1, p.env?.met ?? p.workMet ?? 1);
+        const B = 1 / 30 + 713 / va, co = k.hb * cap;
+        k.hb = Math.min(0.99, (co + 0.007 / vb + ppm * 1e-6 * (pb - 47) / (B * vb) - co * 100 / (218 * B * vb * (cap - co))) / cap);
+    } else k.hb *= 0.5 ** (1 / CO_HALF[k.o2]);
+    if (k.hb >= 0.40) { p.dead = 'carbon monoxide'; return; }
+    if (k.hb >= 0.30) p.unconscious ??= 'carbon monoxide';
+    else if (p.unconscious === 'carbon monoxide') p.unconscious = null;
+    if (!ppm && k.hb < 0.005) p.co = null;
+}
+
 function altitudeMinute(p, rng) {
     const a = p.altitude;
     if (!a || has(p, 'NOBREATHE')) return;
@@ -517,7 +547,7 @@ export function setEnvironment(p, env) {
     const covers = region => (cl.garments ?? []).some(g => (g.covers ?? []).some(x => String(x).toLowerCase().includes(region)));
     p.env = { tdb: env.air_c, tr: env.radiant_c ?? env.air_c, rh: env.humidity_pct ?? 50,
         v: env.air_speed_ms ?? Math.max(0.1, (env.wind_kmh ?? 0) / 3.6 * BODY_WIND), wind10: env.air_speed_ms != null ? 0 : env.wind_kmh ?? 0,
-        clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null,
+        clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null, co: env.co_ppm ?? 0,
         faceBare: !env.face_covered, handsBare: !(/gloves/i.test(cl.ensemble ?? '') || covers('hand')),
         water: env.water_c != null && env.immersed?.length ? { tc: env.water_c, speed: env.water_speed_ms ?? 0, segs: immersion(env.immersed), suit: !!env.immersion_suit,
             swimming: !!env.swimming, afloat: !!env.afloat } : null };
@@ -570,6 +600,7 @@ export function status(who, p) {
     if (p.needs?.work > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs.work * 100)} % of what can be kept up`);
     if (p.heatStroke?.min >= 30) out.push(`heat stroke not cooled within 30 min: about ${p.heatStroke.exertional ? '1 in 4' : '2 in 3'} die within days`);
     if (p.burnDeath) out.push(`burned ${burnedTBSA(p)} % of body surface: about ${Math.round(p.burnDeath.p * 100)} % of such patients die within 2 weeks`);
+    if (p.co) out.push(`carboxyhaemoglobin ${Math.round(p.co.hb * 100)} %${p.co.hb >= 0.3 ? ' (unconscious)' : p.co.hb >= 0.1 ? ' (headache, dizziness, nausea)' : ''}; unconscious at 30 %, dead at 40 %`);
     if (p.peritonitis) out.push(`gut opened (peritonitis): belly pain, fever${p.peritonitis.repaired ? '; repaired by laparotomy' : '; without surgery about 9 in 10 die within a week'}`);
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {
