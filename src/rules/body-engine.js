@@ -136,6 +136,12 @@ export function treat(p, id, treatment, rng = Math.random) {
     const w = p.wounds.find(x => x.id === id);
     if (treatment === 'transfuse') { p.lost = 0; p.deathIn = null; return 'Blood volume replaced.'; }
     // Antivenom before death stops a fatal course; breathing returns, consciousness when time passes [ASSUMED].
+    // Antibiotics for a bloodstream infection: case fatality 15–50 % (Wikipedia, Staphylococcus aureus), drawn uniform.
+    if (treatment === 'antibiotics') {
+        if (!p.sepsis) return 'Antibiotics given; no bloodstream infection recorded.';
+        if (!p.sepsis.treated) { p.sepsis.treated = true; p.sepsis.fatal = p.sepsis.fatal && rng() < (0.15 + rng() * 0.35) / 0.8; }
+        return 'Antibiotics given for the bloodstream infection.';
+    }
     if (treatment === 'antivenom') {
         if (!p.venom) return 'No venom recorded.';
         p.venom.fatal = false;
@@ -179,6 +185,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
+        if (p.sepsis && ++p.sepsis.min >= p.sepsis.deathMin && p.sepsis.fatal) { p.dead = 'sepsis'; return; }
         venomMinute(p);
         let heat = null;
         if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
@@ -230,6 +237,10 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
                 // An infected wound closes 10.5 days later (surgical-site infection adds 10–11 hospital days; StatPearls,
                 // Berríos-Torres 2017 — hospital stay as the proxy for healing).
                 if (w.infection && w.heals !== null) { w.heals = Math.max(w.heals, w.age) + INFECTION_DELAY_DAYS; w.healed = false; }
+                // Bloodstream spread: 8.5 % of adults under 65 hospitalized with skin and soft-tissue infection (Taniguchi et al.
+                // 2022, Open Forum Infect Dis 9:ofac317) [as the rate for infected wounds]. Untreated S. aureus bacteraemia
+                // killed about 80 % (Wikipedia, Staphylococcus aureus); death within 30 days, uniform [ASSUMED].
+                if (w.infection && !p.sepsis && rng() < 0.085) p.sepsis = { fatal: rng() < 0.8, min: 0, deathMin: Math.round((1 + rng() * 29) * DAY_MIN) };
             }
         }
         if (++p.minute >= DAY_MIN) { p.minute -= DAY_MIN; endDay(net); }
@@ -455,6 +466,7 @@ export function status(who, p) {
         if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
         if (nd.alcohol > 0) out.push(`blood alcohol ${round(nd.alcohol, 3)} %`);
     }
+    if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {
         const v = p.venom;
         out.push(`envenomed by ${v.species.toLowerCase().replace('_', ' ')} (${v.mg} mg, ${v.ratio} × the lethal dose)${v.fatal ? (v.kind === 'neuro' ? `: paralysis stops breathing at ${v.collapse} min` : `: shock at ${v.shock} min, death at ${v.death} min`) + ` (now ${v.min} min) unless antivenom` : ': survives without antivenom; local pain and swelling'}`);
@@ -849,7 +861,7 @@ const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
     ams: !!p.altitude?.ams, oedema: !!p.altitude?.oedema,
     heat: coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
-    infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
+    infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis,
 });
 
 function changes(who, a, b) {
@@ -862,6 +874,7 @@ function changes(who, a, b) {
         if (b.thirst > a.thirst) out.push(`${who} is ${b.thirst === 2 ? 'severely dehydrated (8 % of body mass)' : 'dehydrated (5 % of body mass)'}`);
         if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
+        if (b.sepsis && !a.sepsis) out.push(`${who}: the infection has reached the blood (sepsis)`);
         if (b.heat !== a.heat) out.push(`${who}: ${b.heat ?? 'core temperature between 35 and 40 °C'} (core ${b.core} °C)`);
         if (b.ams && !a.ams) out.push(`${who} has acute mountain sickness`);
         if (b.oedema && !a.oedema) out.push(`${who} has high-altitude pulmonary or cerebral oedema`);
@@ -927,6 +940,7 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     if (timed && uses.includes('alertness') && coolCore(p) > 0) scores.thinking = thinkSpeed(p);
     // Altitude: heavy exertion is limited by aerobic capacity (§6.6); acute mountain sickness: symptoms that force a reduction
     // in activity (Maggiorini et al. 1998) → heavy exertion fails [ASSUMED].
+    if (p.sepsis && exertion === 'heavy') return { chance: 0, limit: 'sepsis' };
     if (p.altitude && exertion === 'heavy') {
         if (p.altitude.ams || p.altitude.oedema) return { chance: 0, limit: 'altitude sickness' };
         scores.aerobic = aerobicFactor(p.altitude.m);
