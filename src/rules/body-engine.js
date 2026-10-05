@@ -856,6 +856,9 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // Low core temperature slows thinking; accuracy holds given time (Coleshaw et al. 1983). A timed task treats the speed
     // as a capacity with the force spread [ASSUMED].
     if (timed && uses.includes('alertness') && coolCore(p) > 0) scores.thinking = thinkSpeed(p);
+    // Heat: no slowing measured at 38.6 °C core (reaction 40 ms faster; Barry et al. 2022, Appl Physiol Nutr Metab 47:261);
+    // heat stroke is defined by nervous-system dysfunction (disorientation): attention tasks fail [ASSUMED from the definition].
+    if (uses.includes('alertness') && p.env && coreStage(p.thermal?.stageCore ?? p.thermal?.core) === 'heat stroke') return { chance: 0, limit: 'heat stroke: disoriented' };
     const lacking = uses.find(u => u in FUNCTIONS && !(u in scores));
     if (lacking) return { chance: 0, limit: `no ${lacking}` };
     const used = uses.filter(u => u in scores);
