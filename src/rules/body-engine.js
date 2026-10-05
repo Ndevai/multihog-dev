@@ -226,6 +226,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             p.thermal.stageCore = round(r.core - r.set + 37, 2);
             heat = { core: p.thermal.stageCore, frozen: [], kcal: r.kcal, waterL: WATER_L_DAY.rest * kleiber(p) / DAY_MIN + r.evapL };
         }
+        if (p.env?.water && !thermalCapable(p.species)) water(p, rng);
         if (heat) {
             const st = coreStage(heat.core);
             if (st === 'hypothermia IV') { p.dead = 'hypothermia'; return; }
@@ -399,7 +400,10 @@ const BREATH_HOLD_S = [24.3, 11.4];
 function water(p, rng) {
     const w = p.env?.water;
     if (!w) return;
-    if (w.swimming && !p.swimFailed && limbCold(p, 'arm') >= SWIM_FAIL_DT) p.swimFailed = true;
+    // Other creatures: DF SWIMS_INNATE, AQUATIC or AMPHIBIOUS keep the head up; the rest go under unless afloat [RAW flags].
+    const c = creatureOf(p), human = thermalCapable(p.species);
+    if (!human && !c?.flags?.some(f => ['SWIMS_INNATE', 'SWIMS_LEARNED', 'AQUATIC', 'AMPHIBIOUS'].includes(f))) p.swimFailed = true;
+    if (human && w.swimming && !p.swimFailed && limbCold(p, 'arm') >= SWIM_FAIL_DT) p.swimFailed = true;
     const under = w.segs[0] || (p.swimFailed && !w.afloat) || (p.unconscious && !w.afloat);
     if (under && p.apnea == null) {
         p.breathHold ??= Math.max(5, BREATH_HOLD_S[0] + BREATH_HOLD_S[1] * gauss(rng));

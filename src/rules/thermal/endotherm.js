@@ -58,7 +58,7 @@ export function ellipsoid({ posture = 4.5, mass, density = 1000, coreT, furdepth
     const qLoss = (coreT - opT) / rTotal;
     // Breathing water loss at the heat produced (O2 extraction 20 %), g/s.
     const breathGs = wet ? 0 : Math.max(qLoss, 0) / 20.1 / 0.2094 / O2eff * (vapourDensity(coreT, 100) - vapourDensity(airT, rh)) / 1000;
-    return { qLoss, rTotal, skinT, breathGs };
+    return { qLoss, rTotal, skinT, breathGs, hcA: 1 / rConv };
 }
 
 const fits = new Map();
@@ -114,7 +114,13 @@ export function endothermMinute(p, c, { met = 1.3 } = {}) {
     // Heat production rises to cover loss when cold, up to PEAK × basal; when warm, evaporation removes what conduction cannot.
     const need = loss.qLoss;
     const produce = Math.min(Math.max(act, need), PEAK * basal + (act - basal));
-    const evapW = w ? 0 : Math.max(0, produce - need);
+    // Evaporation limit (NicheMapR endoR defaults: panting up to 5 × breathing, skin wetted up to 100 %): breathing water × 5
+    // plus a fully wet skin, by the Lewis relation he = 16.5 K/kPa × hc (ASHRAE) against the air's vapour pressure; vapour
+    // passes the fur freely [ASSUMED].
+    const latentS = 2501200 - 2378.7 * (w ? w.tc : e.tdb);
+    const pAir = vappr(e.tdb) * (e.rh ?? 50) / 100;
+    const evapMax = w ? 0 : 5 * loss.breathGs * latentS + Math.max(0, 16.5e-3 * loss.hcA * (vappr(loss.skinT) - pAir));
+    const evapW = Math.min(evapMax, Math.max(0, produce - need));
     const stored = produce - need - evapW;
     th.core = Math.round((th.core + stored * 60 / (p.mass * BODY_HEAT_J_KG)) * 1000) / 1000;
     th.set = setT;
