@@ -3,6 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
+import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -25,6 +26,8 @@ const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, III
 // Rule 576, days. Missing types are OPEN-48/49: they do not close yet.
 const CUT_HEAL = { eyes: [3, 5], mouth: [3, 5], head: [7, 10], arm: [7, 10], torso: [10, 14], leg: [10, 14], hand: [10, 14], foot: [10, 14] };
 const BURN_HEAL = { superficial: [5, 10], partial: [7, 21], deep_partial: [21, 56], full: null };
+// Frostbite (superficial): no healing timetable found; the partial-thickness burn row stands in [ASSUMED proxy].
+const FROSTBITE_HEAL = BURN_HEAL.partial;
 const INFECTION_ONSET = { bite: 1, other: 10 };
 const CROOKED_GRIP = 0.51;
 const COST = [0, 40, 64, 107, 178, 297, 495, 825, 1375, 2292];
@@ -94,7 +97,8 @@ export function addWound(p, w, rng = Math.random) {
     const row = rowOf(w.part);
     const wound = { id: p.nextId++, part: w.part.name, pid: w.part.id, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
     const healRange = w.type === 'blunt' && !w.functionLost ? BRUISE_DAYS
-        : ['cut', 'puncture', 'bite', 'blunt'].includes(w.type) || w.functionLost ? CUT_HEAL[row] : w.type === 'burn' ? BURN_HEAL[w.depth] : null;
+        : ['cut', 'puncture', 'bite', 'blunt'].includes(w.type) || w.functionLost ? CUT_HEAL[row] : w.type === 'burn' ? BURN_HEAL[w.depth]
+        : w.type === 'frostbite' ? FROSTBITE_HEAL : null;
     if (w.type === 'burn') wound.depth = BURN_HEAL[w.depth] !== undefined ? w.depth : null;
     // DF HEALING_RATE scales the human days: soft tissue relative to 100, bone relative to 1000 (human templates).
     const factor = w.healFactor ?? 1;
@@ -164,8 +168,16 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = 'suffocation'; return; }
+        const heat = p.env && thermalCapable(p.species) ? thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng)) : null;
+        if (heat) {
+            const st = coreStage(heat.core);
+            if (st === 'hypothermia IV') { p.dead = 'hypothermia'; return; }
+            if (st === 'hypothermia III') p.unconscious ??= 'hypothermia';
+            else if (p.unconscious === 'hypothermia') p.unconscious = null;
+            for (const seg of heat.frozen) for (const part of frostParts(c, seg)) addWound(p, { part, type: 'frostbite' }, rng);
+        }
         if (needs) {
-            n.waterL += WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
+            n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             n.kcal += KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
             if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
@@ -276,6 +288,35 @@ function checkDeath(p) {
     if (!apneic && p.apnea != null) { p.apnea = null; if (p.unconscious === 'not breathing') p.unconscious = null; }
 }
 
+// Frostbite most often strikes cheeks, ears, nose, fingers and toes (Wikipedia "Frostbite", citing McIntosh 2014): when the
+// head, a hand or a foot segment's skin freezes, those DF parts take it; other segments freeze as their DF part [ASSUMED].
+const SEG_CATS = { head: ['NOSE', 'EAR', 'CHEEK'], neck: ['NECK'], chest: ['BODY_UPPER'], back: ['BODY_UPPER'], pelvis: ['BODY_LOWER'],
+    shoulder: ['ARM_UPPER'], arm: ['ARM_LOWER'], hand: ['FINGER'], thigh: ['LEG_UPPER'], leg: ['LEG_LOWER'], foot: ['TOE'] };
+function frostParts(c, seg) {
+    if (!c) return [];
+    const [side, name] = seg.includes('_') ? seg.split('_') : [null, seg];
+    const byId = Object.fromEntries(c.parts.map(x => [x.id, x]));
+    const sideOf = part => { for (let q = part; q; q = byId[q.parent]) for (const f of ['LEFT', 'RIGHT']) if (q.flags.includes(f)) return f; return null; };
+    return c.parts.filter(x => SEG_CATS[name].some(k => x.cats.includes(k)) && (!side || sideOf(x) === side.toUpperCase()));
+}
+
+/**
+ * Sets (or clears, env = null) the air a person is in: { air_c, radiant_c, humidity_pct, wind_kmh (weather, 10 m) or air_speed_ms
+ * (at the body, indoors), clothing: { ensemble, garments }, face_covered, met, posture }. Throws on unknown clothing.
+ */
+export function setEnvironment(p, env) {
+    if (!env) { p.env = null; return; }
+    const cl = env.clothing ?? {};
+    const covers = region => (cl.garments ?? []).some(g => (g.covers ?? []).some(x => String(x).toLowerCase().includes(region)));
+    p.env = { tdb: env.air_c, tr: env.radiant_c ?? env.air_c, rh: env.humidity_pct ?? 50,
+        v: env.air_speed_ms ?? Math.max(0.1, (env.wind_kmh ?? 0) / 3.6 * BODY_WIND), wind10: env.air_speed_ms != null ? 0 : env.wind_kmh ?? 0,
+        clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null,
+        faceBare: !env.face_covered, handsBare: !(/gloves/i.test(cl.ensemble ?? '') || covers('hand')) };
+    if (p.thermal) { p.thermal.bareDose = 0; }
+    if (p.env.met == null) delete p.env.met;
+    if (p.env.posture == null) delete p.env.posture;
+}
+
 export function status(who, p) {
     if (p.dead) return `${who}: dead (${p.dead}).`;
     const out = [];
@@ -315,6 +356,11 @@ export function status(who, p) {
         if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)`);
         if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
         if (nd.alcohol > 0) out.push(`blood alcohol ${round(nd.alcohol, 3)} %`);
+    }
+    const th = p.thermal;
+    if (p.env && th?.core != null) {
+        const st = coreStage(th.core);
+        out.push(`core ${th.core} °C${st ? ` (${st})` : ''}, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})`);
     }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
@@ -686,6 +732,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
 const waterStage = p => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };
 const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
+    heat: coreStage(p.thermal?.core), core: p.thermal?.core, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
 });
 
@@ -699,6 +746,9 @@ function changes(who, a, b) {
         if (b.thirst > a.thirst) out.push(`${who} is ${b.thirst === 2 ? 'severely dehydrated (8 % of body mass)' : 'dehydrated (5 % of body mass)'}`);
         if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
+        if (b.heat !== a.heat) out.push(`${who}: ${b.heat ?? 'core temperature between 35 and 40 °C'} (core ${b.core} °C)`);
+        const frost = b.frost.filter(x => !a.frost.includes(x));
+        if (frost.length) out.push(`${who}: frostbite on ${frost.join(', ')}`);
     }
     return out;
 }

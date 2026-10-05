@@ -303,6 +303,41 @@ A tongue stops working only when severed (its muscle and skin are neither `STRUC
 
 Results: no water at rest → 5 % on day 2.3, 8 % on day 3.7, dead day 9.1; active → dead day 3.4 (review: "as little as 3 days in hot climates").
 
+### 6.4 Body temperature (JOS-3)
+
+Characters given conditions with BodyEnvironment are simulated minute by minute by JOS-3 (Takahashi et al. 2021, Energy & Buildings 231:110575): 17 segments, 85 nodes (core, muscle, fat, skin, arteries, veins). The code is ported from pythermalcomfort 4.6.0 (MIT licence; src/rules/thermal/jos3.js) and matches the Python within 0.01 °C over 2 h runs.
+
+| Input | Rule | Source |
+|---|---|---|
+| body | mass 20–200 kg; height 1.72 m × (mass ÷ 74.43)^(1/3); age 20; male | JOS-3 defaults; geometric similarity [ASSUMED] |
+| species | human, dwarf, elf, goblin use the human model; other species are not simulated | [ASSUMED] OPEN-82 |
+| wind | weather wind (10 m) × 0.68 = air speed at the body (1.1 m), log profile, open terrain z0 = 0.01 m | Oke 1987, as in pythermalcomfort scale_wind_speed_log |
+| clothing | measured ensembles: local clo for the 17 segments (54 ensembles) | Juyoun et al.; Nomoto et al. (pythermalcomfort) |
+| garments | whole-body clo (ASHRAE 55 table) spread over the covered segments: local = clo × body area ÷ covered area; garments add up | ASHRAE 55 via CBE Thermal Comfort Tool; spreading rule [ASSUMED] |
+| activity | METs: sleeping 0.95, resting 1.3, active 3.5, or given; × 1.163 W/kg ÷ basal metabolism = JOS-3 activity ratio (≥ 1) | Compendium of Physical Activities (Ainsworth et al. 2011) |
+| posture | sleeping lying, resting sitting, active standing | [ASSUMED] |
+
+Added to JOS-3:
+
+- Shivering heat is at most 3.9 × basal, because peak shivering is 4.9 × resting metabolism in total (Eyolfson et al. 2001, Eur J Appl Physiol 84:100; 15 subjects, 4.9 ± 0.8). Without the cap the model shivered at 1000 W nude at −20 °C and never cooled.
+- Shivering stops below 32 °C core (Swiss stage II: drowsy, not shivering).
+
+| Outcome | Rule | Source |
+|---|---|---|
+| core temperature | pelvis core node | [ASSUMED rectal ≈ pelvis core] |
+| hypothermia I | core 35–32 °C: awake, shivering (status) | Brown et al. 2012, NEJM 367:1930 (Swiss staging) |
+| hypothermia II | 32–28 °C: drowsy, not shivering (status; check effects OPEN-83) | same |
+| hypothermia III | 28–24 °C: unconscious | same |
+| hypothermia IV | < 24 °C: no vital signs → dead | same; [ASSUMED dead without extracorporeal rewarming] |
+| heat stroke | core > 40 °C (status; effects OPEN-83) | Gaudio & Grissom 2016, J Emerg Med 50:607 |
+| water | (1.5 L/day − the model's own skin and breath loss at its neutral set point) + skin and breath loss this minute (sweat, diffusion, breath) | JOS-3; §6.3 |
+| frostbite, covered or any segment | segment skin below the person's freezing temperature, drawn once from N(−6.3, 0.91) °C | Danielsson 1996, J Appl Physiol 81:2666: risk 5 % at −4.8 °C to 95 % at −7.8 °C skin |
+| frostbite, bare face and hands | wind chill index ≤ −28 (JAG/TI 2001 formula, air ≤ 10 °C, wind ≥ 4.8 km/h): time to freeze −28 to −39: 10–30 min; −40 to −47: 5–10; −48 to −54: 2–5; ≤ −55: under 2; each person at a fixed uniform position in the range; the dose resets above −28 [ASSUMED] | Environment and Climate Change Canada categories (Coaching Association of Canada sheet); Wikipedia "Wind chill" formula |
+| frostbite parts | head → nose, ears, cheeks; hand → fingers; foot → toes; other segments → their DF part | Wikipedia "Frostbite" (cheeks, ears, nose, fingers, toes) [ASSUMED mapping] |
+| frostbite wound | superficial; closes in 7–21 days | partial-thickness burn row [ASSUMED proxy]; depth by duration OPEN-84 |
+
+Results (70 kg, scratch runs): nude at 0 °C in 25 km/h wind, resting: stage I at 1.5 h, stage II at 2.9 h, unconscious at 3.7 h, dead at 4.5 h. Nude at −20 °C in 40 km/h wind: lower legs freeze at 10 min, fingers at 15, toes at 21, the face at 29, unconscious at 1.4 h, dead at 1.8 h. Jacket ensemble at −20 °C in 50 km/h wind, walking, bare face and hands: face and fingers frozen at 20 min, core 36.9 °C. Down suit with hood and gloves at −30 °C, walking: core 37.7 °C; bare face frozen at 9 min. Desert at 45 °C, sun (radiant 60 °C), 20 % RH, walking in T-shirt and shorts: 5.1 L water lost in 6 h (5 % of body mass at 4.2 h), core 38.5 °C. 22 °C indoors, resting, 24 h: 1.4 L.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -313,6 +348,7 @@ Results: no water at rest → 5 % on day 2.3, 8 % on day 3.7, dead day 9.1; acti
 | BodyWound | `part` = a part name; cut, puncture or bite: a wound through every layer [ASSUMED]: vessel class as §5, and organ (`FUNCTIONAL`) tissue stops working, for good without `HEALING_RATE`, as in §5 |
 | BodyCheck | `uses` = grasp, stance, sight, hearing, smell, breathing |
 | BodyChoke | `who`, `holder`, `seconds` held: §6.1 choke rows |
+| BodyEnvironment | `who` list; air °C, radiant °C, humidity, weather wind km/h or indoor air speed, ensemble and/or garments with covers, face covered, METs; `clear`: §6.4 |
 | unknown part / attack / species | the tool returns the valid names; nothing recorded |
 
 ## 8. Unchanged
@@ -368,6 +404,9 @@ What these show:
 | OPEN-74 | closed by the fit in §4.6; replace the CompuBox proxy when a count of head punches landed per bare-knuckle bout is published |
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
+| OPEN-82 | body temperature of non-human-shaped species (JOS-3 is a human model) |
+| OPEN-83 | effects of hypothermia II and heat stroke on checks; hand dexterity in the cold (Heus et al. 1995 give 15 °C local hand skin as the minimum criterion for hand function, no dose–response; Daanen 2009 regression not reachable) |
+| OPEN-84 | frostbite depth from time frozen; cold-water immersion (JOS-3 models air only); wet clothing |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 12 species and the bird median; 60-dB ranges for 30. Missing lowest thresholds: dog, cat, horse, cattle, pig, goat, sheep, elephant (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |

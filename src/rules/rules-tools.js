@@ -1,10 +1,12 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke } from './body-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment } from './body-engine.js';
+import { thermalCapable } from './thermal/exposure.js';
+import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyChoke', 'BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -142,6 +144,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - A shot with a bow, crossbow or blowgun → BodyCheck for the aim; on target → BodyStrike with launcher and the distance.
 - An attack by any other means (sling, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
 - A burn, a bite, an accident or a fall injury → BodyWound.
+- Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
 - A spell is cast → CastSpell. A treatment is applied → BodyTreat. Someone drinks or eats → BodyIntake.
@@ -169,7 +172,6 @@ export function registerRulesTools(enabled) {
         formatMessage: () => '',
     });
 
-    // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
     tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, bolt, bullet). Returns what the wound is and the body state.', {
         who: str('Character name'),
@@ -264,6 +266,38 @@ export function registerRulesTools(enabled) {
         if (error) return error;
         const holder = a.holder && st.people?.[a.holder] ? st.people[a.holder] : null;
         return `${choke(p, a.seconds, holder, rng)} ${status(a.who, p)}`;
+    }));
+
+    tool('BodyEnvironment', 'Set the air and clothing characters are in whenever they enter a different climate, the weather changes, or they change clothes; PassTime then works out body temperature, sweating, hypothermia, heat stroke and frostbite. clear = back to unrecorded (comfortable) conditions.', {
+        who: { type: 'array', items: { type: 'string' }, description: 'Characters in these conditions' },
+        air_c: { type: 'number', description: 'Air temperature, °C' },
+        radiant_c: { type: 'number', description: 'Mean radiant temperature, °C: about air temperature in shade or indoors; higher in strong sun or by a fire (desert sun 60–70), lower under a clear night sky' },
+        humidity_pct: { type: 'number', description: 'Relative humidity, %. Default 50' },
+        wind_kmh: { type: 'number', description: 'Weather wind speed outdoors (as forecast, at 10 m), km/h. 0 = calm' },
+        air_speed_ms: { type: 'number', description: 'Indoors or sheltered: air speed at the body, m/s (still room 0.1)' },
+        ensemble: { type: 'string', description: `Clothing as a measured ensemble when one matches: ${Object.keys(ENSEMBLES).join('; ')}` },
+        garments: {
+            type: 'array',
+            description: 'Clothing as garments (alone or on top of an ensemble). Name from the list or clo for anything else; covers = body regions (head, neck, chest, back, torso, pelvis, shoulders, arms, forearms, hands, thighs, lower legs, legs, feet, or one side: left hand…)',
+            items: { type: 'object', properties: { name: str(`Garment: ${Object.keys(GARMENTS).join('; ')}`), clo: { type: 'number', description: 'Insulation of a garment not in the list, clo' }, covers: { type: 'array', items: { type: 'string' } } }, required: ['covers'] },
+        },
+        face_covered: { type: 'boolean', description: 'Face covered (mask, balaclava, scarf over the face). Default false' },
+        met: { type: 'number', description: 'Activity in METs for the whole span when fixed (Compendium of Physical Activities values: sleeping 0.95, sitting quietly 1.3, walking 3 mph 3.5). Omit to follow PassTime (sleeping 0.95, resting 1.3, active 3.5)' },
+        clear: { type: 'boolean', description: 'Remove recorded conditions' },
+    }, ['who'], a => run(st => {
+        const out = [];
+        for (const name of a.who) {
+            const { p, error } = who(st, name);
+            if (error) { out.push(error); continue; }
+            if (a.clear) { setEnvironment(p, null); out.push(`${name}: conditions cleared.`); continue; }
+            if (a.air_c == null) return 'air_c is required.';
+            if (!thermalCapable(p.species)) { out.push(`${name}: body temperature is simulated only for human body plans (human, dwarf, elf, goblin); not recorded.`); continue; }
+            try {
+                setEnvironment(p, { ...a, clothing: { ensemble: a.ensemble, garments: a.garments } });
+            } catch (e) { return `${e.message} Nothing recorded.`; }
+            out.push(status(name, p));
+        }
+        return out.join('\n');
     }));
 
     tool('BodyIntake', 'Record drinking or eating the moment it happens.', {

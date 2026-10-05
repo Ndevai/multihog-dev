@@ -179,6 +179,7 @@ const MBF_MS = [0.00252, 0, 0, 0, 0.04804, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 const MBF_FAT = [0.00127, 0, 0, 0, 0.0095, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 const MBF_SK = [0.00152, 0.00033, 0.00211, 0.00187, 0.003, 0.00059, 0.00031, 0.00059, 0.00059, 0.00031, 0.00059, 0.00144, 0.00027, 0.00118, 0.00144, 0.00027, 0.00118];
 const WORKF = [0, 0, 0.091, 0.08, 0.129, 0.0262, 0.0139, 0.005, 0.0262, 0.0139, 0.005, 0.201, 0.099, 0.005, 0.201, 0.099, 0.005];
+const SHIV_PEAK = 4.9;
 const SHIVF = [0.0339, 0.0436, 0.27394, 0.24102, 0.38754, 0.00243, 0.00137, 0.0002, 0.00243, 0.00137, 0.0002, 0.0039, 0.00175, 0.00035, 0.0039, 0.00175, 0.00035];
 const NSTF = [0, 0.19, 0, 0.19, 0.19, 0.215, 0, 0, 0.215, 0, 0, 0, 0, 0, 0, 0, 0];
 function shivering(errCr, errSk, b) {
@@ -327,6 +328,7 @@ export function createBody(b = {}) {
     for (let i = 0; i < 10; i++) step(body, env, 60000, { passive: true, avaZero: true });
     body.setCr = INDEX.core.map(k => body.t[k]);
     body.setSk = INDEX.skin.map(k => body.t[k]);
+    body.neutral = env;
     return body;
 }
 
@@ -334,7 +336,7 @@ export function createBody(b = {}) {
  * Advances the body dtime seconds in env: { tdb, tr, rh %, v m/s, clo, iclo, par, posture: standing|sitting|lying }; tdb, tr, rh,
  * v, clo and iclo take one number or 17 (SEGMENTS order). Returns the step's heat and water figures.
  */
-export function step(body, env, dtime = 60, { passive = false, avaZero = false } = {}) {
+export function step(body, env, dtime = 60, { passive = false, avaZero = false, shivStopsBelow = null } = {}) {
     const tdb = arr(env.tdb ?? 28.8), tr = arr(env.tr ?? env.tdb ?? 28.8), rh = arr(env.rh ?? 50), v = arr(env.v ?? 0.1);
     const clo = arr(env.clo ?? 0), iclo = arr(env.iclo ?? 0.45), par = env.par ?? 1.25, posture = env.posture ?? 'standing';
     const tcr = INDEX.core.map(k => body.t[k]), tsk = INDEX.skin.map(k => body.t[k]);
@@ -347,11 +349,16 @@ export function step(body, env, dtime = 60, { passive = false, avaZero = false }
     const bfSkin = skinBloodFlow(errCr, errSk, body);
     let [avaH, avaF] = avaBloodFlow(errCr, errSk, body);
     if (avaZero && passive) avaH = avaF = 0;
-    const qShiv = shivering(errCr, errSk, body);
     const qNst = nonshivering(errSk, body);
     const bmr = basalMet(body.height, body.weight, body.age, body.sex);
     const mCr = MBF_CR.map(f => f * bmr), mMs = MBF_MS.map(f => f * bmr), mFat = MBF_FAT.map(f => f * bmr), mSk = MBF_SK.map(f => f * bmr);
     const qBmrTotal = sum(mCr) + sum(mMs) + sum(mFat) + sum(mSk);
+    // Added to JOS-3: peak shivering = 4.9 × resting metabolism in total (Eyolfson et al. 2001, Eur J Appl Physiol 84:100),
+    // so shivering heat ≤ 3.9 × basal.
+    let qShiv = shivering(errCr, errSk, body);
+    const shivCap = (SHIV_PEAK - 1) * qBmrTotal, shivSum = sum(qShiv);
+    if (shivSum > shivCap) qShiv = qShiv.map(x => x * shivCap / shivSum);
+    if (shivStopsBelow != null && tcr[4] < shivStopsBelow) qShiv = qShiv.map(() => 0);
     if (par < 1) throw new Error('par must be 1 or more');
     const qWork = WORKF.map(f => f * (par - 1) * qBmrTotal);
     const qCr = [...mCr], qMs = [...mMs];
