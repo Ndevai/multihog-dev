@@ -355,7 +355,7 @@ Added to JOS-3:
 |---|---|---|
 | core temperature | pelvis core node | [ASSUMED rectal ≈ pelvis core] |
 | hypothermia I | core 35–32 °C: awake, shivering (status) | Brown et al. 2012, NEJM 367:1930 (Swiss staging) |
-| hypothermia II | 32–28 °C: drowsy, not shivering (status; check effects OPEN-83) | same |
+| hypothermia II | 32–28 °C: drowsy, not shivering; checks that use attention fail [ASSUMED from the stage's definition, impaired consciousness] | same |
 | hypothermia III | 28–24 °C: unconscious | same |
 | hypothermia IV | < 24 °C: no vital signs → dead | same; [ASSUMED dead without extracorporeal rewarming] |
 | heat stroke course | back under 40 °C core within 30 min of onset: no lasting harm. Longer: dies with chance 26.5 % if exertional (working at onset), 63.2 % classic, 1–3 days after onset (uniform) [ASSUMED timing]; the roll stands after cooling. Scratch run, 100 people working at 8 MET in 45 °C sun: heat stroke at 26 min, 35 died | "100 % survivable when core temperature is cooled below 40 °C within 30 minutes" (Hosokawa et al. 2024 review, PMC11438465); mortality 26.5 % exertional, 63.2 % classic (MedLink, Heat stroke) |
