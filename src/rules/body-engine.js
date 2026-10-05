@@ -1064,6 +1064,25 @@ export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false } 
     return `${who} ${per <= g ? 'holds it' : 'cannot hold it'} (${round(per)} kg per hand on ${n} hand${n > 1 ? 's' : ''}; grip ${round(g)} kg, ${p.sex === 'female' ? 'women' : 'men'} aged ${p.age ?? 25} average ${round(norm.mean)} ± ${round(norm.sd)} kg).`;
 }
 
+// Running speed (§6.7): the creature's fastest DF walking gait [RAW]; DF gait value v (ticks per 100 tiles) → km/h = 8775 ÷ v,
+// the constant matching the speeds written beside the gait variations in the DF raws (human 225 → 39 km/h, dog 149 → 59, horse
+// 125 → 70). × the share of working legs (stance) [ASSUMED proportional]; no legs → 0.
+export function topSpeedKmh(p) {
+    const c = creatureOf(p);
+    const g = c?.gaits?.filter(x => x.type === 'WALK') ?? [];
+    if (!g.length || p.dead || p.unconscious) return 0;
+    const st = abilities(p).stance ?? 1;
+    return 8775 / Math.min(...g.map(x => x.max)) * st;
+}
+
+/** A chase over open ground: does the pursuer catch the one fleeing, starting `gap_m` apart, both at full speed? */
+export function chase(pn, pursuer, fn, fleeing, gap_m) {
+    const vp = topSpeedKmh(pursuer) / 3.6, vf = topSpeedKmh(fleeing) / 3.6;
+    const sp = `${pn} ${round(vp * 3.6)} km/h, ${fn} ${round(vf * 3.6)} km/h`;
+    if (vp <= vf) return `${fn} gets away: ${pn} is not faster (${sp}).`;
+    return `${pn} catches ${fn} after ${round(gap_m / (vp - vf), 1)} s, ${round(vp * gap_m / (vp - vf))} m run (${sp}; full speed throughout).`;
+}
+
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
 export function listen(ls, l, { sound, spl_db = null, distance = 1, noise = 'quiet room', barrier = 'none' } = {}) {
     const lc = creatureOf(l);

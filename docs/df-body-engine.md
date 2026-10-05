@@ -517,6 +517,8 @@ Available VO2max = VO2max × altitude factor (§6.6) − 4 mL/min per g of haemo
 
 Open (OPEN-87): recovery rate is glycogen's, not measured on work capacity; check the Santee correction against the paper.
 
+Chase (Chase: pursuer, fleeing, `gap_m`): top speed = the creature's fastest DF walking gait [RAW], km/h = 8775 ÷ gait value (the constant that matches the speeds written beside the gait variations in the DF raws: human sprint 225 → 39 km/h, dog gallop 149 → 59, horse 125 → 70, cheetah 100 → 88), × the share of working legs [ASSUMED]. Caught when the pursuer is faster, after gap ÷ speed difference. Results: dog vs human, 20 m: caught at 3.6 s; grizzly, 50 m: 10.7 s; human vs human with a broken lower leg: caught at 1.8 s; equal humans: no catch. Limits (OPEN-90): all humans run at the DF human top speed (39 km/h, an elite sprinter's); no acceleration, sprint endurance, terrain or load; individual speed differences.
+
 ### 6.8 Carbon monoxide
 
 Set with BodyEnvironment `co_ppm`; treated with BodyTreat `oxygen` or `hyperbaric_oxygen`.
@@ -590,6 +592,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | BodyContact | `material`, `temp_c`, `seconds` | scene facts | — |
 | BodyFall | `height_m`, `soft`, `head_first` | scene facts | — |
 | HoldOn | `hanging`, `load_kg`, `hands` | scene facts | — |
+| Chase | `gap_m` | scene fact | — |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ## 8. Unchanged
