@@ -7,7 +7,7 @@ import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
-import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp } from './thermal/exposure.js';
+import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp, burnedTBSA } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -160,12 +160,25 @@ function infectionChance(w) {
     return late ? 0.15 : 0.03;
 }
 
+// Burn death: revised Baux score = age + % body surface burned (partial or full thickness) (Osler et al. 2010, J Trauma 68:690;
+// inhalation injury +17 not modelled); mortality by inverse logit with the score at 50 % = 135, the middle of the 130–140
+// reported for well-performing burn units (Wikipedia, Baux score), slope 0.058 per point [ASSUMED, recalled from Osler 2010].
+// Re-rolled on the added risk when the burned area grows; death 1–14 days after the burn [ASSUMED timing].
+function burnRisk(p, rng) {
+    const pr = 1 / (1 + Math.exp(-0.058 * ((p.age ?? 25) + burnedTBSA(p) - 135))), old = p.burnDeath?.p ?? 0;
+    if (pr <= old || burnedTBSA(p) === 0) return;
+    const b = p.burnDeath ??= { p: 0, fatal: false, min: 0, deathMin: null };
+    if (!b.fatal && rng() < (pr - old) / (1 - old)) { b.fatal = true; b.deathMin = b.min + Math.round((1 + 13 * rng()) * DAY_MIN); }
+    b.p = pr;
+}
+
 /** Skin of the given regions touches `material` at temp_c for `seconds` (Henriques burn dose, §6.4). Returns a report line. */
 export function contactBurn(p, regions, material, tempC, seconds, rng = Math.random) {
     const ti = contactTemp(material, tempC);
     const segs = immersion(regions);
     const made = [];
     segs.forEach((on, i) => { if (on) for (const b of burnDose(p, i, ti, seconds)) for (const part of frostParts(creatureOf(p), b.seg)) made.push(addWound(p, { part, type: 'burn', depth: b.depth }, rng)); });
+    burnRisk(p, rng);
     return `Skin surface at ${round(ti, 1)} °C for ${seconds} s: ${made.length ? `${made.length} ${made[0].depth ?? ''} burn wound(s) on ${[...new Set(made.map(w => w.part))].join(', ')}` : 'no burn'}.`;
 }
 
@@ -229,6 +242,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         altitudeMinute(p, rng);
         if (p.sepsis && ++p.sepsis.min >= p.sepsis.deathMin && p.sepsis.fatal) { p.dead = 'sepsis'; return; }
         if (p.peritonitis && ++p.peritonitis.min >= p.peritonitis.deathMin && p.peritonitis.fatal) { p.dead = 'peritonitis'; return; }
+        if (p.burnDeath && ++p.burnDeath.min >= (p.burnDeath.deathMin ?? Infinity) && p.burnDeath.fatal) { p.dead = 'burns'; return; }
         venomMinute(p);
         let heat = null;
         if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
@@ -255,6 +269,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             else if (p.unconscious === 'hypothermia') p.unconscious = null;
             for (const seg of heat.frozen) for (const part of frostParts(c, seg)) addWound(p, { part, type: 'frostbite' }, rng);
             for (const b of heat.burned ?? []) for (const part of frostParts(c, b.seg)) addWound(p, { part, type: 'burn', depth: b.depth }, rng);
+            if (heat.burned?.length) burnRisk(p, rng);
             if (thermalCapable(p.species)) water(p, rng);
         }
         if (needs) {
@@ -554,6 +569,7 @@ export function status(who, p) {
     }
     if (p.needs?.work > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs.work * 100)} % of what can be kept up`);
     if (p.heatStroke?.min >= 30) out.push(`heat stroke not cooled within 30 min: about ${p.heatStroke.exertional ? '1 in 4' : '2 in 3'} die within days`);
+    if (p.burnDeath) out.push(`burned ${burnedTBSA(p)} % of body surface: about ${Math.round(p.burnDeath.p * 100)} % of such patients die within 2 weeks`);
     if (p.peritonitis) out.push(`gut opened (peritonitis): belly pain, fever${p.peritonitis.repaired ? '; repaired by laparotomy' : '; without surgery about 9 in 10 die within a week'}`);
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {

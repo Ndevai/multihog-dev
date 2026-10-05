@@ -160,6 +160,9 @@ function surfaceT(node, ta, tr, v) {
     return ts;
 }
 
+/** Share of body surface (%) burned partial or full thickness, by JOS-3 segment areas. */
+export const burnedTBSA = p => Math.round(Object.keys(p.burnt ?? {}).reduce((a, seg) => a + LOCAL_BSA[SEGMENTS.indexOf(seg)], 0) / LOCAL_BSA.reduce((a, b) => a + b, 0) * 1000) / 10;
+
 /** Adds Henriques damage for segment i held at surface temperature t (°C) for `seconds`; returns new burns [{ seg, depth }]. */
 export function burnDose(p, i, t, seconds) {
     p.burnO ??= new Array(SEGMENTS.length).fill(0);
