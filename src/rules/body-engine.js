@@ -769,7 +769,8 @@ function defenceDone(a, t, defender, rng) {
     const sideFlag = { left: 'LEFT', right: 'RIGHT' }[dir];
     const eyeSees = e => sideFlag ? e.flags.includes(sideFlag) || !e.flags.some(f => f === 'LEFT' || f === 'RIGHT') : a.facing !== false;
     const sees = a.lit !== false && dir !== 'back' && eyes.some(eyeSees);
-    const db = a.noise_db || 0, level = db - hearingShift(defender?.species) - (earsOk < ears.length ? 3 : 0);
+    // A named sound source (Listen presets) at the attack's starting distance gives the level by spherical spreading.
+    const db = a.noise_sound && SOUNDS[a.noise_sound] != null ? SOUNDS[a.noise_sound] - 20 * Math.log10(Math.max(1, a.distance_m ?? 1)) : a.noise_db || 0, level = db - hearingShift(defender?.species) - (earsOk < ears.length ? 3 : 0);
     const audible = earsOk > 0 && inRange(defender?.species, db, a.noise_khz);
     if (awake && sees) perceive(0, rt('sight'));
     if (awake && audible && level > HEAR_DB) perceive(0, rt('hearing'));
@@ -902,7 +903,8 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     if (means === 'shot' && !a.landed && a.part) {
         const d = a.distance_m ?? 10, h = SHOT_HC[Math.min(SHOT_HC.length - 1, Math.max(0, SKILL_LEVELS.indexOf(a.skill ?? 'Dabbling')))];
         const sr = d * 5e-4 * 1.035 ** (h + 6) * Math.exp(0.00365 * d);
-        const pHit = r => 1 - Math.exp(-(((r + 0.00275) / sr) ** 2));
+        // Shooter under fire: hit chances × 0.6 (police hit 18 % in gunfights against 30 % when not fired upon; RAND 2008).
+        const pHit = r => (1 - Math.exp(-(((r + 0.00275) / sr) ** 2))) * (a.under_fire ? 0.6 : 1);
         const vol = target.mass / 1000, area = p => (vol * p.relsize / tc.relTotal) ** (2 / 3);
         const bodyA = tc.parts.filter(x => !x.flags.includes('INTERNAL')).reduce((t, x) => t + area(x), 0);
         const onPart = pHit(Math.sqrt(area(part) / Math.PI)), onBody = pHit(Math.sqrt(bodyA / Math.PI));

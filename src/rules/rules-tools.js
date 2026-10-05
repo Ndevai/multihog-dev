@@ -244,6 +244,8 @@ export function registerRulesTools(enabled) {
         facing: { type: 'boolean', description: 'Target looking toward the attacker. Default true.' },
         lit: { type: 'boolean', description: 'Enough light for the target to see the attacker. Default true.' },
         noise_db: { type: 'number', description: 'Sound level of the attacker at the target in dB(A). 0 = silent.' },
+        noise_sound: { type: 'string', enum: Object.keys(SOUNDS), description: 'The attacker\'s sound, when it is one of these (level at the target is computed from distance_m); use instead of noise_db.' },
+        under_fire: { type: 'boolean', description: 'For a shot: the shooter is being shot at.' },
         noise_khz: { type: 'number', description: 'Main pitch of that sound in kHz, when it is a tone (whistle, ultrasonic call). Omit for ordinary noise.' },
         distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Omit when already within reach.' },
         approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
@@ -256,7 +258,7 @@ export function registerRulesTools(enabled) {
         const ta = attacker || !a.attacker ? {} : fromTracker(a.attacker);
         const asp = speciesOf(a.attacker_species || ta.species);
         if (!asp) return noSpecies(a.attacker_species || ta.species);
-        const keys = ['weapon', 'launcher', 'material', 'skill', 'style', 'prone', 'from', 'awake', 'facing', 'lit', 'noise_db', 'noise_khz', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
+        const keys = ['weapon', 'launcher', 'material', 'skill', 'style', 'prone', 'from', 'awake', 'facing', 'lit', 'noise_db', 'noise_sound', 'under_fire', 'noise_khz', 'distance_m', 'approach_speed', 'sense_range_m', 'intent_visible'];
         const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || ta.mass, armor: a.target_armor,
             ...Object.fromEntries(keys.filter(k => a[k] !== undefined).map(k => [k, a[k]])) }, attacker, rng);
         return `${out} ${status(a.who, p)}`;
