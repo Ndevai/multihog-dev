@@ -3,7 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf } from './hearing.js';
-import { reach, BAND_HZ } from './acoustics.js';
+import { reach, hearSound, SOUNDS, BAND_HZ } from './acoustics.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
@@ -984,6 +984,28 @@ export function intake(p, { water_l = 0, food_kcal = 0, alcohol_g = 0 } = {}) {
     p.needs.kcal = Math.max(0, p.needs.kcal - Math.max(0, Number(food_kcal) || 0));
 }
 
+/** Listener hearing for acoustics.js: { shift, deaf } (species threshold, one of two ears lost +3 dB, bands out of range). */
+function earOf(l, lc) {
+    const ears = lc.parts.filter(x => x.flags.includes('HEAR')), earsOk = ears.filter(worksFn(l, lc)).length;
+    const h = hearingOf(l.species);
+    const deaf = h?.lo ? BAND_HZ.map((f, i) => f < h.lo || f > h.hi ? i : -1).filter(i => i >= 0) : [];
+    return { shift: hearingShift(l.species) + (ears.length > 1 && earsOk < ears.length ? 3 : 0), deaf, earsOk, ears: ears.length };
+}
+
+/** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
+export function listen(ls, l, { sound, spl_db = null, distance = 1, noise = 'quiet room', barrier = 'none' } = {}) {
+    const lc = creatureOf(l);
+    if (!lc) return 'Creature data is not loaded.';
+    if (l.dead || l.unconscious) return `${ls} perceives nothing (${l.dead ? 'dead' : 'unconscious'}).`;
+    const spl = spl_db ?? SOUNDS[sound];
+    if (spl == null) return `Unknown sound "${sound}". Known: ${Object.keys(SOUNDS).join(', ')}; or give spl_db at 1 m.`;
+    const ear = earOf(l, lc);
+    if (ear.ears && !ear.earsOk) return `${ls} cannot hear (no working ear).`;
+    const r = hearSound({ spl, distance, barrier, noise, ...ear });
+    const what = `${sound ?? `${spl} dB at 1 m`} at ${distance} m, ${noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
+    return r.audible ? `${ls} hears it (${what}; ${r.margin} dB above what masks it).` : `${ls} does not hear it (${what}; ${-r.margin} dB short).`;
+}
+
 export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none' } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc) return 'Creature data is not loaded.';
@@ -1003,10 +1025,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     if (anyWorks(l, lc, flag('HEAR')) === false) return `${ls} cannot hear it.`;
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
-    const ears = lc.parts.filter(flag('HEAR')), earsOk = ears.filter(worksFn(l, lc)).length;
-    const h = hearingOf(l.species);
-    const deaf = h?.lo ? BAND_HZ.map((f, i) => f < h.lo || f > h.hi ? i : -1).filter(i => i >= 0) : [];
-    const r = reach({ effort, distance, barrier, noise, noiseDb: noise_db, shift: hearingShift(l.species) + (ears.length > 1 && earsOk < ears.length ? 3 : 0), deaf });
+    const r = reach({ effort, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
     const where = `${effort} voice at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible) return `${ls} does not hear ${sp} (${where}).`;
     if (r.words < 0.2) return `${ls} hears that ${sp} is speaking but makes out almost no words: ${Math.round(r.words * 100)} % (${where}; SII ${r.sii}).`;

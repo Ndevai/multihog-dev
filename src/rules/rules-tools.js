@@ -1,6 +1,6 @@
-import { NOISE, BARRIER } from './acoustics.js';
+import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn } from './body-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -9,7 +9,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -150,7 +150,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
@@ -344,6 +344,20 @@ export function registerRulesTools(enabled) {
         if (s.error || l.error) return s.error || l.error;
         const langs = [fromTracker(a.speaker).languages, fromTracker(a.listener).languages];
         return communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort: a.effort ?? 'normal', noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+    }));
+
+    tool('Listen', 'Decide whether a character hears a sound (a shot, footsteps, an engine) before narrating whether they react. Code decides from loudness, distance, background noise, walls and the listener\'s hearing.', {
+        listener: str('Character who might hear it'),
+        listener_species: str('Listener\'s DF creature when it has no tracker profile.'),
+        sound: { type: 'string', enum: Object.keys(SOUNDS) },
+        spl_db: { type: 'number', description: 'Loudness at 1 m, dB SPL, for a sound not in the list (from a published measurement)' },
+        distance_m: { type: 'number', description: 'Distance from the sound, m' },
+        noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
+        barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
+    }, ['listener', 'distance_m'], a => run(st => {
+        const l = who(st, a.listener, a.listener_species);
+        if (l.error) return l.error;
+        return listen(a.listener, l.p, { sound: a.sound, spl_db: a.spl_db, distance: a.distance_m, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {

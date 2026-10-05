@@ -360,6 +360,8 @@ Speech over distance, noise and walls (Communicate `distance_m`, `effort`, `nois
 
 Results: normal voice in a quiet room, 3 m 99 % of words, 30 m 84 %, 100 m 21 %; 2 m beside another conversation 81 %; 5 m in street traffic 3 % (shouted 66 %); through a wooden door at 3 m 9 %; shouted through a brick wall 9 %; beside a jackhammer, not heard; shouted at 300 m on a silent night 93 % (free field, no ground or wind effects).
 
+Other sounds (Listen: `sound` preset or `spl_db` at 1 m, `distance_m`, `noise`, `barrier`): the same path (spreading, air absorption, walls), overall level spread evenly over the six octaves [ASSUMED pink]; heard when in any band the level + 15 dB exceeds the disturbance (background or the listener's internal noise + species shift), as for speech. Presets (dB SPL at 1 m): rifle shot 171, jet engine 150, jackhammer 100 (Wikipedia, Sound pressure), vacuum cleaner 90 (85 at 1.8 m), car passing slowly 87.5 (65–70 at 10 m), quiet conversation 50 (40–60), footsteps on gravel or sand 64 (60–62 dBA at the walker's ear, Larsson et al. 2015, Noise Health 17:227; ear 1.5 m from the feet [ASSUMED]). Results (human): footsteps on gravel at 20 m heard with 28 dB to spare, at 100 m 14 dB; in street traffic at 20 m not heard (15 dB short); quiet conversation behind a wooden door at 10 m not heard; a rifle shot at 10 km on a silent night heard. Limits (OPEN-88): no ground or weather attenuation; impulses (shots) count by peak, not by energy over the ear's ~200 ms integration; species hearing is a flat shift of the human curve, so a dog hears no better at high pitch than a human.
+
 ### 6.3 Water, food, sleep
 
 | Need | Rule | Source |

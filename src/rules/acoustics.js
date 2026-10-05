@@ -16,6 +16,12 @@ const AIR = [1.0, 1.9, 3.7, 9.7, 32.8, 117];
 // (pink noise) [ASSUMED shape].
 export const NOISE = { 'silent night': 10, 'quiet room': 25, 'conversation nearby': 50, 'street traffic': 67.5, television: 75,
     'vacuum cleaner': 85, 'jackhammer close by': 100 };
+// Sound sources, overall dB SPL at 1 m: Wikipedia "Sound pressure" examples (.30-06 rifle 171 at 1 m; jet engine 150 at 1 m;
+// jackhammer 100 at 1 m; normal conversation 40–60 at 1 m → 50; vacuum cleaner 85 at 1.8 m → 90; passenger car at 30 km/h
+// 65–70 at 10 m → 87.5); footsteps on gravel or sand about 60–62 dBA at the walker's ear (Larsson et al. 2015, Noise Health
+// 17:227, citing earlier recordings), ear about 1.5 m from the feet → 64 at 1 m [ASSUMED distance].
+export const SOUNDS = { 'rifle shot': 171, 'jet engine': 150, jackhammer: 100, 'vacuum cleaner': 90, 'car passing slowly': 87.5,
+    'footsteps on gravel or sand': 64, 'quiet conversation': 50 };
 // Walls and doors: field mass law, TL = 20 log10(m f) − 47 dB, m surface mass kg/m² (e.g. Long, Architectural Acoustics);
 // surface masses from material density × thickness [ASSUMED values].
 export const BARRIER = { none: 0, 'curtain or tent': 1, 'wooden door': 20, 'plaster wall': 25, 'brick wall': 200, 'stone wall': 500 };
@@ -52,3 +58,16 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
     return { sii, words: Math.round(100 / (1 + Math.exp(-0.29 * (30 * sii - 15 + 2.70)))) / 100, audible };
 }
 export const BAND_HZ = BANDS;
+
+/** Whether a sound of overall `spl` dB at 1 m is heard: { audible, margin } with margin = best band peak − disturbance, dB. */
+export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room', noiseDb = null, shift = 0, deaf = [] }) {
+    const e = arriving({ spl, distance, barrier });
+    const nDb = noiseDb ?? NOISE[noise] ?? 25;
+    let margin = -Infinity;
+    e.forEach((ei, i) => {
+        if (deaf.includes(i)) return;
+        const n = nDb - 10 * Math.log10(6) - DELTA[i];
+        margin = Math.max(margin, ei + 15 - Math.max(n, XI[i] + shift));
+    });
+    return { audible: margin > 0, margin: Math.round(margin) };
+}
