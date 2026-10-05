@@ -243,10 +243,10 @@ Fracture kind: transverse [576 "blunt blow" row, also used for edged; ASSUMED]. 
 
 | Case | Rule | Source |
 |---|---|---|
-| limb artery or femoral bleeding, BodyTreat `stop_bleeding` | tourniquet: succeeds 20.41 % untrained, 44.14 % with a just-in-time instruction card or phone instructions (`training`), trained [ASSUMED] always; a failure leaves the bleeding, retry allowed | Goolsby et al. 2015, Prehosp Disaster Med 30:600: 194 volunteers without medical training, Combat Application Tourniquet on a mannequin leg, randomized |
+| limb artery or femoral bleeding, BodyTreat `stop_bleeding` | tourniquet succeeds: untrained 18.35 %, with instructions 44.14 %, formally trained 90 % (`training`); a failure leaves the bleeding, retry allowed | Bordonaro et al. 2025, Advances in Simulation 10:57 (systematic review, 10 randomized/clinical trials, Combat Application Tourniquet on trainers): no training 16.3–20.4 % (three studies), point-of-care aids 21.9–69.8 %, video or web training 50.0 and 74.7 %, formal bleeding-control training 87.7 and 92.2 %; instruction-card value from Goolsby et al. 2015 (44.14 %, 194 volunteers) |
 | any other bleeding | stopped | — |
 
-Scratch: 2000 untrained attempts on a thigh artery cut: 19.5 % stopped. Limits (OPEN-90): success rate after formal training (a 2025 systematic review, Efficacy of publicly accessible tourniquets, reports training raises it; its full text could not be read: rate limited); time to apply; improvised tourniquets.
+Scratch: 2000 untrained attempts on a thigh artery cut: about 18 % stopped. Limits (OPEN-90): time to apply; improvised tourniquets (the review: lower success); junctional and torso bleeding.
 
 ### 5.2 Venom
 

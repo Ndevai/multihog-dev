@@ -213,13 +213,14 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
         return 'Antivenom given: the venom course stops.';
     }
     if (!w) return `No wound ${id}.`;
-    // Arterial bleeding on a limb takes a tourniquet: laypeople without training placed one successfully 20.41 % of the time, with a
-    // just-in-time instruction card 44.14 % (Goolsby et al. 2015, Prehosp Disaster Med 30:600, 194 volunteers); trained people
-    // succeed [ASSUMED]. A failed attempt leaves the bleeding; it can be tried again. Other bleeding: stopped.
+    // Arterial bleeding on a limb takes a tourniquet (Combat Application Tourniquet), success by training (Bordonaro et al. 2025,
+    // Adv Simul 10:57, systematic review of 10 trials): no training 16.3–20.4 % in three studies → 18.35 %; with a just-in-time
+    // instruction card 44.14 % (Goolsby et al. 2015, inside the review's 21.9–69.8 % for point-of-care aids); formal bleeding-
+    // control training 87.7 % and 92.2 % → 90 %. A failed attempt leaves the bleeding; it can be tried again. Other bleeding: stopped.
     if (treatment === 'stop_bleeding') {
-        if (['femoral', 'limb_artery'].includes(w.vessel) && w.bleed > 0 && training !== 'trained') {
-            const pr = training === 'instructions' ? 0.4414 : 0.2041;
-            if (rng() >= pr) return `Wound ${id}: the tourniquet does not stop the bleeding (${training === 'instructions' ? 'with instructions' : 'untrained'}: ${Math.round(pr * 100)} % succeed); still ${w.bleed} mL/min.`;
+        if (['femoral', 'limb_artery'].includes(w.vessel) && w.bleed > 0) {
+            const pr = { untrained: 0.1835, instructions: 0.4414, trained: 0.90 }[training] ?? 0.1835;
+            if (rng() >= pr) return `Wound ${id}: the tourniquet does not stop the bleeding (${training}: ${Math.round(pr * 100)} % succeed); still ${w.bleed} mL/min.`;
             w.bleed = 0; return `Wound ${id}: tourniquet on, bleeding stopped.`;
         }
         w.bleed = 0; return `Wound ${id}: bleeding stopped.`;
