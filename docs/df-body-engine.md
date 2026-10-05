@@ -548,6 +548,28 @@ Limits (OPEN-89): evidence, prior suspicion, relationship and training are not i
 | BodyEnvironment | `who` list; air °C, radiant °C, humidity, weather wind km/h or indoor air speed, ensemble and/or garments with covers, face covered, METs; `clear`: §6.4 |
 | unknown part / attack / species | the tool returns the valid names; nothing recorded |
 
+### 7.1 Audit: what the narrating model still decides
+
+Each tool input is either a scene fact (visible in the story: distance, temperature, who is present) or an outcome guess (the model estimates how likely or how bad something is). Outcome guesses are where a narrator bends a scene; the goal is none.
+
+| Tool | Input | Kind | Status |
+|---|---|---|---|
+| BodyCheck | `share` (fraction who succeed) | outcome guess | open: the main remaining guess (OPEN-90) |
+| BodyCheck | `uses`, `exertion`, `on_feet`, `timed`, `fine` | scene facts (what the task involves) | — |
+| BodyWound | `type`, `depth` for accidents | outcome guess | partly replaced: burns by BodyContact and heat, falls by BodyFall, attacks by BodyStrike |
+| BodyStrike | `noise_db` | estimate | could take Listen's sound presets |
+| BodyStrike | `skill` | character fact | — |
+| CastSpell | `complexity` | setting fact (spell list) | — |
+| BodyIntake | amounts | scene facts, with examples | — |
+| BodyEnvironment | `co_ppm` | estimate | ranges given in the description |
+| Look | `size_m`, `distance_m`, `light`, `visibility_m` | scene facts | — |
+| Listen, Communicate | `sound`/`spl_db`, `distance_m`, `noise`, `barrier`, `effort` | scene facts (presets) | — |
+| JudgeStatement | `is_lie` | story fact | — |
+| Bystander, ObeyOrder, AskStranger | `others`, `dangerous`, `situation` | scene facts | — |
+| BodyContact | `material`, `temp_c`, `seconds` | scene facts | — |
+| BodyFall | `height_m`, `soft`, `head_first` | scene facts | — |
+| (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
+
 ## 8. Unchanged
 
 Blood volume 70 mL/kg and loss classes, refill, red cells, infection, treatments, falls, PassTime interruptions, the check formula, magic — rule 576, now applied to any creature with blood [ASSUMED for non-humans].
@@ -608,6 +630,7 @@ What these show:
 | OPEN-86 | venom: copperhead yield and LD50 (only "an estimated lethal dose around 100 mg" found); venom-yield allometry (isometric assumed); mechanical effects of DF symptoms other than paralysis; SEV dilution by body size (SIZE_DILUTES) |
 | OPEN-88 | sound outdoors: ground and weather attenuation (ISO 9613-2 ground term), impulse temporal integration, species audiogram shapes per band; sight: contrast and camouflage, motion, species acuity, attention |
 | OPEN-89 | social judgments: lie detection with evidence or suspicion; persuasion, compliance and fear/morale rates |
+| OPEN-90 | BodyCheck `share`: replace the model's estimate with published success rates and times for common tasks (climbing, swimming distance, lock-picking, first aid outcomes, shooting accuracy by distance, driving) |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 17 species and the bird median; 60-dB ranges for 34 (frogs and toads as the bullfrog, 100 Hz–2.5 kHz). Missing lowest thresholds: pig, goat, sheep, elephant, frogs (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |
