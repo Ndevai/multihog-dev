@@ -268,6 +268,7 @@ Scratch run (300 people, uncleaned forearm cut, fed, 45 days): 41 infected, 5 wi
 |---|---|---|
 | cause | a cut, puncture or bite wound on a GUTS or STOMACH part | [RAW] part categories |
 | untreated | 87 % die, 1–7 days after the wound (uniform) [ASSUMED timing] | penetrating gunshot wounds of the abdomen in the Civil War, before routine laparotomy: 87 % fatal (Manring et al. 2009, Clin Orthop Relat Res 467:2168) |
+| exertion | until repaired, heavy exertion fails [ASSUMED from the defining signs, rigid painful abdomen] | |
 | laparotomy | BodyTreat `laparotomy` before death: 4.5 % die | abdominal wound mortality in Vietnam 4.5 % (same review) |
 
 Scratch run (300 punctured guts each): untreated 89 % died, after laparotomy 5 %.

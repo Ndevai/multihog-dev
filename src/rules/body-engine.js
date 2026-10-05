@@ -921,7 +921,7 @@ const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
     exhausted: !!p.exhausted, ams: !!p.altitude?.ams, oedema: !!p.altitude?.oedema,
     heat: coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
-    infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis,
+    infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis, peritonitis: !!p.peritonitis,
 });
 
 function changes(who, a, b) {
@@ -935,6 +935,7 @@ function changes(who, a, b) {
         if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
         if (b.sepsis && !a.sepsis) out.push(`${who}: the infection has reached the blood (sepsis)`);
+        if (b.peritonitis && !a.peritonitis) out.push(`${who}: the gut is opened (peritonitis)`);
         if (b.heat !== a.heat) out.push(`${who}: ${b.heat ?? 'core temperature between 35 and 40 °C'} (core ${b.core} °C)`);
         if (b.exhausted && !a.exhausted) out.push(`${who} is exhausted and cannot keep working or walking`);
         if (b.ams && !a.ams) out.push(`${who} has acute mountain sickness`);
@@ -1002,6 +1003,8 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // Altitude: heavy exertion is limited by aerobic capacity (§6.6); acute mountain sickness: symptoms that force a reduction
     // in activity (Maggiorini et al. 1998) → heavy exertion fails [ASSUMED].
     if (p.sepsis && exertion === 'heavy') return { chance: 0, limit: 'sepsis' };
+    // Peritonitis: abdominal rigidity and pain on movement (its defining signs) → heavy exertion fails [ASSUMED].
+    if (p.peritonitis && !p.peritonitis.repaired && exertion === 'heavy') return { chance: 0, limit: 'peritonitis' };
     if (p.exhausted && exertion !== 'none') return { chance: 0, limit: 'exhausted' };
     if (p.altitude && exertion === 'heavy' && (p.altitude.ams || p.altitude.oedema)) return { chance: 0, limit: 'altitude sickness' };
     if (exertion === 'heavy' && thermalCapable(p.species)) { const a = vo2avail(p) / vo2max(p); if (a < 1) scores.aerobic = a; }
