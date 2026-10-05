@@ -4,6 +4,7 @@ import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
+import { envenom } from './venom.js';
 import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
@@ -134,6 +135,13 @@ function infectionChance(w) {
 export function treat(p, id, treatment, rng = Math.random) {
     const w = p.wounds.find(x => x.id === id);
     if (treatment === 'transfuse') { p.lost = 0; p.deathIn = null; return 'Blood volume replaced.'; }
+    // Antivenom before death stops a fatal course; breathing returns, consciousness when time passes [ASSUMED].
+    if (treatment === 'antivenom') {
+        if (!p.venom) return 'No venom recorded.';
+        p.venom.fatal = false;
+        if (p.paralysed) { p.paralysed = false; p.apnea = null; }
+        return 'Antivenom given: the venom course stops.';
+    }
     if (!w) return `No wound ${id}.`;
     if (treatment === 'stop_bleeding') { w.bleed = 0; return `Wound ${id}: bleeding stopped.`; }
     if (treatment === 'clean') { w.cleanedAt ??= w.age; return `Wound ${id}: cleaned.`; }
@@ -171,6 +179,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
+        venomMinute(p);
         let heat = null;
         if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
         else if (p.env && c?.homeotherm) {
@@ -296,7 +305,7 @@ function checkDeath(p) {
     const lungs = c.parts.filter(x => x.flags.includes('BREATHE'));
     const apneic = lungs.length > 0 && !c.flags.includes('NOBREATHE') && lungs.every(l => !works(l));
     if (apneic && p.apnea == null) { p.apnea = 0; p.unconscious = 'not breathing'; }
-    if (!apneic && p.apnea != null && !p.drowning) { p.apnea = null; if (p.unconscious === 'not breathing') p.unconscious = null; }
+    if (!apneic && p.apnea != null && !p.drowning && !p.paralysed) { p.apnea = null; if (p.unconscious === 'not breathing') p.unconscious = null; }
 }
 
 /**
@@ -342,6 +351,18 @@ function water(p, rng) {
     } else if (!under) {
         p.underS = 0; p.breathHold = null;
         if (p.drowning) { p.apnea = null; p.drowning = false; p.unconscious ??= 'near-drowning'; }
+    }
+}
+
+/** Venom course (§5.2): neurotoxic → breathing stops at collapse (not-breathing rule); haemotoxic → shock, then death. */
+function venomMinute(p) {
+    const v = p.venom;
+    if (!v || !v.fatal) return;
+    v.min += 1;
+    if (v.kind === 'neuro' && v.min >= v.collapse && p.apnea == null) { p.apnea = 0; p.paralysed = true; p.unconscious = 'paralysed by venom'; }
+    if (v.kind === 'hemo') {
+        if (v.min >= v.shock) p.unconscious ??= 'venom shock';
+        if (v.min >= v.death) p.dead = 'envenomation';
     }
 }
 
@@ -433,6 +454,10 @@ export function status(who, p) {
         if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)`);
         if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
         if (nd.alcohol > 0) out.push(`blood alcohol ${round(nd.alcohol, 3)} %`);
+    }
+    if (p.venom) {
+        const v = p.venom;
+        out.push(`envenomed by ${v.species.toLowerCase().replace('_', ' ')} (${v.mg} mg, ${v.ratio} × the lethal dose)${v.fatal ? (v.kind === 'neuro' ? `: paralysis stops breathing at ${v.collapse} min` : `: shock at ${v.shock} min, death at ${v.death} min`) + ` (now ${v.min} min) unless antivenom` : ': survives without antivenom; local pain and swelling'}`);
     }
     const al = p.altitude;
     if (al) {
@@ -674,7 +699,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         }
         worn.push(it);
     }
-    let w, verb, means, bite = false;
+    let w, verb, means, bite = false, inject = false;
     if (a.launcher) {
         const lw = weaponOf(a.launcher);
         if (!lw?.ranged) return `No DF launcher "${a.launcher}" (bow, crossbow, blowgun). Nothing recorded.`;
@@ -702,6 +727,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         w.piercing = atk.contactPerc < atk.penetrationPerc;
         verb = atk.verb;
         bite = atk.id === 'BITE';
+        inject = !!atk.inject;
         means = atk.sel[1] === 'STANCE' ? 'kick' : 'fist';
     }
     if (!a.landed) {
@@ -752,6 +778,11 @@ export function strike(target, a, attacker = null, rng = Math.random) {
                 healFactor: slowest(soft.filter(h => rate(h) != null), 100) }, rng));
         }
         if (hits.some(rigid)) made.push(addWound(target, { part: hp, type: 'fracture', open: cuts.length > 0, healFactor: slowest(hits.filter(rigid).filter(h => rate(h) != null), 1000) }, rng));
+    }
+    // Venom enters when the bite breaks the skin, cut or smashed (§5.2) [ASSUMED: DF fangs rarely cut by the edge test].
+    if (inject && !target.venom && r.tested.some(x => /SKIN/.test(x.layer.tissue) && x.result !== 'held')) {
+        const v = envenom(ac.id, target.mass, () => gauss(rng));
+        if (v) target.venom = v;
     }
     checkDeath(target);
     const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && r.first.M >= KO_MOMENTUM;

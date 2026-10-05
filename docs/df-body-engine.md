@@ -231,6 +231,22 @@ Clotting and further healing times: small-vessel bleeding stops on its own withi
 
 Fracture kind: transverse [576 "blunt blow" row, also used for edged; ASSUMED]. Never-joins chance: LEG_LOWER uses the shin row; others 2 % [576].
 
+### 5.2 Venom
+
+DF decides which attacks inject venom (`SPECIALATTACK_INJECT_EXTRACT` on the attack). A landed injecting bite whose skin layer is cut or smashed injects [ASSUMED: DF fangs rarely cut by the edge test]. src/rules/venom.js.
+
+| Step | Rule | Source |
+|---|---|---|
+| venom delivered | log-normal around the species' mean yield; spread σ = ln(max ÷ mean) ÷ 2.326 (the recorded maximum as the 99th percentile); king cobra has only a maximum: rattlesnake σ | Wikipedia species pages citing primary sources: western diamondback 250–350 mg, max 700–800; black mamba 100–120 mg, max 400; king cobra up to 420 mg; bushmaster 200–411 mg |
+| dose ratio | R = mg ÷ (mouse IV LD50 × victim kg): rattlesnake 2.72, black mamba 0.32–0.33, king cobra 1.28, bushmaster 1.5 mg/kg (IV: the one route given for every species) | same |
+| fatal | R > 2.37 for every species: the threshold at which 15 % of 70 kg people bitten by a western diamondback die (untreated mortality 10–20 %) | fit to that one point (the user's choice); no published human dose–response slope; individual sensitivity not modelled [ASSUMED] |
+| neurotoxic course (mamba, cobra) | fatal: breathing stops at 45 min (mamba: collapse within 45 min) or 25 min (cobra: death in as little as 30 min, minus the 5 min not-breathing rule) → dead 5 min later | Wikipedia species pages |
+| haemotoxic course (rattlesnake, bushmaster) | fatal: shock (unconscious) at 30 min, dead at 90 min | a fatal bushmaster bite in a child (shock about 30 min, death within 90 min); same times for the rattlesnake [ASSUMED] |
+| antivenom | BodyTreat `antivenom` before death stops a fatal course | [ASSUMED] |
+| other DF venomous creatures | adder, copperhead, gila monster, platypus, giant cave spider, helmet snake, bees: no yield data (OPEN-86) | |
+
+Scratch runs (70 kg, bitten on the shin, 150 untreated each): rattlesnake 19 dead (12.7 %), king cobra 47 (31 %), black mamba 131 (87 %), bushmaster 141 (94 %); antivenom at 20 min saved all. A 20 kg child: rattlesnake 98.5 %, because one threshold and a narrow yield spread make death depend steeply on body mass.
+
 ## 6. What a body can do
 
 A part **works** unless it, or a part above it on its `CON` chain, has a severing, an unjoined fracture, or a lost function [ASSUMED chain rule]. A `NERVOUS` part (spine) that does not work stops every `STANCE` part; one attached to the neck also stops every `GRASP` part [ASSUMED].
@@ -452,7 +468,7 @@ What these show:
 | OPEN-83 | thinking below 34.5 °C core; heat stroke course and death (Hancock & Vasmatzidis 2003 tie heat effects to deep body temperature but give no single curve; Pilcher et al. 2002: −14.9 % at WBGT ≥ 32.2 °C and −13.9 % at ≤ 10 °C air, by air not core); touch and fine finger work from skin temperature (Heus et al. 1995: 15 °C local hand skin as the minimum criterion) |
 | OPEN-84 | frostbite depth from time frozen; cold shock and swim failure in cold water; cooling in ice water about half the published rate; clothing wet in air (rain, sweat); head under water |
 | OPEN-85 | altitude: acclimatization over days and ascent rate (WMS 2024 risk groups have no incidence numbers), HAPE timing, death after hypoxic unconsciousness, effects on thinking, cold and air pressure in the heat model |
-| OPEN-86 | venom. DF injects venom (SPECIALATTACK_INJECT_EXTRACT) for adder, rattlesnake, copperhead, king cobra, black mamba, bushmaster, gila monster, platypus, giant cave spider, helmet snake, bees; its syndrome severities and tick timings are game values. Planned system: dose ratio = venom per bite ÷ (mouse subcutaneous LD50 × victim mass) → death by a dose–response curve. Found (Wikipedia, citing primary sources): western diamondback 250–350 mg/bite, SC LD50 18.5 mg/kg, untreated mortality 10–20 %; king cobra up to 420 mg, SC 1.5–1.7 mg/kg, death in as little as 30 min; bushmaster 200–411 mg, SC 6.0 mg/kg (a child died 90 min after a bite); black mamba 100–120 mg (max 400), IV 0.32 mg/kg only, collapse within 45 min; adder SC 6.45 mg/kg, yield low; gila monster one confirmed death since 1930. Missing: a published slope for the human dose–response, untreated mortality for most species, mouse-to-human sensitivity |
+| OPEN-86 | venom (§5.2 built for four snakes). DF injects venom (SPECIALATTACK_INJECT_EXTRACT) for adder, rattlesnake, copperhead, king cobra, black mamba, bushmaster, gila monster, platypus, giant cave spider, helmet snake, bees; its syndrome severities and tick timings are game values. Planned system: dose ratio = venom per bite ÷ (mouse subcutaneous LD50 × victim mass) → death by a dose–response curve. Found (Wikipedia, citing primary sources): western diamondback 250–350 mg/bite, SC LD50 18.5 mg/kg, untreated mortality 10–20 %; king cobra up to 420 mg, SC 1.5–1.7 mg/kg, death in as little as 30 min; bushmaster 200–411 mg, SC 6.0 mg/kg (a child died 90 min after a bite); black mamba 100–120 mg (max 400), IV 0.32 mg/kg only, collapse within 45 min; adder SC 6.45 mg/kg, yield low; gila monster one confirmed death since 1930. Missing: a published slope for the human dose–response, untreated mortality for most species, mouse-to-human sensitivity |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 12 species and the bird median; 60-dB ranges for 30. Missing lowest thresholds: dog, cat, horse, cattle, pig, goat, sheep, elephant (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |

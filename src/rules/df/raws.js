@@ -378,6 +378,7 @@ export function resolveCreature(db, id) {
             case 'ATTACK_CONTACT_PERC': if (attack) attack.contactPerc = Number(t[1]); break;
             case 'ATTACK_PENETRATION_PERC': if (attack) attack.penetrationPerc = Number(t[1]); break;
             case 'ATTACK_FLAG_EDGE': if (attack) attack.edge = true; break;
+            case 'SPECIALATTACK_INJECT_EXTRACT': if (attack) attack.inject = true; break;
             case 'ATTACK_VELOCITY_MODIFIER': if (attack) attack.velocity = Number(t[1]); break;
             case 'ATTACK_VERB': if (attack) attack.verb = t[1]; break;
             case 'ATTACK_SKILL': if (attack) attack.skill = t[1]; break;
