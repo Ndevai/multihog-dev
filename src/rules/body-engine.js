@@ -24,6 +24,9 @@ const FRACTURE = {
     // fracture). Spine: pain eases at about 4 weeks, resolves at about 12 (Merck, vertebral compression fractures) [ASSUMED pain
     // course = healing].
     wrist: [42, 365], ankle: [42, 120], hip: [90, 180], spine: [28, 84],
+    // Elbow (olecranon) and knee (patella) immobilized 3 weeks (Wikipedia: Olecranon, Patellar fracture); healed at the humerus
+    // shaft's "up to 12 weeks" (Wikipedia: Humerus fracture); shoulder as elbow [ASSUMED].
+    elbow: [21, 84], knee: [21, 84], shoulder: [21, 84],
 };
 // Small-vessel bleeding stops by clotting within the normal bleeding time: under 5 min, up to 8 min in some texts (Ivy and
 // template methods). A bruise clears in 13 days (mild contusion, Jackson & Feagin classification).
@@ -33,7 +36,9 @@ const BRUISE_DAYS = [13, 13];
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
 // Rule 576, days. Missing types are OPEN-48/49: they do not close yet.
-const CUT_HEAL = { eyes: [3, 5], mouth: [3, 5], head: [7, 10], arm: [7, 10], torso: [10, 14], leg: [10, 14], hand: [10, 14], foot: [10, 14] };
+const CUT_HEAL = { eyes: [3, 5], mouth: [3, 5], head: [7, 10], arm: [7, 10], torso: [10, 14], leg: [10, 14], hand: [10, 14], foot: [10, 14],
+    // Suture-removal times: neck 5–7, over a joint 14 days (Trott 2012, as tabled by askmygp.com.au).
+    neck: [5, 7], joint: [14, 14] };
 const BURN_HEAL = { superficial: [5, 10], partial: [7, 21], deep_partial: [21, 56], full: null };
 // Frostbite (superficial): no healing timetable found; the partial-thickness burn row stands in [ASSUMED proxy].
 const FROSTBITE_HEAL = BURN_HEAL.partial;
@@ -46,7 +51,8 @@ export const FUNCTIONS = { grasp: 'GRASP', stance: 'STANCE', sight: 'SIGHT', hea
 // DF part category → rule-576 healing row (cuts) and fracture row.
 const CUT_ROW = { EYE: 'eyes', EYELID: 'eyes', MOUTH: 'mouth', LIP: 'mouth', TONGUE: 'mouth', TOOTH: 'mouth', HEAD: 'head', NOSE: 'head', EAR: 'head',
     CHEEK: 'head', BODY_UPPER: 'torso', BODY_LOWER: 'torso', BODY: 'torso', ARM_UPPER: 'arm', ARM_LOWER: 'arm', ARM: 'arm', HAND: 'hand', FINGER: 'hand',
-    LEG_UPPER: 'leg', LEG_LOWER: 'leg', LEG: 'leg', LEG_FRONT: 'leg', LEG_REAR: 'leg', FOOT: 'foot', FOOT_FRONT: 'foot', FOOT_REAR: 'foot', TOE: 'foot' };
+    LEG_UPPER: 'leg', LEG_LOWER: 'leg', LEG: 'leg', LEG_FRONT: 'leg', LEG_REAR: 'leg', FOOT: 'foot', FOOT_FRONT: 'foot', FOOT_REAR: 'foot', TOE: 'foot',
+    NECK: 'neck', THROAT: 'neck', JOINT: 'joint' };
 const BONE_ROW = { arm: 'arm', hand: 'arm', leg: 'leg', foot: 'leg' };
 const rowOf = part => part?.cats?.map(k => CUT_ROW[k]).find(Boolean) ?? null;
 
@@ -118,8 +124,8 @@ export function addWound(p, w, rng = Math.random) {
     if (w.permanent) wound.permanent = true;
     if (w.type === 'severed') wound.severed = true;
     if (w.type === 'fracture') {
-        // Shoulder, elbow, knee and skull have no timetable (OPEN-58): joins stays null.
-        const joint = w.part.cats.includes('JOINT') && ['wrist', 'ankle', 'hip'].find(j => w.part.name.includes(j));
+        // The skull has no timetable (OPEN-58): joins stays null.
+        const joint = w.part.cats.includes('JOINT') && ['wrist', 'ankle', 'hip', 'elbow', 'knee', 'shoulder'].find(j => w.part.name.includes(j));
         const kind = w.part.cats.some(k => k.startsWith('RIB_')) ? 'rib' : w.part.cats.includes('NOSE') ? 'nose'
             : joint ? joint : w.part.cats.includes('SPINE') ? 'spine' : BONE_ROW[row] ? `${BONE_ROW[row]}_${w.fracture || 'transverse'}` : null;
         const bone = w.part.cats.includes('LEG_LOWER') ? 'shin' : joint === 'wrist' ? 'wrist' : 'default';

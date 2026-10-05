@@ -221,8 +221,10 @@ Healing days and fracture timetables: rule 576 rows, chosen by the part's DF cat
 | BODY_UPPER, BODY_LOWER, BODY | torso |
 | ARM_UPPER, ARM_LOWER, ARM, HAND, FINGER | arm (cuts on HAND, FINGER: hand) |
 | LEG_UPPER, LEG_LOWER, LEG, LEG_FRONT, LEG_REAR, FOOT*, TOE | leg (cuts on FOOT*, TOE: foot) |
-| JOINT wrist, ankle, hip; SPINE | own fracture rows [joins, healed] days: wrist [42, 365] (non-union 12.5 %), ankle [42, 120], hip [90, 180], spine [28, 84]. Sources: Wikipedia Distal radius fracture (cast 6 weeks; healing "a year or two"), Ankle fracture (weight off 6 weeks; significant recovery within 4 months), Hip fracture (3–6 months); Merck Manual, Vertebral compression fractures (pain eases at about 4 weeks, resolves at about 12) [ASSUMED pain course = healing] |
-| others (neck, organs, shoulder, elbow, knee, skull) | none: does not close / no timetable (OPEN-48, OPEN-58; skull: sources give "several weeks to months" only) |
+| NECK, THROAT | cuts: neck row 5–7 days (suture removal; Trott 2012, as tabled by askmygp.com.au) |
+| JOINT | cuts: 14 days (suture removal over a joint, same table) |
+| JOINT wrist, ankle, hip, elbow, knee, shoulder; SPINE | own fracture rows [joins, healed] days: wrist [42, 365] (non-union 12.5 %), ankle [42, 120], hip [90, 180], elbow [21, 84], knee [21, 84], shoulder [21, 84] [ASSUMED as elbow], spine [28, 84]. Elbow, knee: immobilized 3 weeks (Wikipedia Olecranon fracture, Patellar fracture), healed at the humerus shaft's "up to 12 weeks" (Wikipedia Humerus fracture) [ASSUMED transfer]. Sources: Wikipedia Distal radius fracture (cast 6 weeks; healing "a year or two"), Ankle fracture (weight off 6 weeks; significant recovery within 4 months), Hip fracture (3–6 months); Merck Manual, Vertebral compression fractures (pain eases at about 4 weeks, resolves at about 12) [ASSUMED pain course = healing] |
+| others (organs, skull) | none: does not close / no timetable (OPEN-48, OPEN-58; skull: sources give "several weeks to months" only) |
 
 Healing speed: DF `HEALING_RATE` ("lower is faster; omitting the token will result in a tissue that never heals", wiki Tissue definition token) scales the rule-576 days: a soft wound by its slowest damaged tissue ÷ 100, a fracture by its bone tissue ÷ 1000 (the human template values, so human days are unchanged) [RAW, WIKI]. Damage to a `FUNCTIONAL` tissue without `HEALING_RATE` (nerve, brain) loses the part's function for good: a cut spinal cord paralyses for good.
 
