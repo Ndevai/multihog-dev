@@ -85,6 +85,9 @@ export function newPerson(massKg = 70, species = 'HUMAN') {
 }
 
 export const creatureOf = p => creature(p?.species ?? 'HUMAN');
+// DF creature tokens that switch off a need or an effect: NOBREATHE, NO_EAT, NO_DRINK, NO_SLEEP, NOEXERT, NOSTUN, and the
+// syndrome immunities NOPAIN, NO_DIZZINESS, NO_FEVERS, NONAUSEA, PARALYZEIMMUNE [RAW].
+const has = (p, flag) => !!creatureOf(p)?.flags?.includes(flag);
 
 export function person(state, who, massKg, species = 'HUMAN') {
     state.people ??= {};
@@ -245,16 +248,18 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             n.kcal += heat ? heat.kcal : p.workMet ? p.workMet * 1.163 * p.mass * 60 / 4184 : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
-            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
+            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else if (!has(p, 'NO_SLEEP')) { n.slept = 0; n.awake += 1; }
             // Work done against the maximum acceptable work time (§6.7). At rest or asleep it is paid back as muscle glycogen
             // returns: 5 %/h fed, 2 %/h with over a day's food missing; exhaustion ends at 90 % [ASSUMED].
             const met = p.workMet ?? (active ? 3.5 : null);
-            if (met && !sleeping) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p, () => gauss(rng))); if (n.work >= 1) p.exhausted = true; }
+            if (met && !sleeping && !has(p, 'NOEXERT')) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p, () => gauss(rng))); if (n.work >= 1) p.exhausted = true; }
             else if (n.work > 0) {
                 n.work = Math.max(0, n.work - (n.kcal < KCAL_DAY.rest * kleiber(p) ? 0.05 : 0.02) / 60);
                 if (n.work <= 0.9) p.exhausted = false;
             }
             if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
+            if (has(p, 'NO_DRINK')) n.waterL = 0;
+            if (has(p, 'NO_EAT')) n.kcal = 0;
             if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }
             if (n.kcal >= n.foodDeath * KCAL_DAY.rest * kleiber(p)) { p.dead = 'starvation'; return; }
         }
@@ -399,7 +404,7 @@ const SWIM_FAIL_DT = 1.78;
 const BREATH_HOLD_S = [24.3, 11.4];
 function water(p, rng) {
     const w = p.env?.water;
-    if (!w) return;
+    if (!w || has(p, 'NOBREATHE')) return;
     // Other creatures: DF SWIMS_INNATE, AQUATIC or AMPHIBIOUS keep the head up; the rest go under unless afloat [RAW flags].
     const c = creatureOf(p), human = thermalCapable(p.species);
     if (!human && !c?.flags?.some(f => ['SWIMS_INNATE', 'SWIMS_LEARNED', 'AQUATIC', 'AMPHIBIOUS'].includes(f))) p.swimFailed = true;
@@ -428,7 +433,7 @@ function venomMinute(p) {
     const bl = act.find(e => e.kind === 'bleeding');
     if (bl && bloodVolume(p)) p.lost += 5.5 * bl.sev / 100;
     if (!v.fatal) return;
-    if (v.kind === 'neuro' && v.min >= v.collapse && p.apnea == null) { p.apnea = 0; p.paralysed = true; p.unconscious = 'paralysed by venom'; }
+    if (v.kind === 'neuro' && v.min >= v.collapse && p.apnea == null && !has(p, 'NOBREATHE')) { p.apnea = 0; p.paralysed = true; p.unconscious = 'paralysed by venom'; }
     if (v.kind === 'hemo') {
         if (v.min >= v.shock) p.unconscious ??= 'venom shock';
         if (v.min >= v.death) p.dead = 'envenomation';
@@ -439,7 +444,7 @@ function venomMinute(p) {
  * (aircraft, magic) → unconscious once the time of useful consciousness runs out. */
 function altitudeMinute(p, rng) {
     const a = p.altitude;
-    if (!a) return;
+    if (!a || has(p, 'NOBREATHE')) return;
     a.min = (a.min ?? 0) + 1;
     // Acclimatization (§6.6): risk follows the gain over the acclimatized altitude, which starts at 2500 m and rises 457 m
     // (1500 ft) per day spent above it, up to the current altitude (WMS pace, StatPearls NBK560677) [ASSUMED].
@@ -871,11 +876,12 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     if (inject && !target.venom && r.tested.some(x => /SKIN/.test(x.layer.tissue) && x.result !== 'held')) {
         const b = baseVenom(ac.id), scale = b && b !== ac.id && creature(b)?.size ? ac.size / creature(b).size : 1;
         const v = envenom(ac.id, target.mass, () => gauss(rng), scale) ?? (symptoms(ac).length ? { species: ac.id, kind: 'df', fatal: false, min: 0 } : null);
-        if (v) { v.symptoms = symptoms(ac); v.part = part.name; target.venom = v; }
+        const immune = { pain: 'NOPAIN', dizziness: 'NO_DIZZINESS', fever: 'NO_FEVERS', nausea: 'NONAUSEA', paralysis: 'PARALYZEIMMUNE' };
+        if (v) { v.symptoms = symptoms(ac).filter(e => !(immune[e.kind] && has(target, immune[e.kind]))); v.part = part.name; target.venom = v; }
     }
     checkDeath(target);
     const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && r.first.M >= KO_MOMENTUM;
-    if (ko && !target.unconscious) target.unconscious = 'knocked out';
+    if (ko && !target.unconscious && !has(target, 'NOSTUN')) target.unconscious = 'knocked out';
     const parts = [...new Set(r.tested.map(t => t.part))];
     const layers = parts.map(pt => `${pt.name}: ${r.tested.filter(t => t.part === pt).map(t => `${t.layer.tissue.toLowerCase()} ${t.result}`).join(', ')}`).join('; ');
     const wounds = made.length ? ` Wound${made.length > 1 ? 's' : ''} ${made.map(x => x.id).join(', ')}.` : ' No wound.';

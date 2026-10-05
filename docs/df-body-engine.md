@@ -282,6 +282,19 @@ Scratch run (300 people, uncleaned forearm cut, fed, 45 days): 41 infected, 5 wi
 
 Scratch run (300 punctured guts each): untreated 89 % died, after laparotomy 5 %.
 
+### 5.5 Creature tokens that switch off needs and effects
+
+| DF token [RAW] | Effect in the engine |
+|---|---|
+| `NOBREATHE` (18 creatures, e.g. blood man, cave blob, iron man) | no drowning, no altitude illness or hypoxia, venom paralysis does not stop breathing |
+| `NO_DRINK` (97), `NO_EAT` (15) | no thirst or dehydration death; no hunger or starvation death |
+| `NO_SLEEP` (64, mostly insects) | no sleep debt (awake-hours impairment stays 0) |
+| `NOEXERT` (12) | work never accumulates toward exhaustion |
+| `NOSTUN` (23) | blows to the head do not knock out |
+| `NOPAIN`, `NO_DIZZINESS`, `NO_FEVERS`, `NONAUSEA`, `PARALYZEIMMUNE` | the matching venom symptom is dropped (pain, dizziness, fever, nausea, paralysis) |
+
+Scratch: iron man submerged 30 min, alive; human submerged, drowned.
+
 ## 6. What a body can do
 
 A part **works** unless it, or a part above it on its `CON` chain, has a severing, an unjoined fracture, or a lost function [ASSUMED chain rule]. A `NERVOUS` part (spine) that does not work stops every `STANCE` part; one attached to the neck also stops every `GRASP` part [ASSUMED].
