@@ -11,6 +11,11 @@ function dryAir(db) {
     const tk = db + 273.15;
     return { densty: 101325 / (288.1738573002823 * tk), visdyn: 1.8325e-5 * ((296.16 + 120) / (tk + 120)) * (tk / 296.16) ** 1.5, thcond: 0.02425 + 7.038e-5 * db };
 }
+// Water (§6.5 immersion): viscosity by the Vogel equation μ = 2.414e−5 × 10^(247.8 ÷ (T − 140)) Pa·s (T in K); conductivity
+// 0.58 W/m/K, specific heat 4186 J/kg/K, expansion 2.1e−4 /K (standard property tables).
+function water(t) {
+    return { densty: 1000, visdyn: 2.414e-5 * 10 ** (247.8 / (t + 273.15 - 140)), thcond: 0.58, cp: 4186, beta: 2.1e-4 };
+}
 function vappr(db) {
     const t = db + 273.16;
     const loge = t <= 273.16
@@ -21,7 +26,7 @@ function vappr(db) {
 const vapourDensity = (db, rh) => vappr(db) * rh / 100 * 0.018015 / (0.998 * 8.31446261815324 * (db + 273.15));
 
 /** NicheMapR ellipsoid(): heat flow core → air (W) and the parts of its resistance, for one body. */
-export function ellipsoid({ posture = 4.5, mass, density = 1000, coreT, furdepth, furcond = 0.04, airT, windspd, rh = 50, O2eff = 0.2 }) {
+export function ellipsoid({ posture = 4.5, mass, density = 1000, coreT, furdepth, furcond = 0.04, airT, radT = airT, windspd, rh = 50, O2eff = 0.2, fluid = 'air' }) {
     if (posture === 1) posture = 1.01;
     const volume = mass / density;
     const b = (3 * volume / (4 * Math.PI * posture)) ** (1 / 3), c = b, a = b * posture;
@@ -32,22 +37,27 @@ export function ellipsoid({ posture = 4.5, mass, density = 1000, coreT, furdepth
     const eo = Math.sqrt(ao ** 2 - co ** 2) / ao;
     const aOuter = 2 * Math.PI * bo ** 2 + 2 * Math.PI * (ao * bo / eo) * Math.asin(eo);
     const rInsul = (bo - b) / (furcond * aOuter);
-    const air = dryAir(airT);
+    const wet = fluid === 'water';
+    const air = wet ? water(airT) : { ...dryAir(airT), cp: 1005.8, beta: 1 / (airT + 273.15) };
     const charDim = ((4 / 3) * Math.PI * a * b * c) ** (1 / 3);
     const ecc = Math.sqrt(a ** 2 - c ** 2) / a;
     const area = 2 * Math.PI * b ** 2 + 2 * Math.PI * (a * b / ecc) * Math.asin(ecc);
-    const re = air.densty * windspd * charDim / air.visdyn, pr = air.visdyn * 1005.8 / air.thcond;
+    const re = air.densty * windspd * charDim / air.visdyn, pr = air.visdyn * air.cp / air.thcond;
     const nuMix = 2 + 0.6 * re ** 0.5 * pr ** (1 / 3);
     const g = 2 * area * kBody * air.thcond * nuMix * (coreT - airT) / (2 * kBody * charDim * ((4 / 3) * Math.PI * a * b * c) + area * fraction * air.thcond * (2 + 0.6 * re ** 0.5 * pr ** 0.333));
     const skinT = coreT - g * fraction / (2 * kBody);
-    const gr = Math.abs(air.densty ** 2 * (1 / (airT + 273.15)) * 9.80665 * charDim ** 3 * (skinT - airT) / air.visdyn ** 2);
+    const gr = Math.abs(air.densty ** 2 * air.beta * 9.80665 * charDim ** 3 * (skinT - airT) / air.visdyn ** 2);
     const nu = ((2 + 0.6 * gr ** 0.25 * pr ** (1 / 3)) ** 3 + (0.37 * re ** 0.6) ** 3) ** (1 / 3);
     const rConv = 1 / (nu * air.thcond / charDim * aOuter);
-    const rRad = 1 / (4 * aOuter * 0.95 * SIGMA * (airT + 273.15) ** 3);
-    const rTotal = rBody + rInsul + rConv * rRad / (rConv + rRad);
-    const qLoss = (coreT - airT) / rTotal;
+    // Radiation to the mean radiant temperature (sun, fire, sky): the surroundings act at the operative temperature
+    // (convection-weighted air and radiant-weighted radiant temperature). Under water, convection only.
+    const rRad = wet ? Infinity : 1 / (4 * aOuter * 0.95 * SIGMA * ((airT + radT) / 2 + 273.15) ** 3);
+    const rSurf = wet ? rConv : rConv * rRad / (rConv + rRad);
+    const opT = wet ? airT : (airT / rConv + radT / rRad) * rSurf;
+    const rTotal = rBody + rInsul + rSurf;
+    const qLoss = (coreT - opT) / rTotal;
     // Breathing water loss at the heat produced (O2 extraction 20 %), g/s.
-    const breathGs = Math.max(qLoss, 0) / 20.1 / 0.2094 / O2eff * (vapourDensity(coreT, 100) - vapourDensity(airT, rh)) / 1000;
+    const breathGs = wet ? 0 : Math.max(qLoss, 0) / 20.1 / 0.2094 / O2eff * (vapourDensity(coreT, 100) - vapourDensity(airT, rh)) / 1000;
     return { qLoss, rTotal, skinT, breathGs };
 }
 
@@ -90,15 +100,24 @@ export function endothermMinute(p, c, { met = 1.3 } = {}) {
     const bird = 'FEATHER' in (c.tissues ?? {});
     const fur = furFor(p.mass, setT, bird);
     const basal = KLEIBER(p.mass);
-    const loss = ellipsoid({ mass: p.mass, coreT: th.core, furdepth: fur, airT: e.tdb, windspd: Math.max(0.1, e.v ?? 0.1), rh: e.rh ?? 50 });
+    // Wind at the creature's height h = 2 × the ellipsoid's short radius (lying or standing low [ASSUMED]): log profile from
+    // the 10 m weather wind, z0 = 0.01 m, as for humans (§6.4). Air speed given indoors applies unchanged.
+    const b = (3 * p.mass / 1000 / (4 * Math.PI * 4.5)) ** (1 / 3), h = Math.max(0.02, 2 * b);
+    const v = e.wind10 ? e.wind10 / 3.6 * Math.log(h / 0.01) / Math.log(10 / 0.01) : e.v ?? 0.1;
+    // Immersed (any part, whole body [ASSUMED]): water convection; fur fills with water (conductivity 0.58) unless the
+    // creature is AQUATIC or AMPHIBIOUS in DF [ASSUMED: those keep air in the fur].
+    const w = e.water, keepsFur = c.flags?.includes('AQUATIC') || c.flags?.includes('AMPHIBIOUS');
+    const loss = w
+        ? ellipsoid({ mass: p.mass, coreT: th.core, furdepth: fur, furcond: keepsFur ? 0.04 : 0.58, airT: w.tc, windspd: Math.max(0.01, w.speed ?? 0), fluid: 'water' })
+        : ellipsoid({ mass: p.mass, coreT: th.core, furdepth: fur, airT: e.tdb, radT: e.tr ?? e.tdb, windspd: Math.max(0.1, v), rh: e.rh ?? 50 });
     const act = basal * met;
     // Heat production rises to cover loss when cold, up to PEAK × basal; when warm, evaporation removes what conduction cannot.
     const need = loss.qLoss;
     const produce = Math.min(Math.max(act, need), PEAK * basal + (act - basal));
-    const evapW = Math.max(0, produce - need);
+    const evapW = w ? 0 : Math.max(0, produce - need);
     const stored = produce - need - evapW;
     th.core = Math.round((th.core + stored * 60 / (p.mass * BODY_HEAT_J_KG)) * 1000) / 1000;
     th.set = setT;
-    const latent = 2501200 - 2378.7 * e.tdb;
+    const latent = 2501200 - 2378.7 * (w ? w.tc : e.tdb);
     return { core: th.core, set: setT, evapL: evapW / latent * 60 + loss.breathGs * 60 / 1000, kcal: produce * 60 / 4184, fur };
 }
