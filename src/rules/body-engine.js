@@ -447,6 +447,10 @@ function water(p, rng) {
     // Other creatures: DF SWIMS_INNATE, AQUATIC or AMPHIBIOUS keep the head up; the rest go under unless afloat [RAW flags].
     const c = creatureOf(p), human = thermalCapable(p.species);
     if (!human && !c?.flags?.some(f => ['SWIMS_INNATE', 'SWIMS_LEARNED', 'AQUATIC', 'AMPHIBIOUS'].includes(f))) p.swimFailed = true;
+    // Can this person swim at all: 46 % of US adults can do all five water-safety skills (jump in over the head, surface and
+    // float or tread 1 min, turn and find the exit, swim 25 yards, get out; American Red Cross survey, 2014), drawn once unless
+    // the story says (BodyEnvironment `swimmer`). A non-swimmer in deep water goes under unless afloat.
+    if (human) { p.canSwim ??= rng() < 0.46; if (!p.canSwim && w.deep !== false) p.swimFailed = true; }
     if (human && w.swimming && !p.swimFailed && limbCold(p, 'arm') >= SWIM_FAIL_DT) p.swimFailed = true;
     const under = w.segs[0] || (p.swimFailed && !w.afloat) || (p.unconscious && !w.afloat);
     if (under && p.apnea == null) {
@@ -555,7 +559,8 @@ export function setEnvironment(p, env) {
         clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null, co: env.co_ppm ?? 0, smoke: !!env.smoke,
         faceBare: !env.face_covered, handsBare: !(/gloves/i.test(cl.ensemble ?? '') || covers('hand')),
         water: env.water_c != null && env.immersed?.length ? { tc: env.water_c, speed: env.water_speed_ms ?? 0, segs: immersion(env.immersed), suit: !!env.immersion_suit,
-            swimming: !!env.swimming, afloat: !!env.afloat } : null };
+            swimming: !!env.swimming, afloat: !!env.afloat, deep: env.deep_water !== false } : null };
+    if (env.swimmer != null) p.canSwim = !!env.swimmer;
     if (!p.env.water) { p.swimFailed = false; p.underS = 0; p.breathHold = null; if (p.drowning) { p.apnea = null; p.drowning = false; p.unconscious ??= 'near-drowning'; } }
     if (p.thermal) { p.thermal.bareDose = 0; }
     // Low oxygen (fire, sealed room, gas displacing air): the altitude with the same inspired oxygen pressure, entered suddenly

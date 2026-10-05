@@ -302,6 +302,8 @@ export function registerRulesTools(enabled) {
         co_ppm: { type: 'number', description: 'Carbon monoxide in the air, ppm (fire smoke in a room 1000–10 000; car exhaust in a closed garage several thousand; a faulty heater 100–1000); 0 = fresh air' },
         o2_pct: { type: 'number', description: 'Oxygen in the air, % (normal 20.9; a fire-filled or sealed room or gas-displaced air lower); omit for normal air' },
         smoke: { type: 'boolean', description: 'Breathing fire smoke (causes inhalation injury)' },
+        swimmer: { type: 'boolean', description: 'Whether the character can swim, when the story has established it; otherwise code draws it once (46 % of adults)' },
+        deep_water: { type: 'boolean', description: 'Water over the head. Default true when immersed.' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },
     }, ['who'], a => run(st => {
         const out = [];
