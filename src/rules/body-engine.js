@@ -302,7 +302,10 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else if (!has(p, 'NO_SLEEP')) { n.slept = 0; n.awake += 1; }
             // Work done against the maximum acceptable work time (§6.7). At rest or asleep it is paid back as muscle glycogen
             // returns: 5 %/h fed, 2 %/h with over a day's food missing; exhaustion ends at 90 % [ASSUMED].
-            const met = p.workMet ?? (active ? 3.5 : null);
+            // In the water: swimming leisurely 6.0 MET, keeping afloat (treading water, moderate) 3.5 (Compendium of Physical
+            // Activities, Ainsworth et al. 2011) unless held afloat by something.
+            const w = p.env?.water, inWater = w && !w.afloat && thermalCapable(p.species);
+            const met = p.workMet ?? (inWater ? (w.swimming ? 6.0 : 3.5) : active ? 3.5 : null);
             if (met && !sleeping && !has(p, 'NOEXERT')) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p, () => gauss(rng))); if (n.work >= 1) p.exhausted = true; }
             else if (n.work > 0) {
                 n.work = Math.max(0, n.work - (n.kcal < KCAL_DAY.rest * kleiber(p) ? 0.05 : 0.02) / 60);
@@ -464,6 +467,8 @@ function water(p, rng) {
     // the story says (BodyEnvironment `swimmer`). A non-swimmer in deep water goes under unless afloat.
     if (human) { p.canSwim ??= rng() < 0.46; if (!p.canSwim && w.deep !== false) p.swimFailed = true; }
     if (human && w.swimming && !p.swimFailed && limbCold(p, 'arm') >= SWIM_FAIL_DT) p.swimFailed = true;
+    // Exhausted (§6.7 maximum acceptable work time used up) and not held afloat: the head goes under [ASSUMED].
+    if (human && p.exhausted && !w.afloat) p.swimFailed = true;
     const under = w.segs[0] || (p.swimFailed && !w.afloat) || (p.unconscious && !w.afloat);
     if (under && p.apnea == null) {
         p.breathHold ??= Math.max(5, BREATH_HOLD_S[0] + BREATH_HOLD_S[1] * gauss(rng));
