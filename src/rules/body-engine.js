@@ -4,6 +4,7 @@ import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
 import { reach, hearSound, SOUNDS, BAND_HZ } from './acoustics.js';
+import { see } from './vision.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
@@ -991,6 +992,22 @@ function earOf(l, lc) {
     const deaf = h?.lo ? BAND_HZ.map((f, i) => f < h.lo || f > h.hi ? i : -1).filter(i => i >= 0) : [];
     const one = ears.length > 1 && earsOk < ears.length ? 3 : 0;
     return { shift: bandShift(l.species).map(x => x + one), deaf, earsOk, ears: ears.length };
+}
+
+/** Whether `vs` sees a target of smallest dimension `size_m` at `distance_m` (§6.2): one roll against the Johnson
+ * probabilities; returns the deepest level reached (identified ⊂ recognized ⊂ detected). */
+export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight', visibility_m = 20000 } = {}, rng = Math.random) {
+    const vc = creatureOf(v);
+    if (!vc) return 'Creature data is not loaded.';
+    if (v.dead || v.unconscious) return `${vs} perceives nothing (${v.dead ? 'dead' : 'unconscious'}).`;
+    const eyes = vc.parts.filter(x => x.flags.includes('SIGHT'));
+    if (eyes.length && !eyes.some(worksFn(v, vc))) return `${vs} cannot see (no working eye).`;
+    const r = see({ size: size_m, distance: distance_m, light, visibility: visibility_m });
+    const u = rng();
+    const what = `${size_m} m target at ${distance_m} m, ${light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}`;
+    const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse) but not which one'
+        : u < r.detect ? 'notices something there but cannot tell what' : 'does not see it';
+    return `${vs} ${level} (${what}; chances: notice ${Math.round(r.detect * 100)} %, recognize ${Math.round(r.recognize * 100)} %, identify ${Math.round(r.identify * 100)} %).`;
 }
 
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
