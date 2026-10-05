@@ -10,7 +10,9 @@ export const aerobicFactor = m => Math.max(0, 1 - 0.063 * Math.max(0, m - 300) /
 
 // Acute mountain sickness after a night at the altitude (Maggiorini et al. 1990, BMJ 301:853, 466 climbers in Swiss Alps
 // huts): 2850 m 9 %, 3050 m 13 %, 3650 m 34 %, 4559 m 53 %; linear between; 0 below 2500 m [ASSUMED]; held above 4559 m.
-// High-altitude pulmonary or cerebral oedema: 11 of 209 at 4559 m (5.3 %).
+// Oedema (Adhikari & Zimmer 2026, BMJ, summarizing the WMS 2024 guidelines): cerebral (HACE) in up to 1 % at 4000–5000 m,
+// pulmonary (HAPE) in up to 6 % at 4500 m; held above [ASSUMED]. Untreated HACE: coma and death within 12–24 h without
+// descent; untreated HAPE: mortality up to 50 % (timing not given).
 const AMS = [[2500, 0], [2850, 0.09], [3050, 0.13], [3650, 0.34], [4559, 0.53]];
 export function amsChance(m) {
     if (m <= AMS[0][0]) return 0;
@@ -20,7 +22,9 @@ export function amsChance(m) {
     }
     return AMS.at(-1)[1];
 }
-export const oedemaChance = m => m >= 4559 ? 11 / 209 : 0;
+export const haceChance = m => m >= 4000 ? 0.01 : 0;
+export const hapeChance = m => m >= 4500 ? 0.06 : 0;
+export const HACE_DEATH_H = [12, 24];
 
 // Time of useful consciousness after sudden exposure (no acclimatization), sitting quietly: FAA AC 61-107B, Figure 2-3.
 const TUC = [[18000, 20 * 60, 30 * 60], [22000, 600, 600], [25000, 180, 300], [28000, 150, 180], [30000, 60, 120], [35000, 30, 60], [40000, 15, 20], [43000, 9, 12]];

@@ -4,7 +4,7 @@ import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
-import { aerobicFactor, amsChance, oedemaChance, tucRange } from './thermal/altitude.js';
+import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
@@ -351,7 +351,15 @@ function altitudeMinute(p, rng) {
     const a = p.altitude;
     if (!a) return;
     a.min = (a.min ?? 0) + 1;
-    if (a.min === 12 * 60 && a.ams == null) { a.ams = rng() < amsChance(a.m); a.oedema = rng() < oedemaChance(a.m); }
+    if (a.min === 12 * 60 && a.ams == null) {
+        a.ams = rng() < amsChance(a.m);
+        a.hace = rng() < haceChance(a.m);
+        a.hape = rng() < hapeChance(a.m);
+        if (a.hace) a.haceDeath = a.min + Math.round((HACE_DEATH_H[0] + rng() * (HACE_DEATH_H[1] - HACE_DEATH_H[0])) * 60);
+        a.oedema = a.hace || a.hape;
+    }
+    if (a.hace && a.min >= a.haceDeath - 60) p.unconscious ??= 'cerebral oedema';
+    if (a.hace && a.min >= a.haceDeath) p.dead = 'high-altitude cerebral oedema';
     if (a.sudden && a.tuc === undefined) { const r = tucRange(a.m); a.tuc = r ? r[0] + rng() * (r[1] - r[0]) : null; }
     if (a.tuc != null && a.min * 60 >= a.tuc) p.unconscious ??= 'hypoxia';
 }
@@ -359,7 +367,11 @@ function altitudeMinute(p, rng) {
 /** Sets the altitude (m) and how the person got there; m = 0 clears. */
 export function setAltitude(p, m, sudden = false) {
     if (p.unconscious === 'hypoxia') p.unconscious = null;
-    p.altitude = m > 0 ? { m, sudden, min: 0, ams: null, oedema: null } : null;
+    const old = p.altitude;
+    // Descent below where oedema began stops its course [ASSUMED]; the conditions remain until time passes.
+    const keep = old && m < old.m && old.oedema ? { hace: false, hape: old.hape, oedema: old.hape, ams: old.ams } : {};
+    p.altitude = m > 0 ? { m, sudden, min: 0, ams: null, oedema: null, ...keep } : null;
+    if (p.unconscious === 'cerebral oedema') p.unconscious = null;
 }
 
 /**
@@ -424,7 +436,7 @@ export function status(who, p) {
     }
     const al = p.altitude;
     if (al) {
-        out.push(`altitude ${al.m} m: aerobic capacity ${Math.round(aerobicFactor(al.m) * 100)} %${al.ams ? '; acute mountain sickness (headache, insomnia, nausea; heavy exertion fails)' : ''}${al.oedema ? '; high-altitude pulmonary or cerebral oedema: breathless at rest or confused; descent needed' : ''}${al.ams === false ? '; acclimatizing without sickness' : ''}`);
+        out.push(`altitude ${al.m} m: aerobic capacity ${Math.round(aerobicFactor(al.m) * 100)} %${al.ams ? '; acute mountain sickness (headache, insomnia, nausea; heavy exertion fails)' : ''}${al.hace ? `; high-altitude cerebral oedema: unsteady, confused; coma and death in ${round((al.haceDeath - al.min) / 60, 1)} h without descent` : ''}${al.hape ? '; high-altitude pulmonary oedema: breathless on mild exertion, cough; up to half die without descent' : ''}${al.ams === false ? '; acclimatizing without sickness' : ''}`);
     }
     const th = p.thermal;
     if (p.env && th?.core != null) {
