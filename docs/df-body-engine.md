@@ -367,6 +367,20 @@ Fitted fur and lower critical temperature (still air): 20 g mouse 14 mm, 32 °C 
 
 Limits (OPEN-82): one shape and one fur conductivity for all; the allometry is an average over climates (a temperate rat gets arctic-grade fur, LCT 22 °C against about 28–30 measured); no sun, water immersion or wet fur for animals; evaporation without limit (no heat stroke in animals).
 
+### 6.6 Altitude
+
+Set with BodyEnvironment `altitude_m` (and `sudden_ascent` for arrival within minutes); src/rules/thermal/altitude.js.
+
+| Quantity | Rule | Source |
+|---|---|---|
+| air pressure | PB (Torr) = exp(6.63268 − 0.1112 h − 0.00149 h²), h in km: 760 at sea level, 547 at 2850 m, 444 at 4559 m, 253 at 8848 m | West 1996, J Appl Physiol 81:1850 (within 1 % at most high mountain sites) |
+| heavy exertion | aerobic capacity 1 − 0.063 × (altitude − 300 m) ÷ 1000 m, a capacity in the force model for checks with `exertion: heavy` | Wehrlin & Hallén 2006, Eur J Appl Physiol 96:404 (VO2max −6.3 % per 1000 m, 300–2800 m; linear beyond [ASSUMED]) |
+| acute mountain sickness | rolled once after 12 h (the first night) at a new altitude: 0 below 2500 m [ASSUMED], 9 % at 2850 m, 13 % at 3050, 34 % at 3650, 53 % at 4559, linear between, held above → heavy exertion fails [ASSUMED from "symptoms that force a reduction in activity"] | Maggiorini et al. 1990, BMJ 301:853 (466 climbers in Swiss Alps huts); Maggiorini et al. 1998 |
+| pulmonary or cerebral oedema | at 4559 m and above: 11 of 209 (5.3 %), rolled with AMS → heavy exertion fails; status says descent is needed (course and death OPEN-85) | Maggiorini et al. 1990 |
+| sudden arrival | above 18 000 ft (5486 m): unconscious ("hypoxia") once a time drawn uniformly from the FAA range runs out: 18 000 ft 20–30 min, 22 000 ft 10 min, 25 000 ft 3–5 min, 28 000 ft 2.5–3 min, 30 000 ft 1–2 min, 35 000 ft 30–60 s, 40 000 ft 15–20 s, 43 000 ft and above 9–12 s; linear in feet between rows; descending ends it | FAA AC 61-107B, Figure 2-3 (sitting quietly) |
+
+Scratch runs (400 people each, after 13 h): AMS 0 % at 1500 m, 40 % at 3650 m, 53 % at 4559 m. A load-carrying task that 80 % pass at sea level: 68 % at 1500 m, 37 % at 3650 m, 22 % at 4559 m (before any sickness). Sudden arrival at 35 000 ft: unconscious in the first minute.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -436,6 +450,7 @@ What these show:
 | OPEN-82 | animals (§6.5): per-species fur, shape and summit metabolism; sun, water and wet fur; limited evaporation and heat stroke; cold-blooded creatures |
 | OPEN-83 | thinking below 34.5 °C core; heat stroke course and death (Hancock & Vasmatzidis 2003 tie heat effects to deep body temperature but give no single curve; Pilcher et al. 2002: −14.9 % at WBGT ≥ 32.2 °C and −13.9 % at ≤ 10 °C air, by air not core); touch and fine finger work from skin temperature (Heus et al. 1995: 15 °C local hand skin as the minimum criterion) |
 | OPEN-84 | frostbite depth from time frozen; cold shock and swim failure in cold water; cooling in ice water about half the published rate; clothing wet in air (rain, sweat); head under water |
+| OPEN-85 | altitude: acclimatization over days, ascent rate, oedema course and death, death after hypoxic unconsciousness, effects on thinking, cold and air pressure in the heat model |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 12 species and the bird median; 60-dB ranges for 30. Missing lowest thresholds: dog, cat, horse, cattle, pig, goat, sheep, elephant (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |

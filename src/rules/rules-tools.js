@@ -1,4 +1,4 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment } from './body-engine.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature } from './df/index.js';
@@ -289,6 +289,8 @@ export function registerRulesTools(enabled) {
         immersion_suit: { type: 'boolean', description: 'Clothing is a dry suit or immersion suit that keeps water out' },
         face_covered: { type: 'boolean', description: 'Face covered (mask, balaclava, scarf over the face). Default false' },
         met: { type: 'number', description: 'Activity in METs for the whole span when fixed (Compendium of Physical Activities values: sleeping 0.95, sitting quietly 1.3, walking 3 mph 3.5). Omit to follow PassTime (sleeping 0.95, resting 1.3, active 3.5)' },
+        altitude_m: { type: 'number', description: 'Altitude above sea level, m, whenever it changes by 500 m or more. 0 = sea level' },
+        sudden_ascent: { type: 'boolean', description: 'Arrived at this altitude within minutes (aircraft, magic, a fall upward) rather than by climbing' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },
     }, ['who'], a => run(st => {
         const out = [];
@@ -296,7 +298,8 @@ export function registerRulesTools(enabled) {
             const { p, error } = who(st, name);
             if (error) { out.push(error); continue; }
             if (a.clear) { setEnvironment(p, null); out.push(`${name}: conditions cleared.`); continue; }
-            if (a.air_c == null) return 'air_c is required.';
+            if (a.altitude_m != null) setAltitude(p, a.altitude_m, !!a.sudden_ascent);
+            if (a.air_c == null) { out.push(a.altitude_m != null ? status(name, p) : 'air_c is required.'); continue; }
             if (!thermalCapable(p.species) && !creatureOf(p)?.homeotherm) { out.push(`${name}: cold-blooded; body temperature not simulated; not recorded.`); continue; }
             try {
                 setEnvironment(p, { ...a, clothing: { ensemble: a.ensemble, garments: a.garments } });

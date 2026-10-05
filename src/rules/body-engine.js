@@ -4,6 +4,7 @@ import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
+import { aerobicFactor, amsChance, oedemaChance, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
@@ -169,6 +170,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
+        altitudeMinute(p, rng);
         let heat = null;
         if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
         else if (p.env && c?.homeotherm) {
@@ -343,6 +345,23 @@ function water(p, rng) {
     }
 }
 
+/** Altitude (§6.6): AMS and oedema rolled after the first night (12 h) at a new altitude; sudden arrival above 18 000 ft
+ * (aircraft, magic) → unconscious once the time of useful consciousness runs out. */
+function altitudeMinute(p, rng) {
+    const a = p.altitude;
+    if (!a) return;
+    a.min = (a.min ?? 0) + 1;
+    if (a.min === 12 * 60 && a.ams == null) { a.ams = rng() < amsChance(a.m); a.oedema = rng() < oedemaChance(a.m); }
+    if (a.sudden && a.tuc === undefined) { const r = tucRange(a.m); a.tuc = r ? r[0] + rng() * (r[1] - r[0]) : null; }
+    if (a.tuc != null && a.min * 60 >= a.tuc) p.unconscious ??= 'hypoxia';
+}
+
+/** Sets the altitude (m) and how the person got there; m = 0 clears. */
+export function setAltitude(p, m, sudden = false) {
+    if (p.unconscious === 'hypoxia') p.unconscious = null;
+    p.altitude = m > 0 ? { m, sudden, min: 0, ams: null, oedema: null } : null;
+}
+
 /**
  * Sets (or clears, env = null) the air a person is in: { air_c, radiant_c, humidity_pct, wind_kmh (weather, 10 m) or air_speed_ms
  * (at the body, indoors), clothing: { ensemble, garments }, face_covered, met, posture }. Throws on unknown clothing.
@@ -402,6 +421,10 @@ export function status(who, p) {
         if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)`);
         if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
         if (nd.alcohol > 0) out.push(`blood alcohol ${round(nd.alcohol, 3)} %`);
+    }
+    const al = p.altitude;
+    if (al) {
+        out.push(`altitude ${al.m} m: aerobic capacity ${Math.round(aerobicFactor(al.m) * 100)} %${al.ams ? '; acute mountain sickness (headache, insomnia, nausea; heavy exertion fails)' : ''}${al.oedema ? '; high-altitude pulmonary or cerebral oedema: breathless at rest or confused; descent needed' : ''}${al.ams === false ? '; acclimatizing without sickness' : ''}`);
     }
     const th = p.thermal;
     if (p.env && th?.core != null) {
@@ -781,6 +804,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
 const waterStage = p => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };
 const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
+    ams: !!p.altitude?.ams, oedema: !!p.altitude?.oedema,
     heat: coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
 });
@@ -796,6 +820,8 @@ function changes(who, a, b) {
         if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
         if (b.heat !== a.heat) out.push(`${who}: ${b.heat ?? 'core temperature between 35 and 40 °C'} (core ${b.core} °C)`);
+        if (b.ams && !a.ams) out.push(`${who} has acute mountain sickness`);
+        if (b.oedema && !a.oedema) out.push(`${who} has high-altitude pulmonary or cerebral oedema`);
         if (b.swim && !a.swim) out.push(`${who}: arms too cold to keep swimming`);
         const frost = b.frost.filter(x => !a.frost.includes(x));
         if (frost.length) out.push(`${who}: frostbite on ${frost.join(', ')}`);
@@ -856,6 +882,12 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // Low core temperature slows thinking; accuracy holds given time (Coleshaw et al. 1983). A timed task treats the speed
     // as a capacity with the force spread [ASSUMED].
     if (timed && uses.includes('alertness') && coolCore(p) > 0) scores.thinking = thinkSpeed(p);
+    // Altitude: heavy exertion is limited by aerobic capacity (§6.6); acute mountain sickness: symptoms that force a reduction
+    // in activity (Maggiorini et al. 1998) → heavy exertion fails [ASSUMED].
+    if (p.altitude && exertion === 'heavy') {
+        if (p.altitude.ams || p.altitude.oedema) return { chance: 0, limit: 'altitude sickness' };
+        scores.aerobic = aerobicFactor(p.altitude.m);
+    }
     // Heat: no slowing measured at 38.6 °C core (reaction 40 ms faster; Barry et al. 2022, Appl Physiol Nutr Metab 47:261);
     // heat stroke is defined by nervous-system dysfunction (disorientation): attention tasks fail [ASSUMED from the definition].
     if (uses.includes('alertness') && p.env && coreStage(p.thermal?.stageCore ?? p.thermal?.core) === 'heat stroke') return { chance: 0, limit: 'heat stroke: disoriented' };
@@ -865,8 +897,8 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     const risk = uses.includes('alertness') ? crashRisk(impairmentBac(p)) : 1;
     const zero = used.find(u => scores[u] === 0);
     if (zero) return { chance: 0, limit: `${zero} 0%` };
-    if ('thinking' in scores) used.push('thinking');
-    const force = used.filter(u => FORCE_SCORES.includes(u) || u === 'thinking').sort((x, y) => scores[x] - scores[y])[0];
+    for (const k of ['thinking', 'aerobic']) if (k in scores) used.push(k);
+    const force = used.filter(u => FORCE_SCORES.includes(u) || u === 'thinking' || u === 'aerobic').sort((x, y) => scores[x] - scores[y])[0];
     const s = force ? scores[force] : 1;
     const base = Math.max(0, Math.min(1, Number(share) || 0));
     const alert = (r, limit) => risk > 1.005
