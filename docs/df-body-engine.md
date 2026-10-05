@@ -531,6 +531,8 @@ Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 1
 | bystander helps (Bystander) | alone 85 %, one other witness 62 %, four or more 31 % (linear between [ASSUMED]); dangerous emergencies: 85 % at any number [ASSUMED from "did not occur"] | Darley & Latané 1968, J Pers Soc Psychol 8:377 (via Wikipedia, Diffusion of responsibility); Fischer et al. 2011, Psychol Bull 137:517 (7700 participants, g = −0.35, attenuated when dangerous) |
 | order to harm (ObeyOrder) | carries it out to the end: victim out of sight 65 %; same room 40 %; must physically force 30 %; orders by phone 21 %; ordinary business 47.5 %; peers refuse 10 %; a peer obeys 92.5 % | Milgram's variations (Wikipedia, Milgram experiment); Blass: replications 28–91 %, US mean 61 %, elsewhere 66 % |
 
+| small request to a stranger (AskStranger) | yes 46 % | Flynn & Lake 2008, J Pers Soc Psychol 95:128 (via ScienceBlog): about 10 asks for 5 questionnaires, 6 for 3 phone loans, just over 2 for 1 escort to a gym [targets 5, 3, 1 as recalled] → 48, 48, 43 % |
+
 Limits (OPEN-89): evidence, prior suspicion, relationship and training are not inputs (the meta-analysis found detection rates vary little between studies); the speaker's skill at lying is not modelled.
 
 ## 7. Tools
