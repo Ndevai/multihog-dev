@@ -414,10 +414,11 @@ export function registerRulesTools(enabled) {
         hanging: { type: 'boolean', description: 'Hanging by the hands: the load is the character\'s own body' },
         load_kg: { type: 'number', description: 'Mass carried by handles, kg (when not hanging)' },
         hands: { type: 'number', description: 'Hands used, 1 or 2. Default 2.' },
+        seconds: { type: 'number', description: 'How long the hold must last, s (until help arrives, to cross the gap)' },
     }, ['who'], a => run((st, rng) => {
         const { p, error } = who(st, a.who);
         if (error) return error;
-        return holdLoad(a.who, p, { load_kg: a.load_kg, hands: a.hands ?? 2, hanging: !!a.hanging }, rng);
+        return holdLoad(a.who, p, { load_kg: a.load_kg, hands: a.hands ?? 2, hanging: !!a.hanging, seconds: a.seconds ?? null }, rng);
     }));
 
     tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their species\' top speeds and leg injuries.', {

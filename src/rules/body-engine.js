@@ -1052,7 +1052,7 @@ export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight',
  * when the per-hand load ≤ grip strength × the hand's working capacity (grasp ability, cold forearm force factor). Humans only
  * (Dodds 2014 norms); hands counted from working GRASP parts.
  */
-export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false } = {}, rng = Math.random) {
+export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false, seconds = null } = {}, rng = Math.random) {
     if (!thermalCapable(p.species)) return `${who}: grip norms exist for humans only; use BodyCheck.`;
     if (p.dead || p.unconscious) return `${who} cannot hold anything (${p.dead ? 'dead' : 'unconscious'}).`;
     const c = creatureOf(p), works = worksFn(p, c);
@@ -1061,7 +1061,13 @@ export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false } 
     const g = grip(p, () => gauss(rng)) * forceFactor(limbCold(p, 'arm'));
     const load = hanging ? p.mass : load_kg ?? 0, per = load / n;
     const norm = gripNorm(p.age, p.sex);
-    return `${who} ${per <= g ? 'holds it' : 'cannot hold it'} (${round(per)} kg per hand on ${n} hand${n > 1 ? 's' : ''}; grip ${round(g)} kg, ${p.sex === 'female' ? 'women' : 'men'} aged ${p.age ?? 25} average ${round(norm.mean)} ± ${round(norm.sd)} kg).`;
+    const detail = `${round(per)} kg per hand on ${n} hand${n > 1 ? 's' : ''}; grip ${round(g)} kg, ${p.sex === 'female' ? 'women' : 'men'} aged ${p.age ?? 25} average ${round(norm.mean)} ± ${round(norm.sd)} kg`;
+    if (per > g) return `${who} cannot hold it (${detail}).`;
+    // Hold time at a share f of maximal grip: ET = 33.55 f^−1.61 s (grip power model, Frey Law & Avin 2010, Ergonomics 53:109,
+    // Table 2, meta-analysis of static endurance; R² 0.748).
+    const et = 33.55 * Math.max(0.05, per / g) ** -1.61;
+    if (seconds != null) return `${who} ${et >= seconds ? `holds it for the ${seconds} s` : `lets go after ${round(et)} s`} (${detail}; can hold about ${round(et)} s).`;
+    return `${who} holds it, for about ${round(et)} s before the grip gives out (${detail}).`;
 }
 
 // Running speed (§6.7): the creature's fastest DF walking gait [RAW]; DF gait value v (ticks per 100 tiles) → km/h = 8775 ÷ v,

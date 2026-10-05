@@ -554,9 +554,10 @@ Limits (OPEN-89): evidence, prior suspicion, relationship and training are not i
 | Quantity | Rule | Source |
 |---|---|---|
 | grip strength | mean and SD by age and sex, linear between tabled ages (20–90); each person keeps a z drawn once; men 30: 51.6 ± 9.6 kg, women 30: 31.4 ± 6.0, men 75: 35.6 ± 7.6, women 75: 21.4 ± 5.4 | Dodds et al. 2014, PLoS One 9:e113637, Table 2 (60 803 observations, 12 British studies) |
-| HoldOn | holds when load per working hand ≤ grip × cold-forearm force factor (§6.4); hanging: load = own body mass [ASSUMED: maximal dynamometer grip = maximal static hold, no time limit] | — |
+| HoldOn | holds when load per working hand ≤ grip × cold-forearm force factor (§6.4); hanging: load = own body mass [ASSUMED: maximal dynamometer grip = maximal static hold] | — |
+| hold time | ET (s) = 33.55 × f^−1.61, f = load per hand ÷ grip; `seconds` asks whether the hold lasts that long. Average man (30 y, 80 kg) hanging by two hands: 51 s; carrying 20 kg in one hand: 154 s | Frey Law & Avin 2010, Ergonomics 53:109, Table 2: grip power model from a meta-analysis of static endurance (194 publications, 369 points), R² 0.748 |
 
-Scratch (2000 each): hanging by two hands — man 30 y, 80 kg: 89 %; woman 30 y, 60 kg: 60 %; man 75 y: 28 %; woman 75 y: 6 %. Carrying 40 kg in one hand — man 30: 89 %; woman 30: 7 %. Limits (OPEN-90): hold time (endurance at a fraction of maximal force), fingertip ledges (weaker than a full grip), hand injuries other than lost function.
+Scratch (2000 each): hanging by two hands — man 30 y, 80 kg: 89 %; woman 30 y, 60 kg: 60 %; man 75 y: 28 %; woman 75 y: 6 %. Carrying 40 kg in one hand — man 30: 89 %; woman 30: 7 %. Limits (OPEN-90): fingertip ledges (weaker than a full grip), hand injuries other than lost function.
 
 ## 7. Tools
 
