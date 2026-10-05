@@ -387,13 +387,22 @@ function altitudeMinute(p, rng) {
     const a = p.altitude;
     if (!a) return;
     a.min = (a.min ?? 0) + 1;
+    // Acclimatization (§6.6): risk follows the gain over the acclimatized altitude, which starts at 2500 m and rises 457 m
+    // (1500 ft) per day spent above it, up to the current altitude (WMS pace, StatPearls NBK560677) [ASSUMED].
+    p.acclim ??= 2500;
+    a.acc0 ??= p.acclim;
+    if (a.m > p.acclim && a.min % DAY_MIN === 0) p.acclim = Math.min(a.m, p.acclim + 457);
     if (a.min === 12 * 60 && a.ams == null) {
-        a.ams = rng() < amsChance(a.m);
-        a.hace = rng() < haceChance(a.m);
-        a.hape = rng() < hapeChance(a.m);
+        const eff = a.m - a.acc0 + 2500;
+        a.ams = rng() < amsChance(eff);
+        if (a.ams) a.amsEnd = a.min + Math.round((24 + rng() * 24) * 60);
+        a.hace = rng() < haceChance(eff);
+        if (rng() < hapeChance(eff)) a.hapeAt = Math.round((1 + rng() * 4) * DAY_MIN);
         if (a.hace) a.haceDeath = a.min + Math.round((HACE_DEATH_H[0] + rng() * (HACE_DEATH_H[1] - HACE_DEATH_H[0])) * 60);
-        a.oedema = a.hace || a.hape;
+        a.oedema = a.hace;
     }
+    if (a.ams && a.min >= a.amsEnd) a.ams = false;
+    if (a.hapeAt && a.min >= a.hapeAt) { a.hape = true; a.oedema = true; a.hapeAt = null; }
     if (a.hace && a.min >= a.haceDeath - 60) p.unconscious ??= 'cerebral oedema';
     if (a.hace && a.min >= a.haceDeath) p.dead = 'high-altitude cerebral oedema';
     if (a.sudden && a.tuc === undefined) { const r = tucRange(a.m, a.decompression); a.tuc = r ? r[0] + rng() * (r[1] - r[0]) : null; }
