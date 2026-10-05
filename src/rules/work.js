@@ -29,15 +29,19 @@ export function runWatts(bodyKg, loadKg, speedMs, gradePct = 0, terrain = 'dirt 
 /** METs of that work: W ÷ (1.163 W/kg × body kg) (1 MET = 1 kcal/kg/h). */
 export const metOf = (watts, bodyKg) => watts / (1.163 * bodyKg);
 
-// Endurance. VO2max: healthy Norwegians 20–29 y, men 54.4, women 43.0 mL/kg/min, −3.5 per decade (Loe et al. 2013, PLoS One
-// 8:e64319, HUNT, 3816 people). Relative load = (METs − 1) ÷ (VO2max ÷ 3.5 − 1) [ASSUMED: heart-rate reserve share ≈ VO2
-// reserve share]. Maximum acceptable work time (h) = 26.12 × e^(−4.81 × relative load) (Wu & Wang 2002, Ergonomics 45:280, as
-// given by Park et al. 2023, Ann Occup Environ Med 35:e24); time spent ÷ that time adds up, and at 1 the person is exhausted.
-// Each person keeps a fitness z drawn once from N(0, 1): SD 8.4 (men) and 7.7 (women) mL/kg/min (same study).
+// Endurance. VO2max of untrained people (Shvartz & Reibold 1990, Aviat Space Environ Med 61:3, review of direct measurements in
+// the USA, Canada and 7 European countries): men 47.5 at age 6, peak 50 at 12–13, then linear to 25 at 75; women 42.5 at 6, peak
+// 44 at 9, linear to 17.5 at 75 (mL/kg/min). Spread per person: SD 8.4 (men), 7.7 (women) (Loe et al. 2013, PLoS One 8:e64319,
+// HUNT, 3816 people); each person keeps a z drawn once. Relative load = (METs − 1) ÷ (VO2max ÷ 3.5 − 1) [ASSUMED: heart-rate
+// reserve share ≈ VO2 reserve share]. Maximum acceptable work time (h) = 26.12 × e^(−4.81 × relative load) (Wu & Wang 2002,
+// Ergonomics 45:280, as given by Park et al. 2023, Ann Occup Environ Med 35:e24); time spent ÷ that time adds up, and at 1 the
+// person is exhausted.
+const lerp = (x, x0, y0, x1, y1) => y0 + (y1 - y0) * (Math.min(Math.max(x, x0), x1) - x0) / (x1 - x0);
 export function vo2max(p, gauss) {
     if (p.fitZ == null && gauss) p.fitZ = Math.round(gauss() * 100) / 100;
-    const female = p.sex === 'female';
-    return (female ? 43.0 : 54.4) + (p.fitZ ?? 0) * (female ? 7.7 : 8.4) - 3.5 * Math.max(0, ((p.age ?? 25) - 25) / 10);
+    const female = p.sex === 'female', a = p.age ?? 25;
+    const mean = female ? (a < 9 ? lerp(a, 6, 42.5, 9, 44) : lerp(a, 9, 44, 75, 17.5)) : (a < 12.5 ? lerp(a, 6, 47.5, 12.5, 50) : lerp(a, 12.5, 50, 75, 25));
+    return mean + (p.fitZ ?? 0) * (female ? 7.7 : 8.4);
 }
 // Available VO2max: × the altitude factor (§6.6), minus 4 mL/min per g of haemoglobin missing (Schmidt & Prommer 2010, Exerc
 // Sport Sci Rev 38:68). Haemoglobin 150 g/L men, 135 women [ASSUMED typical]; missing blood = lost + red-cell deficit (§5).

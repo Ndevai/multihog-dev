@@ -502,7 +502,7 @@ Endurance:
 
 | Quantity | Rule | Source |
 |---|---|---|
-| VO2max | men 54.4 ± 8.4, women 43.0 ± 7.7 mL/kg/min at 20–29 y, −3.5 per decade; each person keeps one draw (floor 10.5) (default man, 25 y) | Loe et al. 2013, PLoS One 8:e64319 (HUNT, 3816 healthy Norwegians) |
+| VO2max | untrained mean: men 47.5 at 6 y, peak 50 at 12–13, linear to 25 at 75; women 42.5 at 6, peak 44 at 9, linear to 17.5 at 75 (mL/kg/min): men 25 y 45.0, women 25 y 37.6, men 50 y 35; spread SD 8.4 (men), 7.7 (women); each person keeps one draw (floor 10.5) | Shvartz & Reibold 1990, Aviat Space Environ Med 61:3 (direct measurements of untrained people, USA, Canada, 7 European countries); SD from Loe et al. 2013, PLoS One 8:e64319 (HUNT) |
 | relative load | (METs − 1) ÷ (VO2max ÷ 3.5 − 1) | [ASSUMED: heart-rate reserve share ≈ VO2 reserve share] |
 | maximum acceptable work time | 26.12 × e^(−4.81 × relative load) hours; every minute of walking (`walking`) or other activity (`active`, 3.5 MET) adds 1 ÷ that time; at 1 → exhausted: all exertion checks fail | Wu & Wang 2002, Ergonomics 45:280, as given by Park et al. 2023, Ann Occup Environ Med 35:e24 |
 | recovery | at rest or asleep the total falls 5 % per hour if under a day's food is missing, else 2 % per hour; exhaustion ends at 0.9 (2 h of fed rest) [ASSUMED: recovery follows muscle glycogen]; a full day of exhausting work needs 20 h fed rest | glycogen returns 2 %/h unfed, 5 %/h with 50 g carbohydrate every 2 h; at least 20 h for full stores (The Sport Journal, "Glycogen replenishment after exhaustive exercise") |
