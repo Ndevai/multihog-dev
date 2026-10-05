@@ -239,6 +239,15 @@ Clotting and further healing times: small-vessel bleeding stops on its own withi
 
 Fracture kind: transverse [576 "blunt blow" row, also used for edged; ASSUMED]. Never-joins chance: LEG_LOWER uses the shin row; others 2 % [576].
 
+### 5.1b Stopping arterial bleeding
+
+| Case | Rule | Source |
+|---|---|---|
+| limb artery or femoral bleeding, BodyTreat `stop_bleeding` | tourniquet: succeeds 20.41 % untrained, 44.14 % with a just-in-time instruction card or phone instructions (`training`), trained [ASSUMED] always; a failure leaves the bleeding, retry allowed | Goolsby et al. 2015, Prehosp Disaster Med 30:600: 194 volunteers without medical training, Combat Application Tourniquet on a mannequin leg, randomized |
+| any other bleeding | stopped | — |
+
+Scratch: 2000 untrained attempts on a thigh artery cut: 19.5 % stopped. Limits (OPEN-90): success rate after formal training (a 2025 systematic review, Efficacy of publicly accessible tourniquets, reports training raises it; its full text could not be read: rate limited); time to apply; improvised tourniquets.
+
 ### 5.2 Venom
 
 DF decides which attacks inject venom (`SPECIALATTACK_INJECT_EXTRACT` on the attack). A landed injecting bite whose skin layer is cut or smashed injects [ASSUMED: DF fangs rarely cut by the edge test]. src/rules/venom.js.

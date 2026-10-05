@@ -132,6 +132,7 @@ export function addWound(p, w, rng = Math.random) {
     // DF HEALING_RATE scales the human days: soft tissue relative to 100, bone relative to 1000 (human templates).
     const factor = w.healFactor ?? 1;
     if (healRange) wound.heals = round(between(rng, healRange) * factor);
+    if (w.vessel) wound.vessel = w.vessel;
     if (w.vessel && BLEED[w.vessel] && bloodVolume(p)) wound.bleed = round(between(rng, BLEED[w.vessel]));
     if (w.vessel === 'small' && wound.bleed) wound.clotIn = Math.round(between(rng, CLOT_MIN));
     // Gut or stomach opened: peritonitis. Without surgery 87 % die (penetrating abdominal gunshot wounds, Civil War); after
@@ -185,7 +186,7 @@ export function contactBurn(p, regions, material, tempC, seconds, rng = Math.ran
     return `Skin surface at ${round(ti, 1)} °C for ${seconds} s: ${made.length ? `${made.length} ${made[0].depth ?? ''} burn wound(s) on ${[...new Set(made.map(w => w.part))].join(', ')}` : 'no burn'}.`;
 }
 
-export function treat(p, id, treatment, rng = Math.random) {
+export function treat(p, id, treatment, rng = Math.random, { training = 'untrained' } = {}) {
     const w = p.wounds.find(x => x.id === id);
     if (treatment === 'transfuse') { p.lost = 0; p.deathIn = null; return 'Blood volume replaced.'; }
     // Antivenom before death stops a fatal course; breathing returns, consciousness when time passes [ASSUMED].
@@ -212,7 +213,17 @@ export function treat(p, id, treatment, rng = Math.random) {
         return 'Antivenom given: the venom course stops.';
     }
     if (!w) return `No wound ${id}.`;
-    if (treatment === 'stop_bleeding') { w.bleed = 0; return `Wound ${id}: bleeding stopped.`; }
+    // Arterial bleeding on a limb takes a tourniquet: laypeople without training placed one successfully 20.41 % of the time, with a
+    // just-in-time instruction card 44.14 % (Goolsby et al. 2015, Prehosp Disaster Med 30:600, 194 volunteers); trained people
+    // succeed [ASSUMED]. A failed attempt leaves the bleeding; it can be tried again. Other bleeding: stopped.
+    if (treatment === 'stop_bleeding') {
+        if (['femoral', 'limb_artery'].includes(w.vessel) && w.bleed > 0 && training !== 'trained') {
+            const pr = training === 'instructions' ? 0.4414 : 0.2041;
+            if (rng() >= pr) return `Wound ${id}: the tourniquet does not stop the bleeding (${training === 'instructions' ? 'with instructions' : 'untrained'}: ${Math.round(pr * 100)} % succeed); still ${w.bleed} mL/min.`;
+            w.bleed = 0; return `Wound ${id}: tourniquet on, bleeding stopped.`;
+        }
+        w.bleed = 0; return `Wound ${id}: bleeding stopped.`;
+    }
     if (treatment === 'clean') { w.cleanedAt ??= w.age; return `Wound ${id}: cleaned.`; }
     if (treatment === 'splint') { w.splinted = true; return `Wound ${id}: splinted.`; }
     if (treatment === 'load') {
