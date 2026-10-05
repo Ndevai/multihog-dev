@@ -350,8 +350,8 @@ export function registerRulesTools(enabled) {
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
-        wound: { type: 'number', description: 'Wound id (not needed for antivenom or transfuse)' },
-        treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load', 'antivenom', 'antibiotics'] },
+        wound: { type: 'number', description: 'Wound id (not needed for antivenom, antibiotics, laparotomy or transfuse)' },
+        treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load', 'antivenom', 'antibiotics', 'laparotomy'] },
     }, ['who', 'treatment'], a => run((st, rng) => {
         const p = (who(st, a.who, a.species).p ?? person(st, a.who));
         return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;

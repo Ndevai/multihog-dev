@@ -36,9 +36,9 @@ const BRUISE_DAYS = [13, 13];
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
 // Organs, days [function kept, function lost]. Spleen: healed on ultrasound grade 1 at 4–12 weeks, grade 2 at 6–17, grade 3 at
 // 6–29 (68 children; Radiology 1999, 212:515); kept = grades 1–2, lost = grade 3; liver and kidney as spleen [ASSUMED]. Lung
-// contusion resolves in 5–7 days (Wikipedia, Pulmonary contusion); other lung wounds: OPEN-48.
+// contusion resolves in 5–7 days; lacerations heal in 3–5 weeks (Wikipedia, Pulmonary contusion, Pulmonary laceration).
 const SOLID = { cut: [[28, 119], [42, 203]], blunt: [[28, 119], [42, 203]] };
-const ORGAN_HEAL = { SPLEEN: SOLID, LIVER: SOLID, KIDNEY: SOLID, LUNG: { blunt: [[5, 7], [5, 7]] } };
+const ORGAN_HEAL = { SPLEEN: SOLID, LIVER: SOLID, KIDNEY: SOLID, LUNG: { blunt: [[5, 7], [5, 7]], cut: [[21, 35], [21, 35]] } };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
 // Rule 576, days. Missing types are OPEN-48/49: they do not close yet.
 const CUT_HEAL = { eyes: [3, 5], mouth: [3, 5], head: [7, 10], arm: [7, 10], torso: [10, 14], leg: [10, 14], hand: [10, 14], foot: [10, 14],
@@ -128,6 +128,10 @@ export function addWound(p, w, rng = Math.random) {
     if (healRange) wound.heals = round(between(rng, healRange) * factor);
     if (w.vessel && BLEED[w.vessel] && bloodVolume(p)) wound.bleed = round(between(rng, BLEED[w.vessel]));
     if (w.vessel === 'small' && wound.bleed) wound.clotIn = Math.round(between(rng, CLOT_MIN));
+    // Gut or stomach opened: peritonitis. Without surgery 87 % die (penetrating abdominal gunshot wounds, Civil War); after
+    // laparotomy 4.5 % (Vietnam) (Manring et al. 2009, Clin Orthop 467:2168); death 1–7 days after the wound [ASSUMED].
+    if (['cut', 'puncture', 'bite'].includes(w.type) && w.part.cats.some(k => k === 'GUTS' || k === 'STOMACH') && !p.peritonitis)
+        p.peritonitis = { fatal: rng() < 0.87, min: 0, deathMin: Math.round((1 + rng() * 6) * DAY_MIN) };
     if (w.functionLost) wound.functionLost = true;
     if (w.permanent) wound.permanent = true;
     if (w.type === 'severed') wound.severed = true;
@@ -162,6 +166,11 @@ export function treat(p, id, treatment, rng = Math.random) {
         if (!p.sepsis) return 'Antibiotics given; no bloodstream infection recorded.';
         if (!p.sepsis.treated) { p.sepsis.treated = true; p.sepsis.fatal = p.sepsis.fatal && rng() < (0.15 + rng() * 0.35) / 0.8; }
         return 'Antibiotics given for the bloodstream infection.';
+    }
+    if (treatment === 'laparotomy') {
+        if (!p.peritonitis) return 'Laparotomy: no opened gut recorded.';
+        if (!p.peritonitis.repaired) { p.peritonitis.repaired = true; p.peritonitis.fatal = p.peritonitis.fatal && rng() < 0.045 / 0.87; }
+        return 'Laparotomy: the opened gut is repaired.';
     }
     if (treatment === 'antivenom') {
         if (!p.venom) return 'No venom recorded.';
@@ -207,6 +216,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
         if (p.sepsis && ++p.sepsis.min >= p.sepsis.deathMin && p.sepsis.fatal) { p.dead = 'sepsis'; return; }
+        if (p.peritonitis && ++p.peritonitis.min >= p.peritonitis.deathMin && p.peritonitis.fatal) { p.dead = 'peritonitis'; return; }
         venomMinute(p);
         let heat = null;
         if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
@@ -515,6 +525,7 @@ export function status(who, p) {
     }
     if (p.needs?.work > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs.work * 100)} % of what can be kept up`);
     if (p.heatStroke?.min >= 30) out.push(`heat stroke not cooled within 30 min: about ${p.heatStroke.exertional ? '1 in 4' : '2 in 3'} die within days`);
+    if (p.peritonitis) out.push(`gut opened (peritonitis): belly pain, fever${p.peritonitis.repaired ? '; repaired by laparotomy' : '; without surgery about 9 in 10 die within a week'}`);
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {
         const v = p.venom;

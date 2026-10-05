@@ -225,8 +225,8 @@ Healing days and fracture timetables: rule 576 rows, chosen by the part's DF cat
 | JOINT | cuts: 14 days (suture removal over a joint, same table) |
 | JOINT wrist, ankle, hip, elbow, knee, shoulder; SPINE | own fracture rows [joins, healed] days: wrist [42, 365] (non-union 12.5 %), ankle [42, 120], hip [90, 180], elbow [21, 84], knee [21, 84], shoulder [21, 84] [ASSUMED as elbow], spine [28, 84]. Elbow, knee: immobilized 3 weeks (Wikipedia Olecranon fracture, Patellar fracture), healed at the humerus shaft's "up to 12 weeks" (Wikipedia Humerus fracture) [ASSUMED transfer]. Sources: Wikipedia Distal radius fracture (cast 6 weeks; healing "a year or two"), Ankle fracture (weight off 6 weeks; significant recovery within 4 months), Hip fracture (3–6 months); Merck Manual, Vertebral compression fractures (pain eases at about 4 weeks, resolves at about 12) [ASSUMED pain course = healing] |
 | SPLEEN, LIVER, KIDNEY | cut, puncture, bite or blunt: function kept 28–119 days, function lost 42–203 (uniform). Spleen healed on ultrasound: grade 1 mean 7 weeks (4–12), grade 2 9.5 (6–17), grade 3 16 (6–29), 68 children (Radiology 1999, 212:515); kept = grades 1–2, lost = grade 3; liver and kidney and adults as spleen [ASSUMED] |
-| LUNG | blunt: 5–7 days ("most contusions resolve in five to seven days", Wikipedia Pulmonary contusion); other lung wounds no timetable |
-| others (heart, guts, stomach, pancreas, lung cuts, skull) | none: does not close / no timetable (OPEN-48, OPEN-58; skull: sources give "several weeks to months" only) |
+| LUNG | blunt: 5–7 days ("most contusions resolve in five to seven days", Wikipedia Pulmonary contusion); cut, puncture, bite: 21–35 days ("usually heal within three to five weeks", Wikipedia Pulmonary laceration) |
+| others (heart, guts, stomach, pancreas, skull) | none: does not close / no timetable (OPEN-48, OPEN-58; skull: sources give "several weeks to months" only) |
 
 Healing speed: DF `HEALING_RATE` ("lower is faster; omitting the token will result in a tissue that never heals", wiki Tissue definition token) scales the rule-576 days: a soft wound by its slowest damaged tissue ÷ 100, a fracture by its bone tissue ÷ 1000 (the human template values, so human days are unchanged) [RAW, WIKI]. Damage to a `FUNCTIONAL` tissue without `HEALING_RATE` (nerve, brain) loses the part's function for good: a cut spinal cord paralyses for good.
 
@@ -261,6 +261,16 @@ Scratch runs (70 kg, bitten on the shin, 150 untreated each): rattlesnake 19 dea
 | antibiotics | BodyTreat `antibiotics`: case fatality 15–50 %, drawn uniformly | same: 15–50 % with antibiotic treatment |
 
 Scratch run (300 people, uncleaned forearm cut, fed, 45 days): 41 infected, 5 with bloodstream infection, 5 dead.
+
+### 5.4 Opened gut (peritonitis)
+
+| Step | Rule | Source |
+|---|---|---|
+| cause | a cut, puncture or bite wound on a GUTS or STOMACH part | [RAW] part categories |
+| untreated | 87 % die, 1–7 days after the wound (uniform) [ASSUMED timing] | penetrating gunshot wounds of the abdomen in the Civil War, before routine laparotomy: 87 % fatal (Manring et al. 2009, Clin Orthop Relat Res 467:2168) |
+| laparotomy | BodyTreat `laparotomy` before death: 4.5 % die | abdominal wound mortality in Vietnam 4.5 % (same review) |
+
+Scratch run (300 punctured guts each): untreated 89 % died, after laparotomy 5 %.
 
 ## 6. What a body can do
 
