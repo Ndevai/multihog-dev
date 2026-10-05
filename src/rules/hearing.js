@@ -6,8 +6,8 @@ export const HEARING = {
     DOG: H(-0.5, 67, 45000, 'Heffner 1983, Behav Neurosci 97:310: 60 dB range from the text; best = mean of four dogs at 8 kHz read from Fig. 3 (4, 1, −2, −5 dB)'),
     FOX: H(-15, 51, 48000, 'Malkemper et al. 2015, Hear Res 320:30'),
     CAT: H(-4, 55, 78000, 'Heffner & Heffner 1985, Hear Res 19:85: 60 dB limits from the text; best = mean of two cats at 8 kHz read from Fig. 2'),
-    HORSE: H(null, 55, 33500, 'Heffner & Heffner 1983, Behav Neurosci 97:299, via Olczak et al. 2023, Animals 13:2307'),
-    COW: H(null, 23, 35000, 'Heffner & Heffner 1983, via Olczak et al. 2023'),
+    HORSE: H(7, 55, 33500, 'Heffner & Heffner 1983, Behav Neurosci 97:299 (lowest average threshold 7 dB at 2 kHz)'),
+    COW: H(-11, 23, 35000, 'Heffner & Heffner 1983, Behav Neurosci 97:299 (lowest threshold −11 dB at 8 kHz)'),
     PIG: H(null, 42, 40500, 'Heffner & Heffner 1990, Hear Res 48:231'),
     GOAT: H(null, 78, 37000, 'Heffner & Heffner 1990, Hear Res 48:231'),
     SHEEP: H(null, 125, 42000, 'Kendrick 2008, The Welfare of Sheep, via Olczak et al. 2023'),
@@ -24,6 +24,10 @@ export const HEARING = {
     BIRD_PARAKEET: H(1.1, 77, 7600, 'Heffner et al. 2016, J Comp Physiol A 202:853 (budgerigar)'),
     BIRD_PEAFOWL_BLUE: H(null, 29, 7065, 'Heffner et al. 2020, J Comp Physiol A 206:899'),
     BIRD_GUINEAFOWL: H(null, 24.6, 6860, 'Heffner et al. 2024, J Comp Physiol A 210:65'),
+    // Heffner & Heffner 2007, J Am Assoc Lab Anim Sci 46:11 (review): red-ear turtle 68–840 Hz, lowest about 40 dB SPL (for DF
+    // pond turtles [ASSUMED]); bullfrog 100 Hz–2.5 kHz (for DF frogs and toads [ASSUMED]).
+    POND_TURTLE: H(40, 68, 840, 'Heffner & Heffner 2007, JAALAS 46:11 (red-ear turtle)'),
+    TOAD: H(null, 100, 2500, 'Heffner & Heffner 2007, JAALAS 46:11 (bullfrog)'),
     // Fay 1988 and Warfield 1973 via Strain, LSU "How well do dogs and other animals hear?" (no level stated)
     RABBIT: H(null, 360, 42000, 'Fay 1988 via LSU'),
     RAT: H(null, 200, 76000, 'Fay 1988 via LSU'),
@@ -35,7 +39,7 @@ export const HEARING = {
     BIRD_OWL_BARN: H(null, 200, 12000, 'Fay 1988 via LSU (owl)'),
 };
 // Same species under another DF id.
-for (const [id, from] of [['WOLF', 'DOG'], ['DINGO', 'DOG'], ['WILD_BOAR', 'PIG']]) HEARING[id] = HEARING[from];
+for (const [id, from] of [['WOLF', 'DOG'], ['DINGO', 'DOG'], ['WILD_BOAR', 'PIG'], ['GREEN_TREE_FROG', 'TOAD'], ['TOAD_GIANT_CAVE', 'TOAD']]) HEARING[id] = HEARING[from];
 // Birds without an audiogram: median lowest threshold of 16 terrestrial species, 8.1 dB SPL (Dooling 1980, in Popper & Fay,
 // Comparative Studies of Hearing in Vertebrates, via Rößler et al. 2024).
 const BIRD = H(8.1, null, null, 'Dooling 1980 median of 16 species');
