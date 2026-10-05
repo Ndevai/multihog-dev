@@ -7,7 +7,7 @@ import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
-import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor } from './thermal/exposure.js';
+import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -158,6 +158,15 @@ function infectionChance(w) {
     const late = w.cleanedAt === null || w.cleanedAt > 8 * HOUR;
     if (w.type === 'bite') return late ? 0.22 : 0.05;
     return late ? 0.15 : 0.03;
+}
+
+/** Skin of the given regions touches `material` at temp_c for `seconds` (Henriques burn dose, §6.4). Returns a report line. */
+export function contactBurn(p, regions, material, tempC, seconds, rng = Math.random) {
+    const ti = contactTemp(material, tempC);
+    const segs = immersion(regions);
+    const made = [];
+    segs.forEach((on, i) => { if (on) for (const b of burnDose(p, i, ti, seconds)) for (const part of frostParts(creatureOf(p), b.seg)) made.push(addWound(p, { part, type: 'burn', depth: b.depth }, rng)); });
+    return `Skin surface at ${round(ti, 1)} °C for ${seconds} s: ${made.length ? `${made.length} ${made[0].depth ?? ''} burn wound(s) on ${[...new Set(made.map(w => w.part))].join(', ')}` : 'no burn'}.`;
 }
 
 export function treat(p, id, treatment, rng = Math.random) {

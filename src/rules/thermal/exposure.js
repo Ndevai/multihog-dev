@@ -137,21 +137,44 @@ export function thermalMinute(p, { active = false, sleeping = false, restL = 0 }
     // transepidermal necrosis; table in Fritz et al. 2021, Mil Med 186 S1:408). Ω ≥ 1: partial thickness; Ω ≥ 10^4: full
     // thickness [ASSUMED threshold]. Immersed segments: the skin surface at the water temperature, as in the constant-
     // temperature hot-water exposures that define the endpoint (Moritz & Henriques 1947); otherwise the skin node [ASSUMED].
-    th.burnO ??= new Array(SEGMENTS.length).fill(0);
-    th.burnt ??= {};
     const burned = [];
-    skin.map((t, i) => water?.segs[i] ? Math.max(t, water.tc) : t).forEach((t, i) => {
-        if (t <= 44) return;
-        th.burnO[i] += 3.1e98 * Math.exp(-6.27e5 / (8.314 * (t + 273.15))) * 60;
-        const depth = th.burnO[i] >= 1e4 ? 'full' : th.burnO[i] >= 1 ? 'partial' : null;
-        if (depth && th.burnt[SEGMENTS[i]] !== depth && !(depth === 'partial' && th.burnt[SEGMENTS[i]] === 'full')) { th.burnt[SEGMENTS[i]] = depth; burned.push({ seg: SEGMENTS[i], depth }); }
-    });
+    skin.map((t, i) => water?.segs[i] ? Math.max(t, water.tc) : t).forEach((t, i) => burned.push(...burnDose(p, i, t, 60)));
     th.core = Math.round(coreOf(run)[4] * 100) / 100;
     th.skinMin = Math.round(Math.min(...skin) * 10) / 10;
     th.coldest = SEGMENTS[skin.indexOf(Math.min(...skin))];
     const waterL = Math.max(0, restL - body.neutralWaterGs * 60 / 1000) + r.waterGs * 60 / 1000;
     // Food energy: JOS-3 total metabolic heat (basal, work, shivering, non-shivering), W × 60 s ÷ 4184 J/kcal.
     return { core: th.core, skin, waterL, frozen, burned, kcal: r.qTotal * 60 / 4184 };
+}
+
+/** Adds Henriques damage for segment i held at surface temperature t (°C) for `seconds`; returns new burns [{ seg, depth }]. */
+export function burnDose(p, i, t, seconds) {
+    p.burnO ??= new Array(SEGMENTS.length).fill(0);
+    p.burnt ??= {};
+    if (t <= 44) return [];
+    p.burnO[i] += 3.1e98 * Math.exp(-6.27e5 / (8.314 * (t + 273.15))) * seconds;
+    const depth = p.burnO[i] >= 1e4 ? 'full' : p.burnO[i] >= 1 ? 'partial' : null;
+    if (!depth || p.burnt[SEGMENTS[i]] === depth || p.burnt[SEGMENTS[i]] === 'full') return [];
+    p.burnt[SEGMENTS[i]] = depth;
+    return [{ seg: SEGMENTS[i], depth }];
+}
+
+// Touching a hot object: the skin surface takes the contact temperature of two semi-infinite bodies, Ti = (bS TS + bM TM) ÷
+// (bS + bM), b = √(k ρ c) (thermal effusivity). k (W/m/K), ρ (kg/m³), c (J/kg/K) from standard property tables; skin as dermis
+// 0.37, 1100, 3400 [ASSUMED], surface 33 °C.
+const EFFUSIVITY_KRC = { steel: [50, 7850, 490], iron: [80, 7870, 450], copper: [400, 8960, 385], aluminium: [237, 2700, 900],
+    glass: [1.0, 2500, 840], stone: [2.8, 2700, 790], wood: [0.12, 500, 1700], water: [0.6, 1000, 4186], oil: [0.15, 900, 1900] };
+const eff = ([k, r, c]) => Math.sqrt(k * r * c);
+const LIQUIDS = ['water', 'oil'];
+export const CONTACT_MATERIALS = Object.keys(EFFUSIVITY_KRC);
+export function contactTemp(material, tempC, skinC = 33) {
+    const m = EFFUSIVITY_KRC[material];
+    if (!m) throw new Error(`Unknown material "${material}". Known: ${CONTACT_MATERIALS.join(', ')}.`);
+    // Spilled or poured liquid keeps renewing at the surface: the skin surface is at the liquid temperature, as in the hot-water
+    // exposures behind the burn endpoint (Moritz & Henriques 1947) [ASSUMED for oil].
+    if (LIQUIDS.includes(material)) return tempC;
+    const bS = eff([0.37, 1100, 3400]), bM = eff(m);
+    return (bS * skinC + bM * tempC) / (bS + bM);
 }
 
 // Core temperature stages (pelvis core node as rectal temperature [ASSUMED]). Hypothermia: Brown et al. 2012, NEJM 367:1930

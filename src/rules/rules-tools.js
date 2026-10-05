@@ -1,4 +1,5 @@
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude } from './body-engine.js';
+import { CONTACT_MATERIALS } from './thermal/exposure.js';
+import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -7,7 +8,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -356,6 +357,18 @@ export function registerRulesTools(enabled) {
     }, ['who', 'treatment'], a => run((st, rng) => {
         const p = (who(st, a.who, a.species).p ?? person(st, a.who));
         return `${treat(p, Number(a.wound), a.treatment, rng)} ${status(a.who, p)}`;
+    }));
+
+    tool('BodyContact', 'Skin touches something hot (a stove, a pot handle, spilled hot water or oil) for a stated time. Code decides any burn.', {
+        who: str('Character name'),
+        species,
+        regions: { type: 'array', items: { type: 'string' }, description: 'Body regions touching it: right hand, left hand, face, chest, back, left foot, …' },
+        material: { type: 'string', enum: CONTACT_MATERIALS },
+        temp_c: { type: 'number', description: 'Temperature of the object or liquid, °C' },
+        seconds: { type: 'number', description: 'Contact time in seconds' },
+    }, ['who', 'regions', 'material', 'temp_c', 'seconds'], a => run((st, rng) => {
+        const p = (who(st, a.who, a.species).p ?? person(st, a.who));
+        return `${contactBurn(p, a.regions, a.material, a.temp_c, a.seconds, rng)} ${status(a.who, p)}`;
     }));
 
     tool('PassTime', 'Advance story time for every tracked character. Call before narrating any time passing. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
