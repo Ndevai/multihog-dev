@@ -302,10 +302,11 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else if (!has(p, 'NO_SLEEP')) { n.slept = 0; n.awake += 1; }
             // Work done against the maximum acceptable work time (§6.7). At rest or asleep it is paid back as muscle glycogen
             // returns: 5 %/h fed, 2 %/h with over a day's food missing; exhaustion ends at 90 % [ASSUMED].
-            // In the water: swimming leisurely 6.0 MET, keeping afloat (treading water, moderate) 3.5 (Compendium of Physical
-            // Activities, Ainsworth et al. 2011) unless held afloat by something.
+            // In the water: swimming leisurely 6.0 MET (Compendium of Physical Activities, Ainsworth et al. 2011); keeping afloat by
+            // treading water 7.5 MET (VO2 23.2–29.4 mL/kg/min across four techniques in 21 skilled treaders, midpoint; van Duijn
+            // et al. 2021, Front Physiol 12:719788), unless held afloat by something.
             const w = p.env?.water, inWater = w && !w.afloat && thermalCapable(p.species);
-            const met = p.workMet ?? (inWater ? (w.swimming ? 6.0 : 3.5) : active ? 3.5 : null);
+            const met = p.workMet ?? (inWater ? (w.swimming ? 6.0 : 7.5) : active ? 3.5 : null);
             if (met && !sleeping && !has(p, 'NOEXERT')) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p, () => gauss(rng))); if (n.work >= 1) p.exhausted = true; }
             else if (n.work > 0) {
                 n.work = Math.max(0, n.work - (n.kcal < KCAL_DAY.rest * kleiber(p) ? 0.05 : 0.02) / 60);
@@ -449,9 +450,11 @@ function frostParts(c, seg) {
     return c.parts.filter(x => SEG_CATS[name].some(k => x.cats.includes(k)) && (!side || sideOf(x) === side.toUpperCase()));
 }
 
-// Swim failure: arm cooling ends swimming (Ducharme & Lounsbury 2007, Appl Physiol Nutr Metab 32:799: mean 47 min in 10–14 °C
-// water). Fit: JOS-3 forearm cooling at 47 min, 12 °C water, 6.0 MET (Compendium, swimming leisurely), 0.6 m/s = 1.78 °C.
-const SWIM_FAIL_DT = 1.78;
+// Swim failure in cold water (≤ 14 °C): a time drawn per immersion from N(52, 18) min swimming in a bathing suit, N(39, 19) clothed
+// (at least 5 min); 10 unhabituated men in 12 °C water stopped from exhaustion before hypothermia (Bowes et al. 2016,
+// Eur J Appl Physiol 116:759); swim failure in 10–14 °C water averaged 47 min (Ducharme & Lounsbury 2007, Appl Physiol
+// Nutr Metab 32:799). Above 14 °C only the work-time exhaustion of §6.7 applies [ASSUMED scope of the data].
+const SWIM_COLD_C = 14;
 // Head under water: breath held for N(24.3, 11.4) s, then water is breathed in (maximal breath-hold on immersion in 11 °C
 // water, 32 subjects, 24.0 ± 6.7 and 24.7 ± 14.6 s; Barwood et al. 2006, Aviat Space Environ Med 77:1136); from then on the
 // not-breathing rule: unconscious, dead after 5 min.
@@ -466,7 +469,12 @@ function water(p, rng) {
     // float or tread 1 min, turn and find the exit, swim 25 yards, get out; American Red Cross survey, 2014), drawn once unless
     // the story says (BodyEnvironment `swimmer`). A non-swimmer in deep water goes under unless afloat.
     if (human) { p.canSwim ??= rng() < 0.46; if (!p.canSwim && w.deep !== false) p.swimFailed = true; }
-    if (human && w.swimming && !p.swimFailed && limbCold(p, 'arm') >= SWIM_FAIL_DT) p.swimFailed = true;
+    if (human && w.swimming && w.tc <= SWIM_COLD_C) {
+        w.swimMin = (w.swimMin ?? 0) + 1;
+        const clo = p.env.clo, clothed = Array.isArray(clo) ? clo.some(c => c > 0.1) : clo > 0.1;
+        w.swimLimit ??= Math.max(5, clothed ? 39 + 19 * gauss(rng) : 52 + 18 * gauss(rng));
+        if (!p.swimFailed && w.swimMin >= w.swimLimit) p.swimFailed = true;
+    }
     // Exhausted (§6.7 maximum acceptable work time used up) and not held afloat: the head goes under [ASSUMED].
     if (human && p.exhausted && !w.afloat) p.swimFailed = true;
     const under = w.segs[0] || (p.swimFailed && !w.afloat) || (p.unconscious && !w.afloat);
