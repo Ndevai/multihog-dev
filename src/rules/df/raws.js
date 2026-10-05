@@ -315,7 +315,7 @@ export function resolveCreature(db, id) {
     const parts = buildParts(bodyTemplates(db, bodyIds));
     const materials = {}, tissues = {};
     const c = { id, name: id.toLowerCase(), size: 0, sizePerc: 100, strength: 1000, blood: false, flags: [], parts, materials, tissues, attacks: [] };
-    let curTissue = null, curMat = null, tlSel = [], attack = null;
+    let curTissue = null, curMat = null, tlSel = [], attack = null, syn = null;
 
     const layerSel = (tissue, kind, value) => select(parts, kind, value).flatMap(p => p.layers.filter(l => l.tissue === tissue));
     const run = (t, args = []) => {
@@ -382,7 +382,20 @@ export function resolveCreature(db, id) {
             case 'ATTACK_VELOCITY_MODIFIER': if (attack) attack.velocity = Number(t[1]); break;
             case 'ATTACK_VERB': if (attack) attack.verb = t[1]; break;
             case 'ATTACK_SKILL': if (attack) attack.skill = t[1]; break;
-            default: if (t.length === 1 && !k.startsWith('ATTACK_')) c.flags.push(k);
+            case 'SYNDROME': syn = { name: null, injected: false, effects: [] }; (c.syndromes ??= []).push(syn); break;
+            case 'SYN_NAME': if (syn) syn.name = t[1]; break;
+            case 'SYN_INJECTED': if (syn) syn.injected = true; break;
+            case 'SYN_AFFECTED_CLASS': case 'SYN_IMMUNE_CREATURE': case 'SYN_CLASS': case 'SYN_CONTACT': case 'SYN_INHALED': case 'SYN_INGESTED': break;
+            default:
+                // Syndrome effects: CE_<KIND>:SEV:n:PROB:n:[flags]:START:n:PEAK:n:END:n, times in ticks.
+                if (syn && k.startsWith('CE_')) {
+                    const e = { kind: k.slice(3), flags: [] };
+                    for (let i = 1; i < t.length; i++) {
+                        if (['SEV', 'PROB', 'START', 'PEAK', 'END'].includes(t[i])) e[t[i].toLowerCase()] = Number(t[++i]);
+                        else e.flags.push(t[i]);
+                    }
+                    syn.effects.push(e);
+                } else if (t.length === 1 && !k.startsWith('ATTACK_')) c.flags.push(k);
         }
     };
     for (const t of list) if (t[0] !== 'BODY') run(t);

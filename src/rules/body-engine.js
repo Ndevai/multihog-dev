@@ -4,7 +4,7 @@ import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
-import { envenom } from './venom.js';
+import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
@@ -414,8 +414,9 @@ function water(p, rng) {
 /** Venom course (§5.2): neurotoxic → breathing stops at collapse (not-breathing rule); haemotoxic → shock, then death. */
 function venomMinute(p) {
     const v = p.venom;
-    if (!v || !v.fatal) return;
+    if (!v) return;
     v.min += 1;
+    if (!v.fatal) return;
     if (v.kind === 'neuro' && v.min >= v.collapse && p.apnea == null) { p.apnea = 0; p.paralysed = true; p.unconscious = 'paralysed by venom'; }
     if (v.kind === 'hemo') {
         if (v.min >= v.shock) p.unconscious ??= 'venom shock';
@@ -529,8 +530,11 @@ export function status(who, p) {
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {
         const v = p.venom;
-        if (v.kind === 'pain') out.push(`envenomed by ${v.species.toLowerCase().replace('_', ' ')}: severe local pain and swelling; not lethal to a healthy adult`);
-        else out.push(`envenomed by ${v.species.toLowerCase().replace('_', ' ')} (${v.mg} mg, ${v.ratio} × the lethal dose)${v.fatal ? (v.kind === 'neuro' ? `: paralysis stops breathing at ${v.collapse} min` : `: shock at ${v.shock} min, death at ${v.death} min`) + ` (now ${v.min} min) unless antivenom` : ': survives without antivenom; local pain and swelling'}`);
+        const sy = activeSymptoms(v).map(e => `${e.kind} ${e.sev}`).join(', ');
+        if (sy) out.push(`venom symptoms (DF severity 0–100): ${sy}${activeSymptoms(v).some(e => e.kind === 'paralysis') ? '; paralysed: cannot move, still breathing' : ''}`);
+        if (v.kind === 'df') out.push(`envenomed by ${v.species.toLowerCase().replace(/_/g, ' ')} (${v.min} min ago): fictional venom, DF symptoms only`);
+        else if (v.kind === 'pain') out.push(`envenomed by ${v.species.toLowerCase().replace(/_/g, ' ')}: severe local pain and swelling; not lethal to a healthy adult`);
+        else out.push(`envenomed by ${v.species.toLowerCase().replace(/_/g, ' ')} (${v.mg} mg, ${v.ratio} × the lethal dose)${v.fatal ? (v.kind === 'neuro' ? `: paralysis stops breathing at ${v.collapse} min` : `: shock at ${v.shock} min, death at ${v.death} min`) + ` (now ${v.min} min) unless antivenom` : ': survives without antivenom; local pain and swelling'}`);
     }
     const al = p.altitude;
     if (al) {
@@ -854,8 +858,9 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     }
     // Venom enters when the bite breaks the skin, cut or smashed (§5.2) [ASSUMED: DF fangs rarely cut by the edge test].
     if (inject && !target.venom && r.tested.some(x => /SKIN/.test(x.layer.tissue) && x.result !== 'held')) {
-        const v = envenom(ac.id, target.mass, () => gauss(rng));
-        if (v) target.venom = v;
+        const b = baseVenom(ac.id), scale = b && b !== ac.id && creature(b)?.size ? ac.size / creature(b).size : 1;
+        const v = envenom(ac.id, target.mass, () => gauss(rng), scale) ?? (symptoms(ac).length ? { species: ac.id, kind: 'df', fatal: false, min: 0 } : null);
+        if (v) { v.symptoms = symptoms(ac); target.venom = v; }
     }
     checkDeath(target);
     const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && r.first.M >= KO_MOMENTUM;
@@ -1031,6 +1036,9 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     const out = s >= 1 || base === 0 ? alert(base) : alert(normCdf((s - demand) / (s * CAPACITY_CV)), `${force} ${Math.round(s * 100)}%`);
     // Hand work under sight with some eyes lost: grasp errors × 4 and grasping 56 % slower with one eye (Mroczkowski &
     // Niechwiej-Szwedo 2021, Exp Brain Res 239:1345, precision reach-to-grasp, 20 people).
+    // DF paralysis syndrome (giant cave spider): the body cannot move [RAW CE_PARALYSIS].
+    if (p.venom && (uses.includes('grasp') || uses.includes('stance') || exertion !== 'none') && activeSymptoms(p.venom).some(e => e.kind === 'paralysis'))
+        return { chance: 0, limit: 'paralysed by venom' };
     if (uses.includes('sight') && uses.includes('grasp') && scores.sight > 0 && scores.sight < 1)
         return { chance: Math.max(0, 1 - 4 * (1 - out.chance)), limit: [out.limit, 'one eye: errors × 4, takes 1.56 × as long'].filter(Boolean).join('; ') };
     return out;

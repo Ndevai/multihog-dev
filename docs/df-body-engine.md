@@ -250,8 +250,11 @@ DF decides which attacks inject venom (`SPECIALATTACK_INJECT_EXTRACT` on the att
 | antivenom | BodyTreat `antivenom` before death stops a fatal course | [ASSUMED] |
 | adder | mean 14 mg (10–18, Minton 1974; midpoint [ASSUMED]), max 18, mouse IV LD50 0.55 mg/kg; haemotoxic course as the rattlesnake. Result: no 20–70 kg person reaches the lethal ratio; under about 13 kg some do | Wikipedia Vipera berus (14 known British deaths 1876–2005, the last a 5-year-old) |
 | copperhead, Gila monster, platypus | pain and swelling only, never fatal | Wikipedia: Agkistrodon contortrix (88 bitten, all survived, none needed antivenom); Gila monster ("normally not fatal to healthy adult humans"); Platypus (pain "can last as long as months") |
-| giant forms, animal people | the base species' venom [ASSUMED] | |
-| giant cave spider, helmet snake | fictional: no data (OPEN-86) | |
+| giant forms, animal people | the base species' venom; yield × DF body size ÷ base body size [ASSUMED isometric]: giant adder × 1340, adder man × 234, giant rattlesnake × 36 → every bite on a 70 kg person is lethal untreated | [RAW] BODY_SIZE |
+| symptoms | each biting creature's DF syndrome (`SYNDROME` with `SYN_INJECTED`; `CE_<kind>:SEV:…:START:…:PEAK:…:END:…`) runs from the bite; 1 tick = 1.2 min (1200 ticks a day). Status lists the active effects with DF severity. Adder: pain 12 min–48 h, swelling and blisters 1–30 h, nausea 8–24 h. Rattlesnake and helmet snake: necrosis 1 h–2.5 days | [RAW] syndromes; DF wiki "Time" (1200 ticks per day) |
+| paralysis (`CE_PARALYSIS`) | while active, checks that use grasp or stance or any exertion fail; breathing continues [RAW: DF paralysis leaves breathing]. Giant cave spider: 6–24 min | [RAW] |
+| other DF effects (pain, nausea, dizziness, fever, swelling, blisters, bleeding, necrosis, oozing, bruising) | status only (pain OPEN-77) | |
+| helmet snake, giant cave spider | fictional: DF symptoms only, never fatal by dose | |
 
 Scratch runs (70 kg, bitten on the shin, 150 untreated each): rattlesnake 19 dead (12.7 %), king cobra 47 (31 %), black mamba 131 (87 %), bushmaster 141 (94 %); antivenom at 20 min saved all. A 20 kg child: rattlesnake 98.5 %, because one threshold and a narrow yield spread make death depend steeply on body mass.
 
@@ -531,7 +534,7 @@ What these show:
 | OPEN-83 | thinking below 34.5 °C core; heat stroke time to death and its dependence on degree-minutes over 40 °C (Hancock & Vasmatzidis 2003 tie heat effects to deep body temperature but give no single curve; Pilcher et al. 2002: −14.9 % at WBGT ≥ 32.2 °C and −13.9 % at ≤ 10 °C air, by air not core); touch and fine finger work from skin temperature (Heus et al. 1995: 15 °C local hand skin as the minimum criterion) |
 | OPEN-84 | frostbite depth from time frozen; cold shock and swim failure in cold water; cooling in ice water about half the published rate; clothing wet in air (rain, sweat); head under water |
 | OPEN-85 | altitude: acclimatization rule is a pace guideline turned into a model (no incidence by ascent rate), loss of acclimatization after descent, HAPE death time measured, death after hypoxic unconsciousness, effects on thinking, cold and air pressure in the heat model |
-| OPEN-86 | venom: copperhead yield and LD50 (only "an estimated lethal dose around 100 mg" found), giant forms' larger yield, giant cave spider and helmet snake (fictional) |
+| OPEN-86 | venom: copperhead yield and LD50 (only "an estimated lethal dose around 100 mg" found); venom-yield allometry (isometric assumed); mechanical effects of DF symptoms other than paralysis; SEV dilution by body size (SIZE_DILUTES) |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 12 species and the bird median; 60-dB ranges for 30. Missing lowest thresholds: dog, cat, horse, cattle, pig, goat, sheep, elephant (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |

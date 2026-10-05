@@ -15,8 +15,8 @@ export const VENOMS = {
     // not fatal to healthy adult humans"), platypus spur (pain "can last as long as months").
     COPPERHEAD_SNAKE: { kind: 'pain' }, GILA_MONSTER: { kind: 'pain' }, PLATYPUS: { kind: 'pain' },
 };
-// Giant forms and animal people use the base species' venom [ASSUMED].
-const base = id => [id, id.replace(/^GIANT_|, GIANT$|_MAN$| MAN$/, '')].find(k => VENOMS[k]);
+// Giant forms and animal people use the base species' venom, yield × their DF body size ÷ the base's [ASSUMED isometric].
+export const baseVenom = id => [id, id.replace(/^GIANT_|, GIANT$|_MAN$| MAN$/, '')].find(k => VENOMS[k]);
 // Spread: ln(max ÷ mean) ÷ 2.326; a species without a mean takes the rattlesnake spread [ASSUMED].
 const sigma = v => v.mean ? Math.log(v.max / v.mean) / Z99 : Math.log(750 / 300) / Z99;
 const median = v => v.mean ?? v.max / Math.exp(Z99 * sigma(v));
@@ -26,12 +26,20 @@ export const LETHAL_R = RS.mean / (RS.ld50 * 70) * Math.exp(1.0364 * sigma(RS));
 // Haemotoxic deaths: shock and death times observed in a bushmaster case, used for both vipers [ASSUMED].
 
 /** The venom course for a bite by `species` on a victim of `mass` kg, or null when DF gives no venom data. */
-export function envenom(species, mass, gauss) {
-    const id = base(species), v = VENOMS[id];
+export function envenom(species, mass, gauss, scale = 1) {
+    const id = baseVenom(species), v = VENOMS[id];
     if (!v) return null;
     if (v.kind === 'pain') return { species: id, kind: 'pain', fatal: false, min: 0 };
-    const mg = median(v) * Math.exp(sigma(v) * gauss());
+    const mg = scale * median(v) * Math.exp(sigma(v) * gauss());
     const r = mg / (v.ld50 * mass);
     return { species: id, mg: Math.round(mg), ratio: Math.round(r / LETHAL_R * 100) / 100, fatal: r > LETHAL_R, kind: v.kind, min: 0,
         collapse: v.collapse ?? null, shock: v.shock ?? null, death: v.death ?? null };
 }
+
+// DF syndrome effects of the bite (CE_ tokens), times in ticks of 72 s (1200 ticks a day, DF wiki "Time").
+export const TICK_MIN = 1.2;
+export function symptoms(c) {
+    const syn = c?.syndromes?.find(x => x.injected);
+    return syn ? syn.effects.map(e => ({ kind: e.kind.toLowerCase(), sev: e.sev, start: e.start * TICK_MIN, peak: e.peak * TICK_MIN, end: e.end * TICK_MIN })) : [];
+}
+export const activeSymptoms = v => (v.symptoms ?? []).filter(e => v.min >= e.start && v.min < e.end);
