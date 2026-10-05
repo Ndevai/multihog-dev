@@ -167,7 +167,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
     if (minutes > 0 && (p.unconscious === 'knocked out' || p.unconscious === 'choked')) p.unconscious = null;
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
-        if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = 'suffocation'; return; }
+        if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         const heat = p.env && thermalCapable(p.species) ? thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng)) : null;
         if (heat) {
             const st = coreStage(heat.core);
@@ -175,6 +175,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             if (st === 'hypothermia III') p.unconscious ??= 'hypothermia';
             else if (p.unconscious === 'hypothermia') p.unconscious = null;
             for (const seg of heat.frozen) for (const part of frostParts(c, seg)) addWound(p, { part, type: 'frostbite' }, rng);
+            water(p, rng);
         }
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
@@ -285,7 +286,7 @@ function checkDeath(p) {
     const lungs = c.parts.filter(x => x.flags.includes('BREATHE'));
     const apneic = lungs.length > 0 && !c.flags.includes('NOBREATHE') && lungs.every(l => !works(l));
     if (apneic && p.apnea == null) { p.apnea = 0; p.unconscious = 'not breathing'; }
-    if (!apneic && p.apnea != null) { p.apnea = null; if (p.unconscious === 'not breathing') p.unconscious = null; }
+    if (!apneic && p.apnea != null && !p.drowning) { p.apnea = null; if (p.unconscious === 'not breathing') p.unconscious = null; }
 }
 
 // Frostbite most often strikes cheeks, ears, nose, fingers and toes (Wikipedia "Frostbite", citing McIntosh 2014): when the
@@ -300,6 +301,28 @@ function frostParts(c, seg) {
     return c.parts.filter(x => SEG_CATS[name].some(k => x.cats.includes(k)) && (!side || sideOf(x) === side.toUpperCase()));
 }
 
+// Swim failure: arm cooling ends swimming (Ducharme & Lounsbury 2007, Appl Physiol Nutr Metab 32:799: mean 47 min in 10–14 °C
+// water). Fit: JOS-3 forearm cooling at 47 min, 12 °C water, 6.0 MET (Compendium, swimming leisurely), 0.6 m/s = 1.78 °C.
+const SWIM_FAIL_DT = 1.78;
+// Head under water: breath held for N(24.3, 11.4) s, then water is breathed in (maximal breath-hold on immersion in 11 °C
+// water, 32 subjects, 24.0 ± 6.7 and 24.7 ± 14.6 s; Barwood et al. 2006, Aviat Space Environ Med 77:1136); from then on the
+// not-breathing rule: unconscious, dead after 5 min.
+const BREATH_HOLD_S = [24.3, 11.4];
+function water(p, rng) {
+    const w = p.env?.water;
+    if (!w) return;
+    if (w.swimming && !p.swimFailed && limbCold(p, 'arm') >= SWIM_FAIL_DT) p.swimFailed = true;
+    const under = w.segs[0] || (p.swimFailed && !w.afloat) || (p.unconscious && !w.afloat);
+    if (under && p.apnea == null) {
+        p.breathHold ??= Math.max(5, BREATH_HOLD_S[0] + BREATH_HOLD_S[1] * gauss(rng));
+        p.underS = (p.underS ?? 0) + 60;
+        if (p.underS >= p.breathHold) { p.apnea = 0; p.drowning = true; p.unconscious = 'drowning'; }
+    } else if (!under) {
+        p.underS = 0; p.breathHold = null;
+        if (p.drowning) { p.apnea = null; p.drowning = false; p.unconscious ??= 'near-drowning'; }
+    }
+}
+
 /**
  * Sets (or clears, env = null) the air a person is in: { air_c, radiant_c, humidity_pct, wind_kmh (weather, 10 m) or air_speed_ms
  * (at the body, indoors), clothing: { ensemble, garments }, face_covered, met, posture }. Throws on unknown clothing.
@@ -312,7 +335,9 @@ export function setEnvironment(p, env) {
         v: env.air_speed_ms ?? Math.max(0.1, (env.wind_kmh ?? 0) / 3.6 * BODY_WIND), wind10: env.air_speed_ms != null ? 0 : env.wind_kmh ?? 0,
         clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null,
         faceBare: !env.face_covered, handsBare: !(/gloves/i.test(cl.ensemble ?? '') || covers('hand')),
-        water: env.water_c != null && env.immersed?.length ? { tc: env.water_c, speed: env.water_speed_ms ?? 0, segs: immersion(env.immersed), suit: !!env.immersion_suit } : null };
+        water: env.water_c != null && env.immersed?.length ? { tc: env.water_c, speed: env.water_speed_ms ?? 0, segs: immersion(env.immersed), suit: !!env.immersion_suit,
+            swimming: !!env.swimming, afloat: !!env.afloat } : null };
+    if (!p.env.water) { p.swimFailed = false; p.underS = 0; p.breathHold = null; if (p.drowning) { p.apnea = null; p.drowning = false; p.unconscious ??= 'near-drowning'; } }
     if (p.thermal) { p.thermal.bareDose = 0; }
     if (p.env.met == null) delete p.env.met;
     if (p.env.posture == null) delete p.env.posture;
@@ -734,7 +759,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
 const waterStage = p => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };
 const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
-    heat: coreStage(p.thermal?.core), core: p.thermal?.core, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
+    heat: coreStage(p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id),
 });
 
@@ -749,6 +774,7 @@ function changes(who, a, b) {
         if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
         if (b.heat !== a.heat) out.push(`${who}: ${b.heat ?? 'core temperature between 35 and 40 °C'} (core ${b.core} °C)`);
+        if (b.swim && !a.swim) out.push(`${who}: arms too cold to keep swimming`);
         const frost = b.frost.filter(x => !a.frost.includes(x));
         if (frost.length) out.push(`${who}: frostbite on ${frost.join(', ')}`);
     }

@@ -74,7 +74,9 @@ export function immersion(regions = []) {
     const segs = new Array(SEGMENTS.length).fill(false);
     const words = regions.map(r => String(r).toLowerCase());
     const all = words.includes('whole body') || words.includes('neck down');
-    for (const s of all ? SEGMENTS.filter(x => x !== 'head') : words.flatMap(segmentsOf)) segs[SEGMENTS.indexOf(s)] = true;
+    const under = words.includes('submerged') || words.includes('head');
+    for (const s of all || under ? SEGMENTS.filter(x => x !== 'head') : words.flatMap(segmentsOf)) segs[SEGMENTS.indexOf(s)] = true;
+    if (under) segs[0] = true;
     return segs;
 }
 
