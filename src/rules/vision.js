@@ -28,3 +28,15 @@ export function see({ size = 0.5, distance = 10, light = 'daylight', visibility 
     const r = k => Math.round(ttpf(cycles / N50[k]) * 100) / 100;
     return { detect: r('detect'), recognize: r('recognize'), identify: r('identify'), cycles: Math.round(cycles * 10) / 10 };
 }
+
+// Species acuity as a share of human (60 cycles/degree), Caves, Brandley & Johnsen 2018 (Trends Ecol Evol 33:358) as reported
+// by Duke University (24 May 2018): chimpanzees and other primates about 60 (1); wedge-tailed eagle 140 (2.33; for the DF eagle
+// [ASSUMED]); dogs and cats 4–7 times less (1 ÷ 5.5); rats 40–60 times less (1 ÷ 50); mice over 100 times less (1 ÷ 100);
+// most birds under 30 (0.5 as a ceiling [ASSUMED]); the sharpest fish about 30 (0.5 ceiling [ASSUMED]). Cats for the big cats,
+// dogs for wolves [ASSUMED family]. Unknown species: human. Same light dependence as humans [ASSUMED].
+const ACUITY = { CHIMPANZEE: 1, BONOBO: 1, GORILLA: 1, ORANGUTAN: 1, MACAQUE_RHESUS: 1, BIRD_EAGLE: 140 / 60, DOG: 1 / 5.5, WOLF: 1 / 5.5,
+    CAT: 1 / 5.5, LION: 1 / 5.5, TIGER: 1 / 5.5, LEOPARD: 1 / 5.5, JAGUAR: 1 / 5.5, COUGAR: 1 / 5.5, RAT: 1 / 50, MOUSE: 1 / 100 };
+export function acuityOf(id = 'HUMAN') {
+    const base = String(id).toUpperCase().replace(/^GIANT_/, '').replace(/_MAN$/, '');
+    return ACUITY[base] ?? (base.startsWith('BIRD_') ? 0.5 : base.startsWith('FISH_') ? 0.5 : 1);
+}

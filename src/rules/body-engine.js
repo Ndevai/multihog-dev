@@ -4,7 +4,7 @@ import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
 import { reach, hearSound, SOUNDS, BAND_HZ } from './acoustics.js';
-import { see } from './vision.js';
+import { see, acuityOf } from './vision.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
@@ -1002,7 +1002,7 @@ export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight',
     if (v.dead || v.unconscious) return `${vs} perceives nothing (${v.dead ? 'dead' : 'unconscious'}).`;
     const eyes = vc.parts.filter(x => x.flags.includes('SIGHT'));
     if (eyes.length && !eyes.some(worksFn(v, vc))) return `${vs} cannot see (no working eye).`;
-    const r = see({ size: size_m, distance: distance_m, light, visibility: visibility_m });
+    const r = see({ size: size_m, distance: distance_m, light, visibility: visibility_m, acuityFactor: acuityOf(v.species) });
     const u = rng();
     const what = `${size_m} m target at ${distance_m} m, ${light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}`;
     const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse) but not which one'
