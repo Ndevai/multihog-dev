@@ -408,6 +408,19 @@ Set with BodyEnvironment `altitude_m` (and `sudden_ascent` for arrival within mi
 
 Scratch runs (400 people each, after 13 h): AMS 0 % at 1500 m, 40 % at 3650 m, 53 % at 4559 m. A load-carrying task that 80 % pass at sea level: 68 % at 1500 m, 37 % at 3650 m, 22 % at 4559 m (before any sickness). Sudden arrival at 35 000 ft: unconscious in the first minute. 2000 people at 4600 m for 40 h: 20 HACE (1.0 %), 123 HAPE (6.2 %); every HACE case left there died, every one taken down within 2 h of onset lived.
 
+### 6.7 Walking with a load
+
+PassTime `walking` entries (speed, load, slope, terrain) set the walker's activity for the span: METs = Pandolf watts ÷ (1.163 W/kg × body kg). It drives food energy, and heat (JOS-3 or the animal model) when conditions are set; PassTime reports the distance covered.
+
+| Quantity | Rule | Source |
+|---|---|---|
+| metabolic rate | M (W) = 1.5 W + 2.0 (W + L)(L ÷ W)² + η (W + L)(1.5 V² + 0.35 V G); W body kg, L load kg, V m/s, G grade %; downhill counted as level [ASSUMED] | Pandolf, Givoni & Goldman 1977, J Appl Physiol 43:577 (via Wikipedia "Pandolf equation") |
+| terrain η | road 1.0, dirt road 1.1, light brush 1.2, heavy brush 1.5, swamp 1.8, loose sand 2.1, soft snow 15 cm 2.5, 25 cm 3.3, 35 cm 4.1 | Soule & Goldman 1972, J Appl Physiol 32:706 |
+
+Examples (70 kg): road, no load, 5 km/h: 308 W, 3.8 MET (Compendium walking 3 mph: 3.5); dirt road, 20 kg, 5 km/h: 5.0 MET; 30 kg up a 10 % slope at 4 km/h: 9.5 MET; 20 kg in 25 cm snow at 4 km/h: 8.2 MET.
+
+Open (OPEN-87): how long a pace can be kept (fatigue, exhaustion), downhill cost (Santee et al. 2001 model; equation not reachable), running.
+
 ## 7. Tools
 
 | Tool | Change |

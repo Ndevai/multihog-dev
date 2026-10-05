@@ -190,7 +190,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         let heat = null;
         if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
         else if (p.env && c?.homeotherm) {
-            const r = endothermMinute(p, c, { met: p.env.met ?? (sleeping ? 0.95 : active ? 3.5 : 1.3) });
+            const r = endothermMinute(p, c, { met: p.env.met ?? p.workMet ?? (sleeping ? 0.95 : active ? 3.5 : 1.3) });
             // Stages at the human distances from the set point (−2, −5, −9, −13, +3 °C) [ASSUMED].
             p.thermal.stageCore = round(r.core - r.set + 37, 2);
             heat = { core: p.thermal.stageCore, frozen: [], kcal: r.kcal, waterL: WATER_L_DAY.rest * kleiber(p) / DAY_MIN + r.evapL };
@@ -205,7 +205,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         }
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
-            n.kcal += heat ? heat.kcal : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
+            n.kcal += heat ? heat.kcal : p.workMet ? p.workMet * 1.163 * p.mass * 60 / 4184 : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
             if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
             if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }

@@ -1,5 +1,6 @@
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
+import { TERRAIN, pandolf, metOf } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
@@ -148,7 +149,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
 - A spell is cast → CastSpell. A treatment is applied → BodyTreat. Someone drinks or eats → BodyIntake.
-- PassTime lists who is active (walking, working, fighting, in heat) and who sleeps.
+- PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
 - Describe a character's injuries, blood loss or energy from BodyStatus.
@@ -360,12 +361,30 @@ export function registerRulesTools(enabled) {
         resting: { type: 'array', items: { type: 'string' }, description: 'Characters not casting or fighting during this time' },
         active: { type: 'array', items: { type: 'string' }, description: 'Characters walking, working, fighting or in heat during this time (more water and food used)' },
         sleeping: { type: 'array', items: { type: 'string' }, description: 'Characters asleep during this time' },
+        walking: {
+            type: 'array',
+            description: 'Characters walking or marching during this time, with pace, load and ground; sets their energy use, heat and distance covered',
+            items: { type: 'object', properties: {
+                who: str('Character'), speed_kmh: { type: 'number', description: 'Walking speed, km/h (stroll 3, normal 5, brisk 6.5)' },
+                load_kg: { type: 'number', description: 'Carried load, kg' }, grade_pct: { type: 'number', description: 'Slope, % (uphill positive)' },
+                terrain: { type: 'string', enum: Object.keys(TERRAIN) },
+            }, required: ['who', 'speed_kmh'] },
+        },
     }, ['minutes'], a => run((st, rng) => {
         const asked = Math.max(0, Math.round(a.minutes));
+        const walkers = [];
+        for (const w of a.walking || []) {
+            const p = st.people?.[w.who];
+            if (!p) continue;
+            try { p.workMet = metOf(pandolf(p.mass, w.load_kg, w.speed_kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass); }
+            catch (e) { return `${e.message} Nothing recorded.`; }
+            walkers.push([w.who, p, w.speed_kmh]);
+        }
         const { elapsed, events } = advanceAll(st.people || {}, asked, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []) });
-        const head = events.length
+        const walked = walkers.map(([n, p, kmh]) => { const met = p.workMet; delete p.workMet; return `${n} walked ${Math.round(kmh * elapsed / 60 * 10) / 10} km at ${Math.round(met * 10) / 10} MET`; });
+        const head = (events.length
             ? `Time stopped after ${elapsed} of ${asked} minutes: ${events.join('; ')}. ${asked - elapsed} minutes remain.`
-            : `${elapsed} minutes passed.`;
+            : `${elapsed} minutes passed.`) + (walked.length ? ` ${walked.join('; ')}.` : '');
         const lines = Object.entries(st.people || {}).map(([who, p]) => status(who, p));
         return [head, ...lines].join('\n');
     }));

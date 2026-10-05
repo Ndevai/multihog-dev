@@ -110,7 +110,7 @@ export function thermalMinute(p, { active = false, sleeping = false, restL = 0 }
     th.freezeC ??= Math.round((FREEZE_MEAN + FREEZE_SD * gauss()) * 100) / 100;
     th.bareQ ??= rng();  // where in each time range this person's skin freezes, uniform [ASSUMED]
     const e = p.env;
-    const met = e.met ?? (sleeping ? MET.sleeping : active ? MET.active : MET.resting);
+    const met = e.met ?? p.workMet ?? (sleeping ? MET.sleeping : active ? MET.active : MET.resting);
     // MET → multiple of basal metabolism: 1 MET = 1.163 W per kg (1 kcal/kg/h); JOS-3 needs at least 1.
     const par = Math.max(1, met * 1.163 * th.params.weight / basalMet(th.params.height, th.params.weight, th.params.age, th.params.sex));
     const posture = e.posture ?? (sleeping ? 'lying' : active ? 'standing' : 'sitting');
