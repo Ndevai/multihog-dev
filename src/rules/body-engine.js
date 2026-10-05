@@ -3,7 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
-import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
+import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -311,7 +311,8 @@ export function setEnvironment(p, env) {
     p.env = { tdb: env.air_c, tr: env.radiant_c ?? env.air_c, rh: env.humidity_pct ?? 50,
         v: env.air_speed_ms ?? Math.max(0.1, (env.wind_kmh ?? 0) / 3.6 * BODY_WIND), wind10: env.air_speed_ms != null ? 0 : env.wind_kmh ?? 0,
         clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null,
-        faceBare: !env.face_covered, handsBare: !(/gloves/i.test(cl.ensemble ?? '') || covers('hand')) };
+        faceBare: !env.face_covered, handsBare: !(/gloves/i.test(cl.ensemble ?? '') || covers('hand')),
+        water: env.water_c != null && env.immersed?.length ? { tc: env.water_c, speed: env.water_speed_ms ?? 0, segs: immersion(env.immersed), suit: !!env.immersion_suit } : null };
     if (p.thermal) { p.thermal.bareDose = 0; }
     if (p.env.met == null) delete p.env.met;
     if (p.env.posture == null) delete p.env.posture;

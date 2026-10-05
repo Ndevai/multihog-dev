@@ -341,8 +341,12 @@ export function step(body, env, dtime = 60, { passive = false, avaZero = false, 
     const clo = arr(env.clo ?? 0), iclo = arr(env.iclo ?? 0.45), par = env.par ?? 1.25, posture = env.posture ?? 'standing';
     const tcr = INDEX.core.map(k => body.t[k]), tsk = INDEX.skin.map(k => body.t[k]);
     const hc = fixedHc(convCoef(posture, v, tdb, tsk), v), hr = fixedHr(HR[posture]);
+    // Added: segments in water (env.water = { tc, hc, segs }) exchange heat with it by convection only; no radiation, no evaporation.
+    const wat = env.water;
+    if (wat) for (let i = 0; i < N; i++) if (wat.segs[i]) { hc[i] = wat.hc; hr[i] = 0; tdb[i] = tr[i] = wat.tc; }
     const to = tdb.map((t, i) => (hc[i] * t + hr[i] * tr[i]) / (hc[i] + hr[i]));
     const rT = dryR(hc, hr, clo), rEt = wetR(hc, clo, iclo, 16.5);
+    if (wat) for (let i = 0; i < N; i++) if (wat.segs[i]) rEt[i] = 1e9;
     const errCr = tcr.map((t, i) => t - (passive ? t : body.setCr[i]));
     const errSk = tsk.map((t, i) => t - (passive ? t : body.setSk[i]));
     const { wet, eSk, eMax, eSweat } = evaporation(errCr, errSk, tsk, tdb, rh, rEt, body);

@@ -268,7 +268,7 @@ export function registerRulesTools(enabled) {
         return `${choke(p, a.seconds, holder, rng)} ${status(a.who, p)}`;
     }));
 
-    tool('BodyEnvironment', 'Set the air and clothing characters are in whenever they enter a different climate, the weather changes, or they change clothes; PassTime then works out body temperature, sweating, hypothermia, heat stroke and frostbite. clear = back to unrecorded (comfortable) conditions.', {
+    tool('BodyEnvironment', 'Set the air, water and clothing characters are in whenever they enter a different climate, go into or out of water, the weather changes, or they change clothes; PassTime then works out body temperature, sweating, hypothermia, heat stroke and frostbite. clear = back to unrecorded (comfortable) conditions.', {
         who: { type: 'array', items: { type: 'string' }, description: 'Characters in these conditions' },
         air_c: { type: 'number', description: 'Air temperature, °C' },
         radiant_c: { type: 'number', description: 'Mean radiant temperature, °C: about air temperature in shade or indoors; higher in strong sun or by a fire (desert sun 60–70), lower under a clear night sky' },
@@ -281,6 +281,10 @@ export function registerRulesTools(enabled) {
             description: 'Clothing as garments (alone or on top of an ensemble). Name from the list or clo for anything else; covers = body regions (head, neck, chest, back, torso, pelvis, shoulders, arms, forearms, hands, thighs, lower legs, legs, feet, or one side: left hand…)',
             items: { type: 'object', properties: { name: str(`Garment: ${Object.keys(GARMENTS).join('; ')}`), clo: { type: 'number', description: 'Insulation of a garment not in the list, clo' }, covers: { type: 'array', items: { type: 'string' } } }, required: ['covers'] },
         },
+        water_c: { type: 'number', description: 'Water temperature, °C, when any body region is in water' },
+        immersed: { type: 'array', items: { type: 'string' }, description: 'Regions in water: "whole body" (neck down), or regions (legs, feet, torso, arms…)' },
+        water_speed_ms: { type: 'number', description: 'Water moving past the body (current, swimming), m/s. Default 0' },
+        immersion_suit: { type: 'boolean', description: 'Clothing is a dry suit or immersion suit that keeps water out' },
         face_covered: { type: 'boolean', description: 'Face covered (mask, balaclava, scarf over the face). Default false' },
         met: { type: 'number', description: 'Activity in METs for the whole span when fixed (Compendium of Physical Activities values: sleeping 0.95, sitting quietly 1.3, walking 3 mph 3.5). Omit to follow PassTime (sleeping 0.95, resting 1.3, active 3.5)' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },

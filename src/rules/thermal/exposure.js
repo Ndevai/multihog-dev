@@ -62,6 +62,22 @@ export function clothingClo(clothing = {}) {
     return out;
 }
 
+// Water: still fresh water 220 W/m²K (range 100–230); moving 427 at 0.5 m/s to 580 at 0.75 m/s (Junaid et al. 2024, Heliyon
+// e33022, citing Nadel et al. 1974). Clothing under water: its insulation is trapped air; water conducts 0.6 W/mK against air
+// 0.026, so wet-through clothing keeps clo × 0.026 ÷ 0.6 [stated process].
+export function waterHc(speed = 0) {
+    if (speed < 0.5) return 220 + (427 - 220) * Math.max(0, speed) / 0.5;
+    return Math.min(580, 427 + (580 - 427) * (speed - 0.5) / 0.25);
+}
+const WET_CLO = 0.026 / 0.6;
+export function immersion(regions = []) {
+    const segs = new Array(SEGMENTS.length).fill(false);
+    const words = regions.map(r => String(r).toLowerCase());
+    const all = words.includes('whole body') || words.includes('neck down');
+    for (const s of all ? SEGMENTS.filter(x => x !== 'head') : words.flatMap(segmentsOf)) segs[SEGMENTS.indexOf(s)] = true;
+    return segs;
+}
+
 const models = new Map();
 function modelOf(params) {
     const key = JSON.stringify(params);
@@ -98,7 +114,9 @@ export function thermalMinute(p, { active = false, sleeping = false, restL = 0 }
     const posture = e.posture ?? (sleeping ? 'lying' : active ? 'standing' : 'sitting');
     const run = { ...body, t: th.t };
     // Shivering stops below 32 °C core (Swiss stage II: drowsy, not shivering; Brown et al. 2012).
-    const r = step(run, { tdb: e.tdb, tr: e.tr ?? e.tdb, rh: e.rh ?? 50, v: e.v ?? 0.1, clo: e.clo ?? 0, par, posture }, 60, { shivStopsBelow: 32 });
+    const water = e.water ? { tc: e.water.tc, hc: waterHc(e.water.speed), segs: e.water.segs } : null;
+    const clo = (Array.isArray(e.clo) ? e.clo : new Array(SEGMENTS.length).fill(e.clo ?? 0)).map((c, i) => water?.segs[i] && !e.water.suit ? c * WET_CLO : c);
+    const r = step(run, { tdb: e.tdb, tr: e.tr ?? e.tdb, rh: e.rh ?? 50, v: e.v ?? 0.1, clo, par, posture, water }, 60, { shivStopsBelow: 32 });
     th.t = run.t;
     const skin = skinOf(run);
     const frozen = SEGMENTS.filter((s, i) => skin[i] < th.freezeC && !th.frozen.includes(s));

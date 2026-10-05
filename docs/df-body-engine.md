@@ -319,6 +319,8 @@ Characters given conditions with BodyEnvironment are simulated minute by minute 
 
 Added to JOS-3:
 
+- Water: immersed segments exchange heat with water by convection only (radiation 0, evaporation 0): still fresh water 220 W/m²K; moving water 427 W/m²K at 0.5 m/s to 580 at 0.75 m/s, linear between and from still water (Junaid et al. 2024, Heliyon e33022, citing Nadel et al. 1974). Wet-through clothing keeps clo × 0.026 ÷ 0.6 (insulation is trapped air; conductivity of air 0.026, water 0.6 W/mK) [stated process]; an immersion suit keeps its clo.
+
 - Shivering heat is at most 3.9 × basal, because peak shivering is 4.9 × resting metabolism in total (Eyolfson et al. 2001, Eur J Appl Physiol 84:100; 15 subjects, 4.9 ± 0.8). Without the cap the model shivered at 1000 W nude at −20 °C and never cooled.
 - Shivering stops below 32 °C core (Swiss stage II: drowsy, not shivering).
 
@@ -330,6 +332,7 @@ Added to JOS-3:
 | hypothermia III | 28–24 °C: unconscious | same |
 | hypothermia IV | < 24 °C: no vital signs → dead | same; [ASSUMED dead without extracorporeal rewarming] |
 | heat stroke | core > 40 °C (status; effects OPEN-83) | Gaudio & Grissom 2016, J Emerg Med 50:607 |
+| food energy | JOS-3 total metabolic heat each minute (basal, work, shivering, non-shivering) replaces the 1400/2400 kcal/day rows: sitting 96 kcal/h, sleeping 78, walking 246, nude at 0 °C shivering 338 | JOS-3; Compendium METs |
 | water | (1.5 L/day − the model's own skin and breath loss at its neutral set point) + skin and breath loss this minute (sweat, diffusion, breath) | JOS-3; §6.3 |
 | frostbite, covered or any segment | segment skin below the person's freezing temperature, drawn once from N(−6.3, 0.91) °C | Danielsson 1996, J Appl Physiol 81:2666: risk 5 % at −4.8 °C to 95 % at −7.8 °C skin |
 | frostbite, bare face and hands | wind chill index ≤ −28 (JAG/TI 2001 formula, air ≤ 10 °C, wind ≥ 4.8 km/h): time to freeze −28 to −39: 10–30 min; −40 to −47: 5–10; −48 to −54: 2–5; ≤ −55: under 2; each person at a fixed uniform position in the range; the dose resets above −28 [ASSUMED] | Environment and Climate Change Canada categories (Coaching Association of Canada sheet); Wikipedia "Wind chill" formula |
@@ -337,7 +340,7 @@ Added to JOS-3:
 | cold limbs | ΔT = set point − limb core node (forearms for arms, lower legs for legs; muscle temperature [ASSUMED]). Force abilities (grasp, stance) × (1 − 0.02 ΔT); block and dodge times ÷ (1 − 0.05 ΔT); motor nerve speed 49 − 2.2 ΔT m/s in reaction time | Bergh & Ekblom 1979, Acta Physiol Scand 107:33 (muscle 30–39 °C: isometric force −2 %/°C, power and speed −4 to −6 %/°C); Notermans et al. 1994, Muscle Nerve 17:516 (2.2 m/s per °C); linear beyond 30 °C [ASSUMED] |
 | frostbite wound | superficial; closes in 7–21 days | partial-thickness burn row [ASSUMED proxy]; depth by duration OPEN-84 |
 
-Results (70 kg, scratch runs): nude at 0 °C in 25 km/h wind, resting: stage I at 1.5 h, stage II at 2.9 h, unconscious at 3.7 h, dead at 4.5 h. Nude at −20 °C in 40 km/h wind: lower legs freeze at 10 min, fingers at 15, toes at 21, the face at 29, unconscious at 1.4 h, dead at 1.8 h. Jacket ensemble at −20 °C in 50 km/h wind, walking, bare face and hands: face and fingers frozen at 20 min, core 36.9 °C. Down suit with hood and gloves at −30 °C, walking: core 37.7 °C; bare face frozen at 9 min. Rope climb at 80 % share (grasp): nude at 0 °C in 25 km/h wind: forearms 6.2 °C below set point at 0.5 h → 58 %, 12.1 °C at 2 h → 28 %; jacket at −20 °C in 50 km/h wind: 5.8 °C at 2 h → 60 %. Desert at 45 °C, sun (radiant 60 °C), 20 % RH, walking in T-shirt and shorts: 5.1 L water lost in 6 h (5 % of body mass at 4.2 h), core 38.5 °C. 22 °C indoors, resting, 24 h: 1.4 L.
+Results (70 kg, scratch runs): nude at 0 °C in 25 km/h wind, resting: stage I at 1.5 h, stage II at 2.9 h, unconscious at 3.7 h, dead at 4.5 h. Nude at −20 °C in 40 km/h wind: lower legs freeze at 10 min, fingers at 15, toes at 21, the face at 29, unconscious at 1.4 h, dead at 1.8 h. Jacket ensemble at −20 °C in 50 km/h wind, walking, bare face and hands: face and fingers frozen at 20 min, core 36.9 °C. Down suit with hood and gloves at −30 °C, walking: core 37.7 °C; bare face frozen at 9 min. Whole body in still water (75 kg, wet jacket clothing): 0 °C: stage I 1.0 h, unconscious 2.5 h, dead 3.2 h; 5 °C: 1.4 h, 3.8 h, 4.6 h; 10 °C: stage I at 2.7 h, alive at 24 h; 15 and 20 °C: no stage in 24 h. Published guidance puts unconsciousness from hypothermia at about 1 h in ice water (Giesbrecht's 1-10-1 rule): the model cools about half as fast there. Deaths in the first minutes (cold shock gasp, swim failure, drowning) are outside it (OPEN-84). Rope climb at 80 % share (grasp): nude at 0 °C in 25 km/h wind: forearms 6.2 °C below set point at 0.5 h → 58 %, 12.1 °C at 2 h → 28 %; jacket at −20 °C in 50 km/h wind: 5.8 °C at 2 h → 60 %. Desert at 45 °C, sun (radiant 60 °C), 20 % RH, walking in T-shirt and shorts: 5.1 L water lost in 6 h (5 % of body mass at 4.2 h), core 38.5 °C. 22 °C indoors, resting, 24 h: 1.4 L.
 
 ## 7. Tools
 
@@ -407,7 +410,7 @@ What these show:
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
 | OPEN-82 | body temperature of non-human-shaped species (JOS-3 is a human model) |
 | OPEN-83 | effects of hypothermia II and heat stroke on checks; touch and fine finger work from skin temperature (Heus et al. 1995: 15 °C local hand skin as the minimum criterion) |
-| OPEN-84 | frostbite depth from time frozen; cold-water immersion (JOS-3 models air only); wet clothing |
+| OPEN-84 | frostbite depth from time frozen; cold shock and swim failure in cold water; cooling in ice water about half the published rate; clothing wet in air (rain, sweat); head under water |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 12 species and the bird median; 60-dB ranges for 30. Missing lowest thresholds: dog, cat, horse, cattle, pig, goat, sheep, elephant (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |
