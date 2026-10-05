@@ -133,12 +133,25 @@ export function thermalMinute(p, { active = false, sleeping = false, restL = 0 }
         }
     }
     th.frozen.push(...frozen);
+    // Burns: Henriques damage integral Ω = Σ A e^(−ΔE/RT) Δt per segment skin node (A 3.1e98 /s, ΔE 6.27e5 J/mol; endpoint
+    // transepidermal necrosis; table in Fritz et al. 2021, Mil Med 186 S1:408). Ω ≥ 1: partial thickness; Ω ≥ 10^4: full
+    // thickness [ASSUMED threshold]. Immersed segments: the skin surface at the water temperature, as in the constant-
+    // temperature hot-water exposures that define the endpoint (Moritz & Henriques 1947); otherwise the skin node [ASSUMED].
+    th.burnO ??= new Array(SEGMENTS.length).fill(0);
+    th.burnt ??= {};
+    const burned = [];
+    skin.map((t, i) => water?.segs[i] ? Math.max(t, water.tc) : t).forEach((t, i) => {
+        if (t <= 44) return;
+        th.burnO[i] += 3.1e98 * Math.exp(-6.27e5 / (8.314 * (t + 273.15))) * 60;
+        const depth = th.burnO[i] >= 1e4 ? 'full' : th.burnO[i] >= 1 ? 'partial' : null;
+        if (depth && th.burnt[SEGMENTS[i]] !== depth && !(depth === 'partial' && th.burnt[SEGMENTS[i]] === 'full')) { th.burnt[SEGMENTS[i]] = depth; burned.push({ seg: SEGMENTS[i], depth }); }
+    });
     th.core = Math.round(coreOf(run)[4] * 100) / 100;
     th.skinMin = Math.round(Math.min(...skin) * 10) / 10;
     th.coldest = SEGMENTS[skin.indexOf(Math.min(...skin))];
     const waterL = Math.max(0, restL - body.neutralWaterGs * 60 / 1000) + r.waterGs * 60 / 1000;
     // Food energy: JOS-3 total metabolic heat (basal, work, shivering, non-shivering), W × 60 s ÷ 4184 J/kcal.
-    return { core: th.core, skin, waterL, frozen, kcal: r.qTotal * 60 / 4184 };
+    return { core: th.core, skin, waterL, frozen, burned, kcal: r.qTotal * 60 / 4184 };
 }
 
 // Core temperature stages (pelvis core node as rectal temperature [ASSUMED]). Hypothermia: Brown et al. 2012, NEJM 367:1930

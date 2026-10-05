@@ -243,6 +243,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             if (st === 'hypothermia III') p.unconscious ??= 'hypothermia';
             else if (p.unconscious === 'hypothermia') p.unconscious = null;
             for (const seg of heat.frozen) for (const part of frostParts(c, seg)) addWound(p, { part, type: 'frostbite' }, rng);
+            for (const b of heat.burned ?? []) for (const part of frostParts(c, b.seg)) addWound(p, { part, type: 'burn', depth: b.depth }, rng);
             if (thermalCapable(p.species)) water(p, rng);
         }
         if (needs) {
