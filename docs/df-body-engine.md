@@ -261,7 +261,7 @@ A part **works** unless it, or a part above it on its `CON` chain, has a severin
 | breathing | BREATHE | working ÷ all |
 
 - Alertness (BodyCheck `uses: alertness`, tasks needing attention, judgment or quick reactions): impairment as a blood-alcohol level = drinking (BodyIntake `alcohol_g`; Widmark: g ÷ (0.68 × body g) × 100, eliminated 0.015 %/h) + the sleep-loss equivalent (§6.3) [ASSUMED additive, male Widmark factor]. The odds of failing are multiplied by exp(40.7 × BAC^1.345), the curve through the NHTSA 2015 case-control adjusted odds ratios (Compton & Berning: 2.07 at 0.05 %, 3.93 at 0.08 %) and 1 at 0; it gives 23.9 at 0.15 % [crash odds as task-failure odds: ASSUMED]. Example: a task at 80 % sober → 49 % after 39 g of alcohol (three beers, 70 kg) or after 22 h awake.
-- Force abilities for the check model = grasp, stance [576 model, CV 0.19]. Others between 0 and 1 change nothing yet (OPEN-66). A creature without any part of a flag has no such ability: a task that uses it fails.
+- Force abilities for the check model = grasp, stance [576 model, CV 0.19]. Sight between 0 and 1 (eyes lost) in a check that uses sight and grasp: failure × 4 (capped at 1), the task takes 1.56 × as long (Mroczkowski & Niechwiej-Szwedo 2021, Exp Brain Res 239:1345: monocular precision grasping, 4 × grasp errors, +56 % grasp duration). Other partial abilities change nothing yet (OPEN-66). A creature without any part of a flag has no such ability: a task that uses it fails.
 - A `THOUGHT` part (brain) that stops working, or is severed with the part above it → death.
 - All `BREATHE` parts stopped: unconscious at once, death after 5 min (§6.1).
 - Defence time divides by the better of grasp and stance (was blocking and movement).

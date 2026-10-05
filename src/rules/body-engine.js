@@ -947,9 +947,13 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     const alert = (r, limit) => risk > 1.005
         ? { chance: r >= 1 ? 1 : r / (r + (1 - r) * risk), limit: [limit, `alertness: blood alcohol equivalent ${round(impairmentBac(p), 3)} %, odds of failing × ${round(risk, 2)}`].filter(Boolean).join('; ') }
         : { chance: r, limit };
-    if (s >= 1 || base === 0) return alert(base);
     const demand = 1 - normInv(Math.min(0.999, base)) * CAPACITY_CV;
-    return alert(normCdf((s - demand) / (s * CAPACITY_CV)), `${force} ${Math.round(s * 100)}%`);
+    const out = s >= 1 || base === 0 ? alert(base) : alert(normCdf((s - demand) / (s * CAPACITY_CV)), `${force} ${Math.round(s * 100)}%`);
+    // Hand work under sight with some eyes lost: grasp errors × 4 and grasping 56 % slower with one eye (Mroczkowski &
+    // Niechwiej-Szwedo 2021, Exp Brain Res 239:1345, precision reach-to-grasp, 20 people).
+    if (uses.includes('sight') && uses.includes('grasp') && scores.sight > 0 && scores.sight < 1)
+        return { chance: Math.max(0, 1 - 4 * (1 - out.chance)), limit: [out.limit, 'one eye: errors × 4, takes 1.56 × as long'].filter(Boolean).join('; ') };
+    return out;
 }
 
 export const checkChance = (p, task) => checkOdds(p, task).chance;
