@@ -5,6 +5,7 @@ import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom } from './venom.js';
+import { relativeLoad, mawtHours } from './work.js';
 import { aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C } from './thermal/exposure.js';
 
@@ -206,7 +207,10 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             n.kcal += heat ? heat.kcal : p.workMet ? p.workMet * 1.163 * p.mass * 60 / 4184 : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
-            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
+            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) { n.awake = 0; n.work = 0; p.exhausted = false; } } else { n.slept = 0; n.awake += 1; }
+            // Work done against the maximum acceptable work time (§6.7); a full sleep resets it [ASSUMED].
+            const met = p.workMet ?? (active ? 3.5 : null);
+            if (met && !sleeping) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p)); if (n.work >= 1) p.exhausted = true; }
             if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
             if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }
             if (n.kcal >= n.foodDeath * KCAL_DAY.rest * kleiber(p)) { p.dead = 'starvation'; return; }
@@ -466,6 +470,7 @@ export function status(who, p) {
         if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
         if (nd.alcohol > 0) out.push(`blood alcohol ${round(nd.alcohol, 3)} %`);
     }
+    if (p.needs?.work > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs.work * 100)} % of what can be kept up`);
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {
         const v = p.venom;
@@ -859,7 +864,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
 const waterStage = p => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };
 const watch = p => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
-    ams: !!p.altitude?.ams, oedema: !!p.altitude?.oedema,
+    exhausted: !!p.exhausted, ams: !!p.altitude?.ams, oedema: !!p.altitude?.oedema,
     heat: coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis,
 });
@@ -876,6 +881,7 @@ function changes(who, a, b) {
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
         if (b.sepsis && !a.sepsis) out.push(`${who}: the infection has reached the blood (sepsis)`);
         if (b.heat !== a.heat) out.push(`${who}: ${b.heat ?? 'core temperature between 35 and 40 °C'} (core ${b.core} °C)`);
+        if (b.exhausted && !a.exhausted) out.push(`${who} is exhausted and cannot keep working or walking`);
         if (b.ams && !a.ams) out.push(`${who} has acute mountain sickness`);
         if (b.oedema && !a.oedema) out.push(`${who} has high-altitude pulmonary or cerebral oedema`);
         if (b.swim && !a.swim) out.push(`${who}: arms too cold to keep swimming`);
@@ -941,6 +947,7 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // Altitude: heavy exertion is limited by aerobic capacity (§6.6); acute mountain sickness: symptoms that force a reduction
     // in activity (Maggiorini et al. 1998) → heavy exertion fails [ASSUMED].
     if (p.sepsis && exertion === 'heavy') return { chance: 0, limit: 'sepsis' };
+    if (p.exhausted && exertion !== 'none') return { chance: 0, limit: 'exhausted' };
     if (p.altitude && exertion === 'heavy') {
         if (p.altitude.ams || p.altitude.oedema) return { chance: 0, limit: 'altitude sickness' };
         scores.aerobic = aerobicFactor(p.altitude.m);

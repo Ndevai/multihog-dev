@@ -419,7 +419,17 @@ PassTime `walking` entries (speed, load, slope, terrain) set the walker's activi
 
 Examples (70 kg): road, no load, 5 km/h: 308 W, 3.8 MET (Compendium walking 3 mph: 3.5); dirt road, 20 kg, 5 km/h: 5.0 MET; 30 kg up a 10 % slope at 4 km/h: 9.5 MET; 20 kg in 25 cm snow at 4 km/h: 8.2 MET.
 
-Open (OPEN-87): how long a pace can be kept (fatigue, exhaustion), downhill cost (Santee et al. 2001 model; equation not reachable), running.
+Endurance:
+
+| Quantity | Rule | Source |
+|---|---|---|
+| VO2max | men 54.4, women 43.0 mL/kg/min at 20–29 y, −3.5 per decade (default man, 25 y) | Loe et al. 2013, PLoS One 8:e64319 (HUNT, 3816 healthy Norwegians) |
+| relative load | (METs − 1) ÷ (VO2max ÷ 3.5 − 1) | [ASSUMED: heart-rate reserve share ≈ VO2 reserve share] |
+| maximum acceptable work time | 26.12 × e^(−4.81 × relative load) hours; every minute of walking (`walking`) or other activity (`active`, 3.5 MET) adds 1 ÷ that time; at 1 → exhausted: all exertion checks fail; a 7 h sleep resets it [ASSUMED] | Wu & Wang 2002, Ergonomics 45:280, as given by Park et al. 2023, Ann Occup Environ Med 35:e24 |
+
+Limits for a 25-year-old man: 3.8 MET (road walk) 10.3 h, 5.0 MET (20 kg on a dirt road) 7.0 h, 6 MET 5.0 h, 8.2 MET (20 kg in snow) 2.4 h, 9.5 MET (30 kg up 10 %) 1.6 h.
+
+Open (OPEN-87): rest between bouts and partial recovery, downhill cost (Santee et al. 2001 model; equation not reachable), running.
 
 ## 7. Tools
 
