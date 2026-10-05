@@ -29,9 +29,11 @@ export const metOf = (watts, bodyKg) => watts / (1.163 * bodyKg);
 // 8:e64319, HUNT, 3816 people). Relative load = (METs − 1) ÷ (VO2max ÷ 3.5 − 1) [ASSUMED: heart-rate reserve share ≈ VO2
 // reserve share]. Maximum acceptable work time (h) = 26.12 × e^(−4.81 × relative load) (Wu & Wang 2002, Ergonomics 45:280, as
 // given by Park et al. 2023, Ann Occup Environ Med 35:e24); time spent ÷ that time adds up, and at 1 the person is exhausted.
-export function vo2max(p) {
-    const base = p.sex === 'female' ? 43.0 : 54.4;
-    return base - 3.5 * Math.max(0, ((p.age ?? 25) - 25) / 10);
+// Each person keeps a fitness z drawn once from N(0, 1): SD 8.4 (men) and 7.7 (women) mL/kg/min (same study).
+export function vo2max(p, gauss) {
+    if (p.fitZ == null && gauss) p.fitZ = Math.round(gauss() * 100) / 100;
+    const female = p.sex === 'female';
+    return (female ? 43.0 : 54.4) + (p.fitZ ?? 0) * (female ? 7.7 : 8.4) - 3.5 * Math.max(0, ((p.age ?? 25) - 25) / 10);
 }
-export const relativeLoad = (met, p) => Math.max(0, (met - 1) / (vo2max(p) / 3.5 - 1));
+export const relativeLoad = (met, p, gauss) => Math.max(0, (met - 1) / (Math.max(10.5, vo2max(p, gauss)) / 3.5 - 1));
 export const mawtHours = load => 26.12 * Math.exp(-4.81 * load);

@@ -251,7 +251,7 @@ Scratch runs (70 kg, bitten on the shin, 150 untreated each): rattlesnake 19 dea
 
 | Step | Rule | Source |
 |---|---|---|
-| spread to the blood | each wound that becomes infected: 8.5 % | Taniguchi et al. 2022, Open Forum Infect Dis 9:ofac317: bacteraemia in 8.5 % of adults under 65 hospitalized with cellulitis, erysipelas or abscess (25.3 % at 65 and over) [hospitalized cases as the rate for infected wounds] |
+| spread to the blood | each wound that becomes infected: 8.5 % under 65, 25.3 % at 65 and over | Taniguchi et al. 2022, Open Forum Infect Dis 9:ofac317: bacteraemia in 8.5 % of adults under 65 hospitalized with cellulitis, erysipelas or abscess (25.3 % at 65 and over) [hospitalized cases as the rate for infected wounds] |
 | untreated | 80 % die, at a time drawn uniformly within 30 days [ASSUMED timing]; heavy exertion fails while it lasts | pre-antibiotic Staphylococcus aureus bacteraemia case fatality about 80 % (Wikipedia, Staphylococcus aureus) |
 | antibiotics | BodyTreat `antibiotics`: case fatality 15–50 %, drawn uniformly | same: 15–50 % with antibiotic treatment |
 
@@ -404,6 +404,7 @@ Set with BodyEnvironment `altitude_m` (and `sudden_ascent` for arrival within mi
 | acute mountain sickness | rolled once after 12 h (the first night) at a new altitude: 0 below 2500 m [ASSUMED], 9 % at 2850 m, 13 % at 3050, 34 % at 3650, 53 % at 4559, linear between, held above → heavy exertion fails [ASSUMED from "symptoms that force a reduction in activity"] | Maggiorini et al. 1990, BMJ 301:853 (466 climbers in Swiss Alps huts); Maggiorini et al. 1998 |
 | cerebral oedema (HACE) | rolled with AMS: 1 % at 4000 m and above → heavy exertion fails; unconscious 1 h before death, dead 12–24 h after onset (uniform) unless the person descends below that altitude [ASSUMED descent criterion] | Adhikari & Zimmer 2026, BMJ (WMS 2024): HACE in up to 1 % at 4000–5000 m; untreated, coma and death within 12–24 h without descent |
 | pulmonary oedema (HAPE) | rolled with AMS: 6 % at 4500 m and above → heavy exertion fails; status: up to half die without descent (timing OPEN-85) | same: HAPE in up to 6 % at 4500 m; untreated mortality up to 50 % |
+| rapid decompression (`decompression`) | the FAA's shorter column: 18 000 ft 10–15 min, 22 000 ft 5–6 min, 25 000 ft 1.5–2.5 min, 28 000 ft 1–1.5 min, 30 000 ft 30–60 s, 35 000 ft 15–30 s; above 35 000 ft ("nominal") the quiet values [ASSUMED] | FAA AC 61-107B, Figure 2-3 |
 | sudden arrival | above 18 000 ft (5486 m): unconscious ("hypoxia") once a time drawn uniformly from the FAA range runs out: 18 000 ft 20–30 min, 22 000 ft 10 min, 25 000 ft 3–5 min, 28 000 ft 2.5–3 min, 30 000 ft 1–2 min, 35 000 ft 30–60 s, 40 000 ft 15–20 s, 43 000 ft and above 9–12 s; linear in feet between rows; descending ends it | FAA AC 61-107B, Figure 2-3 (sitting quietly) |
 
 Scratch runs (400 people each, after 13 h): AMS 0 % at 1500 m, 40 % at 3650 m, 53 % at 4559 m. A load-carrying task that 80 % pass at sea level: 68 % at 1500 m, 37 % at 3650 m, 22 % at 4559 m (before any sickness). Sudden arrival at 35 000 ft: unconscious in the first minute. 2000 people at 4600 m for 40 h: 20 HACE (1.0 %), 123 HAPE (6.2 %); every HACE case left there died, every one taken down within 2 h of onset lived.
@@ -424,7 +425,7 @@ Endurance:
 
 | Quantity | Rule | Source |
 |---|---|---|
-| VO2max | men 54.4, women 43.0 mL/kg/min at 20–29 y, −3.5 per decade (default man, 25 y) | Loe et al. 2013, PLoS One 8:e64319 (HUNT, 3816 healthy Norwegians) |
+| VO2max | men 54.4 ± 8.4, women 43.0 ± 7.7 mL/kg/min at 20–29 y, −3.5 per decade; each person keeps one draw (floor 10.5) (default man, 25 y) | Loe et al. 2013, PLoS One 8:e64319 (HUNT, 3816 healthy Norwegians) |
 | relative load | (METs − 1) ÷ (VO2max ÷ 3.5 − 1) | [ASSUMED: heart-rate reserve share ≈ VO2 reserve share] |
 | maximum acceptable work time | 26.12 × e^(−4.81 × relative load) hours; every minute of walking (`walking`) or other activity (`active`, 3.5 MET) adds 1 ÷ that time; at 1 → exhausted: all exertion checks fail; a 7 h sleep resets it [ASSUMED] | Wu & Wang 2002, Ergonomics 45:280, as given by Park et al. 2023, Ann Occup Environ Med 35:e24 |
 

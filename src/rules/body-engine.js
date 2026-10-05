@@ -210,7 +210,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
             if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) { n.awake = 0; n.work = 0; p.exhausted = false; } } else { n.slept = 0; n.awake += 1; }
             // Work done against the maximum acceptable work time (§6.7); a full sleep resets it [ASSUMED].
             const met = p.workMet ?? (active ? 3.5 : null);
-            if (met && !sleeping) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p)); if (n.work >= 1) p.exhausted = true; }
+            if (met && !sleeping) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p, () => gauss(rng))); if (n.work >= 1) p.exhausted = true; }
             if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
             if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }
             if (n.kcal >= n.foodDeath * KCAL_DAY.rest * kleiber(p)) { p.dead = 'starvation'; return; }
@@ -244,7 +244,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
                 // Bloodstream spread: 8.5 % of adults under 65 hospitalized with skin and soft-tissue infection (Taniguchi et al.
                 // 2022, Open Forum Infect Dis 9:ofac317) [as the rate for infected wounds]. Untreated S. aureus bacteraemia
                 // killed about 80 % (Wikipedia, Staphylococcus aureus); death within 30 days, uniform [ASSUMED].
-                if (w.infection && !p.sepsis && rng() < 0.085) p.sepsis = { fatal: rng() < 0.8, min: 0, deathMin: Math.round((1 + rng() * 29) * DAY_MIN) };
+                if (w.infection && !p.sepsis && rng() < ((p.age ?? 25) >= 65 ? 0.253 : 0.085)) p.sepsis = { fatal: rng() < 0.8, min: 0, deathMin: Math.round((1 + rng() * 29) * DAY_MIN) };
             }
         }
         if (++p.minute >= DAY_MIN) { p.minute -= DAY_MIN; endDay(net); }
@@ -396,17 +396,17 @@ function altitudeMinute(p, rng) {
     }
     if (a.hace && a.min >= a.haceDeath - 60) p.unconscious ??= 'cerebral oedema';
     if (a.hace && a.min >= a.haceDeath) p.dead = 'high-altitude cerebral oedema';
-    if (a.sudden && a.tuc === undefined) { const r = tucRange(a.m); a.tuc = r ? r[0] + rng() * (r[1] - r[0]) : null; }
+    if (a.sudden && a.tuc === undefined) { const r = tucRange(a.m, a.decompression); a.tuc = r ? r[0] + rng() * (r[1] - r[0]) : null; }
     if (a.tuc != null && a.min * 60 >= a.tuc) p.unconscious ??= 'hypoxia';
 }
 
 /** Sets the altitude (m) and how the person got there; m = 0 clears. */
-export function setAltitude(p, m, sudden = false) {
+export function setAltitude(p, m, sudden = false, decompression = false) {
     if (p.unconscious === 'hypoxia') p.unconscious = null;
     const old = p.altitude;
     // Descent below where oedema began stops its course [ASSUMED]; the conditions remain until time passes.
     const keep = old && m < old.m && old.oedema ? { hace: false, hape: old.hape, oedema: old.hape, ams: old.ams } : {};
-    p.altitude = m > 0 ? { m, sudden, min: 0, ams: null, oedema: null, ...keep } : null;
+    p.altitude = m > 0 ? { m, sudden: sudden || decompression, decompression, min: 0, ams: null, oedema: null, ...keep } : null;
     if (p.unconscious === 'cerebral oedema') p.unconscious = null;
 }
 

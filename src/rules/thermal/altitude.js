@@ -27,9 +27,13 @@ export const hapeChance = m => m >= 4500 ? 0.06 : 0;
 export const HACE_DEATH_H = [12, 24];
 
 // Time of useful consciousness after sudden exposure (no acclimatization), sitting quietly: FAA AC 61-107B, Figure 2-3.
-const TUC = [[18000, 20 * 60, 30 * 60], [22000, 600, 600], [25000, 180, 300], [28000, 150, 180], [30000, 60, 120], [35000, 30, 60], [40000, 15, 20], [43000, 9, 12]];
+const TUC_QUIET = [[18000, 20 * 60, 30 * 60], [22000, 600, 600], [25000, 180, 300], [28000, 150, 180], [30000, 60, 120], [35000, 30, 60], [40000, 15, 20], [43000, 9, 12]];
+// Following rapid decompression (same figure): 18 000 ft 10–15 min, 22 000 ft 5–6 min, 25 000 ft 1.5–2.5 min, 28 000 ft 1–1.5 min,
+// 30 000 ft 30–60 s, 35 000 ft 15–30 s; above, given as "nominal": the 40 000 ft quiet values are used [ASSUMED].
+const TUC_DECOMP = [[18000, 600, 900], [22000, 300, 360], [25000, 90, 150], [28000, 60, 90], [30000, 30, 60], [35000, 15, 30], [40000, 15, 20], [43000, 9, 12]];
 /** Seconds of useful consciousness at m metres after a sudden arrival; null below 18 000 ft. Linear in feet between rows. */
-export function tucRange(m) {
+export function tucRange(m, decompression = false) {
+    const TUC = decompression ? TUC_DECOMP : TUC_QUIET;
     const ft = m / 0.3048;
     if (ft < TUC[0][0]) return null;
     for (let i = 1; i < TUC.length; i++) if (ft <= TUC[i][0]) {
