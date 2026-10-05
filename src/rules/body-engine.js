@@ -199,6 +199,13 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         if (heat) {
             const st = coreStage(heat.core);
             if (st === 'hypothermia IV') { p.dead = 'hypothermia'; return; }
+            // Heat stroke: survived when core is back under 40 °C within 30 min (PMC11438465); past that, death 26.5 % if
+            // exertional, 63.2 % classic (MedLink), 1–3 days later [ASSUMED timing]. The roll stands after cooling.
+            if (st === 'heat stroke' || p.heatStroke?.min >= 30) {
+                const hs = p.heatStroke ??= { min: 0, exertional: !!(p.workMet || active) };
+                if (++hs.min === 30) { hs.fatal = rng() < (hs.exertional ? 0.265 : 0.632); hs.deathMin = 30 + Math.round((1 + 2 * rng()) * DAY_MIN); }
+                if (hs.fatal && hs.min >= hs.deathMin) { p.dead = 'heat stroke'; return; }
+            } else p.heatStroke = null;
             if (st === 'hypothermia III') p.unconscious ??= 'hypothermia';
             else if (p.unconscious === 'hypothermia') p.unconscious = null;
             for (const seg of heat.frozen) for (const part of frostParts(c, seg)) addWound(p, { part, type: 'frostbite' }, rng);
@@ -207,10 +214,15 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             n.kcal += heat ? heat.kcal : p.workMet ? p.workMet * 1.163 * p.mass * 60 / 4184 : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
-            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) { n.awake = 0; n.work = 0; p.exhausted = false; } } else { n.slept = 0; n.awake += 1; }
-            // Work done against the maximum acceptable work time (§6.7); a full sleep resets it [ASSUMED].
+            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else { n.slept = 0; n.awake += 1; }
+            // Work done against the maximum acceptable work time (§6.7). At rest or asleep it is paid back as muscle glycogen
+            // returns: 5 %/h fed, 2 %/h with over a day's food missing; exhaustion ends at 90 % [ASSUMED].
             const met = p.workMet ?? (active ? 3.5 : null);
             if (met && !sleeping) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p, () => gauss(rng))); if (n.work >= 1) p.exhausted = true; }
+            else if (n.work > 0) {
+                n.work = Math.max(0, n.work - (n.kcal < KCAL_DAY.rest * kleiber(p) ? 0.05 : 0.02) / 60);
+                if (n.work <= 0.9) p.exhausted = false;
+            }
             if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
             if (n.waterL / p.mass * 100 >= n.waterDeath) { p.dead = 'dehydration'; return; }
             if (n.kcal >= n.foodDeath * KCAL_DAY.rest * kleiber(p)) { p.dead = 'starvation'; return; }
@@ -480,6 +492,7 @@ export function status(who, p) {
         if (nd.alcohol > 0) out.push(`blood alcohol ${round(nd.alcohol, 3)} %`);
     }
     if (p.needs?.work > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs.work * 100)} % of what can be kept up`);
+    if (p.heatStroke?.min >= 30) out.push(`heat stroke not cooled within 30 min: about ${p.heatStroke.exertional ? '1 in 4' : '2 in 3'} die within days`);
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {
         const v = p.venom;

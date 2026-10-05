@@ -357,6 +357,7 @@ Added to JOS-3:
 | hypothermia II | 32–28 °C: drowsy, not shivering (status; check effects OPEN-83) | same |
 | hypothermia III | 28–24 °C: unconscious | same |
 | hypothermia IV | < 24 °C: no vital signs → dead | same; [ASSUMED dead without extracorporeal rewarming] |
+| heat stroke course | back under 40 °C core within 30 min of onset: no lasting harm. Longer: dies with chance 26.5 % if exertional (working at onset), 63.2 % classic, 1–3 days after onset (uniform) [ASSUMED timing]; the roll stands after cooling. Scratch run, 100 people working at 8 MET in 45 °C sun: heat stroke at 26 min, 35 died | "100 % survivable when core temperature is cooled below 40 °C within 30 minutes" (Hosokawa et al. 2024 review, PMC11438465); mortality 26.5 % exertional, 63.2 % classic (MedLink, Heat stroke) |
 | heat stroke | core > 40 °C: attention checks fail (disorientation is part of the definition) [ASSUMED]; below 40 °C no thinking effect: at 38.6 °C rectal, Stroop reaction was 39–44 ms faster (Barry et al. 2022, Appl Physiol Nutr Metab 47:261); 1 h at 39.6 °C air did not lower accuracy (Malcolm et al. 2018, Front Physiol 9:585) | Gaudio & Grissom 2016, J Emerg Med 50:607 |
 | cold brain | below 36.7 °C core (animals: the same distance below their set point): mental tasks take 1 ÷ (1 − 0.5 × ΔT ÷ 2.2) as long, accuracy holds; new information kept 1 − 0.7 × ΔT ÷ 2.2; recall intact; ΔT capped at 2.2 (34.5 °C, the lowest measured) [ASSUMED linear, held below]. A check marked `timed` with `alertness` uses the speed as a capacity in the force model (spread 0.19 [ASSUMED]) | Coleshaw et al. 1983, J Appl Physiol 55:27 (core 34–35 °C: −70 % memory registration, −50 % calculation speed, accuracy and recall unchanged) |
 | food energy | JOS-3 total metabolic heat each minute (basal, work, shivering, non-shivering) replaces the 1400/2400 kcal/day rows: sitting 96 kcal/h, sleeping 78, walking 246, nude at 0 °C shivering 338 | JOS-3; Compendium METs |
@@ -428,7 +429,8 @@ Endurance:
 |---|---|---|
 | VO2max | men 54.4 ± 8.4, women 43.0 ± 7.7 mL/kg/min at 20–29 y, −3.5 per decade; each person keeps one draw (floor 10.5) (default man, 25 y) | Loe et al. 2013, PLoS One 8:e64319 (HUNT, 3816 healthy Norwegians) |
 | relative load | (METs − 1) ÷ (VO2max ÷ 3.5 − 1) | [ASSUMED: heart-rate reserve share ≈ VO2 reserve share] |
-| maximum acceptable work time | 26.12 × e^(−4.81 × relative load) hours; every minute of walking (`walking`) or other activity (`active`, 3.5 MET) adds 1 ÷ that time; at 1 → exhausted: all exertion checks fail; a 7 h sleep resets it [ASSUMED] | Wu & Wang 2002, Ergonomics 45:280, as given by Park et al. 2023, Ann Occup Environ Med 35:e24 |
+| maximum acceptable work time | 26.12 × e^(−4.81 × relative load) hours; every minute of walking (`walking`) or other activity (`active`, 3.5 MET) adds 1 ÷ that time; at 1 → exhausted: all exertion checks fail | Wu & Wang 2002, Ergonomics 45:280, as given by Park et al. 2023, Ann Occup Environ Med 35:e24 |
+| recovery | at rest or asleep the total falls 5 % per hour if under a day's food is missing, else 2 % per hour; exhaustion ends at 0.9 (2 h of fed rest) [ASSUMED: recovery follows muscle glycogen]; a full day of exhausting work needs 20 h fed rest | glycogen returns 2 %/h unfed, 5 %/h with 50 g carbohydrate every 2 h; at least 20 h for full stores (The Sport Journal, "Glycogen replenishment after exhaustive exercise") |
 
 Limits for a 25-year-old man: 3.8 MET (road walk) 10.3 h, 5.0 MET (20 kg on a dirt road) 7.0 h, 6 MET 5.0 h, 8.2 MET (20 kg in snow) 2.4 h, 9.5 MET (30 kg up 10 %) 1.6 h.
 
@@ -438,7 +440,7 @@ Downhill: Pandolf at the negative grade minus the Santee et al. 2001 correction,
 
 Available VO2max = VO2max × altitude factor (§6.6) − 4 mL/min per g of haemoglobin missing (Schmidt & Prommer 2010, Exerc Sport Sci Rev 38:68). Haemoglobin 150 g/L men, 135 g/L women [ASSUMED typical]; missing blood = blood lost + red-cell deficit. A 450 mL loss: 54.4 → 50.5 mL/kg/min (−7 %), a 5-MET walk lasts 6.2 h instead of 7.0 h; 3000 m: 5.2 h. Heavy-exertion checks use available ÷ normal VO2max as the 'aerobic' capacity.
 
-Open (OPEN-87): rest between bouts and partial recovery; check the Santee correction against the paper.
+Open (OPEN-87): recovery rate is glycogen's, not measured on work capacity; check the Santee correction against the paper.
 
 ## 7. Tools
 
@@ -507,7 +509,7 @@ What these show:
 | OPEN-75 | blunt deflection off armour (2·Sw·IYw < A·Da): disputed on the wiki talk page and contradicts blunt-through-iron with the stated units |
 | OPEN-80 | blocking skill: training should speed the block; the timing model uses untrained reaction and movement times |
 | OPEN-82 | animals (§6.5): per-species fur, shape and summit metabolism; sun, water and wet fur; limited evaporation and heat stroke; cold-blooded creatures |
-| OPEN-83 | thinking below 34.5 °C core; heat stroke course and death (Hancock & Vasmatzidis 2003 tie heat effects to deep body temperature but give no single curve; Pilcher et al. 2002: −14.9 % at WBGT ≥ 32.2 °C and −13.9 % at ≤ 10 °C air, by air not core); touch and fine finger work from skin temperature (Heus et al. 1995: 15 °C local hand skin as the minimum criterion) |
+| OPEN-83 | thinking below 34.5 °C core; heat stroke time to death and its dependence on degree-minutes over 40 °C (Hancock & Vasmatzidis 2003 tie heat effects to deep body temperature but give no single curve; Pilcher et al. 2002: −14.9 % at WBGT ≥ 32.2 °C and −13.9 % at ≤ 10 °C air, by air not core); touch and fine finger work from skin temperature (Heus et al. 1995: 15 °C local hand skin as the minimum criterion) |
 | OPEN-84 | frostbite depth from time frozen; cold shock and swim failure in cold water; cooling in ice water about half the published rate; clothing wet in air (rain, sweat); head under water |
 | OPEN-85 | altitude: acclimatization rule is a pace guideline turned into a model (no incidence by ascent rate), loss of acclimatization after descent, HAPE time to death, death after hypoxic unconsciousness, effects on thinking, cold and air pressure in the heat model |
 | OPEN-86 | venom (§5.2 built for four snakes). DF injects venom (SPECIALATTACK_INJECT_EXTRACT) for adder, rattlesnake, copperhead, king cobra, black mamba, bushmaster, gila monster, platypus, giant cave spider, helmet snake, bees; its syndrome severities and tick timings are game values. Planned system: dose ratio = venom per bite ÷ (mouse subcutaneous LD50 × victim mass) → death by a dose–response curve. Found (Wikipedia, citing primary sources): western diamondback 250–350 mg/bite, SC LD50 18.5 mg/kg, untreated mortality 10–20 %; king cobra up to 420 mg, SC 1.5–1.7 mg/kg, death in as little as 30 min; bushmaster 200–411 mg, SC 6.0 mg/kg (a child died 90 min after a bite); black mamba 100–120 mg (max 400), IV 0.32 mg/kg only, collapse within 45 min; adder SC 6.45 mg/kg, yield low; gila monster one confirmed death since 1930. Missing: a published slope for the human dose–response, untreated mortality for most species, mouse-to-human sensitivity |
