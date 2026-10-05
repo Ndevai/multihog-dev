@@ -529,7 +529,8 @@ export function status(who, p) {
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
     if (p.venom) {
         const v = p.venom;
-        out.push(`envenomed by ${v.species.toLowerCase().replace('_', ' ')} (${v.mg} mg, ${v.ratio} × the lethal dose)${v.fatal ? (v.kind === 'neuro' ? `: paralysis stops breathing at ${v.collapse} min` : `: shock at ${v.shock} min, death at ${v.death} min`) + ` (now ${v.min} min) unless antivenom` : ': survives without antivenom; local pain and swelling'}`);
+        if (v.kind === 'pain') out.push(`envenomed by ${v.species.toLowerCase().replace('_', ' ')}: severe local pain and swelling; not lethal to a healthy adult`);
+        else out.push(`envenomed by ${v.species.toLowerCase().replace('_', ' ')} (${v.mg} mg, ${v.ratio} × the lethal dose)${v.fatal ? (v.kind === 'neuro' ? `: paralysis stops breathing at ${v.collapse} min` : `: shock at ${v.shock} min, death at ${v.death} min`) + ` (now ${v.min} min) unless antivenom` : ': survives without antivenom; local pain and swelling'}`);
     }
     const al = p.altitude;
     if (al) {
