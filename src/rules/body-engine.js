@@ -5,6 +5,7 @@ import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
 import { reach, hearSound, SOUNDS, BAND_HZ } from './acoustics.js';
 import { see, acuityOf } from './vision.js';
+import { grip, gripNorm } from './strength.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
@@ -1027,6 +1028,23 @@ export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight',
     const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse) but not which one'
         : u < r.detect ? 'notices something there but cannot tell what' : 'does not see it';
     return `${vs} ${level} (${what}; chances: notice ${Math.round(r.detect * 100)} %, recognize ${Math.round(r.recognize * 100)} %, identify ${Math.round(r.identify * 100)} %).`;
+}
+
+/**
+ * Holding a load by the hands (§6.10): hanging by the hands (load = own body mass) or carrying something by handles. Holds
+ * when the per-hand load ≤ grip strength × the hand's working capacity (grasp ability, cold forearm force factor). Humans only
+ * (Dodds 2014 norms); hands counted from working GRASP parts.
+ */
+export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false } = {}, rng = Math.random) {
+    if (!thermalCapable(p.species)) return `${who}: grip norms exist for humans only; use BodyCheck.`;
+    if (p.dead || p.unconscious) return `${who} cannot hold anything (${p.dead ? 'dead' : 'unconscious'}).`;
+    const c = creatureOf(p), works = worksFn(p, c);
+    const n = Math.min(hands, c.parts.filter(x => x.flags.includes('GRASP') && works(x)).length);
+    if (!n) return `${who} has no working hand to hold with.`;
+    const g = grip(p, () => gauss(rng)) * forceFactor(limbCold(p, 'arm'));
+    const load = hanging ? p.mass : load_kg ?? 0, per = load / n;
+    const norm = gripNorm(p.age, p.sex);
+    return `${who} ${per <= g ? 'holds it' : 'cannot hold it'} (${round(per)} kg per hand on ${n} hand${n > 1 ? 's' : ''}; grip ${round(g)} kg, ${p.sex === 'female' ? 'women' : 'men'} aged ${p.age ?? 25} average ${round(norm.mean)} ± ${round(norm.sd)} kg).`;
 }
 
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */

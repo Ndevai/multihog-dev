@@ -537,6 +537,15 @@ Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 1
 
 Limits (OPEN-89): evidence, prior suspicion, relationship and training are not inputs (the meta-analysis found detection rates vary little between studies); the speaker's skill at lying is not modelled.
 
+### 6.10 Grip: hanging on and carrying by hand
+
+| Quantity | Rule | Source |
+|---|---|---|
+| grip strength | mean and SD by age and sex, linear between tabled ages (20–90); each person keeps a z drawn once; men 30: 51.6 ± 9.6 kg, women 30: 31.4 ± 6.0, men 75: 35.6 ± 7.6, women 75: 21.4 ± 5.4 | Dodds et al. 2014, PLoS One 9:e113637, Table 2 (60 803 observations, 12 British studies) |
+| HoldOn | holds when load per working hand ≤ grip × cold-forearm force factor (§6.4); hanging: load = own body mass [ASSUMED: maximal dynamometer grip = maximal static hold, no time limit] | — |
+
+Scratch (2000 each): hanging by two hands — man 30 y, 80 kg: 89 %; woman 30 y, 60 kg: 60 %; man 75 y: 28 %; woman 75 y: 6 %. Carrying 40 kg in one hand — man 30: 89 %; woman 30: 7 %. Limits (OPEN-90): hold time (endurance at a fraction of maximal force), fingertip ledges (weaker than a full grip), hand injuries other than lost function.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -570,6 +579,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Bystander, ObeyOrder, AskStranger | `others`, `dangerous`, `situation` | scene facts | — |
 | BodyContact | `material`, `temp_c`, `seconds` | scene facts | — |
 | BodyFall | `height_m`, `soft`, `head_first` | scene facts | — |
+| HoldOn | `hanging`, `load_kg`, `hands` | scene facts | — |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ## 8. Unchanged
