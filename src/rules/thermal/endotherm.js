@@ -85,6 +85,12 @@ export function furFor(massKg, coreT, bird) {
     return out;
 }
 
+// Mammals that sweat to cool: "humans, horses, some primates and some bovidae"; dogs and others with few sweat glands pant
+// (Wikipedia, Perspiration). Equids for horses, cattle-type bovids for "some bovidae", all DF primates [ASSUMED]; giant forms and
+// animal people as their base.
+const SWEATERS = new Set(['HORSE', 'DONKEY', 'MULE', 'COW', 'WATER_BUFFALO', 'YAK', 'MACAQUE_RHESUS', 'MANDRILL', 'CHIMPANZEE', 'BONOBO',
+    'GORILLA', 'ORANGUTAN', 'GIBBON_SIAMANG', 'GIBBON_WHITE_HANDED', 'GIBBON_BLACK_HANDED', 'GIBBON_GRAY', 'GIBBON_SILVERY', 'GIBBON_PILEATED',
+    'GIBBON_BILOU', 'GIBBON_WHITE_BROWED', 'GIBBON_BLACK_CRESTED', 'GRAY_LANGUR', 'CAPUCHIN', 'SPIDER_MONKEY', 'LION_TAMARIN']);
 export const dfCelsius = u => (u - 9968 - 32) * 5 / 9;   // DF Urist: °U = °F + 9968
 export const BODY_HEAT_J_KG = 3470;                      // specific heat of body tissue [ASSUMED human value]
 const PEAK = 4.9;                                         // peak / resting heat production (Eyolfson et al. 2001, human) [ASSUMED for all]
@@ -115,11 +121,12 @@ export function endothermMinute(p, c, { met = 1.3 } = {}) {
     const need = loss.qLoss;
     const produce = Math.min(Math.max(act, need), PEAK * basal + (act - basal));
     // Evaporation limit (NicheMapR endoR defaults: panting up to 5 × breathing, skin wetted up to 100 %): breathing water × 5
-    // plus a fully wet skin, by the Lewis relation he = 16.5 K/kPa × hc (ASHRAE) against the air's vapour pressure; vapour
-    // passes the fur freely [ASSUMED].
+    // plus the wet skin share, by the Lewis relation he = 16.5 K/kPa × hc (ASHRAE) against the air's vapour pressure; vapour
+    // passes the fur freely [ASSUMED]. Only sweaters wet the skin fully; the rest stay at endoR's resting 0.5 %.
     const latentS = 2501200 - 2378.7 * (w ? w.tc : e.tdb);
     const pAir = vappr(e.tdb) * (e.rh ?? 50) / 100;
-    const evapMax = w ? 0 : 5 * loss.breathGs * latentS + Math.max(0, 16.5e-3 * loss.hcA * (vappr(loss.skinT) - pAir));
+    const wetShare = SWEATERS.has(c.id.replace(/^GIANT_|_MAN$/, '')) ? 1 : 0.005;
+    const evapMax = w ? 0 : 5 * loss.breathGs * latentS + wetShare * Math.max(0, 16.5e-3 * loss.hcA * (vappr(loss.skinT) - pAir));
     const evapW = Math.min(evapMax, Math.max(0, produce - need));
     const stored = produce - need - evapW;
     th.core = Math.round((th.core + stored * 60 / (p.mass * BODY_HEAT_J_KG)) * 1000) / 1000;
