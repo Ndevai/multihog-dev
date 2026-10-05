@@ -34,6 +34,11 @@ const CLOT_MIN = [0, 8];
 const INFECTION_DELAY_DAYS = 10.5;
 const BRUISE_DAYS = [13, 13];
 const NONUNION = { default: 0.02, shin: 0.05, wrist: 0.125 };
+// Organs, days [function kept, function lost]. Spleen: healed on ultrasound grade 1 at 4–12 weeks, grade 2 at 6–17, grade 3 at
+// 6–29 (68 children; Radiology 1999, 212:515); kept = grades 1–2, lost = grade 3; liver and kidney as spleen [ASSUMED]. Lung
+// contusion resolves in 5–7 days (Wikipedia, Pulmonary contusion); other lung wounds: OPEN-48.
+const SOLID = { cut: [[28, 119], [42, 203]], blunt: [[28, 119], [42, 203]] };
+const ORGAN_HEAL = { SPLEEN: SOLID, LIVER: SOLID, KIDNEY: SOLID, LUNG: { blunt: [[5, 7], [5, 7]] } };
 const OPEN_FRACTURE_INFECTION = { I: 0.05, II: 0.08, IIIA: 0.12, IIIB: 0.25, IIIC: 0.40 };
 // Rule 576, days. Missing types are OPEN-48/49: they do not close yet.
 const CUT_HEAL = { eyes: [3, 5], mouth: [3, 5], head: [7, 10], arm: [7, 10], torso: [10, 14], leg: [10, 14], hand: [10, 14], foot: [10, 14],
@@ -111,7 +116,10 @@ export function stage(net) {
 export function addWound(p, w, rng = Math.random) {
     const row = rowOf(w.part);
     const wound = { id: p.nextId++, part: w.part.name, pid: w.part.id, type: w.type, bleed: 0, age: 0, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false };
-    const healRange = w.type === 'blunt' && !w.functionLost ? BRUISE_DAYS
+    const organ = w.part.cats.find(k => ORGAN_HEAL[k]);
+    const healRange = organ && ['cut', 'puncture', 'bite', 'blunt'].includes(w.type)
+        ? ORGAN_HEAL[organ][w.type === 'blunt' ? 'blunt' : 'cut']?.[w.functionLost ? 1 : 0] ?? null
+        : w.type === 'blunt' && !w.functionLost ? BRUISE_DAYS
         : ['cut', 'puncture', 'bite', 'blunt'].includes(w.type) || w.functionLost ? CUT_HEAL[row] : w.type === 'burn' ? BURN_HEAL[w.depth]
         : w.type === 'frostbite' ? FROSTBITE_HEAL : null;
     if (w.type === 'burn') wound.depth = BURN_HEAL[w.depth] !== undefined ? w.depth : null;
