@@ -1,5 +1,5 @@
 import { creature } from './df/index.js';
-import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot } from './df/combat.js';
+import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot, SKILL_LEVELS } from './df/combat.js';
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
@@ -668,6 +668,7 @@ export const impairmentBac = p => (p.needs?.alcohol || 0) + awakeBac((p.needs?.a
 export const awakeBac = h => Math.max(0, 0.05 + (h - 17) * 0.05 / 7);
 // Flight speed of a shot: 47.23 m/s, a 102 g arrow from a 144 lbf yew self bow (Stretton et al. 2010), for every launcher.
 const SHOT_MPS = 47.23;
+const SHOT_HC = [101, 95, 89, 83, 77, 71, 65, 59, 53];
 
 // Spread of a blow's momentum: Walilko 2005 punch force SD ÷ mean (rule 576), applied to every attack.
 const SPREAD = 0.237;
@@ -892,6 +893,22 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         bite = atk.id === 'BITE';
         inject = !!atk.inject;
         means = atk.sel[1] === 'STANCE' ? 'kick' : 'fist';
+    }
+    // Aim (§4.4b): a shot at a named part lands on it with P = 1 − e^(−((R + arrow radius) ÷ σr)²), σr = distance × σt,
+    // σt = 5e−4 × 1.035^(h + 6) × e^(0.00365 d) rad (Archery GB 2023 handicap scheme, archeryutils). Handicap h from DF skill by the
+    // Archery GB outdoor longbow classification thresholds 101 (Archer 3rd class) … 53 (Elite Master Bowman) [ASSUMED mapping, one
+    // class per skill level from Dabbling; Expert and above EMB]. R = √(A ÷ π), A = part volume^(2/3) (as for armour, §4.5).
+    // A miss on the part still lands elsewhere with the same law for the whole body (sum of outer parts' areas); else it misses.
+    if (means === 'shot' && !a.landed && a.part) {
+        const d = a.distance_m ?? 10, h = SHOT_HC[Math.min(SHOT_HC.length - 1, Math.max(0, SKILL_LEVELS.indexOf(a.skill ?? 'Dabbling')))];
+        const sr = d * 5e-4 * 1.035 ** (h + 6) * Math.exp(0.00365 * d);
+        const pHit = r => 1 - Math.exp(-(((r + 0.00275) / sr) ** 2));
+        const vol = target.mass / 1000, area = p => (vol * p.relsize / tc.relTotal) ** (2 / 3);
+        const bodyA = tc.parts.filter(x => !x.flags.includes('INTERNAL')).reduce((t, x) => t + area(x), 0);
+        const onPart = pHit(Math.sqrt(area(part) / Math.PI)), onBody = pHit(Math.sqrt(bodyA / Math.PI));
+        const u = rng();
+        if (u >= onBody) return `shot at ${part.name}: misses (spread ${round(sr * 100)} cm at ${d} m; chance on the part ${Math.round(onPart * 100)} %, on the body ${Math.round(onBody * 100)} %).`;
+        if (u >= onPart) { const was = part.name; part = randomHitPart(tc, rng, { attackerCm3: aMass * 1000 }); notes.push(`aimed at ${was}, struck ${part.name} (spread ${round(sr * 100)} cm)`); }
     }
     if (!a.landed) {
         const at = { ...a, means, mass };
