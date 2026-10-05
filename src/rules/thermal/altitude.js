@@ -42,3 +42,11 @@ export function tucRange(m, decompression = false) {
     }
     return [9, 12];
 }
+
+/** Altitude (m) whose air gives the same inspired oxygen as `o2Pct` % oxygen at `baseM` m (hypoxic-room equivalence). */
+export function equivalentAltitude(o2Pct, baseM = 0) {
+    const target = o2Pct / 100 * (pressureTorr(baseM) - 47);
+    let lo = 0, hi = 20000;
+    for (let k = 0; k < 50; k++) { const mid = (lo + hi) / 2; if (inspiredO2(mid) > target) lo = mid; else hi = mid; }
+    return Math.round((lo + hi) / 2);
+}

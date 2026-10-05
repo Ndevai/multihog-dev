@@ -505,6 +505,9 @@ Set with BodyEnvironment `co_ppm`; treated with BodyTreat `oxygen` or `hyperbari
 | unconscious | COHb ≥ 30 % [fit: 800 ppm "insensible within 2 hours" → 97 min; "30 % COHb is considered severe"] | same |
 | death | COHb ≥ 40 % [fit: 3200 ppm "death within 30 minutes" → 29 min]; the highest non-fatal level reported is 73 % | same |
 | none | `NOBREATHE` creatures; bloodless creatures | [RAW] |
+| other creatures | VA scales with (mass ÷ 70 kg)^0.75 [ASSUMED: ventilation follows Kleiber metabolism]; at 1600 ppm, 0.3 kg rat dead at 12 min, 20 kg dog 39 min, 70 kg human 62, 500 kg horse 175 (small animals first, as with miners' canaries) | |
+| low oxygen (`o2_pct`) | the altitude with the same inspired oxygen pressure, FiO2 × (PB − 47), entered suddenly; all §6.6 rules apply [ASSUMED equivalence of hypoxic air and altitude]. 19 % = 813 m, 17 % = 1711 m, 15 % = 2689 m, 12 % = 4352 m, 10 % = 5636 m, 8 % = 7120 m (unconscious at 8 min), 6 % = 8895 m (2 min), 4 % (1 min) | West 1996 pressure (§6.6); FAA times (§6.6) |
+| smoke (`smoke`) | inhalation injury: +17 on the burn score (§6.4 burn death); 18 % burn at 40: 1.0 % → 3.2 % die | Osler et al. 2010, J Trauma 68:690 ("the presence of inhalation injury added the equivalent of 17 years (or 17 % burn)") |
 
 Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 145 min; 1600 ppm 44 / 62 min (table: death in under 2 h); 3200 ppm 22 / 29 min; 12 800 ppm 6 / 7 min (table: unconscious after 2–3 breaths, dead in under 3 min — faster than CO binding explains). After 60 min at 1600 ppm (39 %): 80 min on oxygen → 20 %.
 

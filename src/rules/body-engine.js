@@ -6,7 +6,7 @@ import { hearingShift, inRange } from './hearing.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
-import { pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
+import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp, burnedTBSA } from './thermal/exposure.js';
 
 export const DAY_MIN = 24 * 60;
@@ -165,7 +165,7 @@ function infectionChance(w) {
 // reported for well-performing burn units (Wikipedia, Baux score), slope 0.058 per point [ASSUMED, recalled from Osler 2010].
 // Re-rolled on the added risk when the burned area grows; death 1–14 days after the burn [ASSUMED timing].
 function burnRisk(p, rng) {
-    const pr = 1 / (1 + Math.exp(-0.058 * ((p.age ?? 25) + burnedTBSA(p) - 135))), old = p.burnDeath?.p ?? 0;
+    const pr = 1 / (1 + Math.exp(-0.058 * ((p.age ?? 25) + burnedTBSA(p) + (p.inhalation ? 17 : 0) - 135))), old = p.burnDeath?.p ?? 0;
     if (pr <= old || burnedTBSA(p) === 0) return;
     const b = p.burnDeath ??= { p: 0, fatal: false, min: 0, deathMin: null };
     if (!b.fatal && rng() < (pr - old) / (1 - old)) { b.fatal = true; b.deathMin = b.min + Math.round((1 + 13 * rng()) * DAY_MIN); }
@@ -245,6 +245,8 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         checkDeath(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
+        // Smoke breathed in: inhalation injury, +17 on the burn score (Osler et al. 2010) once any burn exists.
+        if (p.env?.smoke && !p.inhalation && !has(p, 'NOBREATHE')) { p.inhalation = true; burnRisk(p, rng); }
         coMinute(p);
         if (p.dead) return;
         if (p.sepsis && ++p.sepsis.min >= p.sepsis.deathMin && p.sepsis.fatal) { p.dead = 'sepsis'; return; }
@@ -478,7 +480,7 @@ function venomMinute(p) {
  * (aircraft, magic) → unconscious once the time of useful consciousness runs out. */
 // Carbon monoxide (§6.8). Uptake: Coburn-Forster-Kane equation, d[COHb]/dt = Vco/Vb + PICO/(B Vb) − [COHb] PcO2/(M B Vb [O2Hb]),
 // B = 1/DL + PL/VA; DL 30 mL/min/mmHg, PL 713 mmHg, M 218, PcO2 100 mmHg, Vco 0.007 mL/min, O2 capacity 0.207 mL/mL, blood
-// volume as §5, VA 6000 mL/min × METs [ASSUMED scaling]; PICO = ppm × (PB − 47). With no CO in the air, COHb falls with the
+// volume as §5, VA 6000 mL/min × METs × (mass ÷ 70 kg)^0.75 (ventilation follows metabolic rate, Kleiber) [ASSUMED scaling]; PICO = ppm × (PB − 47). With no CO in the air, COHb falls with the
 // half-life 320 min on room air, 80 on 100 % oxygen, 23 hyperbaric (Wikipedia, Carbon monoxide poisoning). Unconscious at
 // 30 % ("30 % COHb is considered severe"; fits 800 ppm "insensible within 2 hours": 97 min), dead at 40 % (fits 3200 ppm
 // "death within 30 minutes": 29 min) [fit].
@@ -489,7 +491,7 @@ function coMinute(p) {
     if (has(p, 'NOBREATHE') || !bloodVolume(p)) return;
     const k = p.co ??= { hb: 0, o2: 'air' }, cap = 0.207, vb = bloodVolume(p);
     if (ppm > 0) {
-        const pb = p.altitude ? pressureTorr(p.altitude.m) : 760, va = 6000 * Math.max(1, p.env?.met ?? p.workMet ?? 1);
+        const pb = p.altitude ? pressureTorr(p.altitude.m) : 760, va = 6000 * kleiber(p) * Math.max(1, p.env?.met ?? p.workMet ?? 1);
         const B = 1 / 30 + 713 / va, co = k.hb * cap;
         k.hb = Math.min(0.99, (co + 0.007 / vb + ppm * 1e-6 * (pb - 47) / (B * vb) - co * 100 / (218 * B * vb * (cap - co))) / cap);
     } else k.hb *= 0.5 ** (1 / CO_HALF[k.o2]);
@@ -547,12 +549,19 @@ export function setEnvironment(p, env) {
     const covers = region => (cl.garments ?? []).some(g => (g.covers ?? []).some(x => String(x).toLowerCase().includes(region)));
     p.env = { tdb: env.air_c, tr: env.radiant_c ?? env.air_c, rh: env.humidity_pct ?? 50,
         v: env.air_speed_ms ?? Math.max(0.1, (env.wind_kmh ?? 0) / 3.6 * BODY_WIND), wind10: env.air_speed_ms != null ? 0 : env.wind_kmh ?? 0,
-        clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null, co: env.co_ppm ?? 0,
+        clo: clothingClo(cl), met: env.met ?? null, posture: env.posture ?? null, co: env.co_ppm ?? 0, smoke: !!env.smoke,
         faceBare: !env.face_covered, handsBare: !(/gloves/i.test(cl.ensemble ?? '') || covers('hand')),
         water: env.water_c != null && env.immersed?.length ? { tc: env.water_c, speed: env.water_speed_ms ?? 0, segs: immersion(env.immersed), suit: !!env.immersion_suit,
             swimming: !!env.swimming, afloat: !!env.afloat } : null };
     if (!p.env.water) { p.swimFailed = false; p.underS = 0; p.breathHold = null; if (p.drowning) { p.apnea = null; p.drowning = false; p.unconscious ??= 'near-drowning'; } }
     if (p.thermal) { p.thermal.bareDose = 0; }
+    // Low oxygen (fire, sealed room, gas displacing air): the altitude with the same inspired oxygen pressure, entered suddenly
+    // (§6.6 rules apply; hypoxic air and altitude are equivalent by inspired PO2) [ASSUMED equivalence].
+    if (env.o2_pct != null && env.o2_pct < 20.9) {
+        p.baseAlt ??= p.altitude?.m ?? 0;
+        const m = equivalentAltitude(env.o2_pct, p.baseAlt);
+        if (p.altitude?.m !== m) setAltitude(p, m, true);
+    } else if (p.baseAlt != null) { setAltitude(p, p.baseAlt); p.baseAlt = null; }
     if (p.env.met == null) delete p.env.met;
     if (p.env.posture == null) delete p.env.posture;
 }

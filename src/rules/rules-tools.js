@@ -295,6 +295,8 @@ export function registerRulesTools(enabled) {
         sudden_ascent: { type: 'boolean', description: 'Arrived at this altitude within minutes (aircraft, magic, a fall upward) rather than by climbing' },
         decompression: { type: 'boolean', description: 'A pressurized cabin or enclosure suddenly opened at this altitude (breath torn out; shorter time conscious)' },
         co_ppm: { type: 'number', description: 'Carbon monoxide in the air, ppm (fire smoke in a room 1000–10 000; car exhaust in a closed garage several thousand; a faulty heater 100–1000); 0 = fresh air' },
+        o2_pct: { type: 'number', description: 'Oxygen in the air, % (normal 20.9; a fire-filled or sealed room or gas-displaced air lower); omit for normal air' },
+        smoke: { type: 'boolean', description: 'Breathing fire smoke (causes inhalation injury)' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },
     }, ['who'], a => run(st => {
         const out = [];
