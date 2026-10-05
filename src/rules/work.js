@@ -12,6 +12,16 @@ export function pandolf(bodyKg, loadKg, speedMs, gradePct = 0, terrain = 'dirt r
     return 1.5 * W + 2.0 * (W + L) * (L / W) ** 2 + eta * (W + L) * (1.5 * V ** 2 + 0.35 * V * G);
 }
 
+// Running: ACSM running equation, VO2 (mL/kg/min) = 0.2 v + 0.9 v × grade + 3.5, v in m/min, grade as a fraction (as given
+// by Dugas et al. 2023, J Clin Med 12:7835, citing ACSM Guidelines). Load scales the cost by (body + load) ÷ body, terrain η
+// multiplies the horizontal term, downhill counts as level [ASSUMED].
+export function runWatts(bodyKg, loadKg, speedMs, gradePct = 0, terrain = 'dirt road') {
+    const eta = TERRAIN[terrain];
+    if (eta == null) throw new Error(`Unknown terrain "${terrain}". Known: ${Object.keys(TERRAIN).join(', ')}.`);
+    const v = speedMs * 60, vo2 = eta * 0.2 * v + 0.9 * v * Math.max(0, gradePct || 0) / 100 + 3.5;
+    return vo2 / 3.5 * 1.163 * bodyKg * (bodyKg + (loadKg || 0)) / bodyKg;
+}
+
 /** METs of that work: W ÷ (1.163 W/kg × body kg) (1 MET = 1 kcal/kg/h). */
 export const metOf = (watts, bodyKg) => watts / (1.163 * bodyKg);
 

@@ -1,6 +1,6 @@
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
-import { TERRAIN, pandolf, metOf } from './work.js';
+import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
@@ -368,6 +368,7 @@ export function registerRulesTools(enabled) {
                 who: str('Character'), speed_kmh: { type: 'number', description: 'Walking speed, km/h (stroll 3, normal 5, brisk 6.5)' },
                 load_kg: { type: 'number', description: 'Carried load, kg' }, grade_pct: { type: 'number', description: 'Slope, % (uphill positive)' },
                 terrain: { type: 'string', enum: Object.keys(TERRAIN) },
+                running: { type: 'boolean', description: 'Running rather than walking' },
             }, required: ['who', 'speed_kmh'] },
         },
     }, ['minutes'], a => run((st, rng) => {
@@ -376,7 +377,7 @@ export function registerRulesTools(enabled) {
         for (const w of a.walking || []) {
             const p = st.people?.[w.who];
             if (!p) continue;
-            try { p.workMet = metOf(pandolf(p.mass, w.load_kg, w.speed_kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass); }
+            try { p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, w.speed_kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass); }
             catch (e) { return `${e.message} Nothing recorded.`; }
             walkers.push([w.who, p, w.speed_kmh]);
         }

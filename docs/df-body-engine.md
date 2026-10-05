@@ -415,6 +415,7 @@ PassTime `walking` entries (speed, load, slope, terrain) set the walker's activi
 | Quantity | Rule | Source |
 |---|---|---|
 | metabolic rate | M (W) = 1.5 W + 2.0 (W + L)(L ÷ W)² + η (W + L)(1.5 V² + 0.35 V G); W body kg, L load kg, V m/s, G grade %; downhill counted as level [ASSUMED] | Pandolf, Givoni & Goldman 1977, J Appl Physiol 43:577 (via Wikipedia "Pandolf equation") |
+| running (`running: true`) | VO2 (mL/kg/min) = 0.2 v + 0.9 v × grade + 3.5 (v m/min, grade fraction); × (body + load) ÷ body; η on the horizontal term; downhill as level [ASSUMED]; METs = VO2 ÷ 3.5 | ACSM running equation, as given by Dugas et al. 2023, J Clin Med 12:7835 |
 | terrain η | road 1.0, dirt road 1.1, light brush 1.2, heavy brush 1.5, swamp 1.8, loose sand 2.1, soft snow 15 cm 2.5, 25 cm 3.3, 35 cm 4.1 | Soule & Goldman 1972, J Appl Physiol 32:706 |
 
 Examples (70 kg): road, no load, 5 km/h: 308 W, 3.8 MET (Compendium walking 3 mph: 3.5); dirt road, 20 kg, 5 km/h: 5.0 MET; 30 kg up a 10 % slope at 4 km/h: 9.5 MET; 20 kg in 25 cm snow at 4 km/h: 8.2 MET.
@@ -428,6 +429,8 @@ Endurance:
 | maximum acceptable work time | 26.12 × e^(−4.81 × relative load) hours; every minute of walking (`walking`) or other activity (`active`, 3.5 MET) adds 1 ÷ that time; at 1 → exhausted: all exertion checks fail; a 7 h sleep resets it [ASSUMED] | Wu & Wang 2002, Ergonomics 45:280, as given by Park et al. 2023, Ann Occup Environ Med 35:e24 |
 
 Limits for a 25-year-old man: 3.8 MET (road walk) 10.3 h, 5.0 MET (20 kg on a dirt road) 7.0 h, 6 MET 5.0 h, 8.2 MET (20 kg in snow) 2.4 h, 9.5 MET (30 kg up 10 %) 1.6 h.
+
+Running (70 kg, road): 8 km/h 8.6 MET, kept 2.1 h; 10 km/h 10.5 MET, 1.1 h; 12 km/h 12.4 MET, 36 min; 10 km/h up 5 % 12.7 MET, 33 min.
 
 Open (OPEN-87): rest between bouts and partial recovery, downhill cost (Santee et al. 2001 model; equation not reachable), running.
 
