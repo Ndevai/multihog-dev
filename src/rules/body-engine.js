@@ -416,6 +416,13 @@ function venomMinute(p) {
     const v = p.venom;
     if (!v) return;
     v.min += 1;
+    // DF effects with an engine mechanism (DF wiki, Syndrome): UNCONSCIOUSNESS "renders the creature unconscious"; BLEEDING
+    // "causes the targeted body part to start bleeding": small-vessel rate 1–10 mL/min scaled by SEV ÷ 100 [ASSUMED].
+    const act = activeSymptoms(v);
+    if (act.some(e => e.kind === 'unconsciousness')) p.unconscious ??= 'venom';
+    else if (p.unconscious === 'venom') p.unconscious = null;
+    const bl = act.find(e => e.kind === 'bleeding');
+    if (bl && bloodVolume(p)) p.lost += 5.5 * bl.sev / 100;
     if (!v.fatal) return;
     if (v.kind === 'neuro' && v.min >= v.collapse && p.apnea == null) { p.apnea = 0; p.paralysed = true; p.unconscious = 'paralysed by venom'; }
     if (v.kind === 'hemo') {
@@ -860,7 +867,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     if (inject && !target.venom && r.tested.some(x => /SKIN/.test(x.layer.tissue) && x.result !== 'held')) {
         const b = baseVenom(ac.id), scale = b && b !== ac.id && creature(b)?.size ? ac.size / creature(b).size : 1;
         const v = envenom(ac.id, target.mass, () => gauss(rng), scale) ?? (symptoms(ac).length ? { species: ac.id, kind: 'df', fatal: false, min: 0 } : null);
-        if (v) { v.symptoms = symptoms(ac); target.venom = v; }
+        if (v) { v.symptoms = symptoms(ac); v.part = part.name; target.venom = v; }
     }
     checkDeath(target);
     const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && r.first.M >= KO_MOMENTUM;
@@ -1039,6 +1046,8 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // DF paralysis syndrome (giant cave spider): the body cannot move [RAW CE_PARALYSIS].
     if (p.venom && (uses.includes('grasp') || uses.includes('stance') || exertion !== 'none') && activeSymptoms(p.venom).some(e => e.kind === 'paralysis'))
         return { chance: 0, limit: 'paralysed by venom' };
+    // DIZZINESS: "occasional fainting and a general slowdown" → checks on feet fail [ASSUMED].
+    if (p.venom && on_feet && activeSymptoms(p.venom).some(e => e.kind === 'dizziness')) return { chance: 0, limit: 'dizzy from venom' };
     if (uses.includes('sight') && uses.includes('grasp') && scores.sight > 0 && scores.sight < 1)
         return { chance: Math.max(0, 1 - 4 * (1 - out.chance)), limit: [out.limit, 'one eye: errors × 4, takes 1.56 × as long'].filter(Boolean).join('; ') };
     return out;

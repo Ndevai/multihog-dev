@@ -253,7 +253,10 @@ DF decides which attacks inject venom (`SPECIALATTACK_INJECT_EXTRACT` on the att
 | giant forms, animal people | the base species' venom; yield × DF body size ÷ base body size [ASSUMED isometric]: giant adder × 1340, adder man × 234, giant rattlesnake × 36 → every bite on a 70 kg person is lethal untreated | [RAW] BODY_SIZE |
 | symptoms | each biting creature's DF syndrome (`SYNDROME` with `SYN_INJECTED`; `CE_<kind>:SEV:…:START:…:PEAK:…:END:…`) runs from the bite; 1 tick = 1.2 min (1200 ticks a day). Status lists the active effects with DF severity. Adder: pain 12 min–48 h, swelling and blisters 1–30 h, nausea 8–24 h. Rattlesnake and helmet snake: necrosis 1 h–2.5 days | [RAW] syndromes; DF wiki "Time" (1200 ticks per day) |
 | paralysis (`CE_PARALYSIS`) | while active, checks that use grasp or stance or any exertion fail; breathing continues [RAW: DF paralysis leaves breathing]. Giant cave spider: 6–24 min | [RAW] |
-| other DF effects (pain, nausea, dizziness, fever, swelling, blisters, bleeding, necrosis, oozing, bruising) | status only (pain OPEN-77) | |
+| unconsciousness (`CE_UNCONSCIOUSNESS`) | unconscious while active ("renders the creature unconscious"). Black mamba and bushmaster: 1–30 h after the bite | [RAW]; DF wiki Syndrome |
+| bleeding (`CE_BLEEDING`) | blood lost 5.5 mL/min × SEV ÷ 100 while active (small-vessel midpoint [ASSUMED]): rattlesnake 10 → 33 mL over 60–120 min | DF wiki Syndrome: "causes the targeted body part to start bleeding" |
+| dizziness (`CE_DIZZINESS`) | checks on feet fail while active [ASSUMED from "occasional fainting and a general slowdown"]. Rattlesnake, helmet snake: 1–30 h | DF wiki Syndrome |
+| other DF effects (pain, nausea, fever, swelling, blisters, necrosis, oozing, bruising) | status only (pain OPEN-77; nausea's dehydration, necrosis's tissue loss: OPEN-86) | |
 | helmet snake, giant cave spider | fictional: DF symptoms only, never fatal by dose | |
 
 Scratch runs (70 kg, bitten on the shin, 150 untreated each): rattlesnake 19 dead (12.7 %), king cobra 47 (31 %), black mamba 131 (87 %), bushmaster 141 (94 %); antivenom at 20 min saved all. A 20 kg child: rattlesnake 98.5 %, because one threshold and a narrow yield spread make death depend steeply on body mass.
