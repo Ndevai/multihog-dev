@@ -102,6 +102,18 @@ export function restoreRulesForMemo(memo) {
     return false;
 }
 
+// The narrator gets the outcome only: chances, intermediate values and citations are salient details that anchor or
+// leak into the narration (models are distracted by irrelevant context: Shi et al. 2023, ICML). The full text goes to the
+// browser console.
+const DETAIL = /\s*\([^()]*(?:%|\b(?:1[89]|20)\d\d\b|\bSII\b|chance)[^()]*\)/g;
+const ODDS = /\b(?:death )?chance \d+(?:\.\d+)? ?%\s*(?:→|—)\s*/g;
+export function plain(out) {
+    if (typeof out !== 'string') return out;
+    const short = out.replace(DETAIL, '').replace(ODDS, '');
+    if (short !== out) console.debug('[Rules engine]', out);
+    return short;
+}
+
 // A decision tool called again in one turn for the same actor and act returns its first result, like RollTheDice's ledger,
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = v => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
@@ -194,7 +206,7 @@ export function registerRulesTools(enabled) {
             await loadRaws();
             const prior = decided(name, args);
             if (prior) return `Already decided this turn; this result stands. ${prior}`;
-            const out = await action(args);
+            const out = plain(await action(args));
             remember(name, args, out);
             globalThis._rpgRefreshRenderedView?.();
             return out;
