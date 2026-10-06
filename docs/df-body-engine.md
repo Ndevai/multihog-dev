@@ -562,6 +562,10 @@ Limits (OPEN-89): evidence, prior suspicion and relationship are not inputs (det
 
 Scratch (2000 each): hanging by two hands — man 30 y, 80 kg: 89 %; woman 30 y, 60 kg: 60 %; man 75 y: 28 %; woman 75 y: 6 %. Carrying 40 kg in one hand — man 30: 89 %; woman 30: 7 %. Limits (OPEN-90): fingertip ledges (weaker than a full grip), hand injuries other than lost function.
 
+### 6.11 New characters
+
+A character the story has not described gets sex, age and occupation from the 1881 census of England and Wales (country totals as published by A Vision of Britain Through Time: Table 3, ages of males and females, 21 five-year bands; Table 10, occupations of males and females, 330 occupations after dropping the "Others" rows), through NewCharacter. Sex: 48.7 % male from the age table, or the chosen occupation's own men/women counts. Age: weighted by the band counts for that sex, uniform within the band [ASSUMED]. Occupation: from age 15 [ASSUMED; the table has no ages], a person has one with probability (occupation total for the sex) ÷ (population aged 15+ of that sex), then one is drawn by count; otherwise "no stated occupation". Whatever the story already fixes (sex, occupation, a minimum age) is passed in and kept. Occupied from 15: men 96 %, women 40 %. Check (20 000 draws): 50.7 % female, 36.5 % under 15 (census 51.3 %, 36.5 %). OPEN: other countries and periods; age by occupation; names.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -598,6 +602,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | BodyFall | `height_m`, `soft`, `head_first` | scene facts | — |
 | HoldOn | `hanging`, `load_kg`, `hands` | scene facts | — |
 | Chase | `gap_m` | scene fact | — |
+| NewCharacter | `sex`, `occupation`, `min_age` | story facts (only when fixed) | sex, age and occupation otherwise drawn from the 1881 census (§6.11) |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ### 7.2 Defences against known model failures

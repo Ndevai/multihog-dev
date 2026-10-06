@@ -2,6 +2,7 @@ import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
 import { LIGHT } from './vision.js';
 import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
+import { drawPerson } from './census.js';
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
@@ -11,7 +12,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -184,7 +185,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look. A character might suspect a lie → JudgeStatement. A bystander might help → Bystander. An order to hurt someone → ObeyOrder. A small favour asked of a stranger → AskStranger. Hanging on or carrying by hand → HoldOn. A chase on foot → Chase. Romantic interest after a first meeting → FirstImpression. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look. A character might suspect a lie → JudgeStatement. A bystander might help → Bystander. An order to hurt someone → ObeyOrder. A small favour asked of a stranger → AskStranger. Hanging on or carrying by hand → HoldOn. A chase on foot → Chase. Romantic interest after a first meeting → FirstImpression. A character appears whom the story has not described → NewCharacter. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
@@ -470,6 +471,20 @@ export function registerRulesTools(enabled) {
         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
         if (p.error || f.error) return p.error || f.error;
         return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m);
+    }));
+
+    tool('NewCharacter', 'Decide the sex, age and occupation of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales.', {
+        who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
+        sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
+        occupation: str('Only when the story already fixes it, in a word or two (innkeeper, carter, blacksmith, servant)'),
+        min_age: { type: 'number', description: 'Only when the story already fixes it (e.g. 18 for someone serving drinks)' },
+    }, ['who'], a => run((st, rng) => {
+        const r = drawPerson({ sex: a.sex ?? null, occupation: a.occupation ?? null, minAge: Number(a.min_age) || 0 }, rng);
+        if (r.error) return r.error;
+        const { p } = who(st, a.who);
+        if (p) Object.assign(p, { age: r.age, sex: r.sex });
+        const noun = r.age < 15 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+        return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child, no occupation' : 'no stated occupation'}.`;
     }));
 
     tool('FirstImpression', 'Decide whether a character, after a brief first meeting, wants to see someone again romantically, before narrating their reaction.', {
