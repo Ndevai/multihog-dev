@@ -16,16 +16,21 @@ export function judgeStatement(isLie, rng = Math.random, { speaker = null, liste
     return { judgedLie: rng() < chance, chance };
 }
 
-// Helping in an emergency: intervened alone 85 %, with one other bystander 62 %, with four 31 % (Darley & Latané 1968, J Pers
-// Soc Psychol 8:377, seizure study, as given by Wikipedia "Diffusion of responsibility"); linear between, 31 % beyond four
-// [ASSUMED]. In dangerous emergencies the bystander effect did not occur (Fischer et al. 2011, Psychol Bull 137:517): the alone
-// rate for any number [ASSUMED from that finding].
-const HELP = [[0, 0.85], [1, 0.62], [4, 0.31]];
-export function helpChance(others, dangerous = false) {
-    const n = dangerous ? 0 : Math.max(0, others);
-    if (n >= 4) return 0.31;
-    const i = n < 1 ? 0 : 1, [x0, y0] = HELP[i], [x1, y1] = HELP[i + 1];
-    return y0 + (y1 - y0) * (n - x0) / (x1 - x0);
+// Helping in an emergency. Alone: 85 % intervened (Darley & Latané 1968, J Pers Soc Psychol 8:377, seizure study). With others
+// present the probit is shifted by Hedges' g from Fischer et al. 2011 (Psychol Bull 137:517, 105 effect sizes, > 7700
+// participants; Table 3: non-emergency −0.47, victim in danger −0.30, perpetrator acting +0.29; Table 4: 1 bystander −0.12,
+// 2 −0.21, 3 −0.45, 4 −0.38, 5+ −0.49; overall −0.35): g = g(situation) + g(number) − g(overall) [ASSUMED additive; g read
+// as a probit shift].
+const G_SITUATION = { 'not an emergency': -0.47, 'victim in danger': -0.30, 'attacker present': 0.29 };
+const G_NUMBER = [0, -0.12, -0.21, -0.45, -0.38, -0.49];
+const phi = x => 0.5 * (1 + erf(x / Math.SQRT2));
+function erf(x) { const t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; }
+const probit = p => { let lo = -8, hi = 8; for (let k = 0; k < 60; k++) { const m = (lo + hi) / 2; if (phi(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
+export const SITUATIONS = Object.keys(G_SITUATION);
+export function helpChance(others, situation = 'victim in danger') {
+    if (others <= 0) return 0.85;
+    const g = (G_SITUATION[situation] ?? -0.30) + G_NUMBER[Math.min(5, Math.round(others))] + 0.35;
+    return phi(probit(0.85) + g);
 }
 
 // Obeying an order to harm someone to the end (Milgram; Wikipedia "Milgram experiment"): baseline, victim in another room 65 %;

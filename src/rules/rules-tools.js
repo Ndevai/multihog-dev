@@ -1,6 +1,6 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
 import { LIGHT } from './vision.js';
-import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance } from './social.js';
+import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -392,10 +392,10 @@ export function registerRulesTools(enabled) {
     tool('Bystander', 'Decide whether an uninvolved character steps in to help in an emergency they witness (someone collapses, is attacked, cries for help).', {
         who: str('The bystander'),
         others: { type: 'number', description: 'How many other people the bystander believes also witness it' },
-        dangerous: { type: 'boolean', description: 'Helping is physically dangerous (an attacker present, fire)' },
+        situation: { type: 'string', enum: SITUATIONS, description: 'Default victim in danger' },
     }, ['who', 'others'], a => run((st, rng) => {
-        const p = helpChance(a.others, !!a.dangerous);
-        return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (chance ${Math.round(p * 100)} %; Darley & Latané 1968${a.dangerous ? ', Fischer et al. 2011' : ''}).`;
+        const p = helpChance(a.others, a.situation ?? 'victim in danger');
+        return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (chance ${Math.round(p * 100)} %; Darley & Latané 1968, Fischer et al. 2011).`;
     }));
 
     tool('ObeyOrder', 'Decide whether a character carries out an order from an authority to hurt someone, all the way, when they have no personal stake in it.', {
