@@ -220,7 +220,7 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
     if (treatment === 'stop_bleeding') {
         if (['femoral', 'limb_artery'].includes(w.vessel) && w.bleed > 0) {
             const pr = { untrained: 0.1835, instructions: 0.4414, trained: 0.90 }[training] ?? 0.1835;
-            if (rng() >= pr) return `Wound ${id}: the tourniquet does not stop the bleeding (${training}: ${Math.round(pr * 100)} % succeed); still ${w.bleed} mL/min.`;
+            if (rng() >= pr) return `Wound ${id}: the tourniquet does not stop the bleeding (applied by someone ${training === 'trained' ? 'trained in bleeding control' : training === 'instructions' ? 'following instructions' : 'untrained'}); still ${w.bleed} mL/min.`;
             w.bleed = 0; return `Wound ${id}: tourniquet on, bleeding stopped.`;
         }
         w.bleed = 0; return `Wound ${id}: bleeding stopped.`;
@@ -1220,7 +1220,7 @@ function normInv(p) {
 function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, timed = false, fine = false }) {
     if (p.dead) return { chance: 0 };
     if (p.unconscious) return { chance: 0, limit: `unconscious (${p.unconscious})` };
-    if (exertion === 'heavy' && p.needs && p.needs.waterL / p.mass * 100 >= 8) return { chance: 0, limit: 'dehydrated 8 % of body mass' };
+    if (exertion === 'heavy' && p.needs && p.needs.waterL / p.mass * 100 >= 8) return { chance: 0, limit: 'dehydration' };
     const cls = bloodClass(p);
     if (cls === 4 || (cls >= 3 && on_feet) || cls >= (EXERTION_FAILS_AT[exertion] ?? 5)) return { chance: 0, limit: `blood-loss class ${['I', 'II', 'III', 'IV'][cls - 1]}` };
     const scores = abilities(p);
@@ -1250,16 +1250,16 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     const used = uses.filter(u => u in scores);
     const risk = uses.includes('alertness') ? crashRisk(impairmentBac(p)) : 1;
     const zero = used.find(u => scores[u] === 0);
-    if (zero) return { chance: 0, limit: `${zero} 0%` };
+    if (zero) return { chance: 0, limit: `no working ${zero}` };
     for (const k of ['thinking', 'aerobic']) if (k in scores) used.push(k);
     const force = used.filter(u => FORCE_SCORES.includes(u) || u === 'thinking' || u === 'aerobic').sort((x, y) => scores[x] - scores[y])[0];
     const s = force ? scores[force] : 1;
     const base = Math.max(0, Math.min(1, Number(share) || 0));
     const alert = (r, limit) => risk > 1.005
-        ? { chance: r >= 1 ? 1 : r / (r + (1 - r) * risk), limit: [limit, `alertness: blood alcohol equivalent ${round(impairmentBac(p), 3)} %, odds of failing × ${round(risk, 2)}`].filter(Boolean).join('; ') }
+        ? { chance: r >= 1 ? 1 : r / (r + (1 - r) * risk), limit: [limit, 'impaired alertness'].filter(Boolean).join('; ') }
         : { chance: r, limit };
     const demand = 1 - normInv(Math.min(0.999, base)) * CAPACITY_CV;
-    const out = s >= 1 || base === 0 ? alert(base) : alert(normCdf((s - demand) / (s * CAPACITY_CV)), `${force} ${Math.round(s * 100)}%`);
+    const out = s >= 1 || base === 0 ? alert(base) : alert(normCdf((s - demand) / (s * CAPACITY_CV)), `reduced ${force}`);
     // Hand work under sight with some eyes lost: grasp errors × 4 and grasping 56 % slower with one eye (Mroczkowski &
     // Niechwiej-Szwedo 2021, Exp Brain Res 239:1345, precision reach-to-grasp, 20 people).
     // DF paralysis syndrome (giant cave spider): the body cannot move [RAW CE_PARALYSIS].
@@ -1268,7 +1268,7 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
     // DIZZINESS: "occasional fainting and a general slowdown" → checks on feet fail [ASSUMED].
     if (p.venom && on_feet && activeSymptoms(p.venom).some(e => e.kind === 'dizziness')) return { chance: 0, limit: 'dizzy from venom' };
     if (uses.includes('sight') && uses.includes('grasp') && scores.sight > 0 && scores.sight < 1)
-        return { chance: Math.max(0, 1 - 4 * (1 - out.chance)), limit: [out.limit, 'one eye: errors × 4, takes 1.56 × as long'].filter(Boolean).join('; ') };
+        return { chance: Math.max(0, 1 - 4 * (1 - out.chance)), limit: [out.limit, 'sight from one eye only'].filter(Boolean).join('; ') };
     return out;
 }
 
@@ -1290,5 +1290,8 @@ export function check(p, task, rng = Math.random) {
     if (route && !task.override) return `${task.task}: decided by ${route[1]}, not BodyCheck. Call that tool. (If this task is genuinely different, call BodyCheck again with override: true.)`;
     const { chance, limit } = checkOdds(p, task);
     const ok = rng() < chance;
-    return `${task.task}: chance ${round(chance * 100, chance < 0.01 && chance > 0 ? 2 : 0)}%${limit ? ` (${limit})` : ''} → ${ok ? 'SUCCESS' : 'FAILURE'}.`;
+    console.debug?.('[Rules engine]', task.task, `chance ${round(chance * 100, 2)} %`);
+    // The cause is stated either way: an outcome without one invites the narrator to invent it.
+    return ok ? `${task.task}: SUCCESS${limit ? `, despite ${limit}` : ''}.`
+        : `${task.task}: FAILURE, ${limit ? `because of ${limit}` : 'an ordinary failure: no injury or condition caused it'}.`;
 }
