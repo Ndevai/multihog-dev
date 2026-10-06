@@ -426,7 +426,7 @@ export function registerRulesTools(enabled) {
     }, ['listener', 'speaker', 'is_lie'], a => run((st, rng) => {
         const l = who(st, a.listener), s = who(st, a.speaker);
         const r = judgeStatement(!!a.is_lie, rng, { speaker: s.p ?? null, listener: l.p ?? null });
-        return `${a.listener} ${r.judgedLie ? 'judges it a lie' : 'believes it'} (chance of being taken for a lie ${Math.round(r.chance * 100)} %, from ${a.speaker}'s credibility and ${a.listener}'s credulity; Bond & DePaulo 2006, 2008). Narrate ${a.listener}'s reaction from that judgment.`;
+        return `${a.listener} ${r.judgedLie ? 'judges it a lie' : 'believes it'}, from ${a.speaker}'s manner alone: no proof either way. Narrate ${a.listener}'s reaction from that judgment.`;
     }));
 
     tool('Bystander', 'Decide whether an uninvolved character steps in to help in an emergency they witness (someone collapses, is attacked, cries for help).', {
@@ -435,7 +435,8 @@ export function registerRulesTools(enabled) {
         situation: { type: 'string', enum: SITUATIONS, description: 'Default victim in danger' },
     }, ['who', 'others'], a => run((st, rng) => {
         const p = helpChance(a.others, a.situation ?? 'victim in danger');
-        return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (chance ${Math.round(p * 100)} %; Darley & Latané 1968, Fischer et al. 2011).`;
+        const others = a.others > 0 ? `with ${a.others} other${a.others > 1 ? 's' : ''} watching` : 'alone with it';
+        return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (${others}).`;
     }));
 
     tool('ObeyOrder', 'Decide whether a character carries out an order from an authority to hurt someone, all the way, when they have no personal stake in it.', {
@@ -443,13 +444,13 @@ export function registerRulesTools(enabled) {
         situation: { type: 'string', enum: Object.keys(OBEY) },
     }, ['who', 'situation'], a => run((st, rng) => {
         const p = OBEY[a.situation];
-        return `${a.who} ${rng() < p ? 'carries the order out to the end' : 'refuses before the end'} (chance ${Math.round(p * 100)} %; Milgram).`;
+        return `${a.who} ${rng() < p ? 'carries the order out to the end' : 'refuses before the end'} (${a.situation}).`;
     }));
 
     tool('AskStranger', 'Decide whether a stranger agrees to a small direct request (a few minutes of time, lending something briefly, showing the way) before narrating the answer.', {
         who: str('The stranger asked'),
         request: str('The request in a few words'),
-    }, ['who'], a => run((st, rng) => `${a.who} ${rng() < SMALL_REQUEST_YES ? 'agrees' : 'declines'} (strangers agree to small direct requests 46 % of the time; Flynn & Lake 2008).`));
+    }, ['who'], a => run((st, rng) => `${a.who} ${rng() < SMALL_REQUEST_YES ? 'agrees' : 'declines'}${a.request ? ` (${a.request})` : ''}.`));
 
     tool('HoldOn', 'Decide whether a person can hang on by their hands (a ledge, a rope, a branch) or carry a load by its handles, before narrating it.', {
         who: str('Character holding on'),
@@ -493,7 +494,7 @@ export function registerRulesTools(enabled) {
         many_options: { type: 'boolean', description: 'They are meeting many prospective partners at once (15 or more), e.g. a ball, a festival, a dating event' },
     }, ['who', 'sex'], a => run((st, rng) => {
         const pr = interestChance(a.sex, !!a.many_options);
-        return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'} (${Math.round(pr * 100)} %; Fisman et al. 2006 speed-dating study).`;
+        return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {

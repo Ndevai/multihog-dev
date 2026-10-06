@@ -381,8 +381,9 @@ export function fallDeathChance(height, { soft = false, headFirst = false } = {}
 
 export function fall(p, height, opts = {}, rng = Math.random) {
     const chance = fallDeathChance(height, opts);
-    if (chance > 0 && rng() < chance) { p.dead = 'fall'; return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — dies.`; }
-    return `Fall ${height} m: death chance ${Math.round(chance * 1000) / 10}% — survives. Injuries: narrate, then record with BodyWound.`;
+    console.debug?.('[Rules engine]', `fall ${height} m: death chance ${Math.round(chance * 1000) / 10} %`);
+    if (chance > 0 && rng() < chance) { p.dead = 'fall'; return `Fall ${height} m: dies.`; }
+    return `Fall ${height} m: survives. Injuries: narrate, then record with BodyWound.`;
 }
 
 /** part → whether it works: no severing, unjoined fracture or lost function on it or above it on its CON chain. */
@@ -940,8 +941,9 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         const bodyA = tc.parts.filter(x => !x.flags.includes('INTERNAL')).reduce((t, x) => t + area(x), 0);
         const onPart = pHit(Math.sqrt(area(part) / Math.PI)), onBody = pHit(Math.sqrt(bodyA / Math.PI));
         const u = rng();
-        if (u >= onBody) return `shot at ${part.name}: misses (spread ${round(sr * 100)} cm at ${d} m; chance on the part ${Math.round(onPart * 100)} %, on the body ${Math.round(onBody * 100)} %).`;
-        if (u >= onPart) { const was = part.name; part = randomHitPart(tc, rng, { attackerCm3: aMass * 1000 }); notes.push(`aimed at ${was}, struck ${part.name} (spread ${round(sr * 100)} cm)`); }
+        console.debug?.('[Rules engine]', `shot spread ${round(sr * 100)} cm at ${d} m; on part ${Math.round(onPart * 100)} %, on body ${Math.round(onBody * 100)} %`);
+        if (u >= onBody) return `shot at ${part.name}: misses, wide of the body${a.under_fire ? ', the shooter under fire' : ''}.`;
+        if (u >= onPart) { const was = part.name; part = randomHitPart(tc, rng, { attackerCm3: aMass * 1000 }); notes.push(`aimed at ${was}, struck ${part.name}`); }
     }
     if (!a.landed) {
         const at = { ...a, means, mass };
@@ -1057,7 +1059,7 @@ export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight',
     const what = `${size_m} m target at ${distance_m} m, ${light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}`;
     const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse) but not which one'
         : u < r.detect ? 'notices something there but cannot tell what' : 'does not see it';
-    return `${vs} ${level} (${what}; chances: notice ${Math.round(r.detect * 100)} %, recognize ${Math.round(r.recognize * 100)} %, identify ${Math.round(r.identify * 100)} %).`;
+    return `${vs} ${level} (${what}).`;
 }
 
 /**
@@ -1074,13 +1076,15 @@ export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false, s
     const g = grip(p, () => gauss(rng)) * forceFactor(limbCold(p, 'arm'));
     const load = hanging ? p.mass : load_kg ?? 0, per = load / n;
     const norm = gripNorm(p.age, p.sex);
-    const detail = `${round(per)} kg per hand on ${n} hand${n > 1 ? 's' : ''}; grip ${round(g)} kg, ${p.sex === 'female' ? 'women' : 'men'} aged ${p.age ?? 25} average ${round(norm.mean)} ± ${round(norm.sd)} kg`;
-    if (per > g) return `${who} cannot hold it (${detail}).`;
+    const cold = forceFactor(limbCold(p, 'arm')) < 1 ? ', hands weakened by cold' : '';
+    const hand = `${n === 1 ? 'one hand' : `${n} hands`}${cold}`;
+    console.debug?.('[Rules engine]', who, `${round(per)} kg per hand; grip ${round(g)} kg; norm ${round(norm.mean)} ± ${round(norm.sd)} kg`);
+    if (per > g) return `${who} cannot hold it: too heavy for ${p.sex === 'female' ? 'her' : 'his'} grip (${hand}).`;
     // Hold time at a share f of maximal grip: ET = 33.55 f^−1.61 s (grip power model, Frey Law & Avin 2010, Ergonomics 53:109,
     // Table 2, meta-analysis of static endurance; R² 0.748).
     const et = 33.55 * Math.max(0.05, per / g) ** -1.61;
-    if (seconds != null) return `${who} ${et >= seconds ? `holds it for the ${seconds} s` : `lets go after ${round(et)} s`} (${detail}; can hold about ${round(et)} s).`;
-    return `${who} holds it, for about ${round(et)} s before the grip gives out (${detail}).`;
+    if (seconds != null) return `${who} ${et >= seconds ? `holds it for the ${seconds} s` : `lets go after ${round(et)} s: the grip tires`} (${hand}).`;
+    return `${who} holds it, for about ${round(et)} s before the grip gives out (${hand}).`;
 }
 
 // Running speed (§6.7): the creature's fastest DF walking gait [RAW]; DF gait value v (ticks per 100 tiles) → km/h = 8775 ÷ v,
@@ -1097,9 +1101,10 @@ export function topSpeedKmh(p) {
 /** A chase over open ground: does the pursuer catch the one fleeing, starting `gap_m` apart, both at full speed? */
 export function chase(pn, pursuer, fn, fleeing, gap_m) {
     const vp = topSpeedKmh(pursuer) / 3.6, vf = topSpeedKmh(fleeing) / 3.6;
-    const sp = `${pn} ${round(vp * 3.6)} km/h, ${fn} ${round(vf * 3.6)} km/h`;
-    if (vp <= vf) return `${fn} gets away: ${pn} is not faster (${sp}).`;
-    return `${pn} catches ${fn} after ${round(gap_m / (vp - vf), 1)} s, ${round(vp * gap_m / (vp - vf))} m run (${sp}; full speed throughout).`;
+    const lame = q => (abilities(q).stance ?? 1) < 1 ? ', slowed by injured legs' : '';
+    console.debug?.('[Rules engine]', `${pn} ${round(vp * 3.6)} km/h, ${fn} ${round(vf * 3.6)} km/h`);
+    if (vp <= vf) return `${fn} gets away: ${pn} is not faster${lame(pursuer)}.`;
+    return `${pn} catches ${fn} after ${round(gap_m / (vp - vf), 1)} s, ${round(vp * gap_m / (vp - vf))} m run: ${pn} is faster${lame(fleeing)}.`;
 }
 
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
@@ -1113,7 +1118,8 @@ export function listen(ls, l, { sound, spl_db = null, distance = 1, noise = 'qui
     if (ear.ears && !ear.earsOk) return `${ls} cannot hear (no working ear).`;
     const r = hearSound({ spl, distance, barrier, noise, ...ear });
     const what = `${sound ?? `${spl} dB at 1 m`} at ${distance} m, ${noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
-    return r.audible ? `${ls} hears it (${what}; ${r.margin} dB above what masks it).` : `${ls} does not hear it (${what}; ${-r.margin} dB short).`;
+    console.debug?.('[Rules engine]', ls, `margin ${r.margin} dB`);
+    return r.audible ? `${ls} hears it (${what}).` : `${ls} does not hear it: too faint over the background (${what}).`;
 }
 
 export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none' } = {}) {
@@ -1138,11 +1144,14 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     const r = reach({ effort, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
     const where = `${effort} voice at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible) return `${ls} does not hear ${sp} (${where}).`;
-    if (r.words < 0.2) return `${ls} hears that ${sp} is speaking but makes out almost no words: ${Math.round(r.words * 100)} % (${where}; SII ${r.sii}).`;
+    console.debug?.('[Rules engine]', ls, `words ${Math.round(r.words * 100)} %, SII ${r.sii}`);
+    if (r.words < 0.2) return `${ls} hears that ${sp} is speaking but makes out almost no words (${where}).`;
     if (!talks(lc)) return `${ls} hears the sounds and their tone; the words carry no meaning (${lc.name}: cannot talk).`;
     const [a, b] = languages;
     if (a?.length && b?.length && !a.some(x => b.includes(x))) return `${ls} hears speech in a language it does not know (${a.join(', ')}); only tone and gestures carry.`;
-    return `${ls} hears ${sp} and makes out ${Math.round(r.words * 100)} % of the words (${where}; SII ${r.sii})${slurred ? '; slurred (tongue not working): short, simple words only' : ''}.`;
+    // Share of key words → plain words (bands [ASSUMED]): the narrator gets how much of the message carries, not a figure.
+    const heard = r.words >= 0.95 ? 'every word' : r.words >= 0.7 ? 'most words; a few are lost' : r.words >= 0.4 ? 'some words; the gist only' : 'scattered words; not the meaning';
+    return `${ls} hears ${sp} and makes out ${heard} (${where})${slurred ? '; slurred (tongue not working): short, simple words only' : ''}.`;
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
