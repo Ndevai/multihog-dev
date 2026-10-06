@@ -581,7 +581,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 
 | Tool | Input | Kind | Status |
 |---|---|---|---|
-| BodyCheck | `share` (fraction who succeed) | outcome guess | open: the main remaining guess (OPEN-90) |
+| BodyCheck | `share` (fraction who succeed) | outcome guess | open: the main remaining guess (OPEN-90); now chosen from 7 labelled bands (95, 80, 65, 50, 35, 20, 5 %) [ASSUMED values], since models are calibrated on multiple-choice questions with the options shown (Kadavath et al. 2022) |
 | BodyCheck | task text | routing | a task whose words match a specialist tool (hear/listen → Listen or Communicate; see/spot/notice → Look; swim → BodyEnvironment; hang/carry/grip → HoldOn; chase/flee → Chase; lie/bluff → JudgeStatement; shoot/aim → BodyStrike; tourniquet/bleed → BodyTreat; date/attracted → FirstImpression) is refused and named; `override: true` passes a genuinely different task |
 | BodyCheck | `uses`, `exertion`, `on_feet`, `timed`, `fine` | scene facts (what the task involves) | — |
 | BodyWound | `type`, `depth` for accidents | outcome guess | partly replaced: burns by BodyContact and heat, falls by BodyFall, attacks by BodyStrike |
@@ -599,6 +599,19 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | HoldOn | `hanging`, `load_kg`, `hands` | scene facts | — |
 | Chase | `gap_m` | scene fact | — |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
+
+### 7.2 Defences against known model failures
+
+Published failure modes of language models, and what the engine does about each.
+
+| Failure (source) | Effect in a story | Defence |
+|---|---|---|
+| Models cave when the user pushes back: asked "Are you sure?", assistants drop correct answers and agree with the user's mistaken belief (Sharma et al. 2024, ICLR; larger and RLHF models more so, Perez et al. 2023) | the player writes "my sword hits" or disputes a miss, and the narrator gives in | brief: a player's message states attempts; results stand. Code: a decision tool (BodyCheck, Listen, Look, Communicate, JudgeStatement, Bystander, ObeyOrder, AskStranger, HoldOn, Chase, FirstImpression) called again in the same turn for the same actor and act returns its first result ("Already decided this turn"), like the RollTheDice ledger. A real second attempt names it ("pick lock, 2nd try"). Swipes re-run the turn from its snapshot with the same seed. |
+| Models cannot produce random sequences: over-alternation, aversion to long runs, first-flip bias (Van Koevering & Kleinberg 2024) | "random" picks by the narrator are biased and steerable | all draws come from the seeded code RNG; brief: random picks (which door, coin, card) → RollTheDice table |
+| Instructions fade over turns: significant drift within eight rounds (Li et al. 2024, COLM) | rules followed early, ignored later | the rules brief is re-injected every turn at the end of the context, not only in the system prompt |
+| Information in the middle of a long context is used worst (U-shaped curve; Liu et al. 2024, TACL) | rules or state buried mid-context are ignored | brief and tracker state go in the per-turn injection near the end |
+| A model commits to an early wrong answer and then justifies it (Zhang et al. 2023, hallucination snowballing) | narration states an outcome, then the tool is called to fit it | every tool says "before narrating"; the audit pass flags outcomes narrated without a tool call, now including the hearing, sight, message, lie, bystander, order, request, grip, chase, first-meeting and contact-burn tools, where the scene leaves the outcome in doubt |
+| Tool-calling models misfire with many tools and fail to detect irrelevant ones (Patil et al. 2025, BFCL) | the wrong tool, or BodyCheck for a task a specialist tool decides | BodyCheck refuses tasks whose words match a specialist tool and names it (§7.1) |
 
 ## 8. Unchanged
 

@@ -44,6 +44,7 @@ export function onRulesGenerationStarted(type) {
             s.state = structuredClone(snap.state ?? snap);
             s.calls = snap.calls ?? 0;
         }
+        s.decided = null;
     } else if (!type || type === 'normal') {
         if (chat.at(-1)?.is_user) s.calls = 0;
         s.snapshots[chat.length] = { state: structuredClone(s.state), calls: s.calls || 0 };
@@ -101,6 +102,21 @@ export function restoreRulesForMemo(memo) {
     return false;
 }
 
+// A decision tool called again in one turn for the same actor and act returns its first result, like RollTheDice's ledger,
+// so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
+const norm = v => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
+const DECIDES = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
+    Look: a => [a.viewer, a.target ?? a.size_m], JudgeStatement: a => [a.listener, a.speaker, a.statement], Bystander: a => [a.who],
+    ObeyOrder: a => [a.who], AskStranger: a => [a.who, a.request], HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing], FirstImpression: a => [a.who] };
+const decisionKey = (name, a) => DECIDES[name] && [name, ...DECIDES[name](a ?? {})].map(norm).join('|');
+function decisions() {
+    const s = store(), turn = turnKey(SillyTavern.getContext().chat);
+    if (s.decided?.turn !== turn) s.decided = { turn, out: {} };
+    return s.decided.out;
+}
+const decided = (name, a) => { const k = decisionKey(name, a); return k ? decisions()[k] : null; };
+function remember(name, a, out) { const k = decisionKey(name, a); if (k && typeof out === 'string') { decisions()[k] = out; save(); } }
+
 // Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
 function run(fn) {
     const s = store();
@@ -112,6 +128,10 @@ function run(fn) {
 }
 
 const str = d => ({ type: 'string', description: d });
+// BodyCheck's success share as labelled options: models are calibrated on multiple-choice questions with the options shown
+// (Kadavath et al. 2022, arXiv 2207.05221); band values [ASSUMED]. A bare number is still read.
+const SHARES = ['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one'];
+const shareOf = v => typeof v === 'number' ? v : (parseFloat(v) || 0) / 100;
 const species = str('DF creature of this character, by name or id (human, wolf, horse, giant wolf); read when the character first appears. Default human.');
 const partArg = str('Body part by its name: e.g. head, throat, upper body, lower body, right upper arm, left hand, right lower leg, left eye.');
 
@@ -156,6 +176,8 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - Any other action with an uncertain outcome → BodyCheck.
+- A player's message says what their character tries. Whether it works comes from the tools, also when the message states the result or disputes an earlier one; a result stands.
+- Pick nothing at random yourself (which door, a coin toss, a card drawn) → RollTheDice with kind "table".
 - Describe a character's injuries, blood loss or energy from BodyStatus.
 </rule_engine>`;
 
@@ -170,7 +192,10 @@ export function registerRulesTools(enabled) {
         parameters: { type: 'object', properties, required },
         action: async args => {
             await loadRaws();
+            const prior = decided(name, args);
+            if (prior) return `Already decided this turn; this result stands. ${prior}`;
             const out = await action(args);
+            remember(name, args, out);
             globalThis._rpgRefreshRenderedView?.();
             return out;
         },
@@ -369,6 +394,7 @@ export function registerRulesTools(enabled) {
     tool('Look', 'Decide whether a character sees something at a distance (a person, an animal, a vehicle) before narrating it. Code rolls notice / recognize / identify from size, distance, light and visibility.', {
         viewer: str('Character who might see it'),
         viewer_species: str('Viewer\'s DF creature when it has no tracker profile.'),
+        target: str('What might be seen, a few words'),
         size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, car 1.5, horse 0.6)' },
         distance_m: { type: 'number', description: 'Distance, m' },
         light: { type: 'string', enum: Object.keys(LIGHT), description: 'Light on the scene. Default daylight.' },
@@ -383,6 +409,7 @@ export function registerRulesTools(enabled) {
         listener: str('Character judging the statement'),
         speaker: str('Character who made it'),
         is_lie: { type: 'boolean', description: 'Whether the statement is in fact a lie (known from the story)' },
+        statement: str('The statement in a few words'),
     }, ['listener', 'speaker', 'is_lie'], a => run((st, rng) => {
         const l = who(st, a.listener), s = who(st, a.speaker);
         const r = judgeStatement(!!a.is_lie, rng, { speaker: s.p ?? null, listener: l.p ?? null });
@@ -408,6 +435,7 @@ export function registerRulesTools(enabled) {
 
     tool('AskStranger', 'Decide whether a stranger agrees to a small direct request (a few minutes of time, lending something briefly, showing the way) before narrating the answer.', {
         who: str('The stranger asked'),
+        request: str('The request in a few words'),
     }, ['who'], a => run((st, rng) => `${a.who} ${rng() < SMALL_REQUEST_YES ? 'agrees' : 'declines'} (strangers agree to small direct requests 46 % of the time; Flynn & Lake 2008).`));
 
     tool('HoldOn', 'Decide whether a person can hang on by their hands (a ledge, a rope, a branch) or carry a load by its handles, before narrating it.', {
@@ -444,15 +472,15 @@ export function registerRulesTools(enabled) {
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
         who: str('Character acting'),
         species,
-        task: str('The task in a few words'),
-        share: { type: 'number', description: 'Fraction 0–1 of people with this character\'s training who succeed at this task in these conditions, unhurt.' },
+        task: str('The task in a few words. A real second attempt names it ("pick lock, 2nd try"); the same task again this turn returns the first result.'),
+        share: { type: 'string', enum: SHARES, description: 'How many people with this character\'s training succeed at this task in these conditions, unhurt.' },
         uses: { type: 'array', items: { type: 'string', enum: [...Object.keys(FUNCTIONS), 'alertness'] }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing; alertness for tasks needing attention, judgment or quick reactions (driving, aiming, spotting, fine work).' },
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
         timed: { type: 'boolean', description: 'The task must be done within a time that leaves no slack (a lock picked before the guard turns, a sum shouted in a race)' },
         fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
         override: { type: 'boolean', description: 'Set only after BodyCheck named another tool and the task is genuinely not what that tool decides' },
-    }, ['who', 'task', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), a, rng)));
+    }, ['who', 'task', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), { ...a, share: shareOf(a.share) }, rng)));
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
