@@ -541,7 +541,7 @@ Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 1
 
 | Judgment | Rule | Source |
 |---|---|---|
-| lie or truth (JudgeStatement) | a lie is judged a lie with chance 0.47; a truth is judged a lie with chance 0.39; one roll | Bond & DePaulo 2006, Pers Soc Psychol Rev 10:214: 206 documents, 24 483 judges, no aids or training: 47 % of lies classified deceptive, 61 % of truths nondeceptive, 54 % correct |
+| lie or truth (JudgeStatement) | judged truthful: truths 61.34 %, lies 52.45 %, + 11.58 % × the speaker's credibility z, + 5.13 % × the listener's credulity z, ± 5.49 % × the speaker's detectability z (lies less believed, truths more); each z drawn once per person; one roll. A speaker at credibility +2 SD: a lie is doubted 24 % of the time instead of 48 % | Bond & DePaulo 2006, Pers Soc Psychol Rev 10:214 (206 documents, 24 483 judges); Bond & DePaulo 2008, Psychol Bull 134:477 (247 samples): measurement-corrected SDs, judge ability 0.80 % (negligible), credulity 5.13 %, detectability 5.49 %, credibility 11.58 %; "the outcome of a deception judgment depends more on the liar's credibility than any other individual difference" |
 
 | bystander helps (Bystander) | alone 85 %, one other witness 62 %, four or more 31 % (linear between [ASSUMED]); dangerous emergencies: 85 % at any number [ASSUMED from "did not occur"] | Darley & Latané 1968, J Pers Soc Psychol 8:377 (via Wikipedia, Diffusion of responsibility); Fischer et al. 2011, Psychol Bull 137:517 (7700 participants, g = −0.35, attenuated when dangerous) |
 | order to harm (ObeyOrder) | carries it out to the end: victim out of sight 65 %; same room 40 %; must physically force 30 %; orders by phone 21 %; ordinary business 47.5 %; peers refuse 10 %; a peer obeys 92.5 % | Milgram's variations (Wikipedia, Milgram experiment); Blass: replications 28–91 %, US mean 61 %, elsewhere 66 % |
@@ -550,7 +550,7 @@ Results (70 kg at rest): 100 ppm 11 % at 8 h; 800 ppm unconscious 97 min, dead 1
 
 | interest after a first meeting (FirstImpression) | wants to meet again: 50 %; women meeting 15 or more prospects at once 33 % | Fisman, Iyengar, Kamenica & Simonson 2006, Q J Econ 121:673: 392 subjects, 14 sessions, 6276 four-minute meetings; small sessions about half yes for both sexes, large sessions men about 50 %, women about one-third; overall 0.43. Attractiveness raised a yes by 0.119–0.140 per rating point (1–10), not used: ratings would be the narrator's guess |
 
-Limits (OPEN-89): evidence, prior suspicion, relationship and training are not inputs (the meta-analysis found detection rates vary little between studies); the speaker's skill at lying is not modelled.
+Limits (OPEN-89): evidence, prior suspicion and relationship are not inputs (detection rates vary little between studies, and judge experience did not raise ability).
 
 ### 6.10 Grip: hanging on and carrying by hand
 

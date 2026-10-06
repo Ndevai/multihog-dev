@@ -384,8 +384,9 @@ export function registerRulesTools(enabled) {
         speaker: str('Character who made it'),
         is_lie: { type: 'boolean', description: 'Whether the statement is in fact a lie (known from the story)' },
     }, ['listener', 'speaker', 'is_lie'], a => run((st, rng) => {
-        const r = judgeStatement(!!a.is_lie, rng);
-        return `${a.listener} ${r.judgedLie ? 'judges it a lie' : 'believes it'} (people without proof catch ${a.is_lie ? '47 % of lies' : 'truths as lies 39 % of the time'}; Bond & DePaulo 2006). Narrate ${a.listener}'s reaction from that judgment.`;
+        const l = who(st, a.listener), s = who(st, a.speaker);
+        const r = judgeStatement(!!a.is_lie, rng, { speaker: s.p ?? null, listener: l.p ?? null });
+        return `${a.listener} ${r.judgedLie ? 'judges it a lie' : 'believes it'} (chance of being taken for a lie ${Math.round(r.chance * 100)} %, from ${a.speaker}'s credibility and ${a.listener}'s credulity; Bond & DePaulo 2006, 2008). Narrate ${a.listener}'s reaction from that judgment.`;
     }));
 
     tool('Bystander', 'Decide whether an uninvolved character steps in to help in an emergency they witness (someone collapses, is attacked, cries for help).', {

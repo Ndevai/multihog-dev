@@ -1,11 +1,18 @@
 // Social judgments decided in code (docs/df-body-engine.md §6.9).
-// Lie detection: judges without aids or training classify 47 % of lies as deceptive and 61 % of truths as truthful (54 %
-// correct overall; Bond & DePaulo 2006, Pers Soc Psychol Rev 10:214, 206 documents, 24 483 judges).
-export const LIE_CAUGHT = 0.47, TRUTH_BELIEVED = 0.61;
+// Lie detection: judges without aids or training call 61.34 % of truths and 52.45 % of lies truthful (Bond & DePaulo 2006, Pers
+// Soc Psychol Rev 10:214, 206 documents, 24 483 judges). Individual differences, measurement-corrected SDs in the share of
+// statements judged truthful or correctly (Bond & DePaulo 2008, Psychol Bull 134:477, 247 samples): speaker credibility 11.58 %
+// (seen as honest whether lying or not), speaker detectability 5.49 %, listener credulity 5.13 %, listener ability 0.80 %
+// (negligible, not used). Each person keeps a z for each trait, drawn once.
+export const LIE_CAUGHT = 1 - 0.5245, TRUTH_BELIEVED = 0.6134;
+const trait = (p, k, gauss) => p ? (p[k] ??= Math.round(gauss() * 100) / 100) : 0;
 
-/** One roll: does the listener judge the statement a lie? Returns { judgedLie, chance }. */
-export function judgeStatement(isLie, rng = Math.random) {
-    const chance = isLie ? LIE_CAUGHT : 1 - TRUTH_BELIEVED;
+/** One roll: does the listener judge the statement a lie? Returns { judgedLie, chance (of being judged a lie) }. */
+export function judgeStatement(isLie, rng = Math.random, { speaker = null, listener = null, gauss = null } = {}) {
+    const g = gauss ?? (() => { let u = 0; while (!u) u = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng()); });
+    const believed = (isLie ? 1 - LIE_CAUGHT : TRUTH_BELIEVED) + 0.1158 * trait(speaker, 'credZ', g) + 0.0513 * trait(listener, 'credulZ', g)
+        + 0.0549 * trait(speaker, 'detectZ', g) * (isLie ? -1 : 1);
+    const chance = 1 - Math.min(0.99, Math.max(0.01, believed));
     return { judgedLie: rng() < chance, chance };
 }
 
