@@ -7,7 +7,7 @@ import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes } from './emotion.js';
 import { skyLight } from './sky.js';
-import { STATION_NAMES, simulateYear, hourTemp } from './weather.js';
+import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
 import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
 import { drawName } from './names.js';
 import { bodySize } from './body-size.js';
@@ -156,7 +156,7 @@ export type Args = Record<string, unknown>;
 const DECIDES: Partial<Record<ToolName, (a: Args) => unknown[]>> = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
-    Weather: a => [a.station], Choose: a => [a.who, ...((a.options as { option?: string }[] | undefined) ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
+    Weather: a => [a.place], Choose: a => [a.who, ...((a.options as { option?: string }[] | undefined) ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
 const decisionKey = (name: ToolName, a: Args | undefined) => { const f = DECIDES[name]; return f ? [name, ...f(a ?? {})].map(norm).join('|') : null; };
 function decisions(): Record<string, string> {
     const s = store(), turn = turnKey(SillyTavern.getContext().chat);
@@ -267,12 +267,15 @@ function storyNow(st: RuleState): number | null {
 }
 
 /** Weather at `station` at story minute `t` (calendar dates only): { d (the day), tempC (air now), date }, or null. */
-function weatherAt(station: string, t: number | null): { d: WeatherDay; tempC: number; date: Date } | null {
+/** Weather at place key `place` (from findPlace) at story minute `t` (calendar dates only): the day, air now, date; or null. */
+function weatherAt(place: string, t: number | null): { d: WeatherDay; tempC: number; date: Date } | null {
     if (t === null || t / 1440 <= 146097) return null;
     const date = new Date(0, 0, 1); date.setFullYear(1, 0, 1); date.setDate(date.getDate() + Math.floor(t / 1440));
     const year = date.getFullYear(), jan1 = new Date(0, 0, 1); jan1.setFullYear(year, 0, 1);
     const doy = Math.min(365, Math.round((date.getTime() - jan1.getTime()) / 864e5) + 1);
-    const days = simulateYear(station, doy, seededRng(`${store().salt}:weather:${station}:${year}`)), d = days[days.length - 1];
+    const days = simulatePlaceYear(place, doy, seededRng(`${store().salt}:weather:${place}:${year}`));
+    if (!days) return null;
+    const d = days[days.length - 1];
     return { d, tempC: hourTemp(d, (t % 1440) / 60), date };
 }
 
@@ -445,7 +448,9 @@ export function registerRulesTools(enabled: boolean): void {
         swimmer: { type: 'boolean', description: 'Whether the character can swim, when the story has established it; otherwise code draws it once (46 % of adults)' },
         deep_water: { type: 'boolean', description: 'Water over the head. Default true when immersed.' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },
-        weather_station: { type: 'string', enum: STATION_NAMES, description: 'Outdoors in the United States: the Weather station; air temperature then follows the day\'s weather as PassTime runs (air_c may be left out). Leave it out indoors or elsewhere.' },
+        weather_place: str('Outdoors: the town or city the characters are in or nearest to ("Lyon", "Sydney, Australia"); air temperature then follows that place\'s weather as PassTime runs (air_c may be left out). Leave it out indoors.'),
+        latitude: { type: 'number', description: 'With weather_place for a place not in the lists (fictional or remote): its latitude; the nearest listed city is used' },
+        longitude: { type: 'number', description: 'Longitude, with latitude' },
     }, ['who'], a => run(st => {
         const out = [];
         for (const name of a.who) {
@@ -453,9 +458,12 @@ export function registerRulesTools(enabled: boolean): void {
             if (!p) { out.push(error); continue; }
             if (a.clear) { setEnvironment(p, null); out.push(`${name}: conditions cleared.`); continue; }
             if (a.altitude_m != null) setAltitude(p, a.altitude_m, !!a.sudden_ascent, !!a.decompression);
-            const w = a.weather_station ? weatherAt(a.weather_station, storyNow(st)) : null;
-            if (a.weather_station && !w) { out.push('weather_station needs a calendar date (dd/mm/yyyy) and hour in [TIME].'); continue; }
-            p.weather = w ? a.weather_station : null;
+            const place = a.weather_place ? findPlace(a.weather_place, a.latitude, a.longitude) : null;
+            if (a.weather_place && !place) { out.push(`No weather data for "${a.weather_place}": give the nearest real town, or latitude and longitude.`); continue; }
+            const w = place ? weatherAt(place.key, storyNow(st)) : null;
+            if (place && !w) { out.push('weather_place needs a calendar date (dd/mm/yyyy) and hour in [TIME].'); continue; }
+            p.weather = w && place ? place.key : null;
+            if (place?.lat != null) st.latitude = place.lat;
             if (a.air_c == null && w) a = { ...a, air_c: w.tempC, radiant_c: a.radiant_c ?? w.tempC };
             if (a.air_c == null) { out.push(a.altitude_m != null ? status(name, p) : 'air_c is required.'); continue; }
             if (!thermalCapable(p.species) && !creatureOf(p)?.homeotherm) { out.push(`${name}: cold-blooded; body temperature not simulated; not recorded.`); continue; }
@@ -601,14 +609,23 @@ export function registerRulesTools(enabled: boolean): void {
         return `The attack on${where} ${won ? 'succeeds' : 'fails'}, the attackers ${odds}${era}. The fighting lasts ${span}. Killed, wounded and captured: attackers ${c.attackerLoss}, defenders ${c.defenderLoss}.`;
     }));
 
-    tool('Weather', 'Decide the day\'s weather at a place in the United States from the story date and hour in [TIME], before describing it: rain or dry, rainfall, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
-        station: { type: 'string', enum: STATION_NAMES, description: 'The weather station nearest the story\'s place, or the one with the most similar climate' },
-    }, ['station'], a => run(st => {
-        const w = weatherAt(a.station, storyNow(st));
+    // Snow or rain: precipitation falls as snow when the day's mean air temperature is at or below 1.0 °C, the Northern
+    // Hemisphere mean of the 50 % rain–snow air-temperature threshold (Jennings et al. 2018, Nat Commun 9:1148; range −0.4 to
+    // 2.4 °C by region) [day mean as the air temperature: ASSUMED].
+    tool('Weather', 'Decide the day\'s weather at the story\'s place from the date and hour in [TIME], before describing it: rain, snow or dry, the amount, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
+        place: str('The town or city the scene is in or nearest to ("Lyon", "Kyoto", "Sydney, Australia"); for a fictional or remote place, the nearest real town or give latitude and longitude'),
+        latitude: { type: 'number', description: 'For a place with no data: latitude; the nearest listed city is used' },
+        longitude: { type: 'number', description: 'Longitude, with latitude' },
+    }, ['place'], a => run(st => {
+        const place = findPlace(a.place, a.latitude, a.longitude);
+        if (!place) return `No weather data for "${a.place}": give the nearest real town, or latitude and longitude.`;
+        const w = weatherAt(place.key, storyNow(st));
         if (!w) return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
+        if (place.lat != null) st.latitude = place.lat;
         const { d, date } = w, r = (x: number) => Math.round(x);
-        const rain = d.wet ? `rain, ${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm over the day` : 'dry';
-        return `${a.station}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${rain}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C.`;
+        const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
+        const sky = !d.wet ? 'dry' : (d.tmaxC + d.tminC) / 2 <= 1.0 ? `snow, ${amount} of water over the day` : `rain, ${amount} over the day`;
+        return `${place.label}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${sky}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C.`;
     }));
 
     // A character's pick among options is drawn, weighted by how many people in their place would take each one: weighted

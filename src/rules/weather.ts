@@ -3,6 +3,7 @@
 // beta. Max and min temperature and solar radiation: residuals χ_i = A χ_{i−1} + B ε_i (eq. 3, A and B eqs. 10–11), value
 // = m (χ c + 1) (eq. 13), m and c from seasonal harmonics u + C cos(0.0172 (i − T)) (eq. 14) on wet or dry days.
 import { STATIONS } from './data/wgen-stations.js';
+import { NORMALS, type Normals } from './data/wmo-normals.js';
 import type { Rng } from './types.js';
 
 /** One simulated day: wet or dry, rain, max and min air temperature, solar radiation (langleys). */
@@ -63,4 +64,119 @@ export function hourTemp(d: WeatherDay, hour: number): number {
     const h = ((hour % 24) + 24) % 24;
     const f = h >= 6 && h <= 15 ? (1 - Math.cos(Math.PI * (h - 6) / 9)) / 2 : (1 + Math.cos(Math.PI * ((h < 6 ? h + 24 : h) - 15) / 15)) / 2;
     return d.tminC + f * (d.tmaxC - d.tminC);
+}
+
+// ---- Anywhere else: WMO city normals → daily weather by SIMMETEO ----
+// SIMMETEO (Geng, Penning de Vries & Supit 1986, Agric For Meteorol 36:363; Geng et al. 1988) derives the WGEN parameters
+// from monthly means, as coded in DSSAT's WGEN.for, SIMMIN (BSD-3, DSSAT Foundation): wet-day share PW = days ÷ days in
+// month; P(W/D) = 0.75 PW; P(W/W) = 1 − P(W/D)(1 − PW) ÷ PW; rain per wet day R; gamma β = max(−2.16 + 1.83 R, 0.01),
+// α = R ÷ β within 0.01–0.998; max temperature on dry and wet days = mean ± a split |9.67 − 27.4 × mean P(W/D)| × 5/9 °C
+// weighted by the month's PW (DSSAT weights by the annual mean PW, which moved monthly means by up to 1 °C); SDs max(5.8 − 0.09 Tmax, 0.5) and max(5.2 − 0.13 Tmin, 0.5) °C; the same A, B residual chain, with
+// value = mean + SD × residual (WGENGN). Temperature parameters are interpolated linearly between mid-months, with the
+// mid-month values corrected until each month's interpolated mean equals its normal (the role of DSSAT's CFACT correction factors;
+// without it January came out 1.4 °C too warm at Tokyo and Moscow); rain parameters stay at their month's value. Where the β regression would need α above 0.998
+// (light rain, under about 2 mm per wet day), β = R ÷ 0.998 keeps the mean rain per wet day [ASSUMED; SIMMETEO caps α only,
+// which gave Cairo 1 mm of January rain for a normal of 5].
+
+const DAYS = [31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+interface MonthParams { pdw: number; pww: number; alpha: number; beta: number; txd: number; txw: number; txdsd: number; txwsd: number; tn: number; tnsd: number }
+
+function simmeteo(n: Normals): MonthParams[] {
+    const [, , , , hi, lo, rain, days] = n;
+    const pw = days.map((d, m) => Math.min(1, d / DAYS[m])), pdw = pw.map(p => 0.75 * p);
+    const pdwMean = pdw.reduce((a, b) => a + b) / 12;
+    const tdiff = Math.abs(9.67 - 27.4 * pdwMean) * 5 / 9;
+    return hi.map((tx, m) => {
+        const wet = days[m] > 0 && rain[m] > 0, rwet = wet ? rain[m] / days[m] : 0;
+        const beta = wet ? Math.max(-2.16 + 1.83 * rwet, 0.01, rwet / 0.998) : 0;
+        const txd = tx + pw[m] * tdiff, txw = tx - (1 - pw[m]) * tdiff;
+        return { pdw: wet ? pdw[m] : 0, pww: wet ? Math.min(1, Math.max(0, 1 - pdw[m] * (1 - pw[m]) / pw[m])) : 0,
+            alpha: wet ? Math.min(Math.max(rwet / beta, 0.01), 0.998) : 0.44, beta,
+            txd, txw, txdsd: Math.max(5.8 - 0.09 * txd, 0.5), txwsd: Math.max(5.8 - 0.09 * txw, 0.5), tn: lo[m], tnsd: Math.max(5.2 - 0.13 * lo[m], 0.5) };
+    });
+}
+
+const KEYS: (keyof MonthParams)[] = ['txd', 'txw', 'txdsd', 'txwsd', 'tn', 'tnsd'];
+/** Mid-month values whose linear interpolation averages to each month's value (fixed-point iteration, 30 rounds). */
+function corrected(p: MonthParams[]): MonthParams[] {
+    const target = p.map(x => ({ ...x }));
+    let mid = p.map(x => ({ ...x }));
+    const len = MONTH_START.map((st, m) => (MONTH_START[m + 1] ?? 365) - st);
+    for (let it = 0; it < 30; it++) {
+        const sum = Array.from({ length: 12 }, () => Object.fromEntries(KEYS.map(k => [k, 0])) as unknown as MonthParams);
+        for (let day = 1; day <= 365; day++) { const v = onDay(mid, day), m = monthOf(day); for (const k of KEYS) sum[m][k] += v[k]; }
+        mid = mid.map((x, m) => {
+            const o = { ...x };
+            for (const k of KEYS) o[k] = x[k] + target[m][k] - sum[m][k] / len[m];
+            return o;
+        });
+    }
+    return mid;
+}
+
+const rainOf = ({ pdw, pww, alpha, beta }: MonthParams) => ({ pdw, pww, alpha, beta });
+
+/** Parameters for day of year `day`: linear between the mid-days of the two nearest months. */
+function onDay(p: MonthParams[], day: number): MonthParams {
+    const mids = MONTH_START.map((s, m) => s + DAYS[m] / 2);
+    let m = mids.findIndex(x => x > day) - 1;
+    if (m < -1) m = 11;
+    const a = (m + 12) % 12, b = (a + 1) % 12;
+    const from = m === -1 ? mids[11] - 365 : mids[a], to = b === 0 && a === 11 ? mids[0] + 365 : mids[b];
+    const f = Math.min(1, Math.max(0, (day - from) / (to - from)));
+    const out = {} as MonthParams;
+    for (const k of Object.keys(p[a]) as (keyof MonthParams)[]) out[k] = p[a][k] + (p[b][k] - p[a][k]) * f;
+    return out;
+}
+
+/** Days 1..`days` of one year for a WMO city: [{ wet, rainMm, tmaxC, tminC }]. */
+export function simulateNormalsYear(n: Normals, days: number, rng: Rng): WeatherDay[] {
+    const raw = simmeteo(n), params = corrected(raw), out: WeatherDay[] = [];
+    let wet = false, x: number[] = [0, 0, 0];
+    for (let day = 1; day <= days; day++) {
+        // Temperatures follow the interpolated curve; rain takes its own month's values, which keeps monthly totals exact.
+        const p = { ...onDay(params, day), ...rainOf(raw[monthOf(day)]) };
+        wet = rng() < (wet ? p.pww : p.pdw);
+        const rainMm = wet ? Math.max(gamma(p.alpha, rng) * p.beta, 0.1) : 0;
+        const e = [residual(rng), residual(rng), residual(rng)];
+        x = [0, 1, 2].map(r => A[r][0] * x[0] + A[r][1] * x[1] + A[r][2] * x[2] + B[r][0] * e[0] + B[r][1] * e[1] + B[r][2] * e[2]);
+        let tmax = (wet ? p.txw : p.txd) + (wet ? p.txwsd : p.txdsd) * x[0], tmin = p.tn + p.tnsd * x[1];
+        if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+        if (tmax - tmin <= 0.1) tmax += 0.1;
+        out.push({ wet, rainMm, tmaxC: tmax, tminC: tmin, radLy: NaN });
+    }
+    return out;
+}
+
+/** A place weather can be generated for: one of the 28 WGEN stations, or a WMO city. */
+export interface Place { key: string; label: string; lat: number | null }
+const fold = (s: unknown) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+const toRad = Math.PI / 180;
+const distKm = (a: number, b: number, c: number, d: number) => 6371 * Math.acos(Math.min(1, Math.sin(a * toRad) * Math.sin(c * toRad) + Math.cos(a * toRad) * Math.cos(c * toRad) * Math.cos((d - b) * toRad)));
+
+/**
+ * The place for `text` ("Lyon", "Sydney, Canada", "Boston"): a WGEN station whose city matches, else a WMO city by name
+ * (a country after a comma narrows it), else the WMO city nearest to `lat`, `lon`. Null when nothing matches.
+ */
+export function findPlace(text: string | undefined, lat?: number, lon?: number): Place | null {
+    const [cityPart, ...rest] = String(text ?? '').split(','), city = fold(cityPart), country = fold(rest.join(' '));
+    if (city) {
+        const st = STATION_NAMES.find(s => fold(s.split(',')[0]) === city);
+        if (st && (!country || fold(st).includes(country) || country === 'usa' || country.startsWith('united states'))) return { key: `wgen:${st}`, label: `${st} (WGEN station)`, lat: null };
+        const named = NORMALS.map((n, i) => [n, i] as const).filter(([n]) => fold(n[0]) === city || fold(n[0]).startsWith(`${city} `));
+        const pick = named.find(([n]) => country && fold(n[1]).includes(country)) ?? (country ? undefined : named[0]);
+        if (pick) return { key: `wmo:${pick[1]}`, label: `${pick[0][0]}, ${pick[0][1]}`, lat: pick[0][2] };
+    }
+    if (lat == null || lon == null || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    let best = 0, bestD = Infinity;
+    NORMALS.forEach((n, i) => { const d = distKm(lat, lon, n[2], n[3]); if (d < bestD) { bestD = d; best = i; } });
+    const n = NORMALS[best];
+    return { key: `wmo:${best}`, label: `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2] };
+}
+
+/** Days 1..`days` of one year at a place key from findPlace (a bare WGEN station name is accepted too). */
+export function simulatePlaceYear(key: string, days: number, rng: Rng): WeatherDay[] | null {
+    if (key.startsWith('wmo:')) { const n = NORMALS[Number(key.slice(4))]; return n ? simulateNormalsYear(n, days, rng) : null; }
+    const st = key.startsWith('wgen:') ? key.slice(5) : key;
+    return STATIONS[st] ? simulateYear(st, days, rng) : null;
 }
