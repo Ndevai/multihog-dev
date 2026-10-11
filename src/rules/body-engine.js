@@ -1289,10 +1289,10 @@ const ROUTES = [[/\b(hear|hears|heard|listen|overhear|noise)\b/i, 'Listen (sound
     [/\b(swim|swims|drown|tread water)\b/i, 'BodyEnvironment (immersed, swimming, swimmer)'],
     [/\b(hang|hangs|hold on|holding on|carry|carries|grip)\b/i, 'HoldOn'],
     [/\b(chase|outrun|catch up|run away|flee|escape on foot)\b/i, 'Chase'],
-    [/\b(lie|lying|deceive|bluff|believe)\b/i, 'JudgeStatement'],
+    [/\b(lie|lying|deceive|bluff|believe)\b/i, 'SocialResponse (a statement that might be a lie)'],
     [/\b(shoot|shot|arrow|bolt|aim)\b/i, 'BodyStrike (launcher, skill, distance_m)'],
     [/\b(tourniquet|stop the bleeding|bleed)\b/i, 'BodyTreat (stop_bleeding, training)'],
-    [/\b(attracted|interested in|ask (him|her|them) out|date)\b/i, 'FirstImpression']];
+    [/\b(attracted|interested in|ask (him|her|them) out|date)\b/i, 'SocialResponse (a brief first meeting)']];
 
 export function check(p, task, rng = Math.random) {
     const route = ROUTES.find(([re]) => re.test(task.task ?? ''));

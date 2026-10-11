@@ -14,14 +14,15 @@ const XI = [-3.9, -9.7, -12.5, -17.7, -25.9, -7.1];
 const AIR = [1.0, 1.9, 3.7, 9.7, 32.8, 117];
 // Background noise at the listener, overall dB SPL (Wikipedia, Sound pressure: examples), spread evenly over the six octaves
 // (pink noise) [ASSUMED shape].
-export const NOISE = { 'silent night': 10, 'quiet room': 25, 'conversation nearby': 50, 'street traffic': 67.5, television: 75,
-    'vacuum cleaner': 85, 'jackhammer close by': 100 };
+// Labels name a loudness class, with the measured example in parentheses.
+export const NOISE = { 'silent night': 10, 'quiet room': 25, 'conversation nearby': 50, 'busy street (traffic)': 67.5,
+    'loud room (television)': 75, 'loud machine nearby (vacuum cleaner)': 85, 'pounding work close by (jackhammer)': 100 };
 // Sound sources, overall dB SPL at 1 m: Wikipedia "Sound pressure" examples (.30-06 rifle 171 at 1 m; jet engine 150 at 1 m;
 // jackhammer 100 at 1 m; normal conversation 40–60 at 1 m → 50; vacuum cleaner 85 at 1.8 m → 90; passenger car at 30 km/h
 // 65–70 at 10 m → 87.5); footsteps on gravel or sand about 60–62 dBA at the walker's ear (Larsson et al. 2015, Noise Health
 // 17:227, citing earlier recordings), ear about 1.5 m from the feet → 64 at 1 m [ASSUMED distance].
-export const SOUNDS = { 'rifle shot': 171, 'jet engine': 150, jackhammer: 100, 'vacuum cleaner': 90, 'car passing slowly': 87.5,
-    'footsteps on gravel or sand': 64, 'quiet conversation': 50 };
+export const SOUNDS = { 'gunshot (rifle)': 171, 'deafening roar (jet engine)': 150, 'loud pounding (jackhammer)': 100,
+    'loud drone (vacuum cleaner)': 90, 'passing vehicle (car at 30 km/h)': 87.5, 'footsteps on gravel or sand': 64, 'quiet conversation': 50 };
 // Walls and doors: field mass law, TL = 20 log10(m f) − 47 dB, m surface mass kg/m² (e.g. Long, Architectural Acoustics);
 // surface masses from material density × thickness [ASSUMED values].
 export const BARRIER = { none: 0, 'curtain or tent': 1, 'wooden door': 20, 'plaster wall': 25, 'brick wall': 200, 'stone wall': 500 };

@@ -19,7 +19,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'Disease', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'Disease', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -126,8 +126,8 @@ export function plain(out) {
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = v => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
 const DECIDES = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
-    Look: a => [a.viewer, a.target ?? a.size_m], JudgeStatement: a => [a.listener, a.speaker, a.statement], Bystander: a => [a.who],
-    ObeyOrder: a => [a.who], AskStranger: a => [a.who, a.request], HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing], FirstImpression: a => [a.who],
+    Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
+    HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
     NewCharacter: a => [a.who], NameCharacter: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population] };
 const decisionKey = (name, a) => DECIDES[name] && [name, ...DECIDES[name](a ?? {})].map(norm).join('|');
 function decisions() {
@@ -154,6 +154,7 @@ const str = d => ({ type: 'string', description: d });
 // Option order is shuffled at each load: models prefer options by position and label rather than content (selection bias,
 // Zheng et al. 2024, ICLR; their remedy permutes the options).
 const shuffled = list => list.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = v => typeof v === 'number' ? v : (parseFloat(v) || 0) / 100;
 // Intuitive estimates are not regressive enough; corrected = class share + ρ × (estimate − class share), with ρ ≈ τ = 2p − 1
@@ -214,7 +215,7 @@ Senses
 - A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate.
 People
 - A character the story has not described → NewCharacter; their first name → NameCharacter.
-- A statement that might be a lie → JudgeStatement. A bystander who might help → Bystander. An order to hurt someone → ObeyOrder. A small favour from a stranger → AskStranger. Interest after a first meeting → FirstImpression.
+- A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
 - A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
 World
@@ -501,11 +502,11 @@ export function registerRulesTools(enabled) {
         return `Fact ${f.id} recorded: ${f.text} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
 
-    tool('Listen', 'Decide whether a character hears a sound (a shot, footsteps, an engine) before narrating whether they react. Code decides from loudness, distance, background noise, walls and the listener\'s hearing.', {
+    tool('Listen', 'Decide whether a character hears a sound (a shot, footsteps, hoofbeats, an engine) before narrating whether they react. Code decides from loudness, distance, background noise, walls and the listener\'s hearing.', {
         listener: str('Character who might hear it'),
         listener_species: str('Listener\'s DF creature when it has no tracker profile.'),
         sound: { type: 'string', enum: Object.keys(SOUNDS) },
-        spl_db: { type: 'number', description: 'Loudness at 1 m, dB SPL, for a sound not in the list (from a published measurement)' },
+        spl_db: { type: 'number', description: 'Loudness at 1 m, dB SPL, for a sound that fits no class in the list (from a published measurement)' },
         distance_m: { type: 'number', description: 'Distance from the sound, m' },
         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
@@ -519,7 +520,7 @@ export function registerRulesTools(enabled) {
         viewer: str('Character who might see it'),
         viewer_species: str('Viewer\'s DF creature when it has no tracker profile.'),
         target: str('What might be seen, a few words'),
-        size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, car 1.5, horse 0.6)' },
+        size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, horse 0.6, wagon or car 1.5)' },
         distance_m: { type: 'number', description: 'Distance, m' },
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Only for an overcast sky or artificial light. Leave it out otherwise: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
@@ -534,39 +535,44 @@ export function registerRulesTools(enabled) {
         return look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: sky?.lux ?? a.light ?? 'daylight', lightLabel: sky?.label ?? null, visibility_m: a.visibility_m ?? 20000 }, rng);
     }));
 
-    tool('JudgeStatement', 'Decide whether a character takes a statement they just heard as a lie or as true, before narrating their reaction. Use when someone could be lying or could be suspected of lying, and the listener has no proof either way.', {
-        listener: str('Character judging the statement'),
-        speaker: str('Character who made it'),
-        is_lie: { type: 'boolean', description: 'Whether the statement is in fact a lie (known from the story)' },
-        statement: str('The statement in a few words'),
-    }, ['listener', 'speaker', 'is_lie'], a => run((st, rng) => {
-        const l = who(st, a.listener), s = who(st, a.speaker);
-        const r = judgeStatement(!!a.is_lie, rng, { speaker: s.p ?? null, listener: l.p ?? null });
-        return `${a.listener} ${r.judgedLie ? 'judges it a lie' : 'believes it'}, from ${a.speaker}'s manner alone: no proof either way. Narrate ${a.listener}'s reaction from that judgment.`;
+    // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
+    // enums; function-calling accuracy drops as the number of functions grows, Patil et al. 2025, BFCL).
+    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, or want to see someone again after a first meeting.', {
+        situation: { type: 'string', enum: SOCIAL },
+        who: str('The person whose response is decided'),
+        speaker: str('For a statement: who made it'),
+        is_lie: { type: 'boolean', description: 'For a statement: whether it is in fact a lie (known from the story)' },
+        statement: str('For a statement: the statement in a few words'),
+        others: { type: 'number', description: 'For an emergency: how many other people the person believes also witness it' },
+        emergency: { type: 'string', enum: SITUATIONS, description: 'For an emergency. Default victim in danger.' },
+        order: { type: 'string', enum: Object.keys(OBEY), description: 'For an order to hurt someone: its circumstances' },
+        request: str('For a favour: the request in a few words'),
+        sex: { type: 'string', enum: ['male', 'female'], description: 'For a first meeting: sex of the person whose interest is decided' },
+        many_options: { type: 'boolean', description: 'For a first meeting: they meet many prospective partners at once (15 or more)' },
+    }, ['situation', 'who'], a => run((st, rng) => {
+        switch (a.situation) {
+            case SOCIAL[0]: {
+                const l = who(st, a.who), s = who(st, a.speaker);
+                const r = judgeStatement(!!a.is_lie, rng, { speaker: s.p ?? null, listener: l.p ?? null });
+                return `${a.who} ${r.judgedLie ? 'judges it a lie' : 'believes it'}, from ${a.speaker ?? 'the speaker'}'s manner alone: no proof either way.`;
+            }
+            case SOCIAL[1]: {
+                const n = Number(a.others) || 0, p = helpChance(n, a.emergency ?? 'victim in danger');
+                return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (${n > 0 ? `with ${n} other${n > 1 ? 's' : ''} watching` : 'alone with it'}).`;
+            }
+            case SOCIAL[2]: {
+                if (!OBEY[a.order]) return `Give order, one of: ${Object.keys(OBEY).join('; ')}.`;
+                return `${a.who} ${rng() < OBEY[a.order] ? 'carries the order out to the end' : 'refuses before the end'} (${a.order}).`;
+            }
+            case SOCIAL[3]: return `${a.who} ${rng() < SMALL_REQUEST_YES ? 'agrees' : 'declines'}${a.request ? ` (${a.request})` : ''}.`;
+            case SOCIAL[4]: {
+                if (!a.sex) return 'Give sex for a first meeting.';
+                const pr = interestChance(a.sex, !!a.many_options);
+                return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
+            }
+            default: return `Give situation, one of: ${SOCIAL.join('; ')}.`;
+        }
     }));
-
-    tool('Bystander', 'Decide whether an uninvolved character steps in to help in an emergency they witness (someone collapses, is attacked, cries for help).', {
-        who: str('The bystander'),
-        others: { type: 'number', description: 'How many other people the bystander believes also witness it' },
-        situation: { type: 'string', enum: SITUATIONS, description: 'Default victim in danger' },
-    }, ['who', 'others'], a => run((st, rng) => {
-        const p = helpChance(a.others, a.situation ?? 'victim in danger');
-        const others = a.others > 0 ? `with ${a.others} other${a.others > 1 ? 's' : ''} watching` : 'alone with it';
-        return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (${others}).`;
-    }));
-
-    tool('ObeyOrder', 'Decide whether a character carries out an order from an authority to hurt someone, all the way, when they have no personal stake in it.', {
-        who: str('The character given the order'),
-        situation: { type: 'string', enum: Object.keys(OBEY) },
-    }, ['who', 'situation'], a => run((st, rng) => {
-        const p = OBEY[a.situation];
-        return `${a.who} ${rng() < p ? 'carries the order out to the end' : 'refuses before the end'} (${a.situation}).`;
-    }));
-
-    tool('AskStranger', 'Decide whether a stranger agrees to a small direct request (a few minutes of time, lending something briefly, showing the way) before narrating the answer.', {
-        who: str('The stranger asked'),
-        request: str('The request in a few words'),
-    }, ['who'], a => run((st, rng) => `${a.who} ${rng() < SMALL_REQUEST_YES ? 'agrees' : 'declines'}${a.request ? ` (${a.request})` : ''}.`));
 
     tool('HoldOn', 'Decide whether a person can hang on by their hands (a ledge, a rope, a branch) or carry a load by its handles, before narrating it.', {
         who: str('Character holding on'),
@@ -604,15 +610,6 @@ export function registerRulesTools(enabled) {
         if (p) Object.assign(p, { age: r.age, sex: r.sex });
         const noun = r.age < 15 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
         return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child, no occupation' : 'no stated occupation'}.`;
-    }));
-
-    tool('FirstImpression', 'Decide whether a character, after a brief first meeting, wants to see someone again romantically, before narrating their reaction.', {
-        who: str('Character whose interest is decided'),
-        sex: { type: 'string', enum: ['male', 'female'] },
-        many_options: { type: 'boolean', description: 'They are meeting many prospective partners at once (15 or more), e.g. a ball, a festival, a dating event' },
-    }, ['who', 'sex'], a => run((st, rng) => {
-        const pr = interestChance(a.sex, !!a.many_options);
-        return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
@@ -698,9 +695,9 @@ export function registerRulesTools(enabled) {
     tool('BodyFall', 'Resolve a fall before narrating its outcome.', {
         who: str('Character name'),
         species,
-        height_m: { type: 'number' },
+        height_m: { type: 'number', description: 'Height fallen, m' },
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
-        head_first: { type: 'boolean' },
+        head_first: { type: 'boolean', description: 'Landed head first' },
     }, ['who', 'height_m'], a => run((st, rng) => {
         const p = (who(st, a.who, a.species).p ?? person(st, a.who));
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first }, rng);
