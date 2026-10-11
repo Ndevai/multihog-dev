@@ -128,7 +128,8 @@ export function plain(out) {
 const norm = v => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
 const DECIDES = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], JudgeStatement: a => [a.listener, a.speaker, a.statement], Bystander: a => [a.who],
-    ObeyOrder: a => [a.who], AskStranger: a => [a.who, a.request], HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing], FirstImpression: a => [a.who] };
+    ObeyOrder: a => [a.who], AskStranger: a => [a.who, a.request], HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing], FirstImpression: a => [a.who],
+    NewCharacter: a => [a.who], NameCharacter: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population] };
 const decisionKey = (name, a) => DECIDES[name] && [name, ...DECIDES[name](a ?? {})].map(norm).join('|');
 function decisions() {
     const s = store(), turn = turnKey(SillyTavern.getContext().chat);
