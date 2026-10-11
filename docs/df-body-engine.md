@@ -640,7 +640,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Look | `light` | scene fact (artificial light, overcast) | outdoors computed from date, hour and latitude (§6.2) |
 | RecordFact, Communicate `message` | the fact, who knows it | story facts | kept in code and injected as [KNOWS] (§6.12) |
 | Appraise | `about`, good/bad, liked, praiseworthy, appealing | the character's view | emotion type from the OCC model (§6.13) |
-| Price | item, quantity, city, year | scene facts | silver and labour-days from Allen 2001 (§6.14) |
+| Price | question (goods, daily wage, yearly cost of living), item, trade, quantity, city, year | scene facts | silver and labour-days from Allen 2001 (§6.14) |
 | NameCharacter | sex, birth year | story facts | first name by US frequency (§6.11) |
 | Disease | disease, population, immune share | story facts | incubation and outbreak size (§6.15) |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
@@ -660,6 +660,7 @@ Published failure modes of language models, and what the engine does about each.
 | Tool-calling models misfire with many tools and fail to detect irrelevant ones (Patil et al. 2025, BFCL) | the wrong tool, or BodyCheck for a task a specialist tool decides | BodyCheck refuses tasks whose words match a specialist tool and names it (§7.1) |
 | Models pick options by position or label rather than content (selection bias; Zheng et al. 2024, ICLR) | the narrator keeps choosing the first band | labelled options (success shares, ordering) are shuffled at each load, as their remedy permutes options |
 | A model judging two answers favours one by position; asking it to give its evidence first reduces that (Multiple Evidence Calibration; Wang et al. 2024, ACL); forced formats can cut reasoning quality (Tam et al. 2024) | the check pass misses or invents unbacked events | the check pass writes the evidence for each event before its list of events |
+| Irrelevant, specific detail in the context lowers accuracy (Shi et al. 2023) | a fight scene pulls London bread prices into the prompt because they sat in the body lorebook entry | every set is kept at one level: the rules brief has one routing line per kind of event, grouped Body, Surroundings, Senses, People, World, Principles, with scopes (cities, years, settings) only in the tool descriptions; the lorebook is split by topic with its own trigger words (576 body, 578 senses and light, 579 people, 580 prices and disease); an enum lists one kind of thing (Price: question, goods, trade as separate enums) |
 
 ## 8. Unchanged
 

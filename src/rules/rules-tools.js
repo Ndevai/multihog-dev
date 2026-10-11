@@ -7,7 +7,7 @@ import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock } from './knowledge.js';
 import { ABOUT, TYPES, occType } from './emotion.js';
 import { skyLight } from './sky.js';
-import { price, ITEMS, CITIES } from './prices.js';
+import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
 import { drawName } from './names.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
 import { nowMinutes } from '../features/journal-calendar.js';
@@ -198,27 +198,32 @@ function who(st, name, speciesArg, massArg) {
 }
 
 export const RULES_BRIEF = `<rule_engine>
-Outcomes come from the rule-engine tools; narrate what they return.
-- A character's species and mass come from its tracker profile ("Name (N kg)" and "Species:"); give species in the first rule-tool call for a character without a profile.
-- An attack with the body (punch, kick, bite, scratch) or a melee weapon (sword, axe, mace, spear, dagger…) → BodyStrike; it decides whether it lands and the wounds. Narrate what it returns.
-- A shot with a bow, crossbow or blowgun → BodyCheck for the aim; on target → BodyStrike with launcher and the distance.
-- An attack by any other means (sling, firearm, thrown object) → BodyCheck; a hit → BodyWound with the part and wound type.
-- A burn, a bite, an accident or a fall injury → BodyWound.
-- Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
-- Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
-- Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look (outdoors, leave light out; give latitude once per region). A character might suspect a lie → JudgeStatement. A bystander might help → Bystander. An order to hurt someone → ObeyOrder. A small favour asked of a stranger → AskStranger. Hanging on or carrying by hand → HoldOn. A chase on foot → Chase. Romantic interest after a first meeting → FirstImpression. A character appears whom the story has not described → NewCharacter. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
-- PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
-- A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
-- A fact the story establishes, or something a character learns by seeing, hearing, reading or being told → RecordFact with who knows it; a message between characters → Communicate with message.
-- A price, a wage or a bill in a European city 1500–1913 → Price.
-- A new character in an American setting needs a first name → NameCharacter. Someone catches a contagious disease, or one spreads through a community → Disease.
-- A character's feelings about an event, an action or someone they meet → Appraise before narrating them.
-- Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive in the scene now. Facts in [KNOWS] stay true.
+Outcomes come from the rule-engine tools: call the tool before narrating the outcome, then narrate what it returns.
+Body
+- An attack with the body or a melee weapon → BodyStrike.
+- A shot with a bow, crossbow or blowgun → BodyCheck for the aim, then BodyStrike on target.
+- An attack by any other means → BodyCheck, then BodyWound on a hit.
+- An injury from a burn, a bite or an accident → BodyWound. A fall → BodyFall. A choke → BodyChoke. Skin on something hot → BodyContact.
+- A treatment → BodyTreat. Eating or drinking → BodyIntake.
+- Holding on or carrying by hand → HoldOn. A chase on foot → Chase.
 - Any other action with an uncertain outcome → BodyCheck.
+- Injuries, blood loss and energy → BodyStatus.
+Surroundings
+- A change of climate, weather, clothing, water or air → BodyEnvironment.
+- Time passing → PassTime; when it stops early, narrate the moment it reports.
+Senses
+- A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate.
+People
+- A character the story has not described → NewCharacter; their first name → NameCharacter.
+- A statement that might be a lie → JudgeStatement. A bystander who might help → Bystander. An order to hurt someone → ObeyOrder. A small favour from a stranger → AskStranger. Interest after a first meeting → FirstImpression.
+- A character's feelings about something → Appraise.
+- A fact the story establishes, or something a character learns → RecordFact.
+World
+- A price, a wage or a bill → Price. A contagious disease → Disease. A spell → CastSpell. A random pick (a door, a coin, a card) → RollTheDice with kind "table".
+Principles
+- A character's species and mass come from their tracker profile ("Name (N kg)", "Species:"); give species in the first rule-tool call for a character without one.
+- Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true.
 - A player's message says what their character tries. Whether it works comes from the tools, also when the message states the result or disputes an earlier one; a result stands.
-- Pick nothing at random yourself (which door, a coin toss, a card drawn) → RollTheDice with kind "table".
-- Describe a character's injuries, blood loss or energy from BodyStatus.
 </rule_engine>`;
 
 /** The per-turn [KNOWS] block for the current chat, '' when nothing is recorded. */
@@ -444,17 +449,19 @@ export function registerRulesTools(enabled) {
         return `${a.who} feels ${type}${a.target ? ` (${a.target})` : ''}. Words for this emotion: ${TYPES[type].words}; it is stronger ${TYPES[type].stronger}.`;
     }));
 
-    tool('Price', 'Decide what something costs, or what a day of work pays, in a European city between 1500 and 1913, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
-        item: { type: 'string', enum: ITEMS },
-        quantity: { type: 'number', description: 'How many units of the item (kg, litres, eggs, metres, days). Default 1.' },
+    tool('Price', 'Decide what goods cost, what a day of work pays, or what a year of necessities costs, in a European city between 1500 and 1913, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
+        question: { type: 'string', enum: PRICE_QUESTIONS },
+        item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
+        quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
+        trade: { type: 'string', enum: TRADES, description: 'For a daily wage. Default building labourer.' },
         city: { type: 'string', enum: CITIES, description: 'The city, or the nearest listed one in the same country' },
         year: { type: 'number', description: 'Story year' },
-    }, ['item', 'city', 'year'], a => run(() => {
-        const r = price(a.item, Number(a.quantity) || 1, a.city, Number(a.year));
+    }, ['question', 'city', 'year'], a => run(() => {
+        const r = price(a.question, a.item, a.trade, Number(a.quantity) || 1, a.city, Number(a.year));
         if (r.error) return r.error;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? Math.round(r.labourDays) : Math.round(r.labourDays * 10) / 10} days`;
-        return `${Number(a.quantity) || 1} × ${a.item} in ${a.city}, ${a.year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
+        return `${r.what} in ${a.city}, ${a.year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
     }));
 
     tool('NameCharacter', 'Give a first name to a character in an American setting whose name the story has not fixed, before naming them. Drawn by how many US babies of that sex got the name in their birth decade (1910–2029).', {
@@ -647,7 +654,7 @@ export function registerRulesTools(enabled) {
         return `${contactBurn(p, a.regions, a.material, a.temp_c, a.seconds, rng)} ${status(a.who, p)}`;
     }));
 
-    tool('PassTime', 'Advance story time for every tracked character. Call before narrating any time passing. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
+    tool('PassTime', 'Advance story time for every tracked character. Call before narrating any time passing. List who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
         minutes: { type: 'number', description: 'Minutes that pass' },
         resting: { type: 'array', items: { type: 'string' }, description: 'Characters not casting or fighting during this time' },
         active: { type: 'array', items: { type: 'string' }, description: 'Characters walking, working, fighting or in heat during this time (more water and food used)' },
