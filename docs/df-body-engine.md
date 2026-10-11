@@ -377,6 +377,8 @@ Other sounds (Listen: `sound` preset or `spl_db` at 1 m, `distance_m`, `noise`, 
 
 Seeing at a distance (Look: `size_m` smallest dimension of the target, `distance_m`, `light`, `visibility_m`; src/rules/vision.js). Light presets (lux, Wikipedia "Lux" examples; ranges at their geometric middle): overcast starlight 0.0001, clear starlight 0.002, quarter moon 0.01, full moon 0.12, civil twilight 3.4, dim street or public lighting 32, living room 50, office 400, overcast day 1000, daylight 15 800, direct sunlight 56 600; scene luminance L = E × 0.2 ÷ π [ASSUMED reflectance 0.2]. Acuity R (cycles/degree) = 17.25 arctan(1.4 log10 L + 0.35) + 25.72 (Ward Larson, Rushmeier & Piatko 1997, fit to Shlaer 1937): daylight 49, twilight 16.6, full moon 4.9, starlight 2.0. Cycles across the target N = R × its angular size (degrees). Johnson criteria (Johnson 1958): 50 % at N = 1 (notice), 4 (recognize the kind), 6.4 (identify); probability P = x^E ÷ (1 + x^E), x = N ÷ N50, E = 2.7 + 0.7 x (target transfer probability function, US Army NVESD). One roll gives the deepest level reached. Beyond the meteorological visibility nothing is seen (contrast under 2 %, Koschmieder) [ASSUMED cut-off]. No working eye → nothing. Results, standing person (0.5 m): daylight 200 m notice 100 %, recognize 90 %, identify 58 %; 1000 m 78 / 4 / 1 %; 2000 m 25 %; full moon 30 m 100 / 64 / 27 %, 100 m 78 / 4 / 1 %; clear starlight 20 m 99 / 24 / 8 %. Species acuity × human (60 cycles/degree): Caves, Brandley & Johnsen 2018 (Trends Ecol Evol 33:358) as reported by Duke University: primates 1, eagle 140/60 = 2.33 (wedge-tailed eagle [ASSUMED for the DF eagle]), dogs and cats ÷ 5.5 ("four to seven times" less; wolves and big cats as their family [ASSUMED]), rats ÷ 50, mice ÷ 100, other birds and fish 0.5 ("most birds see fewer than 30"; the sharpest fish about 30 [ASSUMED ceilings]); unknown species as human; same dependence on light [ASSUMED]. Standing person at 200 m in daylight: human notices 100 %, identifies 58 %; dog notices 71 %, identifies 1 %; eagle identifies 99 %; rat 0. Limits (OPEN-88): no target contrast or camouflage, no motion (dogs detect movement better than acuity suggests), nocturnal species are not better in dim light, no field of view or attention.
 
+Light outdoors comes from the sky, not from the narrator (`src/rules/sky.js`). When Look gets no `light` and the tracker's [TIME] holds a calendar date (dd/mm/yyyy), code computes the Sun's and Moon's altitude at the stored latitude with the low-accuracy formulae of Meeus, Astronomical Algorithms (1991): Sun's longitude and declination (24.2–24.7), obliquity (21.2), equation of time (27.3, Smart), Moon's mean arguments (45.1–45.4), phase angle and illuminated fraction (46.4, 46.1); Moon's longitude from the three largest terms of Table 45.A, latitude and parallax left out [ASSUMED]. Checks against the book's worked examples: Sun's longitude 199.90987° (Example 24.a: 199.90987°), equation of time +3.42775° (27.b: +3.427752°), Moon's D, M, M′ 113.8423°, 97.6435°, 5.1508° (45.a: same), illuminated fraction 0.6801 (46.a: 0.6802). The story clock is local mean solar time [ASSUMED]. Illuminance (Wikipedia, Lux): Sun ≥ 6°, daylight 15 800 lux; 0–6°, sunrise or sunset 400 lux [6° band ASSUMED]; 0 to −6°, civil twilight 3.4 lux; below −6°, moonlight when the Moon is up, 0.12 lux at full and 0.01 lux at quarter, log-interpolated by phase angle [ASSUMED], never below clear starlight 0.002 lux. The narrator passes `light` only for artificial light or an overcast sky.
+
 ### 6.3 Water, food, sleep
 
 | Need | Rule | Source |
@@ -566,6 +568,26 @@ Scratch (2000 each): hanging by two hands — man 30 y, 80 kg: 89 %; woman 30 y,
 
 A character the story has not described gets sex, age and occupation from the 1881 census of England and Wales (country totals as published by A Vision of Britain Through Time: Table 3, ages of males and females, 21 five-year bands; Table 10, occupations of males and females, 330 occupations after dropping the "Others" rows), through NewCharacter. Sex: 48.7 % male from the age table, or the chosen occupation's own men/women counts. Age: weighted by the band counts for that sex, uniform within the band [ASSUMED]. Occupation: from age 15 [ASSUMED; the table has no ages], a person has one with probability (occupation total for the sex) ÷ (population aged 15+ of that sex), then one is drawn by count; otherwise "no stated occupation". Whatever the story already fixes (sex, occupation, a minimum age) is passed in and kept. Occupied from 15: men 96 %, women 40 %. Check (20 000 draws): 50.7 % female, 36.5 % under 15 (census 51.3 %, 36.5 %). OPEN: other countries and periods; age by occupation; names.
 
+### 6.12 What exists and who knows it
+
+Facts the story establishes are recorded once and stay true (RecordFact); each fact lists who knows it. Pattern from PAYADOR and Góngora et al. 2026 (world state held in code, the model proposes changes) and from Prom Week's social facts database (McCoy et al. 2013), with per-character knowledge as in Versu (Evans & Short 2014). Every turn the [KNOWS] block lists common knowledge and each character's facts, newest 12 per line [ASSUMED]: injecting what characters already know, with explicit "already knows" markers, cut known-information forgetting by 73 % over 90 chapters of generated fiction (Xiwei 2026, "Epistemic memory failures in long-form narrative agents"), and models otherwise answer as if a character knew what was said in their absence (FANToM, Kim et al. 2023). A message passed with Communicate and `message` adds the listener as a knower when the words or the gesture reach them (every word, most words, the gist, or a seen gesture; not a language the listener lacks).
+
+### 6.13 Emotions
+
+Appraise returns the emotion type from how the character sees the event, the action or the thing (Ortony, Clore & Collins 1988, The Cognitive Structure of Emotions, the 22 type specifications):
+
+| About | Answer | Type |
+|---|---|---|
+| an event that affects them | good / bad | joy / distress |
+| an event that affects someone else | good and liked / good and disliked / bad and liked / bad and disliked | happy-for / resentment / sorry-for / gloating |
+| the prospect of an event | good / bad | hope / fear |
+| a hoped-for or feared event | came true and good / came true and bad / did not and good / did not and bad | satisfaction / fears-confirmed / disappointment / relief |
+| their own action | praiseworthy (+ good result) / blameworthy (+ bad result) | pride (gratification) / self-reproach (remorse) |
+| someone else's action | praiseworthy (+ good result for them) / blameworthy (+ bad result) | appreciation (gratitude) / reproach (anger) |
+| a person or thing encountered | appealing / unappealing | liking / disliking |
+
+The result names the type, the book's words for it and what makes it stronger (its variables affecting intensity), so the narrator words it within the type. An appraisal-based chain of emotion outperformed control conditions on user-rated believability and observed emotional intelligence of LLM game agents (Croissant et al. 2024, PLOS ONE 19:e0301033). Intensity itself is not computed (OPEN-92).
+
 ## 7. Tools
 
 | Tool | Change |
@@ -603,6 +625,9 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | HoldOn | `hanging`, `load_kg`, `hands` | scene facts | — |
 | Chase | `gap_m` | scene fact | — |
 | NewCharacter | `sex`, `occupation`, `min_age` | story facts (only when fixed) | sex, age and occupation otherwise drawn from the 1881 census (§6.11) |
+| Look | `light` | scene fact (artificial light, overcast) | outdoors computed from date, hour and latitude (§6.2) |
+| RecordFact, Communicate `message` | the fact, who knows it | story facts | kept in code and injected as [KNOWS] (§6.12) |
+| Appraise | `about`, good/bad, liked, praiseworthy, appealing | the character's view | emotion type from the OCC model (§6.13) |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ### 7.2 Defences against known model failures
@@ -680,6 +705,8 @@ What these show:
 | OPEN-88 | sound outdoors: ground and weather attenuation (ISO 9613-2 ground term), impulse temporal integration, species audiogram shapes per band; sight: contrast and camouflage, motion, species acuity, attention |
 | OPEN-89 | social judgments: lie detection with evidence or suspicion; persuasion, compliance and fear/morale rates |
 | OPEN-90 | BodyCheck `share`: replace the model's estimate with published success rates and times for common tasks (climbing, swimming distance, lock-picking, first aid outcomes, shooting accuracy by distance, driving) |
+| OPEN-91 | weather: WGEN (Richardson & Wright 1984, USDA ARS-8) daily rain, temperature and radiation for 139 US stations; its Table A1 (rain parameters) is an unreadable scan in the uploaded copy, so it needs a clean copy or OCR checked by hand |
+| OPEN-92 | emotion intensity and decay (OCC variables affecting intensity have no published scales); the audit does not yet flag characters using knowledge [KNOWS] does not give them |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 17 species and the bird median; 60-dB ranges for 34 (frogs and toads as the bullfrog, 100 Hz–2.5 kHz). Missing lowest thresholds: pig, goat, sheep, elephant, frogs (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |

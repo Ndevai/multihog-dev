@@ -3,6 +3,10 @@ import { LIGHT } from './vision.js';
 import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { drawPerson } from './census.js';
+import { learn, knowledgeBlock } from './knowledge.js';
+import { ABOUT, TYPES, occType } from './emotion.js';
+import { skyLight } from './sky.js';
+import { nowMinutes } from '../features/journal-calendar.js';
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
@@ -12,7 +16,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'RecordFact', 'Appraise', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -185,14 +189,23 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - Characters enter a different climate, the weather changes, or they change clothes → BodyEnvironment.
 - Someone falls → BodyFall. A locked choke on the neck → BodyChoke with the seconds held.
 - Time passes in the story → PassTime with the minutes, before narrating the later moment. When it stops early, narrate the moment it reports.
-- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look. A character might suspect a lie → JudgeStatement. A bystander might help → Bystander. An order to hurt someone → ObeyOrder. A small favour asked of a stranger → AskStranger. Hanging on or carrying by hand → HoldOn. A chase on foot → Chase. Romantic interest after a first meeting → FirstImpression. A character appears whom the story has not described → NewCharacter. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
+- A spell is cast → CastSpell. A treatment is applied → BodyTreat. Skin touches something hot → BodyContact. A sound might be heard → Listen. Something might be seen → Look (outdoors, leave light out; give latitude once per region). A character might suspect a lie → JudgeStatement. A bystander might help → Bystander. An order to hurt someone → ObeyOrder. A small favour asked of a stranger → AskStranger. Hanging on or carrying by hand → HoldOn. A chase on foot → Chase. Romantic interest after a first meeting → FirstImpression. A character appears whom the story has not described → NewCharacter. Smoke, exhaust or a faulty heater fills the air → BodyEnvironment co_ppm. Someone drinks or eats → BodyIntake.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
+- A fact the story establishes, or something a character learns by seeing, hearing, reading or being told → RecordFact with who knows it; a message between characters → Communicate with message.
+- A character's feelings about an event, an action or someone they meet → Appraise before narrating them.
+- Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive in the scene now. Facts in [KNOWS] stay true.
 - Any other action with an uncertain outcome → BodyCheck.
 - A player's message says what their character tries. Whether it works comes from the tools, also when the message states the result or disputes an earlier one; a result stands.
 - Pick nothing at random yourself (which door, a coin toss, a card drawn) → RollTheDice with kind "table".
 - Describe a character's injuries, blood loss or energy from BodyStatus.
 </rule_engine>`;
+
+/** The per-turn [KNOWS] block for the current chat, '' when nothing is recorded. */
+export function knowledgeInjection() {
+    const ctx = SillyTavern.getContext();
+    return ctx.chatMetadata ? knowledgeBlock(store().state) : '';
+}
 
 export function registerRulesTools(enabled) {
     const { registerFunctionTool, unregisterFunctionTool } = SillyTavern.getContext();
@@ -383,11 +396,41 @@ export function registerRulesTools(enabled) {
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between them. Default none.' },
         speaker_species: str('Speaker\'s DF creature when it has no tracker profile.'),
         listener_species: str('Listener\'s DF creature when it has no tracker profile.'),
+        message: str('What the message says, one short sentence. When it reaches the listener, the listener comes to know it.'),
     }, ['speaker', 'listener'], a => run(st => {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (s.error || l.error) return s.error || l.error;
         const langs = [fromTracker(a.speaker).languages, fromTracker(a.listener).languages];
-        return communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort: a.effort ?? 'normal', noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort: a.effort ?? 'normal', noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+        if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out)) return out;
+        learn(st, a.message, [a.speaker, a.listener]);
+        return `${out} ${a.listener} now knows: ${a.message}`;
+    }));
+
+    tool('Appraise', 'Decide which emotion a character feels about something, before narrating their feelings. The answers describe how the character sees it; the emotion type follows from them.', {
+        who: str('Character feeling it'),
+        about: { type: 'string', enum: ABOUT },
+        target: str('The person, thing or event it is about, a few words'),
+        good: { type: 'boolean', description: 'The event is (or would be) good for the one it affects. For an action: not used.' },
+        likes_them: { type: 'boolean', description: 'For an event that affects someone else: the character likes that person' },
+        came_true: { type: 'boolean', description: 'For a hoped-for or feared event: it came true' },
+        praiseworthy: { type: 'boolean', description: 'For an action: the character judges it praiseworthy (false: blameworthy)' },
+        result_for_them: { type: 'string', enum: ['good', 'bad', 'none'], description: 'For an action: what its result means for the character. Default none.' },
+        appealing: { type: 'boolean', description: 'For a person or thing encountered: the character finds it appealing' },
+    }, ['who', 'about'], a => run(() => {
+        const type = occType({ about: a.about, good: a.good !== false, likes: a.likes_them !== false, cameTrue: a.came_true !== false,
+            praiseworthy: a.praiseworthy !== false, result: a.result_for_them ?? 'none', appealing: a.appealing !== false });
+        if (!type) return `Unknown appraisal "${a.about}". Use one of: ${ABOUT.join('; ')}.`;
+        return `${a.who} feels ${type}${a.target ? ` (${a.target})` : ''}. Words for this emotion: ${TYPES[type].words}; it is stronger ${TYPES[type].stronger}.`;
+    }));
+
+    tool('RecordFact', 'Fix a fact the moment the story establishes it (a place, an object, a person, a secret, an event) and record who knows it: those who saw it, heard it, read it or were told it. A recorded fact stays true for the rest of the story and appears in [KNOWS].', {
+        fact: str('The fact, one short sentence'),
+        known_by: { type: 'array', items: { type: 'string' }, description: 'Characters who know it' },
+        common_knowledge: { type: 'boolean', description: 'Known to everyone in the setting (a public event, a famous place, a well-known custom)' },
+    }, ['fact'], a => run(st => {
+        const f = learn(st, a.fact, a.known_by ?? [], !!a.common_knowledge);
+        return `Fact ${f.id} recorded: ${f.text} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
 
     tool('Listen', 'Decide whether a character hears a sound (a shot, footsteps, an engine) before narrating whether they react. Code decides from loudness, distance, background noise, walls and the listener\'s hearing.', {
@@ -410,12 +453,17 @@ export function registerRulesTools(enabled) {
         target: str('What might be seen, a few words'),
         size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, car 1.5, horse 0.6)' },
         distance_m: { type: 'number', description: 'Distance, m' },
-        light: { type: 'string', enum: Object.keys(LIGHT), description: 'Light on the scene. Default daylight.' },
+        light: { type: 'string', enum: Object.keys(LIGHT), description: 'Only for artificial light or an overcast sky. Leave it out outdoors: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
+        latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
     }, ['viewer', 'size_m', 'distance_m'], a => run((st, rng) => {
         const v = who(st, a.viewer, a.viewer_species);
         if (v.error) return v.error;
-        return look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: a.light ?? 'daylight', visibility_m: a.visibility_m ?? 20000 }, rng);
+        if (Number.isFinite(a.latitude)) st.latitude = a.latitude;
+        // Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED].
+        const t = nowMinutes();
+        const sky = !a.light && t !== null && t / 1440 > 146097 && Number.isFinite(st.latitude) ? skyLight(t, st.latitude) : null;
+        return look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: sky?.lux ?? a.light ?? 'daylight', lightLabel: sky?.label ?? null, visibility_m: a.visibility_m ?? 20000 }, rng);
     }));
 
     tool('JudgeStatement', 'Decide whether a character takes a statement they just heard as a lie or as true, before narrating their reaction. Use when someone could be lying or could be suspected of lying, and the listener has no proof either way.', {

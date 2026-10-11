@@ -1048,7 +1048,7 @@ function earOf(l, lc) {
 
 /** Whether `vs` sees a target of smallest dimension `size_m` at `distance_m` (§6.2): one roll against the Johnson
  * probabilities; returns the deepest level reached (identified ⊂ recognized ⊂ detected). */
-export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight', visibility_m = 20000 } = {}, rng = Math.random) {
+export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight', lightLabel = null, visibility_m = 20000 } = {}, rng = Math.random) {
     const vc = creatureOf(v);
     if (!vc) return 'Creature data is not loaded.';
     if (v.dead || v.unconscious) return `${vs} perceives nothing (${v.dead ? 'dead' : 'unconscious'}).`;
@@ -1056,7 +1056,7 @@ export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight',
     if (eyes.length && !eyes.some(worksFn(v, vc))) return `${vs} cannot see (no working eye).`;
     const r = see({ size: size_m, distance: distance_m, light, visibility: visibility_m, acuityFactor: acuityOf(v.species) });
     const u = rng();
-    const what = `${size_m} m target at ${distance_m} m, ${light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}`;
+    const what = `${size_m} m target at ${distance_m} m, ${lightLabel ?? light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}`;
     const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse) but not which one'
         : u < r.detect ? 'notices something there but cannot tell what' : 'does not see it';
     return `${vs} ${level} (${what}).`;
