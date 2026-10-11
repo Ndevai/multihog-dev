@@ -656,7 +656,7 @@ export function registerRulesTools(enabled) {
         how: str('How the knowers learned it, when they learned it the same way: saw it, heard it, read it, told by a named person, rumour'),
     }, ['fact'], a => run(st => {
         const f = learn(st, a.fact, a.known_by ?? [], !!a.common_knowledge, a.how ? Object.fromEntries((a.known_by ?? []).map(k => [k, a.how])) : {});
-        return `Fact ${f.id} recorded: ${f.text} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
+        return `Fact ${f.id} recorded: ${f.text.replace(/[.!?]?$/, '.')} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
     tool('Listen', 'Decide whether a character hears a sound (a shot, footsteps, hoofbeats, an engine) before narrating whether they react. Code decides from loudness, distance, background noise, walls and the listener\'s hearing.', {
         listener: str('Character who might hear it'),
