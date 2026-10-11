@@ -19,11 +19,22 @@ export const findOccupation = text => {
     return t ? OCCUPATIONS.find(o => norm(o.name).split(' ').includes(t)) ?? OCCUPATIONS.find(o => norm(o.name).includes(t)) ?? null : null;
 };
 
+// Birthplace of people living in England and Wales, 1881 (Ravenstein 1885, "The Laws of Migration", J Stat Soc London
+// 48:167, tables of the 1881 census): 25 974 439 residents; born in the county where enumerated 18 699 922, a border county
+// 3 308 732, elsewhere in England and Wales 2 847 168, Scotland 253 528, Ireland 562 374, elsewhere 302 715. The country
+// shares are used at any place [ASSUMED: towns drew more migrants].
+export const BIRTHPLACES = [['this county', 18699922], ['a neighbouring county', 3308732], ['elsewhere in England or Wales', 2847168],
+    ['Scotland', 253528], ['Ireland', 562374], ['abroad or at sea', 302715]];
+
 /**
- * { sex, age, occupation } of a person in England and Wales, 1881. sex, occupation and minAge fix what the story already
+ * { sex, age, occupation, born } of a person in England and Wales, 1881. sex, occupation and minAge fix what the story already
  * says; an occupation sets the sex odds from its own men/women counts and an age of at least 15.
  */
-export function drawPerson({ sex = null, occupation = null, minAge = 0 } = {}, rng = Math.random) {
+export function drawPerson(opts = {}, rng = Math.random) {
+    const r = drawBasics(opts, rng);
+    return r.error ? r : { ...r, born: pick(BIRTHPLACES, b => b[1], rng)[0] };
+}
+function drawBasics({ sex = null, occupation = null, minAge = 0 } = {}, rng = Math.random) {
     const job = occupation ? findOccupation(occupation) : null;
     if (occupation && !job) return { error: `No 1881 census occupation matches "${occupation}". Call again with the nearest real trade, or without occupation.` };
     const s = sex ?? (job ? (rng() < job.m / (job.m + job.f) ? 'male' : 'female')

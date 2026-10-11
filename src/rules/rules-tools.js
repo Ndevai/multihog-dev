@@ -11,7 +11,7 @@ import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js'
 import { drawName } from './names.js';
 import { bodySize } from './body-size.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
-import { BATTLE_YEARS, attackWinShare } from './battle.js';
+import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { nowMinutes } from '../features/journal-calendar.js';
 import { gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -560,13 +560,16 @@ export function registerRulesTools(enabled) {
         defenders: { type: 'number', description: 'Soldiers defending' },
         year: { type: 'number', description: 'Story year' },
         place: str('The position attacked, a few words'),
+        surprise: { type: 'boolean', description: 'The defenders were unaware of the attack until it struck (no warning from sentries or scouts)' },
     }, ['attackers', 'defenders', 'year'], a => run((st, rng) => {
-        const share = attackWinShare(Number(a.attackers), Number(a.defenders), Number(a.year));
+        const share = attackWinShare(Number(a.attackers), Number(a.defenders), Number(a.year), !!a.surprise);
         if (share == null) return `Battle covers engagements from ${BATTLE_YEARS[0]} to ${BATTLE_YEARS[1]} with both sides' numbers given; decide this one with BodyCheck.`;
         const r = a.attackers / a.defenders, where = a.place ? ` ${a.place}` : ' the position';
         const odds = r < 1 ? 'outnumbered by the defenders' : r < 1.5 ? 'at roughly equal strength' : r < 3 ? 'outnumbering the defenders' : 'outnumbering the defenders many times over';
-        const era = a.year <= 1900 ? '; in battles of this era numbers decided little, and leadership, ground and morale decided the rest' : '';
-        return rng() < share ? `The attack on${where} succeeds, the attackers ${odds}${era}.` : `The attack on${where} fails, the attackers ${odds}${era}.`;
+        const era = (a.surprise ? ', and catching the defenders by surprise' : '') + (a.year <= 1900 ? '; in battles of this era numbers decided little, and leadership, ground and morale decided the rest' : '');
+        const won = rng() < share, c = battleCost(Number(a.attackers), Number(a.defenders), Number(a.year), won, rng);
+        const span = c.hours < 1.5 ? 'about an hour' : c.hours < 36 ? `about ${Math.round(c.hours)} hours` : `about ${Math.round(c.hours / 24)} days`;
+        return `The attack on${where} ${won ? 'succeeds' : 'fails'}, the attackers ${odds}${era}. The fighting lasts ${span}. Killed, wounded and captured: attackers ${c.attackerLoss}, defenders ${c.defenderLoss}.`;
     }));
 
     tool('Weather', 'Decide the day\'s weather at a place in the United States from the story date and hour in [TIME], before describing it: rain or dry, rainfall, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
@@ -701,7 +704,7 @@ export function registerRulesTools(enabled) {
         return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m);
     }));
 
-    tool('NewCharacter', 'Decide the sex, age and occupation of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales.', {
+    tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales.', {
         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
         occupation: str('Only when the story already fixes it, in a word or two (innkeeper, carter, blacksmith, servant)'),
@@ -712,7 +715,7 @@ export function registerRulesTools(enabled) {
         const { p } = who(st, a.who);
         if (p) Object.assign(p, { age: r.age, sex: r.sex });
         const noun = r.age < 15 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
-        return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child, no occupation' : 'no stated occupation'}.`;
+        return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child, no occupation' : 'no stated occupation'}; born in ${r.born}.`;
     }));
 
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
