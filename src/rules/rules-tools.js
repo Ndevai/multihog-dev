@@ -3,9 +3,11 @@ import { LIGHT } from './vision.js';
 import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { drawPerson } from './census.js';
+import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock } from './knowledge.js';
 import { ABOUT, TYPES, occType } from './emotion.js';
 import { skyLight } from './sky.js';
+import { price, ITEMS, CITIES } from './prices.js';
 import { nowMinutes } from '../features/journal-calendar.js';
 import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -16,7 +18,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'RecordFact', 'Appraise', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -149,6 +151,16 @@ const str = d => ({ type: 'string', description: d });
 // (Kadavath et al. 2022, arXiv 2207.05221); band values [ASSUMED]. A bare number is still read.
 const SHARES = ['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one'];
 const shareOf = v => typeof v === 'number' ? v : (parseFloat(v) || 0) / 100;
+// Intuitive estimates are not regressive enough; corrected = class share + ρ × (estimate − class share), with ρ ≈ τ = 2p − 1
+// from p, the share of pairs whose order one would predict correctly (Kahneman & Tversky 1977, "Intuitive prediction: biases
+// and corrective procedures", steps 1–5).
+const ORDERING = ['50% (no better than chance)', '60% of pairs', '70% of pairs', '80% of pairs', '90% of pairs'];
+function regressive(a) {
+    const est = shareOf(a.share);
+    if (a.base_share == null) return est;
+    const base = shareOf(a.base_share), rho = Math.max(0, 2 * ((parseFloat(a.ordering) || 50) / 100) - 1);
+    return base + rho * (est - base);
+}
 const species = str('DF creature of this character, by name or id (human, wolf, horse, giant wolf); read when the character first appears. Default human.');
 const partArg = str('Body part by its name: e.g. head, throat, upper body, lower body, right upper arm, left hand, right lower leg, left eye.');
 
@@ -193,6 +205,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - PassTime lists who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - A fact the story establishes, or something a character learns by seeing, hearing, reading or being told → RecordFact with who knows it; a message between characters → Communicate with message.
+- A price, a wage or a bill in a European city 1500–1913 → Price.
 - A character's feelings about an event, an action or someone they meet → Appraise before narrating them.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive in the scene now. Facts in [KNOWS] stay true.
 - Any other action with an uncertain outcome → BodyCheck.
@@ -424,6 +437,19 @@ export function registerRulesTools(enabled) {
         return `${a.who} feels ${type}${a.target ? ` (${a.target})` : ''}. Words for this emotion: ${TYPES[type].words}; it is stronger ${TYPES[type].stronger}.`;
     }));
 
+    tool('Price', 'Decide what something costs, or what a day of work pays, in a European city between 1500 and 1913, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
+        item: { type: 'string', enum: ITEMS },
+        quantity: { type: 'number', description: 'How many units of the item (kg, litres, eggs, metres, days). Default 1.' },
+        city: { type: 'string', enum: CITIES, description: 'The city, or the nearest listed one in the same country' },
+        year: { type: 'number', description: 'Story year' },
+    }, ['item', 'city', 'year'], a => run(() => {
+        const r = price(a.item, Number(a.quantity) || 1, a.city, Number(a.year));
+        if (r.error) return r.error;
+        const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
+        const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? Math.round(r.labourDays) : Math.round(r.labourDays * 10) / 10} days`;
+        return `${Number(a.quantity) || 1} × ${a.item} in ${a.city}, ${a.year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
+    }));
+
     tool('RecordFact', 'Fix a fact the moment the story establishes it (a place, an object, a person, a secret, an event) and record who knows it: those who saw it, heard it, read it or were told it. A recorded fact stays true for the rest of the story and appears in [KNOWS].', {
         fact: str('The fact, one short sentence'),
         known_by: { type: 'array', items: { type: 'string' }, description: 'Characters who know it' },
@@ -506,9 +532,11 @@ export function registerRulesTools(enabled) {
         load_kg: { type: 'number', description: 'Mass carried by handles, kg (when not hanging)' },
         hands: { type: 'number', description: 'Hands used, 1 or 2. Default 2.' },
         seconds: { type: 'number', description: 'How long the hold must last, s (until help arrives, to cross the gap)' },
+        region: { type: 'string', enum: Object.keys(REGIONS), description: 'World region the character grew up in, when known. Kept for later calls.' },
     }, ['who'], a => run((st, rng) => {
         const { p, error } = who(st, a.who);
         if (error) return error;
+        if (a.region) p.region = a.region;
         return holdLoad(a.who, p, { load_kg: a.load_kg, hands: a.hands ?? 2, hanging: !!a.hanging, seconds: a.seconds ?? null }, rng);
     }));
 
@@ -549,14 +577,17 @@ export function registerRulesTools(enabled) {
         who: str('Character acting'),
         species,
         task: str('The task in a few words. A real second attempt names it ("pick lock, 2nd try"); the same task again this turn returns the first result.'),
-        share: { type: 'string', enum: SHARES, description: 'How many people with this character\'s training succeed at this task in these conditions, unhurt.' },
+        reference_class: str('The wider class of attempts this one belongs to (e.g. "amateurs picking an old door lock")'),
+        base_share: { type: 'string', enum: SHARES, description: 'How many attempts in that reference class succeed.' },
+        share: { type: 'string', enum: SHARES, description: 'Your estimate for this attempt: how many people with this character\'s training succeed at it in these conditions, unhurt.' },
+        ordering: { type: 'string', enum: ORDERING, description: 'Given two such attempts, how often you would correctly say which one succeeds.' },
         uses: { type: 'array', items: { type: 'string', enum: [...Object.keys(FUNCTIONS), 'alertness'] }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing; alertness for tasks needing attention, judgment or quick reactions (driving, aiming, spotting, fine work).' },
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
         timed: { type: 'boolean', description: 'The task must be done within a time that leaves no slack (a lock picked before the guard turns, a sum shouted in a race)' },
         fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
         override: { type: 'boolean', description: 'Set only after BodyCheck named another tool and the task is genuinely not what that tool decides' },
-    }, ['who', 'task', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), { ...a, share: shareOf(a.share) }, rng)));
+    }, ['who', 'task', 'reference_class', 'base_share', 'share', 'ordering'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), { ...a, share: regressive(a) }, rng)));
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),

@@ -7,9 +7,9 @@ const MAX_RETRIES = 1;
 
 export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the rule-engine results of the same turn.
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
-Engine-governed events: a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a check succeeding or failing; an attack landing or missing; story time passing (minutes, hours, days); a spell being cast; a treatment working; skin burned by touching something hot. Where distance, noise, darkness, injury, a possible lie or a stranger's free choice leaves it in doubt: a sound heard or missed; someone or something spotted or recognized at a distance; a message understood or not; a statement believed or seen through as a lie; a bystander stepping in or not; an order to hurt someone obeyed or refused; a stranger agreeing to or declining a small request; a grip held or lost; a pursuer catching someone or not; romantic interest after a first meeting.
+Engine-governed events: a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a check succeeding or failing; an attack landing or missing; story time passing (minutes, hours, days); a spell being cast; a treatment working; skin burned by touching something hot. Where distance, noise, darkness, injury, a possible lie or a stranger's free choice leaves it in doubt: a sound heard or missed; someone or something spotted or recognized at a distance; a message understood or not; a statement believed or seen through as a lie; a bystander stepping in or not; an order to hurt someone obeyed or refused; a stranger agreeing to or declining a small request; a grip held or lost; a pursuer catching someone or not; romantic interest after a first meeting; a price, wage or bill stated for a European city between 1500 and 1913.
 An event is backed when an engine result of the matching tool describes it. Intentions, threats, dialogue and misses described as misses are not events.
-Reply with JSON only: {"events":[{"quote":"exact words from the reply","tool":"BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|JudgeStatement|Bystander|ObeyOrder|AskStranger|HoldOn|Chase|FirstImpression","problem":"unbacked|contradicts"}]}. An empty list means every event is backed.`;
+Reply with JSON only: {"events":[{"quote":"exact words from the reply","tool":"BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|JudgeStatement|Bystander|ObeyOrder|AskStranger|HoldOn|Chase|FirstImpression|Price","problem":"unbacked|contradicts"}]}. An empty list means every event is backed.`;
 
 export function buildAuditPrompt(reply, results) {
     const lines = results.length
@@ -18,7 +18,7 @@ export function buildAuditPrompt(reply, results) {
     return `ENGINE RESULTS\n${lines}\n\nREPLY\n${reply}`;
 }
 
-const TOOLS = new Set(['BodyCheck', 'BodyStrike', 'BodyWound', 'BodyFall', 'PassTime', 'CastSpell', 'BodyTreat', 'RollTheDice', 'BodyContact', 'Listen', 'Look', 'Communicate', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'HoldOn', 'Chase', 'FirstImpression']);
+const TOOLS = new Set(['BodyCheck', 'BodyStrike', 'BodyWound', 'BodyFall', 'PassTime', 'CastSpell', 'BodyTreat', 'RollTheDice', 'BodyContact', 'Listen', 'Look', 'Communicate', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'HoldOn', 'Chase', 'FirstImpression', 'Price']);
 
 /** Events from the checker's text; null when the text holds no readable JSON (the check is then skipped). */
 export function parseAudit(text) {

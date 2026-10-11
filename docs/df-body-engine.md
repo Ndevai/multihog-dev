@@ -564,6 +564,8 @@ Limits (OPEN-89): evidence, prior suspicion and relationship are not inputs (det
 
 Scratch (2000 each): hanging by two hands — man 30 y, 80 kg: 89 %; woman 30 y, 60 kg: 60 %; man 75 y: 28 %; woman 75 y: 6 %. Carrying 40 kg in one hand — man 30: 89 %; woman 30: 7 %. Limits (OPEN-90): fingertip ledges (weaker than a full grip), hand injuries other than lost function.
 
+Grip by world region: the British norms are scaled by the PURE study's regional medians (Leong et al. 2016, J Cachexia Sarcopenia Muscle 7:535, Table 2, 125 462 healthy adults, 21 countries) relative to Europe/North America, per sex and age band (35–40, 41–50, 51–60, 61–70; nearest band outside [ASSUMED]). Men at 41–50: Europe/North America 49 kg, China and South America 43, Middle East 43, Africa 38, South East Asia 37, South Asia 33. HoldOn takes `region` once per character.
+
 ### 6.11 New characters
 
 A character the story has not described gets sex, age and occupation from the 1881 census of England and Wales (country totals as published by A Vision of Britain Through Time: Table 3, ages of males and females, 21 five-year bands; Table 10, occupations of males and females, 330 occupations after dropping the "Others" rows), through NewCharacter. Sex: 48.7 % male from the age table, or the chosen occupation's own men/women counts. Age: weighted by the band counts for that sex, uniform within the band [ASSUMED]. Occupation: from age 15 [ASSUMED; the table has no ages], a person has one with probability (occupation total for the sex) ÷ (population aged 15+ of that sex), then one is drawn by count; otherwise "no stated occupation". Whatever the story already fixes (sex, occupation, a minimum age) is passed in and kept. Occupied from 15: men 96 %, women 40 %. Check (20 000 draws): 50.7 % female, 36.5 % under 15 (census 51.3 %, 36.5 %). OPEN: other countries and periods; age by occupation; names.
@@ -588,6 +590,10 @@ Appraise returns the emotion type from how the character sees the event, the act
 
 The result names the type, the book's words for it and what makes it stronger (its variables affecting intensity), so the narrator words it within the type. An appraisal-based chain of emotion outperformed control conditions on user-rated believability and observed emotional intelligence of LLM game agents (Croissant et al. 2024, PLOS ONE 19:e0301033). Intensity itself is not computed (OPEN-92).
 
+### 6.14 Prices and wages
+
+Price returns what a good or a day's work costs in a European city, 1500–1913, from Allen 2001 (Explorations in Economic History 38:411): Table 3 prices of 14 goods in grams of silver (Strasbourg 1745–1754), Table 4 consumer price index for 17 cities by half-century (Strasbourg 1745–1754 = 1), Tables 1–2 daily wages of building craftsmen and labourers. A good's price = its Strasbourg price × the city's index for the period [ASSUMED: relative prices as in Strasbourg]; a missing period takes the adjacent one, at most 50 years off [ASSUMED]. The yearly basket of necessities for one person is Allen's 414.899 g (his quantities × prices sum to 410.1 g in the table as printed). The result also gives the days a building labourer works to earn it. Example: 2 kg of bread in London, 1665: 1.97 g of silver, 0.2 labourer-days.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -607,7 +613,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 
 | Tool | Input | Kind | Status |
 |---|---|---|---|
-| BodyCheck | `share` (fraction who succeed) | outcome guess | open: the main remaining guess (OPEN-90); now chosen from 7 labelled bands (95, 80, 65, 50, 35, 20, 5 %) [ASSUMED values], since models are calibrated on multiple-choice questions with the options shown (Kadavath et al. 2022) |
+| BodyCheck | `share` (fraction who succeed) | outcome guess | open: the main remaining guess (OPEN-90); now chosen from 7 labelled bands (95, 80, 65, 50, 35, 20, 5 %) [ASSUMED values], since models are calibrated on multiple-choice questions with the options shown (Kadavath et al. 2022); corrected toward the share of a named reference class by Kahneman & Tversky's (1977) procedure: chance = class share + ρ (estimate − class share), ρ = 2p − 1, p = how often the narrator would order two such attempts correctly (50–90 %) |
 | BodyCheck | task text | routing | a task whose words match a specialist tool (hear/listen → Listen or Communicate; see/spot/notice → Look; swim → BodyEnvironment; hang/carry/grip → HoldOn; chase/flee → Chase; lie/bluff → JudgeStatement; shoot/aim → BodyStrike; tourniquet/bleed → BodyTreat; date/attracted → FirstImpression) is refused and named; `override: true` passes a genuinely different task |
 | BodyCheck | `uses`, `exertion`, `on_feet`, `timed`, `fine` | scene facts (what the task involves) | — |
 | BodyWound | `type`, `depth` for accidents | outcome guess | partly replaced: burns by BodyContact and heat, falls by BodyFall, attacks by BodyStrike |
@@ -628,6 +634,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Look | `light` | scene fact (artificial light, overcast) | outdoors computed from date, hour and latitude (§6.2) |
 | RecordFact, Communicate `message` | the fact, who knows it | story facts | kept in code and injected as [KNOWS] (§6.12) |
 | Appraise | `about`, good/bad, liked, praiseworthy, appealing | the character's view | emotion type from the OCC model (§6.13) |
+| Price | item, quantity, city, year | scene facts | silver and labour-days from Allen 2001 (§6.14) |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ### 7.2 Defences against known model failures

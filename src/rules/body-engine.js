@@ -1075,7 +1075,7 @@ export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false, s
     if (!n) return `${who} has no working hand to hold with.`;
     const g = grip(p, () => gauss(rng)) * forceFactor(limbCold(p, 'arm'));
     const load = hanging ? p.mass : load_kg ?? 0, per = load / n;
-    const norm = gripNorm(p.age, p.sex);
+    const norm = gripNorm(p.age, p.sex, p.region);
     const cold = forceFactor(limbCold(p, 'arm')) < 1 ? ', hands weakened by cold' : '';
     const hand = `${n === 1 ? 'one hand' : `${n} hands`}${cold}`;
     console.debug?.('[Rules engine]', who, `${round(per)} kg per hand; grip ${round(g)} kg; norm ${round(norm.mean)} ± ${round(norm.sd)} kg`);
