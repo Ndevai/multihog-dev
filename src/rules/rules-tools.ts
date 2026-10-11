@@ -246,6 +246,7 @@ function who(st: RuleState, name: string | null | undefined, speciesArg?: string
 
 // Principles shared by both briefs.
 const RULES_PRINCIPLES = `Principles
+- Words come only from species that can talk (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true.
 - A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands.`;
 

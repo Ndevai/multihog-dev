@@ -279,6 +279,12 @@ function getSettingsInternal(extensionSettings) {
         s.rulesEngine = true;
         s.forkRestoreMainPending = true;
     }
+    // Fork, once: the choice list is off. Its instructions and examples (emojis, banter, quips) are restated every turn at
+    // the end of the prompt, where they set the reply's tone more than the user's own prompt does.
+    if (!s.forkNoChoicesV1) {
+        s.forkNoChoicesV1 = true;
+        s.syspromptModules = { ...(s.syspromptModules || {}), CYOA_mode: false };
+    }
 
     // Migrate NPC prompt to include appearance recording (v3.5.2 one-time migration)
     if (isOlderThan(s.settingsVersion, '3.5.2')) {
