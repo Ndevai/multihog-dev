@@ -1,5 +1,4 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
-import { LIGHT } from './vision.js';
 import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
 import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { drawPerson } from './census.js';
