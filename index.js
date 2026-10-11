@@ -8194,6 +8194,7 @@ function organizeConnectionSettingsUI() {
             if (typeof saved === 'boolean' && saved !== !!s.rulesEngine) {
                 s.rulesEngine = saved;
                 $('#rpg_rules_engine').prop('checked', saved);
+                $('#rpg_rules_question_pass').prop('disabled', !saved);
                 registerRulesTools(saved);
                 registerDiceFunctionTool();
                 saveSettings();
@@ -11330,6 +11331,8 @@ RULES:
             else document.getElementById('rt_player_turn_banner')?.remove();
             saveSettings();
         });
+        // The question pass runs only inside the rules engine, so its box is greyed out while the engine is off.
+        $('#rpg_rules_question_pass').prop('disabled', !getSettings().rulesEngine);
         $('#rpg_rules_question_pass').prop('checked', getSettings().rulesQuestionPass !== false).on('change', function () {
             getSettings().rulesQuestionPass = !!$(this).prop('checked');
             saveSettings();
@@ -11337,6 +11340,7 @@ RULES:
         $('#rpg_rules_engine').prop('checked', !!getSettings().rulesEngine).on('change', function () {
             const fresh = getSettings();
             fresh.rulesEngine = !!$(this).prop('checked');
+            $('#rpg_rules_question_pass').prop('disabled', !fresh.rulesEngine);
             // Per chat: the open chat remembers the choice; other chats keep theirs (new chats take the last one used).
             const ctx = SillyTavern.getContext();
             if (ctx.chatMetadata) { ctx.chatMetadata.rtRulesEngine = fresh.rulesEngine; (ctx.saveMetadataDebounced || ctx.saveMetadata)?.(); }
@@ -12836,6 +12840,7 @@ RULES:
             $(`input[name="rpg_sysprompt_rng_mode"][value="${currentRngMode}"]`).prop('checked', true);
             syncRngToolsUi(s);
             $('#rpg_rules_engine').prop('checked', !!s.rulesEngine);
+            $('#rpg_rules_question_pass').prop('disabled', !s.rulesEngine);
             $('#rpg_player_turn').prop('checked', !!s.playerTurn);
             $('#rpg_scene_memory').prop('checked', !!s.sceneMemory);
             $('#rpg_scene_memory_hide').prop('checked', !!s.sceneMemoryHide);
