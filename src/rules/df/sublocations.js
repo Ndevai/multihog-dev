@@ -10,6 +10,10 @@ export const SUBLOCATIONS = {
     LEG_LOWER: { knee: 5, shin: 35 },
     FOOT: { sole: 25, arch: 25, ankle: 20, heel: 20 },
 };
+// Side of a sub-location; others face both ways. Front and back halves are equal in area for every region (rule of
+// nines, adult: head 4.5/4.5 %, torso 18/18 %, each arm 4.5/4.5 %, each leg 9/9 %).
+/** Every sub-location name, for the covers of worn gear. */
+export const SUBLOCATION_NAMES = () => [...new Set(Object.values(SUBLOCATIONS).flatMap(o => Object.keys(o)))];
 const SIDE = { forehead: 'front', nape: 'back', palm: 'front', 'back of hand': 'back' };
 export const sideOf = (name) => SIDE[name] ?? 'both';
 // Hit sizes of whole regions (CDDA body_parts.json hit_size): torso 36, head 4, eyes 0.5, mouth 0.5, each arm 13, hand 1.5,

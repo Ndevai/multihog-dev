@@ -1,6 +1,7 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
 import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
-import { CONTACT_MATERIALS } from './thermal/exposure.js';
+import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
+import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { drawPerson } from './census.js';
 import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock } from './knowledge.js';
@@ -17,7 +18,7 @@ import { gauss, person, addWound, treat, advanceAll, cast, fall, status, seededR
 import { thermalCapable } from './thermal/exposure.js';
 import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
-import { loadRaws, creatureId, creature } from './df/index.js';
+import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
@@ -185,6 +186,8 @@ function run(fn) {
 const shuffled = (list) => list.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
 // Reshuffled in place before every generation, so the order changes per call rather than per load (Zheng et al. 2024).
 const reshuffle = (list) => { const o = shuffled(list); list.splice(0, list.length, ...o); };
+// Closed lists from the DF raws (melee weapons; weapon metals plus bone and wood for ammunition), filled after load.
+const MELEE = [], WEAPON_MATERIALS = [];
 const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = (v) => typeof v === 'number' ? v : (parseFloat(String(v)) || 0) / 100;
@@ -329,6 +332,11 @@ export function registerRulesTools(enabled) {
     REGISTRY.clear();
     if (!enabled)
         return;
+    // Lists that come from the DF raws fill in once they load; the schemas hold the same arrays.
+    void loadRaws().then(() => {
+        MELEE.splice(0, MELEE.length, ...meleeWeaponNames());
+        WEAPON_MATERIALS.splice(0, WEAPON_MATERIALS.length, ...weaponMetalNames(), 'bone', 'wood');
+    });
     // The action's argument type comes from the schema the model is given.
     const tool = (name, description, properties, required, action) => {
         const exec = async (raw) => {
@@ -370,9 +378,9 @@ export function registerRulesTools(enabled) {
         species,
         part: str('Body part aimed at, by name (head, throat, upper body, right upper arm, left eye…). Omit when the blow is not aimed at a part: the location is then drawn.'),
         attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…). Omit for a shot.'),
-        weapon: str('Melee weapon used, if any: short sword, long sword, two-handed sword, scimitar, dagger, battle axe, great axe, war hammer, maul, mace, morningstar, flail, spear, pike, halberd, pick, whip, scourge.'),
-        material: str('Material of the weapon or of the ammunition: iron, steel, bronze, bismuth bronze, copper, silver, bone, wood. Default iron.'),
-        launcher: str('For a shot: bow, crossbow or blowgun (the ammunition is its arrow, bolt or dart in material). Call it after the shot is on target (BodyCheck for aim); the target can still dodge or block it.'),
+        weapon: { type: 'string', enum: MELEE, description: 'Melee weapon used, if any; the nearest kind for a weapon not listed (a club as a mace, a knife as a dagger).' },
+        material: { type: 'string', enum: WEAPON_MATERIALS, description: 'Material of the weapon (a metal) or of the ammunition (a metal, bone or wood). Default iron.' },
+        launcher: { type: 'string', enum: ['bow', 'crossbow', 'blowgun'], description: 'For a shot; the ammunition is its arrow, bolt or dart in material. Call it after the shot is on target (BodyCheck for aim); the target can still dodge or block it.' },
         skill: { type: 'string', enum: SKILL_LEVELS, description: 'Attacker\'s fighting skill level. Dabbling = untrained.' },
         style: { type: 'string', enum: Object.keys(STYLES), description: 'quick = fast weak blow; heavy or wild = full-force blow.' },
         prone: { type: 'boolean', description: 'Target lying on the ground.' },
@@ -391,7 +399,7 @@ export function registerRulesTools(enabled) {
                             type: 'object',
                             properties: {
                                 part: str('Body part name'),
-                                sublocations: { type: 'array', items: { type: 'string' }, description: 'Covered sub-locations of the part; omit for the whole part.' },
+                                sublocations: { type: 'array', items: { type: 'string', enum: SUBLOCATION_NAMES() }, description: 'Covered sub-locations of the part; omit for the whole part.' },
                                 sides: { type: 'array', items: { type: 'string', enum: ['front', 'back'] }, description: 'Covered side; omit for both (a breastplate without a back plate = front).' },
                                 coverage: { type: 'number', description: '% of those sub-locations the portion covers (gaps, holes, mesh); default 100.' },
                                 material: str('Material of this portion when it differs from the item\'s (a leather nape guard on an iron helm).'),
@@ -457,14 +465,14 @@ export function registerRulesTools(enabled) {
         humidity_pct: { type: 'number', description: 'Relative humidity, %. Default 50' },
         wind_kmh: { type: 'number', description: 'Weather wind speed outdoors (as forecast, at 10 m), km/h. 0 = calm' },
         air_speed_ms: { type: 'number', description: 'Indoors or sheltered: air speed at the body, m/s (still room 0.1)' },
-        ensemble: { type: 'string', description: `Clothing as a measured ensemble when one matches: ${Object.keys(ENSEMBLES).join('; ')}` },
+        ensemble: { type: 'string', enum: Object.keys(ENSEMBLES), description: 'Clothing as a measured ensemble when one matches' },
         garments: {
             type: 'array',
             description: 'Clothing as garments (alone or on top of an ensemble). Name from the list or clo for anything else; covers = body regions (head, neck, chest, back, torso, pelvis, shoulders, arms, forearms, hands, thighs, lower legs, legs, feet, or one side: left hand…)',
-            items: { type: 'object', properties: { name: str(`Garment: ${Object.keys(GARMENTS).join('; ')}`), clo: { type: 'number', description: 'Insulation of a garment not in the list, clo' }, covers: { type: 'array', items: { type: 'string' } } }, required: ['covers'] },
+            items: { type: 'object', properties: { name: { type: 'string', enum: Object.keys(GARMENTS), description: 'Garment from the list; give clo instead for anything else' }, clo: { type: 'number', description: 'Insulation of a garment not in the list, clo' }, covers: { type: 'array', items: { type: 'string', enum: REGION_WORDS } } }, required: ['covers'] },
         },
         water_c: { type: 'number', description: 'Water temperature, °C, when any body region is in water' },
-        immersed: { type: 'array', items: { type: 'string' }, description: 'Regions in water: "whole body" (neck down, head out), "submerged" (head under too), or regions (legs, feet, torso, arms…)' },
+        immersed: { type: 'array', items: { type: 'string', enum: IMMERSION_WORDS }, description: 'Regions in water: "whole body" (neck down, head out), "submerged" (head under too), or regions (legs, feet, torso, arms…)' },
         swimming: { type: 'boolean', description: 'Swimming (set met 6 unless faster); cold arms end swimming' },
         afloat: { type: 'boolean', description: 'Kept afloat with the head out by a life jacket, wreckage or a boat' },
         water_speed_ms: { type: 'number', description: 'Water moving past the body (current, swimming), m/s. Default 0' },
@@ -873,7 +881,7 @@ export function registerRulesTools(enabled) {
     tool('BodyContact', 'Skin touches something hot (a stove, a pot handle, spilled hot water or oil) for a stated time. Code decides any burn.', {
         who: str('Character name'),
         species,
-        regions: { type: 'array', items: { type: 'string' }, description: 'Body regions touching it: right hand, left hand, face, chest, back, left foot, …' },
+        regions: { type: 'array', items: { type: 'string', enum: REGION_WORDS }, description: 'Body regions touching it' },
         material: { type: 'string', enum: CONTACT_MATERIALS },
         temp_c: { type: 'number', description: 'Temperature of the object or liquid, °C' },
         seconds: { type: 'number', description: 'Contact time in seconds' },

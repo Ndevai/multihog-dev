@@ -16,6 +16,8 @@ export const SUBLOCATIONS: Record<string, Record<string, number>> = {
 
 // Side of a sub-location; others face both ways. Front and back halves are equal in area for every region (rule of
 // nines, adult: head 4.5/4.5 %, torso 18/18 %, each arm 4.5/4.5 %, each leg 9/9 %).
+/** Every sub-location name, for the covers of worn gear. */
+export const SUBLOCATION_NAMES = (): string[] => [...new Set(Object.values(SUBLOCATIONS).flatMap(o => Object.keys(o)))];
 export type Side = 'front' | 'back' | 'both';
 const SIDE: Record<string, Side> = { forehead: 'front', nape: 'back', palm: 'front', 'back of hand': 'back' };
 export const sideOf = (name: string): Side => SIDE[name] ?? 'both';

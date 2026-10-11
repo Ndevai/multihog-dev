@@ -1,7 +1,7 @@
 // JSON Schema for tool parameters, and the argument type each schema describes, so a tool's action is checked against
 // the schema the model sees (one source for both).
 export const str = (description) => ({ type: 'string', description });
-const SHOWN = 12;
+const SHOWN = 30;
 /** The value as the property wants it, or an error. Numbers and booleans sent as text are read; an enum value matches
  * ignoring case and spacing, by a band's words without its share, or as the start of exactly one option. */
 function coerce(name, p, v) {
@@ -20,7 +20,8 @@ function coerce(name, p, v) {
         if (typeof v !== 'string' && typeof v !== 'number')
             return { error: `${name} must be text` };
         const s = String(v);
-        if (!p.enum)
+        // An enum filled from data that has not loaded yet checks nothing.
+        if (!p.enum || !p.enum.length)
             return { v: s };
         const key = (x) => x.toLowerCase().replace(/\s+/g, ' ').trim();
         const hit = p.enum.find(o => o === s) ?? p.enum.find(o => key(o) === key(s));

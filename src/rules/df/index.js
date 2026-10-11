@@ -16,6 +16,9 @@ export function loadRaws() {
     })();
     return loading;
 }
+/** Melee weapon names and launcher names from the DF raws; metals that weapons are made of. Empty before the raws load. */
+export const meleeWeaponNames = () => db ? Object.keys(db.ITEM_WEAPON).map(id => weapon(db, id)).filter(w => w && !w.ranged).map(w => w.name).filter(Boolean) : [];
+export const weaponMetalNames = () => db ? Object.keys(db.INORGANIC).map(id => metal(db, id)).filter(m => m?.weapon && m.name).map(m => m.name) : [];
 export const creature = (id) => db && id ? resolveCreature(db, id) : null;
 export const creatureId = (text) => db ? findCreature(db, text) : null;
 export const weaponOf = (text) => db ? weapon(db, text) : null;

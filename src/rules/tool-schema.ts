@@ -28,7 +28,7 @@ export type ArgsOf<Ps, R extends string> = Simplify<
 
 export const str = (description: string) => ({ type: 'string' as const, description });
 
-const SHOWN = 12;
+const SHOWN = 30;
 /** The value as the property wants it, or an error. Numbers and booleans sent as text are read; an enum value matches
  * ignoring case and spacing, by a band's words without its share, or as the start of exactly one option. */
 function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: string } {
@@ -44,7 +44,8 @@ function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: strin
     if (p.type === 'string') {
         if (typeof v !== 'string' && typeof v !== 'number') return { error: `${name} must be text` };
         const s = String(v);
-        if (!p.enum) return { v: s };
+        // An enum filled from data that has not loaded yet checks nothing.
+        if (!p.enum || !p.enum.length) return { v: s };
         const key = (x: string) => x.toLowerCase().replace(/\s+/g, ' ').trim();
         const hit = p.enum.find(o => o === s) ?? p.enum.find(o => key(o) === key(s));
         if (hit) return { v: hit };
