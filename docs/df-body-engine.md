@@ -797,7 +797,7 @@ What these show:
 | OPEN-88 | sound outdoors: ground and weather attenuation (ISO 9613-2 ground term), impulse temporal integration, species audiogram shapes per band; sight: contrast and camouflage, motion, species acuity, attention |
 | OPEN-89 | social judgments: lie detection with evidence or suspicion; persuasion, compliance and fear/morale rates |
 | OPEN-90 | BodyCheck `share`: replace the model's estimate with published success rates and times for common tasks (climbing, swimming distance, lock-picking, first aid outcomes, shooting accuracy by distance, driving) |
-| OPEN-91 (closed) | weather outside the 28 US stations (other countries, climates); wind and humidity (WGEN gives rain, temperature and radiation only) |
+| OPEN-91 | wind and humidity of the day (WGEN and the WMO normals give rain, snow and temperature only); places outside the 1736 cities take the nearest one (§6.16) |
 | OPEN-93 | battles: when a side breaks and flees; defender surprise; fortification effect separated from the force ratio |
 | OPEN-92 | emotion intensity and decay (OCC variables affecting intensity have no published scales); the audit now flags a character stating or acting on a fact [KNOWS] gives only to others (§6.12) |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
