@@ -522,7 +522,7 @@ export function registerRulesTools(enabled) {
         target: str('What might be seen, a few words'),
         size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, car 1.5, horse 0.6)' },
         distance_m: { type: 'number', description: 'Distance, m' },
-        light: { type: 'string', enum: Object.keys(LIGHT), description: 'Only for artificial light or an overcast sky. Leave it out outdoors: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
+        light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Only for an overcast sky or artificial light. Leave it out otherwise: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
     }, ['viewer', 'size_m', 'distance_m'], a => run((st, rng) => {
