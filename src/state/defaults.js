@@ -214,6 +214,7 @@ export function buildDefaultSettings() {
 
         strictDiceCommit: false,
         rulesEngine: false,
+        rulesQuestionPass: true,
         playerTurn: false,
         sceneMemory: false,
         sceneMemoryHide: false,

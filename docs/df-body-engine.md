@@ -707,6 +707,19 @@ Published failure modes of language models, and what the engine does about each.
 | Irrelevant, specific detail in the context lowers accuracy (Shi et al. 2023) | a fight scene pulls London bread prices into the prompt because they sat in the body lorebook entry | every set is kept at one level: the rules brief has one routing line per kind of event, grouped Body, Surroundings, Senses, People, World, Principles, with scopes (cities, years, settings) only in the tool descriptions; the lorebook is split by topic with its own trigger words (576 body, 578 senses and light, 579 people, 580 prices and disease); an enum lists one kind of thing (Price: question, goods, trade as separate enums) |
 | Function-calling accuracy drops as the number of functions grows (Patil et al. 2025, BFCL; BFCL does not test merging tools); RPG-MCP cut 195 tools to 36 by merging them behind action enums, and SkillComposer reports the same consolidation | a narrow tool sits beside general ones and is missed or misused | the five social tools (lie, emergency, order, favour, first meeting) are one tool, SocialResponse, with the situation as an enum (28 → 24 tools); sound and noise presets are loudness classes with the measured example in parentheses, so a horse cart or a forge maps to a class instead of a modern machine standing out in a period scene |
 
+### 7.3 Question pass
+
+Before each reply to a player message, the State Model (the connection the tracker and the check pass use) reads the player's message, the last 8 messages and [KNOWS], with every rule tool listed by its arguments (enums of up to 40 values shown, longer ones as free text [ASSUMED]). It writes one question per outcome in doubt, then a JSON list of tool calls, at most 8 [ASSUMED]. Code drops calls to unknown tools or with a required argument missing, runs the rest in order through the same guarded action the narrator's calls use, and gives the narrator the results in a [DECIDED] block. The check pass counts them as engine results of the turn. A narrator call that repeats one of them returns the same result ("Already decided this turn").
+
+| Step | Source |
+|---|---|
+| questions answered apart from the draft, before writing | Chain-of-Verification (Dhuliawala et al. 2023, arXiv 2309.11495): factored verification beat joint; list precision 0.17 → 0.36, biography FactScore 55.9 → 71.4 (LLaMA 65B); a model defends an outcome it has already written (Zhang et al. 2023) |
+| ask a question when the next sentence is uncertain, answer it from a source, then write | FLARE (Jiang et al. 2023, arXiv 2305.06983), with the rule engine as the source |
+| planning agents ahead of the writing agent | Agents' Room (Huot et al. 2024) |
+| free-text questions first, JSON after | Tam et al. 2024 (as the check pass) |
+
+A swipe of the same turn reuses the calls asked the first time; the engine state is back at the turn's start, so they return the same outcomes. Setting: "Rules question pass", on by default with the rules engine. Live check (§11): the pass runs before the narrator request, a narrator BodyCheck repeating the pass's BodyCheck returned "Already decided this turn", an unknown tool name was dropped, and the [DECIDED] block reached the narrator and the check pass.
+
 ## 8. Unchanged
 
 Blood volume 70 mL/kg and loss classes, refill, red cells, infection, treatments, falls, PassTime interruptions, the check formula, magic — rule 576, now applied to any creature with blood [ASSUMED for non-humans].

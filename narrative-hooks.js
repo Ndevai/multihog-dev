@@ -13,7 +13,7 @@
  */
 
 import { getSettings, hydrateWorldProgressionFromChatState, persistWorldProgressionTimer, persistRouterLastRunWatermark, persistMapUpdaterLastRunTimestamp, persistMapUpdaterLastRunWatermark, persistMapUpdaterState, getNpcRelationshipMax, clampRelationshipValue, relationshipBarPct, getFriendshipTier, getAffectionTier, applyRelTierBadgeElement, showRelationshipFloatFeedback, saveChatState, getActiveChatId, getRelationshipUpdateMode, RELATIONSHIP_UPDATE_MODES, shouldProcessRegexRelationshipUpdates, stripCoreMarkersForNarrator } from './state-manager.js';
-import { syncCombatProfile, isCombatActive } from './llm-client.js';
+import { syncCombatProfile, isCombatActive, sendStateRequest } from './llm-client.js';
 import { parseQuestsFromMemo, extractCurrentTimeStr, cleanMessageContent, formatInWorldTime, memoForGmContext, stripPromptInjectionsFromUserText, stripCyoaAndPacingInjections, mergeMemo, applyQuestSyncAndStripMemo, computeDelta } from './memo-processor.js';
 import { parseMemoBlocks } from './renderer.js';
 import { runRouterPass, saveSceneToLorebook, scanAssistantOutputForKeywords, parseInWorldMinutes, runWorldProgressionPass, updateLorebookEntry, getLorebookManifest, rollbackRouterPass, isRouterRunning, syncDungeonMapsToLocationLorebook, captureActiveDungeonMapHistory } from './router.js';
@@ -43,6 +43,7 @@ import { sceneMemoryInjection, updateWhereabouts, whereaboutsInjection } from '.
 
 const SCENE_CAST_RULE = `<scene_cast>\nCharacters listed as Present in [SCENE] act and speak in person; Remote ones speak only through their channel; Arriving ones enter when their time comes; everyone else is elsewhere and acts off-scene.\n</scene_cast>`;
 import { takeAuditNote } from './src/rules/rules-audit.js';
+import { runQuestionPass, decidedInjection } from './src/rules/question-pass.js';
 import {
     buildDungeonRealityInjection,
     buildMappedSitesInjection,
@@ -1581,9 +1582,17 @@ export function installInterceptor() {
                 }
 
                 if (settings.rulesEngine) {
+                    // Question pass: a second model names the tool calls the reply needs; code runs them first (§7.3).
+                    if (settings.rulesQuestionPass !== false && !['quiet', 'impersonate', 'continue'].includes(type)) {
+                        try {
+                            await runQuestionPass(chat, (system, user) => sendStateRequest(settings, system, user, null, { debugSource: 'Rules Questions' }));
+                        } catch (e) { console.warn('[RPG Tracker] Rules question pass skipped:', e); }
+                        if (!ownsChat()) return;
+                    }
                     const note = takeAuditNote();
                     const known = knowledgeInjection();
-                    injections += `${RULES_BRIEF}\n\n${known ? `${known}\n\n` : ''}${note ? `${note}\n\n` : ''}`;
+                    const decided = decidedInjection();
+                    injections += `${RULES_BRIEF}\n\n${known ? `${known}\n\n` : ''}${decided ? `${decided}\n\n` : ''}${note ? `${note}\n\n` : ''}`;
                 }
 
                 // Quest deadline check — fires before state model pass, deterministically

@@ -22,9 +22,11 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 import { str } from './tool-schema.js';
-const TOOLS = ['Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
-function store() {
+/** Tools registered while the engine is on, by name. */
+export const REGISTRY = new Map();
+export function store() {
     const ctx = SillyTavern.getContext();
     ctx.chatMetadata.rulesEngine ??= { state: { people: {} }, snapshots: {} };
     ctx.chatMetadata.rulesEngine.salt ??= crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
@@ -286,13 +288,12 @@ export function registerRulesTools(enabled) {
     if (!registerFunctionTool || !unregisterFunctionTool)
         return;
     TOOLS.forEach(n => unregisterFunctionTool(n));
+    REGISTRY.clear();
     if (!enabled)
         return;
     // The action's argument type comes from the schema the model is given.
-    const tool = (name, description, properties, required, action) => registerFunctionTool({
-        name, displayName: name, description,
-        parameters: { type: 'object', properties, required: [...required] },
-        action: async (args) => {
+    const tool = (name, description, properties, required, action) => {
+        const exec = async (args) => {
             await loadRaws();
             const prior = decided(name, args);
             if (prior)
@@ -301,9 +302,10 @@ export function registerRulesTools(enabled) {
             remember(name, args, out);
             globalThis._rpgRefreshRenderedView?.();
             return out;
-        },
-        formatMessage: () => '',
-    });
+        };
+        REGISTRY.set(name, { name, description, properties, required, exec });
+        registerFunctionTool({ name, displayName: name, description, parameters: { type: 'object', properties, required: [...required] }, action: exec, formatMessage: () => '' });
+    };
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
     tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, bolt, bullet). Returns what the wound is and the body state.', {
         who: str('Character name'),

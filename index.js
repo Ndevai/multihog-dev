@@ -11327,6 +11327,10 @@ RULES:
             else document.getElementById('rt_player_turn_banner')?.remove();
             saveSettings();
         });
+        $('#rpg_rules_question_pass').prop('checked', getSettings().rulesQuestionPass !== false).on('change', function () {
+            getSettings().rulesQuestionPass = !!$(this).prop('checked');
+            saveSettings();
+        });
         $('#rpg_rules_engine').prop('checked', !!getSettings().rulesEngine).on('change', function () {
             const fresh = getSettings();
             fresh.rulesEngine = !!$(this).prop('checked');

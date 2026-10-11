@@ -3,6 +3,7 @@
 
 import { turnKey } from '../state/dice-ledger.js';
 import { knowledgeBlock } from './knowledge.js';
+import { askedResults } from './question-pass.js';
 
 /** One flagged event: the reply's words, the tool that should decide it (or KNOWS), and the problem. */
 export interface AuditEvent { quote: string; tool: string; problem?: 'unbacked' | 'contradicts' | 'unknown_to_them' }
@@ -53,7 +54,8 @@ export function turnResults(ctx: STContext): TurnResult[] {
     return chat.slice(from)
         .flatMap(m => m.extra?.tool_invocations || [])
         .filter(t => TOOLS.has(t.name))
-        .map(t => ({ tool: t.name, result: String(t.result) }));
+        .map(t => ({ tool: t.name, result: String(t.result) }))
+        .concat(askedResults());
 }
 
 let pendingNote: string | null = null;

@@ -2,6 +2,7 @@
 // Code then redoes the reply once with the missing calls named; a second failure is shown to the user.
 import { turnKey } from '../state/dice-ledger.js';
 import { knowledgeBlock } from './knowledge.js';
+import { askedResults } from './question-pass.js';
 const MAX_RETRIES = 1;
 export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the rule-engine results of the same turn.
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
@@ -44,7 +45,8 @@ export function turnResults(ctx) {
     return chat.slice(from)
         .flatMap(m => m.extra?.tool_invocations || [])
         .filter(t => TOOLS.has(t.name))
-        .map(t => ({ tool: t.name, result: String(t.result) }));
+        .map(t => ({ tool: t.name, result: String(t.result) }))
+        .concat(askedResults());
 }
 let pendingNote = null;
 /** Interceptor: the correction for the reply being redone, once. */

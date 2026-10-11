@@ -29,16 +29,23 @@ import type { WeatherDay } from './weather.js';
 import type { GearSpec, StrikeInput } from './body-engine.js';
 
 /** chatMetadata.rulesEngine: the live state, a snapshot per chat position, the chat's seed, and this turn's decisions. */
-interface EngineStore {
+export interface EngineStore {
     state: RuleState; snapshots: Record<number, { state: RuleState; calls: number }>; salt: string; calls?: number;
     decided?: { turn: string; out: Record<string, string> } | null;
+    /** The question pass of one turn: the calls asked for and what they returned (kept so a swipe reuses the same calls). */
+    asked?: { turn: string; calls: { tool: string; args: Record<string, unknown> }[]; results: { tool: string; result: string }[] } | null;
 }
 
-const TOOLS = ['Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
+export const TOOLS = ['Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
 type ToolName = typeof TOOLS[number];
 const KEEP_SNAPSHOTS = 30;
 
-function store(): EngineStore {
+/** A registered tool as the question pass sees it: its schema and the same guarded action the narrator's call runs. */
+export interface RegisteredTool { name: ToolName; description: string; properties: Props; required: readonly string[]; exec: (args: Args) => Promise<unknown> }
+/** Tools registered while the engine is on, by name. */
+export const REGISTRY = new Map<string, RegisteredTool>();
+
+export function store(): EngineStore {
     const ctx = SillyTavern.getContext();
     ctx.chatMetadata.rulesEngine ??= { state: { people: {} }, snapshots: {} };
     ctx.chatMetadata.rulesEngine.salt ??= crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
@@ -145,7 +152,7 @@ export function plain(out: unknown): unknown {
 // A decision tool called again in one turn for the same actor and act returns its first result, like RollTheDice's ledger,
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
-type Args = Record<string, unknown>;
+export type Args = Record<string, unknown>;
 const DECIDES: Partial<Record<ToolName, (a: Args) => unknown[]>> = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
@@ -288,24 +295,24 @@ export function registerRulesTools(enabled: boolean): void {
     const { registerFunctionTool, unregisterFunctionTool } = SillyTavern.getContext();
     if (!registerFunctionTool || !unregisterFunctionTool) return;
     TOOLS.forEach(n => unregisterFunctionTool(n));
+    REGISTRY.clear();
     if (!enabled) return;
 
     // The action's argument type comes from the schema the model is given.
     const tool = <const Ps extends Props, const Req extends readonly (keyof Ps & string)[]>(name: ToolName, description: string, properties: Ps,
-        required: Req, action: (a: ArgsOf<Ps, Req[number]>) => unknown) => registerFunctionTool({
-        name, displayName: name, description,
-        parameters: { type: 'object', properties, required: [...required] },
-        action: async (args: ArgsOf<Ps, Req[number]> & Args) => {
+        required: Req, action: (a: ArgsOf<Ps, Req[number]>) => unknown) => {
+        const exec = async (args: Args) => {
             await loadRaws();
             const prior = decided(name, args);
             if (prior) return `Already decided this turn; this result stands. ${prior}`;
-            const out = plain(await action(args));
+            const out = plain(await action(args as ArgsOf<Ps, Req[number]>));
             remember(name, args, out);
             (globalThis as { _rpgRefreshRenderedView?: () => void })._rpgRefreshRenderedView?.();
             return out;
-        },
-        formatMessage: () => '',
-    });
+        };
+        REGISTRY.set(name, { name, description, properties, required, exec });
+        registerFunctionTool({ name, displayName: name, description, parameters: { type: 'object', properties, required: [...required] }, action: exec, formatMessage: () => '' });
+    };
 
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
     tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, bolt, bullet). Returns what the wound is and the body state.', {

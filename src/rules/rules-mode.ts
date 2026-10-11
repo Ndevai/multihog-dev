@@ -104,8 +104,8 @@ export function rulesRngSystem({ rngEnabled, useQueue, d100Mode }: { rngEnabled:
     const die = d100Mode ? 'd100' : 'd20';
     const tool = d100Mode ? 'RollTheDiceD100' : 'RollTheDice';
     const checks = `Every check goes through BodyCheck: an action whose outcome is uncertain and that no other rule tool resolves.
-- share = the fraction of people with the actor's training who would succeed at this task in these conditions, unhurt. The tool applies the body state.
-- Narrate the returned verdict. Write each check as *(Climb: 60% → SUCCESS)* with the returned chance.`;
+- First the reference class and its base share, then share = the fraction of people with the actor's training who would succeed at this task in these conditions, unhurt. The tool applies the body state.
+- Narrate the returned verdict and its cause. Write each check as *(Climb → SUCCESS)*.`;
     let dice;
     if (!rngEnabled) dice = `Quantities and tier tables: simulate a fair ${die} internally.`;
     else if (!useQueue) dice = `Quantities: ${tool} kind "amount". Loot, random events and other tier tables: ${tool} kind "table"; narrate the returned tier. For several independent rolls, issue parallel calls in the same turn, each with its own "for".`;
