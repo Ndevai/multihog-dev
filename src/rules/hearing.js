@@ -1,5 +1,3 @@
-// Hearing by species: behavioural audiograms, free field, dB SPL re 20 µPa. best = lowest threshold; lo/hi = the frequencies
-// (Hz) heard at 60 dB SPL. null = not found. Keyed by DF creature id.
 const H = (best, lo, hi, src) => ({ best, lo, hi, src });
 export const HEARING = {
     HUMAN: H(-10, 31, 17600, 'Jackson et al. 1999, J Acoust Soc Am 106:3017'),
@@ -39,17 +37,16 @@ export const HEARING = {
     BIRD_OWL_BARN: H(null, 200, 12000, 'Fay 1988 via LSU (owl)'),
 };
 // Same species under another DF id.
-for (const [id, from] of [['WOLF', 'DOG'], ['DINGO', 'DOG'], ['WILD_BOAR', 'PIG'], ['GREEN_TREE_FROG', 'TOAD'], ['TOAD_GIANT_CAVE', 'TOAD']]) HEARING[id] = HEARING[from];
+for (const [id, from] of [['WOLF', 'DOG'], ['DINGO', 'DOG'], ['WILD_BOAR', 'PIG'], ['GREEN_TREE_FROG', 'TOAD'], ['TOAD_GIANT_CAVE', 'TOAD']])
+    HEARING[id] = HEARING[from];
 // Birds without an audiogram: median lowest threshold of 16 terrestrial species, 8.1 dB SPL (Dooling 1980, in Popper & Fay,
 // Comparative Studies of Hearing in Vertebrates, via Rößler et al. 2024).
 const BIRD = H(8.1, null, null, 'Dooling 1980 median of 16 species');
-
 /** Hearing entry for a DF creature id; giant and animal-person forms use the base species. Unknown → human. */
 export function hearingOf(id = 'HUMAN') {
     const base = String(id).toUpperCase().replace(/^GIANT_/, '').replace(/_MAN$/, '');
     return HEARING[base] ?? (base.startsWith('BIRD_') ? BIRD : null);
 }
-
 // Thresholds at 250, 500, 1000, 2000, 4000, 8000 Hz (dB SPL, free field), read from the published audiograms: dog, mean of four
 // dogs (Heffner 1983, Fig. 3); cat, mean of two (Heffner & Heffner 1985, Fig. 2); horse, mean of three, and cattle, mean of two
 // (Heffner & Heffner 1983, Figs. 2–3); reading error about ±3 dB. Human reference: ISO 389-7 free-field thresholds 11.4, 4.4,
@@ -57,25 +54,24 @@ export function hearingOf(id = 'HUMAN') {
 const HUMAN_BANDS = [11.4, 4.4, 2.4, -1.3, -5.4, 12.6];
 const BANDS = { DOG: [27.75, 19.9, 14, 8.75, 3.6, -0.5], CAT: [22, 8, 3, 1, 0.5, -4], HORSE: [28.7, 15, 10, 8.7, 18, 8],
     COW: [10, 6, -1, -4, -7, -10.5] };
-for (const [id, from] of [['WOLF', 'DOG'], ['DINGO', 'DOG']]) BANDS[id] = BANDS[from];
-
+for (const [id, from] of [['WOLF', 'DOG'], ['DINGO', 'DOG']])
+    BANDS[id] = BANDS[from];
 /** Per-octave threshold shift from human hearing (250–8000 Hz), dB: the species audiogram when known, else the flat shift. */
 export function bandShift(id) {
     const base = String(id ?? 'HUMAN').toUpperCase().replace(/^GIANT_/, '').replace(/_MAN$/, '');
     const b = BANDS[base];
     return b ? b.map((t, i) => t - HUMAN_BANDS[i]) : new Array(6).fill(hearingShift(id));
 }
-
 /** Lowest-threshold shift from the human value, dB; 0 when unknown. */
 export function hearingShift(id) {
     const h = hearingOf(id);
     return h?.best == null ? 0 : h.best - HEARING.HUMAN.best;
 }
-
 /** False when a tone of `khz` is outside the 60-dB range and no louder than 60 dB SPL; true otherwise (or unknown). */
 export function inRange(id, db, khz) {
     const h = hearingOf(id) ?? HEARING.HUMAN;
-    if (khz == null || h.lo == null || db > 60) return true;
+    if (khz == null || h.lo == null || db > 60)
+        return true;
     const hz = khz * 1000;
-    return hz >= h.lo && hz <= h.hi;
+    return hz >= h.lo && hz <= (h.hi ?? Infinity);
 }

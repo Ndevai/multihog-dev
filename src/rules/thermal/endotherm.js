@@ -3,10 +3,8 @@
 // core → skin → fur → air by convection and radiation. Fur depth per creature is fitted so that still-air conductance equals the
 // allometric minimal wet conductance (Schleucher & Withers 2001: birds at rest 0.702 M^−0.519 mL O2 g−1 h−1 °C−1, M in g;
 // mammals about 50 % higher), then wind acts through the model's convection.
-
-const KLEIBER = m => 70 * m ** 0.75 * 4.185 / (24 * 3.6);    // basal W, mass kg (as NicheMapR)
+const KLEIBER = (m) => 70 * m ** 0.75 * 4.185 / (24 * 3.6); // basal W, mass kg (as NicheMapR)
 const SIGMA = 5.6703744191844294e-8;
-
 function dryAir(db) {
     const tk = db + 273.15;
     return { densty: 101325 / (288.1738573002823 * tk), visdyn: 1.8325e-5 * ((296.16 + 120) / (tk + 120)) * (tk / 296.16) ** 1.5, thcond: 0.02425 + 7.038e-5 * db };
@@ -24,10 +22,10 @@ function vappr(db) {
     return 10 ** loge * 100;
 }
 const vapourDensity = (db, rh) => vappr(db) * rh / 100 * 0.018015 / (0.998 * 8.31446261815324 * (db + 273.15));
-
 /** NicheMapR ellipsoid(): heat flow core → air (W) and the parts of its resistance, for one body. */
 export function ellipsoid({ posture = 4.5, mass, density = 1000, coreT, furdepth, furcond = 0.04, airT, radT = airT, windspd, rh = 50, O2eff = 0.2, fluid = 'air' }) {
-    if (posture === 1) posture = 1.01;
+    if (posture === 1)
+        posture = 1.01;
     const volume = mass / density;
     const b = (3 * volume / (4 * Math.PI * posture)) ** (1 / 3), c = b, a = b * posture;
     const kBody = 0.5 + 6.14 * b + 0.439;
@@ -60,49 +58,55 @@ export function ellipsoid({ posture = 4.5, mass, density = 1000, coreT, furdepth
     const breathGs = wet ? 0 : Math.max(qLoss, 0) / 20.1 / 0.2094 / O2eff * (vapourDensity(coreT, 100) - vapourDensity(airT, rh)) / 1000;
     return { qLoss, rTotal, skinT, breathGs, hcA: 1 / rConv };
 }
-
 const fits = new Map();
 /** Fur depth (mm) at which the still-air (0.1 m/s) conductance equals the allometric minimal conductance. */
 // Above 5 kg fur insulation stays about the same "from a 5 kg fox to a 500 kg moose" (Scholander et al. 1950, Biol Bull 99:225):
 // heavier creatures keep the 5 kg fit.
 export function furFor(massKg, coreT, bird) {
-    if (massKg > 5) return furFor(5, coreT, bird);
+    if (massKg > 5)
+        return furFor(5, coreT, bird);
     const key = `${massKg}|${coreT}|${bird}`;
-    if (fits.has(key)) return fits.get(key);
+    if (fits.has(key))
+        return fits.get(key);
     const g = massKg * 1000;
-    const cTarget = (bird ? 0.702 : 0.702 * 1.5) * g ** -0.519 * g * 20.1 / 3600;   // W/°C
-    const cOf = fur => 1 / ellipsoid({ mass: massKg, coreT, furdepth: fur, airT: coreT - 20, windspd: 0.1 }).rTotal;
+    const cTarget = (bird ? 0.702 : 0.702 * 1.5) * g ** -0.519 * g * 20.1 / 3600; // W/°C
+    const cOf = (fur) => 1 / ellipsoid({ mass: massKg, coreT, furdepth: fur, airT: coreT - 20, windspd: 0.1 }).rTotal;
     // The model's fur resistance (thickness ÷ conductivity ÷ outer area) peaks and then falls as fur deepens: take the
     // thinnest fur that reaches the target, else the fur of lowest conductance.
     let best = 0, bestC = Infinity, fur = 0;
     for (let d = 0; d <= 300; d += 0.25) {
         const cd = cOf(d);
-        if (cd <= cTarget) { fur = d; bestC = -1; break; }
-        if (cd < bestC) { bestC = cd; best = d; }
+        if (cd <= cTarget) {
+            fur = d;
+            bestC = -1;
+            break;
+        }
+        if (cd < bestC) {
+            bestC = cd;
+            best = d;
+        }
     }
     const out = bestC === -1 ? fur : best;
     fits.set(key, out);
     return out;
 }
-
 // Mammals that sweat to cool: "humans, horses, some primates and some bovidae"; dogs and others with few sweat glands pant
 // (Wikipedia, Perspiration). Equids for horses, cattle-type bovids for "some bovidae", all DF primates [ASSUMED]; giant forms and
 // animal people as their base.
 const SWEATERS = new Set(['HORSE', 'DONKEY', 'MULE', 'COW', 'WATER_BUFFALO', 'YAK', 'MACAQUE_RHESUS', 'MANDRILL', 'CHIMPANZEE', 'BONOBO',
     'GORILLA', 'ORANGUTAN', 'GIBBON_SIAMANG', 'GIBBON_WHITE_HANDED', 'GIBBON_BLACK_HANDED', 'GIBBON_GRAY', 'GIBBON_SILVERY', 'GIBBON_PILEATED',
     'GIBBON_BILOU', 'GIBBON_WHITE_BROWED', 'GIBBON_BLACK_CRESTED', 'GRAY_LANGUR', 'CAPUCHIN', 'SPIDER_MONKEY', 'LION_TAMARIN']);
-export const dfCelsius = u => (u - 9968 - 32) * 5 / 9;   // DF Urist: °U = °F + 9968
-export const BODY_HEAT_J_KG = 3470;                      // specific heat of body tissue [ASSUMED human value]
-const PEAK = 4.9;                                         // peak / resting heat production (Eyolfson et al. 2001, human) [ASSUMED for all]
-
+export const dfCelsius = (u) => (u - 9968 - 32) * 5 / 9; // DF Urist: °U = °F + 9968
+export const BODY_HEAT_J_KG = 3470; // specific heat of body tissue [ASSUMED human value]
+const PEAK = 4.9; // peak / resting heat production (Eyolfson et al. 2001, human) [ASSUMED for all]
 /**
  * One minute for a creature with HOMEOTHERM. Returns { core, waterL (evaporation beyond the resting share), kcal }.
  * met: multiple of basal (same METs as humans [ASSUMED]).
  */
 export function endothermMinute(p, c, { met = 1.3 } = {}) {
     const e = p.env, th = p.thermal ??= {};
-    const setT = dfCelsius(c.homeotherm);
-    th.core ??= setT;
+    const setT = dfCelsius(c.homeotherm ?? 0);
+    const core0 = th.core ??= setT;
     const bird = 'FEATHER' in (c.tissues ?? {});
     const fur = furFor(p.mass, setT, bird);
     const basal = KLEIBER(p.mass);
@@ -114,8 +118,8 @@ export function endothermMinute(p, c, { met = 1.3 } = {}) {
     // creature is AQUATIC or AMPHIBIOUS in DF [ASSUMED: those keep air in the fur].
     const w = e.water, keepsFur = c.flags?.includes('AQUATIC') || c.flags?.includes('AMPHIBIOUS');
     const loss = w
-        ? ellipsoid({ mass: p.mass, coreT: th.core, furdepth: fur, furcond: keepsFur ? 0.04 : 0.58, airT: w.tc, windspd: Math.max(0.01, w.speed ?? 0), fluid: 'water' })
-        : ellipsoid({ mass: p.mass, coreT: th.core, furdepth: fur, airT: e.tdb, radT: e.tr ?? e.tdb, windspd: Math.max(0.1, v), rh: e.rh ?? 50 });
+        ? ellipsoid({ mass: p.mass, coreT: core0, furdepth: fur, furcond: keepsFur ? 0.04 : 0.58, airT: w.tc, windspd: Math.max(0.01, w.speed ?? 0), fluid: 'water' })
+        : ellipsoid({ mass: p.mass, coreT: core0, furdepth: fur, airT: e.tdb, radT: e.tr ?? e.tdb, windspd: Math.max(0.1, v), rh: e.rh ?? 50 });
     const act = basal * met;
     // Heat production rises to cover loss when cold, up to PEAK × basal; when warm, evaporation removes what conduction cannot.
     const need = loss.qLoss;
@@ -129,8 +133,8 @@ export function endothermMinute(p, c, { met = 1.3 } = {}) {
     const evapMax = w ? 0 : 5 * loss.breathGs * latentS + wetShare * Math.max(0, 16.5e-3 * loss.hcA * (vappr(loss.skinT) - pAir));
     const evapW = Math.min(evapMax, Math.max(0, produce - need));
     const stored = produce - need - evapW;
-    th.core = Math.round((th.core + stored * 60 / (p.mass * BODY_HEAT_J_KG)) * 1000) / 1000;
+    const core = th.core = Math.round((core0 + stored * 60 / (p.mass * BODY_HEAT_J_KG)) * 1000) / 1000;
     th.set = setT;
     const latent = 2501200 - 2378.7 * (w ? w.tc : e.tdb);
-    return { core: th.core, set: setT, evapL: evapW / latent * 60 + loss.breathGs * 60 / 1000, kcal: produce * 60 / 4184, fur };
+    return { core, set: setT, evapL: evapW / latent * 60 + loss.breathGs * 60 / 1000, kcal: produce * 60 / 4184, fur };
 }

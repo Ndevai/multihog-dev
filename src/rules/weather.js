@@ -3,36 +3,40 @@
 // beta. Max and min temperature and solar radiation: residuals χ_i = A χ_{i−1} + B ε_i (eq. 3, A and B eqs. 10–11), value
 // = m (χ c + 1) (eq. 13), m and c from seasonal harmonics u + C cos(0.0172 (i − T)) (eq. 14) on wet or dry days.
 import { STATIONS } from './data/wgen-stations.js';
-
 export const STATION_NAMES = Object.keys(STATIONS);
 const A = [[0.567, 0.086, -0.002], [0.253, 0.504, -0.050], [-0.006, -0.039, 0.244]];
 const B = [[0.781, 0, 0], [0.328, 0.637, 0], [0.238, -0.341, 0.873]];
 const harm = (u, C, T, day) => u + C * Math.cos(0.0172 * (day - T));
 const MONTH_START = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-const monthOf = day => MONTH_START.findLastIndex(s => day > s);
-
+const monthOf = (day) => MONTH_START.findLastIndex(s => day > s);
 function normal(rng) {
     let u = 0;
-    while (!u) u = rng();
+    while (!u)
+        u = rng();
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng());
 }
 // Gamma(alpha, 1) by Marsaglia & Tsang 2000, with the alpha < 1 boost.
 function gamma(alpha, rng) {
-    if (alpha < 1) return gamma(alpha + 1, rng) * rng() ** (1 / alpha);
+    if (alpha < 1)
+        return gamma(alpha + 1, rng) * rng() ** (1 / alpha);
     const d = alpha - 1 / 3, c = 1 / Math.sqrt(9 * d);
     for (;;) {
         const x = normal(rng), v = (1 + c * x) ** 3;
-        if (v > 0 && Math.log(rng()) < x * x / 2 + d - d * v + d * Math.log(v)) return d * v;
+        if (v > 0 && Math.log(rng()) < x * x / 2 + d - d * v + d * Math.log(v))
+            return d * v;
     }
 }
-const fToC = f => (f - 32) * 5 / 9;
+const fToC = (f) => (f - 32) * 5 / 9;
 // As in the WGEN program listing (Appendix C): residual normals beyond ±2.5 are redrawn, and coefficients of variation
 // below 0.06 are raised to 0.06.
 function residual(rng) {
-    for (;;) { const v = normal(rng); if (Math.abs(v) <= 2.5) return v; }
+    for (;;) {
+        const v = normal(rng);
+        if (Math.abs(v) <= 2.5)
+            return v;
+    }
 }
-const cvFloor = c => Math.max(0.06, c);
-
+const cvFloor = (c) => Math.max(0.06, c);
 /** Days 1..`days` of one year at `station`: [{ wet, rainMm, tmaxC, tminC, radLy }]. */
 export function simulateYear(station, days, rng) {
     const s = STATIONS[station], out = [];
@@ -48,12 +52,12 @@ export function simulateYear(station, days, rng) {
         const mn = harm(s.tmin[0], s.tmin[1], s.tmin[2], day), cn = cvFloor(harm(s.tmin[3], s.tmin[4], s.tmin[5], day));
         const mr = harm(s.rad[w], s.rad[w + 1], s.rad[w + 2], day), cr = cvFloor(harm(s.radCv[w], s.radCv[w + 1], s.radCv[w + 2], day));
         let tmax = mx * (x[0] * cx + 1), tmin = mn * (x[1] * cn + 1);
-        if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+        if (tmin > tmax)
+            [tmin, tmax] = [tmax, tmin];
         out.push({ wet, rainMm: rainIn * 25.4, tmaxC: fToC(tmax), tminC: fToC(tmin), radLy: Math.max(0, mr * (x[2] * cr + 1)) });
     }
     return out;
 }
-
 // Air temperature through the day: lowest at 06:00, highest at 15:00, cosine between [ASSUMED].
 export function hourTemp(d, hour) {
     const h = ((hour % 24) + 24) % 24;

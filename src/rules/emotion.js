@@ -3,7 +3,6 @@
 // name it (tokens) and what makes it stronger (variables affecting intensity), from the book's type definitions.
 export const ABOUT = ['an event that affects them', 'an event that affects someone else', 'the prospect of an event',
     'a hoped-for or feared event that came true or did not', 'their own action', "someone else's action", 'a person or thing they encounter'];
-
 const T = (words, stronger) => ({ words, stronger });
 export const TYPES = {
     joy: T('glad, happy, pleased, cheerful, delighted, elated, joyful', 'the more desirable the event'),
@@ -29,10 +28,8 @@ export const TYPES = {
     liking: T('like, affection, attracted to, love, adore', 'the more appealing and the more familiar'),
     disliking: T('dislike, aversion, disgust, revulsion, hate, loathe', 'the more unappealing and the more familiar'),
 };
-
 // Below threshold no emotion arises; above it, intensity sets the word (OCC ch. 4 pp. 81–84, ch. 9 p. 185) [3 levels ASSUMED].
 export const MATTERS = ['not at all', 'somewhat', 'a great deal'];
-
 /**
  * OCC types for one appraisal, the main one first and the ones that co-occur after it: confirmation emotions always come
  * with joy or distress (ch. 6 p. 133); compounds are an attribution emotion plus a well-being emotion (anger = reproach +
@@ -46,16 +43,22 @@ export function occTypes({ about, good = true, wants = true, cameTrue = true, pr
         case ABOUT[3]: return cameTrue ? (good ? ['satisfaction', 'joy'] : ['fears-confirmed', 'distress']) : (good ? ['disappointment', 'distress'] : ['relief', 'joy']);
         case ABOUT[4]: {
             const att = praiseworthy ? 'pride' : 'self-reproach';
-            if (result === 'none') return [att];
-            if (praiseworthy && result === 'good') return ['gratification', 'pride', 'joy'];
-            if (!praiseworthy && result === 'bad') return ['remorse', 'self-reproach', 'distress'];
+            if (result === 'none')
+                return [att];
+            if (praiseworthy && result === 'good')
+                return ['gratification', 'pride', 'joy'];
+            if (!praiseworthy && result === 'bad')
+                return ['remorse', 'self-reproach', 'distress'];
             return [att, result === 'good' ? 'joy' : 'distress'];
         }
         case ABOUT[5]: {
             const att = praiseworthy ? 'appreciation' : 'reproach';
-            if (result === 'none') return [att];
-            if (praiseworthy && result === 'good') return ['gratitude', 'appreciation', 'joy'];
-            if (!praiseworthy && result === 'bad') return ['anger', 'reproach', 'distress'];
+            if (result === 'none')
+                return [att];
+            if (praiseworthy && result === 'good')
+                return ['gratitude', 'appreciation', 'joy'];
+            if (!praiseworthy && result === 'bad')
+                return ['anger', 'reproach', 'distress'];
             return [att, result === 'good' ? 'joy' : 'distress'];
         }
         case ABOUT[6]: return [appealing ? 'liking' : 'disliking'];

@@ -7,68 +7,85 @@ const N = 17;
 export const LOCAL_BSA = [0.11, 0.029, 0.175, 0.161, 0.221, 0.096, 0.063, 0.05, 0.096, 0.063, 0.05, 0.209, 0.112, 0.056, 0.209, 0.112, 0.056];
 const DEF = { height: 1.72, weight: 74.43, age: 20, fat: 15, ci: 2.59, bloodFlowRate: 290 };
 const LAYERS = ['artery', 'vein', 'sfvein', 'core', 'muscle', 'fat', 'skin'];
-
 // matrix.index_order
-const IDX = { CB: 0 };
+// Node 0 is the central blood pool (CB); each segment's nodes follow.
+const IDX = {};
 let nodes = 1;
 for (const [i, bn] of SEGMENTS.entries()) {
     const has = bn === 'head' || bn === 'pelvis' ? ['artery', 'vein', 'core', 'muscle', 'fat', 'skin']
         : i < 5 ? ['artery', 'vein', 'core', 'skin'] : ['artery', 'vein', 'sfvein', 'core', 'skin'];
-    IDX[bn] = {};
-    for (const ln of LAYERS) IDX[bn][ln] = has.includes(ln) ? nodes++ : null;
+    const x = {};
+    for (const ln of LAYERS)
+        x[ln] = has.includes(ln) ? nodes++ : null;
+    IDX[bn] = x;
 }
 export const NUM_NODES = nodes;
-const byLayer = ln => SEGMENTS.map(bn => IDX[bn][ln]).filter(x => x !== null);
-const validByLayer = ln => SEGMENTS.map((bn, i) => IDX[bn][ln] !== null ? i : null).filter(x => x !== null);
+const byLayer = (ln) => SEGMENTS.map(bn => IDX[bn][ln]).filter((x) => x !== null);
+const validByLayer = (ln) => SEGMENTS.map((bn, i) => IDX[bn][ln] !== null ? i : null).filter((x) => x !== null);
 const INDEX = Object.fromEntries(LAYERS.map(l => [l, byLayer(l)]));
 const VINDEX = Object.fromEntries(LAYERS.map(l => [l, validByLayer(l)]));
-
-const sum = a => a.reduce((s, x) => s + x, 0);
+const sum = (a) => { let t = 0; for (let i = 0; i < a.length; i++)
+    t += a[i]; return t; };
 const wavg = (a, w) => sum(a.map((x, i) => x * w[i])) / sum(w);
-const zeros = n => new Array(n).fill(0);
-const matrix = n => Array.from({ length: n }, () => new Float64Array(n));
-export const antoine = t => Math.exp(16.6536 - 4030.183 / (t + 235));
-
+const zeros = (n) => new Array(n).fill(0);
+const matrix = (n) => Array.from({ length: n }, () => new Float64Array(n));
+export const antoine = (t) => Math.exp(16.6536 - 4030.183 / (t + 235));
 // construction.*
 const bsaTotal = (h, w) => 0.202 * w ** 0.425 * h ** 0.725; // DuBois
 const bsaRate = (h, w) => bsaTotal(h, w) / sum(LOCAL_BSA);
-const weightRate = w => w / DEF.weight;
+const weightRate = (w) => w / DEF.weight;
 function bfbRate(h, w, age, ci) {
     ci *= 60;
     ci *= age < 50 ? 1 : age < 60 ? 0.85 : age < 70 ? 0.75 : 0.7;
     return ci * bsaRate(h, w) * sum(LOCAL_BSA) / DEF.bloodFlowRate;
 }
-
 function conductance(h, w, fat) {
     const crSk = fat < 12.5 ? [1.341, 0.93, 1.879, 1.729, 2.37, 1.557, 1.018, 2.21, 1.557, 1.018, 2.21, 2.565, 1.378, 3.404, 2.565, 1.378, 3.404]
         : fat < 17.5 ? [1.311, 0.909, 1.785, 1.643, 2.251, 1.501, 0.982, 2.183, 1.501, 0.982, 2.183, 2.468, 1.326, 3.37, 2.468, 1.326, 3.37]
-        : fat < 22.5 ? [1.282, 0.889, 1.698, 1.563, 2.142, 1.448, 0.947, 2.156, 1.448, 0.947, 2.156, 2.375, 1.276, 3.337, 2.375, 1.276, 3.337]
-        : fat < 27.5 ? [1.255, 0.87, 1.618, 1.488, 2.04, 1.396, 0.913, 2.13, 1.396, 0.913, 2.13, 2.285, 1.227, 3.304, 2.285, 1.227, 3.304]
-        : [1.227, 0.852, 1.542, 1.419, 1.945, 1.346, 0.88, 1.945, 1.346, 0.88, 1.945, 2.198, 1.181, 3.271, 2.198, 1.181, 3.271];
+            : fat < 22.5 ? [1.282, 0.889, 1.698, 1.563, 2.142, 1.448, 0.947, 2.156, 1.448, 0.947, 2.156, 2.375, 1.276, 3.337, 2.375, 1.276, 3.337]
+                : fat < 27.5 ? [1.255, 0.87, 1.618, 1.488, 2.04, 1.396, 0.913, 2.13, 1.396, 0.913, 2.13, 2.285, 1.227, 3.304, 2.285, 1.227, 3.304]
+                    : [1.227, 0.852, 1.542, 1.419, 1.945, 1.346, 0.88, 1.945, 1.346, 0.88, 1.945, 2.198, 1.181, 3.271, 2.198, 1.181, 3.271];
     const crMs = zeros(N), msFat = zeros(N), fatSk = zeros(N);
-    crMs[0] = 1.601; msFat[0] = 13.222; fatSk[0] = 16.008;
-    crMs[4] = 3.0813; msFat[4] = 10.3738; fatSk[4] = 41.4954;
+    crMs[0] = 1.601;
+    msFat[0] = 13.222;
+    fatSk[0] = 16.008;
+    crMs[4] = 3.0813;
+    msFat[4] = 10.3738;
+    fatSk[4] = 41.4954;
     const vesCr = [0, 0, 0, 0, 0, 0.586, 0.383, 1.534, 0.586, 0.383, 1.534, 0.81, 0.435, 1.816, 0.81, 0.435, 1.816];
     const sfvSk = [0, 0, 0, 0, 0, 57.735, 37.768, 16.634, 57.735, 37.768, 16.634, 102.012, 54.784, 24.277, 102.012, 54.784, 24.277];
     const artVein = [0, 0, 0, 0, 0, 0.537, 0.351, 0.762, 0.537, 0.351, 0.762, 0.826, 0.444, 0.992, 0.826, 0.444, 0.992];
     const wr = weightRate(w), br = bsaRate(h, w);
     const all = [crSk, crMs, msFat, fatSk, vesCr, sfvSk, artVein].map(a => [...a]);
-    for (const a of all) for (let i = 0; i < N; i++) a[i] *= i < 2 ? wr / br : br ** 2 / wr;
+    for (const a of all)
+        for (let i = 0; i < N; i++)
+            a[i] *= i < 2 ? wr / br : br ** 2 / wr;
     const [cs, cm, mf, fs, vc, ss, av] = all;
     const c = matrix(NUM_NODES);
     for (const [i, bn] of SEGMENTS.entries()) {
         const x = IDX[bn];
+        const sf = x.sfvein, ms = x.muscle, ft = x.fat;
         c[x.artery][x.vein] = av[i];
         c[x.artery][x.core] = vc[i];
         c[x.vein][x.core] = vc[i];
-        if (i >= 5) c[x.sfvein][x.skin] = ss[i];
-        if (x.muscle !== null) { c[x.core][x.muscle] = cm[i]; c[x.muscle][x.fat] = mf[i]; c[x.fat][x.skin] = fs[i]; }
-        else c[x.core][x.skin] = cs[i];
+        if (i >= 5)
+            c[sf][x.skin] = ss[i];
+        if (ms !== null) {
+            c[x.core][ms] = cm[i];
+            c[ms][ft] = mf[i];
+            c[ft][x.skin] = fs[i];
+        }
+        else
+            c[x.core][x.skin] = cs[i];
     }
-    for (let i = 0; i < NUM_NODES; i++) for (let j = i + 1; j < NUM_NODES; j++) { const s = c[i][j] + c[j][i]; c[i][j] = s; c[j][i] = s; }
+    for (let i = 0; i < NUM_NODES; i++)
+        for (let j = i + 1; j < NUM_NODES; j++) {
+            const s = c[i][j] + c[j][i];
+            c[i][j] = s;
+            c[j][i] = s;
+        }
     return c;
 }
-
 function capacity(h, w, age, ci) {
     const art = [0.096, 0.025, 0.12, 0.111, 0.265, 0.0186, 0.0091, 0.0044, 0.0186, 0.0091, 0.0044, 0.0813, 0.04, 0.0103, 0.0813, 0.04, 0.0103];
     const vein = [0.321, 0.085, 0.424, 0.39, 0.832, 0.046, 0.024, 0.01, 0.046, 0.024, 0.01, 0.207, 0.1, 0.024, 0.207, 0.1, 0.024];
@@ -86,13 +103,17 @@ function capacity(h, w, age, ci) {
         cap[x.vein] = vein[i] * bfbr;
         cap[x.core] = cr[i] * wr;
         cap[x.skin] = sk[i] * wr;
-        if (i >= 5) cap[x.sfvein] = sfv[i] * bfbr;
-        if (x.muscle !== null) { cap[x.muscle] = ms[i] * wr; cap[x.fat] = ft[i] * wr; }
+        if (i >= 5)
+            cap[x.sfvein] = sfv[i] * bfbr;
+        if (x.muscle !== null) {
+            cap[x.muscle] = ms[i] * wr;
+            cap[x.fat] = ft[i] * wr;
+        }
     }
-    for (let i = 0; i < NUM_NODES; i++) cap[i] *= 3600;
+    for (let i = 0; i < NUM_NODES; i++)
+        cap[i] *= 3600;
     return cap;
 }
-
 // thermoregulation.*
 const HC_NAT = {
     standing: [4.48, 4.48, 2.97, 2.91, 2.85, 3.61, 3.55, 3.67, 3.61, 3.55, 3.67, 2.8, 2.04, 2.04, 2.8, 2.04, 2.04],
@@ -118,18 +139,16 @@ function fixedHc(hc, v) {
     const mean = wavg(hc, LOCAL_BSA);
     return hc.map(x => x * whole / mean);
 }
-const fixedHr = hr => { const m = wavg(hr, LOCAL_BSA); return hr.map(x => x * 4.7 / m); };
-const fcl = clo => clo < 0.5 ? clo * 0.2 + 1 : clo * 0.1 + 1.05;
+const fixedHr = (hr) => { const m = wavg(hr, LOCAL_BSA); return hr.map(x => x * 4.7 / m); };
+const fcl = (clo) => clo < 0.5 ? clo * 0.2 + 1 : clo * 0.1 + 1.05;
 const dryR = (hc, hr, clo) => hc.map((h, i) => 1 / (h + hr[i]) / fcl(clo[i]) + 0.155 * clo[i]);
 const wetR = (hc, clo, iclo, lr) => hc.map((h, i) => 1 / (lr * h) / fcl(clo[i]) + 0.155 * clo[i] / (lr * iclo[i]));
-
 const RECEPTOR = [0.0549, 0.0146, 0.1492, 0.1321, 0.2122, 0.0227, 0.0117, 0.0923, 0.0227, 0.0117, 0.0923, 0.0501, 0.0251, 0.0167, 0.0501, 0.0251, 0.0167];
 function errorSignals(errSk) {
     let wrm = 0, cld = 0;
     errSk.forEach((e, i) => { wrm += Math.max(e, 0) * RECEPTOR[i]; cld += Math.min(e, 0) * -RECEPTOR[i]; });
     return [wrm, cld];
 }
-
 const SKIN_SWEAT = [0.064, 0.017, 0.146, 0.129, 0.206, 0.051, 0.026, 0.0155, 0.051, 0.026, 0.0155, 0.073, 0.036, 0.0175, 0.073, 0.036, 0.0175];
 const SD_SWEAT_OLD = [0.69, 0.69, 0.59, 0.52, 0.4, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4];
 function evaporation(errCr, errSk, tsk, tdb, rh, ret, b) {
@@ -146,7 +165,6 @@ function evaporation(errCr, errSk, tsk, tdb, rh, ret, b) {
     }
     return { wet, eSk, eMax, eSweat };
 }
-
 const BFB_SK = [1.754, 0.325, 1.967, 1.475, 2.272, 0.91, 0.508, 1.114, 0.91, 0.508, 1.114, 1.456, 0.651, 0.934, 1.456, 0.651, 0.934];
 const SKIN_DILAT = [0.0692, 0.0992, 0.058, 0.0679, 0.0707, 0.04, 0.0373, 0.0632, 0.04, 0.0373, 0.0632, 0.0736, 0.0411, 0.0623, 0.0736, 0.0411, 0.0623];
 const SKIN_STRIC = [0.0213, 0.0213, 0.0638, 0.0638, 0.0638, 0.0213, 0.0213, 0.1489, 0.0213, 0.0213, 0.1489, 0.0213, 0.0213, 0.1489, 0.0213, 0.0213, 0.1489];
@@ -158,17 +176,15 @@ function skinBloodFlow(errCr, errSk, b) {
     const r = bfbRate(b.height, b.weight, b.age, b.ci);
     return BFB_SK.map((bf, i) => (1 + SKIN_DILAT[i] * (b.age < 60 ? 1 : SD_DILAT_OLD[i]) * dil) / (1 + SKIN_STRIC[i] * str) * bf * 2 ** (errSk[i] / 6) * r);
 }
-
 function avaBloodFlow(errCr, errSk, b) {
     const errBcr = wavg(errCr.slice(2, 5), [10.2975, 9.3935, 4.488]);
     const errMsk = wavg(errSk, LOCAL_BSA);
-    const clamp = x => Math.min(Math.max(x, 0), 1);
+    const clamp = (x) => Math.min(Math.max(x, 0), 1);
     const hand = clamp(0.265 * (errMsk + 0.43) + 0.953 * (errBcr + 0.1905) + 0.9126);
     const foot = clamp(0.265 * (errMsk - 0.997) + 0.953 * (errBcr + 0.0095) + 0.9126);
     const r = bfbRate(b.height, b.weight, b.age, b.ci);
     return [1.71 * r * hand, 2.16 * r * foot];
 }
-
 /** Harris–Benedict (revised) basal metabolism, W. */
 export function basalMet(h, w, age, sex) {
     const kcal = sex === 'female' ? 447.593 + 9.247 * w + 479.9 * h - 4.33 * age : 88.362 + 13.397 * w + 500.3 * h - 5.677 * age;
@@ -202,7 +218,6 @@ function nonshivering(errSk, b) {
 const BFB_CORE = [35.251, 15.24, 89.214, 87.663, 18.686, 1.808, 0.94, 0.217, 1.808, 0.94, 0.217, 1.406, 0.164, 0.08, 1.406, 0.164, 0.08];
 const BFB_MUSCLE = [0.682, 0, 0, 0, 12.614, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 const BFB_FAT = [0.265, 0, 0, 0, 2.219, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
 // matrix.vessel_blood_flow / local_arr / whole_body
 function vesselFlow(xbf, avaH, avaF) {
     const s = (a, b) => sum(xbf.slice(a, b));
@@ -213,10 +228,18 @@ function vesselFlow(xbf, avaH, avaF) {
     art[3] = vein[3] = xbf[3];
     art[4] = vein[4] = xbf[4] + s(11, N) + 2 * avaF;
     const limb = (i, a, b, ava) => { vein[i] = s(a, b); art[i] = vein[i] + ava; };
-    limb(5, 5, 8, avaH); limb(6, 6, 8, avaH); limb(7, 7, 8, avaH);
-    limb(8, 8, 11, avaH); limb(9, 9, 11, avaH); limb(10, 10, 11, avaH);
-    limb(11, 11, 14, avaF); limb(12, 12, 14, avaF); limb(13, 13, 14, avaF);
-    limb(14, 14, N, avaF); limb(15, 15, N, avaF); limb(16, 16, N, avaF);
+    limb(5, 5, 8, avaH);
+    limb(6, 6, 8, avaH);
+    limb(7, 7, 8, avaH);
+    limb(8, 8, 11, avaH);
+    limb(9, 9, 11, avaH);
+    limb(10, 10, 11, avaH);
+    limb(11, 11, 14, avaF);
+    limb(12, 12, 14, avaF);
+    limb(13, 13, 14, avaF);
+    limb(14, 14, N, avaF);
+    limb(15, 15, N, avaF);
+    limb(16, 16, N, avaF);
     return [art, vein];
 }
 function bloodMatrix(bfCore, bfMuscle, bfFat, bfSkin, avaH, avaF) {
@@ -224,59 +247,90 @@ function bloodMatrix(bfCore, bfMuscle, bfFat, bfSkin, avaH, avaF) {
     const set = (down, up, f) => { m[down][up] += 1.067 * f; };
     for (const [i, bn] of SEGMENTS.entries()) {
         const x = IDX[bn];
-        set(x.core, x.artery, bfCore[i]); set(x.skin, x.artery, bfSkin[i]);
-        set(x.vein, x.core, bfCore[i]); set(x.vein, x.skin, bfSkin[i]);
-        if (x.muscle !== null) { set(x.muscle, x.artery, bfMuscle[i]); set(x.vein, x.muscle, bfMuscle[i]); }
-        if (x.fat !== null) { set(x.fat, x.artery, bfFat[i]); set(x.vein, x.fat, bfFat[i]); }
-        if (i === 7 || i === 10) set(x.sfvein, x.artery, avaH);
-        if (i === 13 || i === 16) set(x.sfvein, x.artery, avaF);
+        set(x.core, x.artery, bfCore[i]);
+        set(x.skin, x.artery, bfSkin[i]);
+        set(x.vein, x.core, bfCore[i]);
+        set(x.vein, x.skin, bfSkin[i]);
+        if (x.muscle !== null) {
+            set(x.muscle, x.artery, bfMuscle[i]);
+            set(x.vein, x.muscle, bfMuscle[i]);
+        }
+        if (x.fat !== null) {
+            set(x.fat, x.artery, bfFat[i]);
+            set(x.vein, x.fat, bfFat[i]);
+        }
+        if (i === 7 || i === 10)
+            set(x.sfvein, x.artery, avaH);
+        if (i === 13 || i === 16)
+            set(x.sfvein, x.artery, avaF);
     }
     const xbf = bfCore.map((c, i) => c + bfMuscle[i] + bfFat[i] + bfSkin[i]);
     const [art, vein] = vesselFlow(xbf, avaH, avaF);
-    const a = bn => IDX[bn].artery, CB = 0;
+    const a = (bn) => IDX[bn].artery, CB = 0;
     const flow = (up, down, f) => { m[down][up] += 1.067 * f; };
-    flow(CB, a('neck'), art[1]); flow(a('neck'), a('head'), art[0]);
-    flow(a('head') + 1, a('neck') + 1, vein[0]); flow(a('neck') + 1, CB, vein[1]);
-    flow(CB, a('chest'), art[2]); flow(a('chest') + 1, CB, vein[2]);
-    flow(CB, a('back'), art[3]); flow(a('back') + 1, CB, vein[3]);
-    flow(CB, a('pelvis'), art[4]); flow(a('pelvis') + 1, CB, vein[4]);
+    flow(CB, a('neck'), art[1]);
+    flow(a('neck'), a('head'), art[0]);
+    flow(a('head') + 1, a('neck') + 1, vein[0]);
+    flow(a('neck') + 1, CB, vein[1]);
+    flow(CB, a('chest'), art[2]);
+    flow(a('chest') + 1, CB, vein[2]);
+    flow(CB, a('back'), art[3]);
+    flow(a('back') + 1, CB, vein[3]);
+    flow(CB, a('pelvis'), art[4]);
+    flow(a('pelvis') + 1, CB, vein[4]);
     for (const [side, s0] of [['left', 5], ['right', 8]]) {
         const sh = a(`${side}_shoulder`), ar = a(`${side}_arm`), ha = a(`${side}_hand`);
-        flow(CB, sh, art[s0]); flow(sh, ar, art[s0 + 1]); flow(ar, ha, art[s0 + 2]);
-        flow(ha + 1, ar + 1, vein[s0 + 2]); flow(ar + 1, sh + 1, vein[s0 + 1]); flow(sh + 1, CB, vein[s0]);
-        flow(ha + 2, ar + 2, avaH); flow(ar + 2, sh + 2, avaH); flow(sh + 2, CB, avaH);
+        flow(CB, sh, art[s0]);
+        flow(sh, ar, art[s0 + 1]);
+        flow(ar, ha, art[s0 + 2]);
+        flow(ha + 1, ar + 1, vein[s0 + 2]);
+        flow(ar + 1, sh + 1, vein[s0 + 1]);
+        flow(sh + 1, CB, vein[s0]);
+        flow(ha + 2, ar + 2, avaH);
+        flow(ar + 2, sh + 2, avaH);
+        flow(sh + 2, CB, avaH);
     }
     for (const [side, s0] of [['left', 11], ['right', 14]]) {
         const p = a('pelvis'), th = a(`${side}_thigh`), le = a(`${side}_leg`), fo = a(`${side}_foot`);
-        flow(p, th, art[s0]); flow(th, le, art[s0 + 1]); flow(le, fo, art[s0 + 2]);
-        flow(fo + 1, le + 1, vein[s0 + 2]); flow(le + 1, th + 1, vein[s0 + 1]); flow(th + 1, p + 1, vein[s0]);
-        flow(fo + 2, le + 2, avaF); flow(le + 2, th + 2, avaF); flow(th + 2, p + 1, avaF);
+        flow(p, th, art[s0]);
+        flow(th, le, art[s0 + 1]);
+        flow(le, fo, art[s0 + 2]);
+        flow(fo + 1, le + 1, vein[s0 + 2]);
+        flow(le + 1, th + 1, vein[s0 + 1]);
+        flow(th + 1, p + 1, vein[s0]);
+        flow(fo + 2, le + 2, avaF);
+        flow(le + 2, th + 2, avaF);
+        flow(th + 2, p + 1, avaF);
     }
     return m;
 }
-
 /** Solves A x = b by Gaussian elimination with partial pivoting (replaces np.linalg.inv(A) @ b). */
 function solve(A, b) {
     const n = b.length, M = A.map(r => Float64Array.from(r)), x = Float64Array.from(b);
     for (let k = 0; k < n; k++) {
         let p = k;
-        for (let i = k + 1; i < n; i++) if (Math.abs(M[i][k]) > Math.abs(M[p][k])) p = i;
-        [M[k], M[p]] = [M[p], M[k]]; [x[k], x[p]] = [x[p], x[k]];
+        for (let i = k + 1; i < n; i++)
+            if (Math.abs(M[i][k]) > Math.abs(M[p][k]))
+                p = i;
+        [M[k], M[p]] = [M[p], M[k]];
+        [x[k], x[p]] = [x[p], x[k]];
         for (let i = k + 1; i < n; i++) {
             const f = M[i][k] / M[k][k];
-            if (!f) continue;
-            for (let j = k; j < n; j++) M[i][j] -= f * M[k][j];
+            if (!f)
+                continue;
+            for (let j = k; j < n; j++)
+                M[i][j] -= f * M[k][j];
             x[i] -= f * x[k];
         }
     }
     for (let k = n - 1; k >= 0; k--) {
         let s = x[k];
-        for (let j = k + 1; j < n; j++) s -= M[k][j] * x[j];
+        for (let j = k + 1; j < n; j++)
+            s -= M[k][j] * x[j];
         x[k] = s / M[k][k];
     }
     return x;
 }
-
 // models._pmv_ppd_optimized (ISO 7730), used once to find the neutral operative temperature for the set points.
 function pmv(tdb, tr, vr, rh, met, clo) {
     const pa = rh * 10 * Math.exp(16.6536 - 4030.183 / (tdb + 235));
@@ -292,7 +346,8 @@ function pmv(tdb, tr, vr, rh, met, clo) {
         xf = (xf + xn) / 2;
         hc = Math.max(2.38 * Math.abs(100 * xf - taa) ** 0.25, hcf);
         xn = (p5 + p4 * hc - p2 * xf ** 4) / (100 + p3 * hc);
-        if (++n > 150) return NaN;
+        if (++n > 150)
+            return NaN;
     }
     const tcl = 100 * xn - 273;
     const hl1 = 3.05 * 0.001 * (5733 - 6.99 * mw - pa);
@@ -305,33 +360,30 @@ function neutralTo(met) {
     let to = 28;
     for (let i = 0; i < 100; i++) {
         const v = pmv(to, to, 0.1, 50, met, 0);
-        if (Math.abs(v) < 0.001) return to;
+        if (Math.abs(v) < 0.001)
+            return to;
         to -= v / 3;
     }
     return to;
 }
-
-const arr = x => Array.isArray(x) ? [...x] : new Array(N).fill(x);
-
+const arr = (x) => Array.isArray(x) ? [...x] : new Array(N).fill(x);
 /** A JOS-3 body. b: { height m, weight kg, age, sex, fat %, ci }. */
 export function createBody(b = {}) {
-    const body = { height: b.height ?? DEF.height, weight: b.weight ?? DEF.weight, age: b.age ?? DEF.age, sex: b.sex ?? 'male',
-        fat: b.fat ?? DEF.fat, ci: b.ci ?? DEF.ci };
-    body.bsa = LOCAL_BSA.map(x => x * bsaRate(body.height, body.weight));
-    body.cdt = conductance(body.height, body.weight, body.fat);
-    body.cap = capacity(body.height, body.weight, body.age, body.ci);
-    body.t = new Array(NUM_NODES).fill(36);
+    const height = b.height ?? DEF.height, weight = b.weight ?? DEF.weight, age = b.age ?? DEF.age, fat = b.fat ?? DEF.fat, ci = b.ci ?? DEF.ci;
+    const body = { height, weight, age, sex: b.sex ?? 'male', fat, ci,
+        bsa: LOCAL_BSA.map(x => x * bsaRate(height, weight)), cdt: conductance(height, weight, fat), cap: capacity(height, weight, age, ci),
+        t: new Array(NUM_NODES).fill(36), setCr: [], setSk: [], neutral: {} };
     // _reset_setpt: 10 passive steps of 60000 s at the neutral operative temperature, nude, 1.25 × basal.
     const met = basalMet(body.height, body.weight, body.age, body.sex) / sum(body.bsa) * 1.25 / 58.15;
     const to = neutralTo(met);
     const env = { tdb: to, tr: to, rh: 50, v: 0.1, clo: 0, par: 1.25, posture: 'standing' };
-    for (let i = 0; i < 10; i++) step(body, env, 60000, { passive: true, avaZero: true });
+    for (let i = 0; i < 10; i++)
+        step(body, env, 60000, { passive: true, avaZero: true });
     body.setCr = INDEX.core.map(k => body.t[k]);
     body.setSk = INDEX.skin.map(k => body.t[k]);
     body.neutral = env;
     return body;
 }
-
 /**
  * Advances the body dtime seconds in env: { tdb, tr, rh %, v m/s, clo, iclo, par, posture: standing|sitting|lying }; tdb, tr, rh,
  * v, clo and iclo take one number or 17 (SEGMENTS order). Returns the step's heat and water figures.
@@ -343,16 +395,26 @@ export function step(body, env, dtime = 60, { passive = false, avaZero = false, 
     const hc = fixedHc(convCoef(posture, v, tdb, tsk), v), hr = fixedHr(HR[posture]);
     // Added: segments in water (env.water = { tc, hc, segs }) exchange heat with it by convection only; no radiation, no evaporation.
     const wat = env.water;
-    if (wat) for (let i = 0; i < N; i++) if (wat.segs[i]) { hc[i] = wat.hc; hr[i] = 0; tdb[i] = tr[i] = wat.tc; }
+    if (wat)
+        for (let i = 0; i < N; i++)
+            if (wat.segs[i]) {
+                hc[i] = wat.hc;
+                hr[i] = 0;
+                tdb[i] = tr[i] = wat.tc;
+            }
     const to = tdb.map((t, i) => (hc[i] * t + hr[i] * tr[i]) / (hc[i] + hr[i]));
     const rT = dryR(hc, hr, clo), rEt = wetR(hc, clo, iclo, 16.5);
-    if (wat) for (let i = 0; i < N; i++) if (wat.segs[i]) rEt[i] = 1e9;
+    if (wat)
+        for (let i = 0; i < N; i++)
+            if (wat.segs[i])
+                rEt[i] = 1e9;
     const errCr = tcr.map((t, i) => t - (passive ? t : body.setCr[i]));
     const errSk = tsk.map((t, i) => t - (passive ? t : body.setSk[i]));
     const { wet, eSk, eMax, eSweat } = evaporation(errCr, errSk, tsk, tdb, rh, rEt, body);
     const bfSkin = skinBloodFlow(errCr, errSk, body);
     let [avaH, avaF] = avaBloodFlow(errCr, errSk, body);
-    if (avaZero && passive) avaH = avaF = 0;
+    if (avaZero && passive)
+        avaH = avaF = 0;
     const qNst = nonshivering(errSk, body);
     const bmr = basalMet(body.height, body.weight, body.age, body.sex);
     const mCr = MBF_CR.map(f => f * bmr), mMs = MBF_MS.map(f => f * bmr), mFat = MBF_FAT.map(f => f * bmr), mSk = MBF_SK.map(f => f * bmr);
@@ -361,22 +423,32 @@ export function step(body, env, dtime = 60, { passive = false, avaZero = false, 
     // so shivering heat ≤ 3.9 × basal.
     let qShiv = shivering(errCr, errSk, body);
     const shivCap = (SHIV_PEAK - 1) * qBmrTotal, shivSum = sum(qShiv);
-    if (shivSum > shivCap) qShiv = qShiv.map(x => x * shivCap / shivSum);
-    if (shivStopsBelow != null && tcr[4] < shivStopsBelow) qShiv = qShiv.map(() => 0);
-    if (par < 1) throw new Error('par must be 1 or more');
+    if (shivSum > shivCap)
+        qShiv = qShiv.map(x => x * shivCap / shivSum);
+    if (shivStopsBelow != null && tcr[4] < shivStopsBelow)
+        qShiv = qShiv.map(() => 0);
+    if (par < 1)
+        throw new Error('par must be 1 or more');
     const qWork = WORKF.map(f => f * (par - 1) * qBmrTotal);
     const qCr = [...mCr], qMs = [...mMs];
     const r = bfbRate(body.height, body.weight, body.age, body.ci);
     const bfCore = BFB_CORE.map(x => x * r), bfMuscle = BFB_MUSCLE.map(x => x * r), bfFat = BFB_FAT.map(x => x * r);
     for (const [i, bn] of SEGMENTS.entries()) {
         const add = qWork[i] + qShiv[i];
-        if (IDX[bn].muscle !== null) { qMs[i] += add; bfMuscle[i] += add / 1.163; } else { qCr[i] += add; bfCore[i] += add / 1.163; }
+        if (IDX[bn].muscle !== null) {
+            qMs[i] += add;
+            bfMuscle[i] += add / 1.163;
+        }
+        else {
+            qCr[i] += add;
+            bfCore[i] += add / 1.163;
+        }
     }
-    for (let i = 0; i < N; i++) qCr[i] += qNst[i];
+    for (let i = 0; i < N; i++)
+        qCr[i] += qNst[i];
     const qTotal = sum(qCr) + sum(qMs) + sum(mFat) + sum(mSk);
     const pa = antoine(tdb[0]) * rh[0] / 100;
     const resSh = 0.0014 * qTotal * (34 - tdb[0]), resLh = 0.0173 * qTotal * (5.87 - pa);
-
     const bf = bloodMatrix(bfCore, bfMuscle, bfFat, bfSkin, avaH, avaF);
     const cap = body.cap, bArr = new Float64Array(NUM_NODES);
     INDEX.skin.forEach((k, i) => { bArr[k] = 1 / rT[i] * body.bsa[i] / cap[k] * dtime; });
@@ -385,7 +457,8 @@ export function step(body, env, dtime = 60, { passive = false, avaZero = false, 
         let rowSum = 0;
         for (let j = 0; j < NUM_NODES; j++) {
             const x = (body.cdt[i][j] + bf[i][j]) / cap[i] * dtime;
-            A[i][j] = -x; rowSum += x;
+            A[i][j] = -x;
+            rowSum += x;
         }
         A[i][i] += rowSum + bArr[i] + 1;
     }
@@ -403,7 +476,6 @@ export function step(body, env, dtime = 60, { passive = false, avaZero = false, 
         waterGs: sum(eSweat.map((e, i) => (e + 0.06 * eMax[i]) / 2418)) + resLh / 2418,
     };
 }
-
-export const coreOf = body => INDEX.core.map(k => body.t[k]);
-export const skinOf = body => INDEX.skin.map(k => body.t[k]);
-export const meanSkin = body => wavg(skinOf(body), LOCAL_BSA);
+export const coreOf = (body) => INDEX.core.map(k => body.t[k]);
+export const skinOf = (body) => INDEX.skin.map(k => body.t[k]);
+export const meanSkin = (body) => wavg(skinOf(body), LOCAL_BSA);

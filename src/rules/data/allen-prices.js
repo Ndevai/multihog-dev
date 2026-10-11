@@ -7,7 +7,6 @@ export const GOODS = {
     'egg (each)': 0.010, 'beer (litre)': 0.470, 'wine (litre)': 0.965, 'olive oil (litre)': 7.545, 'soap (kg)': 2.880,
     'linen (metre)': 4.369, 'candles (kg)': 4.980, 'lamp oil (litre)': 7.545, 'fuel (million BTU)': 4.164,
 };
-// Table 4: consumer price index, Strasbourg 1745–1754 = 1.00.
 export const CPI = {
     Antwerp: [0.43, 0.94, 1.15, 1.14, 1.05, 1.10, 1.32, 1.77, 3.40], Amsterdam: [0.46, 0.89, 1.10, 1.22, 1.17, 1.32, 1.65, 2.46, 4.50],
     London: [0.45, 0.76, 1.25, 1.42, 1.34, 1.64, 2.55, 2.81, 5.08], Florence: [0.66, 1.00, 1.30, 1.13, 0.95, 1.18, 1.66, 2.74, 5.44],

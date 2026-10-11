@@ -777,3 +777,17 @@ What these show:
 | OPEN-81 | knockout and choke length: no published duration found (Wikipedia: a typical knockout is a loss of consciousness of three seconds or more; Hutchison 2014 gives 3.5 s from impact to referee stoppage, not time unconscious; the choke study above gives time to unconsciousness only) |
 | OPEN-79 | closed by the fit in §4.7; replace when DF's formula for body-part attacks is published |
 | OPEN-78 | closed: healing days scale by DF `HEALING_RATE`; tissue without it never heals |
+
+## 11. Code
+
+The rules engine (`src/rules/`) is written in TypeScript, strict mode. SillyTavern loads JavaScript only, so each `.ts` file is compiled to the `.js` file beside it (`npm run build`, i.e. `tsc -p .`; `npm run typecheck` checks without writing). Both are committed: the `.js` files are what SillyTavern and the rest of the extension import, and are not edited by hand.
+
+| File | Holds |
+|---|---|
+| `types.ts` | the per-character body state (`Person`: wounds, blood, needs, environment, altitude, venom, courses) and the chat's rule state (`RuleState`: people, facts, story clock, latitude) |
+| `tool-schema.ts` | tool parameter schemas and `ArgsOf`, which derives each tool's argument type from the schema the model is given, so a tool's code and its schema cannot drift apart |
+| `sillytavern.d.ts` | the parts of SillyTavern's extension context the engine uses |
+| `df/raws.ts` | DF raw types: `Creature`, `Part`, `Layer`, `Tissue`, `Material`, gear and weapons |
+| `src/state/dice-ledger.d.ts`, `src/features/journal-calendar.d.ts`, `state-manager.d.ts` | declarations for the JavaScript modules outside the engine that it imports |
+
+Conversion check: the scratch simulations give the same numbers before and after (Atlanta January high 11.8 °C, British BMI mean 27.11, battle shares, all 22 emotion types reachable), and the 86 rules tests pass and fail exactly as before. Typing found three defects, fixed: Battle was missing from the list of tools unregistered when the engine is switched off; BodyTreat and CastSpell read a `species` argument their schemas do not offer.

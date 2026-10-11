@@ -4,9 +4,12 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit"
   },
   "devDependencies": {
+    "typescript": "^5.6.3",
     "vitest": "^3.2.4"
   }
 }

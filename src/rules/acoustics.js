@@ -27,14 +27,12 @@ export const SOUNDS = { 'gunshot (rifle)': 171, 'deafening roar (jet engine)': 1
 // surface masses from material density × thickness [ASSUMED values].
 export const BARRIER = { none: 0, 'curtain or tent': 1, 'wooden door': 20, 'plaster wall': 25, 'brick wall': 200, 'stone wall': 500 };
 const massLaw = (m, f) => m ? Math.max(0, 20 * Math.log10(m * f) - 47) : 0;
-
 /** Octave-band levels (dB spectrum level) of a sound of `effort` (or overall `spl` at 1 m, pink) after distance and barrier. */
 function arriving({ effort, spl, distance, barrier }) {
     const d = Math.max(1, distance);
-    const src = effort ? SPEECH[effort] : BANDS.map((_, i) => spl - 10 * Math.log10(6) - DELTA[i]);
+    const src = effort ? SPEECH[effort] : BANDS.map((_, i) => (spl ?? 0) - 10 * Math.log10(6) - DELTA[i]);
     return src.map((e, i) => e - 20 * Math.log10(d) - AIR[i] * d / 1000 - massLaw(BARRIER[barrier] ?? 0, BANDS[i]));
 }
-
 /**
  * What reaches a listener: { sii, words (share of key words understood in sentences with context: logistic link
  * p = 1 ÷ (1 + e^(−0.29 (30 SII − 15 + 2.70))), SPIN-High fit of 30 normal-hearing listeners, Shen & Kern 2018, Trends Hear
@@ -48,25 +46,27 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
     const n = BANDS.map((_, i) => nDb - 10 * Math.log10(6) - DELTA[i]);
     let sii = 0, audible = false;
     e.forEach((ei, i) => {
-        if (deaf.includes(i)) return;
+        if (deaf.includes(i))
+            return;
         const z = Math.max(n[i], ei - 24), d = Math.max(z, XI[i] + (Array.isArray(shift) ? shift[i] : shift));
         const l = Math.min(1, 1 - (ei - SPEECH.normal[i] - 10) / 160);
         const k = Math.min(1, Math.max(0, (ei - d + 15) / 30));
         sii += IMPORTANCE[i] * l * k;
-        if (ei + 15 > d) audible = true;
+        if (ei + 15 > d)
+            audible = true;
     });
     sii = Math.round(sii * 1000) / 1000;
     return { sii, words: Math.round(100 / (1 + Math.exp(-0.29 * (30 * sii - 15 + 2.70)))) / 100, audible };
 }
 export const BAND_HZ = BANDS;
-
 /** Whether a sound of overall `spl` dB at 1 m is heard: { audible, margin } with margin = best band peak − disturbance, dB. */
 export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room', noiseDb = null, shift = 0, deaf = [] }) {
     const e = arriving({ spl, distance, barrier });
     const nDb = noiseDb ?? NOISE[noise] ?? 25;
     let margin = -Infinity;
     e.forEach((ei, i) => {
-        if (deaf.includes(i)) return;
+        if (deaf.includes(i))
+            return;
         const n = nDb - 10 * Math.log10(6) - DELTA[i];
         margin = Math.max(margin, ei + 15 - Math.max(n, XI[i] + (Array.isArray(shift) ? shift[i] : shift)));
     });

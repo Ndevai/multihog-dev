@@ -10,21 +10,21 @@ export const INCUBATION = {
 // is left out: the homogeneous final-size equation gives about 89 % infected, far above observed attack rates.
 export const R0 = { chickenpox: 9.5, measles: 16, mumps: 11, 'whooping cough': 16 };
 export const DISEASES = [...new Set([...Object.keys(INCUBATION), ...Object.keys(R0)])];
-
 /** Hours from infection to the first symptoms, or null when no incubation data exist. */
 export function incubationHours(disease, gauss) {
     const d = INCUBATION[disease];
     return d ? d[0] * d[1] ** gauss() : null;
 }
-
 /**
  * Share of the susceptible who fall ill over the whole outbreak in a closed, mixing population: z = 1 − e^(−R0 s z), s the
  * susceptible share (Kermack & McKendrick 1927: no epidemic unless R0 s > 1). Returns 0 below the threshold.
  */
 export function attackShare(disease, susceptible = 1) {
     const r = (R0[disease] ?? 0) * susceptible;
-    if (r <= 1) return 0;
+    if (r <= 1)
+        return 0;
     let z = 0.5;
-    for (let k = 0; k < 100; k++) z = 1 - Math.exp(-r * z);
+    for (let k = 0; k < 100; k++)
+        z = 1 - Math.exp(-r * z);
     return z;
 }

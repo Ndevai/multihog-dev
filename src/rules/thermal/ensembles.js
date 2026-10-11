@@ -55,7 +55,6 @@ export const ENSEMBLES = {
     "briefs, socks, undershirt, long-sleeved shirt, jacket, long pants, belt, shoes": [1.39, [0.02, 0.02, 2.13, 2.28, 3.04, 1.8, 1.54, 0.15, 1.8, 1.54, 0.15, 1.33, 0.69, 0.97, 1.33, 0.69, 0.97]],
     "briefs, socks, undershirt, work jacket, work pants, safety shoes": [0.8, [0.0, 0.0, 1.25, 1.39, 1.78, 0.84, 0.71, 0.08, 0.84, 0.71, 0.08, 0.65, 0.59, 1.12, 0.65, 0.59, 1.12]],
 };
-
 // Garment insulation, whole body (clo): ASHRAE Standard 55 garment table, as listed in the CBE Thermal Comfort Tool
 // (static/js/global.js, GPL). Duplicate names keep the first value.
 export const GARMENTS = {
