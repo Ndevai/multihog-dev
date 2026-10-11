@@ -47,7 +47,7 @@ import {
 import { RENDERING_TAGS_LIBRARY, sectionPages, configureRuntimeActions } from './src/app/runtime-bridge.js';
 import { bindRenderedCardEvents } from './src/ui/panel/card-events.js';
 import { getRngMode, applyRngMode, autoSelectRngTools } from './src/state/rng-mode.js';
-import { onRulesAuditMessage } from './src/rules/rules-audit.js';
+import { onRulesAuditMessage, registerRulesStatsCommand } from './src/rules/rules-audit.js';
 import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, restoreRulesForMemo } from './src/rules/rules-tools.js';
 import { rulesTrackerTemplate } from './src/rules/rules-mode.js';
 import { onPlayerTurnMessage, onPlayerTurnSent, onPlayerTurnChatChanged } from './src/features/player-turn.js';
@@ -8436,6 +8436,7 @@ function organizeConnectionSettingsUI() {
 
         registerDiceFunctionTool();
         registerRulesTools(!!getSettings().rulesEngine);
+        registerRulesStatsCommand();
         syncLocationMappingRuntime();
         registerDiceSlashCommand();
 

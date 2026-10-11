@@ -12,7 +12,10 @@ const HEIGHT_SD = [7.59, 7.07];
 const BMI_CV = [0.190, 0.212];
 const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z]+/g, ' ').trim();
 export const COUNTRIES = Object.keys(BODY);
-export const findCountry = (text: string): string | null => COUNTRIES.find(c => norm(c) === norm(text)) ?? COUNTRIES.find(c => norm(c).startsWith(norm(text))) ?? null;
+// Names as the data spells them, else the start of one, else a data name that starts the text (WMO's "Iran (Islamic
+// Republic of)" → Iran).
+export const findCountry = (text: string): string | null => COUNTRIES.find(c => norm(c) === norm(text)) ?? COUNTRIES.find(c => norm(c).startsWith(norm(text)))
+    ?? COUNTRIES.filter(c => norm(text).startsWith(`${norm(c)} `)).sort((a, b) => b.length - a.length)[0] ?? null;
 
 // Linear between tabled years; outside the table the nearest year [ASSUMED].
 function at(years: number[], values: number[], y: number): number {

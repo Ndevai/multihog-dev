@@ -95,3 +95,38 @@ export async function onRulesAuditMessage(messageId: number, deps: AuditDeps): P
     }
     return events;
 }
+
+/**
+ * How often the narrator bent outcomes in this chat: replies the check pass read, those with at least one flagged event,
+ * and the flags by tool and by problem. Read from each reply's shown swipe.
+ */
+export function auditStats(chat: STMessage[]): { checked: number; flagged: number; byTool: Record<string, number>; byProblem: Record<string, number> } {
+    let checked = 0, flagged = 0;
+    const byTool: Record<string, number> = {}, byProblem: Record<string, number> = {};
+    for (const m of chat) {
+        const ev = (m.extra?.rulesAudit as Record<number, AuditEvent[]> | undefined)?.[m.swipe_id ?? 0];
+        if (!Array.isArray(ev)) continue;
+        checked++;
+        if (ev.length) flagged++;
+        for (const e of ev) { byTool[e.tool] = (byTool[e.tool] ?? 0) + 1; byProblem[e.problem ?? 'unbacked'] = (byProblem[e.problem ?? 'unbacked'] ?? 0) + 1; }
+    }
+    return { checked, flagged, byTool, byProblem };
+}
+
+/** /rules-stats: the check pass's tally for the open chat. */
+export function registerRulesStatsCommand(): void {
+    const ctx = SillyTavern.getContext() as STContext & { SlashCommand?: { fromProps(p: object): unknown }; SlashCommandParser?: { addCommandObject(c: unknown): void } };
+    if (!ctx.SlashCommand || !ctx.SlashCommandParser) return;
+    ctx.SlashCommandParser.addCommandObject(ctx.SlashCommand.fromProps({
+        name: 'rules-stats',
+        helpString: 'Rule check tally for this chat: replies checked, replies with outcomes no engine result backs, by tool.',
+        returns: 'the tally as text',
+        callback: async () => {
+            const s = auditStats(SillyTavern.getContext().chat ?? []);
+            const list = (o: Record<string, number>) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ') || 'none';
+            const text = `Rule check: ${s.checked} replies checked, ${s.flagged} with flagged events (${s.checked ? Math.round(100 * s.flagged / s.checked) : 0} %). By tool: ${list(s.byTool)}. By problem: ${list(s.byProblem)}.`;
+            (globalThis as { toastr?: { info(t: string, title?: string): void } }).toastr?.info(text, 'Rules engine');
+            return text;
+        },
+    }));
+}

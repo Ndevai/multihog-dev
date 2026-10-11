@@ -160,11 +160,11 @@ export function findPlace(text, lat, lon) {
     if (city) {
         const st = STATION_NAMES.find(s => fold(s.split(',')[0]) === city);
         if (st && (!country || fold(st).includes(country) || country === 'usa' || country.startsWith('united states')))
-            return { key: `wgen:${st}`, label: `${st} (WGEN station)`, lat: null };
+            return { key: `wgen:${st}`, label: `${st} (WGEN station)`, lat: null, country: 'United States of America' };
         const named = NORMALS.map((n, i) => [n, i]).filter(([n]) => fold(n[0]) === city || fold(n[0]).startsWith(`${city} `));
         const pick = named.find(([n]) => country && fold(n[1]).includes(country)) ?? (country ? undefined : named[0]);
         if (pick)
-            return { key: `wmo:${pick[1]}`, label: `${pick[0][0]}, ${pick[0][1]}`, lat: pick[0][2] };
+            return { key: `wmo:${pick[1]}`, label: `${pick[0][0]}, ${pick[0][1]}`, lat: pick[0][2], country: pick[0][1] };
     }
     if (lat == null || lon == null || !Number.isFinite(lat) || !Number.isFinite(lon))
         return null;
@@ -174,7 +174,7 @@ export function findPlace(text, lat, lon) {
         best = i;
     } });
     const n = NORMALS[best];
-    return { key: `wmo:${best}`, label: `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2] };
+    return { key: `wmo:${best}`, label: `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2], country: n[1] };
 }
 /** Days 1..`days` of one year at a place key from findPlace (a bare WGEN station name is accepted too). */
 export function simulatePlaceYear(key, days, rng) {

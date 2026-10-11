@@ -21,16 +21,31 @@ import { loadRaws, creatureId, creature } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
-import { str } from './tool-schema.js';
+import { str, checkArgs } from './tool-schema.js';
 export const TOOLS = ['Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
 export function store() {
     const ctx = SillyTavern.getContext();
-    ctx.chatMetadata.rulesEngine ??= { state: { people: {} }, snapshots: {} };
-    ctx.chatMetadata.rulesEngine.salt ??= crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
-    return ctx.chatMetadata.rulesEngine;
+    ctx.chatMetadata.rulesEngine ??= { state: { people: {} }, snapshots: {}, version: STATE_VERSION };
+    const s = ctx.chatMetadata.rulesEngine;
+    s.salt ??= crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+    if ((s.version ?? 1) < STATE_VERSION) {
+        migrate(s.state);
+        for (const snap of Object.values(s.snapshots ?? {}))
+            migrate(snap.state);
+        s.version = STATE_VERSION;
+    }
+    return s;
+}
+// State saved in a chat outlives the code that wrote it: each version step converts older state in place, idempotently.
+// 2: a character's weather place became a place key ("wgen:Boston, MA", "wmo:<index>") instead of a WGEN station name.
+const STATE_VERSION = 2;
+function migrate(st) {
+    for (const p of Object.values(st?.people ?? {}))
+        if (p.weather && !p.weather.includes(':'))
+            p.weather = `wgen:${p.weather}`;
 }
 function save() {
     const ctx = SillyTavern.getContext();
@@ -91,7 +106,9 @@ export function onRulesSwiped(messageId) {
 }
 const isReply = (m) => !!m && !m.is_user && !m.is_system && !m.extra?.tool_invocations;
 function restore(saved) {
-    store().state = structuredClone(saved);
+    const s = structuredClone(saved);
+    migrate(s);
+    store().state = s;
     save();
 }
 /** CHAT_CHANGED / MESSAGE_DELETED: state = what the last reply ended with, so a branch or deletion starts from its own point. */
@@ -254,6 +271,23 @@ function storyNow(st) {
     return t + st.clock.add;
 }
 /** Weather at `station` at story minute `t` (calendar dates only): { d (the day), tempC (air now), date }, or null. */
+/** Story year from a calendar date in [TIME]; null for a bare day count or no [TIME]. */
+function storyYear(st) {
+    const t = storyNow(st);
+    if (t === null || t / 1440 <= 146097)
+        return null;
+    const date = new Date(0, 0, 1);
+    date.setFullYear(1, 0, 1);
+    date.setDate(date.getDate() + Math.floor(t / 1440));
+    return date.getFullYear();
+}
+const NO_YEAR = 'Give year: [TIME] holds no calendar date.';
+/** Remembers a place as the scene's setting, so later calls can leave place and country out. */
+function setPlace(st, place) {
+    st.setting = { place: place.key, label: place.label, country: place.country };
+    if (place.lat != null)
+        st.latitude = place.lat;
+}
 /** Weather at place key `place` (from findPlace) at story minute `t` (calendar dates only): the day, air now, date; or null. */
 function weatherAt(place, t) {
     if (t === null || t / 1440 <= 146097)
@@ -297,7 +331,11 @@ export function registerRulesTools(enabled) {
         return;
     // The action's argument type comes from the schema the model is given.
     const tool = (name, description, properties, required, action) => {
-        const exec = async (args) => {
+        const exec = async (raw) => {
+            // Arguments are checked against the schema at the boundary; a call with errors runs nothing and says what to fix.
+            const { args, errors } = checkArgs(properties, required, raw ?? {});
+            if (errors.length)
+                return `${name} not run; fix and call again: ${errors.join('; ')}.`;
             await loadRaws();
             const prior = decided(name, args);
             if (prior)
@@ -471,8 +509,8 @@ export function registerRulesTools(enabled) {
                 continue;
             }
             p.weather = w && place ? place.key : null;
-            if (place?.lat != null)
-                st.latitude = place.lat;
+            if (place)
+                setPlace(st, place);
             if (a.air_c == null && w)
                 a = { ...a, air_c: w.tempC, radiant_c: a.radiant_c ?? w.tempC };
             if (a.air_c == null) {
@@ -557,14 +595,17 @@ export function registerRulesTools(enabled) {
         quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
         trade: { type: 'string', enum: TRADES, description: 'For a daily wage. Default building labourer.' },
         city: { type: 'string', enum: CITIES, description: 'The city, or the nearest listed one in the same country' },
-        year: { type: 'number', description: 'Story year' },
-    }, ['question', 'city', 'year'], a => run(() => {
-        const r = price(a.question, a.item, a.trade, Number(a.quantity) || 1, a.city, Number(a.year));
+        year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
+    }, ['question', 'city'], a => run(st => {
+        const year = a.year ?? storyYear(st);
+        if (year == null)
+            return NO_YEAR;
+        const r = price(a.question, a.item, a.trade, Number(a.quantity) || 1, a.city, year);
         if ('error' in r)
             return r.error;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? Math.round(r.labourDays) : Math.round(r.labourDays * 10) / 10} days`;
-        return `${r.what} in ${a.city}, ${a.year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
+        return `${r.what} in ${a.city}, ${year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
     }));
     tool('NameCharacter', 'Give a first name to a character in an American setting whose name the story has not fixed, before naming them. Drawn by how many US babies of that sex got the name in their birth decade (1910–2029).', {
         who: str('Label of the character (e.g. "the waitress")'),
@@ -576,13 +617,18 @@ export function registerRulesTools(enabled) {
     }));
     tool('BodySize', 'Decide the height and body mass of an adult character the story has not described, before describing them, from their country, sex and birth year. Records the mass for the body rules.', {
         who: str('The character'),
-        country: str('Country the character grew up in (present-day name, e.g. United Kingdom, Nigeria, Japan)'),
+        country: str('Country the character grew up in (present-day name, e.g. United Kingdom, Nigeria, Japan). Default: the country of the last place given.'),
         sex: { type: 'string', enum: ['male', 'female'] },
         birth_year: { type: 'number', description: 'Year of birth' },
-        year: { type: 'number', description: 'Story year' },
+        year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
         species,
-    }, ['who', 'country', 'sex', 'birth_year', 'year'], a => run((st, rng) => {
-        const r = bodySize(a.country, a.sex, Number(a.birth_year), Number(a.year), () => gauss(rng));
+    }, ['who', 'sex', 'birth_year'], a => run((st, rng) => {
+        const year = a.year ?? storyYear(st), country = a.country ?? st.setting?.country;
+        if (year == null)
+            return NO_YEAR;
+        if (!country)
+            return 'Give country: no place is set yet.';
+        const r = bodySize(country, a.sex, a.birth_year, year, () => gauss(rng));
         if ('error' in r)
             return r.error;
         if (r.notes.length)
@@ -592,7 +638,7 @@ export function registerRulesTools(enabled) {
             return error;
         p.mass = Math.round(r.massKg);
         p.sex = a.sex;
-        p.age ??= Number(a.year) - Number(a.birth_year);
+        p.age ??= year - a.birth_year;
         return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg. Write "${a.who} (${p.mass} kg)" in the tracker profile.`;
     }));
     tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, or how many people in a community fall ill over the whole outbreak.', {
@@ -620,17 +666,20 @@ export function registerRulesTools(enabled) {
     tool('Battle', 'Decide whether an attack on a defended position succeeds, for a battle or engagement between armies or units from 1600 to 1991, before narrating its result. Code decides from the numbers on each side and the year.', {
         attackers: { type: 'number', description: 'Soldiers in the attacking force' },
         defenders: { type: 'number', description: 'Soldiers defending' },
-        year: { type: 'number', description: 'Story year' },
+        year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
         place: str('The position attacked, a few words'),
         surprise: { type: 'boolean', description: 'The defenders were unaware of the attack until it struck (no warning from sentries or scouts)' },
-    }, ['attackers', 'defenders', 'year'], a => run((st, rng) => {
-        const share = attackWinShare(Number(a.attackers), Number(a.defenders), Number(a.year), !!a.surprise);
+    }, ['attackers', 'defenders'], a => run((st, rng) => {
+        const year = a.year ?? storyYear(st);
+        if (year == null)
+            return NO_YEAR;
+        const share = attackWinShare(a.attackers, a.defenders, year, !!a.surprise);
         if (share == null)
             return `Battle covers engagements from ${BATTLE_YEARS[0]} to ${BATTLE_YEARS[1]} with both sides' numbers given; decide this one with BodyCheck.`;
         const r = a.attackers / a.defenders, where = a.place ? ` ${a.place}` : ' the position';
         const odds = r < 1 ? 'outnumbered by the defenders' : r < 1.5 ? 'at roughly equal strength' : r < 3 ? 'outnumbering the defenders' : 'outnumbering the defenders many times over';
-        const era = (a.surprise ? ', and catching the defenders by surprise' : '') + (a.year <= 1900 ? '; in battles of this era numbers decided little, and leadership, ground and morale decided the rest' : '');
-        const won = rng() < share, c = battleCost(Number(a.attackers), Number(a.defenders), Number(a.year), won, rng);
+        const era = (a.surprise ? ', and catching the defenders by surprise' : '') + (year <= 1900 ? '; in battles of this era numbers decided little, and leadership, ground and morale decided the rest' : '');
+        const won = rng() < share, c = battleCost(a.attackers, a.defenders, year, won, rng);
         const span = c.hours < 1.5 ? 'about an hour' : c.hours < 36 ? `about ${Math.round(c.hours)} hours` : `about ${Math.round(c.hours / 24)} days`;
         return `The attack on${where} ${won ? 'succeeds' : 'fails'}, the attackers ${odds}${era}. The fighting lasts ${span}. Killed, wounded and captured: attackers ${c.attackerLoss}, defenders ${c.defenderLoss}.`;
     }));
@@ -638,18 +687,18 @@ export function registerRulesTools(enabled) {
     // Hemisphere mean of the 50 % rain–snow air-temperature threshold (Jennings et al. 2018, Nat Commun 9:1148; range −0.4 to
     // 2.4 °C by region) [day mean as the air temperature: ASSUMED].
     tool('Weather', 'Decide the day\'s weather at the story\'s place from the date and hour in [TIME], before describing it: rain, snow or dry, the amount, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
-        place: str('The town or city the scene is in or nearest to ("Lyon", "Kyoto", "Sydney, Australia"); for a fictional or remote place, the nearest real town or give latitude and longitude'),
+        place: str('The town or city the scene is in or nearest to ("Lyon", "Kyoto", "Sydney, Australia"); for a fictional or remote place, the nearest real town or give latitude and longitude. Default: the last place given.'),
         latitude: { type: 'number', description: 'For a place with no data: latitude; the nearest listed city is used' },
         longitude: { type: 'number', description: 'Longitude, with latitude' },
-    }, ['place'], a => run(st => {
-        const place = findPlace(a.place, a.latitude, a.longitude);
+    }, [], a => run(st => {
+        const known = st.setting?.place && !a.place && a.latitude == null ? { key: st.setting.place, label: st.setting.label ?? '', lat: st.latitude ?? null, country: st.setting.country ?? null } : null;
+        const place = known ?? findPlace(a.place, a.latitude, a.longitude);
         if (!place)
-            return `No weather data for "${a.place}": give the nearest real town, or latitude and longitude.`;
+            return a.place ? `No weather data for "${a.place}": give the nearest real town, or latitude and longitude.` : 'Give place: no place is set yet.';
         const w = weatherAt(place.key, storyNow(st));
         if (!w)
             return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
-        if (place.lat != null)
-            st.latitude = place.lat;
+        setPlace(st, place);
         const { d, date } = w, r = (x) => Math.round(x);
         const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
         const sky = !d.wet ? 'dry' : (d.tmaxC + d.tminC) / 2 <= 1.0 ? `snow, ${amount} of water over the day` : `rain, ${amount} over the day`;

@@ -822,3 +822,13 @@ The rules engine (`src/rules/`) is written in TypeScript, strict mode. SillyTave
 Conversion check: the scratch simulations give the same numbers before and after (Atlanta January high 11.8 °C, British BMI mean 27.11, battle shares, all 22 emotion types reachable), and the 86 rules tests pass and fail exactly as before. Typing found three defects, fixed: Battle was missing from the list of tools unregistered when the engine is switched off; BodyTreat and CastSpell read a `species` argument their schemas do not offer.
 
 Live check (SillyTavern 1.19.0, this branch installed as a third-party extension, a scripted OpenAI-compatible stand-in model, Chromium driven by Playwright): the extension loads without errors; with the engine switched on, the narrator request offers 29 tools and carries the rules brief and the [KNOWS] block; scripted BodyCheck, RecordFact and Battle calls run and return their results; RecordFact's fact appears in the next turn's [KNOWS] with its source ("Ann: The key is under the mat (saw it)"); the check pass runs after every reply with the turn's engine results and the [KNOWS] lines; state is snapshotted per chat position.
+
+Foundations every tool shares:
+
+| Layer | What it does |
+|---|---|
+| argument check (`tool-schema.ts`, `checkArgs`) | each call is checked against the schema the model was given before anything runs: required arguments present; numbers and true/false sent as text are read; an option matches ignoring case, by a band's words without its share ("half" → "50% half"), or as the start of exactly one option; unknown keys are dropped. A call with errors runs nothing and returns what to fix, listing the options |
+| state versions (`rules-tools.ts`, `STATE_VERSION`) | rule state saved in a chat carries a version; older state, live and in every snapshot, is converted when the chat opens. Version 2: a character's weather place became a place key |
+| scene setting (`RuleState.setting`) | the last place given to Weather or BodyEnvironment is kept with its country and latitude; Weather may leave place out, BodySize country, and Price, Battle and BodySize the year, which then comes from the calendar date in [TIME]. One value per scene replaces one guess per call |
+| rule-check tally (`/rules-stats`) | replies the check pass read, those with outcomes no engine result backs, by tool and problem: the measure of how often the narrator still bends outcomes |
+

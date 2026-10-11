@@ -89,4 +89,6 @@ export interface RuleState {
     /** Story clock: the tracker [TIME] last seen (minutes) and the minutes PassTime has run since it changed. */
     clock?: { t: number; add: number };
     latitude?: number;
+    /** What the scene has fixed for every tool: the last place given (a weather place key), its label and country. */
+    setting?: { place?: string; label?: string; country?: string | null };
 }
