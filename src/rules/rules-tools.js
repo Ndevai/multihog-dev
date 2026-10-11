@@ -8,8 +8,10 @@ import { learn, knowledgeBlock } from './knowledge.js';
 import { ABOUT, TYPES, occType } from './emotion.js';
 import { skyLight } from './sky.js';
 import { price, ITEMS, CITIES } from './prices.js';
+import { drawName } from './names.js';
+import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
 import { nowMinutes } from '../features/journal-calendar.js';
-import { person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
+import { gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -18,7 +20,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'JudgeStatement', 'Bystander', 'ObeyOrder', 'AskStranger', 'FirstImpression', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'Disease', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -149,12 +151,15 @@ function run(fn) {
 const str = d => ({ type: 'string', description: d });
 // BodyCheck's success share as labelled options: models are calibrated on multiple-choice questions with the options shown
 // (Kadavath et al. 2022, arXiv 2207.05221); band values [ASSUMED]. A bare number is still read.
-const SHARES = ['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one'];
+// Option order is shuffled at each load: models prefer options by position and label rather than content (selection bias,
+// Zheng et al. 2024, ICLR; their remedy permutes the options).
+const shuffled = list => list.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = v => typeof v === 'number' ? v : (parseFloat(v) || 0) / 100;
 // Intuitive estimates are not regressive enough; corrected = class share + ρ × (estimate − class share), with ρ ≈ τ = 2p − 1
 // from p, the share of pairs whose order one would predict correctly (Kahneman & Tversky 1977, "Intuitive prediction: biases
 // and corrective procedures", steps 1–5).
-const ORDERING = ['50% (no better than chance)', '60% of pairs', '70% of pairs', '80% of pairs', '90% of pairs'];
+const ORDERING = shuffled(['50% (no better than chance)', '60% of pairs', '70% of pairs', '80% of pairs', '90% of pairs']);
 function regressive(a) {
     const est = shareOf(a.share);
     if (a.base_share == null) return est;
@@ -206,6 +211,7 @@ Outcomes come from the rule-engine tools; narrate what they return.
 - A message between characters of different species, in a language one of them may not know, or from a wounded or unconscious speaker or to a wounded listener → Communicate before narrating whether it is understood.
 - A fact the story establishes, or something a character learns by seeing, hearing, reading or being told → RecordFact with who knows it; a message between characters → Communicate with message.
 - A price, a wage or a bill in a European city 1500–1913 → Price.
+- A new character in an American setting needs a first name → NameCharacter. Someone catches a contagious disease, or one spreads through a community → Disease.
 - A character's feelings about an event, an action or someone they meet → Appraise before narrating them.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive in the scene now. Facts in [KNOWS] stay true.
 - Any other action with an uncertain outcome → BodyCheck.
@@ -448,6 +454,35 @@ export function registerRulesTools(enabled) {
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? Math.round(r.labourDays) : Math.round(r.labourDays * 10) / 10} days`;
         return `${Number(a.quantity) || 1} × ${a.item} in ${a.city}, ${a.year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
+    }));
+
+    tool('NameCharacter', 'Give a first name to a character in an American setting whose name the story has not fixed, before naming them. Drawn by how many US babies of that sex got the name in their birth decade (1910–2029).', {
+        who: str('Label of the character (e.g. "the waitress")'),
+        sex: { type: 'string', enum: ['male', 'female'] },
+        birth_year: { type: 'number', description: 'Year of birth (story year minus age)' },
+    }, ['who', 'sex', 'birth_year'], a => run((st, rng) => {
+        const n = drawName(a.sex, Number(a.birth_year), rng);
+        return n ? `${a.who}: first name ${n}.` : 'US name data cover births 1910–2029.';
+    }));
+
+    tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, or how many people in a community fall ill over the whole outbreak.', {
+        disease: { type: 'string', enum: DISEASES },
+        question: { type: 'string', enum: ['when symptoms start', 'how many fall ill'] },
+        who: str('For "when symptoms start": the character who caught it'),
+        population: { type: 'number', description: 'For "how many fall ill": people in the community who mix with each other' },
+        immune_share: { type: 'number', description: 'Share 0–1 already immune (had it before or vaccinated). Default 0.' },
+    }, ['disease', 'question'], a => run((st, rng) => {
+        if (a.question === 'when symptoms start') {
+            if (!INCUBATION[a.disease]) return `No incubation data for ${a.disease}. Diseases with data: ${Object.keys(INCUBATION).join(', ')}.`;
+            const h = incubationHours(a.disease, () => gauss(rng));
+            const when = h < 48 ? `${Math.round(h)} hours` : `${Math.round(h / 24)} days`;
+            return `${a.who ?? 'The infected person'} shows the first symptoms of ${a.disease} ${when} after catching it.`;
+        }
+        if (!R0[a.disease]) return `No transmission data for ${a.disease}. Diseases with data: ${Object.keys(R0).join(', ')}.`;
+        const sus = 1 - Math.min(1, Math.max(0, Number(a.immune_share) || 0)), z = attackShare(a.disease, sus);
+        const n = Number(a.population) || 0;
+        if (!z) return `No outbreak: too few people can still catch ${a.disease}; only scattered cases.`;
+        return `Over the outbreak, ${Math.round(z * sus * n)} of ${n} people fall ill with ${a.disease}${z > 0.9 ? ', nearly everyone who could catch it' : ''}.`;
     }));
 
     tool('RecordFact', 'Fix a fact the moment the story establishes it (a place, an object, a person, a secret, an event) and record who knows it: those who saw it, heard it, read it or were told it. A recorded fact stays true for the rest of the story and appears in [KNOWS].', {

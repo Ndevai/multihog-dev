@@ -707,7 +707,7 @@ const SPREAD = 0.237;
 const BLADE_LIMB_ARTERY = 0.12;
 const REF_MASS = 70;
 
-function gauss(rng) {
+export function gauss(rng) {
     return Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng());
 }
 
