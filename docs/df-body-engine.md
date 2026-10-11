@@ -825,6 +825,8 @@ What these show:
 
 ## 11. Code
 
+**Fork defaults (user-owned prompt).** IF a fresh install or the first load of this fork → THEN Custom Sysprompt Mode is on (Multihog never writes Quick Prompt Main), the rules engine is on, and a Main the framework already wrote goes back to the user's backup once. IF Custom Sysprompt Mode is on → THEN the first-turn footer reminder is not injected. The engine's rules reach the narrator only through per-turn injections ([KNOWS], [DECIDED], the brief, the rule-check note).
+
 The rules engine (`src/rules/`) is written in TypeScript, strict mode. SillyTavern loads JavaScript only, so each `.ts` file is compiled to the `.js` file beside it (`npm run build`, i.e. `tsc -p .`; `npm run typecheck` checks without writing). Both are committed: the `.js` files are what SillyTavern and the rest of the extension import, and are not edited by hand.
 
 | File | Holds |

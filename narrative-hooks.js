@@ -1615,7 +1615,7 @@ export function installInterceptor() {
                 // Once per chat: reinforce the status footer on the first user turn only
                 // (near the bottom of early context — system prompt alone is often ignored).
                 // Honors Control Room: disabled <end_of_output_footer> → no reminder.
-                if (shouldInjectEndOfOutputFooterReminder(chat, content)) {
+                if (!settings.customSysprompt && shouldInjectEndOfOutputFooterReminder(chat, content)) {
                     const footerReminder = buildEndOfOutputFooterReminder(settings);
                     if (footerReminder) {
                         injections += footerReminder;

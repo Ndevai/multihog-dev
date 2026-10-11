@@ -271,6 +271,15 @@ function getSettingsInternal(extensionSettings) {
         }
     }
 
+    // Fork (rules-engine), once per install: Quick Prompt Main belongs to the user and outcomes come from the rules engine.
+    // A Main the framework already wrote goes back to the user's backup at boot (forkRestoreMainPending).
+    if (!s.forkUserMainV1) {
+        s.forkUserMainV1 = true;
+        s.customSysprompt = true;
+        s.rulesEngine = true;
+        s.forkRestoreMainPending = true;
+    }
+
     // Migrate NPC prompt to include appearance recording (v3.5.2 one-time migration)
     if (isOlderThan(s.settingsVersion, '3.5.2')) {
         if (s.routerModules?.npc?.instruction === 'Named characters. Do NOT create an entry for {{user}}. Mention {{user}} in EVENT or QUEST entries as needed.') {

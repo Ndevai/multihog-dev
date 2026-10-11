@@ -193,7 +193,7 @@ export function buildDefaultSettings() {
         /** First-run API checklist. Dismissed overlay does not come back. */
         apiSetupGateSeen: false,
 
-        customSysprompt: false,
+        customSysprompt: true,
 
         /** When true (default), snapshot Quick Prompt Main before the framework overwrites it and restore on tracker disable. */
 
@@ -213,7 +213,7 @@ export function buildDefaultSettings() {
 
 
         strictDiceCommit: false,
-        rulesEngine: false,
+        rulesEngine: true,
         rulesQuestionPass: true,
         playerTurn: false,
         sceneMemory: false,
