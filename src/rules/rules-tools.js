@@ -236,6 +236,16 @@ function who(st, name, speciesArg, massArg) {
         return { error: `DF defines no body for "${text}" (a creature of legend only). Nothing recorded.` };
     return { p: person(st, name, Number(massArg) || t.mass, sp) };
 }
+// Principles shared by both briefs.
+const RULES_PRINCIPLES = `Principles
+- Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true.
+- A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands.`;
+/** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
+export const RULES_BRIEF_DECIDED = `<rule_engine>
+Outcomes in [DECIDED] come from the rule engine; narrate each as given, in the order it happens.
+An action whose outcome [DECIDED] does not give is narrated up to the moment its outcome would show; the next turn decides it.
+${RULES_PRINCIPLES}
+</rule_engine>`;
 export const RULES_BRIEF = `<rule_engine>
 Outcomes come from the rule-engine tools: call the tool before narrating the outcome, then narrate what it returns.
 Body
@@ -324,6 +334,14 @@ export function knowledgeInjection() {
     const ctx = SillyTavern.getContext();
     return ctx.chatMetadata ? knowledgeBlock(store().state) : '';
 }
+/**
+ * Whether the question pass ran for this turn. The narrator then gets [DECIDED] and no tool schemas (about 12,000 tokens
+ * for 28 tools, plus a second request per tool call), so a large model on a shared endpoint answers before its gateway closes.
+ */
+export function questionPassRan() {
+    const ctx = SillyTavern.getContext();
+    return !!ctx.chatMetadata && store().asked?.turn === turnKey(ctx.chat);
+}
 export function registerRulesTools(enabled) {
     const { registerFunctionTool, unregisterFunctionTool } = SillyTavern.getContext();
     if (!registerFunctionTool || !unregisterFunctionTool)
@@ -354,7 +372,8 @@ export function registerRulesTools(enabled) {
             return out;
         };
         REGISTRY.set(name, { name, description, properties, required, exec });
-        registerFunctionTool({ name, displayName: name, description, parameters: { type: 'object', properties, required: [...required] }, action: exec, formatMessage: () => '' });
+        registerFunctionTool({ name, displayName: name, description, parameters: { type: 'object', properties, required: [...required] }, action: exec, formatMessage: () => '',
+            shouldRegister: () => !questionPassRan() });
     };
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
     tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, bolt, bullet). Returns what the wound is and the body state.', {

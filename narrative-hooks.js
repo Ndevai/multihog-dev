@@ -33,7 +33,7 @@ import { buildCyoaModeBlock, STATE_MEMO_INJECT_PREAMBLE } from './constants.js';
 import { isCyoaEnabled, isLorebookAgentRuntimeActive, isLocationMappingEnabled } from './src/state/section-enabled.js';
 import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/state/narrative-pacing.js';
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
-import { RULES_BRIEF, knowledgeInjection } from './src/rules/rules-tools.js';
+import { RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, questionPassRan } from './src/rules/rules-tools.js';
 import { bodyMemo, trackedPeople } from './src/rules/body-sheet.js';
 import { rulesDiceSpec, RULES_SECTIONS } from './src/rules/rules-mode.js';
 import { PLAYER_TURN_PROMPT } from './src/features/player-turn.js';
@@ -1592,7 +1592,7 @@ export function installInterceptor() {
                     const note = takeAuditNote();
                     const known = knowledgeInjection();
                     const decided = decidedInjection();
-                    injections += `${RULES_BRIEF}\n\n${known ? `${known}\n\n` : ''}${decided ? `${decided}\n\n` : ''}${note ? `${note}\n\n` : ''}`;
+                    injections += `${questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF}\n\n${known ? `${known}\n\n` : ''}${decided ? `${decided}\n\n` : ''}${note ? `${note}\n\n` : ''}`;
                 }
 
                 // Quest deadline check — fires before state model pass, deterministically
