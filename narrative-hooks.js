@@ -1585,7 +1585,7 @@ export function installInterceptor() {
                     // Question pass: a second model names the tool calls the reply needs; code runs them first (§7.3).
                     if (settings.rulesQuestionPass !== false && !['quiet', 'impersonate', 'continue'].includes(type)) {
                         try {
-                            await runQuestionPass(chat, (system, user) => sendStateRequest(settings, system, user, null, { debugSource: 'Rules Questions' }));
+                            await runQuestionPass(chat, (system, user) => sendStateRequest(settings, system, user, null, { debugSource: 'Rules Questions' }), stripMemoHtml(memoForGmContext(settings.currentMemo || '')));
                         } catch (e) { console.warn('[RPG Tracker] Rules question pass skipped:', e); }
                         if (!ownsChat()) return;
                     }

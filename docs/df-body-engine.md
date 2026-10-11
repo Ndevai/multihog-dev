@@ -736,6 +736,20 @@ Before each reply to a player message, the State Model (the connection the track
 
 A swipe of the same turn reuses the calls asked the first time; the engine state is back at the turn's start, so they return the same outcomes. Setting: "Rules question pass", on by default with the rules engine. Live check (§11): the pass runs before the narrator request, a narrator BodyCheck repeating the pass's BodyCheck returned "Already decided this turn", an unknown tool name was dropped, and the [DECIDED] block reached the narrator and the check pass.
 
+### 7.4 Scoring the question pass
+
+`/rules-eval [n]` sends the first n of 50 scenes (`eval-scenes.ts`; default all) to the State Model as question-pass requests, with a fixed tracker state (two characters, a date in 1850; five scenes carry their own date), and scores the calls: a call counts only when it would run (known tool, required arguments, schema check passed). Each scene lists the calls a correct reading needs and the arguments that decide their outcomes (equal, contains, range, list holds a name, list length); other arguments are free, recording a fact is always allowed, and a scene may allow further tools. Scenes 40–44 need no call.
+
+| Measure | Definition |
+|---|---|
+| fully correct | every expected call made with every deciding argument right, and no call outside the allowed ones |
+| tool precision | matched calls ÷ calls made (allowed extras excluded) |
+| tool recall | matched calls ÷ expected calls |
+| deciding arguments right | passed checks ÷ checks |
+| quiet when nothing is in doubt | share of the no-call scenes with no call |
+
+The scenes cover every decision tool once or more (BodyStrike 4, BodyCheck 3, PassTime 4, BodyEnvironment 4, SocialResponse 5). Scorer check: a stand-in model answering with the expected calls scores 50/50; one answering no calls scores 5/50 (the quiet scenes), recall 0 %; inside SillyTavern with the scripted stand-in model the command runs and reports. Per-scene results go to the browser console. Together with /rules-stats (narration that departs from results) it measures the two factors §7.3 does not: picking the tool, and filling its deciding arguments.
+
 ## 8. Unchanged
 
 Blood volume 70 mL/kg and loss classes, refill, red cells, infection, treatments, falls, PassTime interruptions, the check formula, magic — rule 576, now applied to any creature with blood [ASSUMED for non-humans].

@@ -10,7 +10,7 @@ import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
 
 // Calls run per turn, at most [ASSUMED]; scene messages shown and their length.
-const MAX_CALLS = 8, SCENE_MESSAGES = 8, MESSAGE_CHARS = 1500;
+const MAX_CALLS = 8, SCENE_MESSAGES = 8, MESSAGE_CHARS = 1500, TRACKER_CHARS = 4000;
 // Enums longer than this are shown as free text; the tool then names the valid values in its reply [ASSUMED].
 const ENUM_SHOWN = 40;
 const SKIP = new Set(['BodyStatus']);
@@ -45,8 +45,8 @@ export function toolCatalogue(): string {
 
 type Call = { tool: string; args: Record<string, unknown> };
 
-/** Calls from the model's text: the last JSON object holding "calls"; unknown tools and missing required arguments dropped. */
-export function parseCalls(text: unknown): Call[] {
+/** Every call in the model's text, unchecked: the last JSON object holding "calls" that parses. */
+export function rawCalls(text: unknown): Call[] {
     const s = String(text ?? '');
     const starts = [...s.matchAll(/\{\s*"calls"/g)].map(m => m.index!).reverse();
     for (const at of starts) {
@@ -58,32 +58,36 @@ export function parseCalls(text: unknown): Call[] {
         if (end < 0) continue;
         try {
             const calls = JSON.parse(s.slice(at, end + 1)).calls;
-            if (!Array.isArray(calls)) continue;
-            return calls.filter((c): c is Call => !!c && typeof c.tool === 'string' && typeof c.args === 'object' && c.args !== null)
-                .filter(c => { const t = REGISTRY.get(c.tool); return !!t && !SKIP.has(c.tool) && t.required.every(k => c.args[k] !== undefined && c.args[k] !== ''); })
-                .slice(0, MAX_CALLS);
+            if (Array.isArray(calls)) return calls.filter((c): c is Call => !!c && typeof c.tool === 'string' && typeof c.args === 'object' && c.args !== null);
         } catch { /* try an earlier object */ }
     }
     return [];
 }
 
-/** The scene for the question model: recent messages, the player's message last, and the [KNOWS] block. */
-export function questionPrompt(chat: STMessage[], knows: string): string {
+/** Calls to run: unknown tools and calls missing a required argument dropped, at most MAX_CALLS. */
+export function parseCalls(text: unknown): Call[] {
+    return rawCalls(text).filter(c => { const t = REGISTRY.get(c.tool); return !!t && !SKIP.has(c.tool) && t.required.every(k => c.args[k] !== undefined && c.args[k] !== ''); })
+        .slice(0, MAX_CALLS);
+}
+
+/** The scene for the question model: the tracker state (time, place, characters), [KNOWS], recent messages, the player's last. */
+export function questionPrompt(chat: STMessage[], knows: string, tracker = ''): string {
     const recent = chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES)
         .map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
-    return `TOOLS\n${toolCatalogue()}\n\n${knows ? `${knows}\n\n` : ''}SCENE (the last message is the player's)\n${recent}`;
+    const state = tracker.trim() ? `TRACKER STATE\n${tracker.trim().slice(0, TRACKER_CHARS)}\n\n` : '';
+    return `TOOLS\n${toolCatalogue()}\n\n${state}${knows ? `${knows}\n\n` : ''}SCENE (the last message is the player's)\n${recent}`;
 }
 
 /**
  * Runs the question pass for a generation whose last message is the player's. A swipe of the same turn reuses the calls
  * asked the first time; the engine state was restored to the turn's start, so the same calls give the same outcomes.
  */
-export async function runQuestionPass(chat: STMessage[], send: (system: string, user: string) => Promise<string>): Promise<void> {
+export async function runQuestionPass(chat: STMessage[], send: (system: string, user: string) => Promise<string>, tracker = ''): Promise<void> {
     const ctx = SillyTavern.getContext();
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size) return;
     const s = store(), turn = turnKey(ctx.chat);
     const calls = s.asked?.turn === turn ? s.asked.calls
-        : parseCalls(await send(QUESTION_SYSTEM, questionPrompt(chat, knowledgeBlock(s.state))));
+        : parseCalls(await send(QUESTION_SYSTEM, questionPrompt(chat, knowledgeBlock(s.state), tracker)));
     const results: { tool: string; result: string }[] = [];
     for (const c of calls) results.push({ tool: c.tool, result: String(await REGISTRY.get(c.tool)!.exec(c.args as Args)) });
     s.asked = { turn, calls, results };
