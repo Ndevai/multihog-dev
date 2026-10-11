@@ -20,6 +20,11 @@ export const RULES_DROPPED_SECTIONS = new Set([
     'weapon_proficiencies', 'attacks_per_round', 'saving_throws', 'xp_system', 'level_up_protocol', 'homebrew_and_custom_classes',
 ]);
 
+/** The line above TRACKER STATE in the narrator's prompt each turn. */
+export const RULES_STATE_PREAMBLE = `<state_memo>
+TRACKER STATE 0 below is the state at the start of this turn for everyone in the story; [BODY] in it comes from the rule engine. A character uses only what it shows they have.
+</state_memo>`;
+
 export const RULES_SECTIONS: Record<string, string> = {
     role: `Narrator and world simulator. Narrate the world, simulate NPCs and apply the rules of this prompt and the rule-engine tools. In a fight, simulate every NPC's actions (not {{user}}'s) in the order they happen in time.`,
 
@@ -192,9 +197,9 @@ Organize into two sections using plain-text headers:
 - Gear: — weapons, armour, and worn/equipped items
 - Other Items: — tools, supplies, miscellaneous loot, and currency
 
-FORMAT FOR EVERY ITEM: thematic emoji, rarity tag ([Common], [Uncommon], [Rare], [Epic], [Legendary] or [Artifact]: how hard it is to find), name, then in parentheses what it physically is (material, make; for a weapon its kind: blade, blunt, bow, firearm), then the estimated worth (~X currency fitting the world).
+FORMAT FOR EVERY ITEM: rarity tag ([Common], [Uncommon], [Rare], [Epic], [Legendary] or [Artifact]: how hard it is to find), name, then in parentheses what it physically is (material, make; for a weapon its kind: blade, blunt, bow, firearm), then the estimated worth (~X currency fitting the world).
 - Magic items add their school, complexity and activation condition when known: (bone wand; Healing, complexity 2; activates on a spoken word).
-- Bare currency goes under Other Items without a rarity tag: "💰" for coins, "💵" for paper money.
+- Bare currency goes under Other Items without a rarity tag: the coins or notes and their count.
 
 WORN PROTECTION: for each worn item that covers the body, the parentheses also state which body parts and sub-locations it covers (head: forehead, crown, nape; arms: shoulder, upper arm, elbow, forearm; hands: wrist, palm, back; legs: hip, thigh, knee, shin; feet: sole, arch, ankle, heel) for a held item (shield, buckler) its size in cm and the hand holding it, the sides it covers when only one (front or back), and any holes, gaps or damage with their place (iron helm, forehead and crown, open at the nape; iron breastplate, front only; leather jerkin, left sleeve torn off).
 
@@ -205,11 +210,11 @@ CONTAINERS: list each item inside a bag, chest or other container on its own lin
 Example format:
 [INVENTORY]
 Gear:
-- 🗡️ [Common] [E] Item name (steel blade) (~X currency)
+- [Common] [E] Item name (steel blade) (~X currency)
 Other Items:
 - 🎒 [Common] Item name (leather backpack) (~X currency)
   - 🪢 [Common] Item name (hemp rope, 15 m) (~X currency)
-- 💰 N coins
+- N coins
 [/INVENTORY]`,
 
     spells: `Spells known, one per line: \`Spell name (School, complexity N)\`. Complexity 0 = cantrip. Network energy and stage are written by code in [BODY].

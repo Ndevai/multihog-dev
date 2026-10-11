@@ -35,7 +35,7 @@ import { buildNarrativeModeTags, hasInjectableNarrativePacing } from './src/stat
 import { shouldUseRngQueue } from './src/state/rng-mode.js';
 import { RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, questionPassRan } from './src/rules/rules-tools.js';
 import { bodyMemo, trackedPeople } from './src/rules/body-sheet.js';
-import { rulesDiceSpec, RULES_SECTIONS } from './src/rules/rules-mode.js';
+import { rulesDiceSpec, RULES_SECTIONS, RULES_STATE_PREAMBLE } from './src/rules/rules-mode.js';
 import { PLAYER_TURN_PROMPT } from './src/features/player-turn.js';
 import { calendarInjection } from './src/features/journal-calendar.js';
 import { takePhoneInjection } from './src/features/books-phone.js';
@@ -1563,7 +1563,7 @@ export function installInterceptor() {
 
                 if (settings.currentMemo) {
                     const memoText = stripMemoHtml(settings.rulesEngine ? bodyMemo(memoForGmContext(settings.currentMemo), trackedPeople()) : memoForGmContext(settings.currentMemo)).trim();
-                    injections += `${STATE_MEMO_INJECT_PREAMBLE}\n\n## TRACKER STATE 0 (Current)\n${memoText}\n\n`;
+                    injections += `${settings.rulesEngine ? RULES_STATE_PREAMBLE : STATE_MEMO_INJECT_PREAMBLE}\n\n## TRACKER STATE 0 (Current)\n${memoText}\n\n`;
                 }
 
                 if (settings.playerTurn) injections += `${PLAYER_TURN_PROMPT}\n\n`;
