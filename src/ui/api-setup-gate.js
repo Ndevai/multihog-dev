@@ -13,7 +13,8 @@ export const RECOMMENDED_OUTPUT_LENGTH = 100000;
 
 const OVERLAY_ID = 'rt-api-setup-gate';
 const PULSE_CLASS = 'rt-api-setup-pulse';
-const API_SCREENSHOT = '/scripts/extensions/third-party/SillyTavern-MultihogDnDFramework/assets/st-api-chat-completion.png';
+// Relative to this file, so the image loads whatever folder name the extension was installed under.
+const API_SCREENSHOT = new URL('../../assets/st-api-chat-completion.png', import.meta.url).href;
 
 const API_LABELS = {
     openai: 'Chat Completion',
