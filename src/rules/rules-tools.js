@@ -228,6 +228,33 @@ Principles
 - A player's message says what their character tries. Whether it works comes from the tools, also when the message states the result or disputes an earlier one; a result stands.
 </rule_engine>`;
 
+/** Story time in minutes: the tracker's [TIME] plus the minutes PassTime has run since [TIME] last changed; null without one. */
+function storyNow(st) {
+    const t = nowMinutes();
+    if (t === null) return null;
+    if (st.clock?.t !== t) st.clock = { t, add: 0 };
+    return t + st.clock.add;
+}
+
+/** Weather at `station` at story minute `t` (calendar dates only): { d (the day), tempC (air now), date }, or null. */
+function weatherAt(station, t) {
+    if (t === null || t / 1440 <= 146097) return null;
+    const date = new Date(0, 0, 1); date.setFullYear(1, 0, 1); date.setDate(date.getDate() + Math.floor(t / 1440));
+    const year = date.getFullYear(), jan1 = new Date(0, 0, 1); jan1.setFullYear(year, 0, 1);
+    const doy = Math.min(365, Math.round((date - jan1) / 864e5) + 1);
+    const d = simulateYear(station, doy, seededRng(`${store().salt}:weather:${station}:${year}`)).at(-1);
+    return { d, tempC: hourTemp(d, (t % 1440) / 60), date };
+}
+
+/** Characters outdoors at a weather station take its air temperature at story minute `t`. */
+function applyWeather(people, t) {
+    for (const p of Object.values(people)) {
+        if (!p.weather || !p.env) continue;
+        const w = weatherAt(p.weather, t);
+        if (w) { p.env.tdb = w.tempC; p.env.tr = w.tempC; }
+    }
+}
+
 /** The per-turn [KNOWS] block for the current chat, '' when nothing is recorded. */
 export function knowledgeInjection() {
     const ctx = SillyTavern.getContext();
@@ -383,6 +410,7 @@ export function registerRulesTools(enabled) {
         swimmer: { type: 'boolean', description: 'Whether the character can swim, when the story has established it; otherwise code draws it once (46 % of adults)' },
         deep_water: { type: 'boolean', description: 'Water over the head. Default true when immersed.' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },
+        weather_station: { type: 'string', enum: STATION_NAMES, description: 'Outdoors in the United States: the Weather station; air temperature then follows the day\'s weather as PassTime runs (air_c may be left out). Leave it out indoors or elsewhere.' },
     }, ['who'], a => run(st => {
         const out = [];
         for (const name of a.who) {
@@ -390,6 +418,10 @@ export function registerRulesTools(enabled) {
             if (error) { out.push(error); continue; }
             if (a.clear) { setEnvironment(p, null); out.push(`${name}: conditions cleared.`); continue; }
             if (a.altitude_m != null) setAltitude(p, a.altitude_m, !!a.sudden_ascent, !!a.decompression);
+            const w = a.weather_station ? weatherAt(a.weather_station, storyNow(st)) : null;
+            if (a.weather_station && !w) { out.push('weather_station needs a calendar date (dd/mm/yyyy) and hour in [TIME].'); continue; }
+            p.weather = w ? a.weather_station : null;
+            if (a.air_c == null && w) a = { ...a, air_c: w.tempC, radiant_c: a.radiant_c ?? w.tempC };
             if (a.air_c == null) { out.push(a.altitude_m != null ? status(name, p) : 'air_c is required.'); continue; }
             if (!thermalCapable(p.species) && !creatureOf(p)?.homeotherm) { out.push(`${name}: cold-blooded; body temperature not simulated; not recorded.`); continue; }
             try {
@@ -514,15 +546,12 @@ export function registerRulesTools(enabled) {
 
     tool('Weather', 'Decide the day\'s weather at a place in the United States from the story date and hour in [TIME], before describing it: rain or dry, rainfall, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
         station: { type: 'string', enum: STATION_NAMES, description: 'The weather station nearest the story\'s place, or the one with the most similar climate' },
-    }, ['station'], a => run(() => {
-        const t = nowMinutes();
-        if (t === null || t / 1440 <= 146097) return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
-        const date = new Date(0, 0, 1); date.setFullYear(1, 0, 1); date.setDate(date.getDate() + Math.floor(t / 1440));
-        const year = date.getFullYear(), doy = Math.min(365, Math.round((date - new Date(new Date(0, 0, 1).setFullYear(year, 0, 1))) / 864e5) + 1);
-        const days = simulateYear(a.station, doy, seededRng(`${store().salt}:weather:${a.station}:${year}`)), d = days.at(-1);
-        const hour = (t % 1440) / 60, r = x => Math.round(x);
+    }, ['station'], a => run(st => {
+        const w = weatherAt(a.station, storyNow(st));
+        if (!w) return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
+        const { d, date } = w, r = x => Math.round(x);
         const rain = d.wet ? `rain, ${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm over the day` : 'dry';
-        return `${a.station}, ${date.getDate()}/${date.getMonth() + 1}/${year}: ${rain}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(hourTemp(d, hour))} °C. Set BodyEnvironment air_c to the temperature now.`;
+        return `${a.station}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${rain}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C.`;
     }));
 
     // A character's pick among options is drawn, weighted by how many people in their place would take each one: weighted
@@ -578,7 +607,7 @@ export function registerRulesTools(enabled) {
         if (v.error) return v.error;
         if (Number.isFinite(a.latitude)) st.latitude = a.latitude;
         // Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED].
-        const t = nowMinutes();
+        const t = storyNow(st);
         const sky = !a.light && t !== null && t / 1440 > 146097 && Number.isFinite(st.latitude) ? skyLight(t, st.latitude) : null;
         return look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: sky?.lux ?? a.light ?? 'daylight', lightLabel: sky?.label ?? null, visibility_m: a.visibility_m ?? 20000 }, rng);
     }));
@@ -723,7 +752,17 @@ export function registerRulesTools(enabled) {
             catch (e) { return `${e.message} Nothing recorded.`; }
             walkers.push([w.who, p, w.speed_kmh]);
         }
-        const { elapsed, events } = advanceAll(st.people || {}, asked, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []) });
+        // Characters outdoors at a weather station: time runs in hour steps, each taking the air temperature at its start.
+        const t0 = storyNow(st), weathered = t0 !== null && Object.values(st.people || {}).some(p => p.weather && p.env);
+        let elapsed = 0, events = [];
+        do {
+            if (weathered) applyWeather(st.people, t0 + elapsed);
+            const step = weathered ? Math.min(60, asked - elapsed) : asked - elapsed;
+            const r = advanceAll(st.people || {}, step, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []) });
+            elapsed += r.elapsed; events = r.events;
+            if (events.length || r.elapsed < step) break;
+        } while (elapsed < asked);
+        if (t0 !== null) st.clock.add += elapsed;
         const walked = walkers.map(([n, p, kmh]) => { const met = p.workMet; delete p.workMet; return `${n} walked ${Math.round(kmh * elapsed / 60 * 10) / 10} km at ${Math.round(met * 10) / 10} MET`; });
         const head = (events.length
             ? `Time stopped after ${elapsed} of ${asked} minutes: ${events.join('; ')}. ${asked - elapsed} minutes remain.`
