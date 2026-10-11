@@ -1,0 +1,10 @@
+{
+    "display_name": "Rules Engine",
+    "version": "1.0.0",
+    "author": "Ndevai",
+    "js": "src/index.js",
+    "loading_order": 30,
+    "generate_interceptor": "rulesEngineInterceptor",
+    "homePage": "https://github.com/Ndevai/multihog-dev/tree/rules-standalone",
+    "auto_update": true
+}

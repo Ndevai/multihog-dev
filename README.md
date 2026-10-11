@@ -1,0 +1,37 @@
+# Rules Engine for SillyTavern
+
+Code decides outcomes; the narrator writes them. Each turn:
+
+1. **Question pass.** One model call reads the scene and names the outcomes in doubt (a climb that may fail, a sound that may be missed, time that passes). The engine decides each with its rule tools.
+2. **Narration.** The narrator gets one system message: the brief, the story time, each tracked body ([BODY]), what each character knows ([KNOWS]) and the decided outcomes ([DECIDED]). Your own prompt, card and preset stay as they are.
+3. **Rule check.** One model call compares the reply with the engine's results and redoes the reply once when it bends one.
+
+Without the question pass the narrator gets the 29 rule tools and calls them itself.
+
+## Install
+
+1. SillyTavern → Extensions → Install extension.
+2. URL `https://github.com/Ndevai/multihog-dev`, branch `rules-standalone`.
+3. In AI Response Configuration, tick **Enable function calling** (used when the question pass is off or fails).
+4. Extensions → **Rules Engine**: the three boxes are on by default.
+5. Set the story time once per chat: type `/rules-time 1850-03-14 18:40` (or `Day 1 08:00`), or use the field in the panel. PassTime moves it on.
+
+## Settings
+
+| Setting | Default | What it does |
+|---|---|---|
+| Rules engine | on | registers the tools and sends the engine's message each turn |
+| Question pass | on | one model call before each reply |
+| Rule check | on | one model call after each reply |
+| Connection | same as the chat | a Connection Manager profile for the two extra calls (e.g. a faster model) |
+| Reply length | the connection's own | max tokens for the two extra calls |
+
+## Commands
+
+- `/rules-time [time]`: show or set the story time.
+- `/rules-stats`: how many replies the rule check read and flagged in this chat.
+- `/rules-eval [n]`: scores the question pass on built-in scenes (tool precision and recall, deciding arguments).
+
+Rules, sources and decisions: `docs/df-body-engine.md`. Rule text for a lorebook: `rules/rules-lorebook.json`.
+
+License: GPL-3.0 (derived from the Multihog D&D Framework).
