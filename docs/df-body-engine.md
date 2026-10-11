@@ -572,6 +572,8 @@ A character the story has not described gets sex, age and occupation from the 18
 
 US first names: NameCharacter draws a first name for a given sex and birth year from the Social Security Administration's names-by-state files (1910–2025, names given to 5 or more babies in a state and year), summed over states, 200 most frequent names per sex and decade, weighted by count. The 200 cover 86–89 % of named babies in the 1910s and 54–62 % in the 2020s; rarer names are not drawn.
 
+Height and mass: BodySize draws an adult's height from the mean for their country and birth year (NCD Risk Factor Collaboration 2016, eLife 5:e13410, births 1896–1996, 190 countries, via Our World in Data) with the within-population SD of 7.59 cm for men and 7.07 cm for women (Jelenkovic et al. 2016, eLife, via Our World in Data); mass = the country's mean adult BMI for the story year (WHO Global Health Observatory, NCD-RisC estimates, 1975–2016) × height² [ASSUMED: BMI spread not modelled]. Outside the tabled years the nearest year is used [ASSUMED]. The mass is written into the engine's body state. Check (20 000 draws): Dutch men born 1996, mean 182.4 cm, SD 7.64 cm (data 182.5 cm).
+
 ### 6.12 What exists and who knows it
 
 Facts the story establishes are recorded once and stay true (RecordFact); each fact lists who knows it. Pattern from PAYADOR and Góngora et al. 2026 (world state held in code, the model proposes changes) and from Prom Week's social facts database (McCoy et al. 2013), with per-character knowledge as in Versu (Evans & Short 2014). Every turn the [KNOWS] block lists common knowledge and each character's facts, newest 12 per line [ASSUMED]: injecting what characters already know, with explicit "already knows" markers, cut known-information forgetting by 73 % over 90 chapters of generated fiction (Xiwei 2026, "Epistemic memory failures in long-form narrative agents"), and models otherwise answer as if a character knew what was said in their absence (FANToM, Kim et al. 2023). A message passed with Communicate and `message` adds the listener as a knower when the words or the gesture reach them (every word, most words, the gist, or a seen gesture; not a language the listener lacks).
@@ -652,6 +654,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Disease | disease, population, immune share | story facts | incubation and outbreak size (§6.15) |
 | Weather | station | scene fact | rain and temperature by WGEN (§6.16) |
 | Choose | options and their shares | outcome guess, as labelled bands | drawn in code (§6.17) |
+| BodySize | country, sex, birth year, story year | story facts | height and mass from NCD-RisC (§6.11) |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ### 7.2 Defences against known model failures

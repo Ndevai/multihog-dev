@@ -9,6 +9,7 @@ import { skyLight } from './sky.js';
 import { STATION_NAMES, simulateYear, hourTemp } from './weather.js';
 import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
 import { drawName } from './names.js';
+import { bodySize } from './body-size.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
 import { nowMinutes } from '../features/journal-calendar.js';
 import { gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
@@ -20,7 +21,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -129,7 +130,7 @@ const norm = v => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' '
 const DECIDES = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
-    Weather: a => [a.station], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population] };
+    Weather: a => [a.station], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population] };
 const decisionKey = (name, a) => DECIDES[name] && [name, ...DECIDES[name](a ?? {})].map(norm).join('|');
 function decisions() {
     const s = store(), turn = turnKey(SillyTavern.getContext().chat);
@@ -215,7 +216,7 @@ Surroundings
 Senses
 - A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate.
 People
-- A character the story has not described → NewCharacter; their first name → NameCharacter.
+- A character the story has not described → NewCharacter; their first name → NameCharacter; their height and mass → BodySize.
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
@@ -472,6 +473,23 @@ export function registerRulesTools(enabled) {
     }, ['who', 'sex', 'birth_year'], a => run((st, rng) => {
         const n = drawName(a.sex, Number(a.birth_year), rng);
         return n ? `${a.who}: first name ${n}.` : 'US name data cover births 1910–2029.';
+    }));
+
+    tool('BodySize', 'Decide the height and body mass of an adult character the story has not described, before describing them, from their country, sex and birth year. Records the mass for the body rules.', {
+        who: str('The character'),
+        country: str('Country the character grew up in (present-day name, e.g. United Kingdom, Nigeria, Japan)'),
+        sex: { type: 'string', enum: ['male', 'female'] },
+        birth_year: { type: 'number', description: 'Year of birth' },
+        year: { type: 'number', description: 'Story year' },
+        species,
+    }, ['who', 'country', 'sex', 'birth_year', 'year'], a => run((st, rng) => {
+        const r = bodySize(a.country, a.sex, Number(a.birth_year), Number(a.year), () => gauss(rng));
+        if (r.error) return r.error;
+        if (r.notes.length) console.debug('[Rules engine]', a.who, r.notes.join('; '));
+        const { p, error } = who(st, a.who, a.species);
+        if (error) return error;
+        p.mass = Math.round(r.massKg); p.sex = a.sex; p.age ??= Number(a.year) - Number(a.birth_year);
+        return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg. Write "${a.who} (${p.mass} kg)" in the tracker profile.`;
     }));
 
     tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, or how many people in a community fall ill over the whole outbreak.', {
