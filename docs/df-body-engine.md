@@ -580,6 +580,8 @@ Facts the story establishes are recorded once and stay true (RecordFact); each f
 
 Each knower can carry how they learned the fact: Communicate tags the listener "told by" the speaker, and RecordFact takes `how` (saw it, read it, told by a named person, rumour). [KNOWS] shows it after the fact on that knower's line, so hearsay stays hearsay (source-tagged beliefs as in Versu; LoCoMo, Maharana et al. 2024, ACL, scores recall of who said what).
 
+The check pass receives the [KNOWS] lines and lists each place where a character states or acts on a fact listed only for others; the redo is told to have the character learn it on the page first or act without it.
+
 ### 6.13 Emotions
 
 Appraise returns the emotion types from how the character sees the event, the action or the thing (Ortony, Clore & Collins 1988, The Cognitive Structure of Emotions, the 22 type specifications). First `matters` (not at all / somewhat / a great deal): OCC emotions arise only above a threshold, so "not at all" returns no emotion. Then the types; several can hold at once, as the book's compounds contain their parts and a confirmation is also a joy or a distress:
@@ -611,6 +613,27 @@ Weather gives the day's rain and temperatures at one of 28 US stations from the 
 ### 6.17 Choices
 
 Choose draws a character's pick among options the narrator lists, each with the share of people in that character's place who would take it (the same labelled bands as BodyCheck), weighted random over all options; options with the same wording are merged, since a duplicated option takes extra share from the others in a logit choice (McFadden's independence of irrelevant alternatives) and keeps a floor of 1 % so no listed option is impossible (Mark 2009, Behavioral Mathematics for Game AI, ch. 16, "weighted random from all choices"), the probabilistic-choice view of McFadden's conditional logit (1974). Check: 80 % against 20 % gave 324 and 76 of 400 draws.
+
+### 6.18 Battles
+
+Battle decides whether an attack on a defended position succeeds, from the force ratio (attackers ÷ defenders) and the year, using the shares of attacker wins in the Dupuy Institute's historical engagement databases (C. A. Lawrence, War by Numbers, 2017, tables as posted at dupuyinstitute.org under "Force Ratios"). Adjacent ratio bands with fewer than 30 cases are merged, cases weighted [stated process]; full data sets, not the culled ones.
+
+| Years | Force ratio | Attacker wins | Cases |
+|---|---|---|---|
+| 1600–1900 (Battles Data Base, 243 battles) | under 1 | 54 % | 94 |
+| | 1 to under 2 | 58 % | 109 |
+| | 2 or more | 60 % | 40 |
+| 1901–1991 (Division-level Engagement Data Base, 672 engagements, 1904–1991; 1901–1903 take this table [ASSUMED]) | under 1 | 39 % | 88 |
+| | 1–1.49 | 55 % | 150 |
+| | 1.5–1.99 | 59 % | 123 |
+| | 2–2.49 | 71 % | 56 |
+| | 2.5–2.99 | 83 % | 53 |
+| | 3–3.49 | 69 % | 48 |
+| | 3.5–3.99 | 77 % | 30 |
+| | 4–5.99 | 65 % | 66 |
+| | 6 or more | 95 % | 39 |
+
+The dips at 3–3.5 and 4–6 are in the data and are kept. Before 1900 the ratio changes the result by 6 points across its range, so the result says that leadership, ground and morale decided the rest. Outside 1600–1991 the tool hands the decision to BodyCheck. BodyCheck tasks naming a battle, an assault or storming a position are routed to Battle. Casualties and the duration of the fight are not decided (OPEN-93).
 
 ## 7. Tools
 
@@ -657,7 +680,8 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Weather | station | scene fact | rain and temperature by WGEN (§6.16) |
 | Choose | options and their shares | outcome guess, as labelled bands | drawn in code (§6.17) |
 | BodySize | country, sex, birth year, story year | story facts | height and mass from NCD-RisC (§6.11) |
-| (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
+| Battle | attackers, defenders, year, place | story facts | attacker win share by force ratio and era (§6.18) |
+| (no tool) | persuasion beyond small requests, morale and fleeing, battle casualties, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ### 7.2 Defences against known model failures
 
@@ -739,7 +763,8 @@ What these show:
 | OPEN-89 | social judgments: lie detection with evidence or suspicion; persuasion, compliance and fear/morale rates |
 | OPEN-90 | BodyCheck `share`: replace the model's estimate with published success rates and times for common tasks (climbing, swimming distance, lock-picking, first aid outcomes, shooting accuracy by distance, driving) |
 | OPEN-91 | weather outside the 28 US stations (other countries, climates); wind and humidity (WGEN gives rain, temperature and radiation only) |
-| OPEN-92 | emotion intensity and decay (OCC variables affecting intensity have no published scales); the audit does not yet flag characters using knowledge [KNOWS] does not give them |
+| OPEN-93 | battle casualties and duration: Lanchester fits to historical battles disagree on the law (Johnson 1990: an exponential law fits better than the square law); no rule chosen |
+| OPEN-92 | emotion intensity and decay (OCC variables affecting intensity have no published scales); the audit now flags a character stating or acting on a fact [KNOWS] gives only to others (§6.12) |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 17 species and the bird median; 60-dB ranges for 34 (frogs and toads as the bullfrog, 100 Hz–2.5 kHz). Missing lowest thresholds: pig, goat, sheep, elephant, frogs (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |
 | OPEN-77 | pain (`PAIN_RECEPTORS`): no measured mechanism found. Lier et al. 2021 (cold pressor): low pain leaves task accuracy unchanged, high pain lowers accuracy, reaction time unchanged; no effect size usable as a multiplier. Häske et al. 2024 (Sci Rep, n = 6365 emergency patients): severe pain 11.8 %, mean NRS 7.7 among them; gives how often pain is severe, not what it does |

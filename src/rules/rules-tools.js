@@ -11,6 +11,7 @@ import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js'
 import { drawName } from './names.js';
 import { bodySize } from './body-size.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
+import { BATTLE_YEARS, attackWinShare } from './battle.js';
 import { nowMinutes } from '../features/journal-calendar.js';
 import { gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -131,7 +132,7 @@ const norm = v => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' '
 const DECIDES = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
-    Weather: a => [a.station], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population] };
+    Weather: a => [a.station], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
 const decisionKey = (name, a) => DECIDES[name] && [name, ...DECIDES[name](a ?? {})].map(norm).join('|');
 function decisions() {
     const s = store(), turn = turnKey(SillyTavern.getContext().chat);
@@ -226,7 +227,7 @@ People
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
 World
-- A price, a wage or a bill → Price. A contagious disease → Disease. A spell → CastSpell. A random pick (a door, a coin, a card) → RollTheDice with kind "table".
+- A price, a wage or a bill → Price. A contagious disease → Disease. An attack by one army or unit on a defended position → Battle. A spell → CastSpell. A random pick (a door, a coin, a card) → RollTheDice with kind "table".
 Principles
 - A character's species and mass come from their tracker profile ("Name (N kg)", "Species:"); give species in the first rule-tool call for a character without one.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true.
@@ -552,6 +553,20 @@ export function registerRulesTools(enabled) {
         const n = Number(a.population) || 0;
         if (!z) return `No outbreak: too few people can still catch ${a.disease}; only scattered cases.`;
         return `Over the outbreak, ${Math.round(z * sus * n)} of ${n} people fall ill with ${a.disease}${z > 0.9 ? ', nearly everyone who could catch it' : ''}.`;
+    }));
+
+    tool('Battle', 'Decide whether an attack on a defended position succeeds, for a battle or engagement between armies or units from 1600 to 1991, before narrating its result. Code decides from the numbers on each side and the year.', {
+        attackers: { type: 'number', description: 'Soldiers in the attacking force' },
+        defenders: { type: 'number', description: 'Soldiers defending' },
+        year: { type: 'number', description: 'Story year' },
+        place: str('The position attacked, a few words'),
+    }, ['attackers', 'defenders', 'year'], a => run((st, rng) => {
+        const share = attackWinShare(Number(a.attackers), Number(a.defenders), Number(a.year));
+        if (share == null) return `Battle covers engagements from ${BATTLE_YEARS[0]} to ${BATTLE_YEARS[1]} with both sides' numbers given; decide this one with BodyCheck.`;
+        const r = a.attackers / a.defenders, where = a.place ? ` ${a.place}` : ' the position';
+        const odds = r < 1 ? 'outnumbered by the defenders' : r < 1.5 ? 'at roughly equal strength' : r < 3 ? 'outnumbering the defenders' : 'outnumbering the defenders many times over';
+        const era = a.year <= 1900 ? '; in battles of this era numbers decided little, and leadership, ground and morale decided the rest' : '';
+        return rng() < share ? `The attack on${where} succeeds, the attackers ${odds}${era}.` : `The attack on${where} fails, the attackers ${odds}${era}.`;
     }));
 
     tool('Weather', 'Decide the day\'s weather at a place in the United States from the story date and hour in [TIME], before describing it: rain or dry, rainfall, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
