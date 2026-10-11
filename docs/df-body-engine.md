@@ -600,6 +600,14 @@ Price returns what a good or a day's work costs in a European city, 1500–1913,
 
 Disease answers two questions. When symptoms start: incubation is log-normal, median × s*^z, z ~ N(0, 1) (Sartwell 1950, 1952, in Limpert, Stahel & Abbt 2001, BioScience 51:341, Table 2): chickenpox 14 days (s* 1.14), serum hepatitis 100 days (1.24), bacterial food poisoning 2.3 hours (1.48), salmonellosis 2.4 days (1.47), poliomyelitis 12.6 days (1.50), amoebic dysentery 21.4 days (2.11). Check (20 000 draws, chickenpox): median 14.0 days, 68 % between 12.3 and 16.0 (14 ×/ 1.14). How many fall ill: the final-size relation z = 1 − e^(−R0 s z) for a closed, mixing community, s the susceptible share; no outbreak unless R0 s > 1 (Kermack & McKendrick 1927). R0 at the middle of the ranges in Smieszek 2009 (Theor Biol Med Model 6:11, Table 1): chickenpox 9.5, measles 16, mumps 11, whooping cough 16. Influenza is left out: with R0 2–3 the equation gives about 89 % infected, far above observed attack rates (mixing is not homogeneous). Example: measles in 1 200 people with 80 % immune: 229 fall ill; with 95 % immune: no outbreak.
 
+### 6.16 Weather
+
+Weather gives the day's rain and temperatures at one of 28 US stations from the story date, by WGEN (Richardson & Wright 1984, "WGEN: a model for generating daily weather variables", USDA ARS-8). Rain: a wet or dry day by a first-order Markov chain (monthly P(W/W), P(W/D)), the amount from a gamma distribution (monthly alpha, beta; Table A1, 20 years of daily data 1951–70). Max and min temperature and solar radiation: residuals χ_i = A χ_{i−1} + B ε_i with A and B of eqs. 10–11, value = m (χ c + 1), the mean m and coefficient of variation c following u + C cos(0.0172 (day − T)) on wet or dry days (Tables 1–5). Each station's year is generated from 1 January with a seed from the chat and the year, so the same date always gives the same weather. Temperature through the day: lowest at 06:00, highest at 15:00, cosine between [ASSUMED]. Table A1 is an image scan: it was read by OCR twice (300 and 400 dpi) and the six values that differed between the passes or fell out of range were read off the scan (Albuquerque Feb P(W/W) 0.392 and P(W/D) 0.090, Atlanta Feb P(W/W) 0.490, Caribou Mar P(W/D) 0.315, Dodge City Dec P(W/D) 0.103, Boston Jan P(W/D) 0.333); Table 1 Grand Junction dry-day u read off the scan as 66.6 °F. Ely, Lander and Sault Ste. Marie have temperature tables but no readable rain row and are left out. Check (200 simulated years): Boston 1 125 mm of rain a year, January high 2.6 °C and low −5.0 °C, July high 27.6 °C; Phoenix 178 mm, 18.2 / 3.0 / 40.2 °C; Miami 1 502 mm; Bismarck 396 mm, January high −5.4 °C. These are close to the stations' published climate normals as recalled [not checked against a source here].
+
+### 6.17 Choices
+
+Choose draws a character's pick among options the narrator lists, each with the share of people in that character's place who would take it (the same labelled bands as BodyCheck), weighted random over all options (Mark 2009, Behavioral Mathematics for Game AI, ch. 16, "weighted random from all choices"), the probabilistic-choice view of McFadden's conditional logit (1974). Check: 80 % against 20 % gave 324 and 76 of 400 draws.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -642,6 +650,8 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Price | question (goods, daily wage, yearly cost of living), item, trade, quantity, city, year | scene facts | silver and labour-days from Allen 2001 (§6.14) |
 | NameCharacter | sex, birth year | story facts | first name by US frequency (§6.11) |
 | Disease | disease, population, immune share | story facts | incubation and outbreak size (§6.15) |
+| Weather | station | scene fact | rain and temperature by WGEN (§6.16) |
+| Choose | options and their shares | outcome guess, as labelled bands | drawn in code (§6.17) |
 | (no tool) | persuasion beyond small requests, morale and fleeing, task times, prices, who wins a negotiation | decided by the model | OPEN-89, OPEN-90 |
 
 ### 7.2 Defences against known model failures
@@ -723,7 +733,7 @@ What these show:
 | OPEN-88 | sound outdoors: ground and weather attenuation (ISO 9613-2 ground term), impulse temporal integration, species audiogram shapes per band; sight: contrast and camouflage, motion, species acuity, attention |
 | OPEN-89 | social judgments: lie detection with evidence or suspicion; persuasion, compliance and fear/morale rates |
 | OPEN-90 | BodyCheck `share`: replace the model's estimate with published success rates and times for common tasks (climbing, swimming distance, lock-picking, first aid outcomes, shooting accuracy by distance, driving) |
-| OPEN-91 | weather: WGEN (Richardson & Wright 1984, USDA ARS-8) daily rain, temperature and radiation for 139 US stations; its Table A1 (rain parameters) is an unreadable scan in the uploaded copy, so it needs a clean copy or OCR checked by hand |
+| OPEN-91 | weather outside the 28 US stations (other countries, climates); wind and humidity (WGEN gives rain, temperature and radiation only) |
 | OPEN-92 | emotion intensity and decay (OCC variables affecting intensity have no published scales); the audit does not yet flag characters using knowledge [KNOWS] does not give them |
 | OPEN-76 | penetration depth vs layer thickness: the DF wiki (DF2014:Weapon) states "Penetration is poorly understood"; no published reverse-engineering found. Layers are tested until momentum runs out |
 | OPEN-65 | hearing: lowest thresholds found for 17 species and the bird median; 60-dB ranges for 34 (frogs and toads as the bullfrog, 100 Hz–2.5 kHz). Missing lowest thresholds: pig, goat, sheep, elephant, frogs (Heffner papers 1980–1990, abstracts give ranges only; full texts not reachable). Missing: hearing of DF creatures without a real counterpart (they hear as humans) |

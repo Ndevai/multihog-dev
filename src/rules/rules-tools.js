@@ -6,6 +6,7 @@ import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock } from './knowledge.js';
 import { ABOUT, TYPES, occType } from './emotion.js';
 import { skyLight } from './sky.js';
+import { STATION_NAMES, simulateYear, hourTemp } from './weather.js';
 import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
 import { drawName } from './names.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
@@ -19,7 +20,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from '../state/dice-ledger.js';
 import { getSettings } from '../../state-manager.js';
 
-const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'Disease', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+const TOOLS = ['BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 
 function store() {
@@ -128,7 +129,7 @@ const norm = v => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' '
 const DECIDES = { BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
-    NewCharacter: a => [a.who], NameCharacter: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population] };
+    Weather: a => [a.station], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population] };
 const decisionKey = (name, a) => DECIDES[name] && [name, ...DECIDES[name](a ?? {})].map(norm).join('|');
 function decisions() {
     const s = store(), turn = turnKey(SillyTavern.getContext().chat);
@@ -209,14 +210,14 @@ Body
 - Any other action with an uncertain outcome → BodyCheck.
 - Injuries, blood loss and energy → BodyStatus.
 Surroundings
-- A change of climate, weather, clothing, water or air → BodyEnvironment.
+- The day's weather → Weather. A change of climate, weather, clothing, water or air → BodyEnvironment.
 - Time passing → PassTime; when it stops early, narrate the moment it reports.
 Senses
 - A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate.
 People
 - A character the story has not described → NewCharacter; their first name → NameCharacter.
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
-- A character's feelings about something → Appraise.
+- A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
 World
 - A price, a wage or a bill → Price. A contagious disease → Disease. A spell → CastSpell. A random pick (a door, a coin, a card) → RollTheDice with kind "table".
@@ -491,6 +492,35 @@ export function registerRulesTools(enabled) {
         const n = Number(a.population) || 0;
         if (!z) return `No outbreak: too few people can still catch ${a.disease}; only scattered cases.`;
         return `Over the outbreak, ${Math.round(z * sus * n)} of ${n} people fall ill with ${a.disease}${z > 0.9 ? ', nearly everyone who could catch it' : ''}.`;
+    }));
+
+    tool('Weather', 'Decide the day\'s weather at a place in the United States from the story date and hour in [TIME], before describing it: rain or dry, rainfall, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
+        station: { type: 'string', enum: STATION_NAMES, description: 'The weather station nearest the story\'s place, or the one with the most similar climate' },
+    }, ['station'], a => run(() => {
+        const t = nowMinutes();
+        if (t === null || t / 1440 <= 146097) return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
+        const date = new Date(0, 0, 1); date.setFullYear(1, 0, 1); date.setDate(date.getDate() + Math.floor(t / 1440));
+        const year = date.getFullYear(), doy = Math.min(365, Math.round((date - new Date(new Date(0, 0, 1).setFullYear(year, 0, 1))) / 864e5) + 1);
+        const days = simulateYear(a.station, doy, seededRng(`${store().salt}:weather:${a.station}:${year}`)), d = days.at(-1);
+        const hour = (t % 1440) / 60, r = x => Math.round(x);
+        const rain = d.wet ? `rain, ${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm over the day` : 'dry';
+        return `${a.station}, ${date.getDate()}/${date.getMonth() + 1}/${year}: ${rain}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(hourTemp(d, hour))} °C. Set BodyEnvironment air_c to the temperature now.`;
+    }));
+
+    // A character's pick among options is drawn, weighted by how many people in their place would take each one: weighted
+    // random from all choices (Mark 2009, Behavioral Mathematics for Game AI, ch. 16), probabilistic choice as in McFadden's
+    // conditional logit (1974); the narrator states the shares, code draws (models are biased random generators: Van
+    // Koevering & Kleinberg 2024).
+    tool('Choose', 'Decide what a character does when they have several real options (fight, flee or bargain; which road; whom to trust), before narrating it. Give each option with how many people in their place would take it; code draws one.', {
+        who: str('The character choosing'),
+        options: { type: 'array', items: { type: 'object', properties: { option: { type: 'string' }, share: { type: 'string', enum: SHARES } }, required: ['option', 'share'] }, description: 'Two or more options, each with the share of people in this character\'s place who would take it' },
+    }, ['who', 'options'], a => run((st, rng) => {
+        const opts = (a.options ?? []).filter(o => o?.option);
+        if (opts.length < 2) return 'Give two or more options.';
+        const w = opts.map(o => Math.max(0.01, shareOf(o.share))), total = w.reduce((x, y) => x + y, 0);
+        let u = rng() * total, pick = opts.at(-1);
+        for (let i = 0; i < opts.length; i++) if ((u -= w[i]) < 0) { pick = opts[i]; break; }
+        return `${a.who} chooses: ${pick.option}.`;
     }));
 
     tool('RecordFact', 'Fix a fact the moment the story establishes it (a place, an object, a person, a secret, an event) and record who knows it: those who saw it, heard it, read it or were told it. A recorded fact stays true for the rest of the story and appears in [KNOWS].', {
