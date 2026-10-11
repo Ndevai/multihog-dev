@@ -1546,7 +1546,8 @@ export function installInterceptor() {
                 // Hybrid mode uses live tool calls outside combat and the queue only
                 // while [COMBAT] is active. Queue-only mode continues to inject it for
                 // every response, preserving its existing behavior.
-                const injectRngQueue = shouldUseRngQueue(settings, isCombatActive(settings.currentMemo));
+                // With Custom Sysprompt Mode no section of Main explains the queue, so it is not sent.
+                const injectRngQueue = !settings.customSysprompt && shouldUseRngQueue(settings, isCombatActive(settings.currentMemo));
                 if (injectRngQueue) {
                     if (settings.rngQueueD20) {
                         const queue = turnRngQueue('d20', () => makeRngQueue(RNG_QUEUE_LEN, false));
