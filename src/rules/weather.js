@@ -26,6 +26,12 @@ function gamma(alpha, rng) {
     }
 }
 const fToC = f => (f - 32) * 5 / 9;
+// As in the WGEN program listing (Appendix C): residual normals beyond ±2.5 are redrawn, and coefficients of variation
+// below 0.06 are raised to 0.06.
+function residual(rng) {
+    for (;;) { const v = normal(rng); if (Math.abs(v) <= 2.5) return v; }
+}
+const cvFloor = c => Math.max(0.06, c);
 
 /** Days 1..`days` of one year at `station`: [{ wet, rainMm, tmaxC, tminC, radLy }]. */
 export function simulateYear(station, days, rng) {
@@ -35,12 +41,12 @@ export function simulateYear(station, days, rng) {
         const m = monthOf(day);
         wet = rng() < (wet ? s.pww[m] : s.pwd[m]);
         const rainIn = wet ? gamma(s.alpha[m], rng) * s.beta[m] : 0;
-        const e = [normal(rng), normal(rng), normal(rng)];
+        const e = [residual(rng), residual(rng), residual(rng)];
         x = [0, 1, 2].map(r => A[r][0] * x[0] + A[r][1] * x[1] + A[r][2] * x[2] + B[r][0] * e[0] + B[r][1] * e[1] + B[r][2] * e[2]);
         const w = wet ? 3 : 0;
-        const mx = harm(s.tmax[w], s.tmax[w + 1], s.tmax[w + 2], day), cx = harm(s.tmaxCv[w], s.tmaxCv[w + 1], s.tmaxCv[w + 2], day);
-        const mn = harm(s.tmin[0], s.tmin[1], s.tmin[2], day), cn = harm(s.tmin[3], s.tmin[4], s.tmin[5], day);
-        const mr = harm(s.rad[w], s.rad[w + 1], s.rad[w + 2], day), cr = harm(s.radCv[w], s.radCv[w + 1], s.radCv[w + 2], day);
+        const mx = harm(s.tmax[w], s.tmax[w + 1], s.tmax[w + 2], day), cx = cvFloor(harm(s.tmaxCv[w], s.tmaxCv[w + 1], s.tmaxCv[w + 2], day));
+        const mn = harm(s.tmin[0], s.tmin[1], s.tmin[2], day), cn = cvFloor(harm(s.tmin[3], s.tmin[4], s.tmin[5], day));
+        const mr = harm(s.rad[w], s.rad[w + 1], s.rad[w + 2], day), cr = cvFloor(harm(s.radCv[w], s.radCv[w + 1], s.radCv[w + 2], day));
         let tmax = mx * (x[0] * cx + 1), tmin = mn * (x[1] * cn + 1);
         if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
         out.push({ wet, rainMm: rainIn * 25.4, tmaxC: fToC(tmax), tminC: fToC(tmin), radLy: Math.max(0, mr * (x[2] * cr + 1)) });

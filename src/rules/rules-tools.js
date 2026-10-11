@@ -4,7 +4,7 @@ import { CONTACT_MATERIALS } from './thermal/exposure.js';
 import { drawPerson } from './census.js';
 import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock } from './knowledge.js';
-import { ABOUT, TYPES, occType } from './emotion.js';
+import { ABOUT, MATTERS, TYPES, occTypes } from './emotion.js';
 import { skyLight } from './sky.js';
 import { STATION_NAMES, simulateYear, hourTemp } from './weather.js';
 import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
@@ -43,6 +43,7 @@ function save() {
  * its own position, so a swipe of the reply keeps the tools' effects.
  */
 export function onRulesGenerationStarted(type) {
+    reshuffle(SHARES);
     const ctx = SillyTavern.getContext();
     if (!ctx.chatMetadata) return;
     const s = store();
@@ -156,18 +157,22 @@ const str = d => ({ type: 'string', description: d });
 // Option order is shuffled at each load: models prefer options by position and label rather than content (selection bias,
 // Zheng et al. 2024, ICLR; their remedy permutes the options).
 const shuffled = list => list.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+// Reshuffled in place before every generation, so the order changes per call rather than per load (Zheng et al. 2024).
+const reshuffle = list => { const o = shuffled(list); list.splice(0, list.length, ...o); };
 const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = v => typeof v === 'number' ? v : (parseFloat(v) || 0) / 100;
-// Intuitive estimates are not regressive enough; corrected = class share + ρ × (estimate − class share), with ρ ≈ τ = 2p − 1
-// from p, the share of pairs whose order one would predict correctly (Kahneman & Tversky 1977, "Intuitive prediction: biases
-// and corrective procedures", steps 1–5).
-const ORDERING = shuffled(['50% (no better than chance)', '60% of pairs', '70% of pairs', '80% of pairs', '90% of pairs']);
-function regressive(a) {
+// The chance for this attempt combines the narrator's estimate with the share of its reference class, asked for first:
+// an equal-weight average in log-odds. Averaging a model's forecast with a reference forecast beat the model's own updating
+// (Schoenegger et al. 2024, Sci Adv eadp1528); combine in log-odds rather than probability (Satopää et al. 2014;
+// Lichtendahl et al. 2020); the reference class comes before the estimate (Kahneman & Tversky 1977, steps 1–3). Language
+// models already hedge toward the middle (Halawi et al. 2024; Baron et al. 2012), so no further shrinking is applied.
+const logit = p => Math.log(p / (1 - p)), clamp01 = p => Math.min(0.995, Math.max(0.005, p));
+function combined(a) {
     const est = shareOf(a.share);
     if (a.base_share == null) return est;
-    const base = shareOf(a.base_share), rho = Math.max(0, 2 * ((parseFloat(a.ordering) || 50) / 100) - 1);
-    return base + rho * (est - base);
+    const z = (logit(clamp01(est)) + logit(clamp01(shareOf(a.base_share)))) / 2;
+    return 1 / (1 + Math.exp(-z));
 }
 const species = str('DF creature of this character, by name or id (human, wolf, horse, giant wolf); read when the character first appears. Default human.');
 const partArg = str('Body part by its name: e.g. head, throat, upper body, lower body, right upper arm, left hand, right lower leg, left eye.');
@@ -462,25 +467,30 @@ export function registerRulesTools(enabled) {
         const langs = [fromTracker(a.speaker).languages, fromTracker(a.listener).languages];
         const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort: a.effort ?? 'normal', noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out)) return out;
-        learn(st, a.message, [a.speaker, a.listener]);
+        learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
         return `${out} ${a.listener} now knows: ${a.message}`;
     }));
 
-    tool('Appraise', 'Decide which emotion a character feels about something, before narrating their feelings. The answers describe how the character sees it; the emotion type follows from them.', {
+    tool('Appraise', 'Decide which emotions a character feels about something, before narrating their feelings. The answers describe how the character sees it; the emotion types follow from them.', {
         who: str('Character feeling it'),
         about: { type: 'string', enum: ABOUT },
         target: str('The person, thing or event it is about, a few words'),
-        good: { type: 'boolean', description: 'The event is (or would be) good for the one it affects. For an action: not used.' },
-        likes_them: { type: 'boolean', description: 'For an event that affects someone else: the character likes that person' },
+        matters: { type: 'string', enum: MATTERS, description: 'How much it touches the character\'s goals, standards or tastes' },
+        good: { type: 'boolean', description: 'For an event or prospect: it is (or would be) good for the one it affects' },
+        wants_it_for_them: { type: 'boolean', description: 'For an event that affects someone else: the character wants that outcome for them' },
         came_true: { type: 'boolean', description: 'For a hoped-for or feared event: it came true' },
         praiseworthy: { type: 'boolean', description: 'For an action: the character judges it praiseworthy (false: blameworthy)' },
         result_for_them: { type: 'string', enum: ['good', 'bad', 'none'], description: 'For an action: what its result means for the character. Default none.' },
         appealing: { type: 'boolean', description: 'For a person or thing encountered: the character finds it appealing' },
-    }, ['who', 'about'], a => run(() => {
-        const type = occType({ about: a.about, good: a.good !== false, likes: a.likes_them !== false, cameTrue: a.came_true !== false,
+    }, ['who', 'about', 'matters'], a => run(() => {
+        const types = occTypes({ about: a.about, good: a.good !== false, wants: a.wants_it_for_them !== false, cameTrue: a.came_true !== false,
             praiseworthy: a.praiseworthy !== false, result: a.result_for_them ?? 'none', appealing: a.appealing !== false });
-        if (!type) return `Unknown appraisal "${a.about}". Use one of: ${ABOUT.join('; ')}.`;
-        return `${a.who} feels ${type}${a.target ? ` (${a.target})` : ''}. Words for this emotion: ${TYPES[type].words}; it is stronger ${TYPES[type].stronger}.`;
+        if (!types) return `Unknown appraisal "${a.about}". Use one of: ${ABOUT.join('; ')}.`;
+        if (a.matters === MATTERS[0]) return `${a.who} feels nothing in particular${a.target ? ` about ${a.target}` : ''}: below the threshold of an emotion.`;
+        const strong = a.matters === MATTERS[2];
+        const words = t => { const w = TYPES[t].words.split(', '), h = Math.ceil(w.length / 2); return (strong ? w.slice(h - 1) : w.slice(0, h)).join(', '); };
+        const [main, ...with_] = types;
+        return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.`;
     }));
 
     tool('Price', 'Decide what goods cost, what a day of work pays, or what a year of necessities costs, in a European city between 1500 and 1913, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
@@ -560,9 +570,9 @@ export function registerRulesTools(enabled) {
     // Koevering & Kleinberg 2024).
     tool('Choose', 'Decide what a character does when they have several real options (fight, flee or bargain; which road; whom to trust), before narrating it. Give each option with how many people in their place would take it; code draws one.', {
         who: str('The character choosing'),
-        options: { type: 'array', items: { type: 'object', properties: { option: { type: 'string' }, share: { type: 'string', enum: SHARES } }, required: ['option', 'share'] }, description: 'Two or more options, each with the share of people in this character\'s place who would take it' },
+        options: { type: 'array', items: { type: 'object', properties: { option: { type: 'string' }, share: { type: 'string', enum: SHARES } }, required: ['option', 'share'] }, description: 'Two or more distinct options (not two wordings of one), each with the share of people in this character\'s place who would take it' },
     }, ['who', 'options'], a => run((st, rng) => {
-        const opts = (a.options ?? []).filter(o => o?.option);
+        const seen = new Set(), opts = (a.options ?? []).filter(o => o?.option && !seen.has(o.option.toLowerCase().trim()) && seen.add(o.option.toLowerCase().trim()));
         if (opts.length < 2) return 'Give two or more options.';
         const w = opts.map(o => Math.max(0.01, shareOf(o.share))), total = w.reduce((x, y) => x + y, 0);
         let u = rng() * total, pick = opts.at(-1);
@@ -574,8 +584,9 @@ export function registerRulesTools(enabled) {
         fact: str('The fact, one short sentence'),
         known_by: { type: 'array', items: { type: 'string' }, description: 'Characters who know it' },
         common_knowledge: { type: 'boolean', description: 'Known to everyone in the setting (a public event, a famous place, a well-known custom)' },
+        how: str('How the knowers learned it, when they learned it the same way: saw it, heard it, read it, told by a named person, rumour'),
     }, ['fact'], a => run(st => {
-        const f = learn(st, a.fact, a.known_by ?? [], !!a.common_knowledge);
+        const f = learn(st, a.fact, a.known_by ?? [], !!a.common_knowledge, a.how ? Object.fromEntries((a.known_by ?? []).map(k => [k, a.how])) : {});
         return `Fact ${f.id} recorded: ${f.text} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
 
@@ -696,14 +707,13 @@ export function registerRulesTools(enabled) {
         reference_class: str('The wider class of attempts this one belongs to (e.g. "amateurs picking an old door lock")'),
         base_share: { type: 'string', enum: SHARES, description: 'How many attempts in that reference class succeed.' },
         share: { type: 'string', enum: SHARES, description: 'Your estimate for this attempt: how many people with this character\'s training succeed at it in these conditions, unhurt.' },
-        ordering: { type: 'string', enum: ORDERING, description: 'Given two such attempts, how often you would correctly say which one succeeds.' },
         uses: { type: 'array', items: { type: 'string', enum: [...Object.keys(FUNCTIONS), 'alertness'] }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing; alertness for tasks needing attention, judgment or quick reactions (driving, aiming, spotting, fine work).' },
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
         timed: { type: 'boolean', description: 'The task must be done within a time that leaves no slack (a lock picked before the guard turns, a sum shouted in a race)' },
         fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
         override: { type: 'boolean', description: 'Set only after BodyCheck named another tool and the task is genuinely not what that tool decides' },
-    }, ['who', 'task', 'reference_class', 'base_share', 'share', 'ordering'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), { ...a, share: regressive(a) }, rng)));
+    }, ['who', 'task', 'reference_class', 'base_share', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), { ...a, share: combined(a) }, rng)));
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
