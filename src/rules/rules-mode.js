@@ -253,20 +253,20 @@ export const RULES_ARCHETYPES = {
 };
 export const RULES_CYOA_EXAMPLES = {
     high: [
-        '1. 🗡️ Stab the lookout in the back while he faces the sea — [Strike: dagger stab, Competent]',
+        '1. 🗡️ Stab the lookout in the back while he faces the sea',
         '2. 💣 Throw a Smoke Bomb — [-1 Smoke Bomb]',
-        '3. 🥷 Slip along the hull\'s shadows — [Stealth (trained) 60%]',
+        '3. 🥷 Slip along the hull\'s shadows',
         '4. 🗣️ Shout a warning to the rest of your crew',
-        '5. 🛰️ Try to talk the hostile crew into standing down — [Persuasion (untrained) 25%]',
-        '6. 🔥 Cast a complexity-2 spell at the rigging — [64 PE]',
+        '5. 🛰️ Try to talk the hostile crew into standing down',
+        '6. 🔥 Set the rigging alight with a spell',
         '7. 🚪 Back away and hope the standoff cools down',
     ],
     low: [
-        '1. 🍺 Buy a round for the table and swap stories — [-20 GP]',
+        '1. 🍺 Buy a round for the table and swap stories',
         '2. 🗣️ "What happened to your face? That\'s the longest scar I\'ve seen."',
         '3. 🎵 Hum along to the tune the bard is playing',
-        '4. 📜 Show him the bounty notice from your pack — [Intimidation (trained) 70%] (evidence raises the chance)',
-        '5. ♣️ Join the card game at the corner table — [Bluff (untrained) 15%] (experienced players)',
+        '4. 📜 Show him the bounty notice from your pack',
+        '5. ♣️ Join the card game at the corner table',
         '6. 🚪 Excuse yourself and head back to your ship',
         '7. 🕖 Spend the evening drinking because why the hell not? — [5-hour timeskip]',
     ],

@@ -8207,7 +8207,8 @@ function organizeConnectionSettingsUI() {
         }));
         if (event_types.MESSAGE_SWIPED) eventSource.on(event_types.MESSAGE_SWIPED, id => { if (getSettings().rulesEngine) onRulesSwiped(id); });
         if (event_types.CHAT_CHANGED) eventSource.on(event_types.CHAT_CHANGED, () => {
-            const saved = SillyTavern.getContext().chatMetadata?.rtRulesEngine;
+            // Fork key: a chat's choice from before the fork (often off by default) is not carried over.
+            const saved = SillyTavern.getContext().chatMetadata?.rtRulesEngineFork;
             const s = getSettings();
             if (typeof saved === 'boolean' && saved !== !!s.rulesEngine) {
                 s.rulesEngine = saved;
@@ -11362,7 +11363,7 @@ RULES:
             $('#rpg_rules_question_pass').prop('disabled', !fresh.rulesEngine);
             // Per chat: the open chat remembers the choice; other chats keep theirs (new chats take the last one used).
             const ctx = SillyTavern.getContext();
-            if (ctx.chatMetadata) { ctx.chatMetadata.rtRulesEngine = fresh.rulesEngine; (ctx.saveMetadataDebounced || ctx.saveMetadata)?.(); }
+            if (ctx.chatMetadata) { ctx.chatMetadata.rtRulesEngineFork = fresh.rulesEngine; (ctx.saveMetadataDebounced || ctx.saveMetadata)?.(); }
             registerRulesTools(fresh.rulesEngine);
             registerDiceFunctionTool();
             saveSettings();

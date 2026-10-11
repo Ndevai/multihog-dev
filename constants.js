@@ -1183,13 +1183,15 @@ export function buildCyoaPrompt(config = {}, { rulesOn = false } = {}) {
     if (useXmlTag) reqLines.push('- Enclose all choices inside a single <choices> XML block.');
     if (useButtonTags) reqLines.push('- Wrap every single choice in a <button> tag.');
     if (useEmojis) reqLines.push('- Prefix each choice text with a fitting emoji.');
-    reqLines.push('- Not all choices should always have a roll, though all choices *can* have a roll; high-stakes situations/problem-solving should utilize them more. Downtime needs less rolls.');
-    reqLines.push('- Not every looking around needs to be an investigation check, but investigating something specific should be.');
+    if (!rulesOn) {
+        reqLines.push('- Not all choices should always have a roll, though all choices *can* have a roll; high-stakes situations/problem-solving should utilize them more. Downtime needs less rolls.');
+        reqLines.push('- Not every looking around needs to be an investigation check, but investigating something specific should be.');
+    }
     reqLines.push('- When a site map is attached: do not invent obstacles in choices (locked doors, traps, barricades, sealed passages, etc.) unless they already exist on that map. Offering such a check makes the obstacle real if chosen — keep choices map-real.');
     reqLines.push('- A resource must be >0 (not depleted) in TRACKER STATE 0 (Current) to be eligible for a choice.');
     reqLines.push('- Vary approaches across turns — avoid repeating the same stats, traits, abilities, or narrative actions as the previous turn.');
     reqLines.push(rulesOn
-        ? '- Wrap mechanical details (checks with training and chance, strikes, energy and item costs) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained) 25%]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.'
+        ? '- Write each choice as the action alone: the rule engine decides whether it works after the player picks it. Brackets after an em dash hold only an item the action uses up or a time skip, e.g. — [-1 Smoke Bomb]. Prefix/trait tags at the start of a choice also use brackets.'
         : '- Wrap mechanical details (rolls, modifiers, DC/AC targets, resource costs, uses remaining) in square brackets, typically after an em dash, e.g. — [Persuasion (untrained, CHA +0) DC 13]. Prefix/trait tags at the start of a choice also use brackets but are separate from roll brackets.');
 
     const intro = `[END OF OUTPUT REQUIREMENT]\n${reqLines.join('\n')}`;
