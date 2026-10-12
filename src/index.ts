@@ -16,6 +16,7 @@ import { removeWithDescendants, outcomeLine, bornIn, type Outcome } from './rule
 import { firstYear, earlier } from './rules/history.js';
 import { seededRng } from './rules/body-engine.js';
 import { loadColex } from './rules/colex.js';
+import { loadLanguageYears } from './rules/languages.js';
 
 const NAME = 'rules-engine', KEY = 'rules_engine';
 // SillyTavern extension_prompt_types.IN_CHAT and extension_prompt_roles.SYSTEM (public/script.js).
@@ -308,7 +309,7 @@ function wireEvents(): void {
 
 (async () => {
     registerRulesTools(settings().enabled);
-    void loadColex();
+    void loadColex(); void loadLanguageYears();
     wireEvents();
     registerRulesStatsCommand();
     registerRulesEvalCommand(send);

@@ -63,8 +63,8 @@ export function whisperedAs(word: string, code: string): { concept: string; rate
 export interface Shared { word: string; also: string[] }
 
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
-export function sharedIn(message: string, language: string, max = 3, whispered = false): Shared[] {
-    const code = languageCode(language);
+export function sharedIn(message: string, language: string, max = 3, whispered = false, list?: string | null): Shared[] {
+    const code = list === undefined ? languageCode(language) : list;
     if (!DATA || !code) return [];
     const w = key(message).split(' ').filter(Boolean), used = new Set<number>(), out: Shared[] = [];
     for (let n = 3; n >= 1; n--) for (let i = 0; i + n <= w.length && out.length < max; i++) {

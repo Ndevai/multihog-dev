@@ -44,8 +44,8 @@ export function whisperedAs(word, code) {
     return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate }));
 }
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
-export function sharedIn(message, language, max = 3, whispered = false) {
-    const code = languageCode(language);
+export function sharedIn(message, language, max = 3, whispered = false, list) {
+    const code = list === undefined ? languageCode(language) : list;
     if (!DATA || !code)
         return [];
     const w = key(message).split(' ').filter(Boolean), used = new Set(), out = [];

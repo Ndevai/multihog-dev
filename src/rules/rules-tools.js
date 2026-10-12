@@ -28,6 +28,7 @@ import { CURRENT_BOOK } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
 import { sharedIn, sharedWith, whisperedAs, languageCode } from './colex.js';
+import { resolveLanguage, stageKey } from './languages.js';
 import { str, checkArgs } from './tool-schema.js';
 export const TOOLS = ['Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
@@ -666,6 +667,11 @@ export function registerRulesTools(enabled) {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (!s.p || !l.p)
             return s.error || l.error;
+        // A language is the stage spoken in the story's year; one not spoken then is refused (languages.ts).
+        const year = storyYear(st);
+        const late = [...a.speaker_languages ?? [], ...a.listener_languages ?? []].map(x => resolveLanguage(x, year, CURRENT_BOOK).refused).find(Boolean);
+        if (late)
+            return `Nothing recorded: ${late}.`;
         if (a.speaker_languages?.length)
             s.p.languages = a.speaker_languages.map(x => x.trim().toLowerCase());
         if (a.listener_languages?.length)
@@ -678,7 +684,7 @@ export function registerRulesTools(enabled) {
         }
         // A speaker without voice whispers at every effort: a whisper, or a loud whisper when they raise it.
         const effort = s.p.voice === 'whisper' ? (!a.effort || a.effort === 'normal' || a.effort === 'whisper' ? 'whisper' : 'loud whisper') : a.effort ?? 'normal';
-        const langs = [s.p.languages, l.p.languages];
+        const langs = [s.p.languages?.map(x => stageKey(x, year)), l.p.languages?.map(x => stageKey(x, year))];
         const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out))
             return out;
@@ -688,8 +694,9 @@ export function registerRulesTools(enabled) {
         const whispers = effort === 'whisper' || effort === 'loud whisper';
         const spoken = whispers ? (s.p.languages ?? ['english']).find(x => !l.p.languages?.length || l.p.languages.includes(x))
             : (s.p.languages ?? []).find(x => x !== 'english' && (!l.p.languages?.length || l.p.languages.includes(x)));
-        const shared = spoken ? sharedIn(a.message, spoken, 3, whispers) : [];
-        const one = shared.length ? ` In ${spoken}${whispers ? ', whispered,' : ''} a word can also be taken as: ${shared.map(x => `"${x.word}" (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
+        const stage = spoken ? resolveLanguage(spoken, year, CURRENT_BOOK) : null;
+        const shared = spoken ? sharedIn(a.message, spoken, 3, whispers, stage.list) : [];
+        const one = shared.length ? ` In ${stage.label}${whispers ? ', whispered,' : ''} a word can also be taken as: ${shared.map(x => `"${x.word}" (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
         return `${out} ${a.listener} now knows: ${a.message.replace(/[.!?]?$/, '.')}${one}`;
     }));
     // A listener takes a word that has several meanings in the spoken language in the one the scene supports; when the scene
@@ -703,9 +710,9 @@ export function registerRulesTools(enabled) {
         word: str('The English word as the speaker meant it, as Communicate names it'),
         fits: { type: 'array', items: { type: 'string' }, description: 'Every meaning, from the word and those Communicate lists, that what the listener knows and sees in the scene leaves possible' },
     }, ['speaker', 'listener', 'language', 'word', 'fits'], a => run((st, rng) => {
-        const code = languageCode(a.language);
+        const list = resolveLanguage(a.language, storyYear(st), CURRENT_BOOK).list, code = list === undefined ? languageCode(a.language) : list;
         if (!code)
-            return `No word list for ${a.language}; ${a.listener} takes "${a.word}" as meant.`;
+            return `No word list for ${a.language} in this period; ${a.listener} takes "${a.word}" as meant.`;
         // Weights: the meaning intended 1; another meaning of the same word 1 (equal chance); a word the whisper may be heard
         // as, its odds r/(1 − r), so that with one such word it is heard so with share r.
         const meant = a.word.toLowerCase(), weight = new Map([[meant, 1]]);
@@ -919,6 +926,7 @@ export function registerRulesTools(enabled) {
         in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world: real history for the date, plus [WORLD] (orcs in a world whose book has orcs; a revolver after 1836). False: the claim does not hold.' },
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
+        language: str('For "something the character can do" when it is speaking a language: the language as named ("japanese", "modern japanese", "old mandarin")'),
         quantity: { type: 'number', description: 'For "something the character has": how many. Default 1.' },
         reference_class: str('The wider class this claim belongs to (e.g. "travellers in 1850 England carrying a pistol")'),
         base_share: { type: 'string', enum: SHARES, description: 'How often claims of that class hold in this kind of setting.' },
@@ -928,9 +936,10 @@ export function registerRulesTools(enabled) {
             account(st, a.who);
         // A thing not yet invented at the story's date, or never made in this world, cannot be had (history.ts).
         const late = a.kind === 'something the character has' && a.item ? anachronism(a.item, storyYear(st), CURRENT_BOOK) : '';
-        if (late) {
+        const tongue = a.kind === 'something the character can do' && a.language ? resolveLanguage(a.language, storyYear(st), CURRENT_BOOK).refused : '';
+        if (late || tongue) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
-            return `${a.claim}: does not hold; ${late}. ${a.who} acts on it and meets the world as it is; narrate that.`;
+            return `${a.claim}: does not hold; ${late || tongue}. ${a.who} acts on it and meets the world as it is; narrate that.`;
         }
         if (!a.in_world) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
@@ -956,6 +965,11 @@ export function registerRulesTools(enabled) {
         learn(st, claim, [a.who], false, { [a.who]: 'their own' });
         if (a.kind === 'something the character has' && a.item)
             give(st, a.who, a.item, Math.max(1, Math.round(a.quantity ?? 1)));
+        if (a.kind === 'something the character can do' && a.language) {
+            const p = whoAny(st, a.who).p;
+            if (p && !p.languages?.includes(a.language.trim().toLowerCase()))
+                p.languages = [...p.languages ?? [], a.language.trim().toLowerCase()];
+        }
         return `${a.claim}: holds. Recorded.`;
     }));
     tool('Transfer', 'Record an item changing hands, entering or leaving the story, once the story has it happen: given, sold, bought, lent, returned, stolen, taken by force, found, made, lost, used up, dropped. Whether it happens comes first from the tool that decides how (SocialResponse or Choose for an agreement, Look for a theft that may be seen, HoldOn or BodyStrike for a struggle, Price for what it costs). Returns the new holder and, when it differs, the owner; [HAS] then shows both.', {
