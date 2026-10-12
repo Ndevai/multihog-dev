@@ -26,7 +26,7 @@ export const ENTRY: Props = {
     radius_km: { type: 'number', description: 'Radius of its area, km. Default 300.' },
     cause: str('How it came to be, one sentence: the stated cause every reached area follows from'),
     reaches: { type: 'array', items: { type: 'string', enum: DOMAINS }, description: 'Areas of life the cause reaches; every other area stays as in real history' },
-    reflections: { type: 'array', items: { type: 'string' }, description: '1–7 facts everyone in the world knows that show it, each in a reached area, one short sentence each' },
+    reflections: { type: 'array', items: { type: 'string' }, description: '1–15 facts everyone in the world knows that show it, each in a reached area, one short sentence each' },
     species: str('For a creature or a people: the DF creature its body is (troll, ogre, goblin, giant, wolf)'),
     speaks: { type: 'boolean', description: 'For a creature or a people: it talks' },
     active: { type: 'string', enum: ACTIVE },
@@ -43,7 +43,7 @@ export function checkEntry(raw: Record<string, unknown>): { entry?: Entry; error
     if (!args.worldwide && (args.lat == null || args.lon == null)) errors.push('give lat and lon of its area, or worldwide: true');
     if (args.lat != null && Math.abs(Number(args.lat)) > 90 || args.lon != null && Math.abs(Number(args.lon)) > 180) errors.push('lat is −90 to 90, lon −180 to 180');
     const n = (args.reflections as string[] | undefined)?.length ?? 0;
-    if (n && (n < 1 || n > 7)) errors.push(`reflections: give 1 to 7, not ${n}`);
+    if (n && (n < 1 || n > 15)) errors.push(`reflections: give 1 to 15, not ${n}`);
     return errors.length ? { errors } : { entry: args as Entry, errors };
 }
 

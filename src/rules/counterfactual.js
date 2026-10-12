@@ -8,7 +8,9 @@
 // multiples (median 1 year; 90 % within 25 years).
 import { INVENTIONS, MULTIPLES, GAPS } from './data/inventions.js';
 import { WD_INVENTIONS, PEOPLE } from './data/wikidata-inventions.js';
+import { PARENTS } from './data/wikidata-parents.js';
 export const MEAN_INVENTORS = 1.3;
+const CLOSE_LOSS = 0.122;
 const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 // Both lists, one row per invention (same name and year once).
 const ALL = (() => {
@@ -42,10 +44,14 @@ function multipleOf(person, what, year) {
     return MULTIPLES.find(p => { const f = fold(p); return f.includes(surname) && words.some(w => f.includes(w)) && near(p); }) ?? null;
 }
 /** Each invention of `name` from `year` on: made anyway (a known multiple), made later, or never made, drawn once. */
-export function removePerson(name, year, rng) {
+export function removePerson(name, year, rng, gone = new Set([fold(name)])) {
     return inventionsOf(name, year).map(inv => {
-        const others = inv.by.filter(p => fold(p) !== fold(name));
-        if (others.length)
+        // A co-inventor goes on without them: collaborators of 112 scientists who died suddenly lost 5–8 % of their
+        // quality-adjusted output for good, those closest in field 12.2 % (Azoulay, Graff Zivin & Wang 2010, Q J Econ
+        // 125:549; NBER w14577 Table and text). The joint work is still done with probability 1 − 0.122 [ASSUMED: output
+        // loss read as the chance of not reaching this result]; otherwise it falls to anyone else, as for a sole inventor.
+        const others = inv.by.filter(p => fold(p) !== fold(name) && !gone.has(fold(p)));
+        if (others.length && rng() >= CLOSE_LOSS)
             return { what: inv.what, year: inv.year, result: 'made by another inventor', newYear: inv.year };
         const para = multipleOf(name, inv.what, inv.year);
         if (para) {
@@ -56,6 +62,32 @@ export function removePerson(name, year, rng) {
             return { what: inv.what, year: inv.year, result: 'never made' };
         return { what: inv.what, year: inv.year, result: 'made later by someone else', newYear: inv.year + GAPS[Math.floor(rng() * GAPS.length)] };
     });
+}
+/**
+ * A person gone from `year` and everyone who therefore never lives: a child whose recorded parent is gone before the child's
+ * conception (born more than a year after; year resolution), then that child's children in turn. Each person with the year
+ * they are gone from (a child: their birth year).
+ */
+export function goneWith(name, year) {
+    const out = [{ name, from: year }], seen = new Set([fold(name)]);
+    for (let i = 0; i < out.length; i++) {
+        const p = out[i];
+        for (const [child, [born, parents]] of Object.entries(PARENTS)) {
+            if (born == null || seen.has(fold(child)) || born <= p.from + 1 || !parents.some(q => fold(q) === fold(p.name)))
+                continue;
+            seen.add(fold(child));
+            out.push({ name: child, from: born, parent: p.name });
+        }
+    }
+    return out;
+}
+/** Everyone gone with `name` from `year`, and what becomes of each one's inventions, drawn once. */
+export function removeWithDescendants(name, year, rng) {
+    const gone = goneWith(name, year), names = new Set(gone.map(g => fold(g.name)));
+    return {
+        people: gone.slice(1).map(g => `${g.name} is never born (a child of ${g.parent}).`),
+        outcomes: gone.flatMap(g => removePerson(g.name, g.from, rng, names)),
+    };
 }
 /** One sentence per outcome, for the world book. */
 // Discoveries and inventions share the lists, so the wording covers both. "Never" is within the history so far: Simonton's

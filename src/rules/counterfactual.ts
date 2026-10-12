@@ -8,9 +8,11 @@
 // multiples (median 1 year; 90 % within 25 years).
 import { INVENTIONS, MULTIPLES, GAPS } from './data/inventions.js';
 import { WD_INVENTIONS, PEOPLE } from './data/wikidata-inventions.js';
+import { PARENTS } from './data/wikidata-parents.js';
 import type { Rng } from './types.js';
 
 export const MEAN_INVENTORS = 1.3;
+const CLOSE_LOSS = 0.122;
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 // Both lists, one row per invention (same name and year once).
@@ -45,10 +47,14 @@ function multipleOf(person: string, what: string, year: number): string | null {
 export interface Outcome { what: string; year: number; result: 'made by another inventor' | 'made later by someone else' | 'never made'; newYear?: number }
 
 /** Each invention of `name` from `year` on: made anyway (a known multiple), made later, or never made, drawn once. */
-export function removePerson(name: string, year: number, rng: Rng): Outcome[] {
+export function removePerson(name: string, year: number, rng: Rng, gone: Set<string> = new Set([fold(name)])): Outcome[] {
     return inventionsOf(name, year).map(inv => {
-        const others = inv.by.filter(p => fold(p) !== fold(name));
-        if (others.length) return { what: inv.what, year: inv.year, result: 'made by another inventor', newYear: inv.year };
+        // A co-inventor goes on without them: collaborators of 112 scientists who died suddenly lost 5–8 % of their
+        // quality-adjusted output for good, those closest in field 12.2 % (Azoulay, Graff Zivin & Wang 2010, Q J Econ
+        // 125:549; NBER w14577 Table and text). The joint work is still done with probability 1 − 0.122 [ASSUMED: output
+        // loss read as the chance of not reaching this result]; otherwise it falls to anyone else, as for a sole inventor.
+        const others = inv.by.filter(p => fold(p) !== fold(name) && !gone.has(fold(p)));
+        if (others.length && rng() >= CLOSE_LOSS) return { what: inv.what, year: inv.year, result: 'made by another inventor', newYear: inv.year };
         const para = multipleOf(name, inv.what, inv.year);
         if (para) {
             const ys = [...new Set((para.match(/\b(1[5-9]\d\d|20[0-2]\d)\b/g) ?? []).map(Number))].filter(y => y !== inv.year).sort((a, b) => a - b);
@@ -57,6 +63,33 @@ export function removePerson(name: string, year: number, rng: Rng): Outcome[] {
         if (rng() < Math.exp(-MEAN_INVENTORS)) return { what: inv.what, year: inv.year, result: 'never made' };
         return { what: inv.what, year: inv.year, result: 'made later by someone else', newYear: inv.year + GAPS[Math.floor(rng() * GAPS.length)] };
     });
+}
+
+/**
+ * A person gone from `year` and everyone who therefore never lives: a child whose recorded parent is gone before the child's
+ * conception (born more than a year after; year resolution), then that child's children in turn. Each person with the year
+ * they are gone from (a child: their birth year).
+ */
+export function goneWith(name: string, year: number): { name: string; from: number; parent?: string }[] {
+    const out: { name: string; from: number; parent?: string }[] = [{ name, from: year }], seen = new Set([fold(name)]);
+    for (let i = 0; i < out.length; i++) {
+        const p = out[i];
+        for (const [child, [born, parents]] of Object.entries(PARENTS)) {
+            if (born == null || seen.has(fold(child)) || born <= p.from + 1 || !parents.some(q => fold(q) === fold(p.name))) continue;
+            seen.add(fold(child));
+            out.push({ name: child, from: born, parent: p.name });
+        }
+    }
+    return out;
+}
+
+/** Everyone gone with `name` from `year`, and what becomes of each one's inventions, drawn once. */
+export function removeWithDescendants(name: string, year: number, rng: Rng): { people: string[]; outcomes: Outcome[] } {
+    const gone = goneWith(name, year), names = new Set(gone.map(g => fold(g.name)));
+    return {
+        people: gone.slice(1).map(g => `${g.name} is never born (a child of ${g.parent}).`),
+        outcomes: gone.flatMap(g => removePerson(g.name, g.from, rng, names)),
+    };
 }
 
 /** One sentence per outcome, for the world book. */
