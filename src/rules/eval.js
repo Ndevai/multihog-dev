@@ -70,9 +70,13 @@ export function scoreScene(scene, calls) {
         got: calls.map(c => c.tool), matched, extra, checks, passed, failed, invalid };
 }
 /** Runs the scenes through `send` (the question pass's model) one after another. */
-export async function runEval(send, scenes = EVAL_SCENES, onProgress) {
+export async function runEval(send, scenes = EVAL_SCENES, onProgress, stopped = () => false) {
     const results = [];
     for (const [i, s] of scenes.entries()) {
+        if (stopped()) {
+            scenes = scenes.slice(0, i);
+            break;
+        }
         const chat = [{ name: 'NARRATOR', mes: s.context }, { is_user: true, name: 'PLAYER', mes: s.player }];
         let text = '', failedRequest = false;
         try {
@@ -126,12 +130,14 @@ export function registerRulesEvalCommand(send) {
         name: 'rules-eval',
         helpString: 'Score the rules question pass on built-in scenes with the State Model connection: tool precision and recall, deciding arguments, quiet when nothing is in doubt. Optional: number of scenes.',
         returns: 'the report as text',
-        callback: async (_args, value) => {
+        callback: async (args, value) => {
             if (!REGISTRY.size)
                 return 'Turn the rules engine on first.';
             const n = Math.max(1, Math.min(EVAL_SCENES.length, Number(value) || EVAL_SCENES.length));
             const r = await runEval(send, EVAL_SCENES.slice(0, n), (done, total) => { if (done % 5 === 0 && done < total)
-                toast?.info(`${done} of ${total} scenes`, 'Rules eval'); });
+                toast?.info(`${done} of ${total} scenes`, 'Rules eval'); }, 
+            // The stop button beside the chat box ends the run after the scene in progress; the score covers the scenes done.
+            () => !!args?._abortController?.signal?.aborted);
             const text = reportText(r);
             console.log('[Rules eval]', r);
             // The score stays: a notice until tapped, and a comment in the chat that is never sent to the model.
