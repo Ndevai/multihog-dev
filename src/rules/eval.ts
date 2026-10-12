@@ -6,8 +6,9 @@ import { REGISTRY } from './rules-tools.js';
 import { checkArgs } from './tool-schema.js';
 import { EVAL_SCENES, EVAL_TRACKER, type Check, type EvalScene } from './eval-scenes.js';
 
-// Extra calls never counted against a scene: recording a fact the scene shows is never wrong.
-const ALWAYS_ALLOWED = new Set(['RecordFact']);
+// Extra calls never counted against a scene: recording a fact the scene shows, or fixing who an undescribed person is,
+// takes an invention away from the narrator and is never wrong.
+const ALWAYS_ALLOWED = new Set(['RecordFact', 'NewCharacter']);
 const fold = (v: unknown) => String(v ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 function at(args: Record<string, unknown>, path: string): unknown {
