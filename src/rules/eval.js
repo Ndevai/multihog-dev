@@ -130,11 +130,14 @@ export function registerRulesEvalCommand(send) {
             if (!REGISTRY.size)
                 return 'Turn the rules engine on first.';
             const n = Math.max(1, Math.min(EVAL_SCENES.length, Number(value) || EVAL_SCENES.length));
-            const r = await runEval(send, EVAL_SCENES.slice(0, n), (done, total) => { if (done % 10 === 0 && done < total)
+            const r = await runEval(send, EVAL_SCENES.slice(0, n), (done, total) => { if (done % 5 === 0 && done < total)
                 toast?.info(`${done} of ${total} scenes`, 'Rules eval'); });
             const text = reportText(r);
             console.log('[Rules eval]', r);
-            toast?.info(text.split('\n')[0], 'Rules eval', { timeOut: 30000 });
+            // The score stays: a notice until tapped, and a comment in the chat that is never sent to the model.
+            toast?.info(text.split('\n')[0], 'Rules eval', { timeOut: 0, extendedTimeOut: 0 });
+            const run = ctx.executeSlashCommandsWithOptions;
+            await run?.(`/comment ${text.replace(/\|/g, '\\|').replace(/\{\{/g, '{ {')}`).catch(e => console.warn('[Rules eval] comment failed:', e));
             return text;
         },
     }));
