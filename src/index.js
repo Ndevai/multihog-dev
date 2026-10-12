@@ -9,6 +9,8 @@ import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
 import { parseStoryTime, formatStoryTime } from './rules/clock.js';
 import { sendModel } from './send.js';
 import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM } from './rules/world.js';
+import { removePerson, outcomeLine } from './rules/counterfactual.js';
+import { seededRng } from './rules/body-engine.js';
 const NAME = 'rules-engine', KEY = 'rules_engine';
 // SillyTavern extension_prompt_types.IN_CHAT and extension_prompt_roles.SYSTEM (public/script.js).
 const IN_CHAT = 1, SYSTEM = 0;
@@ -56,7 +58,6 @@ async function saveBook(book) {
 }
 /** Drafts an entry from one line, shows it for editing, and saves what the user approves. */
 async function addEntry(line) {
-    const c = ctx();
     let draft = null;
     try {
         draft = parseEntry(await send(FILL_SYSTEM, `Line: ${line}\nStory setting: ${[storyState(), castBlock()].filter(Boolean).join('\n') || 'not given'}`));
@@ -64,7 +65,25 @@ async function addEntry(line) {
     catch (e) {
         console.warn('[Rules engine] world fill failed:', e);
     }
-    let text = JSON.stringify(draft ?? { what: line }, null, 1);
+    return approveEntry(draft ?? { what: line });
+}
+/** A person gone from history from `year` on: code draws, once, what becomes of each of their inventions; the user approves. */
+async function removePersonEntry(arg) {
+    const m = arg.match(/^(.+?)[,;]\s*(-?\d{1,4})\s*$/);
+    if (!m)
+        return 'Give a name and a year: /world-without Karl Benz, 1880';
+    const [name, year] = [m[1].trim(), Number(m[2])];
+    const salt = ctx().chatMetadata?.rulesEngine?.salt ?? '';
+    const outcomes = removePerson(name, year, seededRng(`${salt}:without:${name.toLowerCase()}:${year}`));
+    if (!outcomes.length)
+        return `No invention by "${name}" from ${year} on in the list (213 inventions with a named inventor, from Wikipedia's timeline of inventions).`;
+    return approveEntry({ what: `${name} gone from ${year}`, kind: 'event', since: year, worldwide: true,
+        cause: `${name} died or never lived before ${year}.`, reaches: ['daily life'], reflections: outcomes.slice(0, 7).map(outcomeLine) });
+}
+/** Shows an entry for editing until it passes the check or is cancelled; saves it. */
+async function approveEntry(draft) {
+    const c = ctx();
+    let text = JSON.stringify(draft, null, 1);
     for (;;) {
         const edited = await c.callGenericPopup('<h3>World book entry</h3><small>Edit and press OK to save; Cancel discards it.</small>', c.POPUP_TYPE.INPUT, text, { wide: true, large: true, rows: 18 });
         if (typeof edited !== 'string' || !edited.trim())
@@ -119,6 +138,10 @@ function registerWorldCommands() {
     c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
         name: 'world-add', helpString: 'Add to this card\'s world book: /world-add orcs in London since the 900s. The model drafts the entry; you edit and approve it.',
         callback: async (_a, v) => String(v ?? '').trim() ? addEntry(String(v).trim()) : 'Give a line: /world-add orcs in London since the 900s.',
+    }));
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'world-without', helpString: 'A person gone from history from a year on: /world-without Karl Benz, 1880. Each of their inventions after that year is made by another inventor, made later, or never made (drawn once, from the rates of independent invention); you edit and approve the entry.',
+        callback: async (_a, v) => removePersonEntry(String(v ?? '')),
     }));
     c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
         name: 'world-list', helpString: 'Show this card\'s world book.',

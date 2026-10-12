@@ -29,7 +29,7 @@ Without the question pass the narrator gets the 29 rule tools and calls them its
 ## Commands
 
 - `/rules-time [time]`: show or set the story time.
-- `/world-add <line>`: add to this card's world book ("orcs in London since the 900s"); the model drafts the entry, you edit and approve it. `/world-list` shows the book. The panel has the same, with a remove button per entry.
+- `/world-add <line>`: add to this card's world book ("orcs in London since the 900s"); the model drafts the entry, you edit and approve it. `/world-without Karl Benz, 1880` removes a person from history from that year: each of their inventions is made by another inventor, made later, or never made, drawn from the published rates of independent invention. `/world-list` shows the book. The panel has the same, with a remove button per entry.
 - `/rules-stats`: how many replies the rule check read and flagged in this chat.
 - `/rules-eval [n]`: scores the question pass on built-in scenes (tool precision and recall, deciding arguments).
 
