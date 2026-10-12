@@ -21,9 +21,11 @@ import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } fr
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
+import { PROBLEMS, solveShare } from './thinking.js';
+import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
 import { str, checkArgs } from './tool-schema.js';
-export const TOOLS = ['Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
@@ -142,7 +144,7 @@ export function plain(out) {
 // A decision tool called again in one turn for the same actor and act returns its first result, like RollTheDice's ledger,
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = (v) => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
-const DECIDES = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
+const DECIDES = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], WorkOut: a => [a.who, a.problem], Sickness: a => [a.who, a.situation], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
     Weather: a => [a.place], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
@@ -203,7 +205,7 @@ function recorded(name) {
 }
 /** The tracked person `name`; on first appearance species and mass come from the arguments, else what the engine recorded, else human. */
 // Names differing by one letter (Mara, Mary) from a recorded one, in names of 4 letters or more, are taken for a misspelling
-// unless the call gives a species, which starts a separate record.
+// unless the call gives a species, which starts a separate record. Numbered labels (stranger 1, stranger 2) are separate people.
 function editDistance(a, b) {
     const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
     for (let j = 1; j <= b.length; j++)
@@ -220,7 +222,7 @@ function who(st, rawName, speciesArg, massArg) {
     const names = Object.keys(st.people ?? {});
     // The same name in other case or spacing is the same person.
     const name = names.find(n => key(n) === key(rawName)) ?? rawName.trim();
-    const near = !st.people?.[name] && !speciesArg && name.length >= 4 ? names.find(n => n.length >= 4 && editDistance(key(n), key(name)) === 1) : undefined;
+    const near = !st.people?.[name] && !speciesArg && name.length >= 4 ? names.find(n => n.length >= 4 && editDistance(key(n), key(name)) === 1 && key(n).replace(/\d+/g, '#') !== key(name).replace(/\d+/g, '#')) : undefined;
     if (near)
         return { error: `No record of "${name}"; ${near} is on record. Call again with ${near}, or give species to start a separate character.` };
     const known = st.people?.[name];
@@ -272,6 +274,7 @@ People
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
+- A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness.
 - An item changing hands, found, made, lost or used up → Transfer, once the story has it happen.
 - A player's message stating something the story has not established about their own character (what they are, an item they have, something they can do or did) → Claim, before the actions that rely on it.
 - Give a character's species, and their mass when the story states it, in the first rule-tool call about them; the engine keeps both after that.
@@ -845,6 +848,34 @@ export function registerRulesTools(enabled) {
         to: str('Who has it now; leave out when it leaves the story (lost, used up, dropped out of reach, sold away)'),
         how: { type: 'string', enum: HOW },
     }, ['item', 'how'], a => run(st => transfer(st, a)));
+    // The data give the share of students who solve such a problem in the time; the estimate for this character is
+    // combined with it in log-odds, as BodyCheck combines a base share, and the body state applies (alertness).
+    tool('WorkOut', 'Decide whether a character works something out in the time they have, before narrating it: a riddle, a trick, a code, a link between clues, a sum, a plan.', {
+        who: str('Character thinking'),
+        problem: str('The problem in a few words'),
+        kind: { type: 'string', enum: PROBLEMS },
+        seconds: { type: 'number', description: 'Time they have to work it out, s (a glance 2, a moment 10, a minute 60, a long look 240)' },
+        share: { type: 'string', enum: SHARES, description: 'How this character compares with university students at such problems: the share of students they would do better than.' },
+    }, ['who', 'problem', 'kind', 'seconds', 'share'], a => run((st, rng) => {
+        const w = whoAny(st, a.who);
+        if (!w.p)
+            return w.error;
+        const base = solveShare(a.kind, a.seconds);
+        // A character better than a share s of students: base odds shifted by the odds of s (0.5 = the students' own rate)
+        // [ASSUMED: a percentile read as a log-odds shift].
+        const z = Math.log(base / (1 - base)) + logit(clamp01(shareOf(a.share)));
+        const chance = 1 / (1 + Math.exp(-z));
+        return check(w.p, { task: `work out ${a.problem}`, share: chance, uses: ['alertness'], override: true }, rng);
+    }));
+    tool('Sickness', 'Decide whether a character vomits or feels sick in a situation with published rates, before narrating it: a sea crossing, or waking after surgery under general anaesthesia. Spoiled food goes to Disease.', {
+        who: str('Character'),
+        situation: { type: 'string', enum: SICK_SITUATIONS },
+        sex: { type: 'string', enum: ['male', 'female'] },
+        age: { type: 'number', description: 'Age in years' },
+        motion_sickness_before: { type: 'boolean', description: 'After surgery: has been seasick, carsick or sick after an operation before' },
+        smoker: { type: 'boolean', description: 'After surgery: smokes' },
+        opioids: { type: 'boolean', description: 'After surgery: given opium, morphine or another opioid for the pain' },
+    }, ['who', 'situation'], a => run((_st, rng) => sickness(a.who, a, rng)));
     tool('Listen', 'Decide whether a character hears a sound (a shot, footsteps, hoofbeats, an engine) before narrating whether they react. Code decides from loudness, distance, background noise, walls and the listener\'s hearing.', {
         listener: str('Character who might hear it'),
         listener_species: str('Listener\'s DF creature when the engine has no record of them yet.'),

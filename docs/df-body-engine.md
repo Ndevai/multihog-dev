@@ -838,14 +838,18 @@ What these show:
 | MOVE | move a body part | BodyCheck |
 | GRASP | hold | HoldOn |
 | INGEST | take in | BodyIntake |
-| EXPEL | push out of the body | gap |
+| EXPEL | push out of the body | Sickness (sea crossing, after surgery); Disease (food poisoning) |
 | ATRANS | transfer possession | Transfer (record); SocialResponse, Choose, Look, HoldOn, BodyStrike, Price (whether and at what cost) |
 | MTRANS | pass information | Communicate, RecordFact |
-| MBUILD | work something out | gap |
+| MBUILD | work something out | WorkOut |
 | ATTEND | perceive | Look, Listen |
 | SPEAK | make sounds | Communicate |
 
-**Names.** IF a tool names a character in other case or spacing than the record ("mara ") → THEN it is the recorded character. IF a name of 4 or more letters differs by one letter from a recorded one ("Mary" with Mara on record) and the call gives no species → THEN the call returns an error naming the recorded character, so a misspelling cannot split one body into two. A call that gives a species starts a separate character.
+**Names.** IF a tool names a character in other case or spacing than the record ("mara ") → THEN it is the recorded character. IF a name of 4 or more letters differs by one letter from a recorded one ("Mary" with Mara on record) and the call gives no species → THEN the call returns an error naming the recorded character, so a misspelling cannot split one body into two. A call that gives a species starts a separate character. Labels that differ only in a number (stranger 1, stranger 2) are separate characters.
+
+**Working something out (WorkOut).** Share of university students solving within t seconds: a link between clues 0.565 (1 − e^(−t/13.4 s)), fitted exactly to 7.8 % at 2 s, 23.0 % at 7 s, 50.5 % at 30 s (Bowden & Jung-Beeman 2003, means over 144 problems, 289 participants); a riddle needing a new view 48.3 % at 4 min and a step-by-step problem 58.0 % at 4 min (Webb, Little & Cropper 2016, Table 1, mean of three experiments), on the same curve shape stretched ×8 so 4 min sits where 30 s does [ASSUMED]. The character's standing among students (a share band) shifts the log-odds by the band's odds [ASSUMED]; the body state applies through alertness.
+
+**Sickness.** Sea crossing of 0.5–7 h: vomits 5.0 % male, 8.8 % female, 12.0 % under 15, 7.0 % unknown; of the rest, 24.4 % feel seasick without vomiting ((21.3 + 4.3 + 4.1 − 7.0) / 93.0, every vomiter counted as unwell [ASSUMED]) (Lawther & Griffin 1988, 20,029 passengers). After general anaesthesia, nausea or vomiting within 24 h with 0–4 risk factors (female, earlier motion sickness or PONV, non-smoker, opioids after): 10, 21, 39, 61, 79 % (Apfel et al. 1999).
 
 **Possessions.** IF an item changes hands, is found, made, lost or used up with nothing in doubt, or did so in the last reply → THEN Transfer records it and [HAS] shows it to the narrator and the question model. Whether it happens comes from the tool that governs how (agreement, theft seen or not, struggle, price). IF Claim decided something a character has → THEN that character is accounted: they give only what is on record. Anyone else is taken at the story's word (a baker has bread without a list of it). Items match singular or plural.
 
