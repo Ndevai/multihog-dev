@@ -31,10 +31,11 @@ export const ENTRY: Props = {
     speaks: { type: 'boolean', description: 'For a creature or a people: it talks' },
     active: { type: 'string', enum: ACTIVE },
     weakness: { type: 'string', enum: WEAKNESS },
+    changes: { type: 'array', items: { type: 'object', properties: { what: str('The invention'), year: { type: 'number', description: 'Its real year' }, new_year: { type: 'number', description: 'Its year in this world' }, never: { type: 'boolean', description: 'Never made in this world' } }, required: ['what', 'year'] }, description: 'Inventions this entry moves: decided by code for /world-without and /world-earlier' },
 };
 const REQUIRED = ['what', 'kind', 'cause', 'reaches', 'reflections'] as const;
 export type Entry = { what: string; kind: string; since?: number; worldwide?: boolean; lat?: number; lon?: number; radius_km?: number; cause: string; reaches: string[]; reflections: string[];
-    species?: string; speaks?: boolean; active?: string; weakness?: string };
+    species?: string; speaks?: boolean; active?: string; weakness?: string; changes?: { what: string; year: number; new_year?: number; never?: boolean }[] };
 
 /** The entry as the schema wants it, or the errors to fix. A species must be a DF creature. */
 export function checkEntry(raw: Record<string, unknown>): { entry?: Entry; errors: string[] } {
@@ -47,8 +48,12 @@ export function checkEntry(raw: Record<string, unknown>): { entry?: Entry; error
     return errors.length ? { errors } : { entry: args as Entry, errors };
 }
 
-/** Applies the book's mechanical switches to the engine: speech per DF creature. */
+/** The book of the open chat, as last applied; read by the tools that check what exists. */
+export let CURRENT_BOOK: Entry[] = [];
+
+/** Applies the book's mechanical switches to the engine: speech per DF creature, and the book the tools check against. */
 export function applyWorld(book: Entry[]): void {
+    CURRENT_BOOK = book;
     for (const k of Object.keys(SPEECH_OVERRIDE)) delete SPEECH_OVERRIDE[k];
     for (const e of book) {
         const id = e.species ? creatureId(e.species) : null;

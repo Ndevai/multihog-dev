@@ -25,6 +25,8 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
+import { anachronism } from './history.js';
+import { CURRENT_BOOK } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
 import { str, checkArgs } from './tool-schema.js';
@@ -803,6 +805,12 @@ export function registerRulesTools(enabled: boolean): void {
         share: { type: 'string', enum: SHARES, description: 'Your estimate for this claim given everything the story has established so far.' },
     }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
         if (a.kind === 'something the character has') account(st, a.who);
+        // A thing not yet invented at the story's date, or never made in this world, cannot be had (history.ts).
+        const late = a.kind === 'something the character has' && a.item ? anachronism(a.item, storyYear(st), CURRENT_BOOK) : '';
+        if (late) {
+            learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
+            return `${a.claim}: does not hold; ${late}. ${a.who} acts on it and meets the world as it is; narrate that.`;
+        }
         if (!a.in_world) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
             return `${a.claim}: does not hold; there is no such thing in this world. ${a.who} acts on it and meets the world as it is; narrate that.`;
@@ -832,7 +840,7 @@ export function registerRulesTools(enabled: boolean): void {
         from: str('Who had it; leave out when it comes from the world (found, made, bought from someone untracked)'),
         to: str('Who has it now; leave out when it leaves the story (lost, used up, dropped out of reach, sold away)'),
         how: { type: 'string', enum: HOW },
-    }, ['item', 'how'], a => run(st => transfer(st, a)));
+    }, ['item', 'how'], a => run(st => { const late = anachronism(a.item, storyYear(st), CURRENT_BOOK); return late ? `Nothing recorded: ${late}.` : transfer(st, a); }));
 
     // The data give the share of students who solve such a problem in the time; the estimate for this character is
     // combined with it in log-odds, as BodyCheck combines a base share, and the body state applies (alertness).

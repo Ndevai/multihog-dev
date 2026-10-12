@@ -12,7 +12,8 @@ import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
 import { parseStoryTime, formatStoryTime } from './rules/clock.js';
 import { sendModel } from './send.js';
 import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM, type Entry } from './rules/world.js';
-import { removeWithDescendants, outcomeLine, bornIn } from './rules/counterfactual.js';
+import { removeWithDescendants, outcomeLine, bornIn, type Outcome } from './rules/counterfactual.js';
+import { firstYear, earlier } from './rules/history.js';
 import { seededRng } from './rules/body-engine.js';
 
 const NAME = 'rules-engine', KEY = 'rules_engine';
@@ -95,7 +96,34 @@ async function removePersonEntry(arg: string): Promise<string> {
     const { people, outcomes } = removeWithDescendants(name, year, seededRng(`${salt}:without:${name.toLowerCase()}:${year}`));
     if (!outcomes.length && !people.length) return `No invention or discovery by "${name}" from ${year} on in the lists (Wikipedia's timeline of inventions and a Wikidata export: about 2,400 with a named inventor).`;
     return approveEntry({ what: `${name} gone from ${year}`, kind: 'event', since: year, worldwide: true,
-        cause: m[2] != null ? `${name} died before ${year}.` : `${name} never lived.`, reaches: ['daily life'], reflections: [...people, ...outcomes.map(outcomeLine)].slice(0, 15) });
+        cause: m[2] != null ? `${name} died before ${year}.` : `${name} never lived.`, reaches: ['daily life'], reflections: [...people, ...outcomes.map(outcomeLine)].slice(0, 15),
+        changes: outcomes.map(changeOf) });
+}
+
+const changeOf = (o: Outcome) => o.result === 'never made' ? { what: o.what, year: o.year, never: true } : { what: o.what, year: o.year, new_year: o.newYear ?? o.year };
+const saltOf = () => ctx().chatMetadata?.rulesEngine?.salt ?? '';
+
+/** An event that removes named people from a year: /world-event The plague of 1665 reaches Cambridge; Isaac Newton; 1665 */
+async function eventEntry(arg: string): Promise<string> {
+    const [cause, names, y] = arg.split(';').map(x => x.trim());
+    const year = Number(y);
+    if (!cause || !names || !Number.isFinite(year)) return 'Give the event, the people it removes and the year: /world-event The plague reaches Cambridge; Isaac Newton; 1665';
+    const all = names.split(',').map(n => n.trim()).filter(Boolean).map(n => removeWithDescendants(n, year, seededRng(`${saltOf()}:event:${n.toLowerCase()}:${year}`)));
+    const people = all.flatMap(r => r.people), outcomes = all.flatMap(r => r.outcomes);
+    return approveEntry({ what: cause, kind: 'event', since: year, worldwide: true, cause, reaches: ['daily life'],
+        reflections: [...people, ...outcomes.map(outcomeLine)].slice(0, 15).concat(people.length || outcomes.length ? [] : [cause]), changes: outcomes.map(changeOf) });
+}
+
+/** An invention made earlier than in real history: /world-earlier telephone, 1850 */
+async function earlierEntry(arg: string): Promise<string> {
+    const m = arg.match(/^(.+?)[,;]\s*(-?\d{1,4})\s*$/);
+    if (!m) return 'Give the invention and the year: /world-earlier telephone, 1850';
+    const f = firstYear(m[1].trim());
+    if (!f) return `No dated invention matches "${m[1].trim()}".`;
+    const r = earlier(f.year, Number(m[2]), seededRng(`${saltOf()}:earlier:${f.label.toLowerCase()}:${m[2]}`));
+    toastr.info(`${f.label}: real ${f.year}; a lead of ${f.year - Number(m[2])} years is matched by ${Math.round(r.share * 100)} % of first discoverers; drawn: ${r.year}.`, 'World book');
+    return approveEntry({ what: `${f.label} made early`, kind: 'technology', since: r.year, worldwide: true, cause: `An inventor ahead of the field made ${f.label} in ${r.year}.`,
+        reaches: ['daily life'], reflections: [`${f.label[0].toUpperCase()}${f.label.slice(1)} exists from ${r.year}.`], changes: [{ what: f.label, year: f.year, new_year: r.year }] });
 }
 
 /** Shows an entry for editing until it passes the check or is cancelled; saves it. */
@@ -145,6 +173,14 @@ function registerWorldCommands(): void {
     c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
         name: 'world-without', helpString: 'A person gone from history from a year on: /world-without Karl Benz, 1880. Each of their inventions after that year is made by another inventor, made later, or never made (drawn once, from the rates of independent invention); you edit and approve the entry.',
         callback: async (_a: unknown, v: unknown) => removePersonEntry(String(v ?? '')),
+    }));
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'world-event', helpString: 'An event that removes people from a year: /world-event The plague reaches Cambridge; Isaac Newton, Isaac Barrow; 1665. Their children not yet born and their inventions follow as for /world-without.',
+        callback: async (_a: unknown, v: unknown) => eventEntry(String(v ?? '')),
+    }));
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'world-earlier', helpString: 'An invention made earlier than in real history: /world-earlier telephone, 1850. The lead is drawn against how far ahead real first inventors were.',
+        callback: async (_a: unknown, v: unknown) => earlierEntry(String(v ?? '')),
     }));
     c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
         name: 'world-list', helpString: 'Show this card\'s world book.',
