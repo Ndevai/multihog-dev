@@ -9,7 +9,7 @@ import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
 import { parseStoryTime, formatStoryTime } from './rules/clock.js';
 import { sendModel } from './send.js';
 import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM } from './rules/world.js';
-import { removePerson, outcomeLine } from './rules/counterfactual.js';
+import { removePerson, outcomeLine, bornIn } from './rules/counterfactual.js';
 import { seededRng } from './rules/body-engine.js';
 const NAME = 'rules-engine', KEY = 'rules_engine';
 // SillyTavern extension_prompt_types.IN_CHAT and extension_prompt_roles.SYSTEM (public/script.js).
@@ -69,16 +69,19 @@ async function addEntry(line) {
 }
 /** A person gone from history from `year` on: code draws, once, what becomes of each of their inventions; the user approves. */
 async function removePersonEntry(arg) {
-    const m = arg.match(/^(.+?)[,;]\s*(-?\d{1,4})\s*$/);
-    if (!m)
-        return 'Give a name and a year: /world-without Karl Benz, 1880';
-    const [name, year] = [m[1].trim(), Number(m[2])];
+    // A year sets when the person is gone; without one, they never lived (from their birth year, when Wikidata has it).
+    const m = arg.match(/^(.+?)(?:[,;]\s*(-?\d{1,4}))?\s*$/);
+    if (!m || !m[1].trim())
+        return 'Give a name, and a year when they are gone: /world-without Karl Benz, 1880 (no year: they never lived).';
+    const name = m[1].trim(), year = m[2] != null ? Number(m[2]) : bornIn(name);
+    if (year == null)
+        return `No birth year for "${name}"; give the year: /world-without ${name}, 1880.`;
     const salt = ctx().chatMetadata?.rulesEngine?.salt ?? '';
     const outcomes = removePerson(name, year, seededRng(`${salt}:without:${name.toLowerCase()}:${year}`));
     if (!outcomes.length)
-        return `No invention by "${name}" from ${year} on in the list (213 inventions with a named inventor, from Wikipedia's timeline of inventions).`;
+        return `No invention or discovery by "${name}" from ${year} on in the lists (Wikipedia's timeline of inventions and a Wikidata export: about 2,400 with a named inventor).`;
     return approveEntry({ what: `${name} gone from ${year}`, kind: 'event', since: year, worldwide: true,
-        cause: `${name} died or never lived before ${year}.`, reaches: ['daily life'], reflections: outcomes.slice(0, 7).map(outcomeLine) });
+        cause: m[2] != null ? `${name} died before ${year}.` : `${name} never lived.`, reaches: ['daily life'], reflections: outcomes.slice(0, 7).map(outcomeLine) });
 }
 /** Shows an entry for editing until it passes the check or is cancelled; saves it. */
 async function approveEntry(draft) {

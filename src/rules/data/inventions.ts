@@ -82,7 +82,7 @@ export const INVENTIONS: [number, string, string[]][] = [
     [1286, "in Ming dynasty China and described in Huolongjing", ["Jiao Yu"]],
     [1364, "first use of a handgun The 15th-century invention of the printing press with mov", []],
     [1420, "Brace in Flanders", []],
-    [1439, "in the Holy Roman Empire", ["Johannes Gutenberg"]],
+    [1439, "movable-type printing press", ["Johannes Gutenberg"]],
     [1453, "First large scale use of Liquation for separating silver from silver-bearing cop", []],
     [1480, "Mariner's astrolabe in Portuguese circumnavigation of Africa Early modern era 16", ["Irfan Shaikh"]],
     [1540, "in 1498", []],

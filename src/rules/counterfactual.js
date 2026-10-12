@@ -7,19 +7,39 @@
 // inventor. When someone else does make it, the delay is a draw from the gaps between the first two discoverers of listed
 // multiples (median 1 year; 90 % within 25 years).
 import { INVENTIONS, MULTIPLES, GAPS } from './data/inventions.js';
+import { WD_INVENTIONS, PEOPLE } from './data/wikidata-inventions.js';
 export const MEAN_INVENTORS = 1.3;
 const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-/** Inventions credited to `name` (full name, or a surname matching one person), made in or after `year`. */
+// Both lists, one row per invention (same name and year once).
+const ALL = (() => {
+    const seen = new Set(), out = [];
+    for (const r of [...INVENTIONS, ...WD_INVENTIONS]) {
+        const k = `${r[0]}|${fold(r[1])}`;
+        if (!seen.has(k)) {
+            seen.add(k);
+            out.push(r);
+        }
+    }
+    return out;
+})();
+const matches = (p, n) => fold(p) === n || (!n.includes(' ') && fold(p).split(' ').pop() === n);
+/** Inventions credited to `name` (full name, or a surname alone), made in or after `year`. */
 export function inventionsOf(name, year) {
     const n = fold(name.trim());
-    const rows = INVENTIONS.filter(([, , by]) => by.some(p => fold(p) === n || fold(p).split(' ').pop() === n.split(' ').pop()));
-    return rows.filter(([y]) => y >= year).map(([y, what, by]) => ({ year: y, what, by }));
+    return ALL.filter(([y, , by]) => y >= year && by.some(p => matches(p, n))).map(([y, what, by]) => ({ year: y, what, by }));
 }
-/** The paragraph listing this invention as a multiple: it names the person's surname and a word of the invention. */
-function multipleOf(person, what) {
+/** Birth year of `name` from Wikidata, or null. */
+export function bornIn(name) {
+    const n = fold(name.trim()), k = Object.keys(PEOPLE).find(p => matches(p, n));
+    return k ? PEOPLE[k][0] : null;
+}
+/** The paragraph listing this invention as a multiple: it names the person's surname, a word of the invention and a year
+ * within 10 of it. */
+function multipleOf(person, what, year) {
     const surname = fold(person).split(' ').pop();
     const words = fold(what).split(/[^a-z]+/).filter(w => w.length >= 5);
-    return MULTIPLES.find(p => { const f = fold(p); return f.includes(surname) && words.some(w => f.includes(w)); }) ?? null;
+    const near = (p) => (p.match(/\b(1[5-9]\d\d|20[0-2]\d)\b/g) ?? []).some(y => Math.abs(Number(y) - year) <= 10);
+    return MULTIPLES.find(p => { const f = fold(p); return f.includes(surname) && words.some(w => f.includes(w)) && near(p); }) ?? null;
 }
 /** Each invention of `name` from `year` on: made anyway (a known multiple), made later, or never made, drawn once. */
 export function removePerson(name, year, rng) {
@@ -27,7 +47,7 @@ export function removePerson(name, year, rng) {
         const others = inv.by.filter(p => fold(p) !== fold(name));
         if (others.length)
             return { what: inv.what, year: inv.year, result: 'made by another inventor', newYear: inv.year };
-        const para = multipleOf(name, inv.what);
+        const para = multipleOf(name, inv.what, inv.year);
         if (para) {
             const ys = [...new Set((para.match(/\b(1[5-9]\d\d|20[0-2]\d)\b/g) ?? []).map(Number))].filter(y => y !== inv.year).sort((a, b) => a - b);
             return { what: inv.what, year: inv.year, result: 'made by another inventor', newYear: ys.find(y => y >= inv.year) ?? ys[0] ?? inv.year };
@@ -38,10 +58,13 @@ export function removePerson(name, year, rng) {
     });
 }
 /** One sentence per outcome, for the world book. */
+// Discoveries and inventions share the lists, so the wording covers both. "Never" is within the history so far: Simonton's
+// "undiscoveries" are passed over in the period, not impossible.
 export function outcomeLine(o) {
+    const w = `${o.what[0].toUpperCase()}${o.what.slice(1)}`;
     if (o.result === 'never made')
-        return `${o.what[0].toUpperCase()}${o.what.slice(1)} has not been invented.`;
+        return `${w}: nobody has made or found it.`;
     if (o.result === 'made by another inventor')
-        return `${o.what[0].toUpperCase()}${o.what.slice(1)} was made by another inventor${o.newYear && o.newYear !== o.year ? ` in ${o.newYear}` : ''}.`;
-    return `${o.what[0].toUpperCase()}${o.what.slice(1)} was invented by someone else in ${o.newYear}.`;
+        return `${w}: made or found by someone else${o.newYear && o.newYear !== o.year ? `, in ${o.newYear}` : ', at the same time'}.`;
+    return `${w}: made or found by someone else, in ${o.newYear}.`;
 }
