@@ -5,7 +5,7 @@
 // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
 // tools itself; a call already made here returns the same result (the turn's decision ledger).
 import { turnKey } from './turn.js';
-import { REGISTRY, store, storyTime, setStoryTime } from './rules-tools.js';
+import { REGISTRY, store, storyTime, setStoryTime, scenePosition, setScenePosition } from './rules-tools.js';
 import { parseStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
 // Calls run per turn, at most [ASSUMED]; scene messages shown and their length.
@@ -18,7 +18,7 @@ Read the scene and the player's message. Find each outcome the next reply will n
 Ask only about outcomes this reply must show. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
 A player's message that states something the story has not established about their own character (what they are, an item they have, something they can do or did) → Claim, before the actions that rely on it. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep). A person the story has not described who acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them. One call per question; calls run in the order given, so put time passing after the actions it follows.
-When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known).
+When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). When the scene's position is not yet known and the scene or scenario says where it is, add "at": [latitude, longitude].
 First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"]}. When nothing is in doubt, write {"calls":[]}.`;
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
 // FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
@@ -77,6 +77,7 @@ export function rawPlan(text) {
                 calls: o.calls.filter((c) => !!c && typeof c.tool === 'string' && typeof c.args === 'object' && c.args !== null),
                 then: Array.isArray(o.then) ? o.then.filter((q) => typeof q === 'string' && !!q.trim()) : [],
                 time: typeof o.time === 'string' ? o.time : undefined,
+                at: Array.isArray(o.at) && o.at.length === 2 && o.at.every((x) => typeof x === 'number' && Number.isFinite(x)) && Math.abs(o.at[0]) <= 90 && Math.abs(o.at[1]) <= 180 ? [o.at[0], o.at[1]] : undefined,
             };
         }
         catch { /* try an earlier object */ }
@@ -124,6 +125,8 @@ export async function runQuestionPass(chat, send, tracker = '') {
         time = plan.time && storyTime() === null ? parseStoryTime(plan.time) : null;
         if (time !== null)
             setStoryTime(time);
+        if (plan.at && !scenePosition())
+            setScenePosition(plan.at[0], plan.at[1]);
         calls = validCalls(plan.calls);
         await runAll(calls);
         if (plan.then.length && calls.length < MAX_CALLS) {

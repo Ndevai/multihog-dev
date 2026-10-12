@@ -149,10 +149,10 @@ export function simulateNormalsYear(n: Normals, days: number, rng: Rng): Weather
 }
 
 /** A place weather can be generated for: one of the 28 WGEN stations, or a WMO city. */
-export interface Place { key: string; label: string; lat: number | null; country: string | null }
+export interface Place { key: string; label: string; lat: number | null; lon?: number | null; country: string | null }
 const fold = (s: unknown) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
 const toRad = Math.PI / 180;
-const distKm = (a: number, b: number, c: number, d: number) => 6371 * Math.acos(Math.min(1, Math.sin(a * toRad) * Math.sin(c * toRad) + Math.cos(a * toRad) * Math.cos(c * toRad) * Math.cos((d - b) * toRad)));
+export const distKm = (a: number, b: number, c: number, d: number) => 6371 * Math.acos(Math.min(1, Math.sin(a * toRad) * Math.sin(c * toRad) + Math.cos(a * toRad) * Math.cos(c * toRad) * Math.cos((d - b) * toRad)));
 
 /**
  * The place for `text` ("Lyon", "Sydney, Canada", "Boston"): a WGEN station whose city matches, else a WMO city by name
@@ -165,13 +165,13 @@ export function findPlace(text: string | undefined, lat?: number, lon?: number):
         if (st && (!country || fold(st).includes(country) || country === 'usa' || country.startsWith('united states'))) return { key: `wgen:${st}`, label: `${st} (WGEN station)`, lat: null, country: 'United States of America' };
         const named = NORMALS.map((n, i) => [n, i] as const).filter(([n]) => fold(n[0]) === city || fold(n[0]).startsWith(`${city} `));
         const pick = named.find(([n]) => country && fold(n[1]).includes(country)) ?? (country ? undefined : named[0]);
-        if (pick) return { key: `wmo:${pick[1]}`, label: `${pick[0][0]}, ${pick[0][1]}`, lat: pick[0][2], country: pick[0][1] };
+        if (pick) return { key: `wmo:${pick[1]}`, label: `${pick[0][0]}, ${pick[0][1]}`, lat: pick[0][2], lon: pick[0][3], country: pick[0][1] };
     }
     if (lat == null || lon == null || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
     let best = 0, bestD = Infinity;
     NORMALS.forEach((n, i) => { const d = distKm(lat, lon, n[2], n[3]); if (d < bestD) { bestD = d; best = i; } });
     const n = NORMALS[best];
-    return { key: `wmo:${best}`, label: `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2], country: n[1] };
+    return { key: `wmo:${best}`, label: `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2], lon: n[3], country: n[1] };
 }
 
 /** Days 1..`days` of one year at a place key from findPlace (a bare WGEN station name is accepted too). */

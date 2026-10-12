@@ -1,7 +1,7 @@
 // Rules Engine for SillyTavern: code decides outcomes, the narrator writes them (docs/df-body-engine.md). Each turn a
 // question pass names the outcomes in doubt and the engine decides them; the narrator gets the brief, the story time,
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
-import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, questionPassRan, storyTime, setStoryTime, REGISTRY, } from './rules/rules-tools.js';
+import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, } from './rules/rules-tools.js';
 import { runQuestionPass, decidedInjection } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
@@ -103,7 +103,7 @@ function renderBook() {
         row.className = 'flex-container alignItemsCenter';
         const label = document.createElement('span');
         label.className = 'flex1';
-        label.textContent = `${e.what} (${e.kind}, ${e.since ?? 'always'}, ${e.place ?? e.where})`;
+        label.textContent = `${e.what} (${e.kind}, ${e.since ?? 'always'}, ${e.worldwide ? 'everywhere' : `${e.lat}, ${e.lon}, ${e.radius_km ?? 300} km`})`;
         const del = document.createElement('div');
         del.className = 'menu_button fa-solid fa-trash-can';
         del.title = 'Remove';
@@ -122,13 +122,13 @@ function registerWorldCommands() {
     }));
     c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
         name: 'world-list', helpString: 'Show this card\'s world book.',
-        callback: async () => worldBlock(getBook()) || 'The world book is empty: the world is real history.',
+        callback: async () => worldBlock(getBook(), scenePosition()) || 'The world book is empty: the world is real history.',
     }));
 }
 /** What the question model and the narrator read about the story now: time and bodies. */
 function storyState() {
     const t = storyTime();
-    return [worldBlock(getBook()), t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
+    return [worldBlock(getBook(), scenePosition()), t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
 }
 globalThis.rulesEngineInterceptor = async (chat, _size, _abort, type) => {
     const s = settings(), c = ctx();

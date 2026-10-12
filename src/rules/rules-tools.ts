@@ -9,6 +9,7 @@ import { learn, knowledgeBlock } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords } from './emotion.js';
 import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
+import { NORMALS } from './data/wmo-normals.js';
 import type { Place } from './weather.js';
 import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
 import { drawName } from './names.js';
@@ -328,6 +329,7 @@ const NO_YEAR = 'Give year: [TIME] holds no calendar date.';
 function setPlace(st: RuleState, place: Place) {
     st.setting = { place: place.key, label: place.label, country: place.country };
     if (place.lat != null) st.latitude = place.lat;
+    if (place.lon != null) st.longitude = place.lon;
 }
 
 /** Weather at place key `place` (from findPlace) at story minute `t` (calendar dates only): the day, air now, date; or null. */
@@ -355,6 +357,23 @@ function applyWeather(people: Record<string, Person>, t: number) {
 export function knowledgeInjection(): string {
     const ctx = SillyTavern.getContext();
     return ctx.chatMetadata ? knowledgeBlock(store().state) : '';
+}
+
+/** Sets the scene's position (and the latitude light and weather use). */
+export function setScenePosition(lat: number, lon: number): void {
+    const st = store().state;
+    st.latitude = lat; st.longitude = lon;
+    if (st.setting) delete st.setting.place;
+    save();
+}
+
+/** Where the scene is, from the last place a tool was given (a WMO city, or latitude and longitude); null when unknown. */
+export function scenePosition(): { lat: number; lon: number } | null {
+    if (!SillyTavern.getContext().chatMetadata) return null;
+    const st = store().state, key = st.setting?.place;
+    const n = key?.startsWith('wmo:') ? NORMALS[Number(key.slice(4))] : null;
+    if (n) return { lat: n[2], lon: n[3] };
+    return st.latitude != null && st.longitude != null ? { lat: st.latitude, lon: st.longitude } : null;
 }
 
 /** The per-turn [HAS] block for the current chat, '' when nothing is recorded. */

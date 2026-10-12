@@ -6,9 +6,9 @@
 import { checkArgs, str, type Props } from './tool-schema.js';
 import { creatureId } from './df/index.js';
 import { SPEECH_OVERRIDE } from './body-engine.js';
+import { distKm } from './weather.js';
 
 export const KINDS = ['creature', 'people', 'place', 'institution', 'technology', 'magic', 'event'] as const;
-export const WHERE = ['worldwide', 'Europe', 'Africa', 'the Middle East', 'Asia', 'North America', 'South America', 'Oceania'] as const;
 export const DOMAINS = ['wildlife and danger', 'warfare', 'settlement and building', 'law and government', 'religion and folklore', 'language and names', 'trade and prices', 'medicine', 'daily life'] as const;
 // Traits on which tellings of one creature differ (folklore, Tolkien, games); the body comes from the DF creature.
 export const ACTIVE = ['day', 'night', 'any time'] as const;
@@ -18,8 +18,12 @@ export const ENTRY: Props = {
     what: str('What the world has, a few words ("orcs", "the Guild of Lamplighters")'),
     kind: { type: 'string', enum: KINDS },
     since: { type: 'number', description: 'Year it began; leave out for "always"' },
-    where: { type: 'string', enum: WHERE },
-    place: str('A narrower place, when it has one ("Southwark, London")'),
+    // Where, as coordinates: a name means different things at different dates (Norway under Danish rule, modern Norway) and a
+    // salient name pulls the narrator toward its associations; the narrator gets the area relative to the scene instead.
+    worldwide: { type: 'boolean', description: 'Everywhere in the world' },
+    lat: { type: 'number', description: 'Latitude of the centre of its area, degrees (north +)' },
+    lon: { type: 'number', description: 'Longitude of the centre of its area, degrees (east +)' },
+    radius_km: { type: 'number', description: 'Radius of its area, km. Default 300.' },
     cause: str('How it came to be, one sentence: the stated cause every reached area follows from'),
     reaches: { type: 'array', items: { type: 'string', enum: DOMAINS }, description: 'Areas of life the cause reaches; every other area stays as in real history' },
     reflections: { type: 'array', items: { type: 'string' }, description: '3–7 facts everyone in the world knows that show it, each in a reached area, one short sentence each' },
@@ -28,14 +32,16 @@ export const ENTRY: Props = {
     active: { type: 'string', enum: ACTIVE },
     weakness: { type: 'string', enum: WEAKNESS },
 };
-const REQUIRED = ['what', 'kind', 'where', 'cause', 'reaches', 'reflections'] as const;
-export type Entry = { what: string; kind: string; since?: number; where: string; place?: string; cause: string; reaches: string[]; reflections: string[];
+const REQUIRED = ['what', 'kind', 'cause', 'reaches', 'reflections'] as const;
+export type Entry = { what: string; kind: string; since?: number; worldwide?: boolean; lat?: number; lon?: number; radius_km?: number; cause: string; reaches: string[]; reflections: string[];
     species?: string; speaks?: boolean; active?: string; weakness?: string };
 
 /** The entry as the schema wants it, or the errors to fix. A species must be a DF creature. */
 export function checkEntry(raw: Record<string, unknown>): { entry?: Entry; errors: string[] } {
     const { args, errors } = checkArgs(ENTRY, REQUIRED, raw);
     if (args.species && !creatureId(String(args.species))) errors.push(`species "${args.species}" is not a DF creature`);
+    if (!args.worldwide && (args.lat == null || args.lon == null)) errors.push('give lat and lon of its area, or worldwide: true');
+    if (args.lat != null && Math.abs(Number(args.lat)) > 90 || args.lon != null && Math.abs(Number(args.lon)) > 180) errors.push('lat is −90 to 90, lon −180 to 180');
     const n = (args.reflections as string[] | undefined)?.length ?? 0;
     if (n && (n < 3 || n > 7)) errors.push(`reflections: give 3 to 7, not ${n}`);
     return errors.length ? { errors } : { entry: args as Entry, errors };
@@ -50,19 +56,39 @@ export function applyWorld(book: Entry[]): void {
     }
 }
 
-/** "[WORLD] … [/WORLD]" for the narrator and the question model, '' for an empty book. */
-export function worldBlock(book: Entry[]): string {
+const toRad = Math.PI / 180;
+const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+// Near = within 300 km beyond the edge, about ten days on foot at 30 km a day [ASSUMED].
+const NEAR_KM = 300;
+
+/** The entry's area in words, relative to the scene when its position is known; coordinates otherwise. */
+function areaWords(e: Entry, here: { lat: number; lon: number } | null): string {
+    if (e.worldwide) return 'everywhere';
+    if (e.lat == null || e.lon == null) return 'area not given';
+    const radius = e.radius_km ?? 300;
+    if (!here) return `around ${Math.abs(e.lat).toFixed(1)}°${e.lat >= 0 ? 'N' : 'S'} ${Math.abs(e.lon).toFixed(1)}°${e.lon >= 0 ? 'E' : 'W'}, within ${radius} km`;
+    const d = distKm(here.lat, here.lon, e.lat, e.lon);
+    if (d <= radius) return 'here: the scene lies in its area';
+    const y = Math.sin((e.lon - here.lon) * toRad) * Math.cos(e.lat * toRad);
+    const x = Math.cos(here.lat * toRad) * Math.sin(e.lat * toRad) - Math.sin(here.lat * toRad) * Math.cos(e.lat * toRad) * Math.cos((e.lon - here.lon) * toRad);
+    const dir = COMPASS[Math.round(((Math.atan2(y, x) / toRad + 360) % 360) / 45) % 8];
+    return d - radius <= NEAR_KM ? `near: its area begins a few days' travel to the ${dir}` : `far away to the ${dir}`;
+}
+
+/** "[WORLD] … [/WORLD]" for the narrator and the question model, '' for an empty book. here: the scene's position. */
+export function worldBlock(book: Entry[], here: { lat: number; lon: number } | null = null): string {
     if (!book.length) return '';
     const line = (e: Entry) => {
         const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', does not talk'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}` : '';
-        return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${e.place ? `${e.place}, ` : ''}${e.where}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}`;
+        return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${areaWords(e, here)}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}`;
     };
     return `[WORLD]\nThis world is real history with these additions. Areas of life an addition does not reach are as in real history.\n${book.map(line).join('\n')}\n[/WORLD]`;
 }
 
 export const FILL_SYSTEM = `You write one entry of a world book for a story set in real history with additions. Change as little real history as the addition needs.
-From the user's line, fill: what, kind, since (a year, or leave it out for always), where, place (optional), cause (one sentence: how it came to be), reaches (only the areas of life the cause reaches), reflections (3 to 7 short facts everyone in that world knows, each in a reached area), and for a creature or a people: species (the Dwarf Fortress creature its body is), speaks, active, weakness.
-Allowed values: kind ${KINDS.join(' | ')}; where ${WHERE.join(' | ')}; reaches ${DOMAINS.join(' | ')}; active ${ACTIVE.join(' | ')}; weakness ${WEAKNESS.join(' | ')}.
+From the user's line, fill: what, kind, since (a year, or leave it out for always), its area as lat and lon of the centre with radius_km (or worldwide: true), cause (one sentence: how it came to be), reaches (only the areas of life the cause reaches), reflections (3 to 7 short facts everyone in that world knows, each in a reached area), and for a creature or a people: species (the Dwarf Fortress creature its body is), speaks, active, weakness.
+Write cause and reflections without present-day country names; name a place only as people there at that date would.
+Allowed values: kind ${KINDS.join(' | ')}; reaches ${DOMAINS.join(' | ')}; active ${ACTIVE.join(' | ')}; weakness ${WEAKNESS.join(' | ')}.
 Write only the JSON object.`;
 
 /** The last JSON object in the model's text, or null. */

@@ -93,6 +93,7 @@ export interface RuleState {
     /** Story clock: the time set with /rules-time (minutes, clock.ts) and the minutes PassTime has run since. */
     clock?: { t: number; add: number };
     latitude?: number;
+    longitude?: number;
     /** What the scene has fixed for every tool: the last place given (a weather place key), its label and country. */
     setting?: { place?: string; label?: string; country?: string | null };
     /** What each character carries, by holder name (possessions.ts). */
