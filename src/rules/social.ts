@@ -10,9 +10,16 @@ export interface SocialTraits { credZ?: number; credulZ?: number; detectZ?: numb
 const trait = (p: SocialTraits | null, k: keyof SocialTraits, gauss: () => number) => p ? (p[k] ??= Math.round(gauss() * 100) / 100) : 0;
 
 /** One roll: does the listener judge the statement a lie? Returns { judgedLie, chance (of being judged a lie) }. */
-export function judgeStatement(isLie: boolean, rng: () => number = Math.random, { speaker = null as SocialTraits | null, listener = null as SocialTraits | null, gauss = null as (() => number) | null } = {}) {
+// With evidence against the speaker: interviewers who kept it until the suspect had told their story judged 85.0 % of truths
+// and 85.7 % of lies correctly; interviewers who revealed it early, 57.1 % and 55.0 % (Hartwig, Granhag, Strömwall &
+// Kronkvist 2006, Law Hum Behav 30:603, 82 interviewers, mock theft; the first group trained in the strategic use of evidence).
+export const EVIDENCE = ['none', 'revealed early', 'kept until they have told their story'] as const;
+const WITH_EVIDENCE: Record<string, { truth: number; lie: number }> = { [EVIDENCE[1]]: { truth: 0.571, lie: 0.550 }, [EVIDENCE[2]]: { truth: 0.850, lie: 0.857 } };
+
+export function judgeStatement(isLie: boolean, rng: () => number = Math.random, { speaker = null as SocialTraits | null, listener = null as SocialTraits | null, gauss = null as (() => number) | null, evidence = 'none' as string } = {}) {
     const g = gauss ?? (() => { let u = 0; while (!u) u = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng()); });
-    const believed = (isLie ? 1 - LIE_CAUGHT : TRUTH_BELIEVED) + 0.1158 * trait(speaker, 'credZ', g) + 0.0513 * trait(listener, 'credulZ', g)
+    const ev = WITH_EVIDENCE[evidence];
+    const believed = (ev ? (isLie ? 1 - ev.lie : ev.truth) : isLie ? 1 - LIE_CAUGHT : TRUTH_BELIEVED) + 0.1158 * trait(speaker, 'credZ', g) + 0.0513 * trait(listener, 'credulZ', g)
         + 0.0549 * trait(speaker, 'detectZ', g) * (isLie ? -1 : 1);
     const chance = 1 - Math.min(0.99, Math.max(0.01, believed));
     return { judgedLie: rng() < chance, chance };

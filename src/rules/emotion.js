@@ -28,6 +28,22 @@ export const TYPES = {
     liking: T('like, affection, attracted to, love, adore', 'the more appealing and the more familiar'),
     disliking: T('dislike, aversion, disgust, revulsion, hate, loathe', 'the more unappealing and the more familiar'),
 };
+// How long an emotion lasts before it first returns to baseline: median hours over 233 high-school students' recalled episodes of 27
+// emotions (Verduyn & Lavrijsen 2015, Motiv Emot 39:119, Fig. 1 bottom left). Each OCC type takes the measured emotion
+// nearest in meaning [mapping ASSUMED]; types without one (gloating, liking) are left out. The emotion lasts longer the
+// more the event matters to the person (event importance, the paper's strongest predictor).
+export const LASTS_H = {
+    joy: 6.0, distress: 48, 'happy-for': 6.0, 'sorry-for': 1.5, resentment: 2.0, hope: 27, fear: 4.0, satisfaction: 3.0,
+    'fears-confirmed': 2.3, relief: 0.8, disappointment: 2.0, pride: 24, 'self-reproach': 4.0, appreciation: 1.5, reproach: 1.5,
+    gratitude: 6.0, anger: 24, gratification: 24, remorse: 4.0, disliking: 0.8,
+};
+/** The typical duration in words, without the figure. */
+export function lastsWords(type) {
+    const h = LASTS_H[type];
+    if (h == null)
+        return '';
+    return h < 1 ? 'it usually fades within the hour' : h < 12 ? 'it usually lasts some hours' : h < 36 ? 'it usually lasts about a day' : 'it usually lasts days';
+}
 // Below threshold no emotion arises; above it, intensity sets the word (OCC ch. 4 pp. 81–84, ch. 9 p. 185) [3 levels ASSUMED].
 export const MATTERS = ['not at all', 'somewhat', 'a great deal'];
 /**

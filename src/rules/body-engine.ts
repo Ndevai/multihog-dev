@@ -1097,17 +1097,23 @@ export function look(vs: string, v: Person, { size_m = 0.5, distance_m = 10, lig
  * when the per-hand load ≤ grip strength × the hand's working capacity (grasp ability, cold forearm force factor). Humans only
  * (Dodds 2014 norms); hands counted from working GRASP parts.
  */
-export function holdLoad(who: string, p: Person, { load_kg = null as number | null, hands = 2, hanging = false, seconds = null as number | null } = {}, rng: Rng = Math.random): string {
+// Fingertips on an edge: four-fingertip force against grip, non-climbers 309 / 440 N, recreational climbers 359 / 445 N,
+// elite climbers 447 / 526 N (Grant et al. 1996, J Sports Sci 14:301, 30 men, means adjusted for body mass; fingertips right
+// hand, grip left hand).
+export const CLIMBERS = ['no', 'recreational', 'expert'] as const;
+const FINGERTIP_SHARE: Record<string, number> = { no: 309 / 440, recreational: 359 / 445, expert: 447 / 526 };
+
+export function holdLoad(who: string, p: Person, { load_kg = null as number | null, hands = 2, hanging = false, seconds = null as number | null, fingertips = false, climber = 'no' as string } = {}, rng: Rng = Math.random): string {
     if (!thermalCapable(p.species)) return `${who}: grip norms exist for humans only; use BodyCheck.`;
     if (p.dead || p.unconscious) return `${who} cannot hold anything (${p.dead ? 'dead' : 'unconscious'}).`;
     const c = creatureOf(p)!, works = worksFn(p, c);
     const n = Math.min(hands, c.parts.filter(x => x.flags.includes('GRASP') && works(x)).length);
     if (!n) return `${who} has no working hand to hold with.`;
-    const g = grip(p, () => gauss(rng)) * forceFactor(limbCold(p, 'arm'));
+    const g = grip(p, () => gauss(rng)) * forceFactor(limbCold(p, 'arm')) * (fingertips ? FINGERTIP_SHARE[climber] ?? FINGERTIP_SHARE.no : 1);
     const load = hanging ? p.mass : load_kg ?? 0, per = load / n;
     const norm = gripNorm(p.age, p.sex, p.region ?? null);
     const cold = forceFactor(limbCold(p, 'arm')) < 1 ? ', hands weakened by cold' : '';
-    const hand = `${n === 1 ? 'one hand' : `${n} hands`}${cold}`;
+    const hand = `${n === 1 ? 'one hand' : `${n} hands`}${fingertips ? ', fingertips only' : ''}${cold}`;
     console.debug?.('[Rules engine]', who, `${round(per)} kg per hand; grip ${round(g)} kg; norm ${round(norm.mean)} ± ${round(norm.sd)} kg`);
     if (per > g) return `${who} cannot hold it: too heavy for ${p.sex === 'female' ? 'her' : 'his'} grip (${hand}).`;
     // Hold time at a share f of maximal grip: ET = 33.55 f^−1.61 s (grip power model, Frey Law & Avin 2010, Ergonomics 53:109,

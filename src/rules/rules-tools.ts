@@ -1,12 +1,12 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
-import { judgeStatement, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
+import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
 import type { SocialTraits } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { drawPerson } from './census.js';
 import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock } from './knowledge.js';
-import { ABOUT, MATTERS, TYPES, occTypes } from './emotion.js';
+import { ABOUT, MATTERS, TYPES, occTypes, lastsWords } from './emotion.js';
 import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
 import type { Place } from './weather.js';
@@ -15,7 +15,7 @@ import { drawName } from './names.js';
 import { bodySize } from './body-size.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
-import { gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
+import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -632,7 +632,8 @@ export function registerRulesTools(enabled: boolean): void {
         const strong = a.matters === MATTERS[2];
         const words = (t: string) => { const w = TYPES[t].words.split(', '), h = Math.ceil(w.length / 2); return (strong ? w.slice(h - 1) : w.slice(0, h)).join(', '); };
         const [main, ...with_] = types;
-        return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.`;
+        const lasts = lastsWords(main);
+        return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
 
     tool('Price', 'Decide what goods cost, what a day of work pays, or what a year of necessities costs, in a European city between 1500 and 1913, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
@@ -829,7 +830,9 @@ export function registerRulesTools(enabled: boolean): void {
         // [ASSUMED: a percentile read as a log-odds shift].
         const z = Math.log(base / (1 - base)) + logit(clamp01(shareOf(a.share)));
         const chance = 1 / (1 + Math.exp(-z));
-        return check(w.p, { task: `work out ${a.problem}`, share: chance, uses: ['alertness'], override: true }, rng);
+        // timed: a cooled core slows this kind of thinking (complex tasks fell after 2–4 °C of cooling, simple ones held: Giesbrecht
+        // et al. 1993, Aviat Space Environ Med 64:206).
+        return check(w.p, { task: `work out ${a.problem}`, share: chance, uses: ['alertness'], timed: true, override: true }, rng);
     }));
 
     tool('Sickness', 'Decide whether a character vomits or feels sick in a situation with published rates, before narrating it: a sea crossing, or waking after surgery under general anaesthesia. Spoiled food goes to Disease.', {
@@ -883,6 +886,7 @@ export function registerRulesTools(enabled: boolean): void {
         speaker: str('For a statement: who made it'),
         is_lie: { type: 'boolean', description: 'For a statement: whether it is in fact a lie (known from the story)' },
         statement: str('For a statement: the statement in a few words'),
+        evidence: { type: 'string', enum: EVIDENCE, description: 'For a statement: evidence the listener holds that bears on it, and when they show it. Default none.' },
         others: { type: 'number', description: 'For an emergency: how many other people the person believes also witness it' },
         emergency: { type: 'string', enum: SITUATIONS, description: 'For an emergency. Default victim in danger.' },
         order: { type: 'string', enum: Object.keys(OBEY), description: 'For an order to hurt someone: its circumstances' },
@@ -893,8 +897,9 @@ export function registerRulesTools(enabled: boolean): void {
         switch (a.situation) {
             case SOCIAL[0]: {
                 const l = who(st, a.who), s = who(st, a.speaker);
-                const r = judgeStatement(!!a.is_lie, rng, { speaker: (s.p ?? null) as SocialTraits | null, listener: (l.p ?? null) as SocialTraits | null });
-                return `${a.who} ${r.judgedLie ? 'judges it a lie' : 'believes it'}, from ${a.speaker ?? 'the speaker'}'s manner alone: no proof either way.`;
+                const r = judgeStatement(!!a.is_lie, rng, { speaker: (s.p ?? null) as SocialTraits | null, listener: (l.p ?? null) as SocialTraits | null, evidence: a.evidence ?? 'none' });
+                const from = !a.evidence || a.evidence === 'none' ? `from ${a.speaker ?? 'the speaker'}'s manner alone: no proof either way` : `weighing what ${a.speaker ?? 'the speaker'} says against the evidence`;
+                return `${a.who} ${r.judgedLie ? 'judges it a lie' : 'believes it'}, ${from}.`;
             }
             case SOCIAL[1]: {
                 const n = Number(a.others) || 0, p = helpChance(n, a.emergency ?? 'victim in danger');
@@ -920,12 +925,14 @@ export function registerRulesTools(enabled: boolean): void {
         load_kg: { type: 'number', description: 'Mass carried by handles, kg (when not hanging)' },
         hands: { type: 'number', description: 'Hands used, 1 or 2. Default 2.' },
         seconds: { type: 'number', description: 'How long the hold must last, s (until help arrives, to cross the gap)' },
+        fingertips: { type: 'boolean', description: 'Only the fingertips hold: a ledge, a window sill, a narrow edge' },
+        climber: { type: 'string', enum: CLIMBERS, description: 'With fingertips: climbing training. Default no.' },
         region: { type: 'string', enum: Object.keys(REGIONS), description: 'World region the character grew up in, when known. Kept for later calls.' },
     }, ['who'], a => run((st, rng) => {
         const { p, error } = who(st, a.who);
         if (!p) return error;
         if (a.region) p.region = a.region;
-        return holdLoad(a.who, p, { load_kg: a.load_kg, hands: a.hands ?? 2, hanging: !!a.hanging, seconds: a.seconds ?? null }, rng);
+        return holdLoad(a.who, p, { load_kg: a.load_kg, hands: a.hands ?? 2, hanging: !!a.hanging, seconds: a.seconds ?? null, fingertips: !!a.fingertips, climber: a.climber ?? 'no' }, rng);
     }));
 
     tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their species\' top speeds and leg injuries.', {
