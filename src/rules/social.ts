@@ -51,6 +51,7 @@ export const OBEY: Record<string, number> = { 'victim out of sight': 0.65, 'vict
 // A direct small request to a stranger (fill a 5–10 min questionnaire, lend a phone for a call, walk them to a building): yes
 // rates from the asks needed, Flynn & Lake 2008 (J Pers Soc Psychol 95:128), as reported by ScienceBlog (2026): about 10 asks for
 // 5 questionnaires, 6 for 3 phone loans, just over 2 for 1 escort [targets 5, 3, 1 as recalled] → 48 %, 48 %, 43 %; mean 46 %.
+// Weak source [SECONDARY: a news report, targets recalled]; for a stranger asking to go first, Langer et al. 1978 below is primary.
 export const SMALL_REQUEST_YES = 0.46;
 
 // Romantic interest after a brief first meeting (yes to seeing the person again): Fisman, Iyengar, Kamenica & Simonson 2006 (Q J
