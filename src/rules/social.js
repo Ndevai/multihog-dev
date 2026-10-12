@@ -59,3 +59,14 @@ export const SMALL_REQUEST_YES = 0.46;
 export function interestChance(sex, manyOptions = false) {
     return sex === 'female' && manyOptions ? 1 / 3 : 0.5;
 }
+// An order from a stranger in the street, out of the requester's role (Bickman 1974, J Appl Soc Psychol 4:47, Brooklyn, 153
+// adults; Table 1, share who obeyed, after one reason if they did not at first; 14–24 people per cell). A guard's uniform
+// (no gun) raised compliance; a milkman's did not differ from ordinary clothes. Being watched made no difference
+// (Experiment II: guard 75 % watched, 92 % unwatched; civilian 50 %, 42 %), so the effect is legitimacy, not threat.
+export const REQUESTERS = ['ordinary clothes', 'uniform without authority (milkman, porter)', 'uniform of authority (guard, police)'];
+export const ORDERS = ['do a small task for them', 'give a small sum to someone else', 'move or change what they are doing for a doubtful reason'];
+const ORDER_OBEYED = [[0.36, 0.33, 0.20], [0.64, 0.57, 0.21], [0.82, 0.89, 0.56]];
+export function orderChance(requester, order) {
+    const r = REQUESTERS.indexOf(requester), o = ORDERS.indexOf(order);
+    return r < 0 || o < 0 ? null : ORDER_OBEYED[r][o];
+}

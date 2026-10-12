@@ -1,5 +1,5 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
-import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS } from './social.js';
+import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance } from './social.js';
 import type { SocialTraits } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
@@ -212,7 +212,7 @@ function inalienable(st: RuleState, item: string): string {
     return '';
 }
 
-const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting'];
+const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting', 'an order from a stranger'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = (v: unknown) => typeof v === 'number' ? v : (parseFloat(String(v)) || 0) / 100;
 // The chance for this attempt combines the narrator's estimate with the share of its reference class, asked for first:
@@ -310,7 +310,7 @@ Senses
 - A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate; a word it names as having several meanings → Interpret.
 People
 - A character the story has not described → NewCharacter; their first name → NameCharacter; their height and mass → BodySize.
-- A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
+- A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or order, or a first meeting → SocialResponse.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
 - A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness.
@@ -965,7 +965,7 @@ export function registerRulesTools(enabled: boolean): void {
 
     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
     // enums; function-calling accuracy drops as the number of functions grows, Patil et al. 2025, BFCL).
-    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, or want to see someone again after a first meeting.', {
+    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, obey an order from a stranger acting outside their office, or want to see someone again after a first meeting.', {
         situation: { type: 'string', enum: SOCIAL },
         who: str('The person whose response is decided'),
         speaker: str('For a statement: who made it'),
@@ -978,6 +978,8 @@ export function registerRulesTools(enabled: boolean): void {
         request: str('For a favour: the request in a few words'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'For a first meeting: sex of the person whose interest is decided' },
         many_options: { type: 'boolean', description: 'For a first meeting: they meet many prospective partners at once (15 or more)' },
+        requester: { type: 'string', enum: REQUESTERS, description: 'For a stranger\'s order: how the one giving it is dressed' },
+        order_kind: { type: 'string', enum: ORDERS, description: 'For a stranger\'s order: what it asks' },
     }, ['situation', 'who'], a => run((st, rng) => {
         switch (a.situation) {
             case SOCIAL[0]: {
@@ -999,6 +1001,11 @@ export function registerRulesTools(enabled: boolean): void {
                 if (!a.sex) return 'Give sex for a first meeting.';
                 const pr = interestChance(a.sex, !!a.many_options);
                 return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
+            }
+            case SOCIAL[5]: {
+                const p = orderChance(a.requester ?? '', a.order_kind ?? '');
+                if (p === null) return `Give requester (${REQUESTERS.join('; ')}) and order_kind (${ORDERS.join('; ')}).`;
+                return `${a.who} ${rng() < p ? 'obeys' : 'refuses'} (${a.order_kind}; the one ordering wears ${a.requester}).`;
             }
             default: return `Give situation, one of: ${SOCIAL.join('; ')}.`;
         }
