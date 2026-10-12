@@ -455,7 +455,7 @@ export function registerRulesTools(enabled: boolean): void {
         approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
         sense_range_m: { type: 'number', description: 'Range of any non-visual sense the target has that detects an approaching attacker (e.g. telepathy), in m.' },
         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
-    }, ['who', 'part'], a => run((st, rng) => {
+    }, ['who'], a => run((st, rng) => {
         const { p, error } = who(st, a.who, a.species, a.target_mass_kg);
         if (!p) return error;
         const attacker = a.attacker && st.people?.[a.attacker] ? st.people[a.attacker] : null;

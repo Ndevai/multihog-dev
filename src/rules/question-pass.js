@@ -14,6 +14,8 @@ const ENUM_SHOWN = 40;
 const SKIP = new Set(['BodyStatus']);
 export const QUESTION_SYSTEM = `You prepare one turn of a roleplay for its narrator. Code decides outcomes with the tools listed below; the narrator then writes what they return.
 Read the scene and the player's message. Find each outcome the next reply will need that is in doubt: an action that may fail, a blow that may land, a sound or sight that may be missed, a message that may not be understood, a person whose response is open, time that passes, a fact the scene establishes or a character learns.
+Ask only about outcomes this reply must show. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) waits for the next turn; ask the first one.
+Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep). A person the story has not described → NewCharacter when the player looks at, asks about or deals with them closely. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them. One call per question; calls run in the order given, so put time passing after the actions it follows.
 First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}]}. When nothing is in doubt, write {"calls":[]}.`;
 /** One line per argument: name, * when required, type or allowed values, description. */
