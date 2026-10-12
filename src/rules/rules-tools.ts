@@ -103,6 +103,9 @@ export function onRulesMessageReceived(messageId: number): void {
     msg.extra ??= {};
     const results = (msg.extra.rulesResult ??= {}) as Record<number, RuleState>;
     results[msg.swipe_id ?? 0] = structuredClone(store().state);
+    // The question pass's calls for this reply, for /rules-stats.
+    const asked = store().asked;
+    if (asked?.turn === turnKey(ctx.chat)) ((msg.extra.rulesAsked ??= {}) as Record<number, unknown>)[msg.swipe_id ?? 0] = asked.calls;
     (ctx.saveChatDebounced || ctx.saveChat)?.();
 }
 

@@ -108,6 +108,43 @@ export function auditStats(chat) {
     }
     return { checked, flagged, byTool, byProblem };
 }
+// Tools that decide an outcome; BodyCheck is the catch-all for actions no specific rule covers.
+const RECORDING = new Set(['RecordFact', 'NewCharacter', 'NameCharacter', 'BodyStatus', 'BodyEnvironment', 'BodyIntake', 'PassTime']);
+/**
+ * Coverage of the rules in this chat: decisions made (question pass and narrator calls, the shown swipe of each reply),
+ * how many went through a specific rule rather than the BodyCheck catch-all, and the catch-all's most frequent tasks:
+ * the actions a new specific rule would cover first.
+ */
+export function coverageStats(chat) {
+    const byTool = {}, tasks = {};
+    let decisions = 0, catchAll = 0;
+    const count = (tool, args) => {
+        if (RECORDING.has(tool))
+            return;
+        decisions++;
+        byTool[tool] = (byTool[tool] ?? 0) + 1;
+        if (tool !== 'BodyCheck')
+            return;
+        catchAll++;
+        const t = String(args.task ?? '').toLowerCase().replace(/,? *\d+(st|nd|rd|th) try$/, '').trim();
+        if (t)
+            tasks[t] = (tasks[t] ?? 0) + 1;
+    };
+    for (const m of chat) {
+        const asked = m.extra?.rulesAsked?.[m.swipe_id ?? 0];
+        for (const c of asked ?? [])
+            count(c.tool, c.args ?? {});
+        for (const t of m.extra?.tool_invocations ?? []) {
+            let args = {};
+            try {
+                args = JSON.parse(t.parameters ?? '{}');
+            }
+            catch { /* unreadable arguments count without a task */ }
+            count(t.name, args);
+        }
+    }
+    return { decisions, catchAll, byTool, tasks };
+}
 /** /rules-stats: the check pass's tally for the open chat. */
 export function registerRulesStatsCommand() {
     const ctx = SillyTavern.getContext();
@@ -115,13 +152,19 @@ export function registerRulesStatsCommand() {
         return;
     ctx.SlashCommandParser.addCommandObject(ctx.SlashCommand.fromProps({
         name: 'rules-stats',
-        helpString: 'Rule check tally for this chat: replies checked, replies with outcomes no engine result backs, by tool.',
+        helpString: 'Rule check tally and rule coverage for this chat: replies with outcomes no engine result backs; outcomes decided by a specific rule versus the BodyCheck catch-all, and the catch-all tasks most often seen.',
         returns: 'the tally as text',
         callback: async () => {
             const s = auditStats(SillyTavern.getContext().chat ?? []);
             const list = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join(', ') || 'none';
-            const text = `Rule check: ${s.checked} replies checked, ${s.flagged} with flagged events (${s.checked ? Math.round(100 * s.flagged / s.checked) : 0} %). By tool: ${list(s.byTool)}. By problem: ${list(s.byProblem)}.`;
-            globalThis.toastr?.info(text, 'Rules engine');
+            const c = coverageStats(SillyTavern.getContext().chat ?? []);
+            const top = Object.entries(c.tasks).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => `${k} ${n}`).join(', ') || 'none';
+            const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+            const text = `Rule check: ${s.checked} replies checked, ${s.flagged} with flagged events (${pct(s.flagged, s.checked)} %). By tool: ${list(s.byTool)}. By problem: ${list(s.byProblem)}.\n`
+                + `Coverage: ${c.decisions} outcomes decided, ${pct(c.decisions - c.catchAll, c.decisions)} % by a specific rule, ${pct(c.catchAll, c.decisions)} % by the BodyCheck catch-all. By tool: ${list(c.byTool)}. Catch-all tasks most often: ${top}.`;
+            globalThis.toastr?.info(text.split('\n')[1], 'Rules engine', { timeOut: 0, extendedTimeOut: 0 });
+            const run = SillyTavern.getContext().executeSlashCommandsWithOptions;
+            await run?.(`/comment ${text.replace(/\|/g, '\\|').replace(/\{\{/g, '{ {')}`).catch(e => console.warn('[Rules stats] comment failed:', e));
             return text;
         },
     }));
