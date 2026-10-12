@@ -8,6 +8,7 @@ import { turnKey } from './turn.js';
 import { REGISTRY, store, storyTime, setStoryTime, scenePosition, setScenePosition } from './rules-tools.js';
 import { parseStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
+import { loadThings, thingsIn, thingsBlock, setRead, READ } from './things.js';
 // Calls run per turn, at most [ASSUMED]; scene messages shown and their length.
 const MAX_CALLS = 8, SCENE_MESSAGES = 8, MESSAGE_CHARS = 1500, TRACKER_CHARS = 4000;
 // Enums longer than this are shown as free text; the tool then names the valid values in its reply [ASSUMED].
@@ -77,12 +78,29 @@ export function rawPlan(text) {
                 calls: o.calls.filter((c) => !!c && typeof c.tool === 'string' && typeof c.args === 'object' && c.args !== null),
                 then: Array.isArray(o.then) ? o.then.filter((q) => typeof q === 'string' && !!q.trim()) : [],
                 time: typeof o.time === 'string' ? o.time : undefined,
+                read: strings(o.read, v => typeof v === 'string'),
+                unsure: strings(o.unsure, v => Array.isArray(v) && v.length >= 2 && v.every(x => typeof x === 'string')),
                 at: Array.isArray(o.at) && o.at.length === 2 && o.at.every((x) => typeof x === 'number' && Number.isFinite(x)) && Math.abs(o.at[0]) <= 90 && Math.abs(o.at[1]) <= 180 ? [o.at[0], o.at[1]] : undefined,
             };
         }
         catch { /* try an earlier object */ }
     }
-    return { calls: [], then: [] };
+    return { calls: [], then: [], read: {}, unsure: {} };
+}
+const strings = (o, ok) => o && typeof o === 'object' && !Array.isArray(o) ? Object.fromEntries(Object.entries(o).filter(([, v]) => ok(v))) : {};
+/** The things the model read, kept only when the id is one offered for that phrase; unsure phrases go to the player. */
+async function resolveRead(found, plan, choose) {
+    const out = [];
+    for (const f of found) {
+        const pick = (id) => f.options.find(o => o.id === id);
+        let o = pick(plan.read[f.phrase]);
+        const doubt = plan.unsure[f.phrase]?.map(pick).filter((x) => !!x) ?? [];
+        if (!o && doubt.length >= 2)
+            o = choose ? pick(await choose(f.phrase, doubt.slice(0, 2))) : undefined;
+        if (o)
+            out.push({ phrase: f.phrase, id: o.id, label: o.label, year: o.year });
+    }
+    return out;
 }
 /** Calls to run: unknown tools and calls missing a required argument dropped, at most MAX_CALLS. */
 export function parseCalls(text) {
@@ -103,10 +121,11 @@ export function questionPrompt(chat, knows, tracker = '') {
  * Runs the question pass for a generation whose last message is the player's. A swipe of the same turn reuses the calls
  * asked the first time; the engine state was restored to the turn's start, so the same calls give the same outcomes.
  */
-export async function runQuestionPass(chat, send, tracker = '') {
+export async function runQuestionPass(chat, send, tracker = '', choose) {
     const ctx = SillyTavern.getContext();
+    setRead([]);
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size)
-        return;
+        return [];
     const s = store(), turn = turnKey(ctx.chat);
     const results = [];
     const runAll = async (list) => { for (const c of list)
@@ -115,13 +134,17 @@ export async function runQuestionPass(chat, send, tracker = '') {
     if (s.asked?.turn === turn) {
         calls = s.asked.calls;
         time = s.asked.time ?? null;
+        setRead(s.asked.read ?? []);
         if (time !== null && storyTime() === null)
             setStoryTime(time);
         await runAll(calls);
     }
     else {
-        const prompt = questionPrompt(chat, knowledgeBlock(s.state), tracker);
+        await loadThings();
+        const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
+        const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker), thingsBlock(found)].filter(Boolean).join('\n\n');
         const plan = rawPlan(await send(QUESTION_SYSTEM, prompt));
+        setRead(await resolveRead(found, plan, choose));
         time = plan.time && storyTime() === null ? parseStoryTime(plan.time) : null;
         if (time !== null)
             setStoryTime(time);
@@ -137,9 +160,10 @@ export async function runQuestionPass(chat, send, tracker = '') {
             calls = [...calls, ...more];
         }
     }
-    s.asked = { turn, calls, results, time };
+    s.asked = { turn, calls, results, time, read: READ };
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
-    console.debug('[Rules engine] question pass', calls, results);
+    console.debug('[Rules engine] question pass', calls, results, READ);
+    return READ;
 }
 /** This turn's question-pass results, for the check pass. */
 export function askedResults() {

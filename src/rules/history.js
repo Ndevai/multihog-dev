@@ -4,6 +4,7 @@
 import { INVENTIONS } from './data/inventions.js';
 import { WD_INVENTIONS } from './data/wikidata-inventions.js';
 import { GAPS } from './data/inventions.js';
+import { READ } from './things.js';
 const STOP = new Set(['a', 'an', 'the', 'of', 'first', 'early', 'modern', 'new', 'his', 'her', 'their', 'some']);
 const words = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/[^a-z]+/)
     .filter(w => w && !STOP.has(w)).map(w => w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w);
@@ -19,6 +20,12 @@ export function firstYear(item, book = []) {
             if (matches(item, c.what) || matches(c.what, item)) {
                 return c.never ? { year: Infinity, label: c.what } : { year: c.new_year ?? c.year, label: c.what };
             }
+    // A thing the question model linked this turn: its own year, or the dated invention its name matches.
+    const read = READ.find(r => matches(item, r.phrase) || matches(r.phrase, item) || matches(item, r.label));
+    if (read?.year != null)
+        return { year: read.year, label: read.label };
+    if (read)
+        item = read.label;
     let best = null;
     // Earliest year; at the same year the shorter name (the plainer match).
     for (const [y, label] of [...INVENTIONS, ...WD_INVENTIONS])

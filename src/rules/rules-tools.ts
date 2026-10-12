@@ -40,7 +40,8 @@ export interface EngineStore {
     state: RuleState; snapshots: Record<number, { state: RuleState; calls: number }>; salt: string; calls?: number; version?: number;
     decided?: { turn: string; out: Record<string, string> } | null;
     /** The question pass of one turn: the calls asked for and what they returned (kept so a swipe reuses the same calls). */
-    asked?: { turn: string; calls: { tool: string; args: Record<string, unknown> }[]; results: { tool: string; result: string }[]; time?: number | null } | null;
+    asked?: { turn: string; calls: { tool: string; args: Record<string, unknown> }[]; results: { tool: string; result: string }[]; time?: number | null;
+        read?: { phrase: string; id: string; label: string; year: number | null }[] } | null;
 }
 
 export const TOOLS = ['WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;

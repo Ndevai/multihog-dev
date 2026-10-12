@@ -199,7 +199,9 @@ globalThis.rulesEngineInterceptor = async (chat, _size, _abort, type) => {
         return;
     if (s.questionPass && type !== 'continue') {
         try {
-            await runQuestionPass(chat, send, [storyState(), castBlock()].filter(Boolean).join('\n'));
+            const read = await runQuestionPass(chat, send, [storyState(), castBlock()].filter(Boolean).join('\n'), choose);
+            if (read.length)
+                toastr.info(read.map(r => `${r.phrase} → ${r.label}${r.year != null ? ` (${r.year})` : ''}`).join('; '), 'Read as');
         }
         catch (e) {
             console.warn('[Rules engine] question pass skipped:', e);
@@ -207,6 +209,13 @@ globalThis.rulesEngineInterceptor = async (chat, _size, _abort, type) => {
     }
     const parts = [questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decidedInjection(), takeAuditNote() ?? ''];
     c.setExtensionPrompt(KEY, parts.filter(Boolean).join('\n\n'), IN_CHAT, DEPTH, false, SYSTEM);
+};
+// Two things fit the player's word equally: the player says which (a guess would change what the scene can hold).
+const choose = async (phrase, [a, b]) => {
+    const esc = (t) => t.replace(/[&<>"]/g, ch => `&#${ch.charCodeAt(0)};`);
+    const c = ctx(), say = (o) => esc(`${o.label}${o.year != null ? ` (${o.year})` : ''}`);
+    const r = await c.callGenericPopup(`<h3>Which "${esc(phrase)}"?</h3><p>${say(a)}: ${esc(a.description)}</p><p>${say(b)}: ${esc(b.description)}</p>`, c.POPUP_TYPE.CONFIRM, '', { okButton: say(a), cancelButton: say(b) });
+    return r === 1 ? a.id : r === 0 ? b.id : null;
 };
 function registerTimeCommand() {
     const c = ctx();
