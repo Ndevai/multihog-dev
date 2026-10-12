@@ -5,7 +5,8 @@
 // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
 // tools itself; a call already made here returns the same result (the turn's decision ledger).
 import { turnKey } from './turn.js';
-import { REGISTRY, store, type Args } from './rules-tools.js';
+import { REGISTRY, store, storyTime, setStoryTime, type Args } from './rules-tools.js';
+import { parseStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
 
@@ -17,10 +18,21 @@ const SKIP = new Set(['BodyStatus']);
 
 export const QUESTION_SYSTEM = `You prepare one turn of a roleplay for its narrator. Code decides outcomes with the tools listed below; the narrator then writes what they return.
 Read the scene and the player's message. Find each outcome the next reply will need that is in doubt: an action that may fail, a blow that may land, a sound or sight that may be missed, a message that may not be understood, a person whose response is open, time that passes, a fact the scene establishes or a character learns.
-Ask only about outcomes this reply must show. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) waits for the next turn; ask the first one.
+Ask only about outcomes this reply must show. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
 A player's message that states something the story has not established about their own character (what they are, an item they have, something they can do or did) → Claim, before the actions that rely on it. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep). A person the story has not described who acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them. One call per question; calls run in the order given, so put time passing after the actions it follows.
-First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}]}. When nothing is in doubt, write {"calls":[]}.`;
+When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known).
+First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"]}. When nothing is in doubt, write {"calls":[]}.`;
+
+// The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
+// FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
+const FOLLOW_ON = `RESULTS SO FAR
+{results}
+
+FOLLOW-ON QUESTIONS
+{then}
+
+Write the calls for the follow-on questions these results leave in doubt; a question a result settles or rules out gets no call. Same format: QUESTIONS, then the JSON {"calls":[...]}.`;
 
 /** One line per argument: name, * when required, type or allowed values, description. */
 function describe(name: string, p: Prop, required: boolean, depth = 0): string {
@@ -46,9 +58,15 @@ export function toolCatalogue(): string {
 }
 
 type Call = { tool: string; args: Record<string, unknown> };
+type Plan = { calls: Call[]; then: string[]; time?: string };
 
 /** Every call in the model's text, unchecked: the last JSON object holding "calls" that parses. */
 export function rawCalls(text: unknown): Call[] {
+    return rawPlan(text).calls;
+}
+
+/** The last JSON object holding "calls" that parses: its calls, follow-on questions and story time, unchecked. */
+export function rawPlan(text: unknown): Plan {
     const s = String(text ?? '');
     const starts = [...s.matchAll(/\{\s*"calls"/g)].map(m => m.index!).reverse();
     for (const at of starts) {
@@ -59,16 +77,24 @@ export function rawCalls(text: unknown): Call[] {
         }
         if (end < 0) continue;
         try {
-            const calls = JSON.parse(s.slice(at, end + 1)).calls;
-            if (Array.isArray(calls)) return calls.filter((c): c is Call => !!c && typeof c.tool === 'string' && typeof c.args === 'object' && c.args !== null);
+            const o = JSON.parse(s.slice(at, end + 1));
+            if (!Array.isArray(o.calls)) continue;
+            return {
+                calls: o.calls.filter((c: unknown): c is Call => !!c && typeof (c as Call).tool === 'string' && typeof (c as Call).args === 'object' && (c as Call).args !== null),
+                then: Array.isArray(o.then) ? o.then.filter((q: unknown): q is string => typeof q === 'string' && !!q.trim()) : [],
+                time: typeof o.time === 'string' ? o.time : undefined,
+            };
         } catch { /* try an earlier object */ }
     }
-    return [];
+    return { calls: [], then: [] };
 }
 
 /** Calls to run: unknown tools and calls missing a required argument dropped, at most MAX_CALLS. */
 export function parseCalls(text: unknown): Call[] {
-    return rawCalls(text).filter(c => { const t = REGISTRY.get(c.tool); return !!t && !SKIP.has(c.tool) && t.required.every(k => c.args[k] !== undefined && c.args[k] !== ''); })
+    return validCalls(rawCalls(text));
+}
+function validCalls(calls: Call[]): Call[] {
+    return calls.filter(c => { const t = REGISTRY.get(c.tool); return !!t && !SKIP.has(c.tool) && t.required.every(k => c.args[k] !== undefined && c.args[k] !== ''); })
         .slice(0, MAX_CALLS);
 }
 
@@ -88,11 +114,30 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
     const ctx = SillyTavern.getContext();
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size) return;
     const s = store(), turn = turnKey(ctx.chat);
-    const calls = s.asked?.turn === turn ? s.asked.calls
-        : parseCalls(await send(QUESTION_SYSTEM, questionPrompt(chat, knowledgeBlock(s.state), tracker)));
     const results: { tool: string; result: string }[] = [];
-    for (const c of calls) results.push({ tool: c.tool, result: String(await REGISTRY.get(c.tool)!.exec(c.args as Args)) });
-    s.asked = { turn, calls, results };
+    const runAll = async (list: Call[]) => { for (const c of list) results.push({ tool: c.tool, result: String(await REGISTRY.get(c.tool)!.exec(c.args as Args)) }); };
+    let calls: Call[], time: number | null = null;
+    if (s.asked?.turn === turn) {
+        calls = s.asked.calls; time = s.asked.time ?? null;
+        if (time !== null && storyTime() === null) setStoryTime(time);
+        await runAll(calls);
+    }
+    else {
+        const prompt = questionPrompt(chat, knowledgeBlock(s.state), tracker);
+        const plan = rawPlan(await send(QUESTION_SYSTEM, prompt));
+        time = plan.time && storyTime() === null ? parseStoryTime(plan.time) : null;
+        if (time !== null) setStoryTime(time);
+        calls = validCalls(plan.calls);
+        await runAll(calls);
+        if (plan.then.length && calls.length < MAX_CALLS) {
+            const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n') || '(none)')
+                .replace('{then}', plan.then.map(q => `- ${q}`).join('\n'));
+            const more = validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${follow}`))).slice(0, MAX_CALLS - calls.length);
+            await runAll(more);
+            calls = [...calls, ...more];
+        }
+    }
+    s.asked = { turn, calls, results, time };
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
     console.debug('[Rules engine] question pass', calls, results);
 }
