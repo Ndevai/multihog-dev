@@ -884,6 +884,8 @@ export function registerRulesTools(enabled: boolean): void {
         reference_class: str('The wider class this claim belongs to (e.g. "travellers in 1850 England carrying a pistol")'),
         base_share: { type: 'string', enum: SHARES, description: 'How often claims of that class hold in this kind of setting.' },
         share: { type: 'string', enum: SHARES, description: 'Your estimate for this claim given everything the story has established so far.' },
+        path: { type: 'array', maxItems: 6, items: { type: 'object', properties: { step: str('One event the claim needs, in the order it would happen'), reference_class: str('The cases this step belongs to, given the steps before it'), base_share: { type: 'string', enum: SHARES }, share: { type: 'string', enum: SHARES } }, required: ['step', 'reference_class', 'base_share', 'share'] },
+            description: 'For a claim whose base share is "almost no one": the events it needs, in order, each given the ones before (arrive in the country, reach the place, stay there). Required then.' },
     }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
         if (a.kind === 'something the character has') account(st, a.who);
         // A thing not yet invented at the story's date, or never made in this world, cannot be had (history.ts).
@@ -899,8 +901,29 @@ export function registerRulesTools(enabled: boolean): void {
         }
         const sp = a.kind === 'what the character is' && a.species ? creatureId(a.species) : null;
         if (a.species && a.kind === 'what the character is' && !sp) return noSpecies(a.species);
-        const holds = rng() < combined(a);
         const claim = a.claim.replace(/[.!?]?$/, '.');
+        // A claim rarer than the lowest band is decomposed into the chain of events it needs, each a share given the ones
+        // before; the chance is their product, at most the claim's own (the chain refines a rare claim, it cannot raise
+        // it). A detailed story reads as more likely while being less likely (conjunction fallacy, Tversky & Kahneman 1983,
+        // Psychol Rev 90:293; GPT-3 commits it too: Binz & Schulz 2023, PNAS 120:e2218523120), so each step is drawn,
+        // not judged for how convincing it is. Drawn in order: the first step that fails is what the world holds instead.
+        const rare = shareOf(a.base_share) <= 0.05;
+        const path = (a.path ?? []).filter(x => x?.step);
+        if (rare && path.length < 2) return 'A claim this rare needs its path: two or more steps, in order, each with its reference class and shares given the steps before.';
+        if (rare) {
+            const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
+            const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;
+            const failed = path.findIndex((_, i) => rng() >= each[i] * scale);
+            if (failed >= 0) {
+                const got = path.slice(0, failed).map(x => x.step);
+                learn(st, `Not so: ${claim}${got.length ? ` (${got.join('; ')}: yes; ${path[failed].step}: no)` : ''}`, [a.who], false, { [a.who]: 'found out' });
+                return `${a.claim}: does not hold. ${got.length ? `What holds: ${got.join('; ')}. ` : ''}What did not happen: ${path[failed].step}. ${a.who} acts on it and meets the world as it is; narrate that.`;
+            }
+            learn(st, `${claim} (${path.map(x => x.step).join('; ')})`, [a.who], false, { [a.who]: 'their own' });
+            if (a.kind === 'something the character has' && a.item) give(st, a.who, a.item, Math.max(1, Math.round(a.quantity ?? 1)));
+            return `${a.claim}: holds, by this path: ${path.map(x => x.step).join('; ')}. Recorded.`;
+        }
+        const holds = rng() < combined(a);
         if (!holds) {
             learn(st, `Not so: ${claim}`, [a.who], false, { [a.who]: 'found out' });
             return `${a.claim}: does not hold. ${a.who} acts on it and meets the world as it is; narrate that.`;
