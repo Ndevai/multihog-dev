@@ -972,15 +972,21 @@ export function registerRulesTools(enabled) {
             p.region = a.region;
         return holdLoad(a.who, p, { load_kg: a.load_kg, hands: a.hands ?? 2, hanging: !!a.hanging, seconds: a.seconds ?? null, fingertips: !!a.fingertips, climber: a.climber ?? 'no' }, rng);
     }));
-    tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their species\' top speeds and leg injuries.', {
+    tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their top speeds (each human\'s drawn once from untrained adults of their sex; other creatures from their species) and leg injuries.', {
         pursuer: str('Character chasing'), pursuer_species: str('Pursuer\'s DF creature when the engine has no record of them yet.'),
         fleeing: str('Character running away'), fleeing_species: str('Fleeing character\'s DF creature when the engine has no record of them yet.'),
         gap_m: { type: 'number', description: 'Head start, m' },
-    }, ['pursuer', 'fleeing', 'gap_m'], a => run(st => {
+        pursuer_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human pursuer the engine has no sex for' },
+        fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing the engine has no sex for' },
+    }, ['pursuer', 'fleeing', 'gap_m'], a => run((st, rng) => {
         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
         if (!p.p || !f.p)
             return p.error || f.error;
-        return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m);
+        if (a.pursuer_sex)
+            p.p.sex ??= a.pursuer_sex;
+        if (a.fleeing_sex)
+            f.p.sex ??= a.fleeing_sex;
+        return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m, rng);
     }));
     tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales.', {
         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),

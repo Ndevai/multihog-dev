@@ -76,7 +76,7 @@ export interface Person {
     burnDeath?: { p: number; fatal: boolean; min: number; deathMin: number | null }; burnO?: number[]; burnt?: Record<string, BurnDepth>; inhalation?: boolean;
     heatStroke?: { min: number; exertional: boolean; fatal?: boolean; deathMin?: number } | null;
     swimFailed?: boolean; canSwim?: boolean; underS?: number; breathHold?: number | null;
-    fitZ?: number; gripZ?: number;
+    fitZ?: number; gripZ?: number; runZ?: number;
     /** Languages the character knows, lower case; absent when the story has not stated them. */
     languages?: string[];
 }

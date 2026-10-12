@@ -1126,17 +1126,27 @@ export function holdLoad(who: string, p: Person, { load_kg = null as number | nu
 // Running speed (§6.7): the creature's fastest DF walking gait [RAW]; DF gait value v (ticks per 100 tiles) → km/h = 8775 ÷ v,
 // the constant matching the speeds written beside the gait variations in the DF raws (human 225 → 39 km/h, dog 149 → 59, horse
 // 125 → 70). × the share of working legs (stance) [ASSUMED proportional]; no legs → 0.
-export function topSpeedKmh(p: Person): number {
+// Humans: flying 20 m sprint of untrained adults, 3.6 ± 0.4 s for 149 women and 2.9 ± 0.3 s for 84 men, mean age 43
+// (Manderoos 2020, Univ. Helsinki doctoral thesis, Study II, Table 4): 20.0 ± 2.2 and 24.8 ± 2.6 km/h (SD by the delta
+// method). Each person keeps one draw (runZ). Ages outside 36–51 take the same values [ASSUMED]; sex unknown takes the mean.
+const HUMAN_RUN: Record<string, { mean: number; sd: number }> = { female: { mean: 20.0, sd: 2.2 }, male: { mean: 24.8, sd: 2.6 } };
+
+export function topSpeedKmh(p: Person, rng: Rng = Math.random): number {
     const c = creatureOf(p);
     const g = c?.gaits?.filter(x => x.type === 'WALK') ?? [];
     if (!g.length || p.dead || p.unconscious) return 0;
     const st = abilities(p).stance ?? 1;
+    if (p.species === 'HUMAN') {
+        p.runZ ??= Math.max(-3, Math.min(3, gauss(rng)));
+        const n = HUMAN_RUN[p.sex ?? ''] ?? { mean: (20.0 + 24.8) / 2, sd: (2.2 + 2.6) / 2 };
+        return Math.max(5, n.mean + p.runZ * n.sd) * st;
+    }
     return 8775 / Math.min(...g.map(x => x.max)) * st;
 }
 
 /** A chase over open ground: does the pursuer catch the one fleeing, starting `gap_m` apart, both at full speed? */
-export function chase(pn: string, pursuer: Person, fn: string, fleeing: Person, gap_m: number): string {
-    const vp = topSpeedKmh(pursuer) / 3.6, vf = topSpeedKmh(fleeing) / 3.6;
+export function chase(pn: string, pursuer: Person, fn: string, fleeing: Person, gap_m: number, rng: Rng = Math.random): string {
+    const vp = topSpeedKmh(pursuer, rng) / 3.6, vf = topSpeedKmh(fleeing, rng) / 3.6;
     const lame = (q: Person) => (abilities(q).stance ?? 1) < 1 ? ', slowed by injured legs' : '';
     console.debug?.('[Rules engine]', `${pn} ${round(vp * 3.6)} km/h, ${fn} ${round(vf * 3.6)} km/h`);
     if (vp <= vf) return `${fn} gets away: ${pn} is not faster${lame(pursuer)}.`;
