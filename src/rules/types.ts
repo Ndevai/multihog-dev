@@ -97,7 +97,7 @@ export interface RuleState {
     /** What the scene has fixed for every tool: the last place given (a weather place key), its label and country. */
     setting?: { place?: string; label?: string; country?: string | null };
     /** What each character carries, by holder name (possessions.ts). */
-    items?: Record<string, { item: string; qty: number }[]>;
+    items?: Record<string, { item: string; qty: number; owner?: string }[]>;
     /** Holders who give only what is on record: player characters after a Claim about what they have. */
     accounted?: string[];
 }

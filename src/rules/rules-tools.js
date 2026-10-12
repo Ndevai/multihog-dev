@@ -27,8 +27,9 @@ import { anachronism } from './history.js';
 import { CURRENT_BOOK } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
+import { sharedIn, sharedWith, languageCode } from './colex.js';
 import { str, checkArgs } from './tool-schema.js';
-export const TOOLS = ['WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
@@ -147,7 +148,7 @@ export function plain(out) {
 // A decision tool called again in one turn for the same actor and act returns its first result, like RollTheDice's ledger,
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = (v) => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
-const DECIDES = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], WorkOut: a => [a.who, a.problem], Sickness: a => [a.who, a.situation], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
+const DECIDES = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], WorkOut: a => [a.who, a.problem], Sickness: a => [a.who, a.situation], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Interpret: a => [a.listener, a.speaker, a.word], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
     Weather: a => [a.place], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
@@ -180,6 +181,24 @@ const shuffled = (list) => list.map(x => [Math.random(), x]).sort((a, b) => a[0]
 const reshuffle = (list) => { const o = shuffled(list); list.splice(0, list.length, ...o); };
 // Closed lists from the DF raws (melee weapons; weapon metals plus bone and wood for ammunition), filled after load.
 const MELEE = [], WEAPON_MATERIALS = [];
+// How a character came to know a fact: Aikhenvald's (2004, Evidentiality) six sources marked by the world's evidential
+// systems (visual, non-visual sensory, inference, assumption, hearsay, quotative).
+const KNOWN_HOW = ['saw it', 'heard, smelled or felt it', 'inferred from what they saw', 'assumed from what they know', 'told by someone', 'hearsay'];
+// Body parts and kin are possessed without being owned or handed over (inalienable possession: Nichols 1988, the classes
+// languages most often mark apart), and a tracked person is a character, not an item.
+const KIN = /^(?:my |his |her |their |our |your )?(?:mother|father|son|daughter|brother|sister|wife|husband|child|children|parent|uncle|aunt|cousin|nephew|niece|grandmother|grandfather|grandchild)s?$/i;
+const SEVERED = /\b(severed|cut off|amputated|preserved|skull|bones? of)\b/i;
+let PART_NAMES = null;
+function inalienable(st, item) {
+    const t = item.trim().toLowerCase().replace(/^(?:my|his|her|their|our|your|a|an|the) /, '');
+    if (KIN.test(t) || Object.keys(st.people ?? {}).some(n => n.toLowerCase() === t))
+        return `"${item}" is a person; their moves come from the story and the people tools`;
+    PART_NAMES ??= new Set((creature('HUMAN')?.parts ?? []).map(p => p.name.toLowerCase().replace(/^(left|right) /, '')));
+    const bare = t.replace(/^(left|right) /, '');
+    if (!SEVERED.test(t) && (PART_NAMES.has(bare) || PART_NAMES.has(bare.replace(/s$/, ''))))
+        return `"${item}" is a body part; it goes with the body (BodyWound, BodyStrike, BodyTreat)`;
+    return '';
+}
 const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = (v) => typeof v === 'number' ? v : (parseFloat(String(v)) || 0) / 100;
@@ -250,7 +269,8 @@ const RULES_PRINCIPLES = `Principles
 - The world is real history with the additions in [WORLD]; an area of life an addition does not reach is as in real history.
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
-- A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.`;
+- A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.
+- A character who took a word in another meaning ([KNOWS]: "took … to mean …") acts on that meaning; the narration keeps the English word as spoken.`;
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
 export const RULES_BRIEF_DECIDED = `<rule_engine>
 Outcomes in [DECIDED] come from the rule engine; narrate each as given, in the order it happens.
@@ -272,7 +292,7 @@ Surroundings
 - The day's weather → Weather. A change of climate, weather, clothing, water or air → BodyEnvironment.
 - Time passing → PassTime; when it stops early, narrate the moment it reports.
 Senses
-- A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate.
+- A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate; a word it names as having several meanings → Interpret.
 People
 - A character the story has not described → NewCharacter; their first name → NameCharacter; their height and mass → BodySize.
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
@@ -654,7 +674,35 @@ export function registerRulesTools(enabled) {
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out))
             return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
-        return `${out} ${a.listener} now knows: ${a.message}`;
+        // English speech is already on the page in its own words; another language's words are not.
+        const spoken = (s.p.languages ?? []).find(x => x !== 'english' && (!l.p.languages?.length || l.p.languages.includes(x)));
+        const shared = spoken ? sharedIn(a.message, spoken) : [];
+        const one = shared.length ? ` In ${spoken} one word also means: ${shared.map(x => `"${x.word}" (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
+        return `${out} ${a.listener} now knows: ${a.message.replace(/[.!?]?$/, '.')}${one}`;
+    }));
+    // A listener takes a word that has several meanings in the spoken language in the one the scene supports; when the scene
+    // supports more than one, each is equally likely [ASSUMED: no published rate of misreading per context]. Context usually
+    // settles a word of several meanings (Piantadosi, Tily & Gibson 2012, Cognition 122:280), so most calls give the meaning
+    // intended. A misreading is kept as the listener's own fact: it shows only when the story reaches what depends on it.
+    tool('Interpret', 'Decide which meaning a listener takes from a word that has several meanings in the language spoken, after Communicate names it, before narrating their response.', {
+        speaker: str('Who said it'),
+        listener: str('Who heard it'),
+        language: str('The language spoken'),
+        word: str('The English word as the speaker meant it, as Communicate names it'),
+        fits: { type: 'array', items: { type: 'string' }, description: 'Every meaning, from the word and those Communicate lists, that what the listener knows and sees in the scene leaves possible' },
+    }, ['speaker', 'listener', 'language', 'word', 'fits'], a => run((st, rng) => {
+        const code = languageCode(a.language);
+        if (!code)
+            return `No word list for ${a.language}; ${a.listener} takes "${a.word}" as meant.`;
+        const valid = [a.word.toLowerCase(), ...sharedWith(a.word, code)];
+        const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase()))].filter(x => valid.includes(x));
+        if (!fits.length)
+            return `Give fits from: ${valid.join('; ')}.`;
+        const reading = fits[Math.floor(rng() * fits.length)];
+        if (reading === valid[0])
+            return `${a.listener} takes "${a.word}" as ${a.speaker} meant it.`;
+        learn(st, `${a.listener} took ${a.speaker}'s word for "${a.word}" to mean "${reading}" (one word in ${a.language})`, [a.listener], false, { [a.listener]: 'heard it' });
+        return `${a.listener} takes "${a.word}" to mean "${reading}"; ${a.speaker} does not know. Narrate the English word as spoken; the misreading shows only through what ${a.listener} says and does, now or when it comes to matter.`;
     }));
     tool('Appraise', 'Decide which emotions a character feels about something, before narrating their feelings. The answers describe how the character sees it; the emotion types follow from them.', {
         who: str('Character feeling it'),
@@ -820,18 +868,27 @@ export function registerRulesTools(enabled) {
         fact: str('The fact, one short sentence'),
         known_by: { type: 'array', items: { type: 'string' }, description: 'Characters who know it' },
         common_knowledge: { type: 'boolean', description: 'Known to everyone in the setting (a public event, a famous place, a well-known custom)' },
-        how: str('How the knowers learned it, when they learned it the same way: saw it, heard it, read it, told by a named person, rumour'),
+        how: { type: 'string', enum: KNOWN_HOW, description: 'How the knowers learned it, when they learned it the same way' },
+        told_by: str('For "told by someone": who told them'),
+        cause: str('For an event: who or what caused it, as the story has it: a character\'s name, "a natural force", or "unknown"'),
     }, ['fact'], a => run(st => {
-        const f = learn(st, a.fact, a.known_by ?? [], !!a.common_knowledge, a.how ? Object.fromEntries((a.known_by ?? []).map(k => [k, a.how])) : {});
+        const how = a.how === KNOWN_HOW[4] && a.told_by ? `told by ${a.told_by}` : a.how;
+        if (a.cause && !['a natural force', 'unknown'].includes(a.cause.toLowerCase())) {
+            const c = whoAny(st, a.cause);
+            if (!c.p)
+                return c.error;
+        }
+        const text = a.cause ? `${a.fact.replace(/[.!?]?$/, '')} (cause: ${a.cause})` : a.fact;
+        const f = learn(st, text, a.known_by ?? [], !!a.common_knowledge, how ? Object.fromEntries((a.known_by ?? []).map(k => [k, how])) : {});
         return `Fact ${f.id} recorded: ${f.text.replace(/[.!?]?$/, '.')} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
     // A player's message is plain language: what it states about their character or the world becomes a fact only through
     // a draw, like an action ("say yes or roll the dice", Baker 2004, Dogs in the Vineyard). The chance combines the setting's
     // base share with the estimate for this story, as BodyCheck does; the result is recorded either way, so it stays.
-    tool('Claim', 'Decide whether something a player\'s message states about their own character holds, when the story has not established it: what the character is, an item they have, something they can do, something that happened to them before. The world itself comes from the scenario and the world\'s facts, not from a claim. Returns whether it holds; either way it is recorded and stays.', {
+    tool('Claim', 'Decide whether something a player\'s message states about their own character holds, when the story has not established it: what the character is, an item they have, an ability of body or skill, something that happened to them before, something outside their control happening to them now (a slip, a faint, a cramp). Permission comes from the people who give it (SocialResponse or Choose); what a place allows comes from the scene and the world\'s facts. Returns whether it holds; either way it is recorded and stays.', {
         who: str('The player\'s character making the claim'),
         claim: str('The claim, one short sentence ("Mary is a cat", "Mary has a pistol in her coat", "the cellar door is unlocked")'),
-        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before'] },
+        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before', 'something happening to the character now'] },
         in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world: real history for the date, plus [WORLD] (orcs in a world whose book has orcs; a revolver after 1836). False: the claim does not hold.' },
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
@@ -874,13 +931,19 @@ export function registerRulesTools(enabled) {
             give(st, a.who, a.item, Math.max(1, Math.round(a.quantity ?? 1)));
         return `${a.claim}: holds. Recorded.`;
     }));
-    tool('Transfer', 'Record an item changing hands, entering or leaving the story, once the story has it happen: given, sold, bought, stolen, taken by force, found, made, lost, used up, dropped. Whether it happens comes first from the tool that decides how (SocialResponse or Choose for an agreement, Look for a theft that may be seen, HoldOn or BodyStrike for a struggle, Price for what it costs). Returns the new holder; [HAS] then shows it.', {
+    tool('Transfer', 'Record an item changing hands, entering or leaving the story, once the story has it happen: given, sold, bought, lent, returned, stolen, taken by force, found, made, lost, used up, dropped. Whether it happens comes first from the tool that decides how (SocialResponse or Choose for an agreement, Look for a theft that may be seen, HoldOn or BodyStrike for a struggle, Price for what it costs). Returns the new holder and, when it differs, the owner; [HAS] then shows both.', {
         item: str('The item, a few words, singular ("revolver", "shilling", "loaf of bread")'),
         quantity: { type: 'number', description: 'How many. Default 1.' },
         from: str('Who had it; leave out when it comes from the world (found, made, bought from someone untracked)'),
         to: str('Who has it now; leave out when it leaves the story (lost, used up, dropped out of reach, sold away)'),
         how: { type: 'string', enum: HOW },
-    }, ['item', 'how'], a => run(st => { const late = anachronism(a.item, storyYear(st), CURRENT_BOOK); return late ? `Nothing recorded: ${late}.` : transfer(st, a); }));
+    }, ['item', 'how'], a => run(st => {
+        const own = inalienable(st, a.item);
+        if (own)
+            return `Nothing recorded: ${own}.`;
+        const late = anachronism(a.item, storyYear(st), CURRENT_BOOK);
+        return late ? `Nothing recorded: ${late}.` : transfer(st, a);
+    }));
     // The data give the share of students who solve such a problem in the time; the estimate for this character is
     // combined with it in log-odds, as BodyCheck combines a base share, and the body state applies (alertness).
     tool('WorkOut', 'Decide whether a character works something out in the time they have, before narrating it: a riddle, a trick, a code, a link between clues, a sum, a plan.', {

@@ -12,6 +12,7 @@ import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM } from './r
 import { removeWithDescendants, outcomeLine, bornIn } from './rules/counterfactual.js';
 import { firstYear, earlier } from './rules/history.js';
 import { seededRng } from './rules/body-engine.js';
+import { loadColex } from './rules/colex.js';
 const NAME = 'rules-engine', KEY = 'rules_engine';
 // SillyTavern extension_prompt_types.IN_CHAT and extension_prompt_roles.SYSTEM (public/script.js).
 const IN_CHAT = 1, SYSTEM = 0;
@@ -321,6 +322,7 @@ function wireEvents() {
 }
 (async () => {
     registerRulesTools(settings().enabled);
+    void loadColex();
     wireEvents();
     registerRulesStatsCommand();
     registerRulesEvalCommand(send);
