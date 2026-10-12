@@ -3,7 +3,7 @@
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
 import {
     registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat,
-    RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, questionPassRan, storyTime, setStoryTime, REGISTRY,
+    RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, questionPassRan, storyTime, setStoryTime, REGISTRY,
 } from './rules/rules-tools.js';
 import { runQuestionPass, decidedInjection } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
@@ -58,7 +58,7 @@ function castBlock(): string {
 /** What the question model and the narrator read about the story now: time and bodies. */
 function storyState(): string {
     const t = storyTime();
-    return [t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople())].filter(Boolean).join('\n');
+    return [t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
 }
 
 (globalThis as Record<string, unknown>).rulesEngineInterceptor = async (chat: STMessage[], _size: number, _abort: unknown, type: string) => {
