@@ -13,6 +13,7 @@ import { removeWithDescendants, outcomeLine, bornIn } from './rules/counterfactu
 import { firstYear, earlier } from './rules/history.js';
 import { seededRng } from './rules/body-engine.js';
 import { loadColex } from './rules/colex.js';
+import { skyLight } from './rules/sky.js';
 import { loadLanguageYears } from './rules/languages.js';
 const NAME = 'rules-engine', KEY = 'rules_engine';
 // SillyTavern extension_prompt_types.IN_CHAT and extension_prompt_roles.SYSTEM (public/script.js).
@@ -192,7 +193,11 @@ function registerWorldCommands() {
 /** What the question model and the narrator read about the story now: time and bodies. */
 function storyState() {
     const t = storyTime();
-    return [worldBlock(getBook(), scenePosition()), t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
+    const here = scenePosition();
+    // Sun above the horizon at the scene, for the world book's day and night creatures (a calendar date is needed: a bare
+    // "Day N" count has no season).
+    const sunUp = t !== null && here && t / 1440 > 146097 ? skyLight(t, here.lat).sunAlt >= 0 : null;
+    return [worldBlock(getBook(), here, sunUp), t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
 }
 globalThis.rulesEngineInterceptor = async (chat, _size, _abort, type) => {
     const s = settings(), c = ctx();

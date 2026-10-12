@@ -81,11 +81,23 @@ function areaWords(e, here) {
     return d - radius <= NEAR_KM ? `near: its area begins a few days' travel to the ${dir}` : `far away to the ${dir}`;
 }
 /** "[WORLD] … [/WORLD]" for the narrator and the question model, '' for an empty book. here: the scene's position. */
-export function worldBlock(book, here = null) {
+// `sunUp`: whether the sun is above the horizon at the scene now (sky.ts), when the story time and place are known; the
+// entry's activity and a sunlight weakness are then stated as they stand now, decided by the sky, not by the narrator.
+export function worldBlock(book, here = null, sunUp = null) {
     if (!book.length)
         return '';
+    const now = (e) => {
+        if (sunUp === null)
+            return '';
+        const out = [];
+        if (e.active === 'day' || e.active === 'night')
+            out.push((e.active === 'day') === sunUp ? `now active (sun ${sunUp ? 'up' : 'down'})` : `now resting in shelter (sun ${sunUp ? 'up' : 'down'})`);
+        if (e.weakness === 'sunlight turns it to stone' && sunUp)
+            out.push('the sun is up: one caught in the open turns to stone');
+        return out.length ? `, ${out.join(', ')}` : '';
+    };
     const line = (e) => {
-        const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', does not talk'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}` : '';
+        const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', does not talk'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}${now(e)}` : '';
         return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${areaWords(e, here)}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}`;
     };
     return `[WORLD]\nThis world is real history with these additions. Areas of life an addition does not reach are as in real history.\n${book.map(line).join('\n')}\n[/WORLD]`;
