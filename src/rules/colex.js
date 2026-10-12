@@ -36,9 +36,9 @@ export function whisperedAs(word, code) {
     if (!DATA)
         return [];
     const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map();
-    for (const [a, b, r] of DATA.whisper[code] ?? []) {
-        const other = ids.has(a) && !ids.has(b) ? b : ids.has(b) && !ids.has(a) ? a : -1;
-        if (other >= 0)
+    for (const [a, b, ab, ba] of DATA.whisper[code] ?? []) {
+        const [other, r] = ids.has(a) && !ids.has(b) ? [b, ab] : ids.has(b) && !ids.has(a) ? [a, ba] : [-1, 0];
+        if (other >= 0 && r > 0)
             out.set(other, Math.max(out.get(other) ?? 0, r));
     }
     return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate }));

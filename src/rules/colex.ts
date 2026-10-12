@@ -11,9 +11,10 @@
 // two obstruents (IPA voiced/voiceless pairs at the same place and manner, from the CLICS⁴ word list of the language's
 // largest variety), each with the share of whispers heard as the other word: word-initial and medial 28 % per sound
 // (Tartter 1989, JASA 86:1678: voicing 72 % right in whispered syllables; medial [ASSUMED] as initial), word-final 4 %
-// (Baker & Whiteside 1994, Proc IOA: 96 %); two sounds multiply [ASSUMED independent]. Words that differ only in tone are
-// left out: pitch is gone, the share heard right from duration and loudness is not yet sourced.
-interface Colex { concepts: string[]; pairs: [number, number][]; names: Record<string, string>; by: Record<string, number[]>; whisper: Record<string, [number, number, number][]> }
+// (Baker & Whiteside 1994, Proc IOA: 96 %); two sounds multiply [ASSUMED independent]. Mandarin words that differ in tone
+// use the whispered-tone confusions ('Whispered tones revisited', UCL manuscript, Table 6: 49.9 % of tones right, 96.4 %
+// voiced), said → heard; other tone languages' tone pairs are left out until their rates are sourced.
+interface Colex { concepts: string[]; pairs: [number, number][]; names: Record<string, string>; by: Record<string, number[]>; whisper: Record<string, [number, number, number, number][]> }
 
 let DATA: Colex | null = null, loading: Promise<void> | null = null;
 let KEYS = new Map<string, number[]>();
@@ -52,9 +53,9 @@ export function sharedWith(word: string, code: string): string[] {
 export function whisperedAs(word: string, code: string): { concept: string; rate: number }[] {
     if (!DATA) return [];
     const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map<number, number>();
-    for (const [a, b, r] of DATA.whisper[code] ?? []) {
-        const other = ids.has(a) && !ids.has(b) ? b : ids.has(b) && !ids.has(a) ? a : -1;
-        if (other >= 0) out.set(other, Math.max(out.get(other) ?? 0, r));
+    for (const [a, b, ab, ba] of DATA.whisper[code] ?? []) {
+        const [other, r] = ids.has(a) && !ids.has(b) ? [b, ab] : ids.has(b) && !ids.has(a) ? [a, ba] : [-1, 0];
+        if (other >= 0 && r > 0) out.set(other, Math.max(out.get(other) ?? 0, r));
     }
     return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate }));
 }

@@ -636,7 +636,7 @@ export function registerRulesTools(enabled: boolean): void {
         means: { type: 'string', enum: ['speech', 'gesture'] },
         lit: { type: 'boolean', description: 'Enough light to see a gesture. Default true.' },
         distance_m: { type: 'number', description: 'Distance between them, m. Default 1.' },
-        effort: { type: 'string', enum: ['normal', 'raised', 'loud', 'shout'], description: 'Vocal effort. Default normal; whisper is not modelled.' },
+        effort: { type: 'string', enum: ['whisper', 'normal', 'raised', 'loud', 'shout'], description: 'Vocal effort. Default normal.' },
         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between them. Default none.' },
         speaker_species: str('Speaker\'s DF creature when the engine has no record of them yet.'),
@@ -651,13 +651,15 @@ export function registerRulesTools(enabled: boolean): void {
         if (a.speaker_languages?.length) s.p.languages = a.speaker_languages.map(x => x.trim().toLowerCase());
         if (a.listener_languages?.length) l.p.languages = a.listener_languages.map(x => x.trim().toLowerCase());
         if (a.speaker_voice) { if (a.speaker_voice === 'normal') delete s.p.voice; else s.p.voice = 'whisper'; }
+        // A speaker without voice whispers at every effort: a whisper, or a loud whisper when they raise it.
+        const effort = s.p.voice === 'whisper' ? (!a.effort || a.effort === 'normal' || a.effort === 'whisper' ? 'whisper' : 'loud whisper') : a.effort ?? 'normal';
         const langs = [s.p.languages, l.p.languages];
-        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort: a.effort ?? 'normal', noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out)) return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
         // English speech is already on the page in its own words; another language's words are not. A whisper loses voicing
         // in any language, English included (colex.ts).
-        const whispers = s.p.voice === 'whisper';
+        const whispers = effort === 'whisper' || effort === 'loud whisper';
         const spoken = whispers ? (s.p.languages ?? ['english']).find(x => !l.p!.languages?.length || l.p!.languages.includes(x))
             : (s.p.languages ?? []).find(x => x !== 'english' && (!l.p!.languages?.length || l.p!.languages.includes(x)));
         const shared = spoken ? sharedIn(a.message, spoken, 3, whispers) : [];

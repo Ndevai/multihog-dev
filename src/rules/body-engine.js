@@ -10,6 +10,7 @@ import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
+import { relatedShare } from './intelligibility.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp, burnedTBSA } from './thermal/exposure.js';
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -1474,7 +1475,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
     const r = reach({ effort, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
-    const where = `${effort} voice at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
+    const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible)
         return `${ls} does not hear ${sp} (${where}).`;
     console.debug?.('[Rules engine]', ls, `words ${Math.round(r.words * 100)} %, SII ${r.sii}`);
@@ -1483,11 +1484,18 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     if (!talks(lc))
         return `${ls} hears the sounds and their tone; the words carry no meaning (${lc.name}: cannot talk).`;
     const [a, b] = languages;
-    if (a?.length && b?.length && !a.some(x => b.includes(x)))
-        return `${ls} hears speech in a language it does not know (${a.join(', ')}); only tone and gestures carry.`;
+    let words = r.words, related = '';
+    if (a?.length && b?.length && !a.some(x => b.includes(x))) {
+        // A related language the listener knows carries part of the words (intelligibility.ts).
+        const rel = relatedShare(b, a);
+        if (!rel)
+            return `${ls} hears speech in a language it does not know (${a.join(', ')}); only tone and gestures carry.`;
+        words *= rel.share;
+        related = `; ${rel.heard} understood through ${rel.from}`;
+    }
     // Share of key words → plain words (bands [ASSUMED]): the narrator gets how much of the message carries, not a figure.
-    const heard = r.words >= 0.95 ? 'every word' : r.words >= 0.7 ? 'most words; a few are lost' : r.words >= 0.4 ? 'some words; the gist only' : 'scattered words; not the meaning';
-    return `${ls} hears ${sp} and makes out ${heard} (${where})${slurred ? '; slurred (tongue not working): short, simple words only' : ''}.`;
+    const heard = words >= 0.95 ? 'every word' : words >= 0.7 ? 'most words; a few are lost' : words >= 0.4 ? 'some words; the gist only' : 'scattered words; not the meaning';
+    return `${ls} hears ${sp} and makes out ${heard} (${where}${related})${slurred ? '; slurred (tongue not working): short, simple words only' : ''}.`;
 }
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
 const waterStage = (p) => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };

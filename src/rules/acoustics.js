@@ -4,11 +4,16 @@
 const BANDS = [250, 500, 1000, 2000, 4000, 8000];
 const DELTA = [22.48, 25.48, 28.48, 31.48, 34.48, 37.48];
 const IMPORTANCE = [0.0617, 0.1671, 0.2373, 0.2648, 0.2142, 0.0549];
+// Whisper: 26.8 dB below phonated speech aimed at the same distance (1.5 m), 21.5 dB below when aimed at 6 m (Eriksson &
+// Traunmüller 1999, ICPhS, 2 speakers, vowel levels: phonated 55.7/52.5 dB, whispered 25.6/29.1 dB at 1.5 m; whispered
+// 30.5/34.7 dB at 6 m); the normal spectrum shifted down [ASSUMED shape: whisper has no voice harmonics below 1 kHz].
+const NORMAL = [34.75, 34.27, 25.01, 17.32, 9.33, 1.13];
 export const SPEECH = {
-    normal: [34.75, 34.27, 25.01, 17.32, 9.33, 1.13], raised: [38.98, 40.15, 33.86, 25.32, 16.78, 5.07],
+    normal: NORMAL, raised: [38.98, 40.15, 33.86, 25.32, 16.78, 5.07],
     loud: [41.55, 44.85, 42.16, 34.39, 25.41, 11.39], shout: [42.50, 49.24, 51.31, 44.32, 34.41, 20.72],
+    whisper: NORMAL.map(x => x - 26.8), 'loud whisper': NORMAL.map(x => x - 21.5),
 };
-export const SPEECH_SPL = { normal: 62.35, raised: 68.34, loud: 74.85, shout: 82.30 };
+export const SPEECH_SPL = { normal: 62.35, raised: 68.34, loud: 74.85, shout: 82.30, whisper: 62.35 - 26.8, 'loud whisper': 62.35 - 21.5 };
 const XI = [-3.9, -9.7, -12.5, -17.7, -25.9, -7.1];
 // Air absorption, dB/km, 10 °C and 70 % humidity (ISO 9613-2, Table 2).
 const AIR = [1.0, 1.9, 3.7, 9.7, 32.8, 117];
