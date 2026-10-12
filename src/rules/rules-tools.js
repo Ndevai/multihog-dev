@@ -22,7 +22,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { str, checkArgs } from './tool-schema.js';
-export const TOOLS = ['RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
@@ -137,7 +137,7 @@ export function plain(out) {
 // A decision tool called again in one turn for the same actor and act returns its first result, like RollTheDice's ledger,
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = (v) => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
-const DECIDES = { RollTheDice: a => [a.who, a.for], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
+const DECIDES = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
     Weather: a => [a.place], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
@@ -216,7 +216,7 @@ const RULES_PRINCIPLES = `Principles
 - Write each check the engine decided as *(Climb → SUCCESS)* right after the sentence that narrates it.
 - Words come only from species that can talk (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true.
-- A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands.`;
+- A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character or the world holds as [DECIDED] or [KNOWS] gives it.`;
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
 export const RULES_BRIEF_DECIDED = `<rule_engine>
 Outcomes in [DECIDED] come from the rule engine; narrate each as given, in the order it happens.
@@ -244,6 +244,7 @@ People
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
+- A player's message stating something the story has not established about their character or the world (who or what they are, an item they have, a fact about a place) → Claim, before the actions that rely on it.
 - Give a character's species, and their mass when the story states it, in the first rule-tool call about them; the engine keeps both after that.
 World
 - A price, a wage or a bill → Price. A contagious disease → Disease. An attack by one army or unit on a defended position → Battle. A spell → CastSpell. A random pick (a door, a coin, a card) or a loot or random-event table → RollTheDice with kind "table"; a quantity → kind "amount".
@@ -760,6 +761,38 @@ export function registerRulesTools(enabled) {
     }, ['fact'], a => run(st => {
         const f = learn(st, a.fact, a.known_by ?? [], !!a.common_knowledge, a.how ? Object.fromEntries((a.known_by ?? []).map(k => [k, a.how])) : {});
         return `Fact ${f.id} recorded: ${f.text.replace(/[.!?]?$/, '.')} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
+    }));
+    // A player's message is plain language: what it states about their character or the world becomes a fact only through
+    // a draw, like an action ("say yes or roll the dice", Baker 2004, Dogs in the Vineyard). The chance combines the setting's
+    // base share with the estimate for this story, as BodyCheck does; the result is recorded either way, so it stays.
+    tool('Claim', 'Decide whether something a player\'s message states about their character or the world holds, when the story has not established it: who or what the character is, an item they have, something they can do, a fact about a place or person, something that happened before. Returns whether it holds; either way it is recorded and stays.', {
+        who: str('The player\'s character making the claim'),
+        claim: str('The claim, one short sentence ("Mary is a cat", "Mary has a pistol in her coat", "the cellar door is unlocked")'),
+        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'a fact about the world', 'something that happened before'] },
+        species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
+        reference_class: str('The wider class this claim belongs to (e.g. "travellers in 1850 England carrying a pistol")'),
+        base_share: { type: 'string', enum: SHARES, description: 'How often claims of that class hold in this kind of setting.' },
+        share: { type: 'string', enum: SHARES, description: 'Your estimate for this claim given everything the story has established so far.' },
+    }, ['who', 'claim', 'kind', 'base_share', 'share'], a => run((st, rng) => {
+        const sp = a.kind === 'what the character is' && a.species ? creatureId(a.species) : null;
+        if (a.species && a.kind === 'what the character is' && !sp)
+            return noSpecies(a.species);
+        const holds = rng() < combined(a);
+        const claim = a.claim.replace(/[.!?]?$/, '.');
+        if (!holds) {
+            learn(st, `Not so: ${claim}`, [a.who], false, { [a.who]: 'found out' });
+            return `${a.claim}: does not hold. ${a.who} acts on it and meets the world as it is; narrate that.`;
+        }
+        if (sp) {
+            const p = st.people?.[a.who];
+            if (p?.wounds.length)
+                return `${a.who} has wounds on record; a change of body comes through the story (a spell, a transformation), not a claim. Nothing recorded.`;
+            if (p)
+                delete st.people[a.who];
+            person(st, a.who, undefined, sp);
+        }
+        learn(st, claim, [a.who], false, { [a.who]: 'their own' });
+        return `${a.claim}: holds. Recorded.`;
     }));
     tool('Listen', 'Decide whether a character hears a sound (a shot, footsteps, hoofbeats, an engine) before narrating whether they react. Code decides from loudness, distance, background noise, walls and the listener\'s hearing.', {
         listener: str('Character who might hear it'),
