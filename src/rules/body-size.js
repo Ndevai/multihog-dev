@@ -34,8 +34,20 @@ export function bodySize(country, sex, birthYear, year, gauss) {
     const s = sex === 'female' ? 1 : 0, [h, b] = BODY[c];
     const heightCm = at(H_YEARS, h[s], birthYear) + gauss() * HEIGHT_SD[s];
     const sl = Math.sqrt(Math.log(1 + BMI_CV[s] ** 2));
-    const bmi = at(B_YEARS, b[s], year) * Math.exp(gauss() * sl - sl * sl / 2);
+    const bmiZ = gauss();
+    const bmi = at(B_YEARS, b[s], year) * Math.exp(bmiZ * sl - sl * sl / 2);
     const notes = [birthYear < H_YEARS[0] || birthYear > H_YEARS[H_YEARS.length - 1] ? `height for births ${birthYear < H_YEARS[0] ? H_YEARS[0] : H_YEARS[H_YEARS.length - 1]}` : null,
         year < B_YEARS[0] || year > B_YEARS[B_YEARS.length - 1] ? `weight for ${year < B_YEARS[0] ? B_YEARS[0] : B_YEARS[B_YEARS.length - 1]}` : null].filter((x) => !!x);
-    return { country: c, heightCm, massKg: bmi * (heightCm / 100) ** 2, notes };
+    return { country: c, heightCm, massKg: bmi * (heightCm / 100) ** 2, bmiZ, notes };
+}
+// A build the story states, as a BMI in the middle of its WHO band (underweight < 18.5, normal 18.5–25, overweight 25–30,
+// obese 30–35 shown; ≥ 35 is still obese).
+export const BUILDS = { thin: 17.5, average: 22, overweight: 27.5, obese: 32.5 };
+/** Where a BMI sits in its sex's distribution for that country and year (z of the log-normal draw above); country unknown:
+ * a mean BMI of 24 [ASSUMED, near the world adult mean]. */
+export function bmiZOf(bmi, sex, country, year) {
+    const s = sex === 'female' ? 1 : 0, c = country ? findCountry(country) : null;
+    const mean = c && year ? at(B_YEARS, BODY[c][1][s], year) : 24;
+    const sl = Math.sqrt(Math.log(1 + BMI_CV[s] ** 2));
+    return (Math.log(bmi / mean) + sl * sl / 2) / sl;
 }

@@ -1137,7 +1137,10 @@ export function topSpeedKmh(p: Person, rng: Rng = Math.random): number {
     if (!g.length || p.dead || p.unconscious) return 0;
     const st = abilities(p).stance ?? 1;
     if (p.species === 'HUMAN') {
-        p.runZ ??= Math.max(-3, Math.min(3, gauss(rng)));
+        // Body fat and sprint time correlate r = 0.50 (20 m, 23 male college soccer players: Ishida, Travis & Stone 2021,
+        // J Funct Morphol Kinesiol 6:7); within 12 elite female sprinters followed 5–10 years, partial r = 0.46–0.50 (abstract,
+        // authors not on record). BMI stands for body fat [ASSUMED]: speed z = −0.5 BMI z + √0.75 × own draw, when BMI z is known.
+        p.runZ ??= Math.max(-3, Math.min(3, p.bmiZ == null ? gauss(rng) : -0.5 * p.bmiZ + Math.sqrt(0.75) * gauss(rng)));
         const n = HUMAN_RUN[p.sex ?? ''] ?? { mean: (20.0 + 24.8) / 2, sd: (2.2 + 2.6) / 2 };
         return Math.max(5, n.mean + p.runZ * n.sd) * st;
     }

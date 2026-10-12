@@ -10,7 +10,7 @@ import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
 import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
 import { drawName } from './names.js';
-import { bodySize } from './body-size.js';
+import { bodySize, BUILDS, bmiZOf } from './body-size.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
@@ -705,6 +705,7 @@ export function registerRulesTools(enabled) {
         p.mass = Math.round(r.massKg);
         p.sex = a.sex;
         p.age ??= year - a.birth_year;
+        p.bmiZ = r.bmiZ;
         return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg.`;
     }));
     tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, or how many people in a community fall ill over the whole outbreak.', {
@@ -978,6 +979,8 @@ export function registerRulesTools(enabled) {
         gap_m: { type: 'number', description: 'Head start, m' },
         pursuer_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human pursuer the engine has no sex for' },
         fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing the engine has no sex for' },
+        pursuer_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The pursuer\'s build, when the story states it and BodySize has not drawn it' },
+        fleeing_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The fleeing character\'s build, when the story states it and BodySize has not drawn it' },
     }, ['pursuer', 'fleeing', 'gap_m'], a => run((st, rng) => {
         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
         if (!p.p || !f.p)
@@ -986,6 +989,9 @@ export function registerRulesTools(enabled) {
             p.p.sex ??= a.pursuer_sex;
         if (a.fleeing_sex)
             f.p.sex ??= a.fleeing_sex;
+        for (const [q, b] of [[p.p, a.pursuer_build], [f.p, a.fleeing_build]])
+            if (b && q.bmiZ == null)
+                q.bmiZ = bmiZOf(BUILDS[b], q.sex, st.setting?.country, storyYear(st));
         return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m, rng);
     }));
     tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales.', {

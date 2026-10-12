@@ -77,6 +77,8 @@ export interface Person {
     heatStroke?: { min: number; exertional: boolean; fatal?: boolean; deathMin?: number } | null;
     swimFailed?: boolean; canSwim?: boolean; underS?: number; breathHold?: number | null;
     fitZ?: number; gripZ?: number; runZ?: number;
+    /** Where the person's BMI sits among their sex in their country and year (BodySize, or a build the story states). */
+    bmiZ?: number;
     /** Languages the character knows, lower case; absent when the story has not stated them. */
     languages?: string[];
 }
