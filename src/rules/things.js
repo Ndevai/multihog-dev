@@ -42,3 +42,17 @@ export function thingsBlock(found) {
     const lines = found.map(f => `"${f.phrase}": ${f.options.map(o => `${o.id} = ${o.label}${o.year != null ? ` (${o.year})` : ''}${o.description ? `: ${o.description}` : ''}`).join(' | ')}`);
     return `[THINGS]\nThings the player's message may name, each with what it could be. In the JSON, add "read": {"phrase": "id"} with the one meant for each; when two fit the scene equally, add "unsure": {"phrase": ["id", "id"]} instead.\n${lines.join('\n')}\n[/THINGS]`;
 }
+/** The earliest year among the dated things `name` names exactly (any of its meanings), or null: a refusal by this year
+ *  holds whichever thing the word meant. */
+export function earliestYear(name) {
+    const k = key(name), hits = INDEX.get(k) ?? INDEX.get(singular(k)) ?? [];
+    let best = null;
+    for (const i of hits) {
+        const t = THINGS[i];
+        if (t[4] == null)
+            return null;
+        if (!best || t[4] < best.year)
+            best = { year: t[4], label: t[1] };
+    }
+    return best;
+}

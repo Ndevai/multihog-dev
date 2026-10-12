@@ -4,7 +4,8 @@
 import { INVENTIONS } from './data/inventions.js';
 import { WD_INVENTIONS } from './data/wikidata-inventions.js';
 import { GAPS } from './data/inventions.js';
-import { READ } from './things.js';
+import { READ, earliestYear } from './things.js';
+import { resolveLanguage } from './languages.js';
 const STOP = new Set(['a', 'an', 'the', 'of', 'first', 'early', 'modern', 'new', 'his', 'her', 'their', 'some']);
 const words = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/[^a-z]+/)
     .filter(w => w && !STOP.has(w)).map(w => w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w);
@@ -31,7 +32,8 @@ export function firstYear(item, book = []) {
     for (const [y, label] of [...INVENTIONS, ...WD_INVENTIONS])
         if (matches(item, label) && (!best || y < best.year || y === best.year && words(label).length < words(best.label).length))
             best = { year: y, label };
-    return best;
+    // Not linked this turn: the things list by exact name, when every thing that name can mean is dated.
+    return best ?? earliestYear(item);
 }
 /** '' when `item` can exist at `year`; else the reason, for the tool result. */
 export function anachronism(item, year, book = []) {
@@ -56,4 +58,20 @@ export function earlier(real, wanted, rng) {
         return { year: wanted, share };
     const shorter = GAPS.filter(g => g < lead);
     return { year: real - (shorter.length ? shorter[Math.floor(rng() * shorter.length)] : 0), share };
+}
+/**
+ * One check for whether something can exist in the story's year: a thing (inventions, Wikidata items, world-book changes),
+ * a language or its stage, or a world-book addition (a creature, people or institution before its `since`). Returns why
+ * not, or ''. Claim, Transfer and Communicate all ask here, so anything given a year later is checked the same way.
+ */
+export function cannotExist(name, year, book = [], as) {
+    if (year === null || !name)
+        return '';
+    if (as === 'thing')
+        return anachronism(name, year, book);
+    if (as === 'language')
+        return resolveLanguage(name, year, book).refused ?? '';
+    const k = name.trim().toLowerCase();
+    const e = book.find(x => x.since != null && (x.what.toLowerCase().includes(k) || k.includes(x.what.toLowerCase().replace(/s$/, '')) || x.species?.toLowerCase() === k));
+    return e && year < e.since ? `${e.what} exist in this world only since ${e.since}, not in ${year}` : '';
 }

@@ -25,7 +25,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
-import { anachronism } from './history.js';
+import { cannotExist } from './history.js';
 import { CURRENT_BOOK } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
@@ -653,7 +653,7 @@ export function registerRulesTools(enabled: boolean): void {
         if (!s.p || !l.p) return s.error || l.error;
         // A language is the stage spoken in the story's year; one not spoken then is refused (languages.ts).
         const year = storyYear(st);
-        const late = [...a.speaker_languages ?? [], ...a.listener_languages ?? []].map(x => resolveLanguage(x, year, CURRENT_BOOK).refused).find(Boolean);
+        const late = [...a.speaker_languages ?? [], ...a.listener_languages ?? []].map(x => cannotExist(x, year, CURRENT_BOOK, 'language')).find(Boolean);
         if (late) return `Nothing recorded: ${late}.`;
         if (a.speaker_languages?.length) s.p.languages = a.speaker_languages.map(x => x.trim().toLowerCase());
         if (a.listener_languages?.length) l.p.languages = a.listener_languages.map(x => x.trim().toLowerCase());
@@ -889,11 +889,13 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
         if (a.kind === 'something the character has') account(st, a.who);
         // A thing not yet invented at the story's date, or never made in this world, cannot be had (history.ts).
-        const late = a.kind === 'something the character has' && a.item ? anachronism(a.item, storyYear(st), CURRENT_BOOK) : '';
-        const tongue = a.kind === 'something the character can do' && a.language ? resolveLanguage(a.language, storyYear(st), CURRENT_BOOK).refused : '';
-        if (late || tongue) {
+        const y = storyYear(st);
+        const late = a.kind === 'something the character has' && a.item ? cannotExist(a.item, y, CURRENT_BOOK, 'thing')
+            : a.kind === 'something the character can do' && a.language ? cannotExist(a.language, y, CURRENT_BOOK, 'language')
+            : a.kind === 'what the character is' && a.species ? cannotExist(a.species, y, CURRENT_BOOK, 'being') : '';
+        if (late) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
-            return `${a.claim}: does not hold; ${late || tongue}. ${a.who} acts on it and meets the world as it is; narrate that.`;
+            return `${a.claim}: does not hold; ${late}. ${a.who} acts on it and meets the world as it is; narrate that.`;
         }
         if (!a.in_world) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
@@ -952,7 +954,7 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['item', 'how'], a => run(st => {
         const own = inalienable(st, a.item);
         if (own) return `Nothing recorded: ${own}.`;
-        const late = anachronism(a.item, storyYear(st), CURRENT_BOOK);
+        const late = cannotExist(a.item, storyYear(st), CURRENT_BOOK, 'thing');
         return late ? `Nothing recorded: ${late}.` : transfer(st, a);
     }));
 

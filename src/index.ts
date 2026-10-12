@@ -18,6 +18,7 @@ import { seededRng } from './rules/body-engine.js';
 import { loadColex } from './rules/colex.js';
 import { skyLight } from './rules/sky.js';
 import { loadLanguageYears } from './rules/languages.js';
+import { loadThings } from './rules/things.js';
 
 const NAME = 'rules-engine', KEY = 'rules_engine';
 // SillyTavern extension_prompt_types.IN_CHAT and extension_prompt_roles.SYSTEM (public/script.js).
@@ -314,7 +315,7 @@ function wireEvents(): void {
 
 (async () => {
     registerRulesTools(settings().enabled);
-    void loadColex(); void loadLanguageYears();
+    void loadColex(); void loadLanguageYears(); void loadThings();
     wireEvents();
     registerRulesStatsCommand();
     registerRulesEvalCommand(send);
