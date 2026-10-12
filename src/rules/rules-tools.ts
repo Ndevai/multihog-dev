@@ -230,7 +230,7 @@ const RULES_PRINCIPLES = `Principles
 - Write each check the engine decided as *(Climb → SUCCESS)* right after the sentence that narrates it.
 - Words come only from species that can talk (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true.
-- A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character or the world holds as [DECIDED] or [KNOWS] gives it.`;
+- A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.`;
 
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
 export const RULES_BRIEF_DECIDED = `<rule_engine>
@@ -260,7 +260,7 @@ People
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or a first meeting → SocialResponse.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
-- A player's message stating something the story has not established about their character or the world (who or what they are, an item they have, a fact about a place) → Claim, before the actions that rely on it.
+- A player's message stating something the story has not established about their own character (what they are, an item they have, something they can do or did) → Claim, before the actions that rely on it.
 - Give a character's species, and their mass when the story states it, in the first rule-tool call about them; the engine keeps both after that.
 World
 - A price, a wage or a bill → Price. A contagious disease → Disease. An attack by one army or unit on a defended position → Battle. A spell → CastSpell. A random pick (a door, a coin, a card) or a loot or random-event table → RollTheDice with kind "table"; a quantity → kind "amount".
@@ -734,15 +734,20 @@ export function registerRulesTools(enabled: boolean): void {
     // A player's message is plain language: what it states about their character or the world becomes a fact only through
     // a draw, like an action ("say yes or roll the dice", Baker 2004, Dogs in the Vineyard). The chance combines the setting's
     // base share with the estimate for this story, as BodyCheck does; the result is recorded either way, so it stays.
-    tool('Claim', 'Decide whether something a player\'s message states about their character or the world holds, when the story has not established it: who or what the character is, an item they have, something they can do, a fact about a place or person, something that happened before. Returns whether it holds; either way it is recorded and stays.', {
+    tool('Claim', 'Decide whether something a player\'s message states about their own character holds, when the story has not established it: what the character is, an item they have, something they can do, something that happened to them before. The world itself comes from the scenario and the world\'s facts, not from a claim. Returns whether it holds; either way it is recorded and stays.', {
         who: str('The player\'s character making the claim'),
         claim: str('The claim, one short sentence ("Mary is a cat", "Mary has a pistol in her coat", "the cellar door is unlocked")'),
-        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'a fact about the world', 'something that happened before'] },
+        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before'] },
+        in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world as the scenario and the world\'s facts give it (orcs in a world that has orcs; a revolver after 1836). False: the claim does not hold.' },
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         reference_class: str('The wider class this claim belongs to (e.g. "travellers in 1850 England carrying a pistol")'),
         base_share: { type: 'string', enum: SHARES, description: 'How often claims of that class hold in this kind of setting.' },
         share: { type: 'string', enum: SHARES, description: 'Your estimate for this claim given everything the story has established so far.' },
-    }, ['who', 'claim', 'kind', 'base_share', 'share'], a => run((st, rng) => {
+    }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
+        if (!a.in_world) {
+            learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
+            return `${a.claim}: does not hold; there is no such thing in this world. ${a.who} acts on it and meets the world as it is; narrate that.`;
+        }
         const sp = a.kind === 'what the character is' && a.species ? creatureId(a.species) : null;
         if (a.species && a.kind === 'what the character is' && !sp) return noSpecies(a.species);
         const holds = rng() < combined(a);

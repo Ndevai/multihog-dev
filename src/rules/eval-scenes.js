@@ -60,7 +60,7 @@ export const EVAL_SCENES = [
     { id: 48, context: 'A farm dog spots a fox ten metres away at the edge of the field.', player: 'The dog chases the fox.', expect: [{ tool: 'Chase', args: { gap_m: [5, 15] } }] },
     { id: 49, context: 'The guard dozes at the gate.', player: 'Mara sneaks past the guard, then waits ten minutes in the shadows.', expect: [{ tool: 'BodyCheck', args: { who: 'Mara' } }, { tool: 'PassTime', args: { minutes: 10 } }], allow: ['Listen', 'Look'] },
     { id: 50, context: 'The caravan sets off across the desert at noon; it is 40 °C in the sun.', player: 'They walk for three hours.', expect: [{ tool: 'BodyEnvironment', args: { air_c: [35, 45] } }, { tool: 'PassTime', args: { minutes: 180 } }] },
-    { id: 51, context: 'England, 1850. Mara, a seamstress, walks home past the docks at night.', player: 'Mara pulls the revolver from her coat.', expect: [{ tool: 'Claim', args: { who: 'Mara', kind: 'something the character has' } }] },
+    { id: 51, context: 'England, 1850. Mara, a seamstress, walks home past the docks at night.', player: 'Mara pulls the revolver from her coat.', expect: [{ tool: 'Claim', args: { who: 'Mara', kind: 'something the character has', in_world: true } }] },
     { id: 52, context: 'England, 1850. Mara stands in the rain outside the church.', player: 'I am a cat. Mara slinks under the gate.', expect: [{ tool: 'Claim', args: { who: 'Mara', kind: 'what the character is', species: '~cat' } }] },
     { id: 53, context: 'Mara wakes in a fern forest beside a lake; the time machine smokes behind her. A dinosaur skeleton lies in the mud.', player: 'Mara remembers how she rebuilt the time machine\'s coil last year.', expect: [{ tool: 'Claim', args: { who: 'Mara', kind: 'something that happened before' } }] },
 ];
