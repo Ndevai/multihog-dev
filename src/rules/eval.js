@@ -129,13 +129,17 @@ export function registerRulesEvalCommand(send) {
     const toast = globalThis.toastr;
     ctx.SlashCommandParser.addCommandObject(ctx.SlashCommand.fromProps({
         name: 'rules-eval',
-        helpString: 'Score the rules question pass on built-in scenes with the State Model connection: tool precision and recall, deciding arguments, quiet when nothing is in doubt. Optional: number of scenes.',
+        helpString: 'Score the rules question pass on built-in scenes with the State Model connection: tool precision and recall, deciding arguments, quiet when nothing is in doubt. Optional: a number of scenes from the first (10), or a range (51-53).',
         returns: 'the report as text',
         callback: async (args, value) => {
             if (!REGISTRY.size)
                 return 'Turn the rules engine on first.';
-            const n = Math.max(1, Math.min(EVAL_SCENES.length, Number(value) || EVAL_SCENES.length));
-            const r = await runEval(send, EVAL_SCENES.slice(0, n), (done, total) => { if (done % 5 === 0 && done < total)
+            // "10" runs scenes 1–10; "51-53" runs that range; nothing runs all.
+            const m = String(value ?? '').trim().match(/^(\d+)\s*-\s*(\d+)$/);
+            const from = m ? Math.max(1, Number(m[1])) : 1;
+            const to = Math.min(EVAL_SCENES.length, m ? Number(m[2]) : Number(value) || EVAL_SCENES.length);
+            const chosen = EVAL_SCENES.filter(sc => sc.id >= from && sc.id <= to);
+            const r = await runEval(send, chosen, (done, total) => { if (done % 5 === 0 && done < total)
                 toast?.info(`${done} of ${total} scenes`, 'Rules eval'); }, 
             // The stop button beside the chat box ends the run after the scene in progress; the score covers the scenes done.
             () => !!args?._abortController?.signal?.aborted);
