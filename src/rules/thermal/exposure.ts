@@ -39,7 +39,7 @@ const REGION: Record<string, string[]> = {
     shins: ['left_leg', 'right_leg'], legs: ['left_thigh', 'left_leg', 'right_thigh', 'right_leg'], feet: ['left_foot', 'right_foot'],
 };
 /** Body region words a garment or contact can name: the region words above, then each JOS-3 segment ("left hand"). */
-export const REGION_WORDS = [...Object.keys(REGION), ...SEGMENTS.map(s => s.replace('_', ' '))];
+export const REGION_WORDS = [...new Set([...Object.keys(REGION), ...SEGMENTS.map(s => s.replace('_', ' '))])];
 /** Region words for water: the whole body below the neck, everything including the head, or any region word. */
 export const IMMERSION_WORDS = ['whole body', 'submerged', ...REGION_WORDS];
 

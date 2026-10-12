@@ -401,7 +401,7 @@ export function registerRulesTools(enabled) {
         from: { type: 'string', enum: ['front', 'back', 'left', 'right'], description: 'Where the attacker strikes from, relative to the way the target faces. Default: front, or back when facing is false.' },
         target_armor: {
             type: 'array',
-            description: 'Every item the character hit wears or holds ready ([E] in [INVENTORY]): armour, clothing, a shield, a held board or door.',
+            description: 'Every item the character hit wears or holds ready, as the story describes it: armour, clothing, a shield, a held board or door.',
             items: {
                 type: 'object',
                 properties: {
