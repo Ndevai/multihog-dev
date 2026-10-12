@@ -895,7 +895,7 @@ Already finer in the engine than any grammar: tense and remoteness (GB082–084,
 | Uniform without authority (milkman) | 64 % | 57 % | 21 % |
 | Uniform of authority (guard, no gun) | 82 % | 89 % | 56 % |
 
-Being watched made no difference (Experiment II: guard 75 % watched, 92 % unwatched; civilian 50 %, 42 %), so the effect is legitimacy, not threat. Distance (D) and the size of the imposition (R) still have no rates; politeness forms (GB415: 242/1739) change wording, not outcome.
+Being watched made no difference (Experiment II: guard 75 % watched, 92 % unwatched; civilian 50 %, 42 %), so the effect is legitimacy, not threat. **One shift for who asks:** the uniform's effect did not depend on the situation (interaction χ² = 0.26, df 4), so it is kept as one log-odds shift, pooled over the three situations (civilian 30.1 %, milkman 47.3 %: +0.73, not significant; guard 77.2 %: +2.06), and applied to every request from a stranger: the small favour, asking to go first, the order [ASSUMED: carries to other requests]. The order keeps only the civilian row (36, 33, 20 %). The other factors are not merged: Langer's own table shows size and reason interact (a reason that adds nothing lifts a small request from 60 % to 93 % and leaves a big one at 24 %), so an additive rule would contradict it. Distance (D) still has no rate; politeness forms (GB415: 242/1739) change wording, not outcome.
 
 **Size of the request and the reason (the imposition, R), from Langer, Blank & Chanowitz 1978** (J Pers Soc Psychol 36:635, Experiment 1, 120 people at a copier). SocialResponse "a stranger asks to go first": IF a stranger asks to take a turn, a place or a machine before the person → THEN the share who let them:
 

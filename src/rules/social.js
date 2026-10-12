@@ -60,16 +60,26 @@ export const SMALL_REQUEST_YES = 0.46;
 export function interestChance(sex, manyOptions = false) {
     return sex === 'female' && manyOptions ? 1 / 3 : 0.5;
 }
-// An order from a stranger in the street, out of the requester's role (Bickman 1974, J Appl Soc Psychol 4:47, Brooklyn, 153
-// adults; Table 1, share who obeyed, after one reason if they did not at first; 14–24 people per cell). A guard's uniform
-// (no gun) raised compliance; a milkman's did not differ from ordinary clothes. Being watched made no difference
-// (Experiment II: guard 75 % watched, 92 % unwatched; civilian 50 %, 42 %), so the effect is legitimacy, not threat.
+// Who asks: an order from a stranger in the street, out of the requester's role (Bickman 1974, J Appl Soc Psychol 4:47,
+// Brooklyn, 153 adults; Table 1, share who obeyed after one reason if they did not at first; 14–24 per cell): civilian 36 %
+// (small task), 33 % (give a sum to someone else), 20 % (move for a doubtful reason). The uniform's effect did not depend
+// on the situation (interaction χ² = 0.26, df 4), so it is one log-odds shift, pooled over the three: civilian 30.1 %,
+// milkman 47.3 % (+0.73; not significant against civilian), guard 77.2 % (+2.06). Being watched made no difference
+// (Experiment II), so the effect is legitimacy, not threat. The shift applies to every request from a stranger (a favour,
+// asking to go first, an order) [ASSUMED: the situation-free shift Bickman found carries to other requests].
 export const REQUESTERS = ['ordinary clothes', 'uniform without authority (milkman, porter)', 'uniform of authority (guard, police)'];
+const REQUESTER_SHIFT = [0, 0.73, 2.06];
 export const ORDERS = ['do a small task for them', 'give a small sum to someone else', 'move or change what they are doing for a doubtful reason'];
-const ORDER_OBEYED = [[0.36, 0.33, 0.20], [0.64, 0.57, 0.21], [0.82, 0.89, 0.56]];
-export function orderChance(requester, order) {
-    const r = REQUESTERS.indexOf(requester), o = ORDERS.indexOf(order);
-    return r < 0 || o < 0 ? null : ORDER_OBEYED[r][o];
+const ORDER_OBEYED = [0.36, 0.33, 0.20];
+const logit = (p) => Math.log(p / (1 - p));
+/** A civilian's chance `p` asked by someone dressed as `requester` (unknown dress: unchanged). */
+export function asRequester(p, requester) {
+    const i = REQUESTERS.indexOf(requester);
+    return i <= 0 ? p : 1 / (1 + Math.exp(-(logit(p) + REQUESTER_SHIFT[i])));
+}
+export function orderChance(order) {
+    const o = ORDERS.indexOf(order);
+    return o < 0 ? null : ORDER_OBEYED[o];
 }
 // A stranger asking to go first, interrupting what the person is about to do (Langer, Blank & Chanowitz 1978, J Pers Soc
 // Psychol 36:635, Experiment 1: 120 people about to use a copier; Table 1, share who let the stranger go first; 15–25 per

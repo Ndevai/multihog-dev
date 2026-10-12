@@ -1,5 +1,5 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
-import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance } from './social.js';
+import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { drawPerson } from './census.js';
@@ -1101,7 +1101,7 @@ export function registerRulesTools(enabled) {
         request: str('For a favour: the request in a few words'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'For a first meeting: sex of the person whose interest is decided' },
         many_options: { type: 'boolean', description: 'For a first meeting: they meet many prospective partners at once (15 or more)' },
-        requester: { type: 'string', enum: REQUESTERS, description: 'For a stranger\'s order: how the one giving it is dressed' },
+        requester: { type: 'string', enum: REQUESTERS, description: 'For a favour, an order or asking to go first: how the stranger asking is dressed. Default ordinary clothes.' },
         order_kind: { type: 'string', enum: ORDERS, description: 'For a stranger\'s order: what it asks' },
         request_size: { type: 'string', enum: GIVE_WAY_SIZES, description: 'For a stranger asking to go first: how long they need, against the person\'s own task' },
         reason: { type: 'string', enum: GIVE_WAY_REASONS, description: 'For a stranger asking to go first: the reason they give' },
@@ -1122,7 +1122,7 @@ export function registerRulesTools(enabled) {
                     return `Give order, one of: ${Object.keys(OBEY).join('; ')}.`;
                 return `${a.who} ${rng() < OBEY[a.order] ? 'carries the order out to the end' : 'refuses before the end'} (${a.order}).`;
             }
-            case SOCIAL[3]: return `${a.who} ${rng() < SMALL_REQUEST_YES ? 'agrees' : 'declines'}${a.request ? ` (${a.request})` : ''}.`;
+            case SOCIAL[3]: return `${a.who} ${rng() < asRequester(SMALL_REQUEST_YES, a.requester) ? 'agrees' : 'declines'}${a.request ? ` (${a.request})` : ''}.`;
             case SOCIAL[4]: {
                 if (!a.sex)
                     return 'Give sex for a first meeting.';
@@ -1130,16 +1130,16 @@ export function registerRulesTools(enabled) {
                 return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
             }
             case SOCIAL[5]: {
-                const p = orderChance(a.requester ?? '', a.order_kind ?? '');
+                const p = orderChance(a.order_kind ?? '');
                 if (p === null)
-                    return `Give requester (${REQUESTERS.join('; ')}) and order_kind (${ORDERS.join('; ')}).`;
-                return `${a.who} ${rng() < p ? 'obeys' : 'refuses'} (${a.order_kind}; the one ordering wears ${a.requester}).`;
+                    return `Give order_kind (${ORDERS.join('; ')}).`;
+                return `${a.who} ${rng() < asRequester(p, a.requester) ? 'obeys' : 'refuses'} (${a.order_kind}; the one ordering wears ${a.requester ?? REQUESTERS[0]}).`;
             }
             case SOCIAL[6]: {
                 const p = giveWayChance(a.request_size ?? '', a.reason ?? '');
                 if (p === null)
                     return `Give request_size (${GIVE_WAY_SIZES.join('; ')}) and reason (${GIVE_WAY_REASONS.join('; ')}).`;
-                return `${a.who} ${rng() < p ? 'lets them go first' : 'declines'} (${a.request_size}; ${a.reason}).`;
+                return `${a.who} ${rng() < asRequester(p, a.requester) ? 'lets them go first' : 'declines'} (${a.request_size}; ${a.reason}).`;
             }
             default: return `Give situation, one of: ${SOCIAL.join('; ')}.`;
         }
