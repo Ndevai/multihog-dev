@@ -1400,8 +1400,25 @@ export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false, s
 // 125 → 70). × the share of working legs (stance) [ASSUMED proportional]; no legs → 0.
 // Humans: flying 20 m sprint of untrained adults, 3.6 ± 0.4 s for 149 women and 2.9 ± 0.3 s for 84 men, mean age 43
 // (Manderoos 2020, Univ. Helsinki doctoral thesis, Study II, Table 4): 20.0 ± 2.2 and 24.8 ± 2.6 km/h (SD by the delta
-// method). Each person keeps one draw (runZ). Ages outside 36–51 take the same values [ASSUMED]; sex unknown takes the mean.
+// method). Each person keeps one draw (runZ); sex unknown takes the mean.
 const HUMAN_RUN = { female: { mean: 20.0, sd: 2.2 }, male: { mean: 24.8, sd: 2.6 } };
+// Age: World Masters Athletics 100 m age factors (2023 edition, five-year table): the best time at an age is the open best ÷
+// the factor, so speed scales with it; 1 up to 35, linear between the listed ages. The sample's mean age 43 is the base
+// [ASSUMED: untrained people decline with age as the age records do]; under 18 has no factor here.
+const AGES = [35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110];
+const AGE_100M = {
+    female: [1, .9810, .9441, .9080, .8726, .8379, .8038, .7705, .7377, .7040, .6590, .6011, .5302, .4464, .3497, .2400],
+    male: [.9999, .9668, .9345, .9031, .8726, .8429, .8139, .7858, .7584, .7317, .6946, .6396, .5666, .4757, .3669, .2400],
+};
+function ageFactor(sex, age) {
+    const f = AGE_100M[sex] ?? AGE_100M.female.map((x, i) => (x + AGE_100M.male[i]) / 2);
+    if (age <= AGES[0])
+        return f[0];
+    if (age >= AGES[AGES.length - 1])
+        return f[f.length - 1];
+    const i = AGES.findIndex(a => a > age) - 1;
+    return f[i] + (f[i + 1] - f[i]) * (age - AGES[i]) / 5;
+}
 export function topSpeedKmh(p, rng = Math.random) {
     const c = creatureOf(p);
     const g = c?.gaits?.filter(x => x.type === 'WALK') ?? [];
@@ -1414,7 +1431,8 @@ export function topSpeedKmh(p, rng = Math.random) {
         // authors not on record). BMI stands for body fat [ASSUMED]: speed z = −0.5 BMI z + √0.75 × own draw, when BMI z is known.
         p.runZ ??= Math.max(-3, Math.min(3, p.bmiZ == null ? gauss(rng) : -0.5 * p.bmiZ + Math.sqrt(0.75) * gauss(rng)));
         const n = HUMAN_RUN[p.sex ?? ''] ?? { mean: (20.0 + 24.8) / 2, sd: (2.2 + 2.6) / 2 };
-        return Math.max(5, n.mean + p.runZ * n.sd) * st;
+        const age = p.age != null && p.age >= 18 ? ageFactor(p.sex ?? '', p.age) / ageFactor(p.sex ?? '', 43) : 1;
+        return Math.max(3, (n.mean + p.runZ * n.sd) * age) * st;
     }
     return 8775 / Math.min(...g.map(x => x.max)) * st;
 }
@@ -1475,6 +1493,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
     const r = reach({ effort, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
+    l.heard = { from: sp, snr: r.snr, whisper: /whisper/.test(effort) };
     const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible)
         return `${ls} does not hear ${sp} (${where}).`;

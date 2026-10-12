@@ -83,6 +83,8 @@ export interface Person {
     languages?: string[];
     /** How the character produces voice: absent = normal; 'whisper' = no vocal-fold vibration. */
     voice?: 'whisper';
+    /** The last speech this character heard: from whom, at what speech-to-noise ratio (dB). */
+    heard?: { from: string; snr: number; whisper?: boolean };
 }
 
 /** A fixed fact of the story and who knows it; `from` maps a normalized knower name to how they learned it. */

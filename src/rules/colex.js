@@ -12,8 +12,10 @@ export function loadColex() {
     return loading;
 }
 /** Glottolog code of a language name ("Guaraní", "guarani"), or null when CLICS has none. */
+// Names the word lists file under a city or variety name.
+const ALIAS = { cantonese: 'guan1279', 'yue chinese': 'guan1279', mandarin: 'mand1415' };
 export function languageCode(name) {
-    return DATA?.names[key(name)] ?? null;
+    return ALIAS[key(name)] ?? DATA?.names[key(name)] ?? null;
 }
 /** Display of a concept gloss: "OLDER BROTHER (OF MAN)" → "older brother (of man)". */
 const show = (c) => c.toLowerCase();
@@ -43,8 +45,31 @@ export function whisperedAs(word, code) {
     }
     return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate }));
 }
+const SNRS = [-18, -12, -6, 0, 6, 12];
+/** Share of consonant `a` heard as `b` (Miller & Nicely indices) at `snr` dB; 0 at or above +12 dB. */
+function heardAs(a, b, snr) {
+    if (!DATA || snr >= 12)
+        return 0;
+    const at = (k) => { const m = DATA.noiseTables[String(SNRS[k])]; const row = m[a]; return row[b] / row.reduce((x, y) => x + y, 0); };
+    if (snr <= SNRS[0])
+        return at(0);
+    const k = SNRS.findIndex(x => x > snr) - 1;
+    return at(k) + (at(k + 1) - at(k)) * (snr - SNRS[k]) / 6;
+}
+/** Words the word for `word` can be misheard as in language `code` at speech-to-noise ratio `snr` dB, with the share. */
+export function noisyAs(word, code, snr) {
+    if (!DATA || snr >= 12)
+        return [];
+    const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map();
+    for (const [a, b, ca, cb] of DATA.noise[code] ?? []) {
+        const [other, r] = ids.has(a) && !ids.has(b) ? [b, heardAs(ca, cb, snr)] : ids.has(b) && !ids.has(a) ? [a, heardAs(cb, ca, snr)] : [-1, 0];
+        if (other >= 0 && r >= 0.01)
+            out.set(other, Math.max(out.get(other) ?? 0, r));
+    }
+    return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate }));
+}
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
-export function sharedIn(message, language, max = 3, whispered = false, list) {
+export function sharedIn(message, language, max = 3, whispered = false, list, snr = Infinity) {
     const code = list === undefined ? languageCode(language) : list;
     if (!DATA || !code)
         return [];
@@ -58,7 +83,8 @@ export function sharedIn(message, language, max = 3, whispered = false, list) {
                 continue;
             for (let j = 0; j < n; j++)
                 used.add(i + j);
-            const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...language === 'english' ? [] : sharedWith(phrase, code)];
+            const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...noisyAs(phrase, code, snr).map(x => `${x.concept} if misheard`),
+                ...language === 'english' ? [] : sharedWith(phrase, code)];
             if (also.length)
                 out.push({ word: phrase, also });
         }

@@ -13,8 +13,17 @@
 // (Tartter 1989, JASA 86:1678: voicing 72 % right in whispered syllables; medial [ASSUMED] as initial), word-final 4 %
 // (Baker & Whiteside 1994, Proc IOA: 96 %); two sounds multiply [ASSUMED independent]. Mandarin words that differ in tone
 // use the whispered-tone confusions ('Whispered tones revisited', UCL manuscript, Table 6: 49.9 % of tones right, 96.4 %
-// voiced), said → heard; other tone languages' tone pairs are left out until their rates are sourced.
-interface Colex { concepts: string[]; pairs: [number, number][]; names: Record<string, string>; by: Record<string, number[]>; whisper: Record<string, [number, number, number, number][]> }
+// voiced), said → heard; Cantonese (Guangzhou) the six-tone confusions of Lam 2010 (HKU BSc dissertation, Table 3: 31.3 %
+// right, 93.7 % voiced); Thai 33.9 % right for isolated words (Abramson 1972 as reported by Lam 2010), the rest spread
+// evenly [ASSUMED]; a tone language uses its variety whose list writes the most tones. English vowels whispered: Tartter
+// 1991 (Percept Psychophys 49:365, Table 2: 10 vowels, 81.6 % right, 92 % voiced), said → heard.
+// Consonants in noise: pairs of words in a language that differ in one of 16 consonants (p t k f θ s ʃ b d g v ð z ʒ m n),
+// heard as the other at the share Miller & Nicely 1955 measured at that speech-to-noise ratio (JASA 27:338, Tables I–VI,
+// −18 to +12 dB, 200–6500 Hz; nonsense syllables, so the rates are for words the scene does not settle; English listeners'
+// rates used for every language [ASSUMED]); linear between the measured ratios, none above +12 dB [ASSUMED: past the data].
+// Read from the PDF text; a few single counts lost in extraction (checked against the page image at 0 dB).
+interface Colex { concepts: string[]; pairs: [number, number][]; names: Record<string, string>; by: Record<string, number[]>;
+    whisper: Record<string, [number, number, number, number][]>; noise: Record<string, [number, number, number, number][]>; noiseTables: Record<string, number[][]> }
 
 let DATA: Colex | null = null, loading: Promise<void> | null = null;
 let KEYS = new Map<string, number[]>();
@@ -31,8 +40,10 @@ export function loadColex(): Promise<void> {
 }
 
 /** Glottolog code of a language name ("Guaraní", "guarani"), or null when CLICS has none. */
+// Names the word lists file under a city or variety name.
+const ALIAS: Record<string, string> = { cantonese: 'guan1279', 'yue chinese': 'guan1279', mandarin: 'mand1415' };
 export function languageCode(name: string): string | null {
-    return DATA?.names[key(name)] ?? null;
+    return ALIAS[key(name)] ?? DATA?.names[key(name)] ?? null;
 }
 
 /** Display of a concept gloss: "OLDER BROTHER (OF MAN)" → "older brother (of man)". */
@@ -60,10 +71,31 @@ export function whisperedAs(word: string, code: string): { concept: string; rate
     return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate }));
 }
 
+const SNRS = [-18, -12, -6, 0, 6, 12];
+/** Share of consonant `a` heard as `b` (Miller & Nicely indices) at `snr` dB; 0 at or above +12 dB. */
+function heardAs(a: number, b: number, snr: number): number {
+    if (!DATA || snr >= 12) return 0;
+    const at = (k: number) => { const m = DATA!.noiseTables[String(SNRS[k])]; const row = m[a]; return row[b] / row.reduce((x, y) => x + y, 0); };
+    if (snr <= SNRS[0]) return at(0);
+    const k = SNRS.findIndex(x => x > snr) - 1;
+    return at(k) + (at(k + 1) - at(k)) * (snr - SNRS[k]) / 6;
+}
+
+/** Words the word for `word` can be misheard as in language `code` at speech-to-noise ratio `snr` dB, with the share. */
+export function noisyAs(word: string, code: string, snr: number): { concept: string; rate: number }[] {
+    if (!DATA || snr >= 12) return [];
+    const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map<number, number>();
+    for (const [a, b, ca, cb] of DATA.noise[code] ?? []) {
+        const [other, r] = ids.has(a) && !ids.has(b) ? [b, heardAs(ca, cb, snr)] : ids.has(b) && !ids.has(a) ? [a, heardAs(cb, ca, snr)] : [-1, 0];
+        if (other >= 0 && r >= 0.01) out.set(other, Math.max(out.get(other) ?? 0, r));
+    }
+    return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate }));
+}
+
 export interface Shared { word: string; also: string[] }
 
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
-export function sharedIn(message: string, language: string, max = 3, whispered = false, list?: string | null): Shared[] {
+export function sharedIn(message: string, language: string, max = 3, whispered = false, list?: string | null, snr = Infinity): Shared[] {
     const code = list === undefined ? languageCode(language) : list;
     if (!DATA || !code) return [];
     const w = key(message).split(' ').filter(Boolean), used = new Set<number>(), out: Shared[] = [];
@@ -72,7 +104,8 @@ export function sharedIn(message: string, language: string, max = 3, whispered =
         const phrase = w.slice(i, i + n).join(' ');
         if (!KEYS.has(phrase) && !KEYS.has(singular(phrase))) continue;
         for (let j = 0; j < n; j++) used.add(i + j);
-        const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...language === 'english' ? [] : sharedWith(phrase, code)];
+        const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...noisyAs(phrase, code, snr).map(x => `${x.concept} if misheard`),
+            ...language === 'english' ? [] : sharedWith(phrase, code)];
         if (also.length) out.push({ word: phrase, also });
     }
     return out;

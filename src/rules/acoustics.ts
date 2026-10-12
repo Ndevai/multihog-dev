@@ -65,7 +65,10 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
         if (ei + 15 > d) audible = true;
     });
     sii = Math.round(sii * 1000) / 1000;
-    return { sii, words: Math.round(100 / (1 + Math.exp(-0.29 * (30 * sii - 15 + 2.70)))) / 100, audible };
+    // Speech-to-noise ratio over the six bands, dB: band level = spectrum level + 10 log bandwidth.
+    const sum = (x: number[]) => 10 * Math.log10(x.reduce((t, v) => t + 10 ** (v / 10), 0));
+    const snr = Math.round(sum(e.map((v, i) => v + DELTA[i])) - sum(n.map((v, i) => v + DELTA[i])));
+    return { sii, words: Math.round(100 / (1 + Math.exp(-0.29 * (30 * sii - 15 + 2.70)))) / 100, audible, snr };
 }
 export const BAND_HZ = BANDS;
 

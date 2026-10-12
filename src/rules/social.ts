@@ -71,3 +71,15 @@ export function orderChance(requester: string, order: string): number | null {
     const r = REQUESTERS.indexOf(requester as typeof REQUESTERS[number]), o = ORDERS.indexOf(order as typeof ORDERS[number]);
     return r < 0 || o < 0 ? null : ORDER_OBEYED[r][o];
 }
+
+// A stranger asking to go first, interrupting what the person is about to do (Langer, Blank & Chanowitz 1978, J Pers Soc
+// Psychol 36:635, Experiment 1: 120 people about to use a copier; Table 1, share who let the stranger go first; 15–25 per
+// cell). Small: the stranger needs less of the person's time than the person's own task; big: more. A reason that says
+// nothing new ("because I have to make copies") worked like a real one for a small request and like none for a big one.
+export const GIVE_WAY_SIZES = ['small (less than their own task)', 'big (more than their own task)'] as const;
+export const GIVE_WAY_REASONS = ['no reason', 'a reason that adds nothing', 'a real reason'] as const;
+const GIVE_WAY: number[][] = [[0.60, 0.93, 0.94], [0.24, 0.24, 0.42]];
+export function giveWayChance(size: string, reason: string): number | null {
+    const a = GIVE_WAY_SIZES.indexOf(size as typeof GIVE_WAY_SIZES[number]), b = GIVE_WAY_REASONS.indexOf(reason as typeof GIVE_WAY_REASONS[number]);
+    return a < 0 || b < 0 ? null : GIVE_WAY[a][b];
+}

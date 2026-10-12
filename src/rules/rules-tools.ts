@@ -1,5 +1,5 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
-import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance } from './social.js';
+import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance } from './social.js';
 import type { SocialTraits } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
@@ -29,7 +29,7 @@ import { anachronism } from './history.js';
 import { CURRENT_BOOK } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
-import { sharedIn, sharedWith, whisperedAs, languageCode } from './colex.js';
+import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode } from './colex.js';
 import { resolveLanguage, stageKey } from './languages.js';
 import { str, checkArgs } from './tool-schema.js';
 import type { Props, ArgsOf } from './tool-schema.js';
@@ -213,7 +213,7 @@ function inalienable(st: RuleState, item: string): string {
     return '';
 }
 
-const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting', 'an order from a stranger'];
+const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting', 'an order from a stranger', 'a stranger asks to go first'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = (v: unknown) => typeof v === 'number' ? v : (parseFloat(String(v)) || 0) / 100;
 // The chance for this attempt combines the narrator's estimate with the share of its reference class, asked for first:
@@ -311,7 +311,7 @@ Senses
 - A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate; a word it names as having several meanings → Interpret.
 People
 - A character the story has not described → NewCharacter; their first name → NameCharacter; their height and mass → BodySize.
-- A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour or order, or a first meeting → SocialResponse.
+- A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour, order or request to go first, or a first meeting → SocialResponse.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
 - A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness.
@@ -665,10 +665,11 @@ export function registerRulesTools(enabled: boolean): void {
         // English speech is already on the page in its own words; another language's words are not. A whisper loses voicing
         // in any language, English included (colex.ts).
         const whispers = effort === 'whisper' || effort === 'loud whisper';
-        const spoken = whispers ? (s.p.languages ?? ['english']).find(x => !l.p!.languages?.length || l.p!.languages.includes(x))
+        const snr = l.p.heard?.from === a.speaker ? l.p.heard.snr : Infinity, noisy = snr < 12;
+        const spoken = whispers || noisy ? (s.p.languages ?? ['english']).find(x => !l.p!.languages?.length || l.p!.languages.includes(x))
             : (s.p.languages ?? []).find(x => x !== 'english' && (!l.p!.languages?.length || l.p!.languages.includes(x)));
         const stage = spoken ? resolveLanguage(spoken, year, CURRENT_BOOK) : null;
-        const shared = spoken ? sharedIn(a.message, spoken, 3, whispers, stage!.list) : [];
+        const shared = spoken ? sharedIn(a.message, spoken, 3, whispers, stage!.list, snr) : [];
         const one = shared.length ? ` In ${stage!.label}${whispers ? ', whispered,' : ''} a word can also be taken as: ${shared.map(x => `"${x.word}" (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
         return `${out} ${a.listener} now knows: ${a.message.replace(/[.!?]?$/, '.')}${one}`;
     }));
@@ -690,14 +691,16 @@ export function registerRulesTools(enabled: boolean): void {
         // as, its odds r/(1 − r), so that with one such word it is heard so with share r.
         const meant = a.word.toLowerCase(), weight = new Map<string, number>([[meant, 1]]);
         if (a.language.toLowerCase() !== 'english') for (const c of sharedWith(a.word, code)) weight.set(c, 1);
-        if (who(st, a.speaker).p?.voice === 'whisper') for (const x of whisperedAs(a.word, code)) weight.set(x.concept, x.rate / (1 - x.rate));
+        const heard = who(st, a.listener).p?.heard;
+        if (who(st, a.speaker).p?.voice === 'whisper' || heard?.from === a.speaker && heard.whisper) for (const x of whisperedAs(a.word, code)) weight.set(x.concept, x.rate / (1 - x.rate));
+        if (heard?.from === a.speaker) for (const x of noisyAs(a.word, code, heard.snr)) weight.set(x.concept, Math.max(weight.get(x.concept) ?? 0, x.rate / (1 - x.rate)));
         const valid = [...weight.keys()];
-        const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase().replace(/ if whispered$/, '')))].filter(x => weight.has(x));
+        const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase().replace(/ if (whispered|misheard)$/, '')))].filter(x => weight.has(x));
         if (!fits.length) return `Give fits from: ${valid.join('; ')}.`;
         let u = rng() * fits.reduce((t, x) => t + weight.get(x)!, 0), reading = fits[fits.length - 1];
         for (const x of fits) if ((u -= weight.get(x)!) < 0) { reading = x; break; }
         if (reading === meant) return `${a.listener} takes "${a.word}" as ${a.speaker} meant it.`;
-        const why = weight.get(reading) === 1 ? `one word in ${a.language}` : `whispered, it sounds like that word in ${a.language}`;
+        const why = weight.get(reading) === 1 ? `one word in ${a.language}` : `heard as that word in ${a.language}`;
         learn(st, `${a.listener} took ${a.speaker}'s word for "${a.word}" to mean "${reading}" (${why})`, [a.listener], false, { [a.listener]: 'heard it' });
         return `${a.listener} takes "${a.word}" to mean "${reading}"; ${a.speaker} does not know. Narrate the English word as spoken; the misreading shows only through what ${a.listener} says and does, now or when it comes to matter.`;
     }));
@@ -991,7 +994,7 @@ export function registerRulesTools(enabled: boolean): void {
 
     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
     // enums; function-calling accuracy drops as the number of functions grows, Patil et al. 2025, BFCL).
-    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, obey an order from a stranger acting outside their office, or want to see someone again after a first meeting.', {
+    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, obey an order from a stranger acting outside their office, let a stranger go first (a turn, a place in line, a machine), or want to see someone again after a first meeting.', {
         situation: { type: 'string', enum: SOCIAL },
         who: str('The person whose response is decided'),
         speaker: str('For a statement: who made it'),
@@ -1006,6 +1009,8 @@ export function registerRulesTools(enabled: boolean): void {
         many_options: { type: 'boolean', description: 'For a first meeting: they meet many prospective partners at once (15 or more)' },
         requester: { type: 'string', enum: REQUESTERS, description: 'For a stranger\'s order: how the one giving it is dressed' },
         order_kind: { type: 'string', enum: ORDERS, description: 'For a stranger\'s order: what it asks' },
+        request_size: { type: 'string', enum: GIVE_WAY_SIZES, description: 'For a stranger asking to go first: how long they need, against the person\'s own task' },
+        reason: { type: 'string', enum: GIVE_WAY_REASONS, description: 'For a stranger asking to go first: the reason they give' },
     }, ['situation', 'who'], a => run((st, rng) => {
         switch (a.situation) {
             case SOCIAL[0]: {
@@ -1033,6 +1038,11 @@ export function registerRulesTools(enabled: boolean): void {
                 if (p === null) return `Give requester (${REQUESTERS.join('; ')}) and order_kind (${ORDERS.join('; ')}).`;
                 return `${a.who} ${rng() < p ? 'obeys' : 'refuses'} (${a.order_kind}; the one ordering wears ${a.requester}).`;
             }
+            case SOCIAL[6]: {
+                const p = giveWayChance(a.request_size ?? '', a.reason ?? '');
+                if (p === null) return `Give request_size (${GIVE_WAY_SIZES.join('; ')}) and reason (${GIVE_WAY_REASONS.join('; ')}).`;
+                return `${a.who} ${rng() < p ? 'lets them go first' : 'declines'} (${a.request_size}; ${a.reason}).`;
+            }
             default: return `Give situation, one of: ${SOCIAL.join('; ')}.`;
         }
     }));
@@ -1053,7 +1063,7 @@ export function registerRulesTools(enabled: boolean): void {
         return holdLoad(a.who, p, { load_kg: a.load_kg, hands: a.hands ?? 2, hanging: !!a.hanging, seconds: a.seconds ?? null, fingertips: !!a.fingertips, climber: a.climber ?? 'no' }, rng);
     }));
 
-    tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their top speeds (each human\'s drawn once from untrained adults of their sex; other creatures from their species) and leg injuries.', {
+    tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their top speeds (each human\'s drawn once from untrained adults of their sex, scaled by age; other creatures from their species) and leg injuries.', {
         pursuer: str('Character chasing'), pursuer_species: str('Pursuer\'s DF creature when the engine has no record of them yet.'),
         fleeing: str('Character running away'), fleeing_species: str('Fleeing character\'s DF creature when the engine has no record of them yet.'),
         gap_m: { type: 'number', description: 'Head start, m' },
@@ -1061,11 +1071,15 @@ export function registerRulesTools(enabled: boolean): void {
         fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing the engine has no sex for' },
         pursuer_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The pursuer\'s build, when the story states it and BodySize has not drawn it' },
         fleeing_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The fleeing character\'s build, when the story states it and BodySize has not drawn it' },
+        pursuer_age: { type: 'number', description: 'For a human pursuer the engine has no age for, years' },
+        fleeing_age: { type: 'number', description: 'For a human fleeing the engine has no age for, years' },
     }, ['pursuer', 'fleeing', 'gap_m'], a => run((st, rng) => {
         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
         if (!p.p || !f.p) return p.error || f.error;
         if (a.pursuer_sex) p.p.sex ??= a.pursuer_sex;
         if (a.fleeing_sex) f.p.sex ??= a.fleeing_sex;
+        if (Number.isFinite(a.pursuer_age)) p.p.age ??= a.pursuer_age;
+        if (Number.isFinite(a.fleeing_age)) f.p.age ??= a.fleeing_age;
         for (const [q, b] of [[p.p, a.pursuer_build], [f.p, a.fleeing_build]] as const) if (b && q.bmiZ == null) q.bmiZ = bmiZOf(BUILDS[b], q.sex, st.setting?.country, storyYear(st));
         return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m, rng);
     }));
