@@ -11,6 +11,7 @@ import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
 import { parseStoryTime, formatStoryTime } from './rules/clock.js';
 import { sendModel } from './send.js';
+import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM, type Entry } from './rules/world.js';
 
 const NAME = 'rules-engine', KEY = 'rules_engine';
 // SillyTavern extension_prompt_types.IN_CHAT and extension_prompt_roles.SYSTEM (public/script.js).
@@ -26,6 +27,10 @@ interface Ctx {
     eventSource: { on(e: string, f: (...a: any[]) => unknown): void }; eventTypes: Record<string, string>;
     setExtensionPrompt(key: string, value: string, position: number, depth: number, scan?: boolean, role?: number): void;
     saveSettingsDebounced(): void; getCurrentChatId(): string | undefined; generate(type: string): Promise<unknown>;
+    characterId?: number | string; groupId?: string | null; characters: { name: string; data?: { extensions?: Record<string, unknown> } }[];
+    writeExtensionField(id: number | string, key: string, value: unknown): Promise<void>;
+    saveMetadata(): Promise<void>; POPUP_TYPE: Record<string, number>;
+    callGenericPopup(content: string, type: number, value?: string, options?: object): Promise<unknown>;
     renderExtensionTemplateAsync(name: string, template: string): Promise<string>;
     SlashCommand?: { fromProps(p: object): unknown }; SlashCommandParser?: { addCommandObject(c: unknown): void };
 }
@@ -55,10 +60,77 @@ function castBlock(): string {
     return lines.length ? `[CAST]\n${lines.join('\n')}\n[/CAST]` : '';
 }
 
+// The world book belongs to the character card, so every chat with that card shares it; a group chat keeps its own.
+const cardOf = () => { const c = ctx(); return !c.groupId && c.characterId !== undefined ? c.characters[Number(c.characterId)] : null; };
+function getBook(): Entry[] {
+    const card = cardOf();
+    return ((card ? card.data?.extensions?.rulesWorld : ctx().chatMetadata?.rulesWorld) as Entry[] | undefined) ?? [];
+}
+async function saveBook(book: Entry[]): Promise<void> {
+    const c = ctx(), card = cardOf();
+    if (card) await c.writeExtensionField(Number(c.characterId), 'rulesWorld', book);
+    else { c.chatMetadata.rulesWorld = book; await c.saveMetadata(); }
+    applyWorld(book);
+    renderBook();
+}
+
+/** Drafts an entry from one line, shows it for editing, and saves what the user approves. */
+async function addEntry(line: string): Promise<string> {
+    const c = ctx();
+    let draft: Record<string, unknown> | null = null;
+    try { draft = parseEntry(await send(FILL_SYSTEM, `Line: ${line}\nStory setting: ${[storyState(), castBlock()].filter(Boolean).join('\n') || 'not given'}`)); }
+    catch (e) { console.warn('[Rules engine] world fill failed:', e); }
+    let text = JSON.stringify(draft ?? { what: line }, null, 1);
+    for (;;) {
+        const edited = await c.callGenericPopup('<h3>World book entry</h3><small>Edit and press OK to save; Cancel discards it.</small>', c.POPUP_TYPE.INPUT, text, { wide: true, large: true, rows: 18 });
+        if (typeof edited !== 'string' || !edited.trim()) return 'World book: nothing saved.';
+        let raw: Record<string, unknown>;
+        try { raw = JSON.parse(edited); } catch { toastr.warning('Not valid JSON; fix it and press OK.', 'World book'); text = edited; continue; }
+        const { entry, errors } = checkEntry(raw);
+        if (!entry) { toastr.warning(errors.join('; '), 'World book'); text = edited; continue; }
+        await saveBook([...getBook(), entry]);
+        return `World book: saved "${entry.what}".`;
+    }
+}
+
+function renderBook(): void {
+    const list = document.getElementById('rules_engine_world_list');
+    if (!list) return;
+    const book = getBook();
+    list.innerHTML = '';
+    if (!book.length) { list.textContent = 'No entries: the world is real history.'; return; }
+    book.forEach((e, i) => {
+        const row = document.createElement('div');
+        row.className = 'flex-container alignItemsCenter';
+        const label = document.createElement('span');
+        label.className = 'flex1';
+        label.textContent = `${e.what} (${e.kind}, ${e.since ?? 'always'}, ${e.place ?? e.where})`;
+        const del = document.createElement('div');
+        del.className = 'menu_button fa-solid fa-trash-can';
+        del.title = 'Remove';
+        del.addEventListener('click', () => { void saveBook(getBook().filter((_, j) => j !== i)); });
+        row.append(label, del);
+        list.append(row);
+    });
+}
+
+function registerWorldCommands(): void {
+    const c = ctx();
+    if (!c.SlashCommand || !c.SlashCommandParser) return;
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'world-add', helpString: 'Add to this card\'s world book: /world-add orcs in London since the 900s. The model drafts the entry; you edit and approve it.',
+        callback: async (_a: unknown, v: unknown) => String(v ?? '').trim() ? addEntry(String(v).trim()) : 'Give a line: /world-add orcs in London since the 900s.',
+    }));
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'world-list', helpString: 'Show this card\'s world book.',
+        callback: async () => worldBlock(getBook()) || 'The world book is empty: the world is real history.',
+    }));
+}
+
 /** What the question model and the narrator read about the story now: time and bodies. */
 function storyState(): string {
     const t = storyTime();
-    return [t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
+    return [worldBlock(getBook()), t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
 }
 
 (globalThis as Record<string, unknown>).rulesEngineInterceptor = async (chat: STMessage[], _size: number, _abort: unknown, type: string) => {
@@ -126,6 +198,12 @@ async function buildSettings(): Promise<void> {
         if (ctx().chatMetadata) { setStoryTime(t); refreshTime(); }
     });
     refreshTime();
+    const line = document.getElementById('rules_engine_world_line') as HTMLInputElement;
+    document.getElementById('rules_engine_world_fill')?.addEventListener('click', () => {
+        if (!line.value.trim()) return;
+        void addEntry(line.value.trim()).then(msg => { toastr.info(msg, 'World book'); line.value = ''; });
+    });
+    renderBook();
 }
 
 /** This extension's folder under scripts/extensions/third-party, from the URL this module loaded from. */
@@ -148,7 +226,7 @@ function wireEvents(): void {
         }).catch(e => console.warn('[Rules engine] rule check skipped:', e));
     });
     on(ev.MESSAGE_SWIPED, (id: number) => { if (live()) onRulesSwiped(id); });
-    on(ev.CHAT_CHANGED, () => { if (live()) syncRulesToChat(); refreshTime(); });
+    on(ev.CHAT_CHANGED, () => { if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); });
     on(ev.MESSAGE_DELETED, () => { if (live()) syncRulesToChat(); });
     // PassTime moves the clock; the field follows after each reply.
     on(ev.MESSAGE_RECEIVED, () => refreshTime());
@@ -160,6 +238,8 @@ function wireEvents(): void {
     registerRulesStatsCommand();
     registerRulesEvalCommand(send);
     registerTimeCommand();
+    registerWorldCommands();
     await buildSettings();
+    applyWorld(getBook());
     console.log(`[Rules engine] loaded: ${REGISTRY.size} tools`);
 })();

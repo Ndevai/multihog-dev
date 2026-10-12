@@ -1444,11 +1444,13 @@ export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, 
     console.debug?.('[Rules engine]', ls, `margin ${r.margin} dB`);
     return r.audible ? `${ls} hears it (${what}).` : `${ls} does not hear it: too faint over the background (${what}).`;
 }
+/** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
+export const SPEECH_OVERRIDE = {};
 export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none' } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc)
         return 'Creature data is not loaded.';
-    const talks = (c) => c.flags.includes('CAN_SPEAK') || c.flags.includes('INTELLIGENT');
+    const talks = (c) => SPEECH_OVERRIDE[c.id] ?? (c.flags.includes('CAN_SPEAK') || c.flags.includes('INTELLIGENT'));
     const anyWorks = (p, c, test) => { const parts = c.parts.filter(test); const w = worksFn(p, c); return parts.length ? parts.some(w) : null; };
     const flag = (f) => (x) => x.flags.includes(f);
     if (l.dead || l.unconscious)

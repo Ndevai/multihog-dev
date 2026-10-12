@@ -244,7 +244,8 @@ function whoAny(st, name, speciesArg) {
 // Principles shared by both briefs.
 const RULES_PRINCIPLES = `Principles
 - Write each check the engine decided as *(Climb → SUCCESS)* right after the sentence that narrates it.
-- Words come only from species that can talk (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
+- The world is real history with the additions in [WORLD]; an area of life an addition does not reach is as in real history.
+- Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
 - A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.`;
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
@@ -807,7 +808,7 @@ export function registerRulesTools(enabled) {
         who: str('The player\'s character making the claim'),
         claim: str('The claim, one short sentence ("Mary is a cat", "Mary has a pistol in her coat", "the cellar door is unlocked")'),
         kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before'] },
-        in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world as the scenario and the world\'s facts give it (orcs in a world that has orcs; a revolver after 1836). False: the claim does not hold.' },
+        in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world: real history for the date, plus [WORLD] (orcs in a world whose book has orcs; a revolver after 1836). False: the claim does not hold.' },
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
         quantity: { type: 'number', description: 'For "something the character has": how many. Default 1.' },

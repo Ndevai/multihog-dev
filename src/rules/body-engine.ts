@@ -1175,10 +1175,14 @@ export interface MessageInput {
     means?: 'speech' | 'gesture'; lit?: boolean; languages?: (string[] | null | undefined)[]; distance?: number; effort?: Effort;
     noise?: string; noise_db?: number | null; barrier?: string;
 }
+
+/** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
+export const SPEECH_OVERRIDE: Record<string, boolean> = {};
+
 export function communicate(sp: string, s: Person, ls: string, l: Person, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none' }: MessageInput = {}): string {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc) return 'Creature data is not loaded.';
-    const talks = (c: Creature) => c.flags.includes('CAN_SPEAK') || c.flags.includes('INTELLIGENT');
+    const talks = (c: Creature) => SPEECH_OVERRIDE[c.id] ?? (c.flags.includes('CAN_SPEAK') || c.flags.includes('INTELLIGENT'));
     const anyWorks = (p: Person, c: Creature, test: (x: Part) => boolean) => { const parts = c.parts.filter(test); const w = worksFn(p, c); return parts.length ? parts.some(w) : null; };
     const flag = (f: string) => (x: Part) => x.flags.includes(f);
     if (l.dead || l.unconscious) return `${ls} perceives nothing (${l.dead ? 'dead' : 'unconscious'}).`;
