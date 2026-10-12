@@ -24,7 +24,7 @@ Read the scene and the player's message. Find each outcome the next reply will n
 Ask only about outcomes this reply must show. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
 A player's message that states something the story has not established about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now) → Claim, before the actions that rely on it. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A person the story has not described who acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one call per person. One call per question; calls run in the order given, so put time passing after the actions it follows.
-When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). When the scene's position is not yet known and the scene or scenario says where it is, add "at": [latitude, longitude].
+When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). When the scene's position is not yet known and the scene or scenario says where it is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
 First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"]}. When nothing is in doubt, write {"calls":[]}.`;
 
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
@@ -61,7 +61,7 @@ export function toolCatalogue(): string {
 }
 
 type Call = { tool: string; args: Record<string, unknown> };
-type Plan = { calls: Call[]; then: string[]; time?: string; at?: [number, number]; read: Record<string, string>; unsure: Record<string, string[]> };
+type Plan = { calls: Call[]; then: string[]; time?: string; at?: [number, number]; read: Record<string, string>; unsure: Record<string, string[]>; present?: string[] };
 
 /** Every call in the model's text, unchecked: the last JSON object holding "calls" that parses. */
 export function rawCalls(text: unknown): Call[] {
@@ -86,6 +86,7 @@ export function rawPlan(text: unknown): Plan {
                 calls: o.calls.filter((c: unknown): c is Call => !!c && typeof (c as Call).tool === 'string' && typeof (c as Call).args === 'object' && (c as Call).args !== null),
                 then: Array.isArray(o.then) ? o.then.filter((q: unknown): q is string => typeof q === 'string' && !!q.trim()) : [],
                 time: typeof o.time === 'string' ? o.time : undefined,
+                present: Array.isArray(o.present) ? o.present.filter((x: unknown): x is string => typeof x === 'string' && !!x.trim()) : undefined,
                 read: strings(o.read, v => typeof v === 'string') as Record<string, string>,
                 unsure: strings(o.unsure, v => Array.isArray(v) && v.length >= 2 && v.every(x => typeof x === 'string')) as Record<string, string[]>,
                 at: Array.isArray(o.at) && o.at.length === 2 && o.at.every((x: unknown) => typeof x === 'number' && Number.isFinite(x)) && Math.abs(o.at[0]) <= 90 && Math.abs(o.at[1]) <= 180 ? [o.at[0], o.at[1]] : undefined,
@@ -141,9 +142,9 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
     const s = store(), turn = turnKey(ctx.chat);
     const results: { tool: string; result: string }[] = [];
     const runAll = async (list: Call[]) => { for (const c of list) results.push({ tool: c.tool, result: String(await REGISTRY.get(c.tool)!.exec(c.args as Args)) }); };
-    let calls: Call[], time: number | null = null;
+    let calls: Call[], time: number | null = null, present: string[] | undefined;
     if (s.asked?.turn === turn) {
-        calls = s.asked.calls; time = s.asked.time ?? null;
+        calls = s.asked.calls; time = s.asked.time ?? null; present = s.asked.present;
         setRead(s.asked.read ?? []);
         if (time !== null && storyTime() === null) setStoryTime(time);
         await runAll(calls);
@@ -154,6 +155,7 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker), thingsBlock(found)].filter(Boolean).join('\n\n');
         const plan = rawPlan(await send(QUESTION_SYSTEM, prompt));
         setRead(await resolveRead(found, plan, choose));
+        present = plan.present;
         time = plan.time && storyTime() === null ? parseStoryTime(plan.time) : null;
         if (time !== null) setStoryTime(time);
         if (plan.at && !scenePosition()) setScenePosition(plan.at[0], plan.at[1]);
@@ -167,7 +169,7 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
             calls = [...calls, ...more];
         }
     }
-    s.asked = { turn, calls, results, time, read: READ };
+    s.asked = { turn, calls, results, time, read: READ, present };
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
     console.debug('[Rules engine] question pass', calls, results, READ);
     return READ;

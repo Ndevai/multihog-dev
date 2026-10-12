@@ -23,7 +23,10 @@
 // rates used for every language [ASSUMED]); linear between the measured ratios, none above +12 dB [ASSUMED: past the data].
 // Read from the PDF text; a few single counts lost in extraction (checked against the page image at 0 dB).
 interface Colex { concepts: string[]; pairs: [number, number][]; names: Record<string, string>; by: Record<string, number[]>;
-    whisper: Record<string, [number, number, number, number][]>; noise: Record<string, [number, number, number, number][]>; noiseTables: Record<string, number[][]> }
+    whisper: Record<string, [number, number, number, number][]>; noise: Record<string, [number, number, number, number][]>; noiseTables: Record<string, number[][]>;
+    /** IPA forms of the words in whisper and noise pairs, by language and concept. */
+    forms: Record<string, Record<string, string>> }
+import { roman } from './roman.js';
 
 let DATA: Colex | null = null, loading: Promise<void> | null = null;
 let KEYS = new Map<string, number[]>();
@@ -46,6 +49,14 @@ export function languageCode(name: string): string | null {
     return ALIAS[key(name)] ?? DATA?.names[key(name)] ?? null;
 }
 
+/** How the word for `word` sounds in language `code`, in letters (roman.ts), or '' when its form is not kept. */
+export function soundOf(word: string, code: string): string {
+    const ids = KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? [];
+    const f = ids.map(i => DATA?.forms?.[code]?.[i]).find(Boolean);
+    return f ? roman(f) : '';
+}
+const formOf = (i: number, code: string) => { const f = DATA?.forms?.[code]?.[i]; return f ? roman(f) : ''; };
+
 /** Display of a concept gloss: "OLDER BROTHER (OF MAN)" → "older brother (of man)". */
 const show = (c: string) => c.toLowerCase();
 
@@ -61,14 +72,14 @@ export function sharedWith(word: string, code: string): string[] {
 }
 
 /** Words the whispered word for `word` can be heard as in language `code`, each with the share heard so. */
-export function whisperedAs(word: string, code: string): { concept: string; rate: number }[] {
+export function whisperedAs(word: string, code: string): { concept: string; rate: number; sound: string }[] {
     if (!DATA) return [];
     const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map<number, number>();
     for (const [a, b, ab, ba] of DATA.whisper[code] ?? []) {
         const [other, r] = ids.has(a) && !ids.has(b) ? [b, ab] : ids.has(b) && !ids.has(a) ? [a, ba] : [-1, 0];
         if (other >= 0 && r > 0) out.set(other, Math.max(out.get(other) ?? 0, r));
     }
-    return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate }));
+    return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate, sound: formOf(i, code) }));
 }
 
 const SNRS = [-18, -12, -6, 0, 6, 12];
@@ -82,17 +93,17 @@ function heardAs(a: number, b: number, snr: number): number {
 }
 
 /** Words the word for `word` can be misheard as in language `code` at speech-to-noise ratio `snr` dB, with the share. */
-export function noisyAs(word: string, code: string, snr: number): { concept: string; rate: number }[] {
+export function noisyAs(word: string, code: string, snr: number): { concept: string; rate: number; sound: string }[] {
     if (!DATA || snr >= 12) return [];
     const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map<number, number>();
     for (const [a, b, ca, cb] of DATA.noise[code] ?? []) {
         const [other, r] = ids.has(a) && !ids.has(b) ? [b, heardAs(ca, cb, snr)] : ids.has(b) && !ids.has(a) ? [a, heardAs(cb, ca, snr)] : [-1, 0];
         if (other >= 0 && r >= 0.01) out.set(other, Math.max(out.get(other) ?? 0, r));
     }
-    return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate }));
+    return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate, sound: formOf(i, code) }));
 }
 
-export interface Shared { word: string; also: string[] }
+export interface Shared { word: string; sound: string; also: string[] }
 
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
 export function sharedIn(message: string, language: string, max = 3, whispered = false, list?: string | null, snr = Infinity): Shared[] {
@@ -104,9 +115,10 @@ export function sharedIn(message: string, language: string, max = 3, whispered =
         const phrase = w.slice(i, i + n).join(' ');
         if (!KEYS.has(phrase) && !KEYS.has(singular(phrase))) continue;
         for (let j = 0; j < n; j++) used.add(i + j);
-        const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...noisyAs(phrase, code, snr).map(x => `${x.concept} if misheard`),
+        const said = (x: { concept: string; sound: string }, how: string) => `${x.concept}${x.sound ? ` = ${x.sound}` : ''} ${how}`;
+        const also = [...whispered ? whisperedAs(phrase, code).map(x => said(x, 'if whispered')) : [], ...noisyAs(phrase, code, snr).map(x => said(x, 'if misheard')),
             ...language === 'english' ? [] : sharedWith(phrase, code)];
-        if (also.length) out.push({ word: phrase, also });
+        if (also.length) out.push({ word: phrase, sound: soundOf(phrase, code), also });
     }
     return out;
 }

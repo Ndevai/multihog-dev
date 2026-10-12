@@ -28,18 +28,26 @@ export function learn(st, text, knowers = [], everyone = false, sources = {}) {
     return f;
 }
 export const knows = (st, name, text) => (st.facts ?? []).some(f => norm(f.text) === norm(text) && (f.everyone || f.knowers.some(k => norm(k) === norm(name))));
-/** The [KNOWS] block: common knowledge, then each character's own facts, newest last. Empty when nothing is recorded. */
-export function knowledgeBlock(st) {
+// What is not in the narrator's context cannot leak into another character's mouth: models revealed private information
+// where people would not 39 % (GPT-4) and 57 % (ChatGPT) of the time (ConfAIde, Mireshghallah et al. 2024, ICLR). So the
+// narrator gets the lines of the characters in the scene only (`present`, named by the question pass); the rule check still
+// reads every line, to catch a character acting on what only others know. A secret is a fact its knowers keep hidden.
+/** The [KNOWS] block: common knowledge, then each character's own facts, newest last; only `present` characters' lines
+ *  when given. Empty when nothing is recorded. */
+export function knowledgeBlock(st, present) {
     const facts = [...(st.facts ?? [])].sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
     if (!facts.length)
         return '';
-    const last = (list, n) => list.slice(-FACTS_SHOWN).map(f => n && f.from?.[norm(n)] ? `${f.text} (${f.from[norm(n)]})` : f.text).join(' | ');
+    const last = (list, n) => list.slice(-FACTS_SHOWN).map(f => `${f.text}${n && f.from?.[norm(n)] ? ` (${f.from[norm(n)]})` : ''}${f.secret ? ' [secret: kept hidden]' : ''}`).join(' | ');
     const lines = [];
     const common = facts.filter(f => f.everyone);
     if (common.length)
         lines.push(`Common knowledge: ${last(common)}`);
-    const names = [...new Set(facts.flatMap(f => f.everyone ? [] : f.knowers))];
+    const here = present?.length ? new Set(present.map(norm)) : null;
+    const names = [...new Set(facts.flatMap(f => f.everyone ? [] : f.knowers))].filter(n => !here || here.has(norm(n)));
     for (const n of names)
         lines.push(`${n}: ${last(facts.filter(f => !f.everyone && f.knowers.some(k => norm(k) === norm(n))), n)}`);
-    return `[KNOWS]\nFixed facts of the story and who knows each. A character knows common knowledge, their own line, and what they perceive in the scene now.\n${lines.join('\n')}\n[/KNOWS]`;
+    if (!lines.length)
+        return '';
+    return `[KNOWS]\nFixed facts of the story and who knows each${here ? ', for the characters in this scene' : ''}. A character knows common knowledge, their own line, and what they perceive in the scene now. A secret is kept hidden: asked about it, its keeper evades or lies (SocialResponse decides whether a lie is believed).\n${lines.join('\n')}\n[/KNOWS]`;
 }

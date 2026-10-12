@@ -1,3 +1,4 @@
+import { roman } from './roman.js';
 let DATA = null, loading = null;
 let KEYS = new Map();
 const key = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\(.*?\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -17,6 +18,13 @@ const ALIAS = { cantonese: 'guan1279', 'yue chinese': 'guan1279', mandarin: 'man
 export function languageCode(name) {
     return ALIAS[key(name)] ?? DATA?.names[key(name)] ?? null;
 }
+/** How the word for `word` sounds in language `code`, in letters (roman.ts), or '' when its form is not kept. */
+export function soundOf(word, code) {
+    const ids = KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? [];
+    const f = ids.map(i => DATA?.forms?.[code]?.[i]).find(Boolean);
+    return f ? roman(f) : '';
+}
+const formOf = (i, code) => { const f = DATA?.forms?.[code]?.[i]; return f ? roman(f) : ''; };
 /** Display of a concept gloss: "OLDER BROTHER (OF MAN)" → "older brother (of man)". */
 const show = (c) => c.toLowerCase();
 /** The other concepts language `code` says with the word for the concepts named `word`; [] when none or unknown. */
@@ -43,7 +51,7 @@ export function whisperedAs(word, code) {
         if (other >= 0 && r > 0)
             out.set(other, Math.max(out.get(other) ?? 0, r));
     }
-    return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate }));
+    return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate, sound: formOf(i, code) }));
 }
 const SNRS = [-18, -12, -6, 0, 6, 12];
 /** Share of consonant `a` heard as `b` (Miller & Nicely indices) at `snr` dB; 0 at or above +12 dB. */
@@ -66,7 +74,7 @@ export function noisyAs(word, code, snr) {
         if (other >= 0 && r >= 0.01)
             out.set(other, Math.max(out.get(other) ?? 0, r));
     }
-    return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate }));
+    return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate, sound: formOf(i, code) }));
 }
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
 export function sharedIn(message, language, max = 3, whispered = false, list, snr = Infinity) {
@@ -83,10 +91,11 @@ export function sharedIn(message, language, max = 3, whispered = false, list, sn
                 continue;
             for (let j = 0; j < n; j++)
                 used.add(i + j);
-            const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...noisyAs(phrase, code, snr).map(x => `${x.concept} if misheard`),
+            const said = (x, how) => `${x.concept}${x.sound ? ` = ${x.sound}` : ''} ${how}`;
+            const also = [...whispered ? whisperedAs(phrase, code).map(x => said(x, 'if whispered')) : [], ...noisyAs(phrase, code, snr).map(x => said(x, 'if misheard')),
                 ...language === 'english' ? [] : sharedWith(phrase, code)];
             if (also.length)
-                out.push({ word: phrase, also });
+                out.push({ word: phrase, sound: soundOf(phrase, code), also });
         }
     return out;
 }

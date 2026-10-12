@@ -27,7 +27,7 @@ import { anachronism } from './history.js';
 import { CURRENT_BOOK } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
-import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode } from './colex.js';
+import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode, soundOf } from './colex.js';
 import { resolveLanguage, stageKey } from './languages.js';
 import { str, checkArgs } from './tool-schema.js';
 export const TOOLS = ['Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
@@ -271,7 +271,7 @@ const RULES_PRINCIPLES = `Principles
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
 - A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.
-- A character who took a word in another meaning ([KNOWS]: "took … to mean …") acts on that meaning; the narration keeps the English word as spoken.`;
+- A character who took a word in another meaning ([KNOWS]: "took … to mean …") acts on that meaning; the narration keeps the English word as spoken, and may quote the words as they sounded, spelled as [KNOWS] gives them (sètï, sèdï), when the misunderstanding comes out.`;
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
 export const RULES_BRIEF_DECIDED = `<rule_engine>
 Outcomes in [DECIDED] come from the rule engine; narrate each as given, in the order it happens.
@@ -371,7 +371,10 @@ function applyWeather(people, t) {
 /** The per-turn [KNOWS] block for the current chat, '' when nothing is recorded. */
 export function knowledgeInjection() {
     const ctx = SillyTavern.getContext();
-    return ctx.chatMetadata ? knowledgeBlock(store().state) : '';
+    if (!ctx.chatMetadata)
+        return '';
+    const a = store().asked;
+    return knowledgeBlock(store().state, a?.turn === turnKey(ctx.chat) ? a.present : undefined);
 }
 /** Sets the scene's position (and the latitude light and weather use). */
 export function setScenePosition(lat, lon) {
@@ -697,7 +700,7 @@ export function registerRulesTools(enabled) {
             : (s.p.languages ?? []).find(x => x !== 'english' && (!l.p.languages?.length || l.p.languages.includes(x)));
         const stage = spoken ? resolveLanguage(spoken, year, CURRENT_BOOK) : null;
         const shared = spoken ? sharedIn(a.message, spoken, 3, whispers, stage.list, snr) : [];
-        const one = shared.length ? ` In ${stage.label}${whispers ? ', whispered,' : ''} a word can also be taken as: ${shared.map(x => `"${x.word}" (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
+        const one = shared.length ? ` In ${stage.label}${whispers ? ', whispered,' : ''} a word can also be taken as: ${shared.map(x => `"${x.word}"${x.sound ? ` = ${x.sound}` : ''} (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
         return `${out} ${a.listener} now knows: ${a.message.replace(/[.!?]?$/, '.')}${one}`;
     }));
     // A listener takes a word that has several meanings in the spoken language in the one the scene supports; when the scene
@@ -728,7 +731,7 @@ export function registerRulesTools(enabled) {
             for (const x of noisyAs(a.word, code, heard.snr))
                 weight.set(x.concept, Math.max(weight.get(x.concept) ?? 0, x.rate / (1 - x.rate)));
         const valid = [...weight.keys()];
-        const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase().replace(/ if (whispered|misheard)$/, '')))].filter(x => weight.has(x));
+        const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase().replace(/ if (whispered|misheard)$/, '').replace(/ = .*$/, '')))].filter(x => weight.has(x));
         if (!fits.length)
             return `Give fits from: ${valid.join('; ')}.`;
         let u = rng() * fits.reduce((t, x) => t + weight.get(x), 0), reading = fits[fits.length - 1];
@@ -740,7 +743,8 @@ export function registerRulesTools(enabled) {
         if (reading === meant)
             return `${a.listener} takes "${a.word}" as ${a.speaker} meant it.`;
         const why = weight.get(reading) === 1 ? `one word in ${a.language}` : `heard as that word in ${a.language}`;
-        learn(st, `${a.listener} took ${a.speaker}'s word for "${a.word}" to mean "${reading}" (${why})`, [a.listener], false, { [a.listener]: 'heard it' });
+        const s1 = soundOf(a.word, code), s2 = soundOf(reading, code);
+        learn(st, `${a.listener} took ${a.speaker}'s word for "${a.word}"${s1 ? ` (${s1})` : ''} to mean "${reading}"${s2 && s2 !== s1 ? ` (${s2})` : ''} (${why})`, [a.listener], false, { [a.listener]: 'heard it' });
         return `${a.listener} takes "${a.word}" to mean "${reading}"; ${a.speaker} does not know. Narrate the English word as spoken; the misreading shows only through what ${a.listener} says and does, now or when it comes to matter.`;
     }));
     tool('Appraise', 'Decide which emotions a character feels about something, before narrating their feelings. The answers describe how the character sees it; the emotion types follow from them.', {
@@ -910,6 +914,7 @@ export function registerRulesTools(enabled) {
         how: { type: 'string', enum: KNOWN_HOW, description: 'How the knowers learned it, when they learned it the same way' },
         told_by: str('For "told by someone": who told them'),
         cause: str('For an event: who or what caused it, as the story has it: a character\'s name, "a natural force", or "unknown"'),
+        secret: { type: 'boolean', description: 'The knowers keep it hidden from others (an affair, a crime, a plan)' },
     }, ['fact'], a => run(st => {
         const how = a.how === KNOWN_HOW[4] && a.told_by ? `told by ${a.told_by}` : a.how;
         if (a.cause && !['a natural force', 'unknown'].includes(a.cause.toLowerCase())) {
@@ -919,6 +924,8 @@ export function registerRulesTools(enabled) {
         }
         const text = a.cause ? `${a.fact.replace(/[.!?]?$/, '')} (cause: ${a.cause})` : a.fact;
         const f = learn(st, text, a.known_by ?? [], !!a.common_knowledge, how ? Object.fromEntries((a.known_by ?? []).map(k => [k, how])) : {});
+        if (a.secret && !a.common_knowledge)
+            f.secret = true;
         return `Fact ${f.id} recorded: ${f.text.replace(/[.!?]?$/, '.')} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
     // A player's message is plain language: what it states about their character or the world becomes a fact only through
