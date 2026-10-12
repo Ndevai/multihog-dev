@@ -217,8 +217,24 @@ function recorded(name: string | null | undefined): { mass?: number; species?: s
 
 type Who = { p: Person; error?: undefined } | { p?: undefined; error: string };
 /** The tracked person `name`; on first appearance species and mass come from the arguments, else what the engine recorded, else human. */
-function who(st: RuleState, name: string | null | undefined, speciesArg?: string, massArg?: number): Who {
-    if (!name) return { error: 'Give the character\'s name.' };
+// Names differing by one letter (Mara, Mary) from a recorded one, in names of 4 letters or more, are taken for a misspelling
+// unless the call gives a species, which starts a separate record.
+function editDistance(a: string, b: string): number {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+}
+
+function who(st: RuleState, rawName: string | null | undefined, speciesArg?: string, massArg?: number): Who {
+    if (!rawName) return { error: 'Give the character\'s name.' };
+    const key = (x: string) => x.toLowerCase().replace(/\s+/g, ' ').trim();
+    const names = Object.keys(st.people ?? {});
+    // The same name in other case or spacing is the same person.
+    const name = names.find(n => key(n) === key(rawName)) ?? rawName.trim();
+    const near = !st.people?.[name] && !speciesArg && name.length >= 4 ? names.find(n => n.length >= 4 && editDistance(key(n), key(name)) === 1) : undefined;
+    if (near) return { error: `No record of "${name}"; ${near} is on record. Call again with ${near}, or give species to start a separate character.` };
     const known = st.people?.[name];
     const t: ReturnType<typeof recorded> = known ? {} : recorded(name);
     const text = speciesArg || t.species;
@@ -227,6 +243,12 @@ function who(st: RuleState, name: string | null | undefined, speciesArg?: string
     // DF names some creatures only in legends ([DOES_NOT_EXIST], no body): chimera, centaur, griffon.
     if (!known && !creature(sp)?.parts.length) return { error: `DF defines no body for "${text}" (a creature of legend only). Nothing recorded.` };
     return { p: person(st, name, Number(massArg) || t.mass, sp) };
+}
+
+/** who() for tools that act on anyone: a creature name the raws lack falls back to human; a misspelt name stays an error. */
+function whoAny(st: RuleState, name: string, speciesArg?: string): Who {
+    const r = who(st, name, speciesArg);
+    return r.p || r.error.startsWith('No record of') ? r : { p: person(st, name) };
 }
 
 // Principles shared by both briefs.
@@ -911,7 +933,7 @@ export function registerRulesTools(enabled: boolean): void {
         timed: { type: 'boolean', description: 'The task must be done within a time that leaves no slack (a lock picked before the guard turns, a sum shouted in a race)' },
         fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
         override: { type: 'boolean', description: 'Set only after BodyCheck named another tool and the task is genuinely not what that tool decides' },
-    }, ['who', 'task', 'reference_class', 'base_share', 'share'], a => run((st, rng) => check((who(st, a.who, a.species).p ?? person(st, a.who)), { ...a, share: combined(a) }, rng)));
+    }, ['who', 'task', 'reference_class', 'base_share', 'share'], a => run((st, rng) => { const w = whoAny(st, a.who, a.species); return w.p ? check(w.p, { ...a, share: combined(a) }, rng) : w.error; }));
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
@@ -919,7 +941,8 @@ export function registerRulesTools(enabled: boolean): void {
         treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load', 'antivenom', 'antibiotics', 'laparotomy', 'oxygen', 'hyperbaric_oxygen'] },
         training: { type: 'string', enum: ['untrained', 'instructions', 'trained'], description: 'For stop_bleeding: the person treating has no first-aid training, has written or phone instructions, or has formal bleeding-control training (medic, Stop the Bleed course). Default untrained.' },
     }, ['who', 'treatment'], a => run((st, rng) => {
-        const p = (who(st, a.who).p ?? person(st, a.who));
+        const { p, error } = whoAny(st, a.who);
+        if (!p) return error;
         return `${treat(p, Number(a.wound), a.treatment, rng, { training: a.training ?? 'untrained' })} ${status(a.who, p)}`;
     }));
 
@@ -931,7 +954,8 @@ export function registerRulesTools(enabled: boolean): void {
         temp_c: { type: 'number', description: 'Temperature of the object or liquid, °C' },
         seconds: { type: 'number', description: 'Contact time in seconds' },
     }, ['who', 'regions', 'material', 'temp_c', 'seconds'], a => run((st, rng) => {
-        const p = (who(st, a.who, a.species).p ?? person(st, a.who));
+        const { p, error } = whoAny(st, a.who, a.species);
+        if (!p) return error;
         return `${contactBurn(p, a.regions, a.material, a.temp_c, a.seconds, rng)} ${status(a.who, p)}`;
     }));
 
@@ -983,7 +1007,8 @@ export function registerRulesTools(enabled: boolean): void {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },
     }, ['who', 'complexity'], a => run(st => {
-        const p = (who(st, a.who).p ?? person(st, a.who));
+        const { p, error } = whoAny(st, a.who);
+        if (!p) return error;
         return `${cast(p, Math.max(1, Math.min(9, Math.round(a.complexity))))} ${status(a.who, p)}`;
     }));
 
@@ -994,12 +1019,13 @@ export function registerRulesTools(enabled: boolean): void {
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
         head_first: { type: 'boolean', description: 'Landed head first' },
     }, ['who', 'height_m'], a => run((st, rng) => {
-        const p = (who(st, a.who, a.species).p ?? person(st, a.who));
+        const { p, error } = whoAny(st, a.who, a.species);
+        if (!p) return error;
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first }, rng);
     }));
 
     tool('BodyStatus', 'Read a character\'s body and network state.', {
         who: str('Character name'),
         species,
-    }, ['who'], a => run(st => status(a.who, (who(st, a.who, a.species).p ?? person(st, a.who)))));
+    }, ['who'], a => run(st => { const w = whoAny(st, a.who, a.species); return w.p ? status(a.who, w.p) : w.error; }));
 }
