@@ -6,7 +6,14 @@
 // in [KNOWS] and shows through what they do.
 // Limits: a pair is listed when one variety of the language has it (a dialect counts); a homophone counts like a polysemy;
 // a concept missing from a language's word list gives no ambiguity.
-interface Colex { concepts: string[]; pairs: [number, number][]; names: Record<string, string>; by: Record<string, number[]> }
+// Whispered words: a speaker without vocal-fold vibration (laryngectomy, both folds paralysed) whispers; vowels and place
+// of articulation carry, pitch and voicing do not. Pairs of words in a language that differ only in the voicing of up to
+// two obstruents (IPA voiced/voiceless pairs at the same place and manner, from the CLICS⁴ word list of the language's
+// largest variety), each with the share of whispers heard as the other word: word-initial and medial 28 % per sound
+// (Tartter 1989, JASA 86:1678: voicing 72 % right in whispered syllables; medial [ASSUMED] as initial), word-final 4 %
+// (Baker & Whiteside 1994, Proc IOA: 96 %); two sounds multiply [ASSUMED independent]. Words that differ only in tone are
+// left out: pitch is gone, the share heard right from duration and loudness is not yet sourced.
+interface Colex { concepts: string[]; pairs: [number, number][]; names: Record<string, string>; by: Record<string, number[]>; whisper: Record<string, [number, number, number][]> }
 
 let DATA: Colex | null = null, loading: Promise<void> | null = null;
 let KEYS = new Map<string, number[]>();
@@ -41,10 +48,21 @@ export function sharedWith(word: string, code: string): string[] {
     return [...out].map(i => show(DATA!.concepts[i]));
 }
 
+/** Words the whispered word for `word` can be heard as in language `code`, each with the share heard so. */
+export function whisperedAs(word: string, code: string): { concept: string; rate: number }[] {
+    if (!DATA) return [];
+    const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map<number, number>();
+    for (const [a, b, r] of DATA.whisper[code] ?? []) {
+        const other = ids.has(a) && !ids.has(b) ? b : ids.has(b) && !ids.has(a) ? a : -1;
+        if (other >= 0) out.set(other, Math.max(out.get(other) ?? 0, r));
+    }
+    return [...out].map(([i, rate]) => ({ concept: show(DATA!.concepts[i]), rate }));
+}
+
 export interface Shared { word: string; also: string[] }
 
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
-export function sharedIn(message: string, language: string, max = 3): Shared[] {
+export function sharedIn(message: string, language: string, max = 3, whispered = false): Shared[] {
     const code = languageCode(language);
     if (!DATA || !code) return [];
     const w = key(message).split(' ').filter(Boolean), used = new Set<number>(), out: Shared[] = [];
@@ -53,7 +71,7 @@ export function sharedIn(message: string, language: string, max = 3): Shared[] {
         const phrase = w.slice(i, i + n).join(' ');
         if (!KEYS.has(phrase) && !KEYS.has(singular(phrase))) continue;
         for (let j = 0; j < n; j++) used.add(i + j);
-        const also = sharedWith(phrase, code);
+        const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...language === 'english' ? [] : sharedWith(phrase, code)];
         if (also.length) out.push({ word: phrase, also });
     }
     return out;

@@ -81,6 +81,8 @@ export interface Person {
     bmiZ?: number;
     /** Languages the character knows, lower case; absent when the story has not stated them. */
     languages?: string[];
+    /** How the character produces voice: absent = normal; 'whisper' = no vocal-fold vibration. */
+    voice?: 'whisper';
 }
 
 /** A fixed fact of the story and who knows it; `from` maps a normalized knower name to how they learned it. */

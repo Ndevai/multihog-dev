@@ -29,7 +29,7 @@ import { anachronism } from './history.js';
 import { CURRENT_BOOK } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
-import { sharedIn, sharedWith, languageCode } from './colex.js';
+import { sharedIn, sharedWith, whisperedAs, languageCode } from './colex.js';
 import { str, checkArgs } from './tool-schema.js';
 import type { Props, ArgsOf } from './tool-schema.js';
 import type { Rng, Person, RuleState } from './types.js';
@@ -644,19 +644,24 @@ export function registerRulesTools(enabled: boolean): void {
         speaker_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the speaker knows, when the story states them; kept for later calls.' },
         listener_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the listener knows, when the story states them; kept for later calls.' },
         message: str('What the message says, one short sentence. When it reaches the listener, the listener comes to know it.'),
+        speaker_voice: { type: 'string', enum: ['normal', 'whisper only (no vocal-fold vibration)'], description: 'When the story states that the speaker cannot voice (larynx removed, vocal folds paralysed); kept for later calls.' },
     }, ['speaker', 'listener'], a => run(st => {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (!s.p || !l.p) return s.error || l.error;
         if (a.speaker_languages?.length) s.p.languages = a.speaker_languages.map(x => x.trim().toLowerCase());
         if (a.listener_languages?.length) l.p.languages = a.listener_languages.map(x => x.trim().toLowerCase());
+        if (a.speaker_voice) { if (a.speaker_voice === 'normal') delete s.p.voice; else s.p.voice = 'whisper'; }
         const langs = [s.p.languages, l.p.languages];
         const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort: a.effort ?? 'normal', noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out)) return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
-        // English speech is already on the page in its own words; another language's words are not.
-        const spoken = (s.p.languages ?? []).find(x => x !== 'english' && (!l.p!.languages?.length || l.p!.languages.includes(x)));
-        const shared = spoken ? sharedIn(a.message, spoken) : [];
-        const one = shared.length ? ` In ${spoken} one word also means: ${shared.map(x => `"${x.word}" (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
+        // English speech is already on the page in its own words; another language's words are not. A whisper loses voicing
+        // in any language, English included (colex.ts).
+        const whispers = s.p.voice === 'whisper';
+        const spoken = whispers ? (s.p.languages ?? ['english']).find(x => !l.p!.languages?.length || l.p!.languages.includes(x))
+            : (s.p.languages ?? []).find(x => x !== 'english' && (!l.p!.languages?.length || l.p!.languages.includes(x)));
+        const shared = spoken ? sharedIn(a.message, spoken, 3, whispers) : [];
+        const one = shared.length ? ` In ${spoken}${whispers ? ', whispered,' : ''} a word can also be taken as: ${shared.map(x => `"${x.word}" (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
         return `${out} ${a.listener} now knows: ${a.message.replace(/[.!?]?$/, '.')}${one}`;
     }));
 
@@ -664,7 +669,7 @@ export function registerRulesTools(enabled: boolean): void {
     // supports more than one, each is equally likely [ASSUMED: no published rate of misreading per context]. Context usually
     // settles a word of several meanings (Piantadosi, Tily & Gibson 2012, Cognition 122:280), so most calls give the meaning
     // intended. A misreading is kept as the listener's own fact: it shows only when the story reaches what depends on it.
-    tool('Interpret', 'Decide which meaning a listener takes from a word that has several meanings in the language spoken, after Communicate names it, before narrating their response.', {
+    tool('Interpret', 'Decide which meaning a listener takes from a word that has several meanings in the language spoken, or that sounds like another word when whispered, after Communicate names it, before narrating their response.', {
         speaker: str('Who said it'),
         listener: str('Who heard it'),
         language: str('The language spoken'),
@@ -673,12 +678,19 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['speaker', 'listener', 'language', 'word', 'fits'], a => run((st, rng) => {
         const code = languageCode(a.language);
         if (!code) return `No word list for ${a.language}; ${a.listener} takes "${a.word}" as meant.`;
-        const valid = [a.word.toLowerCase(), ...sharedWith(a.word, code)];
-        const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase()))].filter(x => valid.includes(x));
+        // Weights: the meaning intended 1; another meaning of the same word 1 (equal chance); a word the whisper may be heard
+        // as, its odds r/(1 − r), so that with one such word it is heard so with share r.
+        const meant = a.word.toLowerCase(), weight = new Map<string, number>([[meant, 1]]);
+        if (a.language.toLowerCase() !== 'english') for (const c of sharedWith(a.word, code)) weight.set(c, 1);
+        if (who(st, a.speaker).p?.voice === 'whisper') for (const x of whisperedAs(a.word, code)) weight.set(x.concept, x.rate / (1 - x.rate));
+        const valid = [...weight.keys()];
+        const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase().replace(/ if whispered$/, '')))].filter(x => weight.has(x));
         if (!fits.length) return `Give fits from: ${valid.join('; ')}.`;
-        const reading = fits[Math.floor(rng() * fits.length)];
-        if (reading === valid[0]) return `${a.listener} takes "${a.word}" as ${a.speaker} meant it.`;
-        learn(st, `${a.listener} took ${a.speaker}'s word for "${a.word}" to mean "${reading}" (one word in ${a.language})`, [a.listener], false, { [a.listener]: 'heard it' });
+        let u = rng() * fits.reduce((t, x) => t + weight.get(x)!, 0), reading = fits[fits.length - 1];
+        for (const x of fits) if ((u -= weight.get(x)!) < 0) { reading = x; break; }
+        if (reading === meant) return `${a.listener} takes "${a.word}" as ${a.speaker} meant it.`;
+        const why = weight.get(reading) === 1 ? `one word in ${a.language}` : `whispered, it sounds like that word in ${a.language}`;
+        learn(st, `${a.listener} took ${a.speaker}'s word for "${a.word}" to mean "${reading}" (${why})`, [a.listener], false, { [a.listener]: 'heard it' });
         return `${a.listener} takes "${a.word}" to mean "${reading}"; ${a.speaker} does not know. Narrate the English word as spoken; the misreading shows only through what ${a.listener} says and does, now or when it comes to matter.`;
     }));
 

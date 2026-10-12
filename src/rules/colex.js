@@ -31,8 +31,20 @@ export function sharedWith(word, code) {
     }
     return [...out].map(i => show(DATA.concepts[i]));
 }
+/** Words the whispered word for `word` can be heard as in language `code`, each with the share heard so. */
+export function whisperedAs(word, code) {
+    if (!DATA)
+        return [];
+    const ids = new Set(KEYS.get(key(word)) ?? KEYS.get(singular(key(word))) ?? []), out = new Map();
+    for (const [a, b, r] of DATA.whisper[code] ?? []) {
+        const other = ids.has(a) && !ids.has(b) ? b : ids.has(b) && !ids.has(a) ? a : -1;
+        if (other >= 0)
+            out.set(other, Math.max(out.get(other) ?? 0, r));
+    }
+    return [...out].map(([i, rate]) => ({ concept: show(DATA.concepts[i]), rate }));
+}
 /** Words of an English message (1–3-word phrases, longest first) that `language` says with a word that has other meanings. */
-export function sharedIn(message, language, max = 3) {
+export function sharedIn(message, language, max = 3, whispered = false) {
     const code = languageCode(language);
     if (!DATA || !code)
         return [];
@@ -46,7 +58,7 @@ export function sharedIn(message, language, max = 3) {
                 continue;
             for (let j = 0; j < n; j++)
                 used.add(i + j);
-            const also = sharedWith(phrase, code);
+            const also = [...whispered ? whisperedAs(phrase, code).map(x => `${x.concept} if whispered`) : [], ...language === 'english' ? [] : sharedWith(phrase, code)];
             if (also.length)
                 out.push({ word: phrase, also });
         }
