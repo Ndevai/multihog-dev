@@ -6,8 +6,10 @@
 // Where a language is spoken: Glottolog 5 (CLDF, countries of each language's speech communities; extinct and classical
 // languages, which list a last year of documentation, left out).
 type Series = Record<string, [number, number][]>;
-let CLIO: { height: Series; numeracy: Series; wage: Series; literacy: Series } | null = null, GLOTTO: Record<string, string[]> = {}, CLDR: Record<string, Record<string, number>> = {};
+let CLIO: { height: Series; numeracy: Series; wage: Series; literacy: Series; homicide: Series; urban: Series; population: Series; infant: Series } | null = null, GLOTTO: Record<string, string[]> = {}, CLDR: Record<string, Record<string, number>> = {};
 let LIFE: { ages: number[]; tables: Record<string, Record<string, [number, number, (number | null)[]][]>> } | null = null;
+let CITIES: { n: string; k: string; la: number; lo: number; p: [number, number][] }[] = [], ISCO: [string, string][] = [];
+let OWW: Record<string, Record<string, [number, [string, number][]]>> = {};
 let FAITH: Record<string, Record<string, Record<string, number>>> = {};
 let loading: Promise<void> | null = null;
 export function loadPopulation(): Promise<void> {
@@ -16,6 +18,9 @@ export function loadPopulation(): Promise<void> {
         fetch(new URL('../../rules/glotto.json', import.meta.url)).then(r => r.json()).then(d => { GLOTTO = d; }),
         fetch(new URL('../../rules/cldr.json', import.meta.url)).then(r => r.json()).then(d => { CLDR = d; }),
         fetch(new URL('../../rules/lifetables.json', import.meta.url)).then(r => r.json()).then(d => { LIFE = d; }),
+        fetch(new URL('../../rules/cities.json', import.meta.url)).then(r => r.json()).then(d => { CITIES = d; }),
+        fetch(new URL('../../rules/isco.json', import.meta.url)).then(r => r.json()).then(d => { ISCO = d; }),
+        fetch(new URL('../../rules/oww.json', import.meta.url)).then(r => r.json()).then(d => { OWW = d; }),
         fetch(new URL('../../rules/religion.json', import.meta.url)).then(r => r.json()).then(d => { FAITH = d.shares; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
@@ -120,4 +125,58 @@ export function survival(country: string | null | undefined, sex: string | undef
     };
     const lf = l(Math.max(0, from)), lt = l(Math.min(100, to));
     return lf && lt != null ? { share: Math.min(1, lt / lf), country: c, years: y1 === y2 ? `${y1}` : `${y1}–${y2}` } : null;
+}
+
+// Country figures by year from Clio Infra (Fink-Jensen 2015 total population, urbanization ratio, homicide rates; Baten & Blum
+// 2015 infant mortality): linear between data years, the nearest data year within 25 years, else none [ASSUMED].
+export type Fact = 'population' | 'urban' | 'homicide' | 'infant';
+export function countryFact(fact: Fact, country: string | null | undefined, year: number | null): { v: number; country: string; year: number } | null {
+    const s = CLIO?.[fact], c = s && country ? pick(Object.keys(s), country) : null;
+    if (!c || year === null) return null;
+    const r = at(s![c], year), d = r.from === null ? year : r.from;
+    return Math.abs(d - year) > 25 ? null : { v: r.v, country: c, year: d };
+}
+
+// Cities: Modelski (ancient 3700 BC–AD 1000; modern AD 2000) and Chandler (AD 100–1975) as spatialized by Reba, Reitsma & Seto
+// 2016 (Sci Data 3:160034): 1,725 cities with population by year. A city's population in `year` is log-linear between its
+// listed years, none outside the span of its list.
+function popAt(p: [number, number][], year: number): number | null {
+    if (year < p[0][0] || year > p[p.length - 1][0]) return null;
+    const i = p.findIndex((x, k) => year >= x[0] && (k === p.length - 1 || year <= p[k + 1][0]));
+    if (i === p.length - 1 || p[i][0] === year) return p[i][1];
+    const [a, b] = [p[i], p[i + 1]];
+    return Math.exp(Math.log(a[1]) + (Math.log(b[1]) - Math.log(a[1])) * (year - a[0]) / (b[0] - a[0]));
+}
+const fold = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, ' ').trim();
+/** The listed city called `name` (or the biggest in `year` of those so called) and its population in `year`. */
+export function cityPopulation(name: string, year: number): { name: string; country: string; pop: number } | null {
+    const k = fold(name), hits = CITIES.filter(c => fold(c.n) === k).map(c => ({ name: c.n, country: c.k, pop: popAt(c.p, year) })).filter((x): x is { name: string; country: string; pop: number } => x.pop !== null);
+    return hits.sort((a, b) => b.pop - a.pop)[0] ?? null;
+}
+/** The largest listed city within 100 km of a point in `year`, with the distance. */
+export function cityNear(lat: number, lon: number, year: number): { name: string; country: string; pop: number; km: number } | null {
+    const rad = Math.PI / 180, d = (c: { la: number; lo: number }) => 6371 * Math.acos(Math.min(1, Math.sin(lat * rad) * Math.sin(c.la * rad) + Math.cos(lat * rad) * Math.cos(c.la * rad) * Math.cos((c.lo - lon) * rad)));
+    return CITIES.map(c => ({ name: c.n, country: c.k, pop: popAt(c.p, year), km: d(c) })).filter((x): x is { name: string; country: string; pop: number; km: number } => x.pop !== null && x.km <= 100)
+        .sort((a, b) => b.pop - a.pop)[0] ?? null;
+}
+
+// Pay by trade, 1953–2008 (Occupational Wages around the World, Oostendorp, version 3: 206,449 rows, 192 countries; hourly wage
+// in US dollars of that year, series hw4, mean of its lower and upper bound [ASSUMED: the file has no codebook]). Trades are found
+// by title in the ILO's ISCO-08/88 index (7,011 titles → 385 ISCO-88 unit groups); the year is the nearest within 5 years; a trade the survey lacks takes its 3-digit minor group.
+export function wageByTrade(trade: string, country: string, year: number): { codes: string[]; usd: number; relative: number; year: number; country: string } | { error: string } {
+    const q = fold(trade), words = q.split(' ').filter(Boolean);
+    const exact = ISCO.filter(([t]) => fold(t) === q), part = ISCO.filter(([t]) => words.length && words.every(w => fold(t).split(' ').includes(w)));
+    const hits = exact.length ? exact : part, count: Record<string, number> = {};
+    for (const [, c] of hits) count[c] = (count[c] ?? 0) + 1;
+    const top = Math.max(0, ...Object.values(count)), codes = Object.keys(count).filter(c => count[c] >= Math.max(1, top / 2)).slice(0, 4);
+    if (!codes.length) return { error: `No trade called "${trade}" in the ISCO index; try a plainer name (welder, nurse, baker).` };
+    const c = pick(Object.keys(OWW), country);
+    if (!c) return { error: `No wage data for "${country}" (1953–2008, 192 countries).` };
+    const ys = Object.keys(OWW[c]).map(Number), near = ys.reduce((b, y) => Math.abs(y - year) < Math.abs(b - year) ? y : b, ys[0]);
+    if (Math.abs(near - year) > 5) return { error: `${c}: wage data for ${ys[0]}–${ys[ys.length - 1]}, none within 5 years of ${year}.` };
+    const [median, rows] = OWW[c][near], by = (n: number) => rows.filter(([k]) => k.split('/').some(x => codes.some(y => y.slice(0, n) === x.slice(0, n)))).map(r => r[1]);
+    const v = by(4).length ? by(4) : by(3);
+    if (!v.length) return { error: `${c} ${near}: no figure for ${trade} (ISCO-88 ${codes.join(', ')}).` };
+    const usd = v.reduce((t, x) => t + x, 0) / v.length;
+    return { codes, usd, relative: usd / median, year: near, country: c };
 }

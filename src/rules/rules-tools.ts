@@ -11,7 +11,7 @@ import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
 import { NORMALS } from './data/wmo-normals.js';
 import type { Place } from './weather.js';
-import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
+import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET_ONLY, basketWage } from './prices.js';
 import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
@@ -26,7 +26,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
-import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio } from './population.js';
+import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
 import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
@@ -48,7 +48,7 @@ export interface EngineStore {
         read?: { phrase: string; id: string; label: string; year: number | null }[] } | null;
 }
 
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
 type ToolName = typeof TOOLS[number];
 const KEEP_SNAPSHOTS = 30;
 
@@ -752,13 +752,14 @@ export function registerRulesTools(enabled: boolean): void {
         return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
 
-    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
+    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
         item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
         quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
         trade: { type: 'string', enum: TRADES, description: 'For a daily wage. Default building labourer.' },
         city: { type: 'string', enum: CITIES, description: 'The city, or the nearest listed one in the same country' },
         country: str('For a daily wage in a country with no listed city, 1820–2008: the country'),
+        trade_name: str('For the hourly pay of a modern trade 1953–2008 (with country): the occupation, e.g. "welder", "nurse"'),
         money: { type: 'array', items: { type: 'number' }, description: 'For "value of English money": [pounds, shillings, pence] (12 shillings = [0, 12, 0])' },
         year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
     }, ['question'], a => run(st => {
@@ -771,6 +772,18 @@ export function registerRulesTools(enabled: boolean): void {
             const day = a.city && CITIES.includes(a.city) ? price('daily wage', undefined, 'building labourer', 1, a.city, year) : null;
             const days = day && !('error' in day) ? `; a building labourer in ${a.city} earns that in ${Math.round(g / day.silver * 10) / 10} days` : '';
             return `£${l} ${sh}s ${d}d in ${year}: ${Math.round(g * 10) / 10} g of silver${days}.`;
+        }
+        // A named modern trade: ISCO-88 codes matched in the index, pay from the October Inquiry series (population.ts).
+        if (a.trade_name) {
+            const w = wageByTrade(String(a.trade_name), a.country ?? st.setting?.country ?? '', year);
+            if ('error' in w) return w.error;
+            return `${a.trade_name} in ${w.country}, ${w.year}: US$${Math.round(w.usd * 100) / 100} an hour (${Math.round(w.relative * 100) / 100} × the country's median; ISCO ${w.codes.slice(0, 3).join(', ')}).`;
+        }
+        // Markets only the Moatsos wage series cover: baskets per day and days of work per year.
+        if (a.city && BASKET_ONLY.includes(a.city)) {
+            const b = basketWage(a.city, a.trade === 'building craftsman', year);
+            if ('error' in b) return b.error;
+            return `Daily wage of ${b.class} labour in ${a.city} (${b.country}), ${b.at}: buys ${Math.round(b.rw * 100) / 100} daily subsistence baskets; a year's basket costs ${Math.round(b.daysPerYear)} days of work.`;
         }
         // Outside the listed cities: a labourer's wage by what it buys against a British labourer's the same year (population.ts).
         if (!CITIES.includes(a.city ?? "") && a.country) {
@@ -786,6 +799,25 @@ export function registerRulesTools(enabled: boolean): void {
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? Math.round(r.labourDays) : Math.round(r.labourDays * 10) / 10} days`;
         return `${r.what} in ${a.city}, ${year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
+    }));
+
+    tool('PlaceProfile', 'Decide how large, how urban, how violent and how deadly for infants a country or city is in a year, before narrating a crowd, a town\'s size, a murder rate or a child\'s survival. Returns population, urban share, murders per 100,000, infant deaths per 1,000 births and the nearest listed city.', {
+        country: str('The country. Default: the setting\'s country.'),
+        city: str('A city name, for its population'),
+        year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
+    }, [], a => run(st => {
+        const year = a.year ?? storyYear(st);
+        if (year == null) return NO_YEAR;
+        const c = a.country ?? st.setting?.country, out: string[] = [];
+        const f = (k: 'population' | 'urban' | 'homicide' | 'infant', fmt: (v: number) => string) => { const r = countryFact(k, c, year); if (r) out.push(fmt(r.v) + (r.year !== year ? ` (${r.year})` : '')); };
+        f('population', v => `population ${Math.round(v * 1000).toLocaleString('en')}`);
+        f('urban', v => `${Math.round(v * 100)} % in towns`);
+        f('homicide', v => `${Math.round(v * 10) / 10} murders per 100,000`);
+        f('infant', v => `${Math.round(v)} infant deaths per 1,000 births`);
+        const cp = a.city ? cityPopulation(String(a.city), year) : null, pos = scenePosition(), near = cp ? null : pos ? cityNear(pos.lat, pos.lon, year) : null;
+        if (cp) out.push(`${cp.name} (${cp.country}) ${Math.round(cp.pop).toLocaleString('en')} people`);
+        else if (near) out.push(`nearest listed city ${near.name}, ${near.km} km, ${Math.round(near.pop).toLocaleString('en')} people`);
+        return out.length ? `${c ?? a.city}, ${year}: ${out.join('; ')}.` : 'No figures for that place and year.';
     }));
 
     tool('NameCharacter', 'Give a first name to a character in an American setting whose name the story has not fixed, before naming them. Drawn by how many US babies of that sex got the name in their birth decade (1910–2029).', {

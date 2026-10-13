@@ -1,6 +1,7 @@
 // Prices and wages in European cities, 1264–1913, and four Asian cities, 1730–1925 (docs/df-body-engine.md §6.14), from
 // Allen 2001 and the GPIH files.
 import { PERIODS, GOODS, CPI, CRAFTSMAN, LABOURER } from './data/allen-prices.js';
+import { MOATSOS } from './data/moatsos.js';
 import { LABOURER as LAB_Y, CRAFTSMAN as CRAFT_Y, CPI as CPI_Y, ASIAWAGE, ASIABASKET, POUND, WORLDWAGE, WORLDBASKET, WORLDSKILLED, WAGE2, SKILLED2, PENCE, PENCESKILLED } from './data/gpih.js';
 
 // Places with wages only (and a bare-bones basket where the source gives one): the four Asian cities, Latin America, India by
@@ -11,7 +12,17 @@ const fromPence = (m: Record<string, [number, number][]>) => Object.fromEntries(
 const WAGES: Record<string, [number, number][]> = { ...ASIAWAGE, ...WORLDWAGE, ...WAGE2, ...fromPence(PENCE) }, BASKETS = { ...ASIABASKET, ...WORLDBASKET };
 const SKILLED: Record<string, [number, number][]> = { ...WORLDSKILLED, ...SKILLED2, ...fromPence(PENCESKILLED) };
 const ASIA = Object.keys(WAGES);
-export const CITIES = [...new Set([...Object.keys(CPI), ...Object.keys(CPI_Y), ...ASIA])];
+export const CITIES = [...new Set([...Object.keys(CPI), ...Object.keys(CPI_Y), ...ASIA, ...Object.keys(MOATSOS)])];
+/** Markets only Moatsos & de Zwart 2025 cover: wages come as daily subsistence baskets, not grams of silver. */
+export const BASKET_ONLY = Object.keys(MOATSOS).filter(m => !Object.keys(CPI).includes(m) && !Object.keys(CPI_Y).includes(m) && !ASIA.includes(m));
+/** What a day's wage buys in daily subsistence baskets (2,100 kcal, fuel, light, clothing, rent) and the days of work a year's basket costs. */
+export function basketWage(market: string, skilled: boolean, year: number): { error: string } | { rw: number; daysPerYear: number; at: number; country: string; class: string } {
+    const m = MOATSOS[market];
+    if (!m) return { error: `No wage data for "${market}".` };
+    const s = skilled && m.s.length ? m.s : m.u.length ? m.u : m.s, r = annual(s, year);
+    if (!r) return { error: `${market}: wages ${s[0]?.[0]}–${s.at(-1)?.[0]}, none within 10 years of ${year}.` };
+    return { rw: r.v, daysPerYear: 365 / r.v, at: r.at, country: m.c, class: skilled && m.s.length ? 'skilled' : 'unskilled' };
+}
 export const PRICE_QUESTIONS = ['price of goods', 'daily wage', 'yearly cost of living for one person', 'value of English money'];
 
 // Annual figure of a series, else the nearest year within 10 years [ASSUMED].
