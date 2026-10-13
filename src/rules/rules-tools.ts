@@ -5,7 +5,7 @@ import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/expo
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { drawPerson } from './census.js';
 import { REGIONS } from './strength.js';
-import { learn, knowledgeBlock } from './knowledge.js';
+import { learn, knowledgeBlock, recalls } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords } from './emotion.js';
 import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
@@ -929,6 +929,9 @@ export function registerRulesTools(enabled: boolean): void {
             const f = recordedFact(st, a.claim);
             if (f && !f.everyone && !f.knowers.some(k => k.toLowerCase() === a.who.toLowerCase()))
                 return `${a.claim}: does not hold; ${a.who} has not learned this${f.secret ? ' (another\'s secret)' : ''}. They learn it only on the page: seen, overheard, told or worked out. Nothing recorded.`;
+            // Forgotten by now: adults recalled no more with cues and questions than unprompted (Bauer & Larkina 2016), so a
+            // claim to remember it does not bring it back; seeing, hearing or being told it again does.
+            if (f && !recalls(st, f, a.who)) return `${a.claim}: does not hold; ${a.who} has forgotten it. Being reminded on the page (told, seeing it again) brings it back. Nothing recorded.`;
             if (f) return `${a.claim}: holds; ${a.who} already knows it. Recorded.`;
         }
         // A claim rarer than the lowest band is decomposed into the chain of events it needs, each a share given the ones

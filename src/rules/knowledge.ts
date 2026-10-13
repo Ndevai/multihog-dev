@@ -55,7 +55,7 @@ export function recallShare(years: number, age = 30): number {
     return Math.min(1, y1 * years ** -m);
 }
 const draw = (s: string) => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return ((h >>> 0) % 100000) / 100000; };
-function recalls(st: RuleState, f: Fact, who: string): boolean {
+export function recalls(st: RuleState, f: Fact, who: string): boolean {
     const now = st.clock ? st.clock.t + st.clock.add : null, at = f.at?.[norm(who)];
     if (now === null || at == null || f.everyone) return true;
     // The age that sets the rate is the knower's age when they learned it (Bauer & Larkina group by age at the events).

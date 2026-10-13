@@ -61,7 +61,7 @@ export function recallShare(years, age = 30) {
 }
 const draw = (s) => { let h = 2166136261; for (const c of s)
     h = Math.imul(h ^ c.charCodeAt(0), 16777619); return ((h >>> 0) % 100000) / 100000; };
-function recalls(st, f, who) {
+export function recalls(st, f, who) {
     const now = st.clock ? st.clock.t + st.clock.add : null, at = f.at?.[norm(who)];
     if (now === null || at == null || f.everyone)
         return true;
