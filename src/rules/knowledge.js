@@ -35,18 +35,23 @@ export function learn(st, text, knowers = [], everyone = false, sources = {}) {
     }
     return f;
 }
-// Forgetting. Events a person singled out as notable were recalled, unprompted, by adults after 1 year 97 %; the odds fell
-// 14.6-fold by 2 years and 20.7-fold by 3 (Bauer & Larkina 2016, Memory 24:1345, Table 4 and text; 4-year prospective study):
-// 69 % and 61 %. Retention curves of every kind are fit as well by a power function as by any (Rubin & Wenzel 1996, Psychol
-// Rev 103:734, 210 data sets), so y = 0.97 t^(−0.42), t in years (the 1- and 3-year points), at most 1; under 1 year from
-// 100 % to 97 % linearly [ASSUMED]. Adults' events only: children forget faster (4-year-olds recalled 39 % after 1 year)
-// [OPEN: per-age rates]. Common knowledge does not fade. A fact is not deleted: it drops out of [KNOWS] for that knower, the
-// record stays, and learning it again brings it back. Each knower keeps one fixed draw per fact, so a fact once forgotten
-// stays forgotten (the curve only falls) until relearned.
-export function recallShare(years) {
+// Forgetting. Events a person singled out as notable, recalled unprompted (Bauer & Larkina 2016, Memory 24:1345, Table 7:
+// share of 3 target events recalled after 1, 2 and 3 years, by age at the events): age 4: 36, 27, 14 %; age 6: 48, 32,
+// 30 %; age 8: 70, 54, 31 %; adults: 97, 70, 62 %. Retention curves of every kind are fit as well by a power function as by
+// any (Rubin & Wenzel 1996, Psychol Rev 103:734, 210 data sets), so y = y1 · t^(−m), t in years, through each age's 1- and
+// 3-year points; under 1 year from 100 % to y1 linearly [ASSUMED]; ages between the groups linear, adult from 18 [ASSUMED].
+// Common knowledge does not fade. A fact is not deleted: it drops out of [KNOWS] for that knower, the record stays, and
+// learning it again brings it back. Each knower keeps one fixed draw per fact, so a fact once forgotten stays forgotten
+// (the curve only falls) until relearned.
+const AGES = [4, 6, 8, 18], Y1 = [0.357, 0.48, 0.70, 0.97], Y3 = [0.137, 0.297, 0.31, 0.623];
+export function recallShare(years, age = 30) {
+    const i = AGES.findIndex(a => a >= age), j = i <= 0 ? Math.max(0, i) : i;
+    const f = i <= 0 ? 0 : (age - AGES[i - 1]) / (AGES[i] - AGES[i - 1]);
+    const at = (v) => i < 0 ? v[v.length - 1] : i === 0 ? v[0] : v[j - 1] + (v[j] - v[j - 1]) * f;
+    const y1 = at(Y1), m = Math.log(y1 / at(Y3)) / Math.log(3);
     if (years <= 1)
-        return 1 - 0.03 * Math.max(0, years);
-    return Math.min(1, 0.97 * years ** -0.42);
+        return 1 - (1 - y1) * Math.max(0, years);
+    return Math.min(1, y1 * years ** -m);
 }
 const draw = (s) => { let h = 2166136261; for (const c of s)
     h = Math.imul(h ^ c.charCodeAt(0), 16777619); return ((h >>> 0) % 100000) / 100000; };
@@ -54,7 +59,8 @@ function recalls(st, f, who) {
     const now = st.clock ? st.clock.t + st.clock.add : null, at = f.at?.[norm(who)];
     if (now === null || at == null || f.everyone)
         return true;
-    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallShare((now - at) / 525960);
+    const p = Object.entries(st.people ?? {}).find(([n]) => norm(n) === norm(who))?.[1];
+    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallShare((now - at) / 525960, p?.age ?? 30);
 }
 export const knows = (st, name, text) => (st.facts ?? []).some(f => norm(f.text) === norm(text) && (f.everyone || f.knowers.some(k => norm(k) === norm(name))));
 // What is not in the narrator's context cannot leak into another character's mouth: models revealed private information
