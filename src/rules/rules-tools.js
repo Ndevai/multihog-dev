@@ -9,7 +9,7 @@ import { ABOUT, MATTERS, TYPES, occTypes, lastsWords } from './emotion.js';
 import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
 import { NORMALS } from './data/wmo-normals.js';
-import { price, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
+import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES } from './prices.js';
 import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
@@ -792,18 +792,28 @@ export function registerRulesTools(enabled) {
         const lasts = lastsWords(main);
         return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
-    tool('Price', 'Decide what goods cost, what a day of work pays, or what a year of necessities costs, in a European city between 1500 and 1913, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
+    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913 or an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
         item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
         quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
         trade: { type: 'string', enum: TRADES, description: 'For a daily wage. Default building labourer.' },
         city: { type: 'string', enum: CITIES, description: 'The city, or the nearest listed one in the same country' },
         country: str('For a daily wage in a country with no listed city, 1820–2008: the country'),
+        money: { type: 'array', items: { type: 'number' }, description: 'For "value of English money": [pounds, shillings, pence] (12 shillings = [0, 12, 0])' },
         year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
     }, ['question'], a => run(st => {
         const year = a.year ?? storyYear(st);
         if (year == null)
             return NO_YEAR;
+        // English money in silver (Lindert 2006 from Jastram 1981, mint price, 1273–1977), and in a labourer's days where a city is given.
+        if (a.question === 'value of English money') {
+            const [l = 0, sh = 0, d = 0] = (a.money ?? []).map(Number), pounds = l + sh / 20 + d / 240, g = poundSilver(pounds, year);
+            if (g == null)
+                return 'English money data cover 1273–1977.';
+            const day = a.city && CITIES.includes(a.city) ? price('daily wage', undefined, 'building labourer', 1, a.city, year) : null;
+            const days = day && !('error' in day) ? `; a building labourer in ${a.city} earns that in ${Math.round(g / day.silver * 10) / 10} days` : '';
+            return `£${l} ${sh}s ${d}d in ${year}: ${Math.round(g * 10) / 10} g of silver${days}.`;
+        }
         // Outside the listed cities: a labourer's wage by what it buys against a British labourer's the same year (population.ts).
         if (!CITIES.includes(a.city ?? "") && a.country) {
             const w = wageRatio(a.country, year);

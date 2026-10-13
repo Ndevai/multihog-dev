@@ -1,8 +1,23 @@
-// Prices and wages in European cities, 1500–1913 (docs/df-body-engine.md §6.14), from Allen 2001.
+// Prices and wages in European cities, 1264–1913, and four Asian cities, 1730–1925 (docs/df-body-engine.md §6.14), from
+// Allen 2001 and the GPIH files.
 import { PERIODS, GOODS, CPI, CRAFTSMAN, LABOURER } from './data/allen-prices.js';
+import { LABOURER as LAB_Y, CRAFTSMAN as CRAFT_Y, CPI as CPI_Y, ASIAWAGE, ASIABASKET, POUND } from './data/gpih.js';
 
-export const CITIES = Object.keys(CPI);
-export const PRICE_QUESTIONS = ['price of goods', 'daily wage', 'yearly cost of living for one person'];
+const ASIA = Object.keys(ASIAWAGE);
+export const CITIES = [...new Set([...Object.keys(CPI), ...Object.keys(CPI_Y), ...ASIA])];
+export const PRICE_QUESTIONS = ['price of goods', 'daily wage', 'yearly cost of living for one person', 'value of English money'];
+
+// Annual figure of a series, else the nearest year within 10 years [ASSUMED].
+function annual(s: [number, number][] | undefined, year: number): { v: number; at: number } | null {
+    let best: [number, number] | null = null;
+    for (const x of s ?? []) if (Math.abs(x[0] - year) <= 10 && (!best || Math.abs(x[0] - year) < Math.abs(best[0] - year))) best = x;
+    return best ? { v: best[1], at: best[0] } : null;
+}
+/** Grams of pure silver in `pounds` of English money (£ s d as decimal pounds) in `year`, at the mint price, 1273–1977. */
+export function poundSilver(pounds: number, year: number): number | null {
+    const g = annual(POUND, year);
+    return g ? pounds * g.v : null;
+}
 export const GOODS_LIST = Object.keys(GOODS);
 export const TRADES = ['building labourer', 'building craftsman'];
 // Table 3 basket per person per year (quantities × Strasbourg prices; Allen's total 414.899 g of silver).
@@ -31,24 +46,42 @@ function nearest(row: (number | null)[] | undefined, k: number): { v: number; at
 export type PriceResult = { error: string } | { silver: number; what: string; labourDays: number | null; note: string | null };
 /** { silver (g), labourDays, what, note } for one of PRICE_QUESTIONS in `city` in `year`, or { error }. */
 export function price(question: string, item: string | undefined, trade = 'building labourer', qty = 1, city: string, year: number): PriceResult {
-    if (!CPI[city]) return { error: `No price data for "${city}". Cities: ${CITIES.join(', ')}.` };
-    if (year < 1500 || year > 1913) return { error: 'Price data cover 1500–1913.' };
-    const k = Math.min(PERIODS.length - 1, Math.floor((year - 1500) / 50));
-    const lab = nearest(LABOURER[city], k);
-    let unit: number, at: number, what: string;
+    if (!CITIES.includes(city)) return { error: `No price data for "${city}". Cities: ${CITIES.join(', ')}.` };
+    // Asian cities (Allen, Bassino, Ma, Moll-Murata & van Zanden 2011, Econ Hist Rev 64:8): labourers' silver wages and the
+    // bare-bones basket (g of silver per man per year), annual.
+    if (ASIA.includes(city)) {
+        const w = annual(ASIAWAGE[city], year), b = annual(ASIABASKET[city], year);
+        if (question === 'daily wage') {
+            if (!w || trade === 'building craftsman') return { error: `${city}: unskilled labourers' wages only, ${ASIAWAGE[city][0][0]}–${ASIAWAGE[city].at(-1)![0]}.` };
+            return { silver: w.v * qty, what: `${qty} day${qty === 1 ? '' : 's'} of a labourer's work`, labourDays: qty, note: w.at !== year ? `figure for ${w.at}` : null };
+        }
+        if (question.startsWith('yearly') && b) return { silver: b.v * qty, what: `A year of bare-bones subsistence for ${qty === 1 ? 'one man' : `${qty} people`}`, labourDays: w ? b.v * qty / w.v : null, note: b.at !== year ? `figure for ${b.at}` : null };
+        return { error: `${city}: daily wage and yearly cost of living only, about 1730–1925.` };
+    }
+    if (year < 1264 || year > 1913) return { error: 'European price data cover 1264–1913.' };
+    // Annual series (Allen's 1264–1913 files) first, the 50-year tables second.
+    const k = Math.max(0, Math.min(PERIODS.length - 1, Math.floor((year - 1500) / 50)));
+    const yl = annual(LAB_Y[city], year), lab = yl ?? nearest(LABOURER[city], k);
+    let unit: number, at: number, what: string, note: string | null = null;
     if (question === 'daily wage') {
-        const craft = trade === 'building craftsman', w = nearest((craft ? CRAFTSMAN : LABOURER)[city], k);
+        const craft = trade === 'building craftsman', wy = annual((craft ? CRAFT_Y : LAB_Y)[city], year);
+        if (wy) {
+            const silver = wy.v * qty;
+            return { silver, what: `${qty} day${qty === 1 ? '' : 's'} of a ${trade}'s work`, labourDays: lab ? silver / lab.v : null, note: wy.at !== year ? `figure for ${wy.at}` : null };
+        }
+        const w = nearest((craft ? CRAFTSMAN : LABOURER)[city], k);
         if (!w) return { error: `No ${trade} wage for ${city} within 50 years of ${year}.` };
         unit = w.v; at = w.at; what = `${qty} day${qty === 1 ? '' : 's'} of a ${trade}'s work`;
     } else {
         // Every good moves with the city's price index [ASSUMED: relative prices as in Strasbourg 1745–1754].
-        const c = nearest(CPI[city], k);
-        if (!c) return { error: `No price index for ${city} within 50 years of ${year}.` };
+        const cy = annual(CPI_Y[city], year), c = cy ?? nearest(CPI[city], k);
+        if (!c) return { error: `No price index for ${city} near ${year}.` };
+        if (cy) note = cy.at !== year ? `figure for ${cy.at}` : null;
         const yearly = question.startsWith('yearly');
         if (!yearly && (item == null || GOODS[item] == null)) return { error: `Give item, one of: ${GOODS_LIST.join(', ')}.` };
         unit = (yearly ? climateBasket(city) : GOODS[item!]) * c.v; at = c.at;
         what = yearly ? `A year of necessities for ${qty === 1 ? 'one person' : `${qty} people`}` : `${qty} × ${item}`;
     }
     const silver = unit * qty;
-    return { silver, what, labourDays: lab ? silver / lab.v : null, note: at !== PERIODS[k] ? `figures for ${at}–${at + 49}` : null };
+    return { silver, what, labourDays: lab ? silver / lab.v : null, note: note ?? (CPI_Y[city] && question !== 'daily wage' ? null : at !== PERIODS[k] ? `figures for ${at}–${at + 49}` : null) };
 }
