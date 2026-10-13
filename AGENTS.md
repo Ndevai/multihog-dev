@@ -23,7 +23,11 @@ A SillyTavern extension where code decides outcomes and the language model narra
 
 ## How to finish
 1. Write the rule, its source, its numbers and one check line into `docs/df-body-engine.md` in the matching section, and one plain sentence into `README.md` when a player would notice the change.
-2. Commit with a message naming what changed, then push to branch `rules-standalone`.
+2. Add an entry at the top of `docs/progress.md`: date, model used, what changed (in plain words a non-programmer reads), what was checked and the values seen, what is next.
+3. Commit with a message naming what changed, then push to branch `rules-standalone`.
+
+## Starting a task
+Read `docs/progress.md` (latest entries) and `docs/superset-models.md` (the planned jobs in order) first; continue from the "next" line of the latest entry.
 
 ## Replies to the user
 Conclusion first; numbers in place of degree words; one chosen option with its reason; a Sources list with links.
