@@ -185,6 +185,18 @@ const MELEE = [], WEAPON_MATERIALS = [];
 // How a character came to know a fact: Aikhenvald's (2004, Evidentiality) six sources marked by the world's evidential
 // systems (visual, non-visual sensory, inference, assumption, hearsay, quotative).
 const KNOWN_HOW = ['saw it', 'heard, smelled or felt it', 'inferred from what they saw', 'assumed from what they know', 'told by someone', 'hearsay'];
+// Every sense writes to the same knowledge: what Look identifies, Listen hears and Communicate carries is learned with its
+// source, so a secret reaches another character only through a perception the engine decided.
+function learnt(st, fact, who, how) {
+    const f = learn(st, fact, [who], false, { [who]: how });
+    return f.text.replace(/[.!?]?$/, '.');
+}
+// A recorded fact the claim names: most of its words (≥ 60 % of the longer one's, [ASSUMED]) in common.
+const words = (t) => new Set(t.toLowerCase().match(/\p{L}{3,}/gu) ?? []);
+function recordedFact(st, text) {
+    const w = words(text);
+    return (st.facts ?? []).find(f => { const v = words(f.text); const both = [...w].filter(x => v.has(x)).length; return both / Math.max(w.size, v.size, 1) >= 0.6; });
+}
 // Body parts and kin are possessed without being owned or handed over (inalienable possession: Nichols 1988, the classes
 // languages most often mark apart), and a tracked person is a character, not an item.
 const KIN = /^(?:my |his |her |their |our |your )?(?:mother|father|son|daughter|brother|sister|wife|husband|child|children|parent|uncle|aunt|cousin|nephew|niece|grandmother|grandfather|grandchild)s?$/i;
@@ -934,7 +946,7 @@ export function registerRulesTools(enabled) {
     tool('Claim', 'Decide whether something a player\'s message states about their own character holds, when the story has not established it: what the character is, an item they have, an ability of body or skill, something that happened to them before, something outside their control happening to them now (a slip, a faint, a cramp). Permission comes from the people who give it (SocialResponse or Choose); what a place allows comes from the scene and the world\'s facts. Returns whether it holds; either way it is recorded and stays.', {
         who: str('The player\'s character making the claim'),
         claim: str('The claim, one short sentence ("Mary is a cat", "Mary has a pistol in her coat", "the cellar door is unlocked")'),
-        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before', 'something happening to the character now'] },
+        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before', 'something happening to the character now', 'something the character knows'] },
         in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world: real history for the date, plus [WORLD] (orcs in a world whose book has orcs; a revolver after 1836). False: the claim does not hold.' },
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
@@ -965,6 +977,15 @@ export function registerRulesTools(enabled) {
         if (a.species && a.kind === 'what the character is' && !sp)
             return noSpecies(a.species);
         const claim = a.claim.replace(/[.!?]?$/, '.');
+        // Knowledge the story has recorded comes only from where it was learned: a fact on record that this character is not
+        // among the knowers of (another's secret, an event elsewhere) cannot be claimed; they learn it on the page.
+        if (a.kind === 'something the character knows') {
+            const f = recordedFact(st, a.claim);
+            if (f && !f.everyone && !f.knowers.some(k => k.toLowerCase() === a.who.toLowerCase()))
+                return `${a.claim}: does not hold; ${a.who} has not learned this${f.secret ? ' (another\'s secret)' : ''}. They learn it only on the page: seen, overheard, told or worked out. Nothing recorded.`;
+            if (f)
+                return `${a.claim}: holds; ${a.who} already knows it. Recorded.`;
+        }
         // A claim rarer than the lowest band is decomposed into the chain of events it needs, each a share given the ones
         // before; the chance is their product, at most the claim's own (the chain refines a rare claim, it cannot raise
         // it). A detailed story reads as more likely while being less likely (conjunction fallacy, Tversky & Kahneman 1983,
@@ -1066,11 +1087,13 @@ export function registerRulesTools(enabled) {
         distance_m: { type: 'number', description: 'Distance from the sound, m' },
         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
+        reveals: str('The fact hearing it would teach, one short sentence (a secret overheard, who is coming); learned only if heard'),
     }, ['listener', 'distance_m'], a => run(st => {
         const l = who(st, a.listener, a.listener_species);
         if (!l.p)
             return l.error;
-        return listen(a.listener, l.p, { sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+        const out = listen(a.listener, l.p, { sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+        return / hears it /.test(out) && a.reveals ? `${out} ${a.listener} now knows: ${learnt(st, a.reveals, a.listener, KNOWN_HOW[1])}` : out;
     }));
     tool('Look', 'Decide whether a character sees something at a distance (a person, an animal, a vehicle) before narrating it. Code rolls notice / recognize / identify from size, distance, light and visibility.', {
         viewer: str('Character who might see it'),
@@ -1081,6 +1104,7 @@ export function registerRulesTools(enabled) {
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Only for an overcast sky or artificial light. Leave it out otherwise: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
+        reveals: str('The fact seeing it would teach, one short sentence (who it is, what they are doing); learned only if identified'),
     }, ['viewer', 'size_m', 'distance_m'], a => run((st, rng) => {
         const v = who(st, a.viewer, a.viewer_species);
         if (!v.p)
@@ -1090,7 +1114,8 @@ export function registerRulesTools(enabled) {
         // Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED].
         const t = storyNow(st);
         const sky = !a.light && t !== null && t / 1440 > 146097 && st.latitude != null && Number.isFinite(st.latitude) ? skyLight(t, st.latitude) : null;
-        return look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: sky?.lux ?? a.light ?? 'daylight', lightLabel: sky?.label ?? null, visibility_m: a.visibility_m ?? 20000 }, rng);
+        const out = look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: sky?.lux ?? a.light ?? 'daylight', lightLabel: sky?.label ?? null, visibility_m: a.visibility_m ?? 20000 }, rng);
+        return / identifies it /.test(out) && a.reveals ? `${out} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : out;
     }));
     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
     // enums; function-calling accuracy drops as the number of functions grows, Patil et al. 2025, BFCL).
