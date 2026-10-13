@@ -45,8 +45,26 @@ export function learn(st: RuleState, text: string, knowers: (string | null | und
 // Common knowledge does not fade. A fact is not deleted: it drops out of [KNOWS] for that knower, the record stays, and
 // learning it again brings it back. Each knower keeps one fixed draw per fact, so a fact once forgotten stays forgotten
 // (the curve only falls) until relearned.
+// Age 3 (childhood amnesia: Bauer & Larkina 2014, Memory 22:907): events from age 3 were recalled by 60 % or more of
+// their number at ages 5–7 and 64 % at 7, then 36 % at 8 and 34 % at 9; read as 62 % to 4 years, 36 % at 5, 34 % at 6,
+// then the age-4 slope [ASSUMED beyond the data].
+const AGE3: [number, number][] = [[0, 1], [2, 0.62], [4, 0.62], [5, 0.36], [6, 0.34]];
+// Knowledge learned by study (names, concepts, facts of a field), not events: cued recall fell over the first 36–48 months
+// and then held for the remaining 8 years (Conway, Cohen & Stanhope 1991, J Exp Psychol Gen 120:395, Figure 2: about 58 %
+// at 3 months, 27 % from 39 months, read from the figure); a level that then holds for decades (Bahrick 1984's permastore).
+// So knowledge = 0.47 + 0.53 e^(−t / 1.16 y): 47 % = 27/58 kept for good, the time constant through the 15-month point.
+export function knowledgeShare(years: number): number {
+    return 0.47 + 0.53 * Math.exp(-Math.max(0, years) / 1.16);
+}
 const AGES = [4, 6, 8, 18], Y1 = [0.357, 0.48, 0.70, 0.97], Y3 = [0.137, 0.297, 0.31, 0.623];
 export function recallShare(years: number, age = 30): number {
+    if (age < 4) {
+        const t = Math.max(0, years), i = AGE3.findIndex(([y]) => y >= t);
+        if (i < 0) return 0.34 * (t / 6) ** -(Math.log(Y1[0] / Y3[0]) / Math.log(3));
+        if (i === 0) return 1;
+        const [y0, p0] = AGE3[i - 1], [y1, p1] = AGE3[i];
+        return p0 + (p1 - p0) * (t - y0) / (y1 - y0);
+    }
     const i = AGES.findIndex(a => a >= age), j = i <= 0 ? Math.max(0, i) : i;
     const f = i <= 0 ? 0 : (age - AGES[i - 1]) / (AGES[i] - AGES[i - 1]);
     const at = (v: number[]) => i < 0 ? v[v.length - 1] : i === 0 ? v[0] : v[j - 1] + (v[j] - v[j - 1]) * f;
@@ -59,7 +77,8 @@ export function recalls(st: RuleState, f: Fact, who: string): boolean {
     const now = st.clock ? st.clock.t + st.clock.add : null, at = f.at?.[norm(who)];
     if (now === null || at == null || f.everyone) return true;
     // The age that sets the rate is the knower's age when they learned it (Bauer & Larkina group by age at the events).
-    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallShare((now - at) / 525960, f.ageAt?.[norm(who)] ?? 30);
+    const years = (now - at) / 525960;
+    return draw(`${f.id}|${norm(who)}|${f.text}`) < (f.kind === 'knowledge' ? knowledgeShare(years) : recallShare(years, f.ageAt?.[norm(who)] ?? 30));
 }
 
 export const knows = (st: RuleState, name: string, text: string) => (st.facts ?? []).some(f => norm(f.text) === norm(text) && (f.everyone || f.knowers.some(k => norm(k) === norm(name))));

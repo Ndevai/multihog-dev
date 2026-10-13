@@ -10,6 +10,7 @@ import { parseStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
 import { loadColex } from './colex.js';
 import { loadLanguageYears } from './languages.js';
+import { loadChat } from './history.js';
 import { loadThings, thingsIn, thingsBlock, setRead, READ } from './things.js';
 // Calls run per turn, at most [ASSUMED]; scene messages shown and their length.
 const MAX_CALLS = 8, SCENE_MESSAGES = 8, MESSAGE_CHARS = 1500, TRACKER_CHARS = 4000;
@@ -178,7 +179,7 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         await runAll(calls);
     }
     else {
-        await Promise.all([loadThings(), loadColex(), loadLanguageYears()]);
+        await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat()]);
         const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
         const only = await pickTools(chat, send) ?? undefined;
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only), thingsBlock(found)].filter(Boolean).join('\n\n');

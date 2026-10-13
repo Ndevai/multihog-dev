@@ -25,7 +25,7 @@ import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
-import { cannotExist } from './history.js';
+import { cannotExist, notYetIn } from './history.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
@@ -879,12 +879,14 @@ export function registerRulesTools(enabled: boolean): void {
         told_by: str('For "told by someone": who told them'),
         cause: str('For an event: who or what caused it, as the story has it: a character\'s name, "a natural force", or "unknown"'),
         secret: { type: 'boolean', description: 'The knowers keep it hidden from others (an affair, a crime, a plan)' },
+        kind: { type: 'string', enum: ['event', 'knowledge'], description: 'event: something that happened or was said (default); knowledge: something learned by study or training (a name, a concept, a craft\'s facts), which fades less and then holds' },
     }, ['fact'], a => run(st => {
         const how = a.how === KNOWN_HOW[4] && a.told_by ? `told by ${a.told_by}` : a.how;
         if (a.cause && !['a natural force', 'unknown'].includes(a.cause.toLowerCase())) { const c = whoAny(st, a.cause); if (!c.p) return c.error; }
         const text = a.cause ? `${a.fact.replace(/[.!?]?$/, '')} (cause: ${a.cause})` : a.fact;
         const f = learn(st, text, a.known_by ?? [], !!a.common_knowledge, how ? Object.fromEntries((a.known_by ?? []).map(k => [k, how])) : {});
         if (a.secret && !a.common_knowledge) f.secret = true;
+        if (a.kind === 'knowledge') f.kind = 'knowledge';
         return `Fact ${f.id} recorded: ${f.text.replace(/[.!?]?$/, '.')} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
 
@@ -941,10 +943,11 @@ export function registerRulesTools(enabled: boolean): void {
         // not judged for how convincing it is. Drawn in order: the first step that fails is what the world holds instead.
         // A world-book being claimed outside its area is rare there whatever share the model gave: it needs its path.
         const far = a.kind === 'what the character is' && a.species ? farFrom(a.species, CURRENT_BOOK, scenePosition()) : null;
-        const rare = shareOf(a.base_share) <= 0.05 || !!far;
-        if (far && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
+        const absent = a.kind === 'something the character has' && a.item ? notYetIn(a.item, storyYear(st), st.setting?.country) : null;
+        const rare = shareOf(a.base_share) <= 0.05 || !!far || !!absent;
+        if ((far || absent) && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
-        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
+        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;

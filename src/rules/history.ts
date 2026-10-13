@@ -72,3 +72,30 @@ export function cannotExist(name: string, year: number | null, book: Entry[] = [
     const e = book.find(x => x.since != null && (x.what.toLowerCase().includes(k) || k.includes(x.what.toLowerCase().replace(/s$/, '')) || x.species?.toLowerCase() === k));
     return e && year < e.since! ? `${e.what} exist in this world only since ${e.since}, not in ${year}` : '';
 }
+
+// Adoption by country (CHAT, Comin & Hobijn 2009, NBER w15319; 161 countries, 27 technologies as the story names them).
+// A thing invented somewhere is not in use everywhere: IF the country's series records the years before the story's year and
+// its first year of use is later → THEN having or using it there is rare (Claim needs its path). Years the series does not
+// cover decide nothing.
+type Chat = Record<string, { words: string[]; countries: Record<string, [number, number | null]> }>;
+let CHAT: Chat | null = null, chatLoading: Promise<void> | null = null;
+export function loadChat(): Promise<void> {
+    chatLoading ??= fetch(new URL('../../rules/chat.json', import.meta.url)).then(r => r.json()).then(d => { CHAT = d; })
+        .catch(e => { console.warn('[Rules engine] CHAT not loaded:', e); chatLoading = null; });
+    return chatLoading;
+}
+// WMO station countries (the scene setting) named as CHAT names them.
+const CHAT_NAME: Record<string, string> = { 'united states of america': 'United States', 'russian federation': 'Russia', 'republic of korea': 'South Korea',
+    'viet nam': 'Vietnam', 'iran (islamic republic of)': 'Iran', 'syrian arab republic': 'Syria', "lao people's democratic republic": 'Laos',
+    'united republic of tanzania': 'Tanzania', 'venezuela, bolivarian republic of': 'Venezuala', czechia: 'Czech Republic' };
+/** The country and first year of use when `item` was not yet in use in `country` in `year`, by CHAT; else null. */
+export function notYetIn(item: string, year: number | null, country: string | null | undefined): { country: string; first: number | null } | null {
+    if (!CHAT || year === null || !country) return null;
+    const k = item.trim().toLowerCase().replace(/^(a|an|the) /, '').replace(/s$/, ''), c = CHAT_NAME[country.toLowerCase()] ?? country;
+    for (const t of Object.values(CHAT)) {
+        if (!t.words.some(w => w === k || k.endsWith(` ${w}`))) continue;
+        const v = t.countries[c];
+        if (v && v[0] <= year && (v[1] === null || v[1] > year)) return { country: c, first: v[1] };
+    }
+    return null;
+}

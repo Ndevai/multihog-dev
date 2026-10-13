@@ -13,7 +13,7 @@ import { parseStoryTime, formatStoryTime } from './rules/clock.js';
 import { sendModel } from './send.js';
 import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM, type Entry } from './rules/world.js';
 import { removeWithDescendants, outcomeLine, bornIn, type Outcome } from './rules/counterfactual.js';
-import { firstYear, earlier } from './rules/history.js';
+import { firstYear, earlier, loadChat } from './rules/history.js';
 import { seededRng } from './rules/body-engine.js';
 import { loadColex } from './rules/colex.js';
 import { skyLight } from './rules/sky.js';
@@ -315,7 +315,7 @@ function wireEvents(): void {
 
 (async () => {
     registerRulesTools(settings().enabled);
-    void loadColex(); void loadLanguageYears(); void loadThings();
+    void loadColex(); void loadLanguageYears(); void loadThings(); void loadChat();
     wireEvents();
     registerRulesStatsCommand();
     const c = ctx() as Ctx & { SlashCommand?: { fromProps(p: object): unknown }; SlashCommandParser?: { addCommandObject(x: unknown): void } };
