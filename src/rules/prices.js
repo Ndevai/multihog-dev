@@ -6,6 +6,20 @@ export const GOODS_LIST = Object.keys(GOODS);
 export const TRADES = ['building labourer', 'building craftsman'];
 // Table 3 basket per person per year (quantities × Strasbourg prices; Allen's total 414.899 g of silver).
 const BASKET = 414.899;
+// Heating, light and clothing follow the city's climate (Moatsos & de Zwart 2025, Econ Hum Biol 59:101544, Table 1): per
+// person, fuel F = 1.6 mBTU for cooking + the household's heating need / 4 people; candles 2.06 + 0.337 F kg; cloth
+// 1.65 + 0.865 F m. Heating need = k × heating degree days below 15.5 °C, from the WMO monthly normals of the city (or its
+// nearest listed neighbour: Antwerp as Brussels, Augsburg as Munich, Lwow as Lviv); k = 0.002734 mBTU per degree day per
+// household, so Amsterdam's 2,180 degree days give their 3.09 mBTU per person [CALIBRATED]. Allen's fuel (5 mBTU), linen
+// (5 m), candles and lamp oil (2.6 kg, 2.6 l) are scaled by each quantity's ratio to Strasbourg's.
+const HDD = { Antwerp: 2051, Amsterdam: 2180, London: 1642, Florence: 1177, Naples: 866, Valencia: 332, Madrid: 1162, Paris: 1625,
+    Strasbourg: 2124, Augsburg: 2651, Leipzig: 2430, Munich: 2651, Vienna: 2170, Gdansk: 2792, Krakow: 2718, Warsaw: 2763, Lwow: 2796, Milan: 1700 };
+const fuelOf = (hdd) => 1.6 + 0.002734 * hdd / 4;
+function climateBasket(city) {
+    const f = fuelOf(HDD[city] ?? HDD.Strasbourg), f0 = fuelOf(HDD.Strasbourg), light = (x) => 2.06 + 0.337 * x, cloth = (x) => 1.65 + 0.865 * x;
+    return BASKET + 5 * GOODS['fuel (million BTU)'] * (f / f0 - 1) + 2.6 * (GOODS['candles (kg)'] + GOODS['lamp oil (litre)']) * (light(f) / light(f0) - 1)
+        + 5 * GOODS['linen (metre)'] * (cloth(f) / cloth(f0) - 1);
+}
 // The period's figure, else an adjacent period's (at most 50 years off) [ASSUMED].
 function nearest(row, k) {
     for (const j of [k, k - 1, k + 1]) {
@@ -40,7 +54,7 @@ export function price(question, item, trade = 'building labourer', qty = 1, city
         const yearly = question.startsWith('yearly');
         if (!yearly && (item == null || GOODS[item] == null))
             return { error: `Give item, one of: ${GOODS_LIST.join(', ')}.` };
-        unit = (yearly ? BASKET : GOODS[item]) * c.v;
+        unit = (yearly ? climateBasket(city) : GOODS[item]) * c.v;
         at = c.at;
         what = yearly ? `A year of necessities for ${qty === 1 ? 'one person' : `${qty} people`}` : `${qty} × ${item}`;
     }
