@@ -166,10 +166,16 @@ function remember(name, a, out) { const k = decisionKey(name, a); if (k && typeo
     save();
 } }
 // Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
+// The draws each call used, kept with its result (question-pass.ts), so an outcome can be traced: same state, same
+// draws, same result; /rules-log shows them.
+export let LAST_DRAWS = [];
+export const clearDraws = () => { LAST_DRAWS = []; };
 function run(fn) {
     const s = store();
     s.calls = (s.calls || 0) + 1;
-    const rng = seededRng(`${s.salt}:${turnKey(SillyTavern.getContext().chat)}:${s.calls}`);
+    const seeded = seededRng(`${s.salt}:${turnKey(SillyTavern.getContext().chat)}:${s.calls}`), draws = [];
+    const rng = () => { const v = seeded(); draws.push(v); return v; };
+    LAST_DRAWS = draws;
     const out = fn(s.state, rng);
     save();
     return out;

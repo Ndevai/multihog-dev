@@ -5,7 +5,7 @@
 // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
 // tools itself; a call already made here returns the same result (the turn's decision ledger).
 import { turnKey } from './turn.js';
-import { REGISTRY, store, storyTime, setStoryTime, scenePosition, setScenePosition, type Args } from './rules-tools.js';
+import { REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, type Args } from './rules-tools.js';
 import { parseStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
@@ -168,8 +168,8 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
     setRead([]);
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size) return [];
     const s = store(), turn = turnKey(ctx.chat);
-    const results: { tool: string; result: string }[] = [];
-    const runAll = async (list: Call[]) => { for (const c of list) results.push({ tool: c.tool, result: String(await REGISTRY.get(c.tool)!.exec(c.args as Args)) }); };
+    const results: { tool: string; result: string; draws?: number[] }[] = [];
+    const runAll = async (list: Call[]) => { for (const c of list) { clearDraws(); const result = String(await REGISTRY.get(c.tool)!.exec(c.args as Args)); results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) }); } };
     let calls: Call[], time: number | null = null, present: string[] | undefined;
     if (s.asked?.turn === turn) {
         calls = s.asked.calls; time = s.asked.time ?? null; present = s.asked.present;
@@ -205,6 +205,13 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
     console.debug('[Rules engine] question pass', calls, results, READ);
     return READ;
+}
+
+/** "/rules-log": this turn's calls, each with its arguments, the draws it used (0–1) and its result. */
+export function turnLog(): string {
+    const a = store().asked;
+    if (!a || a.turn !== turnKey(SillyTavern.getContext().chat)) return 'No question pass this turn.';
+    return a.calls.map((c, i) => `${i + 1}. ${c.tool} ${JSON.stringify(c.args)}\n   draws: ${a.results[i]?.draws?.join(', ') || 'none'}\n   → ${a.results[i]?.result ?? ''}`).join('\n');
 }
 
 /** This turn's question-pass results, for the check pass. */

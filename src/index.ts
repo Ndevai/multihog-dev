@@ -5,7 +5,7 @@ import {
     registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat,
     RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY,
 } from './rules/rules-tools.js';
-import { runQuestionPass, decidedInjection, type Chooser } from './rules/question-pass.js';
+import { runQuestionPass, decidedInjection, turnLog, type Chooser } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
@@ -318,6 +318,8 @@ function wireEvents(): void {
     void loadColex(); void loadLanguageYears(); void loadThings();
     wireEvents();
     registerRulesStatsCommand();
+    const c = ctx() as Ctx & { SlashCommand?: { fromProps(p: object): unknown }; SlashCommandParser?: { addCommandObject(x: unknown): void } };
+    c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-log', helpString: 'This turn\'s decisions: each call, its arguments, the random draws it used and its result.', callback: async () => turnLog() }));
     registerRulesEvalCommand(send);
     registerTimeCommand();
     registerWorldCommands();

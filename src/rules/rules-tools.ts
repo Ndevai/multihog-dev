@@ -42,7 +42,7 @@ export interface EngineStore {
     state: RuleState; snapshots: Record<number, { state: RuleState; calls: number }>; salt: string; calls?: number; version?: number;
     decided?: { turn: string; out: Record<string, string> } | null;
     /** The question pass of one turn: the calls asked for and what they returned (kept so a swipe reuses the same calls). */
-    asked?: { turn: string; calls: { tool: string; args: Record<string, unknown> }[]; results: { tool: string; result: string }[]; time?: number | null; present?: string[];
+    asked?: { turn: string; calls: { tool: string; args: Record<string, unknown> }[]; results: { tool: string; result: string; draws?: number[] }[]; time?: number | null; present?: string[];
         read?: { phrase: string; id: string; label: string; year: number | null }[] } | null;
 }
 
@@ -178,10 +178,16 @@ const decided = (name: ToolName, a: Args) => { const k = decisionKey(name, a); r
 function remember(name: ToolName, a: Args, out: unknown) { const k = decisionKey(name, a); if (k && typeof out === 'string') { decisions()[k] = out; save(); } }
 
 // Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
+// The draws each call used, kept with its result (question-pass.ts), so an outcome can be traced: same state, same
+// draws, same result; /rules-log shows them.
+export let LAST_DRAWS: number[] = [];
+export const clearDraws = () => { LAST_DRAWS = []; };
 function run<T>(fn: (st: RuleState, rng: Rng) => T): T {
     const s = store();
     s.calls = (s.calls || 0) + 1;
-    const rng = seededRng(`${s.salt}:${turnKey(SillyTavern.getContext().chat)}:${s.calls}`);
+    const seeded = seededRng(`${s.salt}:${turnKey(SillyTavern.getContext().chat)}:${s.calls}`), draws: number[] = [];
+    const rng = () => { const v = seeded(); draws.push(v); return v; };
+    LAST_DRAWS = draws;
     const out = fn(s.state, rng);
     save();
     return out;

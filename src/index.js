@@ -2,7 +2,7 @@
 // question pass names the outcomes in doubt and the engine decides them; the narrator gets the brief, the story time,
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
 import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, } from './rules/rules-tools.js';
-import { runQuestionPass, decidedInjection } from './rules/question-pass.js';
+import { runQuestionPass, decidedInjection, turnLog } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
@@ -334,6 +334,8 @@ function wireEvents() {
     void loadThings();
     wireEvents();
     registerRulesStatsCommand();
+    const c = ctx();
+    c.SlashCommandParser?.addCommandObject(c.SlashCommand.fromProps({ name: 'rules-log', helpString: 'This turn\'s decisions: each call, its arguments, the random draws it used and its result.', callback: async () => turnLog() }));
     registerRulesEvalCommand(send);
     registerTimeCommand();
     registerWorldCommands();
