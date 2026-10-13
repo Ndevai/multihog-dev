@@ -94,3 +94,18 @@ export function giveWayChance(size: string, reason: string): number | null {
     const a = GIVE_WAY_SIZES.indexOf(size as typeof GIVE_WAY_SIZES[number]), b = GIVE_WAY_REASONS.indexOf(reason as typeof GIVE_WAY_REASONS[number]);
     return a < 0 || b < 0 ? null : GIVE_WAY[a][b];
 }
+
+// Trust after a betrayal (Schweitzer, Hershey & Bradlow 2006, Organ Behav Hum Decis Process 101:1; 184 students, a trust
+// game: the partner returned nothing in rounds 1–2, then kept faith from round 3). Share who make themselves vulnerable to
+// the betrayer again after k acts of good faith: logit⁻¹(A − B e^(−δ k)) (their Equation 1, individual intercept at the
+// mean); A, B, δ from Table 2 summed as Table 1 sets out (overall mean + main effects + interactions). A betrayal with
+// lies (false promises) recovers to a lower level; a promise to change, and a promise with an apology, raise it.
+export const TRUST_REPAIR = ['none', 'a promise to change', 'a promise and an apology'] as const;
+const P = { A: [4, -3.89, -0.51, -0.41, 0.95, 1.47], B: [6.92, -3.95, -5.12, -0.08, 4.88, 1.41], d: [0.77, 2.01, 4.26, -2.14, -3.41, 0.45] };
+/** Share who trust the betrayer again after `kept` acts of good faith. */
+export function trustAgain(lied: boolean, repair: string, kept: number): number {
+    const promise = repair !== 'none', apology = repair === TRUST_REPAIR[2];
+    const sum = (v: number[]) => v[0] + (lied ? v[1] : 0) + (promise ? v[2] : 0) + (apology ? v[3] : 0) + (lied && promise ? v[4] : 0) + (lied && apology ? v[5] : 0);
+    const A = sum(P.A), B = sum(P.B), d = sum(P.d);
+    return 1 / (1 + Math.exp(-(A - B * Math.exp(-d * Math.max(0, kept)))));
+}

@@ -1,5 +1,5 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
-import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance } from './social.js';
+import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, TRUST_REPAIR, trustAgain, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { drawPerson } from './census.js';
@@ -30,7 +30,7 @@ import { HOW, transfer, give, account, possessionsBlock } from './possessions.js
 import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode, soundOf } from './colex.js';
 import { resolveLanguage, stageKey } from './languages.js';
 import { str, checkArgs } from './tool-schema.js';
-export const TOOLS = ['Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
@@ -149,7 +149,7 @@ export function plain(out) {
 // A decision tool called again in one turn for the same actor and act returns its first result, like RollTheDice's ledger,
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = (v) => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
-const DECIDES = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], WorkOut: a => [a.who, a.problem], Sickness: a => [a.who, a.situation], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Interpret: a => [a.listener, a.speaker, a.word], Listen: a => [a.listener, a.sound ?? a.spl_db],
+const DECIDES = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], WorkOut: a => [a.who, a.problem], Sickness: a => [a.who, a.situation], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Interpret: a => [a.listener, a.speaker, a.word], Trust: a => [a.who, a.other, a.event], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
     Weather: a => [a.place], Choose: a => [a.who, ...(a.options ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
@@ -309,6 +309,7 @@ Senses
 People
 - A character the story has not described → NewCharacter; their first name → NameCharacter; their height and mass → BodySize.
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour, order or request to go first, or a first meeting → SocialResponse.
+- A betrayal, a promise or apology after one, faith kept, or whether the betrayed one trusts the betrayer again → Trust.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
 - A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness.
@@ -1175,6 +1176,38 @@ export function registerRulesTools(enabled) {
                 return `${a.who} ${rng() < asRequester(p, a.requester) ? 'lets them go first' : 'declines'} (${a.request_size}; ${a.reason}).`;
             }
             default: return `Give situation, one of: ${SOCIAL.join('; ')}.`;
+        }
+    }));
+    tool('Trust', 'Record what one character did to another\'s trust (betrayed it, betrayed it with lies, promised to change, apologized, kept faith), or decide whether the betrayed one makes themselves vulnerable to the betrayer again (lends, confides, relies on them), before narrating it.', {
+        who: str('The one whose trust is at stake'),
+        other: str('The one who betrayed or must be trusted'),
+        event: { type: 'string', enum: ['betrayed them', 'betrayed them with lies or false promises', 'promised to change', 'promised to change and apologized', 'kept faith once', 'do they trust them now?'] },
+    }, ['who', 'other', 'event'], a => run((st, rng) => {
+        const k = `${a.who}→${a.other}`, t = (st.trust ??= {})[k];
+        switch (a.event) {
+            case 'betrayed them':
+                st.trust[k] = { lied: false, repair: TRUST_REPAIR[0], kept: 0 };
+                return `Recorded: ${a.other} betrayed ${a.who}.`;
+            case 'betrayed them with lies or false promises':
+                st.trust[k] = { lied: true, repair: TRUST_REPAIR[0], kept: 0 };
+                return `Recorded: ${a.other} betrayed ${a.who} with lies.`;
+            case 'promised to change':
+            case 'promised to change and apologized':
+                if (!t)
+                    return `No betrayal of ${a.who} by ${a.other} on record.`;
+                t.repair = a.event === 'promised to change' ? TRUST_REPAIR[1] : TRUST_REPAIR[2];
+                return `Recorded: ${a.other} ${a.event}.`;
+            case 'kept faith once':
+                if (!t)
+                    return `No betrayal on record; nothing to repair.`;
+                t.kept++;
+                return `Recorded: ${a.other} kept faith (${t.kept} time${t.kept > 1 ? 's' : ''} since the betrayal).`;
+            default: {
+                if (!t)
+                    return `No betrayal of ${a.who} by ${a.other} on record: decide trust between them with SocialResponse or Choose.`;
+                const p = trustAgain(t.lied, t.repair, t.kept);
+                return `${a.who} ${rng() < p ? 'trusts' : 'does not trust'} ${a.other} this time (betrayed${t.lied ? ' with lies' : ''}; ${t.repair === 'none' ? 'no promise' : t.repair}; good faith kept ${t.kept} time${t.kept === 1 ? '' : 's'} since).`;
+            }
         }
     }));
     tool('HoldOn', 'Decide whether a person can hang on by their hands (a ledge, a rope, a branch) or carry a load by its handles, before narrating it.', {

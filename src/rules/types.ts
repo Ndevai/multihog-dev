@@ -94,6 +94,8 @@ export interface Fact { id: number; text: string; knowers: string[]; everyone: b
 export interface RuleState {
     people?: Record<string, Person>;
     facts?: Fact[]; factSeq?: number;
+    /** Trust between two characters after a betrayal, by "truster→betrayer" (social.ts trustAgain). */
+    trust?: Record<string, { lied: boolean; repair: string; kept: number }>;
     /** Story clock: the time set with /rules-time (minutes, clock.ts) and the minutes PassTime has run since. */
     clock?: { t: number; add: number };
     latitude?: number;
