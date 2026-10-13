@@ -989,6 +989,7 @@ export function registerRulesTools(enabled: boolean): void {
         kind: { type: 'string', enum: PROBLEMS },
         seconds: { type: 'number', description: 'Time they have to work it out, s (a glance 2, a moment 10, a minute 60, a long look 240)' },
         share: { type: 'string', enum: SHARES, description: 'How this character compares with university students at such problems: the share of students they would do better than.' },
+        reveals: str('The fact working it out would teach, one short sentence (who the thief is, where the key is); learned only on success'),
     }, ['who', 'problem', 'kind', 'seconds', 'share'], a => run((st, rng) => {
         const w = whoAny(st, a.who);
         if (!w.p) return w.error;
@@ -999,7 +1000,8 @@ export function registerRulesTools(enabled: boolean): void {
         const chance = 1 / (1 + Math.exp(-z));
         // timed: a cooled core slows this kind of thinking (complex tasks fell after 2–4 °C of cooling, simple ones held: Giesbrecht
         // et al. 1993, Aviat Space Environ Med 64:206).
-        return check(w.p, { task: `work out ${a.problem}`, share: chance, uses: ['alertness'], timed: true, override: true }, rng);
+        const out = check(w.p, { task: `work out ${a.problem}`, share: chance, uses: ['alertness'], timed: true, override: true }, rng);
+        return a.reveals && /SUCCESS/.test(out) ? `${out} ${a.who} now knows: ${learnt(st, a.reveals, a.who, KNOWN_HOW[2])}` : out;
     }));
 
     tool('Sickness', 'Decide whether a character vomits or feels sick in a situation with published rates, before narrating it: a sea crossing, or waking after surgery under general anaesthesia. Spoiled food goes to Disease.', {
