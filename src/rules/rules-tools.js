@@ -24,7 +24,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist } from './history.js';
-import { CURRENT_BOOK } from './world.js';
+import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
 import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode, soundOf } from './colex.js';
@@ -970,10 +970,14 @@ export function registerRulesTools(enabled) {
         // it). A detailed story reads as more likely while being less likely (conjunction fallacy, Tversky & Kahneman 1983,
         // Psychol Rev 90:293; GPT-3 commits it too: Binz & Schulz 2023, PNAS 120:e2218523120), so each step is drawn,
         // not judged for how convincing it is. Drawn in order: the first step that fails is what the world holds instead.
-        const rare = shareOf(a.base_share) <= 0.05;
+        // A world-book being claimed outside its area is rare there whatever share the model gave: it needs its path.
+        const far = a.kind === 'what the character is' && a.species ? farFrom(a.species, CURRENT_BOOK, scenePosition()) : null;
+        const rare = shareOf(a.base_share) <= 0.05 || !!far;
+        if (far && shareOf(a.base_share) > 0.05)
+            a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
         if (rare && path.length < 2)
-            return 'A claim this rare needs its path: two or more steps, in order, each with its reference class and shares given the steps before.';
+            return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;

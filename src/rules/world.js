@@ -127,3 +127,15 @@ export function parseEntry(text) {
     }
     return null;
 }
+/** The world-book entry for `name` (a creature or people) when the scene lies outside its area, with the distance; else null.
+ *  A being far from where its kind lives is rare there, so a claim to be one needs its path (rules-tools Claim). */
+export function farFrom(name, book, here) {
+    if (!here || !name)
+        return null;
+    const k = name.trim().toLowerCase();
+    const e = book.find(x => !x.worldwide && x.lat != null && x.lon != null && (x.species?.toLowerCase() === k || x.what.toLowerCase().includes(k)));
+    if (!e)
+        return null;
+    const km = distKm(here.lat, here.lon, e.lat, e.lon);
+    return km > (e.radius_km ?? 300) ? { what: e.what, km: Math.round(km) } : null;
+}
