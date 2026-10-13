@@ -972,7 +972,7 @@ export function registerRulesTools(enabled: boolean): void {
         item: str('The item, a few words, singular ("revolver", "shilling", "loaf of bread")'),
         quantity: { type: 'number', description: 'How many. Default 1.' },
         from: str('Who had it; leave out when it comes from the world (found, made, bought from someone untracked)'),
-        to: str('Who has it now; leave out when it leaves the story (lost, used up, dropped out of reach, sold away)'),
+        to: str('Who or where has it now: a person, or a place when it is left there ("the west hall window"), so it can be found later; leave out when it leaves the story (used up, sold away)'),
         how: { type: 'string', enum: HOW },
     }, ['item', 'how'], a => run(st => {
         const own = inalienable(st, a.item);
