@@ -28,10 +28,16 @@ export function learn(st, text, knowers = [], everyone = false, sources = {}) {
     // Learning it again (told again, seen again, using it) restarts its forgetting clock for those knowers.
     const now = st.clock ? st.clock.t + st.clock.add : null;
     if (now !== null) {
-        const at = f.at ??= {};
+        const at = f.at ??= {}, age = f.ageAt ??= {};
         for (const k of knowers)
-            if (k)
+            if (k) {
                 at[norm(k)] = now;
+                const p = Object.entries(st.people ?? {}).find(([n]) => norm(n) === norm(k))?.[1];
+                if (p?.age != null)
+                    age[norm(k)] = p.age;
+                else
+                    delete age[norm(k)];
+            }
     }
     return f;
 }
@@ -59,8 +65,8 @@ function recalls(st, f, who) {
     const now = st.clock ? st.clock.t + st.clock.add : null, at = f.at?.[norm(who)];
     if (now === null || at == null || f.everyone)
         return true;
-    const p = Object.entries(st.people ?? {}).find(([n]) => norm(n) === norm(who))?.[1];
-    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallShare((now - at) / 525960, p?.age ?? 30);
+    // The age that sets the rate is the knower's age when they learned it (Bauer & Larkina group by age at the events).
+    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallShare((now - at) / 525960, f.ageAt?.[norm(who)] ?? 30);
 }
 export const knows = (st, name, text) => (st.facts ?? []).some(f => norm(f.text) === norm(text) && (f.everyone || f.knowers.some(k => norm(k) === norm(name))));
 // What is not in the narrator's context cannot leak into another character's mouth: models revealed private information
