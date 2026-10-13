@@ -1,10 +1,14 @@
 // Prices and wages in European cities, 1264–1913, and four Asian cities, 1730–1925 (docs/df-body-engine.md §6.14), from
 // Allen 2001 and the GPIH files.
 import { PERIODS, GOODS, CPI, CRAFTSMAN, LABOURER } from './data/allen-prices.js';
-import { LABOURER as LAB_Y, CRAFTSMAN as CRAFT_Y, CPI as CPI_Y, ASIAWAGE, ASIABASKET, POUND, WORLDWAGE, WORLDBASKET, WORLDSKILLED } from './data/gpih.js';
+import { LABOURER as LAB_Y, CRAFTSMAN as CRAFT_Y, CPI as CPI_Y, ASIAWAGE, ASIABASKET, POUND, WORLDWAGE, WORLDBASKET, WORLDSKILLED, WAGE2, SKILLED2, PENCE, PENCESKILLED } from './data/gpih.js';
 // Places with wages only (and a bare-bones basket where the source gives one): the four Asian cities, Latin America, India by
 // region, Istanbul, Korea.
-const WAGES = { ...ASIAWAGE, ...WORLDWAGE }, BASKETS = { ...ASIABASKET, ...WORLDBASKET };
+// British African colonies are paid in pence: g of silver = pence ÷ 240 × the pound's silver that year (POUND).
+const silverOf = (s) => s.map(([y, d]) => { const g = POUND.find(x => x[0] === y)?.[1]; return g ? [y, d / 240 * g] : null; }).filter((x) => !!x);
+const fromPence = (m) => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, silverOf(v)]));
+const WAGES = { ...ASIAWAGE, ...WORLDWAGE, ...WAGE2, ...fromPence(PENCE) }, BASKETS = { ...ASIABASKET, ...WORLDBASKET };
+const SKILLED = { ...WORLDSKILLED, ...SKILLED2, ...fromPence(PENCESKILLED) };
 const ASIA = Object.keys(WAGES);
 export const CITIES = [...new Set([...Object.keys(CPI), ...Object.keys(CPI_Y), ...ASIA])];
 export const PRICE_QUESTIONS = ['price of goods', 'daily wage', 'yearly cost of living for one person', 'value of English money'];
@@ -55,7 +59,7 @@ export function price(question, item, trade = 'building labourer', qty = 1, city
     // Asian cities (Allen, Bassino, Ma, Moll-Murata & van Zanden 2011, Econ Hist Rev 64:8): labourers' silver wages and the
     // bare-bones basket (g of silver per man per year), annual.
     if (ASIA.includes(city)) {
-        const craft = trade === 'building craftsman' && WORLDSKILLED[city], w = annual(craft ? WORLDSKILLED[city] : WAGES[city], year), b = annual(BASKETS[city], year);
+        const craft = trade === 'building craftsman' && SKILLED[city], w = annual(craft ? SKILLED[city] : WAGES[city], year), b = annual(BASKETS[city], year);
         if (question === 'daily wage') {
             if (!w || (trade === 'building craftsman' && !craft))
                 return { error: `${city}: unskilled labourers' wages only, years with figures ${WAGES[city][0][0]}–${WAGES[city].at(-1)[0]} (nearest within 10 years).` };
