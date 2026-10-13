@@ -26,6 +26,8 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
+import { skillShare, spokenThere, heightShift, wageRatio } from './population.js';
+import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
@@ -756,11 +758,21 @@ export function registerRulesTools(enabled: boolean): void {
         quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
         trade: { type: 'string', enum: TRADES, description: 'For a daily wage. Default building labourer.' },
         city: { type: 'string', enum: CITIES, description: 'The city, or the nearest listed one in the same country' },
+        country: str('For a daily wage in a country with no listed city, 1820–2008: the country'),
         year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
-    }, ['question', 'city'], a => run(st => {
+    }, ['question'], a => run(st => {
         const year = a.year ?? storyYear(st);
         if (year == null) return NO_YEAR;
-        const r = price(a.question, a.item, a.trade, Number(a.quantity) || 1, a.city, year);
+        // Outside the listed cities: a labourer's wage by what it buys against a British labourer's the same year (population.ts).
+        if (!CITIES.includes(a.city ?? "") && a.country) {
+            const w = wageRatio(a.country, year);
+            if ('error' in w) return w.error;
+            const lon = year <= 1913 ? price('daily wage', undefined, 'building labourer', 1, 'London', year) : null;
+            const g = lon && !('error' in lon) ? `; in London that buys what ${Math.round(lon.silver * w.ratio * 10) / 10} g of silver buys` : '';
+            return `Daily wage of a labourer in ${w.country}, ${year}: buys ${Math.round(w.ratio * 100)} % of what a British labourer's buys${g}.`;
+        }
+        if (!CITIES.includes(a.city ?? "")) return 'Give city, or country for a daily wage elsewhere (1820–2008).';
+        const r = price(a.question, a.item, a.trade, Number(a.quantity) || 1, a.city!, year);
         if ('error' in r) return r.error;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? Math.round(r.labourDays) : Math.round(r.labourDays * 10) / 10} days`;
@@ -787,7 +799,8 @@ export function registerRulesTools(enabled: boolean): void {
         const year = a.year ?? storyYear(st), country = a.country ?? st.setting?.country;
         if (year == null) return NO_YEAR;
         if (!country) return 'Give country: no place is set yet.';
-        const r = bodySize(country, a.sex, a.birth_year, year, () => gauss(rng));
+        const shift = a.birth_year < H_YEARS[0] ? heightShift(country, a.birth_year, H_YEARS[0]) ?? 0 : 0;
+        const r = bodySize(country, a.sex, a.birth_year, year, () => gauss(rng), shift);
         if ('error' in r) return r.error;
         if (r.notes.length) console.debug('[Rules engine]', a.who, r.notes.join('; '));
         const { p, error } = who(st, a.who, a.species);
@@ -901,6 +914,7 @@ export function registerRulesTools(enabled: boolean): void {
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
         language: str('For "something the character can do" when it is speaking a language: the language as named ("japanese", "modern japanese", "old mandarin")'),
+        skill: { type: 'string', enum: ['reading and writing', 'counting and simple sums'], description: 'For "something the character can do" when it is one of these' },
         quantity: { type: 'number', description: 'For "something the character has": how many. Default 1.' },
         reference_class: str('The wider class this claim belongs to (e.g. "travellers in 1850 England carrying a pistol")'),
         base_share: { type: 'string', enum: SHARES, description: 'How often claims of that class hold in this kind of setting.' },
@@ -944,10 +958,17 @@ export function registerRulesTools(enabled: boolean): void {
         // A world-book being claimed outside its area is rare there whatever share the model gave: it needs its path.
         const far = a.kind === 'what the character is' && a.species ? farFrom(a.species, CURRENT_BOOK, scenePosition()) : null;
         const absent = a.kind === 'something the character has' && a.item ? notYetIn(a.item, storyYear(st), st.setting?.country) : null;
-        const rare = shareOf(a.base_share) <= 0.05 || !!far || !!absent;
-        if ((far || absent) && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
+        // A language with no speech community in the scene's country (Glottolog) is rare there, as a thing not yet adopted is.
+        const foreign = a.kind === 'something the character can do' && a.language && spokenThere(a.language, st.setting?.country) === false;
+        // Reading and counting: the base share is the measured share of the country's people (population.ts); counting by
+        // the character's birth decade, age 30 when unknown [ASSUMED].
+        const skill = a.kind === 'something the character can do' && a.skill
+            ? skillShare(a.skill === 'reading and writing' ? 'reading' : 'numeracy', st.setting?.country, y === null ? null : a.skill === 'reading and writing' ? y : y - (st.people?.[a.who]?.age ?? 30)) : null;
+        if (skill) a = { ...a, base_share: Math.max(0.001, skill.share) as unknown as string };
+        const rare = shareOf(a.base_share) <= 0.05 || !!far || !!absent || !!foreign;
+        if ((far || absent || foreign) && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
-        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
+        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;

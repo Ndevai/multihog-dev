@@ -11,6 +11,7 @@ import { sendModel } from './send.js';
 import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM } from './rules/world.js';
 import { removeWithDescendants, outcomeLine, bornIn } from './rules/counterfactual.js';
 import { firstYear, earlier, loadChat } from './rules/history.js';
+import { loadPopulation } from './rules/population.js';
 import { seededRng } from './rules/body-engine.js';
 import { loadColex } from './rules/colex.js';
 import { skyLight } from './rules/sky.js';
@@ -333,6 +334,7 @@ function wireEvents() {
     void loadLanguageYears();
     void loadThings();
     void loadChat();
+    void loadPopulation();
     wireEvents();
     registerRulesStatsCommand();
     const c = ctx();

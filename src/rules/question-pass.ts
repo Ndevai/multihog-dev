@@ -12,6 +12,7 @@ import type { Prop } from './tool-schema.js';
 import { loadColex } from './colex.js';
 import { loadLanguageYears } from './languages.js';
 import { loadChat } from './history.js';
+import { loadPopulation } from './population.js';
 import { loadThings, thingsIn, thingsBlock, setRead, READ, type Found } from './things.js';
 
 // Calls run per turn, at most [ASSUMED]; scene messages shown and their length.
@@ -179,7 +180,7 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         await runAll(calls);
     }
     else {
-        await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat()]);
+        await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
         const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
         const only = await pickTools(chat, send) ?? undefined;
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only), thingsBlock(found)].filter(Boolean).join('\n\n');

@@ -29,15 +29,15 @@ function at(years: number[], values: number[], y: number): number {
  * { heightCm, massKg, notes } for an adult of `sex` from `country` born in `birthYear`, measured in `year`. Height is drawn
  * around the cohort mean with the SD above; mass = a BMI drawn around the country's mean for that year × height².
  */
-export function bodySize(country: string, sex: string, birthYear: number, year: number, gauss: Gauss): { error: string } | { country: string; heightCm: number; massKg: number; bmiZ: number; notes: string[] } {
+export function bodySize(country: string, sex: string, birthYear: number, year: number, gauss: Gauss, shift = 0): { error: string } | { country: string; heightCm: number; massKg: number; bmiZ: number; notes: string[] } {
     const c = findCountry(country);
     if (!c) return { error: `No height data for "${country}".` };
     const s = sex === 'female' ? 1 : 0, [h, b] = BODY[c as keyof typeof BODY];
-    const heightCm = at(H_YEARS, h[s], birthYear) + gauss() * HEIGHT_SD[s];
+    const heightCm = at(H_YEARS, h[s], birthYear) + shift + gauss() * HEIGHT_SD[s];
     const sl = Math.sqrt(Math.log(1 + BMI_CV[s] ** 2));
     const bmiZ = gauss();
     const bmi = at(B_YEARS, b[s], year) * Math.exp(bmiZ * sl - sl * sl / 2);
-    const notes = [birthYear < H_YEARS[0] || birthYear > H_YEARS[H_YEARS.length - 1] ? `height for births ${birthYear < H_YEARS[0] ? H_YEARS[0] : H_YEARS[H_YEARS.length - 1]}` : null,
+    const notes = [shift ? `height shifted ${Math.round(shift * 10) / 10} cm for births ${birthYear}` : null, birthYear < H_YEARS[0] && !shift || birthYear > H_YEARS[H_YEARS.length - 1] ? `height for births ${birthYear < H_YEARS[0] ? H_YEARS[0] : H_YEARS[H_YEARS.length - 1]}` : null,
         year < B_YEARS[0] || year > B_YEARS[B_YEARS.length - 1] ? `weight for ${year < B_YEARS[0] ? B_YEARS[0] : B_YEARS[B_YEARS.length - 1]}` : null].filter((x): x is string => !!x);
     return { country: c, heightCm, massKg: bmi * (heightCm / 100) ** 2, bmiZ, notes };
 }
