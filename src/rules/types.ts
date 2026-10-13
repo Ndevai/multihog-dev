@@ -88,7 +88,7 @@ export interface Person {
 }
 
 /** A fixed fact of the story and who knows it; `from` maps a normalized knower name to how they learned it. */
-export interface Fact { id: number; text: string; knowers: string[]; everyone: boolean; seq?: number; from?: Record<string, string>; secret?: boolean }
+export interface Fact { id: number; text: string; knowers: string[]; everyone: boolean; seq?: number; from?: Record<string, string>; secret?: boolean; at?: Record<string, number> }
 
 /** Rules-engine state of one chat (chatMetadata.rulesEngine.state). */
 export interface RuleState {
