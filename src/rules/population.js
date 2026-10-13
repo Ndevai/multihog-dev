@@ -1,9 +1,10 @@
-let CLIO = null, GLOTTO = {};
+let CLIO = null, GLOTTO = {}, CLDR = {};
 let loading = null;
 export function loadPopulation() {
     loading ??= Promise.all([
         fetch(new URL('../../rules/clio.json', import.meta.url)).then(r => r.json()).then(d => { CLIO = d; }),
         fetch(new URL('../../rules/glotto.json', import.meta.url)).then(r => r.json()).then(d => { GLOTTO = d; }),
+        fetch(new URL('../../rules/cldr.json', import.meta.url)).then(r => r.json()).then(d => { CLDR = d; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
 }
@@ -61,4 +62,13 @@ export function spokenIn(language) {
 export function spokenThere(language, country) {
     const cs = spokenIn(language);
     return cs && country ? !!pick(cs, country) : null;
+}
+// Share of a country's people who speak a language, first or second (Unicode CLDR territoryInfo, languagePopulation
+// _populationPercent, cldr-json main branch, 2026-10-13: 524 languages). Present-day estimates, so used from 1950 on [ASSUMED].
+export function speakShare(language, country, year) {
+    if (!country || year === null || year < 1950)
+        return null;
+    const k = language.trim().toLowerCase().replace(/^(modern|standard) /, ''), t = CLDR[k] ?? CLDR[`${k} chinese`];
+    const c = t ? pick(Object.keys(t), country) : null;
+    return c ? { share: t[c] / 100, country: c } : null;
 }

@@ -6,12 +6,13 @@
 // Where a language is spoken: Glottolog 5 (CLDF, countries of each language's speech communities; extinct and classical
 // languages, which list a last year of documentation, left out).
 type Series = Record<string, [number, number][]>;
-let CLIO: { height: Series; numeracy: Series; wage: Series; literacy: Series } | null = null, GLOTTO: Record<string, string[]> = {};
+let CLIO: { height: Series; numeracy: Series; wage: Series; literacy: Series } | null = null, GLOTTO: Record<string, string[]> = {}, CLDR: Record<string, Record<string, number>> = {};
 let loading: Promise<void> | null = null;
 export function loadPopulation(): Promise<void> {
     loading ??= Promise.all([
         fetch(new URL('../../rules/clio.json', import.meta.url)).then(r => r.json()).then(d => { CLIO = d; }),
         fetch(new URL('../../rules/glotto.json', import.meta.url)).then(r => r.json()).then(d => { GLOTTO = d; }),
+        fetch(new URL('../../rules/cldr.json', import.meta.url)).then(r => r.json()).then(d => { CLDR = d; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
 }
@@ -69,4 +70,13 @@ export function spokenIn(language: string): string[] | null {
 export function spokenThere(language: string, country: string | null | undefined): boolean | null {
     const cs = spokenIn(language);
     return cs && country ? !!pick(cs, country) : null;
+}
+
+// Share of a country's people who speak a language, first or second (Unicode CLDR territoryInfo, languagePopulation
+// _populationPercent, cldr-json main branch, 2026-10-13: 524 languages). Present-day estimates, so used from 1950 on [ASSUMED].
+export function speakShare(language: string, country: string | null | undefined, year: number | null): { share: number; country: string } | null {
+    if (!country || year === null || year < 1950) return null;
+    const k = language.trim().toLowerCase().replace(/^(modern|standard) /, ''), t = CLDR[k] ?? CLDR[`${k} chinese`];
+    const c = t ? pick(Object.keys(t), country) : null;
+    return c ? { share: t![c] / 100, country: c } : null;
 }

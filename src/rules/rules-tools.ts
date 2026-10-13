@@ -26,7 +26,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
-import { skillShare, spokenThere, heightShift, wageRatio } from './population.js';
+import { skillShare, spokenThere, speakShare, heightShift, wageRatio } from './population.js';
 import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
@@ -959,16 +959,18 @@ export function registerRulesTools(enabled: boolean): void {
         const far = a.kind === 'what the character is' && a.species ? farFrom(a.species, CURRENT_BOOK, scenePosition()) : null;
         const absent = a.kind === 'something the character has' && a.item ? notYetIn(a.item, storyYear(st), st.setting?.country) : null;
         // A language with no speech community in the scene's country (Glottolog) is rare there, as a thing not yet adopted is.
-        const foreign = a.kind === 'something the character can do' && a.language && spokenThere(a.language, st.setting?.country) === false;
+        const foreign = a.kind === 'something the character can do' && a.language && y !== null && y < 1950 && spokenThere(a.language, st.setting?.country) === false;
         // Reading and counting: the base share is the measured share of the country's people (population.ts); counting by
         // the character's birth decade, age 30 when unknown [ASSUMED].
         const skill = a.kind === 'something the character can do' && a.skill
             ? skillShare(a.skill === 'reading and writing' ? 'reading' : 'numeracy', st.setting?.country, y === null ? null : a.skill === 'reading and writing' ? y : y - (st.people?.[a.who]?.age ?? 30)) : null;
         if (skill) a = { ...a, base_share: Math.max(0.001, skill.share) as unknown as string };
+        const speaks = a.kind === 'something the character can do' && a.language ? speakShare(a.language, st.setting?.country, y) : null;
+        if (speaks) a = { ...a, base_share: Math.max(0.001, speaks.share) as unknown as string };
         const rare = shareOf(a.base_share) <= 0.05 || !!far || !!absent || !!foreign;
         if ((far || absent || foreign) && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
-        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
+        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;
