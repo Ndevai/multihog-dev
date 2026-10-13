@@ -752,7 +752,7 @@ export function registerRulesTools(enabled: boolean): void {
         return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
 
-    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913 or an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
+    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, India by region 1595–1928, Korea 1782–1879 and Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
         item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
         quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
