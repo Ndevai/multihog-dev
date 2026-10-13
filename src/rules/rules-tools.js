@@ -24,7 +24,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
-import { skillShare, spokenThere, speakShare, heightShift, wageRatio } from './population.js';
+import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio } from './population.js';
 import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
@@ -977,6 +977,10 @@ export function registerRulesTools(enabled) {
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
         language: str('For "something the character can do" when it is speaking a language: the language as named ("japanese", "modern japanese", "old mandarin")'),
         skill: { type: 'string', enum: ['reading and writing', 'counting and simple sums'], description: 'For "something the character can do" when it is one of these' },
+        faith: { type: 'string', enum: FAITHS, description: 'For "what the character is" when it is a religion' },
+        lived_to: { type: 'number', description: 'For a claim that needs someone to have lived to an age (the character\'s own age; a parent alive now): that age' },
+        alive_at: { type: 'number', description: 'With lived_to: the age at which that person was last known alive (0 = from birth)' },
+        person_sex: { type: 'string', enum: ['male', 'female'], description: 'With lived_to: that person\'s sex' },
         quantity: { type: 'number', description: 'For "something the character has": how many. Default 1.' },
         reference_class: str('The wider class this claim belongs to (e.g. "travellers in 1850 England carrying a pistol")'),
         base_share: { type: 'string', enum: SHARES, description: 'How often claims of that class hold in this kind of setting.' },
@@ -1032,6 +1036,12 @@ export function registerRulesTools(enabled) {
             ? skillShare(a.skill === 'reading and writing' ? 'reading' : 'numeracy', st.setting?.country, y === null ? null : a.skill === 'reading and writing' ? y : y - (st.people?.[a.who]?.age ?? 30)) : null;
         if (skill)
             a = { ...a, base_share: Math.max(0.001, skill.share) };
+        const faith = a.kind === 'what the character is' && a.faith ? faithShare(a.faith, st.setting?.country, y) : null;
+        if (faith)
+            a = { ...a, base_share: Math.max(0.001, faith.share) };
+        const lives = a.lived_to != null ? survival(st.setting?.country, a.person_sex, y, Number(a.alive_at) || 0, Number(a.lived_to)) : null;
+        if (lives)
+            a = { ...a, base_share: Math.max(0.001, lives.share) };
         const speaks = a.kind === 'something the character can do' && a.language ? speakShare(a.language, st.setting?.country, y) : null;
         if (speaks)
             a = { ...a, base_share: Math.max(0.001, speaks.share) };
@@ -1040,7 +1050,7 @@ export function registerRulesTools(enabled) {
             a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
         if (rare && path.length < 2)
-            return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
+            return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${faith ? ` (${Math.round(faith.share * 1000) / 10} % of people in ${faith.country}, ${faith.year}, are ${a.faith})` : ''}${lives ? ` (${Math.round(lives.share * 1000) / 10} % live from ${Number(a.alive_at) || 0} to ${a.lived_to}, ${lives.country} life table ${lives.years})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;
