@@ -74,7 +74,7 @@ OPEN: the trait → act frequency table (act-frequency studies); papers 84, 87, 
 ## Order of work
 
 1. BioGears sidecar: build, wrap one HTTP call (state in, actions, state out), map BodySize to patient file, swap §5–6 rules listed above.
-2. Open-Meteo call in Weather and BodyEnvironment for 1940 onward.
+2. Open-Meteo call in Weather and BodyEnvironment for 1940 onward. DONE 2026-10-13 (reanalysis.ts). Next part: 20CRv3 for 1836–1939.
 3. Census sampler from NAPP and Mosaic extracts (the user downloads them after registering).
 
 Sources: BioGears source (github.com/BioGearsEngine/core; Baird et al. 2020, JOSS 5:2645); Pulse source and docs (gitlab.kitware.com/physiology/engine; pulse.kitware.com); Hester et al. 2011, Front Physiol 2:12; IPUMS International NAPP page; IPUMS Mosaic data files page; Open-Meteo historical weather API docs and terms; Valler et al. 2024, ModE-RA, Sci Data; NOAA 20CRv3 (Slivinski et al. 2019).

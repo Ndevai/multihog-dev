@@ -9,6 +9,7 @@ import { learn, knowledgeBlock, recalls } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords } from './emotion.js';
 import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
+import { observedDay, cachedDay } from './reanalysis.js';
 import { NORMALS } from './data/wmo-normals.js';
 import type { Place } from './weather.js';
 import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET_ONLY, basketWage } from './prices.js';
@@ -375,12 +376,37 @@ function setPlace(st: RuleState, place: Place) {
     st.setting = { place: place.key, label: place.label, country: place.country };
     if (place.lat != null) st.latitude = place.lat;
     if (place.lon != null) st.longitude = place.lon;
+    if (place.lat != null && place.lon != null) COORDS.set(place.key, [place.lat, place.lon]);
+}
+
+// Coordinates of places seen this session, for the observed weather of real days (reanalysis.ts).
+const COORDS = new Map<string, [number, number]>();
+function coordsOf(key: string): [number, number] | null {
+    const c = COORDS.get(key);
+    if (c) return c;
+    const st = store().state;
+    return st.setting?.place === key && st.latitude != null && st.longitude != null ? [st.latitude, st.longitude] : null;
+}
+/** Calendar date of story minute `t`, or null for a bare day count. */
+function dateOf(t: number | null): Date | null {
+    if (t === null || t / 1440 <= 146097) return null;
+    const date = new Date(0, 0, 1); date.setFullYear(1, 0, 1); date.setDate(date.getDate() + Math.floor(t / 1440));
+    return date;
+}
+/** Fetches the observed day for a place before a tool runs, so the synchronous weather lookups find it. */
+async function prefetchWeather(place: Place | null, t: number | null): Promise<void> {
+    const date = dateOf(t), c = place?.lat != null && place.lon != null ? [place.lat, place.lon] as [number, number] : place ? coordsOf(place.key) : null;
+    if (place && c) COORDS.set(place.key, c);
+    if (date && c) await observedDay(c[0], c[1], date.getFullYear(), date.getMonth() + 1, date.getDate());
 }
 
 /** Weather at place key `place` (from findPlace) at story minute `t` (calendar dates only): the day, air now, date; or null. */
-function weatherAt(place: string, t: number | null): { d: WeatherDay; tempC: number; date: Date } | null {
-    if (t === null || t / 1440 <= 146097) return null;
-    const date = new Date(0, 0, 1); date.setFullYear(1, 0, 1); date.setDate(date.getDate() + Math.floor(t / 1440));
+function weatherAt(place: string, t: number | null): { d: WeatherDay; tempC: number; date: Date; observed?: { snowCm: number; windMs: number; humidity: number } } | null {
+    const date = dateOf(t);
+    if (t === null || !date) return null;
+    // The observed day (ERA5) where it was fetched; the generator otherwise.
+    const c = coordsOf(place), obs = c ? cachedDay(c[0], c[1], date.getFullYear(), date.getMonth() + 1, date.getDate()) : null;
+    if (obs) return { d: obs.day, tempC: obs.hourlyC[Math.min(23, Math.floor((t % 1440) / 60))], date, observed: { snowCm: obs.snowCm, windMs: obs.windMs, humidity: obs.humidity } };
     const year = date.getFullYear(), jan1 = new Date(0, 0, 1); jan1.setFullYear(year, 0, 1);
     const doy = Math.min(365, Math.round((date.getTime() - jan1.getTime()) / 864e5) + 1);
     const days = simulatePlaceYear(place, doy, seededRng(`${store().salt}:weather:${place}:${year}`));
@@ -618,7 +644,9 @@ export function registerRulesTools(enabled: boolean): void {
         weather_place: str('Outdoors: the town or city the characters are in or nearest to ("Lyon", "Sydney, Australia"); air temperature then follows that place\'s weather as PassTime runs (air_c may be left out). Leave it out indoors.'),
         latitude: { type: 'number', description: 'With weather_place for a place not in the lists (fictional or remote): its latitude; the nearest listed city is used' },
         longitude: { type: 'number', description: 'Longitude, with latitude' },
-    }, ['who'], a => run(st => {
+    }, ['who'], async a => {
+        if (a.weather_place) await prefetchWeather(findPlace(a.weather_place, a.latitude, a.longitude), storyNow(store().state));
+        return run(st => {
         const out = [];
         for (const name of a.who) {
             const { p, error } = who(st, name);
@@ -640,7 +668,8 @@ export function registerRulesTools(enabled: boolean): void {
             out.push(status(name, p));
         }
         return out.join('\n');
-    }));
+        });
+    });
 
     tool('BodyIntake', 'Record drinking or eating the moment it happens.', {
         who: str('Character name'),
@@ -896,8 +925,11 @@ export function registerRulesTools(enabled: boolean): void {
         place: str('The town or city the scene is in or nearest to ("Lyon", "Kyoto", "Sydney, Australia"); for a fictional or remote place, the nearest real town or give latitude and longitude. Default: the last place given.'),
         latitude: { type: 'number', description: 'For a place with no data: latitude; the nearest listed city is used' },
         longitude: { type: 'number', description: 'Longitude, with latitude' },
-    }, [], a => run(st => {
-        const known = st.setting?.place && !a.place && a.latitude == null ? { key: st.setting.place, label: st.setting.label ?? '', lat: st.latitude ?? null, country: st.setting.country ?? null } : null;
+    }, [], async a => {
+        const s0 = store().state, k0 = s0.setting?.place && !a.place && a.latitude == null ? { key: s0.setting.place, label: s0.setting.label ?? '', lat: s0.latitude ?? null, lon: s0.longitude ?? null, country: s0.setting.country ?? null } : null;
+        await prefetchWeather(k0 ?? findPlace(a.place, a.latitude, a.longitude), storyNow(s0));
+        return run(st => {
+        const known = st.setting?.place && !a.place && a.latitude == null ? { key: st.setting.place, label: st.setting.label ?? '', lat: st.latitude ?? null, lon: st.longitude ?? null, country: st.setting.country ?? null } : null;
         const place = known ?? findPlace(a.place, a.latitude, a.longitude);
         if (!place) return a.place ? `No weather data for "${a.place}": give the nearest real town, or latitude and longitude.` : 'Give place: no place is set yet.';
         const w = weatherAt(place.key, storyNow(st));
@@ -905,9 +937,12 @@ export function registerRulesTools(enabled: boolean): void {
         setPlace(st, place);
         const { d, date } = w, r = (x: number) => Math.round(x);
         const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
-        const sky = !d.wet ? 'dry' : (d.tmaxC + d.tminC) / 2 <= 1.0 ? `snow, ${amount} of water over the day` : `rain, ${amount} over the day`;
-        return `${place.label}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${sky}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C.`;
-    }));
+        const o = w.observed, snowy = o ? o.snowCm > 0 : (d.tmaxC + d.tminC) / 2 <= 1.0;
+        const sky = !d.wet ? 'dry' : snowy ? `snow, ${o ? `${Math.round(o.snowCm * 10) / 10} cm` : `${amount} of water`} over the day` : `rain, ${amount} over the day`;
+        const extra = o ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : '';
+        return `${place.label}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${sky}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C${extra}.`;
+        });
+    });
 
     // A character's pick among options is drawn, weighted by how many people in their place would take each one: weighted
     // random from all choices (Mark 2009, Behavioral Mathematics for Game AI, ch. 16), probabilistic choice as in McFadden's
