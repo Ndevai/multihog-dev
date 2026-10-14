@@ -109,10 +109,10 @@ Each entry is the widest single source for its question: a whole-system model, a
 | 81 | Hersbach H et al. 2020, "The ERA5 global reanalysis", Q J R Meteorol Soc 146:1999 | hourly real weather 1940– | job 2 |
 | 82 | Slivinski LC et al. 2019, "Towards a more reliable historical reanalysis: improvements for version 3 of the Twentieth Century Reanalysis system", Q J R Meteorol Soc 145:2876 | weather 1836–2015 | job 2 |
 | 83 | Valler V et al. 2024, "ModE-RA: a global monthly paleo-reanalysis of the modern era 1421 to 2008", Sci Data 11:36 | monthly climate 1421–2008 | job 2 |
-| 84 | Semenov MA, Barrow EM 1997, "Use of a stochastic weather generator in the development of climate change scenarios", Climatic Change 35:397 | LARS-WG generator | §6.16 fictional worlds |
+| 84 | Price RH, Bouffard DL 1974, "Behavioral appropriateness and situational constraint as dimensions of social behavior", J Pers Soc Psychol 30:579 | rated fit of 15 behaviours in 15 situations; how strongly each situation restricts behaviour | Claim (actions) |
 | 85 | Tobler W 1993, "Three presentations on geographical analysis and modeling", NCGIA Technical Report 93-1 (report) | walking speed by slope | travel time |
 | 86 | Bohannon RW, Andrews AW 2011, "Normal walking speed: a descriptive meta-analysis", Physiotherapy 97:182 | walking speed by age and sex | Chase |
-| 87 | Levine RV, Norenzayan A 1999, "The pace of life in 31 countries", J Cross-Cult Psychol 30:178 | walking speed by country | Chase |
+| 87 | Rauthmann JF et al. 2014, "The Situational Eight DIAMONDS: a taxonomy of major dimensions of situation characteristics", J Pers Soc Psychol 107:677 | 8 measured dimensions of any situation | Claim (actions) |
 | 88 | Dodds RM et al. 2014, "Grip strength across the life course: normative data from twelve British studies", PLoS ONE 9:e113637 | strength by age and sex | §6.10 |
 | 89 | Helbing D, Farkas I, Vicsek T 2000, "Simulating dynamical features of escape panic", Nature 407:487 | crowd movement and crushing | crowds |
 | 90 | Dupuy TN 1979, Numbers, Predictions and War (book) | Quantified Judgment Model of battle outcomes | §6.18 |
@@ -124,5 +124,5 @@ Each entry is the widest single source for its question: a whole-system model, a
 | 96 | Myhrvold NP et al. 2015, "An amniote life-history database to perform comparative analyses with birds, mammals, and reptiles", Ecology 96:3109 | body size, lifespan, litter size of 21,000 species | creatures |
 | 97 | Calder WA 1984, Size, Function, and Life History (book) | scaling of every body function with mass | creatures |
 | 98 | Watson PE, Watson ID, Batt RD 1980, "Total body water volumes for adult males and females estimated from simple anthropometric measurements", Am J Clin Nutr 33:27 | body water from height, mass, age | §6.3, alcohol |
-| 99 | Lanchester FW 1916, Aircraft in Warfare: The Dawn of the Fourth Arm (book) | attrition laws | §6.18 |
+| 99 | Fleeson W 2001, "Toward a structure- and process-integrated view of personality: traits as density distributions of states", J Pers Soc Psychol 80:1011 | each person's behaviour varies around their trait level; how often a person acts against type | Claim (actions) |
 | 100 | Kahneman D, Krueger AB et al. 2004, "A survey method for characterizing daily life experience: the day reconstruction method", Science 306:1776 | how people spend and feel their day | PassTime |

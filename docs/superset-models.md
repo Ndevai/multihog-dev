@@ -61,6 +61,16 @@ Replaces: §6.16 for real places 1940 onward.
 
 Social judgments, emotions, choices, battles, prices, language: each rests on its own measured studies; no single model computes them together. Prices: the Moatsos & de Zwart 2025 basket series is the widest single series (in use).
 
+## 5. Actions against a character's profile (design, 2026-10-13)
+
+A player's stated action is a claim about what the character does, decided by Claim's existing path: base share × the player's justification steps, combined with the model's estimate in log-odds.
+- Profile: Big Five traits (Schmitt et al. 2007 country means), drawn at character creation; plain-English labels map to traits ("hard-working" → conscientiousness, "reads nerd books" → openness/intellect; the two traits are nearly independent, so the label pair does not clash).
+- Base share: how often a person at that trait level acts that way, from the trait as a distribution of momentary states (Fleeson 2001: behaviour varies around the trait mean nearly as much within one person as between people).
+- Situation: how strongly the setting restricts the act (Price & Bouffard 1974 appropriateness ratings; Rauthmann et al. 2014 DIAMONDS); screaming in a calm conversation = act with near-zero appropriateness in that setting.
+- Voice: tone as vocal effort level (normal, raised, loud, shouted; dB from Pearsons et al. 1977), pitch and rate; formants carry vowel identity, not tone.
+- Each turn of justification adds a path step; a chain of plausible steps raises the chance, as in the rare-claim path.
+OPEN: the trait → act frequency table (act-frequency studies); papers 84, 87, 99 in reading-list.md.
+
 ## Order of work
 
 1. BioGears sidecar: build, wrap one HTTP call (state in, actions, state out), map BodySize to patient file, swap §5–6 rules listed above.
