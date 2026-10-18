@@ -43,9 +43,10 @@ export function limbOf(part: string): { comp: string; limb: 'Leg' | 'Arm' } | nu
 }
 const pulsed = (w: Wound) => (w.vessel === 'femoral' || w.vessel === 'limb_artery') && w.bleed > 0 && !w.healed && !!limbOf(w.part);
 
-// Pulse runs at most PULSE_MAX_MIN minutes per PassTime call, about 3–4 min of waiting on a phone [ASSUMED budget; Node:
-// 8.3 s per simulated minute]; beyond that the wound keeps Pulse's last flow and the engine's rules.
-export const PULSE_MAX_MIN = 15;
+// Pulse runs at most PULSE_MAX_MIN minutes and PULSE_BUDGET_MS of real time per PassTime call [ASSUMED budget]: a phone
+// (Android, SillyTavern, 2026-10-18) took 31.1 s per simulated minute, Node 8.2 s; beyond that the wound keeps Pulse's
+// last flow and the engine's rules.
+export const PULSE_MAX_MIN = 15, PULSE_BUDGET_MS = 60_000;
 
 /**
  * Before PassTime: for each human with a bleeding limb artery, runs Pulse for the coming minutes and stores the minute-by-
@@ -74,7 +75,7 @@ export async function prepareBleeding(people: Record<string, Person>, minutes: n
         for (const w of p.wounds.filter(pulsed)) { const c = limbOf(w.part)!.comp; byComp.set(c, Math.min(1, byComp.get(c)! + w.pulseSev!)); }
         await rpc('act', key, { AnyAction: [...byComp].map(([c, s]) => ({ PatientAction: { Hemorrhage: { Compartment: c, Severity: { Scalar0To1: { Value: s } } } } })) });
         p.pulseWounds = p.wounds.filter(pulsed).map(w => w.id);
-        const track = await rpc<Minute[] | null>('run', key, Math.min(minutes, PULSE_MAX_MIN));
+        const track = await rpc<Minute[] | null>('run', key, Math.min(minutes, PULSE_MAX_MIN), PULSE_BUDGET_MS);
         p.pulse = track?.length ? { track: track.map(m => ({ rate: m.rate, hr: m.hr, map: m.map, sys: m.sys, dia: m.dia, rr: m.rr, spo2: m.spo2 })), at: 0 } : null;
     }
 }

@@ -45,11 +45,12 @@ export function stop(key) { const e = engines.get(key); if (e) { M._Deallocate(e
 export function has(key) { return engines.has(key); }
 /** Applies Pulse actions given in Pulse's JSON action format ({ AnyAction: [...] }). */
 export function act(key, actions) { const e = engines.get(key); return !!e && !!call(a => M._ProcessActions(e, a, 0), JSON.stringify(actions)); }
-/** Advances `minutes`, one minute at a time; returns the requested values at the end of each minute. */
-export function run(key, minutes) {
+/** Advances up to `minutes`, one minute at a time, stopping once `budgetMs` of real time is used; returns the requested
+ *  values at the end of each minute. */
+export function run(key, minutes, budgetMs = Infinity) {
     const e = engines.get(key); if (!e) return null;
-    const out = [];
-    for (let i = 0; i < minutes; i++) {
+    const out = [], t0 = Date.now();
+    for (let i = 0; i < minutes && Date.now() - t0 < budgetMs; i++) {
         if (!M._AdvanceTimeS(e, 60)) break;
         const p = M._PullData(e) / 8, v = {};
         KEYS.forEach((k, j) => { v[k] = M.HEAPF64[p + 1 + j]; });

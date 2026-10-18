@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (16), Claude Opus 5.5
+- Checked on the user's phone (/rules-pulse-test): Pulse runs in SillyTavern; values equal Node's (pulse 75/min, 113/74 mmHg, 360 mL at 2 min). Loading 1.2 s, patient 1.0 s, 31.1 s per simulated minute (Node 8.2 s).
+- Changed: each PassTime runs Pulse for at most 60 s of real time (about 2 story minutes on that phone), then the rules continue from Pulse's last flow.
+- Next: precomputed Pulse trajectories (60 min, one bleeding limb, by sex, limb and severity) so the common case costs no waiting.
+
 ## 2026-10-18 (15), Claude Opus 5.5
 - Changed: a bleeding leg or arm artery now runs on Pulse, a full physiology simulation (heart, vessels, lungs, kidneys), compiled to run inside the extension on a phone. Blood flow falls as pressure falls, the heart speeds up, and the narrator gets pulse, blood pressure, breathing and oxygen. Up to 15 story minutes per PassTime are simulated; beyond that the rules continue from Pulse's last flow.
 - Checked (Node): WebAssembly matches native Pulse to 0.1 (leg bleed 0.8: pulse 72 → 107, lost 1,577 mL in 10 min); through PassTime: class II at 5 min, class III at 10 min with flow down to 134 mL/min. Compiles with zero errors.

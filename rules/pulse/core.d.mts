@@ -3,4 +3,4 @@ export function start(key: string, get: (p: string) => Promise<ArrayBuffer>, sta
 export function stop(key: string): void;
 export function has(key: string): boolean;
 export function act(key: string, actions: unknown): boolean;
-export function run(key: string, minutes: number): Record<string, number>[] | null;
+export function run(key: string, minutes: number, budgetMs?: number): Record<string, number>[] | null;
