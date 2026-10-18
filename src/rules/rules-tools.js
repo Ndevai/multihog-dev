@@ -401,7 +401,7 @@ function weatherAt(place, t) {
     // The observed day (ERA5) where it was fetched; the generator otherwise.
     const c = coordsOf(place), obs = c ? cachedDay(c[0], c[1], date.getFullYear(), date.getMonth() + 1, date.getDate()) : null;
     if (obs)
-        return { d: obs.day, tempC: obs.hourlyC[Math.min(23, Math.floor((t % 1440) / 60))], date, observed: { snowCm: obs.snowCm, windMs: obs.windMs, humidity: obs.humidity } };
+        return { d: obs.day, tempC: obs.hourlyC[Math.min(23, Math.floor((t % 1440) / 60))], date, observed: { snowCm: obs.snowCm, windMs: obs.windMs, humidity: obs.humidity, source: obs.source } };
     const year = date.getFullYear(), jan1 = new Date(0, 0, 1);
     jan1.setFullYear(year, 0, 1);
     const doy = Math.min(365, Math.round((date.getTime() - jan1.getTime()) / 864e5) + 1);
@@ -1042,7 +1042,7 @@ export function registerRulesTools(enabled) {
             const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
             const o = w.observed, snowy = o ? o.snowCm > 0 : (d.tmaxC + d.tminC) / 2 <= 1.0;
             const sky = !d.wet ? 'dry' : snowy ? `snow, ${o ? `${Math.round(o.snowCm * 10) / 10} cm` : `${amount} of water`} over the day` : `rain, ${amount} over the day`;
-            const extra = o ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : '';
+            const extra = !o ? '' : o.source === 'ERA5' ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : ' (that day\'s weather as reconstructed from pressure records, 20th Century Reanalysis)';
             return `${place.label}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${sky}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C${extra}.`;
         });
     });
