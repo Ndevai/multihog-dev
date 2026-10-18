@@ -28,7 +28,7 @@ export interface Net { C: number; N: number; R: number; P: number; F: number; E:
 
 export interface Needs {
     waterL: number; kcal: number; awake: number; slept: number; waterDeath: number | null; foodDeath: number | null;
-    work?: number; alcohol?: number;
+    work?: number; alcohol?: number; debt?: number;
 }
 
 /** Immersion: water temperature, speed, which of the 17 JOS-3 segments are under, and how the person is in it. */
@@ -99,6 +99,8 @@ export interface RuleState {
     /** Story clock: the time set with /rules-time (minutes, clock.ts) and the minutes PassTime has run since. */
     clock?: { t: number; add: number };
     latitude?: number;
+    /** Big Five place of each character, z-scores by trait (acts.ts), drawn once when first needed. */
+    traits?: Record<string, Record<string, number>>;
     longitude?: number;
     /** What the scene has fixed for every tool: the last place given (a weather place key), its label and country. */
     setting?: { place?: string; label?: string; country?: string | null };

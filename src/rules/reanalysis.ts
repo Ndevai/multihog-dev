@@ -1,5 +1,5 @@
-// Observed weather of a real day, 1940 to about 5 days ago: ERA5 (Hersbach et al. 2020, Q J R Meteorol Soc 146:1999;
-// 0.25° grid, hourly) through the Open-Meteo historical weather API (free for non-commercial use, no key; CC BY 4.0;
+// Observed weather of a real day, 1940 to about 5 days ago: ERA5 (Hersbach et al. 2020, Q J R Meteorol Soc 146:1999, from
+// 1950; extended back to 1940 by Soci et al. 2024, Q J R Meteorol Soc 150:4014; 0.25° grid, hourly) through the Open-Meteo historical weather API (free for non-commercial use, no key; CC BY 4.0;
 // 600 calls/min, 10,000/day). Local time of the place (timezone=auto). A day without data, a future day or a failed call
 // gives null, and the weather generator (weather.ts) answers instead.
 import type { WeatherDay } from './weather.js';

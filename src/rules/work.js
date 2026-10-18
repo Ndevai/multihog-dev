@@ -1,6 +1,17 @@
 import { aerobicFactor } from './thermal/altitude.js';
 export const TERRAIN = { road: 1.0, 'dirt road': 1.1, 'light brush': 1.2, 'heavy brush': 1.5, swamp: 1.8, 'loose sand': 2.1,
     'snow 15 cm': 2.5, 'snow 25 cm': 3.3, 'snow 35 cm': 4.1 };
+// Walking pace when the story gives none: Tobler's hiking function W = 6·e^(−3.5·|S + 0.05|) km/h, S = slope as rise ÷ run
+// (Tobler 1993, NCGIA Technical Report 93-1, Fig. II, fitted to Imhof 1950); off roads × 0.6. Scaled by normal gait speed
+// for age and sex ÷ Tobler's flat 5.04 km/h (Bohannon & Andrews 2011, Physiotherapy 97:182, Table 2, cm/s: men 20s 135.8,
+// 30s 143.3, 40s 143.4, 50s 143.3, 60s 133.9, 70s 126.2, 80+ 96.8; women 134.1, 133.7, 139.0, 131.3, 124.1, 113.2, 94.3)
+// [ASSUMED: the age-sex ratio carries over to slopes].
+const GAIT = { male: [135.8, 143.3, 143.4, 143.3, 133.9, 126.2, 96.8], female: [134.1, 133.7, 139.0, 131.3, 124.1, 113.2, 94.3] };
+export function walkSpeedKmh(gradePct = 0, terrain = 'dirt road', age = 35, sex = 'male') {
+    const tobler = 6 * Math.exp(-3.5 * Math.abs(gradePct / 100 + 0.05)) * (/road/.test(terrain) ? 1 : 0.6);
+    const g = GAIT[sex === 'female' ? 'female' : 'male'][Math.max(0, Math.min(6, Math.floor(age / 10) - 2))];
+    return tobler * (g * 0.036) / 5.04;
+}
 // Downhill: Pandolf with the negative grade, minus the Santee et al. 2001 correction CF = η [G (W + L) V ÷ 3.5 − (W + L)
 // (G + 6)² ÷ W + 25 − V²] (as recalled; −5 % at 1.34 m/s gives 82 % of level cost, −10 % gives 77 %) [ASSUMED: unverified].
 /** Metabolic rate (W) walking. */

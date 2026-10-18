@@ -115,6 +115,13 @@ export const bloodVolume = (p: Person) => creatureOf(p)?.blood === false ? 0 : p
 const LETHAL_LOSS_ML_KG = 50;
 export const lossFraction = (p: Person) => bloodVolume(p) ? p.lost / bloodVolume(p) : 0;
 
+// Signs by class of blood loss (Gutierrez, Reines & Wulf-Gutierrez 2004, Crit Care 8:373, Table 1).
+const SHOCK_SIGNS = [
+    'pulse under 100, blood pressure normal, breathing 14–20/min, mind normal',
+    'pulse over 100, blood pressure falling, breathing 20–30/min, anxious',
+    'pulse over 120, blood pressure low, breathing 30–40/min, little urine, confused',
+    'pulse over 140, blood pressure low, breathing over 35/min, no urine, lethargic',
+];
 export function bloodClass(p: Person): 1 | 2 | 3 | 4 {
     const f = lossFraction(p);
     return f > 0.4 ? 4 : f >= 0.3 ? 3 : f >= 0.15 ? 2 : 1;
@@ -309,7 +316,13 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
             n.kcal += heat ? heat.kcal : p.workMet ? p.workMet * 1.163 * p.mass * 60 / 4184 : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
-            if (sleeping) { if (++n.slept >= SLEEP_RESET_MIN) n.awake = 0; } else if (!has(p, 'NO_SLEEP')) { n.slept = 0; n.awake += 1; }
+            if (sleeping) {
+                if (n.slept === 0) n.debt = Math.max(0, (n.debt ?? 0) + n.awake / 60 - CRITICAL_WAKE_H);
+                n.slept += 1;
+            } else if (!has(p, 'NO_SLEEP')) {
+                if (n.slept >= SLEEP_WAKE_END_MIN) { n.debt = Math.max(0, (n.debt ?? 0) - Math.max(0, n.slept / 60 - SLEEP_NEED_H)); n.awake = 0; }
+                n.slept = 0; n.awake += 1;
+            }
             // Work done against the maximum acceptable work time (§6.7). At rest or asleep it is paid back as muscle glycogen
             // returns: 5 %/h fed, 2 %/h with over a day's food missing; exhaustion ends at 90 % [ASSUMED].
             // In the water: swimming leisurely 6.0 MET (Compendium of Physical Activities, Ainsworth et al. 2011); keeping afloat by
@@ -379,7 +392,15 @@ export function cast(p: Person, complexity: number): string {
 }
 
 // Rows: < 12 m (0 % below 6 m, straight line to 44 % at 12 m), 12, 15.6, exactly 19.2, above 19.2 (all).
-export function fallDeathChance(height: number, { soft = false, headFirst = false } = {}): number {
+// Age: odds of death × 1.05 per year of age (Lapostolle et al. 2005, Crit Care Med 33:1239, multivariate, 287 falls over 3 m),
+// centred on the sample's mean age 37.2 (41.6 in the 34 % who died, 34.9 in survivors) [centring ASSUMED].
+export function fallDeathChance(height: number, { soft = false, headFirst = false, age }: { soft?: boolean; headFirst?: boolean; age?: number } = {}): number {
+    const base = fallBase(height, soft, headFirst);
+    if (age == null || !Number.isFinite(age) || base <= 0 || base >= 1) return base;
+    const lo = Math.log(base / (1 - base)) + Math.log(1.05) * (age - 37.2);
+    return 1 / (1 + Math.exp(-lo));
+}
+function fallBase(height: number, soft: boolean, headFirst: boolean): number {
     const chances: number[] = [0, ...FALL_ROWS.map(r => r[1]), 1];
     let row = FALL_ROWS.filter(([h]) => height >= h).length;
     if (height > FALL_ROWS.at(-1)![0]) row = chances.length - 1;
@@ -389,7 +410,7 @@ export function fallDeathChance(height: number, { soft = false, headFirst = fals
     return FALL_ROWS[0][1] * (height - 6) / (FALL_ROWS[0][0] - 6);
 }
 
-export function fall(p: Person, height: number, opts: { soft?: boolean; headFirst?: boolean } = {}, rng: Rng = Math.random): string {
+export function fall(p: Person, height: number, opts: { soft?: boolean; headFirst?: boolean; age?: number } = {}, rng: Rng = Math.random): string {
     const chance = fallDeathChance(height, opts);
     console.debug?.('[Rules engine]', `fall ${height} m: death chance ${Math.round(chance * 1000) / 10} %`);
     if (chance > 0 && rng() < chance) { p.dead = 'fall'; return `Fall ${height} m: dies.`; }
@@ -638,7 +659,7 @@ export function status(who: string, p: Person): string {
     else if (p.unconscious) out.push(`${who}: unconscious (${p.unconscious})`);
     const f = lossFraction(p);
     const c = creatureOf(p);
-    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]})` : `${who} (${c?.name ?? p.species}): no blood`);
+    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): no blood`);
     if (p.deathIn !== null) out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
     if (p.red > 0 || p.lost > 0) out.push(`aerobic capacity ${Math.round(vo2avail(p) / vo2max(p) * 100)} % (altitude and missing red cells)`);
     for (const w of p.wounds) {
@@ -665,10 +686,10 @@ export function status(who: string, p: Person): string {
     const reduced = (Object.entries(abilities(p)) as [string, number][]).filter(([, v]) => v < 1);
     if (reduced.length) out.push(`abilities: ${reduced.map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(', ')}`);
     if (p.needs) {
-        const nd = p.needs, pct = nd.waterL / p.mass * 100, hours = nd.awake / 60;
-        if (pct >= 2) out.push(`water lost ${round(nd.waterL, 1)} L (${round(pct)} % of body mass${pct >= 8 ? ': weak, dizzy, faint; heavy exertion fails' : pct >= 5 ? ': headache, irritable, light-headed' : ''})`);
+        const nd = p.needs, pct = nd.waterL / p.mass * 100, hours = wakeHours(p);
+        if (pct >= 2) out.push(`water lost ${round(nd.waterL, 1)} L (${round(pct)} % of body mass${pct >= 8 ? ': weak, dizzy, faint; heavy exertion fails' : pct >= 5 ? ': headache, irritable, light-headed' : ': thirsty'})`);
         if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)`);
-        if (hours >= 10) out.push(`awake ${round(hours)} h: performs like blood alcohol ${round(awakeBac(hours), 3)} %`);
+        if (hours >= 10) out.push(`awake ${round(nd.awake / 60)} h${(nd.debt ?? 0) >= 1 ? ` plus ${round(nd.debt ?? 0)} h of sleep debt` : ''}: performs like blood alcohol ${round(awakeBac(hours), 3)} %${(nd.debt ?? 0) >= 1 ? '; feels less sleepy than that (sleepiness rises little under chronic restriction)' : ''}`);
         if ((nd.alcohol ?? 0) > 0) out.push(`blood alcohol ${round(nd.alcohol ?? 0, 3)} %`);
     }
     if ((p.needs?.work ?? 0) > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs!.work! * 100)} % of what can be kept up`);
@@ -716,18 +737,28 @@ const APNEA_DEATH_MIN = 5;
 // Survival (Tipton & Montgomery 2025, Exp Physiol "The physiology of survival: fluid and food"): net water loss 1.5 L/day at
 // rest, 4 L/day active or in heat; water lost 5 % of body mass → headache, light-headedness; 8 % → performance significantly
 // impaired; death at 15–20 %. Energy use 1400 kcal/day at rest, 2400 active; total starvation kills in 40–60 days.
-// Awake hours (NIOSH, from Dawson & Reid 1997): 17 h ≈ BAC 0.05 %, 24 h ≈ 0.10 %. Sleep of 7 h (AASM adult minimum) resets.
+// Awake hours (NIOSH, from Dawson & Reid 1997): 17 h ≈ BAC 0.05 %, 24 h ≈ 0.10 %.
+// Sleep debt (Van Dongen et al. 2003, Sleep 26:117): performance follows cumulative wake beyond a critical 15.84 h a day
+// (daily sleep need 8.16 h); 14 nights of 6 h equal 1 night without sleep, of 4 h 2 nights. On falling asleep the wake
+// beyond 15.84 h is added to the debt (wake under it pays back); sleep beyond 8.16 h pays back hour for hour [ASSUMED: the
+// paper gives no recovery rate]. A sleep of 1 h or more ends the wake spell [ASSUMED]. Impairment uses wake + debt.
+// Thirst begins at a water loss of 2 % of body mass, where plasma osmolality has risen about 2 % (Cheuvront et al.,
+// "Physiologic basis for understanding quantitative dehydration assessment", Am J Clin Nutr; loss by sweat or no drinking).
 const WATER_L_DAY = { rest: 1.5, active: 4 };
 const KCAL_DAY = { rest: 1400, active: 2400 };
-const SLEEP_RESET_MIN = 7 * 60;
+const SLEEP_WAKE_END_MIN = 60, CRITICAL_WAKE_H = 15.84, SLEEP_NEED_H = 8.16;
 // Other body masses scale water and energy use by (mass ÷ 70 kg)^0.75 (Kleiber's metabolic scaling law).
 const kleiber = (p: Person) => (p.mass / 70) ** 0.75;
-// Alertness: impairment as blood-alcohol level = drinking (Widmark: grams ÷ (0.68 × body g) × 100, eliminated 0.015 %/h)
+// Alertness: impairment as blood-alcohol level = drinking (Widmark: grams ÷ (0.68 × body g) × 100, eliminated 0.015 %/h, the
+// population mean for moderate drinkers; range 0.010–0.035 %/h, 0.015–0.020 fed, 0.025–0.035 in alcoholics: Jones 2010,
+// Forensic Sci Int 200:1)
 // + hours awake. Odds of failing × the crash odds ratio exp(40.7 × BAC^1.345), the curve through NHTSA 2015 (Compton & Berning,
 // case-control) adjusted odds ratios 2.07 at 0.05 % and 3.93 at 0.08 %, and 1 at 0.
 const WIDMARK_R = 0.68, ELIM_PER_MIN = 0.015 / 60;
 export const crashRisk = (bac: number) => Math.exp(40.7 * Math.max(0, bac) ** 1.345);
-export const impairmentBac = (p: Person) => (p.needs?.alcohol || 0) + awakeBac((p.needs?.awake || 0) / 60);
+export const impairmentBac = (p: Person) => (p.needs?.alcohol || 0) + awakeBac(wakeHours(p));
+/** Hours awake now plus sleep debt carried from short nights. */
+export const wakeHours = (p: Person) => (p.needs?.awake || 0) / 60 + (p.needs?.debt || 0);
 export const awakeBac = (h: number) => Math.max(0, 0.05 + (h - 17) * 0.05 / 7);
 // Flight speed of a shot: 47.23 m/s, a 102 g arrow from a 144 lbf yew self bow (Stretton et al. 2010), for every launcher.
 const SHOT_MPS = 47.23;
@@ -1237,7 +1268,7 @@ export function communicate(sp: string, s: Person, ls: string, l: Person, { mean
 }
 
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
-const waterStage = (p: Person) => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 2 : pct >= 5 ? 1 : 0; };
+const waterStage = (p: Person) => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 3 : pct >= 5 ? 2 : pct >= 2 ? 1 : 0; };
 type Watch = ReturnType<typeof watch>;
 const watch = (p: Person) => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
@@ -1253,7 +1284,7 @@ function changes(who: string, a: Watch, b: Watch): string[] {
         if (b.cls > a.cls) out.push(`${who} reaches blood-loss class ${['I', 'II', 'III', 'IV'][b.cls - 1]}`);
         if (b.dying && !a.dying) out.push(`${who} is dying`);
         if (a.out && !b.out) out.push(`${who} comes to`);
-        if (b.thirst > a.thirst) out.push(`${who} is ${b.thirst === 2 ? 'severely dehydrated (8 % of body mass)' : 'dehydrated (5 % of body mass)'}`);
+        if (b.thirst > a.thirst) out.push(`${who} is ${b.thirst === 3 ? 'severely dehydrated (8 % of body mass)' : b.thirst === 2 ? 'dehydrated (5 % of body mass)' : 'thirsty (2 % of body mass lost)'}`);
         if (!a.out && b.out) out.push(`${who} loses consciousness (${b.out})`);
         for (const id of b.infected) if (!a.infected.includes(id)) out.push(`${who}: wound ${id} is infected`);
         if (b.sepsis && !a.sepsis) out.push(`${who}: the infection has reached the blood (sepsis)`);

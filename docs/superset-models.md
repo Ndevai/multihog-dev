@@ -69,7 +69,7 @@ A player's stated action is a claim about what the character does, decided by Cl
 - Situation: how strongly the setting restricts the act (Price & Bouffard 1974 appropriateness ratings; Rauthmann et al. 2014 DIAMONDS); screaming in a calm conversation = act with near-zero appropriateness in that setting.
 - Voice: tone as vocal effort level (normal, raised, loud, shouted; dB from Pearsons et al. 1977), pitch and rate; formants carry vowel identity, not tone.
 - Each turn of justification adds a path step; a chain of plausible steps raises the chance, as in the rare-claim path.
-OPEN: the trait → act frequency table (act-frequency studies); papers 84, 87, 99 in reading-list.md.
+BUILT 2026-10-17 (acts.ts, Claim kind "something the character chooses to do now"; df-body-engine.md §6.9) from Fleeson 2001 Table 4 and Price & Bouffard 1974 Table 1. OPEN: a measured act frequency by trait level (Buss & Craik 1980, J Pers 48:379; 1981, J Pers 49:174); Rauthmann et al. 2014 (DIAMONDS) and Schmitt et al. 2007 country means not in hand; Buss & Craik 1983 gives category base rates only.
 
 ## Order of work
 

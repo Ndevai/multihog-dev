@@ -14,6 +14,7 @@ export function loadPopulation() {
         fetch(new URL('../../rules/isco.json', import.meta.url)).then(r => r.json()).then(d => { ISCO = d; }),
         fetch(new URL('../../rules/oww.json', import.meta.url)).then(r => r.json()).then(d => { OWW = d; }),
         fetch(new URL('../../rules/religion.json', import.meta.url)).then(r => r.json()).then(d => { FAITH = d.shares; }),
+        fetch(new URL('../../rules/compendium.json', import.meta.url)).then(r => r.json()).then(d => { COMPENDIUM = d; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
 }
@@ -100,7 +101,19 @@ export function faithShare(faith, country, year) {
 // Survival: share of people alive at age `from` who are still alive at age `to`, l(to)/l(from), from the national life
 // table of the person's sex nearest the year (Human Life-Table Database, 2026 release: 131 countries, England, Scotland, Wales, Northern Ireland and East Germany, 1751–2024; l(x) at
 // 0, 1, 5, …, 100, log-linear between the table's ages). A period table stands for the person's own cohort [ASSUMED].
+// Before the life tables (they start 1751): the Siler hazard a1·e^(−b1 x) + a2 + a3·e^(b3 x) fitted to Sweden 1751–59, the
+// only agrarian population in Gurven & Kaplan 2007 (Popul Dev Rev 33:321, Table 2: a1 0.400, b1 1.074, a2 0.008, a3 2.01e-4,
+// b3 0.083; both sexes; gives l15 0.607, l45 0.435 against the table's 0.60, 0.43). Used for story years before 1751 when
+// no table lies within 25 years [ASSUMED: one agrarian schedule for all places and sexes].
+const SILER = { a1: 0.400, b1: 1.074, a2: 0.008, a3: 2.01e-4, b3: 0.083 };
+const silerL = (x) => Math.exp(-((SILER.a1 / SILER.b1) * (1 - Math.exp(-SILER.b1 * x)) + SILER.a2 * x + (SILER.a3 / SILER.b3) * (Math.exp(SILER.b3 * x) - 1)));
 export function survival(country, sex, year, from, to) {
+    const r = survivalTable(country, sex, year, from, to);
+    if (r || year === null || year >= 1751)
+        return r;
+    return { share: Math.min(1, silerL(Math.min(110, to)) / silerL(Math.max(0, from))), country: 'a pre-industrial farming population', years: 'Siler fit to Sweden 1751–59' };
+}
+function survivalTable(country, sex, year, from, to) {
     const t = LIFE?.tables, c = t && country ? pick(Object.keys(t), country) : null;
     if (!c || year === null)
         return null;
@@ -177,4 +190,35 @@ export function wageByTrade(trade, country, year) {
         return { error: `${c} ${near}: no figure for ${trade} (ISCO-88 ${codes.join(', ')}).` };
     const usd = v.reduce((t, x) => t + x, 0) / v.length;
     return { codes, usd, relative: usd / median, year: near, country: c };
+}
+// Activities: the 2024 Adult Compendium of Physical Activities (Herrmann et al. 2024, J Sport Health Sci 13:6; table PDF from
+// pacompendium.com, 1,111 of its 1,114 rows parsed): code, MET, heading, description. 1 MET ≈ 1 kcal/kg/h; adults 19–59.
+// An activity named in words takes the row sharing the most of its words (a word matches a longer one it begins, "horse" →
+// "horseback"), ties broken by how informative the shared words are (log of rows ÷ rows containing the word), then by the
+// shorter description; half or fewer of the words matched gives none, and the narrator gives met [matching ASSUMED].
+let COMPENDIUM = [];
+let WORDS = [], DF = new Map();
+const stem = (x) => x.replace(/(ing|ed|es|s)$/, '');
+const hit = (q, d) => d === q || (q.length >= 4 && d.startsWith(q));
+export function activityMet(text) {
+    if (WORDS.length !== COMPENDIUM.length) {
+        WORDS = COMPENDIUM.map(r => [...new Set(fold(r[3]).split(' ').filter(x => x.length > 2).map(stem))]);
+        DF = new Map();
+        for (const ws of WORDS)
+            for (const x of ws)
+                DF.set(x, (DF.get(x) ?? 0) + 1);
+    }
+    const w = [...new Set(fold(text).split(' ').filter(x => x.length > 2 && !['the', 'and', 'with', 'for', 'into', 'from'].includes(x)).map(stem))];
+    if (!w.length)
+        return null;
+    let best = -1, key = [0, 0, 0];
+    COMPENDIUM.forEach((r, i) => {
+        const m = w.filter(x => WORDS[i].some(d => hit(x, d)));
+        const k = [m.length, m.reduce((t, x) => t + Math.log(COMPENDIUM.length / (DF.get(x) ?? 1)), 0), -r[3].length];
+        if (k[0] > key[0] || (k[0] === key[0] && (k[1] > key[1] || (k[1] === key[1] && k[2] > key[2])))) {
+            best = i;
+            key = k;
+        }
+    });
+    return best >= 0 && key[0] * 2 > w.length ? { met: COMPENDIUM[best][1], code: COMPENDIUM[best][0], description: COMPENDIUM[best][3] } : null;
 }

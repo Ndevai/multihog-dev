@@ -37,9 +37,18 @@ export const LASTS_H = {
     'fears-confirmed': 2.3, relief: 0.8, disappointment: 2.0, pride: 24, 'self-reproach': 4.0, appreciation: 1.5, reproach: 1.5,
     gratitude: 6.0, anger: 24, gratification: 24, remorse: 4.0, disliking: 0.8,
 };
-/** The typical duration in words, without the figure. */
-export function lastsWords(type) {
-    const h = LASTS_H[type];
+// The same medians by the paper's own 27 emotion words, for when the narrator names the feeling (Fig. 1 bottom left). The OCC
+// type fear above takes Verduyn's anxiety (a feared prospect, 4 h); fear of a present threat is 1 h.
+export const EMOTION_HOURS = {
+    shame: 0.5, relief: 0.8, disgust: 0.8, 'being touched': 0.9, surprise: 1.0, boredom: 1.0, fear: 1.0, admiration: 1.5,
+    irritation: 1.5, compassion: 1.5, disappointment: 2.0, jealousy: 2.0, hatred: 2.0, desperation: 2.3, stress: 2.5,
+    relaxation: 2.8, contentment: 3.0, anxiety: 4.0, guilt: 4.0, humiliation: 5.0, gratitude: 6.0, joy: 6.0, anger: 24,
+    pride: 24, enthusiasm: 24, hope: 27, sadness: 48,
+};
+export const EMOTION_WORDS = Object.keys(EMOTION_HOURS);
+/** The typical duration in words, without the figure; `word` (one of EMOTION_WORDS) takes precedence over the OCC type. */
+export function lastsWords(type, word) {
+    const h = (word ? EMOTION_HOURS[word] : undefined) ?? LASTS_H[type];
     if (h == null)
         return '';
     return h < 1 ? 'it usually fades within the hour' : h < 12 ? 'it usually lasts some hours' : h < 36 ? 'it usually lasts about a day' : 'it usually lasts days';

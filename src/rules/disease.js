@@ -4,7 +4,27 @@
 export const INCUBATION = {
     chickenpox: [14 * 24, 1.14], 'serum hepatitis': [100 * 24, 1.24], 'bacterial food poisoning': [2.3, 1.48],
     salmonellosis: [2.4 * 24, 1.47], poliomyelitis: [12.6 * 24, 1.50], 'amoebic dysentery': [21.4 * 24, 2.11],
+    // Respiratory viruses: median days and dispersion of the fitted log-normal (Lessler et al. 2009, Lancet Infect Dis 9:291,
+    // Table 3). Influenza A without the one experimental-infection study, which the table footnote sets apart (with it 1.4 d, 1.51).
+    adenovirus: [5.6 * 24, 1.26], 'common cold coronavirus': [3.2 * 24, 1.15], SARS: [4.0 * 24, 1.81],
+    'influenza A': [1.9 * 24, 1.23], 'influenza B': [0.6 * 24, 1.51], parainfluenza: [2.6 * 24, 1.35],
+    'respiratory syncytial virus': [4.4 * 24, 1.24], rhinovirus: [1.9 * 24, 1.68], measles: [12.5 * 24, 1.23],
 };
+// Share of a whole population killed by historical epidemics, as ranges (Alfani & Murphy 2017, J Econ Hist 77:314, Table 1);
+// a value is drawn uniformly within the range [ASSUMED].
+export const EPIDEMICS = {
+    'Antonine plague (smallpox), 160–180': { where: 'the Roman Empire', low: 0.10, high: 0.30 },
+    'Plague of Cyprian, 249–270': { where: 'the Roman Empire', low: 0.15, high: 0.25 },
+    'Plague of Justinian, 540–541': { where: 'the Mediterranean (50 % in Egypt and other dense areas)', low: 0.25, high: 0.50 },
+    'Black Death, 1347–1352': { where: 'Europe and the Mediterranean', low: 0.35, high: 0.60 },
+    'plague of 1623–1632, northern Italy': { where: 'northern Italy', low: 0.30, high: 0.35 },
+    'plague of 1623–1632, Switzerland': { where: 'Switzerland', low: 0.20, high: 0.25 },
+    'plague of 1623–1632, southern Germany, Rhineland, Alsace': { where: 'southern Germany, the Rhineland and Alsace', low: 0.12, high: 0.15 },
+    'plague of 1623–1632, Dutch Republic': { where: 'the Dutch Republic', low: 0.08, high: 0.11 },
+    'plague of 1647–1657, Kingdom of Naples': { where: 'the Kingdom of Naples', low: 0.30, high: 0.43 },
+    'plague of 1647–1657, Catalonia': { where: 'Catalonia', low: 0.15, high: 0.20 },
+};
+export const EPIDEMIC_NAMES = Object.keys(EPIDEMICS);
 // Basic reproduction number R0, middle of the range in Smieszek 2009 (Theor Biol Med Model 6:11, Table 1, citing Anderson
 // & May 1991 for chickenpox 7–12, and later reviews for measles 15–17, mumps 10–12, whooping cough 15–17). Influenza (R0 2–3)
 // is left out: the homogeneous final-size equation gives about 89 % infected, far above observed attack rates.

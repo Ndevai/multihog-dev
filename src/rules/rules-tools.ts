@@ -6,7 +6,7 @@ import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { drawPerson } from './census.js';
 import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock, recalls } from './knowledge.js';
-import { ABOUT, MATTERS, TYPES, occTypes, lastsWords } from './emotion.js';
+import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './emotion.js';
 import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
 import { observedDay, cachedDay } from './reanalysis.js';
@@ -15,11 +15,13 @@ import type { Place } from './weather.js';
 import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET_ONLY, basketWage } from './prices.js';
 import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
-import { DISEASES, INCUBATION, R0, incubationHours, attackShare } from './disease.js';
+import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, levelZ, stateShare, settingRatio } from './acts.js';
+import type { Trait } from './acts.js';
+import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES } from './disease.js';
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
-import { TERRAIN, pandolf, runWatts, metOf } from './work.js';
+import { TERRAIN, pandolf, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
@@ -27,7 +29,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
-import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
+import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
 import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
@@ -632,6 +634,7 @@ export function registerRulesTools(enabled: boolean): void {
         immersion_suit: { type: 'boolean', description: 'Clothing is a dry suit or immersion suit that keeps water out' },
         face_covered: { type: 'boolean', description: 'Face covered (mask, balaclava, scarf over the face). Default false' },
         met: { type: 'number', description: 'Activity in METs for the whole span when fixed (Compendium of Physical Activities values: sleeping 0.95, sitting quietly 1.3, walking 3 mph 3.5). Omit to follow PassTime (sleeping 0.95, resting 1.3, active 3.5)' },
+        activity: str('What the characters are doing, in plain words ("chopping wood", "sitting in a lecture", "rowing a boat"), when met is not given: code takes the Compendium value'),
         altitude_m: { type: 'number', description: 'Altitude above sea level, m, whenever it changes by 500 m or more. 0 = sea level' },
         sudden_ascent: { type: 'boolean', description: 'Arrived at this altitude within minutes (aircraft, magic, a fall upward) rather than by climbing' },
         decompression: { type: 'boolean', description: 'A pressurized cabin or enclosure suddenly opened at this altitude (breath torn out; shorter time conscious)' },
@@ -646,8 +649,10 @@ export function registerRulesTools(enabled: boolean): void {
         longitude: { type: 'number', description: 'Longitude, with latitude' },
     }, ['who'], async a => {
         if (a.weather_place) await prefetchWeather(findPlace(a.weather_place, a.latitude, a.longitude), storyNow(store().state));
+        const act = a.met == null && a.activity ? activityMet(a.activity) : null;
+        if (act) a = { ...a, met: act.met };
         return run(st => {
-        const out = [];
+        const out: string[] = act ? [`Activity: ${act.description} (${act.met} MET, Compendium ${act.code}).`] : a.activity && a.met == null ? [`No Compendium activity matches "${a.activity}"; give met to set it.`] : [];
         for (const name of a.who) {
             const { p, error } = who(st, name);
             if (!p) { out.push(error); continue; }
@@ -769,6 +774,7 @@ export function registerRulesTools(enabled: boolean): void {
         praiseworthy: { type: 'boolean', description: 'For an action: the character judges it praiseworthy (false: blameworthy)' },
         result_for_them: { type: 'string', enum: ['good', 'bad', 'none'], description: 'For an action: what its result means for the character. Default none.' },
         appealing: { type: 'boolean', description: 'For a person or thing encountered: the character finds it appealing' },
+        emotion_word: { type: 'string', enum: EMOTION_WORDS, description: 'The plain word for the feeling when one fits (fear = a present threat; anxiety = a feared prospect)' },
     }, ['who', 'about', 'matters'], a => run(() => {
         const types = occTypes({ about: a.about, good: a.good !== false, wants: a.wants_it_for_them !== false, cameTrue: a.came_true !== false,
             praiseworthy: a.praiseworthy !== false, result: a.result_for_them ?? 'none', appealing: a.appealing !== false });
@@ -777,7 +783,7 @@ export function registerRulesTools(enabled: boolean): void {
         const strong = a.matters === MATTERS[2];
         const words = (t: string) => { const w = TYPES[t].words.split(', '), h = Math.ceil(w.length / 2); return (strong ? w.slice(h - 1) : w.slice(0, h)).join(', '); };
         const [main, ...with_] = types;
-        const lasts = lastsWords(main);
+        const lasts = lastsWords(main, a.emotion_word);
         return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
 
@@ -879,13 +885,21 @@ export function registerRulesTools(enabled: boolean): void {
         return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg.`;
     }));
 
-    tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, or how many people in a community fall ill over the whole outbreak.', {
+    tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, how many people in a community fall ill over the whole outbreak, or what share of a population a historical epidemic (Antonine plague to the plagues of the 1600s) kills.', {
         disease: { type: 'string', enum: DISEASES },
-        question: { type: 'string', enum: ['when symptoms start', 'how many fall ill'] },
+        question: { type: 'string', enum: ['when symptoms start', 'how many fall ill', 'how many die in a historical epidemic'] },
+        epidemic: { type: 'string', enum: EPIDEMIC_NAMES, description: 'For "how many die in a historical epidemic"' },
         who: str('For "when symptoms start": the character who caught it'),
         population: { type: 'number', description: 'For "how many fall ill": people in the community who mix with each other' },
         immune_share: { type: 'number', description: 'Share 0–1 already immune (had it before or vaccinated). Default 0.' },
-    }, ['disease', 'question'], a => run((st, rng) => {
+    }, ['question'], a => run((st, rng) => {
+        if (a.question === 'how many die in a historical epidemic') {
+            const e = a.epidemic ? EPIDEMICS[a.epidemic] : null;
+            if (!e) return `Give epidemic: ${EPIDEMIC_NAMES.join('; ')}.`;
+            const share = e.low + (e.high - e.low) * rng(), n = Number(a.population) || 0;
+            return `${a.epidemic}: it kills ${Math.round(share * 100)} % of the people of ${e.where}${n ? ` — ${Math.round(share * n)} of ${n} here` : ''} (recorded range ${Math.round(e.low * 100)}–${Math.round(e.high * 100)} %).`;
+        }
+        if (!a.disease) return 'Give disease.';
         if (a.question === 'when symptoms start') {
             if (!INCUBATION[a.disease]) return `No incubation data for ${a.disease}. Diseases with data: ${Object.keys(INCUBATION).join(', ')}.`;
             const h = incubationHours(a.disease, () => gauss(rng)) ?? 0;
@@ -985,7 +999,13 @@ export function registerRulesTools(enabled: boolean): void {
     tool('Claim', 'Decide whether something a player\'s message states about their own character holds, when the story has not established it: what the character is, an item they have, an ability of body or skill, something that happened to them before, something outside their control happening to them now (a slip, a faint, a cramp). Permission comes from the people who give it (SocialResponse or Choose); what a place allows comes from the scene and the world\'s facts. Returns whether it holds; either way it is recorded and stays.', {
         who: str('The player\'s character making the claim'),
         claim: str('The claim, one short sentence ("Mary is a cat", "Mary has a pistol in her coat", "the cellar door is unlocked")'),
-        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before', 'something happening to the character now', 'something the character knows'] },
+        kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before', 'something happening to the character now', 'something the character knows', 'something the character chooses to do now'] },
+        trait: { type: 'string', enum: TRAITS, description: 'For "something the character chooses to do now": the personality trait the act expresses (shouting, partying: extraversion; insulting, fighting: agreeableness, low pole; slacking off: conscientiousness, low pole; panicking, crying: emotional stability, low pole; reading, questioning: intellect)' },
+        trait_level: { type: 'string', enum: LEVELS, description: 'The character\'s place on that trait among people, when the story has shown it ("hard-working": conscientiousness high). Otherwise leave out: code draws it once and keeps it.' },
+        act_pole: { type: 'string', enum: POLES, description: 'With trait: whether the act shows much of the trait or little of it' },
+        act_strength: { type: 'string', enum: STRENGTHS, description: 'With trait: mild (a raised voice) or strong (screaming)' },
+        behaviour: { type: 'string', enum: BEHAVIOURS, description: 'With trait, when one fits: the act as one of these' },
+        situation: { type: 'string', enum: SETTINGS, description: 'With behaviour, when one fits: the setting as one of these' },
         in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world: real history for the date, plus [WORLD] (orcs in a world whose book has orcs; a revolver after 1836). False: the claim does not hold.' },
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
@@ -1051,10 +1071,21 @@ export function registerRulesTools(enabled: boolean): void {
         if (lives) a = { ...a, base_share: Math.max(0.001, lives.share) as unknown as string };
         const speaks = a.kind === 'something the character can do' && a.language ? speakShare(a.language, st.setting?.country, y) : null;
         if (speaks) a = { ...a, base_share: Math.max(0.001, speaks.share) as unknown as string };
+        // An act of the character's own choosing: the share of their hours spent in states at the act's level (Fleeson 2001),
+        // scaled by how fitting the act is in the setting against its average fit (Price & Bouffard 1974) [scaling ASSUMED].
+        let act: { share: number; z: number; rating: number | null } | null = null;
+        if (a.kind === 'something the character chooses to do now' && a.trait) {
+            const prof = ((st.traits ??= {})[a.who] ??= {});
+            if (a.trait_level) prof[a.trait] = levelZ(a.trait_level);
+            prof[a.trait] ??= Math.max(-2.5, Math.min(2.5, gauss(rng)));
+            const z = prof[a.trait], set = settingRatio(a.behaviour, a.situation);
+            act = { share: Math.min(0.99, stateShare(a.trait as Trait, z, (a.act_pole ?? POLES[0]) as typeof POLES[number], (a.act_strength ?? 'mild') as typeof STRENGTHS[number]) * set.ratio), z, rating: set.rating };
+            a = { ...a, base_share: Math.max(0.001, act.share) as unknown as string };
+        }
         const rare = shareOf(a.base_share) <= 0.05 || !!far || !!absent || !!foreign;
         if ((far || absent || foreign) && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
-        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${faith ? ` (${Math.round(faith.share * 1000) / 10} % of people in ${faith.country}, ${faith.year}, are ${a.faith})` : ''}${lives ? ` (${Math.round(lives.share * 1000) / 10} % live from ${Number(a.alive_at) || 0} to ${a.lived_to}, ${lives.country} life table ${lives.years})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
+        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${faith ? ` (${Math.round(faith.share * 1000) / 10} % of people in ${faith.country}, ${faith.year}, are ${a.faith})` : ''}${lives ? ` (${Math.round(lives.share * 1000) / 10} % live from ${Number(a.alive_at) || 0} to ${a.lived_to}, ${lives.country} life table ${lives.years})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}${act ? ` (someone at ${a.who}'s level of ${a.trait} acts this way in ${Math.round(act.share * 1000) / 10} % of moments${act.rating !== null ? `; ${a.behaviour} rated ${act.rating} of 9 for fit ${a.situation === 'own room' ? 'in one\'s own room' : `at ${a.situation}`}` : ''}; each step that makes it fit raises the chance)` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;
@@ -1346,11 +1377,11 @@ export function registerRulesTools(enabled: boolean): void {
             type: 'array',
             description: 'Characters walking or marching during this time, with pace, load and ground; sets their energy use, heat and distance covered',
             items: { type: 'object', properties: {
-                who: str('Character'), speed_kmh: { type: 'number', description: 'Walking speed, km/h (stroll 3, normal 5, brisk 6.5)' },
+                who: str('Character'), speed_kmh: { type: 'number', description: 'Walking speed, km/h, when the story sets it (stroll 3, brisk 6.5); otherwise leave out: code takes the normal pace for the slope, ground, age and sex' },
                 load_kg: { type: 'number', description: 'Carried load, kg' }, grade_pct: { type: 'number', description: 'Slope, % (uphill positive)' },
                 terrain: { type: 'string', enum: Object.keys(TERRAIN) },
                 running: { type: 'boolean', description: 'Running rather than walking' },
-            }, required: ['who', 'speed_kmh'] },
+            }, required: ['who'] },
         },
     }, ['minutes'], a => run((st, rng) => {
         const asked = Math.max(0, Math.round(a.minutes));
@@ -1358,9 +1389,11 @@ export function registerRulesTools(enabled: boolean): void {
         for (const w of a.walking || []) {
             const p = st.people?.[w.who];
             if (!p) continue;
-            try { p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, w.speed_kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass); }
+            if (w.running && w.speed_kmh == null) return `Give speed_kmh for ${w.who}'s running. Nothing recorded.`;
+            const kmh = w.speed_kmh ?? walkSpeedKmh(w.grade_pct ?? 0, w.terrain ?? 'dirt road', p.age ?? 35, p.sex ?? 'male');
+            try { p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass); }
             catch (e) { return `${(e as Error).message} Nothing recorded.`; }
-            walkers.push([w.who, p, w.speed_kmh]);
+            walkers.push([w.who, p, kmh]);
         }
         // Characters outdoors at a weather station: time runs in hour steps, each taking the air temperature at its start.
         const t0 = storyNow(st), weathered = t0 !== null && Object.values(st.people || {}).some(p => p.weather && p.env);
@@ -1396,10 +1429,11 @@ export function registerRulesTools(enabled: boolean): void {
         height_m: { type: 'number', description: 'Height fallen, m' },
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
         head_first: { type: 'boolean', description: 'Landed head first' },
+        age: { type: 'number', description: 'Age in years, when known' },
     }, ['who', 'height_m'], a => run((st, rng) => {
         const { p, error } = whoAny(st, a.who, a.species);
         if (!p) return error;
-        return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first }, rng);
+        return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first, age: a.age == null ? undefined : Number(a.age) }, rng);
     }));
 
     tool('BodyStatus', 'Read a character\'s body and network state.', {
