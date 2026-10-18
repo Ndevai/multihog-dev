@@ -19,11 +19,8 @@ async function rpc(op, ...args) {
         return direct.start(args[0], get, args[1]);
     return direct[op](...args);
 }
-// Severity (0–1) to the rate a limb bleeds in the first 10 s, measured on Pulse's StandardMale (Node sweep, 2026-10-18):
-// leg 0.1→19, 0.2→41, 0.3→66, 0.4→95, 0.5→125, 0.6→157, 0.7→189, 0.8→219, 0.9→246, 1.0→269 mL/min; arm 5, 11, 19, 27,
-// 36, 46, 56, 65, 74, 82. A wound's drawn rate is turned into the severity that starts at it; rates above severity 1
-// (a femoral cut drawn at 300–600 mL/min) bleed at severity 1, Pulse's widest opening of that limb [ASSUMED: Pulse's limit].
-const FLOW = { Leg: [0, 19, 41, 66, 95, 125, 157, 189, 219, 246, 269], Arm: [0, 5, 11, 19, 27, 36, 46, 56, 65, 74, 82] };
+const FLOW = { Leg: [0, 19, 41, 66, 95, 125, 157, 189, 219, 246, 269], Arm: [0, 5, 11, 19, 27, 36, 46, 56, 65, 74, 82],
+    Aorta: [0, 369, 749, 1109, 1507, 1912, 2321, 2646, 3004, 3239, 3420], Muscle: [0, 59, 129, 209, 298, 396, 497, 599, 696, 784, 857] };
 export function severityFor(limb, mlMin) {
     const f = FLOW[limb];
     if (mlMin >= f[10])
@@ -31,16 +28,21 @@ export function severityFor(limb, mlMin) {
     const i = f.findIndex(x => x >= mlMin);
     return i <= 0 ? 0 : (i - 1 + (mlMin - f[i - 1]) / (f[i] - f[i - 1])) / 10;
 }
-/** The Pulse compartment of a wounded limb, from the body part's name; null for parts Pulse's limbs do not cover. */
-export function limbOf(part) {
+/** The Pulse compartment of a wound, from the body part's name and vessel: limbs by side; the trunk's major arteries
+ *  (the engine's 300–600 mL/min class) to the aorta and its other arteries to Pulse's muscle compartment [ASSUMED
+ *  mapping]; null for parts Pulse does not cover (head, neck: no carotid compartment). */
+export function limbOf(part, vessel) {
     const t = part.toLowerCase(), side = /left/.test(t) ? 'Left' : 'Right';
     if (/leg|thigh|foot|knee|shin|calf|ankle|toe/.test(t))
         return { comp: `${side}Leg`, limb: 'Leg' };
     if (/arm|hand|elbow|wrist|finger|thumb|shoulder/.test(t))
         return { comp: `${side}Arm`, limb: 'Arm' };
+    if (/upper body|lower body|chest|abdomen|belly|torso|back|pelvis/.test(t))
+        return vessel === 'femoral' ? { comp: 'Aorta', limb: 'Aorta' } : { comp: 'Muscle', limb: 'Muscle' };
     return null;
 }
-const pulsed = (w) => (w.vessel === 'femoral' || w.vessel === 'limb_artery') && w.bleed > 0 && !w.healed && !!limbOf(w.part);
+const site = (w) => limbOf(w.part, w.vessel);
+const pulsed = (w) => (w.vessel === 'femoral' || w.vessel === 'limb_artery') && w.bleed > 0 && !w.healed && !!site(w);
 // Pulse runs at most PULSE_MAX_MIN minutes and PULSE_BUDGET_MS of real time per PassTime call [ASSUMED budget]: a phone
 // (Android, SillyTavern, 2026-10-18) took 31.1 s per simulated minute, Node 8.2 s; beyond that the wound keeps Pulse's
 // last flow and the engine's rules.
@@ -51,9 +53,11 @@ async function tables() {
     return TABLES;
 }
 export function tableTrack(t, sex, limb, sev, from, n) {
-    const runs = t.tables[sex === 'female' ? 'Female' : 'Male'][limb];
-    const x = Math.max(0.1, Math.min(1, sev)) * 10 - 1, i = Math.min(8, Math.floor(x)), f = x - i, a = runs[i], b = runs[i + 1];
-    const end = Math.round(a.length + (b.length - a.length) * f), scale = sev < 0.1 ? sev / 0.1 : 1;
+    const { sev: grid, runs } = t.tables[sex === 'female' ? 'Female' : 'Male'][limb];
+    const lo = grid[0], hi = grid[grid.length - 1], v0 = Math.max(lo, Math.min(hi, sev));
+    const i = Math.max(0, Math.min(grid.length - 2, grid.findIndex((g, k) => v0 >= g && v0 <= grid[k + 1])));
+    const f = (v0 - grid[i]) / (grid[i + 1] - grid[i]), a = runs[i], b = runs[i + 1];
+    const end = Math.round(a.length + (b.length - a.length) * f), scale = sev < lo ? sev / lo : 1;
     const out = [];
     for (let m = from; m < Math.min(end, from + n); m++) {
         const ra = a[Math.min(m, a.length - 1)], rb = b[Math.min(m, b.length - 1)], v = ra.map((y, k) => y + (rb[k] - y) * f);
@@ -67,10 +71,10 @@ export async function prepareBleeding(people, minutes) {
         return;
     const t = await tables();
     for (const [, p] of todo) {
-        const ws = p.wounds.filter(pulsed), comps = new Set(ws.map(w => limbOf(w.part).comp)), ids = ws.map(w => w.id).sort().join();
+        const ws = p.wounds.filter(pulsed), comps = new Set(ws.map(w => site(w).comp)), ids = ws.map(w => w.id).sort().join();
         // One bleeding limb and no live engine for this person: the precomputed run, from the minute the bleed has reached.
-        if (t && comps.size === 1 && (!p.pulseTab || p.pulseTab.ids === ids) && !p.pulseWounds?.length) {
-            const limb = limbOf(ws[0].part).limb;
+        if (t && comps.size === 1 && t.tables.Male[site(ws[0]).limb] && (!p.pulseTab || p.pulseTab.ids === ids) && !p.pulseWounds?.length) {
+            const limb = site(ws[0]).limb;
             for (const w of ws)
                 w.pulseSev ??= severityFor(limb, w.bleed);
             p.pulseTab ??= { ids, limb, sev: Math.min(1, ws.reduce((s2, w) => s2 + w.pulseSev, 0)), minute: 0 };
@@ -101,10 +105,10 @@ export async function prepareBleeding(people, minutes) {
         // limb is sent each time, 0 where nothing bleeds, so a tourniquet or pressure ends the flow in Pulse too.
         for (const w of p.wounds.filter(pulsed))
             if (w.pulseSev == null || fresh)
-                w.pulseSev = severityFor(limbOf(w.part).limb, w.bleed);
-        const byComp = new Map(['LeftLeg', 'RightLeg', 'LeftArm', 'RightArm'].map(c => [c, 0]));
+                w.pulseSev = severityFor(site(w).limb, w.bleed);
+        const byComp = new Map(['LeftLeg', 'RightLeg', 'LeftArm', 'RightArm', 'Aorta', 'Muscle'].map(c => [c, 0]));
         for (const w of p.wounds.filter(pulsed)) {
-            const c = limbOf(w.part).comp;
+            const c = site(w).comp;
             byComp.set(c, Math.min(1, byComp.get(c) + w.pulseSev));
         }
         await rpc('act', key, { AnyAction: [...byComp].map(([c, s]) => ({ PatientAction: { Hemorrhage: { Compartment: c, Severity: { Scalar0To1: { Value: s } } } } })) });

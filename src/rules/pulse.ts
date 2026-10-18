@@ -27,21 +27,29 @@ async function rpc<T>(op: string, ...args: unknown[]): Promise<T> {
 // leg 0.1→19, 0.2→41, 0.3→66, 0.4→95, 0.5→125, 0.6→157, 0.7→189, 0.8→219, 0.9→246, 1.0→269 mL/min; arm 5, 11, 19, 27,
 // 36, 46, 56, 65, 74, 82. A wound's drawn rate is turned into the severity that starts at it; rates above severity 1
 // (a femoral cut drawn at 300–600 mL/min) bleed at severity 1, Pulse's widest opening of that limb [ASSUMED: Pulse's limit].
-const FLOW: Record<'Leg' | 'Arm', number[]> = { Leg: [0, 19, 41, 66, 95, 125, 157, 189, 219, 246, 269], Arm: [0, 5, 11, 19, 27, 36, 46, 56, 65, 74, 82] };
-export function severityFor(limb: 'Leg' | 'Arm', mlMin: number): number {
+// Trunk (same sweep): Aorta 0.1→369, 0.2→749, 0.3→1,109, 0.5→1,912, 1.0→3,420 mL/min; Muscle 0.1→59, 0.2→129, 0.3→209,
+// 0.4→298, 0.5→396, 1.0→857.
+type Site = 'Leg' | 'Arm' | 'Aorta' | 'Muscle';
+const FLOW: Record<Site, number[]> = { Leg: [0, 19, 41, 66, 95, 125, 157, 189, 219, 246, 269], Arm: [0, 5, 11, 19, 27, 36, 46, 56, 65, 74, 82],
+    Aorta: [0, 369, 749, 1109, 1507, 1912, 2321, 2646, 3004, 3239, 3420], Muscle: [0, 59, 129, 209, 298, 396, 497, 599, 696, 784, 857] };
+export function severityFor(limb: Site, mlMin: number): number {
     const f = FLOW[limb];
     if (mlMin >= f[10]) return 1;
     const i = f.findIndex(x => x >= mlMin);
     return i <= 0 ? 0 : (i - 1 + (mlMin - f[i - 1]) / (f[i] - f[i - 1])) / 10;
 }
-/** The Pulse compartment of a wounded limb, from the body part's name; null for parts Pulse's limbs do not cover. */
-export function limbOf(part: string): { comp: string; limb: 'Leg' | 'Arm' } | null {
+/** The Pulse compartment of a wound, from the body part's name and vessel: limbs by side; the trunk's major arteries
+ *  (the engine's 300–600 mL/min class) to the aorta and its other arteries to Pulse's muscle compartment [ASSUMED
+ *  mapping]; null for parts Pulse does not cover (head, neck: no carotid compartment). */
+export function limbOf(part: string, vessel?: string): { comp: string; limb: Site } | null {
     const t = part.toLowerCase(), side = /left/.test(t) ? 'Left' : 'Right';
     if (/leg|thigh|foot|knee|shin|calf|ankle|toe/.test(t)) return { comp: `${side}Leg`, limb: 'Leg' };
     if (/arm|hand|elbow|wrist|finger|thumb|shoulder/.test(t)) return { comp: `${side}Arm`, limb: 'Arm' };
+    if (/upper body|lower body|chest|abdomen|belly|torso|back|pelvis/.test(t)) return vessel === 'femoral' ? { comp: 'Aorta', limb: 'Aorta' } : { comp: 'Muscle', limb: 'Muscle' };
     return null;
 }
-const pulsed = (w: Wound) => (w.vessel === 'femoral' || w.vessel === 'limb_artery') && w.bleed > 0 && !w.healed && !!limbOf(w.part);
+const site = (w: Wound) => limbOf(w.part, w.vessel);
+const pulsed = (w: Wound) => (w.vessel === 'femoral' || w.vessel === 'limb_artery') && w.bleed > 0 && !w.healed && !!site(w);
 
 // Pulse runs at most PULSE_MAX_MIN minutes and PULSE_BUDGET_MS of real time per PassTime call [ASSUMED budget]: a phone
 // (Android, SillyTavern, 2026-10-18) took 31.1 s per simulated minute, Node 8.2 s; beyond that the wound keeps Pulse's
@@ -59,16 +67,18 @@ export const PULSE_MAX_MIN = 15, PULSE_BUDGET_MS = 60_000;
 // is where Pulse reached an irreversible state (male leg: 50 min at 0.5, 23 min at 1.0; female leg: 57 min at 0.4, 20 min at
 // 1.0; arms: none within 60 min). Between grid severities values are linear, and the end of a shorter run too; below 0.1
 // the 0.1 run with flow and loss scaled down [ASSUMED]. These cost no waiting; live Pulse is for two or more bleeding limbs.
-type Tables = { cols: string[]; tables: Record<string, Record<string, number[][][]>> };
+type Tables = { cols: string[]; tables: Record<string, Record<string, { sev: number[]; runs: number[][][] }>> };
 let TABLES: Tables | null = null;
 async function tables(): Promise<Tables | null> {
     TABLES ??= await fetch(new URL('bleed.json', BASE)).then(r => r.ok ? r.json() : null).catch(() => null);
     return TABLES;
 }
-export function tableTrack(t: Tables, sex: string, limb: 'Leg' | 'Arm', sev: number, from: number, n: number) {
-    const runs = t.tables[sex === 'female' ? 'Female' : 'Male'][limb];
-    const x = Math.max(0.1, Math.min(1, sev)) * 10 - 1, i = Math.min(8, Math.floor(x)), f = x - i, a = runs[i], b = runs[i + 1];
-    const end = Math.round(a.length + (b.length - a.length) * f), scale = sev < 0.1 ? sev / 0.1 : 1;
+export function tableTrack(t: Tables, sex: string, limb: Site, sev: number, from: number, n: number) {
+    const { sev: grid, runs } = t.tables[sex === 'female' ? 'Female' : 'Male'][limb];
+    const lo = grid[0], hi = grid[grid.length - 1], v0 = Math.max(lo, Math.min(hi, sev));
+    const i = Math.max(0, Math.min(grid.length - 2, grid.findIndex((g, k) => v0 >= g && v0 <= grid[k + 1])));
+    const f = (v0 - grid[i]) / (grid[i + 1] - grid[i]), a = runs[i], b = runs[i + 1];
+    const end = Math.round(a.length + (b.length - a.length) * f), scale = sev < lo ? sev / lo : 1;
     const out: (Minute & { last?: boolean })[] = [];
     for (let m = from; m < Math.min(end, from + n); m++) {
         const ra = a[Math.min(m, a.length - 1)], rb = b[Math.min(m, b.length - 1)], v = ra.map((y, k) => y + (rb[k] - y) * f);
@@ -82,10 +92,10 @@ export async function prepareBleeding(people: Record<string, Person>, minutes: n
     if (!todo.length || minutes <= 0) return;
     const t = await tables();
     for (const [, p] of todo) {
-        const ws = p.wounds.filter(pulsed), comps = new Set(ws.map(w => limbOf(w.part)!.comp)), ids = ws.map(w => w.id).sort().join();
+        const ws = p.wounds.filter(pulsed), comps = new Set(ws.map(w => site(w)!.comp)), ids = ws.map(w => w.id).sort().join();
         // One bleeding limb and no live engine for this person: the precomputed run, from the minute the bleed has reached.
-        if (t && comps.size === 1 && (!p.pulseTab || p.pulseTab.ids === ids) && !p.pulseWounds?.length) {
-            const limb = limbOf(ws[0].part)!.limb;
+        if (t && comps.size === 1 && t.tables.Male[site(ws[0])!.limb] && (!p.pulseTab || p.pulseTab.ids === ids) && !p.pulseWounds?.length) {
+            const limb = site(ws[0])!.limb;
             for (const w of ws) w.pulseSev ??= severityFor(limb, w.bleed);
             p.pulseTab ??= { ids, limb, sev: Math.min(1, ws.reduce((s2, w) => s2 + w.pulseSev!, 0)), minute: 0 };
             const tr = tableTrack(t, p.sex ?? 'male', limb, p.pulseTab.sev, p.pulseTab.minute, minutes);
@@ -107,9 +117,9 @@ export async function prepareBleeding(people: Record<string, Person>, minutes: n
         if (!fresh && same && p.pulse && p.pulse.at < p.pulse.track.length) continue;
         // A wound's severity is fixed when Pulse first sees it (its drawn rate then); a stopped wound drops out, and every
         // limb is sent each time, 0 where nothing bleeds, so a tourniquet or pressure ends the flow in Pulse too.
-        for (const w of p.wounds.filter(pulsed)) if (w.pulseSev == null || fresh) w.pulseSev = severityFor(limbOf(w.part)!.limb, w.bleed);
-        const byComp = new Map<string, number>(['LeftLeg', 'RightLeg', 'LeftArm', 'RightArm'].map(c => [c, 0]));
-        for (const w of p.wounds.filter(pulsed)) { const c = limbOf(w.part)!.comp; byComp.set(c, Math.min(1, byComp.get(c)! + w.pulseSev!)); }
+        for (const w of p.wounds.filter(pulsed)) if (w.pulseSev == null || fresh) w.pulseSev = severityFor(site(w)!.limb, w.bleed);
+        const byComp = new Map<string, number>(['LeftLeg', 'RightLeg', 'LeftArm', 'RightArm', 'Aorta', 'Muscle'].map(c => [c, 0]));
+        for (const w of p.wounds.filter(pulsed)) { const c = site(w)!.comp; byComp.set(c, Math.min(1, byComp.get(c)! + w.pulseSev!)); }
         await rpc('act', key, { AnyAction: [...byComp].map(([c, s]) => ({ PatientAction: { Hemorrhage: { Compartment: c, Severity: { Scalar0To1: { Value: s } } } } })) });
         p.pulseWounds = p.wounds.filter(pulsed).map(w => w.id);
         const track = await rpc<Minute[] | null>('run', key, Math.min(minutes, PULSE_MAX_MIN), PULSE_BUDGET_MS);
