@@ -98,3 +98,49 @@ export function describe(q: string, tempC = 20): string {
     const probs = [...(e?.hazards ?? []), ...(r ? checkCompound(r) : [])];
     return parts.join('; ') + '.' + (probs.length ? ` Notes: ${probs.join('; ')}.` : '');
 }
+
+// Fuels described by their elements (docs/df-body-engine.md §6.19). Higher heating value, dry, MJ/kg = 0.3491 C + 1.1783 H
+// + 0.1005 S − 0.1034 O − 0.0151 N − 0.0211 ash (wt %; Channiwala & Parikh 2002, Fuel 81:1051). Check: the 5 fuels of
+// rules/fuels.json within 3 % of their measured values; 74 pure compounds here, median 2.7 %, 90 % within 10.2 %. Wet fuel:
+// HHV × (1 − w); lower heating value = HHV_wet − 2.443 MJ/kg × (water present + water formed from its hydrogen, 8.937 × H)
+// (latent heat of water at 25 °C). Check: clean wood at 50 % moisture, ash 1.3 %: HHV 9.6, LHV 7.7 measured (Synthetic
+// Fuels Handbook Table D.3).
+export interface Elements { C: number; H: number; O: number; N?: number; S?: number; ash?: number }
+export function heatingValue(el: Elements, moisturePct = 0): { hhvDry: number; hhvWet: number; lhvWet: number } {
+    const ash = el.ash ?? 0, scale = (100 - ash) / 100; // elements given dry ash-free → dry basis
+    const C = el.C * scale, H = el.H * scale, O = el.O * scale, N = (el.N ?? 0) * scale, S = (el.S ?? 0) * scale;
+    const hhvDry = 0.3491 * C + 1.1783 * H + 0.1005 * S - 0.1034 * O - 0.0151 * N - 0.0211 * ash;
+    const w = Math.min(Math.max(moisturePct, 0), 100) / 100, hhvWet = hhvDry * (1 - w);
+    return { hhvDry, hhvWet, lhvWet: hhvWet - 2.443 * (w + 8.937 * H / 100 * (1 - w)) };
+}
+let FUELS: { name: string; C: number; H: number; O: number; N: number; S: number; hhv: number }[] | null = null;
+export async function loadFuels() { FUELS ??= (await (await fetch(new URL('../../rules/fuels.json', import.meta.url))).json()).fuels; }
+export const fuelRows = () => FUELS ?? [];
+
+/** A fuel by name (rules/fuels.json) at a moisture and ash; heat per kg, wet. */
+export function describeFuel(name: string, moisturePct = 0, ashPct = 0): string | null {
+    const f = FUELS?.find(x => x.name === name.trim().toLowerCase()); if (!f) return null;
+    const h = heatingValue({ ...f, ash: ashPct }, moisturePct);
+    return `${f.name} (C ${f.C} %, H ${f.H} %, O ${f.O} % of the dry, ash-free fuel), ${moisturePct} % water, ${ashPct} % ash: gives ${h.lhvWet.toFixed(1)} MJ per kg burnt in practice (water leaves as steam), ${h.hhvWet.toFixed(1)} MJ/kg if the steam is condensed; dry ash-free it would give ${f.hhv.toFixed(1)} MJ/kg (measured; its elements give ${h.hhvDry.toFixed(1)} at this ash).${moisturePct > 0 && h.lhvWet <= 0 ? ' Too wet to keep burning on its own.' : ''}`;
+}
+
+/** A mixture of compounds by mass, "ethanol 40%, water 60%": each part's state, the heat of the whole, its elements. */
+export function describeMixture(text: string, tempC = 20): string {
+    const parts = text.split(/[,;+]/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^(.*?)\s+([\d.]+)\s*%$/); return m ? { q: m[1], w: Number(m[2]) } : null; });
+    if (parts.some(p => !p)) return `Give a mixture as "name share%, name share%" by mass (e.g. "ethanol 40%, water 60%").`;
+    const total = parts.reduce((s, p) => s + p!.w, 0);
+    if (Math.abs(total - 100) > 0.5) return `The shares add up to ${total} %, not 100 %; nothing computed.`;
+    let heat = 0; const els: Record<string, number> = {}, lines: string[] = [];
+    for (const p of parts) {
+        const r = findCompound(p!.q); if (!r) return `"${p!.q}" is not in the compound table; nothing computed.`;
+        const f = parseFormula(r.f), M = molarMass(r.f), h = heatFromFormation(r);
+        for (const [e, n] of Object.entries(f)) els[e] = (els[e] ?? 0) + p!.w * n * molarMassOf(e) / M;
+        const burns = o2Mol(r.f) > 0 && r.f !== 'H2O';
+        if (burns && h) heat += p!.w / 100 * h.kJmol / M;
+        const T = tempC + 273.15, st = r.Tb != null && r.Tm != null ? (T >= r.Tb ? 'gas' : T >= r.Tm ? 'liquid' : 'solid') : '?';
+        lines.push(`${r.n} ${p!.w} % (${st} on its own${burns ? (h ? `, ${(h.kJmol / M).toFixed(1)} kJ/g` : ', heat unknown') : ', does not burn'})`);
+    }
+    const elText = Object.entries(els).sort((a, b) => b[1] - a[1]).map(([e, v]) => `${e} ${v.toFixed(1)} %`).join(', ');
+    return `Mixture: ${lines.join('; ')}. Burnt completely it gives ${heat.toFixed(1)} kJ per g of mixture (water in it only takes heat away). Elements by mass: ${elText}. Boiling, flash point and fire limits of a mixture need its vapour pressures, which the engine does not have yet; each part's own values are in Substance for that part.`;
+}
+const molarMassOf = (e: string) => molarMass(e);

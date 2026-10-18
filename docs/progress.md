@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (24), Claude Opus 5.5
+- Added: solid fuels from their elements (wood, peat, lignite, coal, refuse), with water and ash; mixtures of compounds by mass. Substance takes both.
+- Checked: heat from elements within 3 % of 5 measured fuels, median 2.7 % on 74 compounds; wet wood 8.0 vs 7.7 MJ/kg measured.
+- Not done: mixture boiling and flash points (vapour pressures); kerosene, petrol as sets of compounds.
+
 ## 2026-10-18 (23), Claude Opus 5.5
 - Added: 3796 compounds with measured physical data (boiling, melting, flash and ignition points, fire limits, heat of formation), each checked against physics and against its structure; boiling points estimated from structure where unmeasured (Joback + Stein–Brown); new narrator tool Substance.
 - Checked: structure reader on 3381 compounds, no errors, formulas all match RDKit; boiling estimate mean error 21.8 K on 1854; heats of burning from two independent sources agree to 0.01 % (61 compounds); 14 contradictions and 194 suspect values found in the data.
