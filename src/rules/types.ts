@@ -73,7 +73,9 @@ export interface Person {
     unconscious?: string | null; apnea?: number | null; drowning?: boolean; paralysed?: boolean; exhausted?: boolean;
     needs?: Needs; env?: Env | null; thermal?: ThermalState; weather?: string | null; workMet?: number | null;
     /** Pulse: minute-by-minute flow and vital signs prepared for the coming PassTime, and wounds already applied to its engine. */
-    pulse?: { track: { rate: number; hr: number; map: number; sys: number; dia: number; rr: number; spo2: number }[]; at: number } | null; pulseWounds?: number[];
+    pulse?: { track: { rate: number; hr: number; map: number; sys: number; dia: number; rr: number; spo2: number; dies?: boolean }[]; at: number; table?: boolean } | null; pulseWounds?: number[];
+    /** A bleed run from the precomputed Pulse tables: its wounds, limb, severity and the minute reached. */
+    pulseTab?: { ids: string; limb: 'Leg' | 'Arm'; sev: number; minute: number } | null;
     /** Vital signs at the end of the last Pulse minute. */
     pulseLast?: { hr: number; map: number; sys: number; dia: number; rr: number; spo2: number } | null;
     altitude?: Altitude | null; acclim?: number; baseAlt?: number | null;

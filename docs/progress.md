@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (17), Claude Opus 5.5
+- Changed: a single bleeding leg or arm now reads precomputed Pulse runs (40 runs: 2 sexes × 2 limbs × 10 severities × 60 minutes), so it costs no waiting on the phone; Pulse decides death (a cut femoral artery at severity 0.8 kills a man in 27 min, 2.94 L lost). Live Pulse remains for two or more bleeding limbs, within 60 s per PassTime.
+- Fixed: a stopped bleed ended its Pulse track only at the track's end; it now ends at once, and the old vital signs are cleared.
+- Checked (harness): the femoral case above; a tourniquet at 4 min holds the loss at 0.66 L. Compiles with zero errors.
+- Next: the character's own body (sex is used; height, mass, age not yet), trunk vessels.
+
 ## 2026-10-18 (16), Claude Opus 5.5
 - Checked on the user's phone (/rules-pulse-test): Pulse runs in SillyTavern; values equal Node's (pulse 75/min, 113/74 mmHg, 360 mL at 2 min). Loading 1.2 s, patient 1.0 s, 31.1 s per simulated minute (Node 8.2 s).
 - Changed: each PassTime runs Pulse for at most 60 s of real time (about 2 story minutes on that phone), then the rules continue from Pulse's last flow.

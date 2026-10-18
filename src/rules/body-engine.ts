@@ -345,16 +345,22 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
         // Limb arteries: the flow Pulse computed for this minute (pulse.ts), while its track lasts; then each such wound keeps
         // its share of Pulse's last flow under the engine's rules.
         let bleeding = p.wounds.reduce((s, w) => s + w.bleed, 0);
+        // A stopped bleed (pressure, tourniquet) ends the Pulse track at once.
+        if ((p.pulse || p.pulseLast) && !p.wounds.some(pulseWound)) { p.pulse = null; p.pulseLast = null; }
         if (p.pulse && p.pulse.at < p.pulse.track.length) {
             const m = p.pulse.track[p.pulse.at++], ws = p.wounds.filter(pulseWound), own = ws.reduce((s, w) => s + w.bleed, 0);
             bleeding += m.rate - own;
-            const { rate: _r, ...vitals } = m; p.pulseLast = vitals;
+            const { rate: _r, dies, ...vitals } = m; p.pulseLast = vitals;
             for (const w of ws) w.bleed = round(own > 0 ? m.rate * w.bleed / own : m.rate / ws.length, 1);
+            if (p.pulse.table && p.pulseTab) p.pulseTab.minute++;
             if (p.pulse.at >= p.pulse.track.length) p.pulse = null;
+            // Pulse's irreversible state at the end of a precomputed run is death from blood loss.
+            if (dies) { p.lost += bleeding; p.dead = 'blood loss'; return; }
         }
         p.lost += bleeding;
         if (p.lost >= LETHAL_LOSS_ML_KG * p.mass) { p.lost = LETHAL_LOSS_ML_KG * p.mass; p.dead = 'blood loss'; return; }
-        if (bloodClass(p) === 4) {
+        // While a Pulse run carries the bleed, Pulse decides when it kills; the class IV timer is for the rules' own bleeds.
+        if (bloodClass(p) === 4 && !p.pulse && !(p.pulseTab && p.wounds.some(pulseWound))) {
             const mode = bleeding > 0 ? 'bleeding' : 'stopped';
             if (p.deathIn === null || p.deathMode !== mode) p.deathIn = mode === 'bleeding' ? Math.round(between(rng, [30, 60])) : 120;
             p.deathMode = mode;

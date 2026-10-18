@@ -54,11 +54,48 @@ export const PULSE_MAX_MIN = 15, PULSE_BUDGET_MS = 60_000;
  * Hemorrhage action at its severity. Pulse's state lives in memory: after a page reload the engine restarts from the
  * stabilised patient with the wounds re-applied [ASSUMED: earlier loss is carried by the engine's own count].
  */
+// Precomputed Pulse runs (rules/pulse/bleed.json): one bleeding limb (right leg or arm; the left taken as the same), StandardMale
+// or StandardFemale, severity 0.1 to 1.0 in steps of 0.1, the values at the end of each of 60 minutes; a run that ends early
+// is where Pulse reached an irreversible state (male leg: 50 min at 0.5, 23 min at 1.0; female leg: 57 min at 0.4, 20 min at
+// 1.0; arms: none within 60 min). Between grid severities values are linear, and the end of a shorter run too; below 0.1
+// the 0.1 run with flow and loss scaled down [ASSUMED]. These cost no waiting; live Pulse is for two or more bleeding limbs.
+type Tables = { cols: string[]; tables: Record<string, Record<string, number[][][]>> };
+let TABLES: Tables | null = null;
+async function tables(): Promise<Tables | null> {
+    TABLES ??= await fetch(new URL('bleed.json', BASE)).then(r => r.ok ? r.json() : null).catch(() => null);
+    return TABLES;
+}
+export function tableTrack(t: Tables, sex: string, limb: 'Leg' | 'Arm', sev: number, from: number, n: number) {
+    const runs = t.tables[sex === 'female' ? 'Female' : 'Male'][limb];
+    const x = Math.max(0.1, Math.min(1, sev)) * 10 - 1, i = Math.min(8, Math.floor(x)), f = x - i, a = runs[i], b = runs[i + 1];
+    const end = Math.round(a.length + (b.length - a.length) * f), scale = sev < 0.1 ? sev / 0.1 : 1;
+    const out: (Minute & { last?: boolean })[] = [];
+    for (let m = from; m < Math.min(end, from + n); m++) {
+        const ra = a[Math.min(m, a.length - 1)], rb = b[Math.min(m, b.length - 1)], v = ra.map((y, k) => y + (rb[k] - y) * f);
+        out.push({ hr: v[0], map: v[1], sys: v[2], dia: v[3], rr: v[4], spo2: v[5], volume: 0, rate: v[6] * scale, lost: v[7] * scale, last: m === end - 1 && end < 60 });
+    }
+    return out;
+}
+
 export async function prepareBleeding(people: Record<string, Person>, minutes: number): Promise<void> {
     const todo = Object.entries(people).filter(([, p]) => !p.dead && p.species === 'HUMAN' && p.wounds.some(pulsed));
     if (!todo.length || minutes <= 0) return;
+    const t = await tables();
+    for (const [, p] of todo) {
+        const ws = p.wounds.filter(pulsed), comps = new Set(ws.map(w => limbOf(w.part)!.comp)), ids = ws.map(w => w.id).sort().join();
+        // One bleeding limb and no live engine for this person: the precomputed run, from the minute the bleed has reached.
+        if (t && comps.size === 1 && (!p.pulseTab || p.pulseTab.ids === ids) && !p.pulseWounds?.length) {
+            const limb = limbOf(ws[0].part)!.limb;
+            for (const w of ws) w.pulseSev ??= severityFor(limb, w.bleed);
+            p.pulseTab ??= { ids, limb, sev: Math.min(1, ws.reduce((s2, w) => s2 + w.pulseSev!, 0)), minute: 0 };
+            const tr = tableTrack(t, p.sex ?? 'male', limb, p.pulseTab.sev, p.pulseTab.minute, minutes);
+            p.pulse = tr.length ? { track: tr.map(m => ({ rate: m.rate, hr: m.hr, map: m.map, sys: m.sys, dia: m.dia, rr: m.rr, spo2: m.spo2, ...(m.last ? { dies: true } : {}) })), at: 0, table: true } : null;
+        } else if (p.pulseTab) p.pulse = null;   // a precomputed run whose wounds changed: the rules carry on [ASSUMED]
+    }
+    const live = todo.filter(([, p]) => !p.pulseTab);
+    if (!live.length) return;
     await rpc('boot');
-    for (const [who, p] of todo) {
+    for (const [who, p] of live) {
         const key = `${who}`;
         const fresh = !(await rpc<boolean>('has', key));
         if (fresh && !(await rpc<boolean>('start', key, p.sex === 'female' ? 'StandardFemale@0s.json.gz' : 'StandardMale@0s.json.gz'))) continue;
