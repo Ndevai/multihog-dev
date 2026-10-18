@@ -175,6 +175,11 @@ export function findPlace(text: string | undefined, lat?: number, lon?: number):
 }
 
 /** Days 1..`days` of one year at a place key from findPlace (a bare WGEN station name is accepted too). */
+/** Country of a place key from findPlace (WMO cities only). */
+export function placeCountry(key: string): string | null {
+    return key.startsWith('wmo:') ? NORMALS[Number(key.slice(4))]?.[1] ?? null : null;
+}
+
 export function simulatePlaceYear(key: string, days: number, rng: Rng): WeatherDay[] | null {
     if (key.startsWith('wmo:')) { const n = NORMALS[Number(key.slice(4))]; return n ? simulateNormalsYear(n, days, rng) : null; }
     const st = key.startsWith('wgen:') ? key.slice(5) : key;

@@ -8,7 +8,7 @@ import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock, recalls } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './emotion.js';
 import { skyLight } from './sky.js';
-import { findPlace, simulatePlaceYear, hourTemp } from './weather.js';
+import { findPlace, simulatePlaceYear, hourTemp, placeCountry } from './weather.js';
 import { observedDay, cachedDay } from './reanalysis.js';
 import { NORMALS } from './data/wmo-normals.js';
 import type { Place } from './weather.js';
@@ -16,6 +16,7 @@ import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET
 import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
 import { WATER_SOURCES, drinkWater } from './waterborne.js';
+import { pigment } from './pigment.js';
 import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, levelZ, stateShare, settingRatio } from './acts.js';
 import type { Trait } from './acts.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES, deathCause } from './disease.js';
@@ -30,7 +31,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
-import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, neverMarriedShare, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
+import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, neverMarriedShare, climateShift, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
 import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
@@ -414,7 +415,9 @@ function weatherAt(place: string, t: number | null): { d: WeatherDay; tempC: num
     const doy = Math.min(365, Math.round((date.getTime() - jan1.getTime()) / 864e5) + 1);
     const days = simulatePlaceYear(place, doy, seededRng(`${store().salt}:weather:${place}:${year}`));
     if (!days) return null;
-    const d = days[days.length - 1];
+    // A past month runs warmer or colder than the 1991–2020 normals by the country's recorded anomaly (population.ts).
+    const off = climateShift(placeCountry(place), year, date.getMonth() + 1) ?? 0, g = days[days.length - 1];
+    const d = off ? { ...g, tmaxC: g.tmaxC + off, tminC: g.tminC + off } : g;
     return { d, tempC: hourTemp(d, (t % 1440) / 60), date };
 }
 
@@ -874,7 +877,7 @@ export function registerRulesTools(enabled: boolean): void {
         return n ? `${a.who}: first name ${n}.` : 'US name data cover births 1910–2029.';
     }));
 
-    tool('BodySize', 'Decide the height and body mass of an adult character the story has not described, before describing them, from their country, sex and birth year. Records the mass for the body rules.', {
+    tool('BodySize', 'Decide the height and body mass of an adult character the story has not described, before describing them, from their country, sex and birth year; eye and hair colour too where the country has data (15 European and Central Asian countries). Records the mass for the body rules.', {
         who: str('The character'),
         country: str('Country the character grew up in (present-day name, e.g. United Kingdom, Nigeria, Japan). Default: the country of the last place given.'),
         sex: { type: 'string', enum: ['male', 'female'] },
@@ -892,7 +895,8 @@ export function registerRulesTools(enabled: boolean): void {
         const { p, error } = who(st, a.who, a.species);
         if (!p) return error;
         p.mass = Math.round(r.massKg); p.sex = a.sex; p.age ??= year - a.birth_year; p.bmiZ = r.bmiZ;
-        return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg.`;
+        const col = pigment(country, rng), looks = [col.eyes && `${col.eyes} eyes`, col.hair && `${col.hair} hair`].filter(Boolean).join(', ');
+        return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg${looks ? `, ${looks}` : ''}.`;
     }));
 
     tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, how many people in a community fall ill over the whole outbreak, or what share of a population a historical epidemic (Antonine plague to the plagues of the 1600s) kills.', {

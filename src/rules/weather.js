@@ -177,6 +177,10 @@ export function findPlace(text, lat, lon) {
     return { key: `wmo:${best}`, label: `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2], lon: n[3], country: n[1] };
 }
 /** Days 1..`days` of one year at a place key from findPlace (a bare WGEN station name is accepted too). */
+/** Country of a place key from findPlace (WMO cities only). */
+export function placeCountry(key) {
+    return key.startsWith('wmo:') ? NORMALS[Number(key.slice(4))]?.[1] ?? null : null;
+}
 export function simulatePlaceYear(key, days, rng) {
     if (key.startsWith('wmo:')) {
         const n = NORMALS[Number(key.slice(4))];

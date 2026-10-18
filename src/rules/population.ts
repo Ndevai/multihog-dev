@@ -24,6 +24,7 @@ export function loadPopulation(): Promise<void> {
         fetch(new URL('../../rules/oww.json', import.meta.url)).then(r => r.json()).then(d => { OWW = d; }),
         fetch(new URL('../../rules/religion.json', import.meta.url)).then(r => r.json()).then(d => { FAITH = d.shares; }),
         fetch(new URL('../../rules/compendium.json', import.meta.url)).then(r => r.json()).then(d => { COMPENDIUM = d; }),
+        fetch(new URL('../../rules/berkeley.json', import.meta.url)).then(r => r.json()).then(d => { BERKELEY = d; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
 }
@@ -233,4 +234,17 @@ export function neverMarriedShare(country: string | null | undefined, sex: strin
     if (age <= mids[0]) pct = v[0];
     else for (let i = 0; i < mids.length - 1; i++) if (age <= mids[i + 1]) { pct = v[i] + (v[i + 1] - v[i]) * (age - mids[i]) / (mids[i + 1] - mids[i]); break; }
     return { share: pct / 100, country: c, year: y };
+}
+
+// The climate of past months: Berkeley Earth land-surface temperature by country (Rohde & Hausfather 2020, Earth Syst Sci Data
+// 12:3469; regional files of the January 2021 run, 143 countries, monthly 1750–2020 where coverage allows), as the month's
+// anomaly against that calendar month's 1991–2020 mean, the base period of the WMO normals the generator uses. Months whose
+// 95 % uncertainty exceeds 2 °C are left out [ASSUMED].
+let BERKELEY: Record<string, [number, (number | null)[][]]> = {};
+export function climateShift(country: string | null | undefined, year: number, month: number): number | null {
+    if (!country) return null;
+    const c = BERKELEY[country] ? country : pick(Object.keys(BERKELEY), country);
+    const r = c ? BERKELEY[c] : null;
+    const row = r ? r[1][year - r[0]] : null;
+    return row?.[month - 1] ?? null;
 }
