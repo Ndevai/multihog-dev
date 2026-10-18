@@ -712,6 +712,9 @@ export function registerRulesTools(enabled) {
         intake(p, a);
         return status(a.who, p);
     }));
+    // A strong feeling raises the voice: peak speech level of 48 women students enacting a message, strong minus weak intensity,
+    // anger +4.46 dB, liking +1.19 dB (Kimble, Forte & Yoshikawa 1981, J Pers 49:271, Table 2, mean of camera and person targets).
+    const FEELING_DB = { 'intense anger': 4.46, 'intense affection': 1.19 };
     tool('Communicate', 'Decide what a message carries from one character to another (speech or gesture) before narrating a reply or reaction. Returns whether the words, only the tone, or nothing reaches the listener.', {
         speaker: str('Character sending the message'),
         listener: str('Character receiving it'),
@@ -719,6 +722,7 @@ export function registerRulesTools(enabled) {
         lit: { type: 'boolean', description: 'Enough light to see a gesture. Default true.' },
         distance_m: { type: 'number', description: 'Distance between them, m. Default 1.' },
         effort: { type: 'string', enum: ['whisper', 'normal', 'raised', 'loud', 'shout'], description: 'Vocal effort. Default normal.' },
+        feeling: { type: 'string', enum: ['intense anger', 'intense affection'], description: 'When the speaker voices a strong feeling: it raises the voice within the chosen effort' },
         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between them. Default none.' },
         speaker_species: str('Speaker\'s DF creature when the engine has no record of them yet.'),
@@ -749,7 +753,7 @@ export function registerRulesTools(enabled) {
         // A speaker without voice whispers at every effort: a whisper, or a loud whisper when they raise it.
         const effort = s.p.voice === 'whisper' ? (!a.effort || a.effort === 'normal' || a.effort === 'whisper' ? 'whisper' : 'loud whisper') : a.effort ?? 'normal';
         const langs = [s.p.languages?.map(x => stageKey(x, year)), l.p.languages?.map(x => stageKey(x, year))];
-        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none', louder_db: a.feeling ? FEELING_DB[a.feeling] : 0 });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out))
             return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });

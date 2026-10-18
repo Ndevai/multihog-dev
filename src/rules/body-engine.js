@@ -3,7 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
-import { reach, hearSound, SOUNDS, BAND_HZ } from './acoustics.js';
+import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL } from './acoustics.js';
 import { see, acuityOf } from './vision.js';
 import { grip, gripNorm } from './strength.js';
 import { endothermMinute } from './thermal/endotherm.js';
@@ -1496,7 +1496,7 @@ export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, 
 }
 /** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
 export const SPEECH_OVERRIDE = {};
-export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none' } = {}) {
+export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none', louder_db = 0 } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc)
         return 'Creature data is not loaded.';
@@ -1523,7 +1523,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
         return `${ls} cannot hear it.`;
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
-    const r = reach({ effort, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
+    const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
     l.heard = { from: sp, snr: r.snr, whisper: /whisper/.test(effort) };
     const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible)
