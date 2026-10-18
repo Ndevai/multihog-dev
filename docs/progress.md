@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (14), Claude Opus 5.5
+- Tried (not applied): intelligibility for any language pair from one universal representation (ASJP word lists for 6,126 languages, articulatory-feature segment costs), calibrated on Gooskens's 57 minimal-exposure cells. Leave-one-out error 11.8 points at best, r ≈ −0.5; at the 40-word resolution the predictions crowd into 15–35 % (Czech → Slovak 33 % vs 87.5 measured). Recorded with scripts in docs/data/asjp-attempt.
+- Next: a representation that carries running speech and cognacy (see df-body-engine.md, Related languages).
+
 ## 2026-10-18 (13), Claude Opus 5.5
 - Changed: a stranger outside 1881 England now also lives in a household drawn from their country's surveys (UN household database, 187 countries, 1960–2021): its size and type (alone, couple, couple with children, single parent, extended family, non-relatives). Brazil 1990: average household of 4.2, 1.6 % of people alone.
 - Checked in the harness: implied household averages match the surveys within 0.03 (Brazil, India); UK 2011 2.50 vs 2.35.
