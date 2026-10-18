@@ -321,7 +321,14 @@ function wireEvents(): void {
     wireEvents();
     registerRulesStatsCommand();
     const c = ctx() as Ctx & { SlashCommand?: { fromProps(p: object): unknown }; SlashCommandParser?: { addCommandObject(x: unknown): void } };
-    c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-pulse-test', helpString: 'Runs the body simulation (Pulse) for 2 minutes of a leg bleed and reports the vital signs and the time it took.', callback: async () => pulseSelfTest() }));
+    c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-pulse-test', helpString: 'Runs the body simulation (Pulse) for 2 minutes of a leg bleed and reports the vital signs and the time it took.', callback: async () => {
+        // A command's return value is not shown in the chat, so the result appears as a notice that stays until tapped.
+        const t = (globalThis as { toastr?: { info: (m: string) => void; success: (m: string, t: string, o: object) => void } }).toastr;
+        t?.info('Pulse test running (up to a minute)…');
+        const r = await pulseSelfTest();
+        t?.success(r, 'Pulse', { timeOut: 0, extendedTimeOut: 0 });
+        return r;
+    } }));
     c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-log', helpString: 'This turn\'s decisions: each call, its arguments, the random draws it used and its result.', callback: async () => turnLog() }));
     registerRulesEvalCommand(send);
     registerTimeCommand();
