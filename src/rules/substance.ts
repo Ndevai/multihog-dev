@@ -1,6 +1,6 @@
 // Substance records checked against their composition (docs/df-body-engine.md §6.19). A record is a name, a formula and
 // measured values; code derives what the atoms fix (molar mass, oxygen to burn it, heat of burning) and compares.
-// Atomic weights: IUPAC conventional values (H 1.008, C 12.011, N 14.007, O 15.999).
+// Atomic weights: IUPAC standard atomic weights, conventional/abridged values (H 1.008, C 12.011, N 14.007, O 15.999, …).
 // Heat of burning from oxygen demand: ΔHc ≈ k × mol O2, mol O2 = C + H ÷ 4 − O ÷ 2 (products CO2, liquid H2O, N2)
 // (Thornton 1917 rule; k fitted here as the median over the 68 measured records with 2 or more carbons, 442 kJ per mol O2;
 // leave-one-out median error 1.8 %, 90 % within 7.1 %, propyne left out). One-carbon molecules and H2 sit 11–29 % off (their
@@ -9,7 +9,7 @@
 // A family (fatty acid, alcohol, amino acid, …) with 3 or more measured members fills a gap with its own median k.
 import { parseSmiles, formulaOf, formulaString, jobackGroups, jobackProps, combustionKJmol, hazards, loadJoback } from './structure.js';
 export interface Substance { name: string; formula: string; smiles?: string; state?: string; dHc_kJmol?: number; dHc_kJg?: number; family?: string; src?: string }
-const WEIGHT: Record<string, number> = { H: 1.008, C: 12.011, N: 14.007, O: 15.999 };
+const WEIGHT: Record<string, number> = { H: 1.008, B: 10.81, C: 12.011, N: 14.007, O: 15.999, F: 18.998, Na: 22.990, Mg: 24.305, Al: 26.982, Si: 28.085, P: 30.974, S: 32.06, Cl: 35.45, K: 39.098, Ca: 40.078, Fe: 55.845, Cu: 63.546, Zn: 65.38, Br: 79.904, Ag: 107.87, Sn: 118.71, I: 126.90, Hg: 200.59, Pb: 207.2 };
 
 export function parseFormula(f: string): Record<string, number> {
     const out: Record<string, number> = {};
@@ -20,7 +20,7 @@ export function parseFormula(f: string): Record<string, number> {
 }
 export function molarMass(f: string): number {
     return Object.entries(parseFormula(f)).reduce((s, [e, n]) => {
-        if (WEIGHT[e] == null) throw new Error(`Element ${e} has no weight here (C, H, N, O only).`);
+        if (WEIGHT[e] == null) throw new Error(`Element ${e} has no weight here.`);
         return s + WEIGHT[e] * n;
     }, 0);
 }

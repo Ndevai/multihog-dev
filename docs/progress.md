@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (23), Claude Opus 5.5
+- Added: 3796 compounds with measured physical data (boiling, melting, flash and ignition points, fire limits, heat of formation), each checked against physics and against its structure; boiling points estimated from structure where unmeasured (Joback + Stein–Brown); new narrator tool Substance.
+- Checked: structure reader on 3381 compounds, no errors, formulas all match RDKit; boiling estimate mean error 21.8 K on 1854; heats of burning from two independent sources agree to 0.01 % (61 compounds); 14 contradictions and 194 suspect values found in the data.
+- Not done: mixtures (kerosene, wood) as sets of compounds; salts, metals; pressure.
+
 ## 2026-10-18 (22), Claude Opus 5.5
 - Added: molecular structure (SMILES) per substance; the engine counts the atoms, finds rings and groups, and derives boiling and melting points, heat of formation and heat of burning (Joback). Records whose formula disagrees with their structure are refused; peroxide bonds are reported.
 - Checked: same atoms and groups as RDKit + thermo on 79 + 41 of 43 molecules (2 deliberate differences); heat error median 0.4 % (oxygen rule 1.6 %); now catches the 1-butanol misprint the formula alone missed; 3 contradictions, 6 suspect.

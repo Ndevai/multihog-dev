@@ -23,6 +23,7 @@ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPID
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
+import { loadChem, describe as describeCompound } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
@@ -54,7 +55,7 @@ export interface EngineStore {
         read?: { phrase: string; id: string; label: string; year: number | null }[] } | null;
 }
 
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
 type ToolName = typeof TOOLS[number];
 const KEEP_SNAPSHOTS = 30;
 
@@ -965,6 +966,11 @@ export function registerRulesTools(enabled: boolean): void {
     // Snow or rain: precipitation falls as snow when the day's mean air temperature is at or below 1.0 °C, the Northern
     // Hemisphere mean of the 50 % rain–snow air-temperature threshold (Jennings et al. 2018, Nat Commun 9:1148; range −0.4 to
     // 2.4 °C by region) [day mean as the air temperature: ASSUMED].
+    tool('Substance', 'Look up a single chemical compound before narrating what it does physically: whether it is solid, liquid or gas at the temperature, whether and how hot it burns, when its vapour catches fire, its fire limits in air. Measured values from handbooks; estimates from its structure when unmeasured. Not for mixtures (wood, kerosene, food).', {
+        substance: str('Compound name in English (ethanol, octane, glycerol, naphthalene, carbon dioxide) or a SMILES structure'),
+        temp_c: { type: 'number', description: 'Temperature it is at, °C (the scene\'s air temperature). Default 20.' },
+    }, ['substance'], async a => { await loadChem(); return describeCompound(a.substance, a.temp_c ?? 20); });
+
     tool('Weather', 'Decide the day\'s weather at the story\'s place from the date and hour in [TIME], before describing it: rain, snow or dry, the amount, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
         place: str('The town or city the scene is in or nearest to ("Lyon", "Kyoto", "Sydney, Australia"); for a fictional or remote place, the nearest real town or give latitude and longitude. Default: the last place given.'),
         latitude: { type: 'number', description: 'For a place with no data: latitude; the nearest listed city is used' },

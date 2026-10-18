@@ -145,7 +145,7 @@ export function jobackGroups(m) {
         return { groups: null, why: 'O–O bond outside the fitted groups' };
     // Carboxylic acids, esters, aldehydes, ketones first: they take two or three atoms each.
     for (let k = 0; k < n; k++) {
-        if (el(k) !== 'C' || m.atoms[k].arom || used[k])
+        if (el(k) !== 'C' || used[k])
             continue;
         const cn = nbs(k).find(y => y.o === 3 && el(y.k) === 'N');
         if (cn) {
@@ -155,6 +155,12 @@ export function jobackGroups(m) {
         const o2 = dblO(k);
         if (o2 == null)
             continue;
+        if (nbs(k).filter(y => el(y.k) === 'O').length >= 3)
+            return { groups: null, why: 'carbonate (C bonded to three O) fits no group' };
+        if (m.atoms[k].arom) {
+            put('>C=O (ring)', k, o2);
+            continue;
+        } // ring carbonyl written aromatic (c=O), as in caffeine
         const sO = nbs(k).filter(x => x.o === 1 && el(x.k) === 'O' && !used[x.k]);
         const oh = sO.find(x => H(x.k) === 1), ether = sO.find(x => H(x.k) === 0);
         if (oh) {
