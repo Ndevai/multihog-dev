@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (19), Claude Opus 5.5
+- Changed: bleeding arteries of the chest and belly also run on precomputed Pulse runs (aorta and trunk muscle vessels, 20 more runs); the neck stays on the rules (Pulse has no carotid). A major chest artery at 450 mL/min kills a man in 12 min; a smaller trunk artery at 120 mL/min in 43 min.
+- Checked (harness), compiles with zero errors.
+- Not done: each character's own height, mass and age in Pulse (needs a precomputed range of body sizes); every character bleeds as Pulse's standard man or woman [ASSUMED].
+
 ## 2026-10-18 (18), Claude Opus 5.5
 - Fixed: the narrator described Rio's weather (April 1822) with no engine result; the question pass now adds a Weather call every turn the story has a date and a place, so code decides the sky before anyone describes it.
 - Checked (harness, stub model): Rio 14/4/1822 → Weather added, 28 / 19 °C, 0.1 mm.

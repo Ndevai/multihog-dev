@@ -12,12 +12,12 @@ REQ = [('HeartRate', FrequencyUnit.Per_min), ('MeanArterialPressure', PressureUn
 jobs = sys.argv[1:]   # e.g. Male:Leg:0.5
 for job in jobs:
     sex, limb, sev = job.split(':'); sev = float(sev)
-    out = f'/tmp/claude-0/-home-claude/1bd7bcb3-68ff-5931-8d4a-6ef781b50745/scratchpad/tables/{sex}_{limb}_{sev:.1f}.json'
+    out = f'/tmp/claude-0/-home-claude/1bd7bcb3-68ff-5931-8d4a-6ef781b50745/scratchpad/tables/{sex}_{limb}_{sev:.2f}.json'
     if os.path.exists(out): continue
     p = PulseEngine(); p.log_to_console(False)
     reqs = [SEDataRequest.create_physiology_request(n, unit=u) if u else SEDataRequest.create_physiology_request(n) for n, u in REQ]
     assert p.serialize_from_file(f'./states/Standard{sex}@0s.json', SEDataRequestManager(reqs))
-    h = SEHemorrhage(); h.set_compartment(f'Right{limb}'); h.get_severity().set_value(sev); p.process_action(h)
+    h = SEHemorrhage(); h.set_compartment(limb if limb in ('Aorta','Muscle') else f'Right{limb}'); h.get_severity().set_value(sev); p.process_action(h)
     rows = []
     for m in range(60):
         if not p.advance_time_s(60): break
