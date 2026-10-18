@@ -1,3 +1,11 @@
+// How common a trait is among the people of a country in a year, from published series (docs/df-body-engine.md §11):
+// literacy (Our World in Data, cross-country literacy rates: van Zanden et al. 2014 How Was Life?, Buringh & van Zanden
+// 2009, UNESCO; 1475–2024, 218 countries), numeracy (Baten 2015, Clio Infra: share of people reporting their exact age,
+// the ABCC index, by birth decade, 1500–1970), male height by birth decade (Baten & Blum 2015, Clio Infra, 1550–2000),
+// labourers' real wages (de Zwart, van Leeuwen & van Leeuwen-Li 2015, Clio Infra, 1820–2008, comparable across countries).
+// Where a language is spoken: Glottolog 5 (CLDF, countries of each language's speech communities; extinct and classical
+// languages, which list a last year of documentation, left out).
+import { SINGLE } from './data/hajnal.js';
 let CLIO = null, GLOTTO = {}, CLDR = {};
 let LIFE = null;
 let CITIES = [], ISCO = [];
@@ -221,4 +229,28 @@ export function activityMet(text) {
         }
     });
     return best >= 0 && key[0] * 2 > w.length ? { met: COMPENDIUM[best][1], code: COMPENDIUM[best][0], description: COMPENDIUM[best][3] } : null;
+}
+// Never married: the share of a country's men or women of an age who are single, from census tables 1891–1952 (data/hajnal.ts).
+// Linear between the age bands' midpoints, held beyond the last; none under 20 (no band), none further than 30 years from
+// the census [ASSUMED], the nearest census when a country has two.
+export function neverMarriedShare(country, sex, age, year) {
+    if (!country || year === null || !(age >= 20))
+        return null;
+    const c = pick([...new Set(SINGLE.map(r => r[0]))], country);
+    if (!c)
+        return null;
+    const r = SINGLE.filter(x => x[0] === c).reduce((b, x) => Math.abs(x[1] - year) < Math.abs(b[1] - year) ? x : b);
+    if (Math.abs(r[1] - year) > 30)
+        return null;
+    const [, y, mids, men, women] = r, v = sex === 'female' ? women : men;
+    let pct = v[v.length - 1];
+    if (age <= mids[0])
+        pct = v[0];
+    else
+        for (let i = 0; i < mids.length - 1; i++)
+            if (age <= mids[i + 1]) {
+                pct = v[i] + (v[i + 1] - v[i]) * (age - mids[i]) / (mids[i + 1] - mids[i]);
+                break;
+            }
+    return { share: pct / 100, country: c, year: y };
 }

@@ -54,6 +54,26 @@ export const OBEY = { 'victim out of sight': 0.65, 'victim in the same room': 0.
 // 5 questionnaires, 6 for 3 phone loans, just over 2 for 1 escort [targets 5, 3, 1 as recalled] → 48 %, 48 %, 43 %; mean 46 %.
 // Weak source [SECONDARY: a news report, targets recalled]; for a stranger asking to go first, Langer et al. 1978 below is primary.
 export const SMALL_REQUEST_YES = 0.46;
+// Since Milgram: Burger 2009 (Am Psychol 64:1, Table 2) repeated the voice-feedback condition up to 150 V in 2006: 70.0 %
+// (28 of 40) continued past 150 V against 82.5 % (33 of 40) in Milgram's comparable Experiment 5. Story years from 2006 scale
+// every OBEY share by 0.70 ÷ 0.825; between 1962 and 2006 linearly [ASSUMED: the 150 V ratio holds to the end of the scale].
+export function obeyShare(order, year) {
+    const p = OBEY[order];
+    if (p == null)
+        return null;
+    const f = year == null ? 1 : 1 - (1 - 0.70 / 0.825) * Math.min(1, Math.max(0, (year - 1962) / (2006 - 1962)));
+    return p * f;
+}
+// Refusing a split of something to be shared, knowing refusal leaves both with nothing (ultimatum game, 14 small-scale
+// societies with real stakes of about a day's wage; Henrich et al. 2005, Behav Brain Sci 28:795, Table 2, Lamalera's sham
+// offers and subgroup rows left out, Machiguenga's denominator taken as its 21 pairs): offers of 20 % or less refused 25 of 79
+// (31.6 %); larger offers 29 of 467 (6.2 %).
+export const REFUSE_SPLIT = { low: 25 / 79, other: 29 / 467 };
+// Punishing someone who cheated the group, at a cost to oneself (Fehr & Gächter 2002, Nature 415:137: 240 students, six
+// rounds of a public-goods game): 84.3 % punished at least once in six rounds; as an independent chance each round,
+// 1 − (1 − 0.843)^(1/6) = 26.6 % for one occasion [ASSUMED: rounds independent]. 74.2 % of punishments fell on
+// below-average contributors.
+export const PUNISH_ONCE = 1 - (1 - 0.843) ** (1 / 6);
 // Romantic interest after a brief first meeting (yes to seeing the person again): Fisman, Iyengar, Kamenica & Simonson 2006 (Q J
 // Econ 121:673; 392 subjects, 6276 four-minute meetings): in sessions with fewer than 15 partners about half got a yes from
 // either sex; in larger sessions men stayed at about 50 %, women fell to about one-third; overall yes rate 0.43.

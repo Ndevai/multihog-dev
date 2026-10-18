@@ -48,3 +48,18 @@ export function attackShare(disease: string, susceptible = 1): number {
     for (let k = 0; k < 100; k++) z = 1 - Math.exp(-r * z);
     return z;
 }
+
+// Causes of death among foragers and forager-horticulturalists (Gurven & Kaplan 2007, Popul Dev Rev 33:321, Table 5, pooled
+// totals of 3,328 deaths in 13 groups): by age band illness / degenerative / accident / violence, under 15: 65.3, 9.5, 8.1,
+// 17.1 %; 15–59: 60.5, 9.2, 12.9, 17.4 %; 60 and over: 54.6, 28.2, 10.3, 6.9 %. Within illness, all ages: respiratory 23.7,
+// gastrointestinal 13.8, fever 7.3, other 16.6; within violence: homicide 6.3, warfare 5.2 (shares of all deaths, groups with
+// good data only, so they are rescaled within their class [ASSUMED]).
+const CAUSE_BY_AGE: [number, number[]][] = [[15, [65.3, 9.5, 8.1, 17.1]], [60, [60.5, 9.2, 12.9, 17.4]], [Infinity, [54.6, 28.2, 10.3, 6.9]]];
+const ILLNESS: [string, number][] = [['a respiratory illness', 23.7], ['a gastrointestinal illness', 13.8], ['a fever', 7.3], ['another illness', 16.6]];
+const VIOLENCE: [string, number][] = [['homicide', 6.3], ['warfare', 5.2]];
+const drawFrom = (rows: [string, number][], u: number) => { const t = rows.reduce((x, r) => x + r[1], 0); let v = u * t; for (const r of rows) if ((v -= r[1]) < 0) return r[0]; return rows[rows.length - 1][0]; };
+export function deathCause(age: number, rng: () => number): string {
+    const shares = CAUSE_BY_AGE.find(([upTo]) => age < upTo)![1];
+    const cls = drawFrom([['illness', shares[0]], ['degenerative disease (old age, heart, cancer)', shares[1]], ['an accident', shares[2]], ['violence', shares[3]]], rng());
+    return cls === 'illness' ? drawFrom(ILLNESS, rng()) : cls === 'violence' ? drawFrom(VIOLENCE, rng()) : cls;
+}

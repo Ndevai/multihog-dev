@@ -5,6 +5,7 @@
 // labourers' real wages (de Zwart, van Leeuwen & van Leeuwen-Li 2015, Clio Infra, 1820–2008, comparable across countries).
 // Where a language is spoken: Glottolog 5 (CLDF, countries of each language's speech communities; extinct and classical
 // languages, which list a last year of documentation, left out).
+import { SINGLE } from './data/hajnal.js';
 type Series = Record<string, [number, number][]>;
 let CLIO: { height: Series; numeracy: Series; wage: Series; literacy: Series; homicide: Series; urban: Series; population: Series; infant: Series } | null = null, GLOTTO: Record<string, string[]> = {}, CLDR: Record<string, Record<string, number>> = {};
 let LIFE: { ages: number[]; tables: Record<string, Record<string, [number, number, (number | null)[]][]>> } | null = null;
@@ -216,4 +217,20 @@ export function activityMet(text: string): { met: number; code: string; descript
         if (k[0] > key[0] || (k[0] === key[0] && (k[1] > key[1] || (k[1] === key[1] && k[2] > key[2])))) { best = i; key = k; }
     });
     return best >= 0 && key[0] * 2 > w.length ? { met: COMPENDIUM[best][1], code: COMPENDIUM[best][0], description: COMPENDIUM[best][3] } : null;
+}
+
+// Never married: the share of a country's men or women of an age who are single, from census tables 1891–1952 (data/hajnal.ts).
+// Linear between the age bands' midpoints, held beyond the last; none under 20 (no band), none further than 30 years from
+// the census [ASSUMED], the nearest census when a country has two.
+export function neverMarriedShare(country: string | null | undefined, sex: string | undefined, age: number, year: number | null): { share: number; country: string; year: number } | null {
+    if (!country || year === null || !(age >= 20)) return null;
+    const c = pick([...new Set(SINGLE.map(r => r[0]))], country);
+    if (!c) return null;
+    const r = SINGLE.filter(x => x[0] === c).reduce((b, x) => Math.abs(x[1] - year) < Math.abs(b[1] - year) ? x : b);
+    if (Math.abs(r[1] - year) > 30) return null;
+    const [, y, mids, men, women] = r, v = sex === 'female' ? women : men;
+    let pct = v[v.length - 1];
+    if (age <= mids[0]) pct = v[0];
+    else for (let i = 0; i < mids.length - 1; i++) if (age <= mids[i + 1]) { pct = v[i] + (v[i + 1] - v[i]) * (age - mids[i]) / (mids[i + 1] - mids[i]); break; }
+    return { share: pct / 100, country: c, year: y };
 }

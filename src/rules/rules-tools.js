@@ -1,5 +1,5 @@
 import { NOISE, BARRIER, SOUNDS } from './acoustics.js';
-import { judgeStatement, EVIDENCE, helpChance, OBEY, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, TRUST_REPAIR, trustAgain, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance } from './social.js';
+import { judgeStatement, EVIDENCE, helpChance, OBEY, obeyShare, REFUSE_SPLIT, PUNISH_ONCE, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, TRUST_REPAIR, trustAgain, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { drawPerson } from './census.js';
@@ -14,7 +14,7 @@ import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET
 import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
 import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, levelZ, stateShare, settingRatio } from './acts.js';
-import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES } from './disease.js';
+import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES, deathCause } from './disease.js';
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
@@ -26,7 +26,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
-import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
+import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, neverMarriedShare, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
 import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
@@ -222,7 +222,7 @@ function inalienable(st, item) {
         return `"${item}" is a body part; it goes with the body (BodyWound, BodyStrike, BodyTreat)`;
     return '';
 }
-const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting', 'an order from a stranger', 'a stranger asks to go first'];
+const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting', 'an order from a stranger', 'a stranger asks to go first', 'an offered split they can refuse so neither gets anything', 'a chance to punish someone who cheated the group, at a cost to themselves'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = (v) => typeof v === 'number' ? v : (parseFloat(String(v)) || 0) / 100;
 // The chance for this attempt combines the narrator's estimate with the share of its reference class, asked for first:
@@ -952,7 +952,8 @@ export function registerRulesTools(enabled) {
     }));
     tool('Disease', 'Decide the course of a contagious disease before narrating it: when a character who caught it first shows symptoms, how many people in a community fall ill over the whole outbreak, or what share of a population a historical epidemic (Antonine plague to the plagues of the 1600s) kills.', {
         disease: { type: 'string', enum: DISEASES },
-        question: { type: 'string', enum: ['when symptoms start', 'how many fall ill', 'how many die in a historical epidemic'] },
+        question: { type: 'string', enum: ['when symptoms start', 'how many fall ill', 'how many die in a historical epidemic', 'what a death among foragers or village farmers was from'] },
+        age: { type: 'number', description: 'For "what a death … was from": age at death' },
         epidemic: { type: 'string', enum: EPIDEMIC_NAMES, description: 'For "how many die in a historical epidemic"' },
         who: str('For "when symptoms start": the character who caught it'),
         population: { type: 'number', description: 'For "how many fall ill": people in the community who mix with each other' },
@@ -964,6 +965,12 @@ export function registerRulesTools(enabled) {
                 return `Give epidemic: ${EPIDEMIC_NAMES.join('; ')}.`;
             const share = e.low + (e.high - e.low) * rng(), n = Number(a.population) || 0;
             return `${a.epidemic}: it kills ${Math.round(share * 100)} % of the people of ${e.where}${n ? ` — ${Math.round(share * n)} of ${n} here` : ''} (recorded range ${Math.round(e.low * 100)}–${Math.round(e.high * 100)} %).`;
+        }
+        if (a.question === 'what a death among foragers or village farmers was from') {
+            if (a.age == null)
+                return 'Give age at death.';
+            const c = deathCause(Number(a.age), rng);
+            return `${a.who ?? 'The person'} died of ${c}.`;
         }
         if (!a.disease)
             return 'Give disease.';
@@ -1092,9 +1099,11 @@ export function registerRulesTools(enabled) {
         language: str('For "something the character can do" when it is speaking a language: the language as named ("japanese", "modern japanese", "old mandarin")'),
         skill: { type: 'string', enum: ['reading and writing', 'counting and simple sums'], description: 'For "something the character can do" when it is one of these' },
         faith: { type: 'string', enum: FAITHS, description: 'For "what the character is" when it is a religion' },
+        marital: { type: 'string', enum: ['never married', 'married now or before'], description: 'For "what the character is" when it is their marital state' },
+        age: { type: 'number', description: 'With marital: the character\'s age' },
         lived_to: { type: 'number', description: 'For a claim that needs someone to have lived to an age (the character\'s own age; a parent alive now): that age' },
         alive_at: { type: 'number', description: 'With lived_to: the age at which that person was last known alive (0 = from birth)' },
-        person_sex: { type: 'string', enum: ['male', 'female'], description: 'With lived_to: that person\'s sex' },
+        person_sex: { type: 'string', enum: ['male', 'female'], description: 'With lived_to or marital: that person\'s sex' },
         quantity: { type: 'number', description: 'For "something the character has": how many. Default 1.' },
         reference_class: str('The wider class this claim belongs to (e.g. "travellers in 1850 England carrying a pistol")'),
         base_share: { type: 'string', enum: SHARES, description: 'How often claims of that class hold in this kind of setting.' },
@@ -1153,6 +1162,10 @@ export function registerRulesTools(enabled) {
         const faith = a.kind === 'what the character is' && a.faith ? faithShare(a.faith, st.setting?.country, y) : null;
         if (faith)
             a = { ...a, base_share: Math.max(0.001, faith.share) };
+        const sex = st.people?.[a.who]?.sex ?? a.person_sex, age = Number(a.age ?? st.people?.[a.who]?.age);
+        const single = a.kind === 'what the character is' && a.marital && Number.isFinite(age) ? neverMarriedShare(st.setting?.country, sex, age, y) : null;
+        if (single)
+            a = { ...a, base_share: Math.max(0.001, a.marital === 'never married' ? single.share : 1 - single.share) };
         const lives = a.lived_to != null ? survival(st.setting?.country, a.person_sex, y, Number(a.alive_at) || 0, Number(a.lived_to)) : null;
         if (lives)
             a = { ...a, base_share: Math.max(0.001, lives.share) };
@@ -1299,7 +1312,7 @@ export function registerRulesTools(enabled) {
     }));
     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
     // enums; function-calling accuracy drops as the number of functions grows, Patil et al. 2025, BFCL).
-    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, obey an order from a stranger acting outside their office, let a stranger go first (a turn, a place in line, a machine), or want to see someone again after a first meeting.', {
+    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, obey an order from a stranger acting outside their office, let a stranger go first (a turn, a place in line, a machine), or want to see someone again after a first meeting, refuse an unfair split, or punish someone who cheated the group.', {
         situation: { type: 'string', enum: SOCIAL },
         who: str('The person whose response is decided'),
         speaker: str('For a statement: who made it'),
@@ -1309,6 +1322,7 @@ export function registerRulesTools(enabled) {
         others: { type: 'number', description: 'For an emergency: how many other people the person believes also witness it' },
         emergency: { type: 'string', enum: SITUATIONS, description: 'For an emergency. Default victim in danger.' },
         order: { type: 'string', enum: Object.keys(OBEY), description: 'For an order to hurt someone: its circumstances' },
+        offer_share: { type: 'number', description: 'For an offered split: the share of the whole offered to them, 0–1' },
         request: str('For a favour: the request in a few words'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'For a first meeting: sex of the person whose interest is decided' },
         many_options: { type: 'boolean', description: 'For a first meeting: they meet many prospective partners at once (15 or more)' },
@@ -1329,9 +1343,10 @@ export function registerRulesTools(enabled) {
                 return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (${n > 0 ? `with ${n} other${n > 1 ? 's' : ''} watching` : 'alone with it'}).`;
             }
             case SOCIAL[2]: {
-                if (!a.order || !OBEY[a.order])
+                const p = a.order ? obeyShare(a.order, storyYear(st)) : null;
+                if (p === null)
                     return `Give order, one of: ${Object.keys(OBEY).join('; ')}.`;
-                return `${a.who} ${rng() < OBEY[a.order] ? 'carries the order out to the end' : 'refuses before the end'} (${a.order}).`;
+                return `${a.who} ${rng() < p ? 'carries the order out to the end' : 'refuses before the end'} (${a.order}).`;
             }
             case SOCIAL[3]: return `${a.who} ${rng() < asRequester(SMALL_REQUEST_YES, a.requester) ? 'agrees' : 'declines'}${a.request ? ` (${a.request})` : ''}.`;
             case SOCIAL[4]: {
@@ -1352,6 +1367,13 @@ export function registerRulesTools(enabled) {
                     return `Give request_size (${GIVE_WAY_SIZES.join('; ')}) and reason (${GIVE_WAY_REASONS.join('; ')}).`;
                 return `${a.who} ${rng() < asRequester(p, a.requester) ? 'lets them go first' : 'declines'} (${a.request_size}; ${a.reason}).`;
             }
+            case SOCIAL[7]: {
+                const sh = Number(a.offer_share);
+                if (!(sh >= 0 && sh <= 1))
+                    return 'Give offer_share: the part offered to them, 0–1.';
+                return `${a.who} ${rng() < (sh <= 0.2 ? REFUSE_SPLIT.low : REFUSE_SPLIT.other) ? 'refuses the split, so neither gets anything' : 'accepts the split'}.`;
+            }
+            case SOCIAL[8]: return `${a.who} ${rng() < PUNISH_ONCE ? 'punishes the cheater, at a cost to themselves' : 'lets it pass this time'}.`;
             default: return `Give situation, one of: ${SOCIAL.join('; ')}.`;
         }
     }));

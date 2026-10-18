@@ -35,4 +35,4 @@ Without the question pass the narrator gets the 29 rule tools and calls them its
 
 Rules, sources and decisions: `docs/df-body-engine.md`. Rule text for a lorebook: `rules/rules-lorebook.json`.
 
-License: GPL-3.0 (derived from the Multihog D&D Framework).
+License: GPL-3.0 (derived from the Multihog D&D Framework). Whether a character has married starts from the share of people of their sex and age who were single in their country's census (1891–1952); refusing an unfair split, punishing a cheater and obeying an order to harm follow measured rates, obedience lower in modern years than in Milgram's.
