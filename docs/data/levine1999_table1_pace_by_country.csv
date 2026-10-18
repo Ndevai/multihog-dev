@@ -1,0 +1,32 @@
+country,overall_pace_index_z_mean,overall_pace_index_rank,walking_seconds_60ft_mean,walking_rank,postal_seconds_mean,postal_rank,clock_accuracy_seconds_mean,clock_accuracy_rank,source_page,checked_on_image
+Switzerland,-3.43,1,11.80,3,16.91,2,19.29,1,PDF 13 (journal 190),yes
+Ireland,-3.02,2,11.13,1,17.49,3,51.42,11,PDF 13 (journal 190),yes
+Germany,-3.00,3,12.01,5,13.46,1,43.00,8,PDF 13 (journal 190),yes
+Japan,-2.68,4,12.11,7,18.61,4,35.00,6,PDF 13 (journal 190),yes
+Italy,-2.13,5,12.75,10,23.00,12,24.17,2,PDF 13 (journal 190),yes
+England,-2.09,6,12.00,4,20.78,9,53.72,13,PDF 13 (journal 190),yes
+Sweden,-1.96,7,12.92,13,19.10,5,40.20,7,PDF 13 (journal 190),yes
+Austria,-1.43,8,14.08,23,20.60,8,25.00,3,PDF 13 (journal 190),yes
+Netherlands,-1.43,9,11.45,2,24.42,14,82.33,25,PDF 13 (journal 190),yes
+Hong Kong,-1.39,10,13.10,14,20.10,6,54.83,14,PDF 13 (journal 190),yes
+France,-1.36,11,12.34,8,27.84,18,49.00,10,PDF 13 (journal 190),yes
+Poland,-1.32,12,12.90,12,25.83,15,43.00,8,PDF 13 (journal 190),yes
+Costa Rica,-1.13,13,13.33,16,21.13,10,55.38,15,PDF 13 (journal 190),yes
+Taiwan,-0.73,14,13.58,18,20.22,7,68.00,21,PDF 13 (journal 190),yes
+Singapore,-0.65,15,14.75,25,22.42,11,32.00,4,PDF 13 (journal 190),yes
+United States,-0.30,16,12.03,6,36.99,23,67.87,20,PDF 13 (journal 190),yes
+Canada,-0.26,17,12.86,11,30.50,21,70.00,22,PDF 13 (journal 190),yes
+S. Korea,-0.02,18,13.76,20,29.75,20,58.00,16,PDF 13 (journal 190),yes
+Hungary,0.01,19,13.75,19,28.45,19,64.17,18,PDF 13 (journal 190),yes
+Czech Republic,0.28,20,13.80,21,27.73,17,76.07,23,PDF 13 (journal 190),yes
+Greece,0.54,21,13.10,14,24.33,13,117.0,29,PDF 13 (journal 190),yes
+Kenya,0.78,22,12.58,9,42.50,30,77.14,24,PDF 13 (journal 190),yes
+China,1.03,23,14.26,24,39.63,25,51.82,12,PDF 13 (journal 190),yes
+Bulgaria,1.59,24,15.57,27,33.67,22,60.00,17,PDF 13 (journal 190),yes
+Romania,2.42,25,16.72,30,42.25,29,32.46,5,PDF 13 (journal 190),yes
+Jordan,2.44,26,15.79,28,39.92,27,66.16,19,PDF 13 (journal 190),yes
+Syria,3.26,27,15.95,29,40.02,28,94.52,27,PDF 13 (journal 190),yes
+El Salvador,3.63,28,14.04,22,25.88,16,210.0,31,PDF 13 (journal 190),yes
+Brazil,3.98,29,16.76,31,38.17,24,108.0,28,PDF 13 (journal 190),yes
+Indonesia,4.14,30,14.82,26,39.64,26,161.5,30,PDF 13 (journal 190),yes
+Mexico,4.23,31,13.56,17,70.00,31,92.31,26,PDF 13 (journal 190),yes

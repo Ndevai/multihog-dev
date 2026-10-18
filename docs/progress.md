@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (4), Claude Opus 5.5
+- Changed: walking pace follows the country's measured pace of life (Levine & Norenzayan 1999, 31 countries): a man of 35 on a flat road walks 6.27 km/h in Ireland, 5.82 in the United Kingdom, 4.16 in Brazil (5.16 elsewhere).
+- Checked: cold-water survival without clothes matches Tikuisis 1997's model within 0.2 h: 10.7 °C 3.2 h (3.2), 6.1 °C 1.8 h (1.7), 11.1 °C 2.9 h (2.7). Compiles with zero errors.
+- Considered and left: Luks 2019 Tables 1–3 (doses, guideline risk categories and the Lake Louise score bands give no illness probability; the measured AMS rates stay).
+- Next: the Senses and Memory CSV sections.
+
 ## 2026-10-18 (3), Claude Opus 5.5
 - Checked in SillyTavern (Termux, proxy on): London 15 Jul 1880 14:00 gives "rain, 3.1 mm; high 22 °C, low 13 °C; now about 22 °C (20th Century Reanalysis)". The narrator's reply (warm light drizzle, Thursday) matched; 15 Jul 1880 was a Thursday.
 - Note: the sandbox fetch gave 5.9 mm for that day; the in-app call used the place's own coordinates, so a neighbouring 1° grid point [ASSUMED cause].

@@ -7,10 +7,17 @@ export const TERRAIN = { road: 1.0, 'dirt road': 1.1, 'light brush': 1.2, 'heavy
 // 30s 143.3, 40s 143.4, 50s 143.3, 60s 133.9, 70s 126.2, 80+ 96.8; women 134.1, 133.7, 139.0, 131.3, 124.1, 113.2, 94.3)
 // [ASSUMED: the age-sex ratio carries over to slopes].
 const GAIT = { male: [135.8, 143.3, 143.4, 143.3, 133.9, 126.2, 96.8], female: [134.1, 133.7, 139.0, 131.3, 124.1, 113.2, 94.3] };
-export function walkSpeedKmh(gradePct = 0, terrain = 'dirt road', age = 35, sex = 'male') {
+// Pace of life by country: mean seconds for a lone adult to walk 60 ft (18.3 m) downtown on a clear summer working morning
+// (Levine & Norenzayan 1999, J Cross-Cult Psychol 30:178, Table 1, about 1990s; 31 countries, mean 13.54 s). The walk
+// is scaled by the 31-country mean ÷ the country's seconds: Ireland 11.13 s → × 1.19, Brazil 16.76 s → × 0.79 [ASSUMED:
+// carries to other years, places outside downtowns and the age-sex gait above, whose samples are taken as the 31-country mean].
+const PACE_S = { 'Switzerland': 11.80, 'Ireland': 11.13, 'Germany': 12.01, 'Japan': 12.11, 'Italy': 12.75, 'United Kingdom of Great Britain and Northern Ireland': 12.00, 'Sweden': 12.92, 'Austria': 14.08, 'Netherlands (Kingdom of the)': 11.45, 'Hong Kong, China': 13.10, 'France': 12.34, 'Poland': 12.90, 'Costa Rica': 13.33, 'Taiwan': 13.58, 'Singapore': 14.75, 'United States of America': 12.03, 'Canada': 12.86, 'Republic of Korea': 13.76, 'Hungary': 13.75, 'Czechia': 13.80, 'Greece': 13.10, 'Kenya': 12.58, 'China': 14.26, 'Bulgaria': 15.57, 'Romania': 16.72, 'Jordan': 15.79, 'Syrian Arab Republic': 15.95, 'El Salvador': 14.04, 'Brazil': 16.76, 'Indonesia': 14.82, 'Mexico': 13.56 };
+const PACE_MEAN_S = Object.values(PACE_S).reduce((s, x) => s + x, 0) / Object.keys(PACE_S).length;
+export function walkSpeedKmh(gradePct = 0, terrain = 'dirt road', age = 35, sex = 'male', country = null) {
     const tobler = 6 * Math.exp(-3.5 * Math.abs(gradePct / 100 + 0.05)) * (/road/.test(terrain) ? 1 : 0.6);
     const g = GAIT[sex === 'female' ? 'female' : 'male'][Math.max(0, Math.min(6, Math.floor(age / 10) - 2))];
-    return tobler * (g * 0.036) / 5.04;
+    const pace = country && PACE_S[country] ? PACE_MEAN_S / PACE_S[country] : 1;
+    return tobler * (g * 0.036) / 5.04 * pace;
 }
 // Downhill: Pandolf with the negative grade, minus the Santee et al. 2001 correction CF = η [G (W + L) V ÷ 3.5 − (W + L)
 // (G + 6)² ÷ W + 25 − V²] (as recalled; −5 % at 1.34 m/s gives 82 % of level cost, −10 % gives 77 %) [ASSUMED: unverified].

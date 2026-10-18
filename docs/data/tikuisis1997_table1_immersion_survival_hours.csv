@@ -1,0 +1,31 @@
+clothing_ensemble_as_printed,additional_clothing_codes,sea_state,water_temp_c,icl_clo,model_survival_hours_as_printed,model_survival_hours,model_qualifier,model_footnote,data_survival_hours_as_printed,data_survival_hours,data_footnote_symbol,data_footnote_text,source_page,checked_on_image
+Nude,,Calm sea,10.7,0,3.2,3.2,,,na,,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Flight Suit + 1,1,Calm sea,10.7,0.04,3.9,3.9,,,2.4,2.4,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Float Coat + 1 + 2,"1,2",Calm sea,10.7,0.08,4.7,4.7,,,4.7,4.7,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Aviation Coverall + 1,1,Calm sea,10.7,0.18,7.4,7.4,,,7.5,7.5,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Boatcrew Coverall + 1 + 2,"1,2",Calm sea,10.7,0.19,7.8,7.8,,,7.7,7.7,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Short Wetsuit (3.2 mm) + 1,1,Calm sea,10.7,0.14,6.2,6.2,,,6.2,6.2,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Full Wetsuit (4.8 mm) + 1,1,Calm sea,10.7,0.28,11.3,11.3,,,11.4,11.4,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Dry Coverall + 3,3,Calm sea,10.7,0.63,>36,36,>,,na,,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Torn Dry Coverall + 3,3,Calm sea,10.7,0.63,4.0**,4.0,,** See Wetness/Leakage section,na,,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Dry Suit (4.8 mm) + 2,2,Calm sea,10.7,0.66,>36,36,>,,15.0,15.0,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Nude,,Rough sea,6.1,0,1.7,1.7,,,na,,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Flight Suit + 1,1,Rough sea,6.1,0.02,1.8,1.8,,,1.3,1.3,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Float Coat + 1 + 2,"1,2",Rough sea,6.1,0.03,1.9,1.9,,,na,,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Aviation Coverall + 1,1,Rough sea,6.1,0.09,2.4,2.4,,,2.7,2.7,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Boatcrew Coverall + 1 + 2,"1,2",Rough sea,6.1,0.10,2.5,2.5,,,2.6,2.6,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Short Wetsuit (3.2 mm) + 1,1,Rough sea,6.1,0.14,3.0,3.0,,,na,,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Full Wetsuit (4.8 mm) + 1,1,Rough sea,6.1,0.23,4.2,4.2,,,4.4,4.4,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Dry Coverall + 3,3,Rough sea,6.1,0.42,8.6,8.6,,,8.8,8.8,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Torn Dry Coverall + 3,3,Rough sea,6.1,0.42,2.3**,2.3,,** See Wetness/Leakage section,2.3,2.3,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Dry Suit (4.8 mm) + 2,2,Rough sea,6.1,0.44,9.2,9.2,,,na,,‡,"71.7 kg, 1.75 m, 11.1% body fat, 23.5 yrs (20)",PDF p.4 (journal 444),yes
+Nude,,Rough sea,11.1,0,2.7,2.7,,,na,,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Flight Suit + 1,1,Rough sea,11.1,0.02,3.0,3.0,,,2.1,2.1,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Float Coat + 1 + 2,"1,2",Rough sea,11.1,0.03,3.2,3.2,,,3.1,3.1,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Aviation Coverall + 1,1,Rough sea,11.1,0.09,4.3,4.3,,,4.2,4.2,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Boatcrew Coverall + 1 + 2,"1,2",Rough sea,11.1,0.10,4.5,4.5,,,3.8,3.8,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Short Wetsuit (3.2 mm) + 1,1,Rough sea,11.1,0.14,5.5,5.5,,,5.6,5.6,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Full Wetsuit (4.8 mm) + 1,1,Rough sea,11.1,0.23,8.3,8.3,,,8.2,8.2,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Dry Coverall + 3,3,Rough sea,11.1,0.42,17.4,17.4,,,na,,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Torn Dry Coverall + 3,3,Rough sea,11.1,0.42,4.0**,4.0,,** See Wetness/Leakage section,na,,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes
+Dry Suit (4.8 mm) + 2,2,Rough sea,11.1,0.44,18.6,18.6,,,18.3,18.3,†,"72.2 kg, 1.74 m, 12.0% body fat, 24.3 yrs (21)",PDF p.4 (journal 444),yes

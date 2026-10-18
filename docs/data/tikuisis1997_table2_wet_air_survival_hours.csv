@@ -1,0 +1,11 @@
+clothing_ensemble_as_printed,additional_clothing_codes,air_temp_c,wind_as_printed,icl_clo,wetness_as_printed,wetness_unit_as_printed_in_caption,model_survival_hours,data_survival_hours_as_printed,data_survival_hours,data_footnote_symbol,data_footnote_text,source_page,checked_on_image
+Nude,,7.7,28 k·h-1 (as printed),0,500,g·cm-2,2.1,na,,,,PDF p.5 (journal 445),yes
+Flight Suit + 1,1,7.7,28 k·h-1 (as printed),0.56,2800,g·cm-2,2.2,2.2,2.2,†,"Extrapolated from mean observed deep body cooling rates in young lean males [71.7 kg, 1.75 m, 11.1% body fat, 23.5 yr (20)]",PDF p.5 (journal 445),yes
+Float Coat + 1 + 2,"1,2",7.7,28 k·h-1 (as printed),1.54,1550,g·cm-2,8.5,na,,,,PDF p.5 (journal 445),yes
+Aviation Coverall + 1,1,7.7,28 k·h-1 (as printed),0.73,1550,g·cm-2,4.1,9.3,9.3,†,"Extrapolated from mean observed deep body cooling rates in young lean males [71.7 kg, 1.75 m, 11.1% body fat, 23.5 yr (20)]",PDF p.5 (journal 445),yes
+Boatcrew Coverall + 1 + 2,"1,2",7.7,28 k·h-1 (as printed),1.76,1750,g·cm-2,8.0,7.9‡,7.9,‡,Pertains to sitting atop a capsized boat under similar conditions but with continuous spray,PDF p.5 (journal 445),yes
+Short Wetsuit (3.2 mm) + 1,1,7.7,28 k·h-1 (as printed),0.73,650,g·cm-2,9.4,na,,,,PDF p.5 (journal 445),yes
+Full Wetsuit (4.8 mm) + 1,1,7.7,28 k·h-1 (as printed),0.87,650,g·cm-2,11.8,11.9,11.9,†,"Extrapolated from mean observed deep body cooling rates in young lean males [71.7 kg, 1.75 m, 11.1% body fat, 23.5 yr (20)]",PDF p.5 (journal 445),yes
+Dry Coverall + 3,3,7.7,28 k·h-1 (as printed),0.72,500,g·cm-2,11.3,12.3,12.3,†,"Extrapolated from mean observed deep body cooling rates in young lean males [71.7 kg, 1.75 m, 11.1% body fat, 23.5 yr (20)]",PDF p.5 (journal 445),yes
+Torn Dry Coverall + 3,3,7.7,28 k·h-1 (as printed),0.72,950,g·cm-2,6.5,6.6,6.6,†,"Extrapolated from mean observed deep body cooling rates in young lean males [71.7 kg, 1.75 m, 11.1% body fat, 23.5 yr (20)]",PDF p.5 (journal 445),yes
+Dry Suit (4.8 mm) + 2,2,7.7,28 k·h-1 (as printed),1.10,500,g·cm-2,21.4,na,,,,PDF p.5 (journal 445),yes
