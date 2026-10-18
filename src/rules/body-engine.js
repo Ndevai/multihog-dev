@@ -1640,9 +1640,10 @@ function changes(who, a, b) {
     return out;
 }
 /** Advances everyone minute by minute; stops at the end of the first minute in which a condition changes. */
-export function advanceAll(people, minutes, resting = new Set(), rng = Math.random, { active = new Set(), sleeping = new Set() } = {}) {
+export function advanceAll(people, minutes, resting = new Set(), rng = Math.random, { active = new Set(), sleeping = new Set(), eachMinute = null } = {}) {
     const total = Math.max(0, Math.round(minutes));
     for (let m = 1; m <= total; m++) {
+        eachMinute?.();
         const events = [];
         for (const [who, p] of Object.entries(people)) {
             const before = watch(p);

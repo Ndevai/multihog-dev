@@ -1333,9 +1333,10 @@ function changes(who: string, a: Watch, b: Watch): string[] {
 }
 
 /** Advances everyone minute by minute; stops at the end of the first minute in which a condition changes. */
-export function advanceAll(people: Record<string, Person>, minutes: number, resting: Set<string> = new Set(), rng: Rng = Math.random, { active = new Set<string>(), sleeping = new Set<string>() } = {}): { elapsed: number; events: string[] } {
+export function advanceAll(people: Record<string, Person>, minutes: number, resting: Set<string> = new Set(), rng: Rng = Math.random, { active = new Set<string>(), sleeping = new Set<string>(), eachMinute = null as null | (() => void) } = {}): { elapsed: number; events: string[] } {
     const total = Math.max(0, Math.round(minutes));
     for (let m = 1; m <= total; m++) {
+        eachMinute?.();
         const events: string[] = [];
         for (const [who, p] of Object.entries(people)) {
             const before = watch(p);

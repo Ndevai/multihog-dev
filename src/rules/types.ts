@@ -69,6 +69,8 @@ export interface BodyTiming { nerve_mps?: number; limb_m?: number; sense_s?: Rec
 export interface Person {
     /** Named spot the character is at (actions.ts), e.g. "John's house: living room". */
     at?: string;
+    /** The room whose air this person last breathed (rooms.ts). */
+    airFrom?: string | null;
     species: string; mass: number; lost: number; red: number; wounds: Wound[]; nextId: number;
     dead: string | null; deathIn: number | null; deathMode?: 'bleeding' | 'stopped'; minute: number; net: Net;
     age?: number; sex?: string; region?: string | null; body?: BodyTiming;
@@ -110,6 +112,8 @@ export interface RuleState {
     clock?: { t: number; add: number; sec?: number };
     /** Distances between named spots, metres, keyed 'a|b' with a < b (actions.ts); recorded once, reused after. */
     links?: Record<string, number>;
+    /** Air of rooms by spot name (rooms.ts). */
+    rooms?: Record<string, import('./rooms.js').Room>;
     latitude?: number;
     /** Big Five place of each character, z-scores by trait (acts.ts), drawn once when first needed. */
     traits?: Record<string, Record<string, number>>;

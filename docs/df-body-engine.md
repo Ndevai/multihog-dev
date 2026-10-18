@@ -784,6 +784,20 @@ World history as diffs (`world-log.ts`; borrowed from the plan → diff → vali
 
 Memory (borrowed from Park et al. 2023, "Generative Agents: Interactive Simulacra of Human Behavior", UIST, §4.1): when a character knows more facts than [KNOWS] shows (12), the ones shown are those with the highest recency + importance + relevance, each scaled 0–1 over that character's facts, equal weights. Recency × 0.995 per story hour since learned (Park counts since last retrieved [ASSUMED: learned]); importance 1–10 given by RecordFact `importance` on Park's scale (1 mundane, 10 extremely poignant), 5 when not given [ASSUMED]; relevance = share of the fact's content words in the last two messages [ASSUMED: word overlap in place of embedding similarity, which needs a model call]. Shown oldest first. Check (harness, 20 facts over 7.5 story days): a scene about bread keeps the 7-day-old bakery fire (relevant) and the brother's death (importance 10), and drops the 8 oldest meals (importance 1).
 
+### 6.22 Room air
+
+Tool Room (`rooms.ts`): an enclosed space, keyed by the same spot name as Act, as a well-mixed box. Each minute (PassTime and Act run it before the bodies) every gas follows dC/dt = G ÷ V − λ (C − C outside), solved exactly over the minute, λ = air changes per hour ÷ 60; everyone whose spot is the room breathes its carbon monoxide (§6.8 uptake) and its oxygen (below 20.9 % as the equivalent altitude, §6.6); leaving the room returns them to clean air.
+
+| Quantity | Rule | Source |
+|---|---|---|
+| air changes | lognormal, median 0.45 per hour, 10th percentile 0.18 → σ 0.715; drawn once per room unless the story sets it [ASSUMED: any era and country] | US EPA Exposure Factors Handbook 2011, ch. 19, Table 19-1 (2,844 tracer measurements; Koontz & Rector 1995; lognormal fit: Murray & Burmaster 1995, Risk Anal 15:459) |
+| fire | per kg of fuel, from its elements: carbon → CO2 except what leaves as CO; O2 taken = C + H ÷ 4 − O ÷ 2 (moles), less half a mole per CO; wood C 50, H 6, O 44 %; charcoal pure carbon [ASSUMED]; a compound burnt in a lamp from its formula | Speight, Synthetic Fuels Handbook, Table D.1 |
+| carbon monoxide | charcoal 276 g per kg burnt; other solid fuels 15–85 g → 50 used [ASSUMED]; liquids and gases none unless given [ASSUMED] | IPCC Emission Factor Database meeting report, India, Annex 7 (household stove tests) |
+| breathing | O2 used = METs × 3.5 mL/kg/min; CO2 out 0.85 × that [ASSUMED respiratory exchange ratio]; 24.04 L per mole at 20 °C | |
+| outside CO2 | 420 ppm unless given (about 280 before 1800) [ASSUMED; no year table yet] | |
+
+Check (harness): a 30 m³ attic room, 0.3 changes per hour, 0.5 kg/h of charcoal, a man asleep: CO 2,911 ppm after 50 min, carboxyhaemoglobin 31 %, unconscious; dead at 59 min (40 %); O2 fall equivalent to 951 m altitude. By hand: 0.5 × 276 = 138 g CO/h = 118 L/h into 30 m³ ≈ 3,300 ppm in 50 min without leaks; the leak takes about 10 %. Replay of the world history exact. Not done: layering (heavy gases low, light high: the box gives the average), smoke and heat from the fire into the room, carbon dioxide's own effects on the body, gas flowing between connected rooms, open windows as a rule (only as a stated rate), outside CO2 by year.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -828,6 +842,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | Disease | disease, population, immune share | story facts | incubation and outbreak size (§6.15) |
 | Weather | station | scene fact | rain and temperature by WGEN (§6.16) |
 | Act | who, steps (be_at, walk_to, sit, stand, bend, kneel, reach, grasp…) | durations, clock, spot | MTM-1 times and own walking speed; moves the clock (§6.20) |
+| Room | room, volume, air changes, fires | room air | CO, CO2, O2 each minute from fuel atoms and breathing; occupants breathe it (§6.22) |
 | Substance | compound (name or SMILES), temperature | scene fact | state, burning, flash point, fire limits from measured data or structure (§6.19) |
 | Choose | options and their shares | outcome guess, as labelled bands | drawn in code (§6.17) |
 | BodySize | country, sex, birth year, story year | story facts | height and mass from NCD-RisC (§6.11) |

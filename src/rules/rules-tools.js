@@ -21,9 +21,11 @@ import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest } from './actions.js';
+import { parseFormula, molarMass } from './substance.js';
+import { airHook, describeAir, drawAch, FIRE_FUELS, OUT_O2 } from './rooms.js';
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify } from './world-log.js';
-import { loadChem, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
+import { loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
@@ -41,7 +43,7 @@ import { HOW, transfer, give, account, possessionsBlock } from './possessions.js
 import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode, soundOf } from './colex.js';
 import { resolveLanguage, stageKey } from './languages.js';
 import { str, checkArgs } from './tool-schema.js';
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
@@ -1638,7 +1640,7 @@ export function registerRulesTools(enabled) {
                 if (weathered)
                     applyWeather(st.people, t0 + elapsed);
                 const step = weathered ? Math.min(60, asked - elapsed) : asked - elapsed;
-                const r = advanceAll(st.people || {}, step, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []) });
+                const r = advanceAll(st.people || {}, step, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []), eachMinute: airHook(st) });
                 elapsed += r.elapsed;
                 events = r.events;
                 if (events.length || r.elapsed < step)
@@ -1690,7 +1692,7 @@ export function registerRulesTools(enabled) {
             if (mins > 0) {
                 st.clock.sec -= mins * 60;
                 const others = new Set(Object.keys(st.people ?? {}).filter(n => !names.has(n)));
-                const ev = advanceAll(st.people || {}, mins, others, rng, { active: names });
+                const ev = advanceAll(st.people || {}, mins, others, rng, { active: names, eachMinute: airHook(st) });
                 if (ev.events.length)
                     tail = ` Meanwhile: ${ev.events.join('; ')}.`;
             }
@@ -1700,6 +1702,53 @@ export function registerRulesTools(enabled) {
             tail = ' No story clock set ([TIME] missing): durations given, clock not moved.';
         return `${r.text}. Span ${honest(r.seconds)}.${tail}`;
     }));
+    tool('Room', 'Set up or change the air of an enclosed space (a room, a cellar, a tent, a mine gallery) when its air matters: a fire, a stove or a lamp burning inside, many people in a closed room, gas filling it. Characters whose spot (Act be_at / walk_to) is this room breathe its air every minute: carbon monoxide, carbon dioxide, oxygen. Call again when a fire starts or goes out.', {
+        room: str('The spot name, as used in Act ("John\'s house: kitchen")'),
+        volume_m3: { type: 'number', description: 'Volume, m³ (floor area × ceiling height; a 4 × 4 m room with a 2.5 m ceiling is 40). Needed the first time.' },
+        air_changes_per_hour: { type: 'number', description: 'Only when the story sets it (sealed 0, window wide open about 5); otherwise code draws a house\'s typical leak rate once' },
+        air_c: { type: 'number', description: 'Air temperature inside, °C. Default 20.' },
+        outdoor_co2_ppm: { type: 'number', description: 'Carbon dioxide outside, ppm. Default 420 (present day); about 280 before 1800.' },
+        fires: { type: 'array', description: 'What burns inside now (empty list: nothing)', items: { type: 'object', properties: {
+                    fuel: { type: 'string', description: `${Object.keys(FIRE_FUELS).join(', ')}, or a compound burnt in a lamp or burner (ethanol, methane, propane, octane)` },
+                    kg_per_hour: { type: 'number', description: 'Fuel burnt per hour, kg (a brazier about 0.5–1 kg/h of charcoal, an open wood fire 1–3, an oil lamp 0.01)' },
+                    co_g_per_kg: { type: 'number', description: 'Carbon monoxide per kg burnt, when known; otherwise the measured household-stove value' },
+                }, required: ['fuel', 'kg_per_hour'] } },
+    }, ['room'], async (a) => {
+        await loadChem();
+        return run((st, rng) => {
+            st.rooms ??= {};
+            const old = st.rooms[a.room];
+            if (!old && !(a.volume_m3 && a.volume_m3 > 0))
+                return `Give volume_m3 for ${a.room} (first time). Nothing recorded.`;
+            const fires = [];
+            for (const f of a.fires ?? []) {
+                const k = f.fuel.trim().toLowerCase(), known = FIRE_FUELS[k];
+                if (known) {
+                    fires.push({ fuel: k, kgh: f.kg_per_hour, C: known.C, H: known.H, O: known.O, coEF: f.co_g_per_kg ?? known.coEF, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : known.note });
+                    continue;
+                }
+                const c = findCompound(k);
+                if (!c)
+                    return `Unknown fuel "${f.fuel}". Known: ${Object.keys(FIRE_FUELS).join(', ')}, or a compound name. Nothing recorded.`;
+                const el = parseFormula(c.f), M = molarMass(c.f), pct = (e, w) => (el[e] ?? 0) * w / M * 100;
+                fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : 'burns to CO2 [ASSUMED]' });
+            }
+            const r = old ?? { m3: a.volume_m3, ach: a.air_changes_per_hour ?? Math.round(drawAch(() => gauss(rng)) * 100) / 100, co: 0, co2: a.outdoor_co2_ppm ?? 420, o2: OUT_O2, out: { co: 0, co2: a.outdoor_co2_ppm ?? 420 }, air_c: a.air_c ?? 20, fires: [] };
+            if (a.volume_m3)
+                r.m3 = a.volume_m3;
+            if (a.air_changes_per_hour != null)
+                r.ach = a.air_changes_per_hour;
+            if (a.air_c != null)
+                r.air_c = a.air_c;
+            if (a.outdoor_co2_ppm != null)
+                r.out.co2 = a.outdoor_co2_ppm;
+            if (a.fires)
+                r.fires = fires;
+            st.rooms[a.room] = r;
+            const inside = Object.entries(st.people ?? {}).filter(([, p]) => p.at === a.room).map(([n]) => n);
+            return `${describeAir(a.room, r)}. Inside: ${inside.join(', ') || 'no one'}. The air changes minute by minute as time passes (PassTime, Act).`;
+        });
+    });
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },

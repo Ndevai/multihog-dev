@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (27), Claude Opus 5.5
+- Added: tool Room. A room's air moves minute by minute (CO, CO2, O2) from what burns in it (by the fuel's atoms) and who breathes in it, with the house leak rate drawn from US measurements; people whose spot is the room breathe it.
+- Checked (harness): charcoal brazier, 30 m³, sleeping man: unconscious at 50 min, dead at 59; hand calculation agrees within the leak.
+- Not done: heavy and light gases layering, smoke and heat, CO2 effects, flow between rooms, outside CO2 by year.
+
 ## 2026-10-18 (26), Claude Opus 5.5
 - Added, borrowed from three projects: (1) every change of the world stored as a diff with its call and draws; /rules-replay rebuilds the state from them and catches changes made outside the tools (Orchestrated Reality). (2) Act times several characters on one clock with a merged timeline (Thing' Sandbox). (3) [KNOWS] picks each character's facts by recency + importance + relevance (Generative Agents); RecordFact takes importance 1–10.
 - Checked (harness): replay exact over 6 changes, a hand edit caught; café timeline Marie 3.5 s, John 8.2 s; memory keeps an old relevant fact and an important one, drops old meals.
