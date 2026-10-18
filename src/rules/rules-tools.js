@@ -8,7 +8,7 @@ import { learn, knowledgeBlock, recalls } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './emotion.js';
 import { skyLight } from './sky.js';
 import { findPlace, simulatePlaceYear, hourTemp, placeCountry } from './weather.js';
-import { observedDay, cachedDay } from './reanalysis.js';
+import { observedDay, cachedDay, reanalysisMissed } from './reanalysis.js';
 import { NORMALS } from './data/wmo-normals.js';
 import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET_ONLY, basketWage } from './prices.js';
 import { drawName } from './names.js';
@@ -1047,7 +1047,8 @@ export function registerRulesTools(enabled) {
             const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
             const o = w.observed, snowy = o ? o.snowCm > 0 : (d.tmaxC + d.tminC) / 2 <= 1.0;
             const sky = !d.wet ? 'dry' : snowy ? `snow, ${o ? `${Math.round(o.snowCm * 10) / 10} cm` : `${amount} of water`} over the day` : `rain, ${amount} over the day`;
-            const extra = !o ? '' : o.source === 'ERA5' ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : ' (that day\'s weather as reconstructed from pressure records, 20th Century Reanalysis)';
+            const c = coordsOf(place.key), missed = !o && c && reanalysisMissed(c[0], c[1], date.getFullYear());
+            const extra = missed ? ' (generated: the 20th Century Reanalysis could not be reached; is enableCorsProxy on in SillyTavern\'s config.yaml?)' : !o ? '' : o.source === 'ERA5' ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : ' (that day\'s weather as reconstructed from pressure records, 20th Century Reanalysis)';
             return `${place.label}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${sky}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C${extra}.`;
         });
     });

@@ -26,6 +26,10 @@ export function cachedDay(lat: number, lon: number, y: number, m: number, d: num
 }
 
 /** Fetches the observed day at `lat`, `lon`; null when outside ERA5 or the call fails. Each day is fetched once per session. */
+/** True when the day's reanalysis was tried and could not be read (service or proxy unreachable). */
+export function reanalysisMissed(lat: number, lon: number, y: number): boolean {
+    return y >= 1851 && y < 1940 && years.has(`${lat.toFixed(2)},${lon.toFixed(2)},${y}`) && !reached.has(`${lat.toFixed(2)},${lon.toFixed(2)},${y}`);
+}
 export async function observedDay(lat: number, lon: number, y: number, m: number, d: number): Promise<ObservedDay | null> {
     const k = key(lat, lon, y, m, d);
     if (cache.has(k)) return cache.get(k)!;
@@ -65,9 +69,10 @@ export async function observedDay(lat: number, lon: number, y: number, m: number
 // wind and humidity are not taken. The service sends no CORS header, so a browser reads it through SillyTavern's CORS proxy
 // (/proxy/, config.yaml enableCorsProxy: true).
 const PSL = 'https://psl.noaa.gov/cgi-bin/data/timeseries/getdaily.pl';
-const years = new Set<string>();
+const years = new Set<string>(), reached = new Set<string>();
 async function getText(url: string): Promise<string | null> {
-    for (const u of [url, `/proxy/${url}`]) {
+    // SillyTavern's proxy reads the target from the path, so the query string travels encoded inside it.
+    for (const u of [url, `/proxy/${encodeURIComponent(url)}`, `/proxy/${url}`]) {
         try { const r = await fetch(u); if (r.ok) { const t = await r.text(); if (/\d{4},\d{2},\d{2},/.test(t)) return t; } } catch { /* next route */ }
     }
     return null;
@@ -85,6 +90,7 @@ async function twentiethCentury(lat: number, lon: number, y: number): Promise<vo
     years.add(yk);
     const [hi, lo, pr] = await Promise.all(['tmax.2m', 'tmin.2m', 'prate'].map(v => series(lat, lon, y, v)));
     if (!hi || !lo || !pr) return;
+    reached.add(yk);
     for (const [day, kmax] of hi) {
         const kmin = lo.get(day), rate = pr.get(day);
         if (kmin == null || rate == null) continue;
