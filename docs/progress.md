@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (7), Claude Opus 5.5
+- Changed: Claim "something that happened before" takes `past_act`; the act is matched to Buss 1981's 600 acts, and the share of people of the character's sex who had ever done it is the base share, moved by the character's trait (36 % of men had hit someone who annoyed them; 25 % at very low extraversion, 48 % at very high).
+- Read by script from the scanned dissertation text (HathiTrust is search-only; no page image): 600 act texts, 600 men's and women's shares; sex checks fit (asking someone out 96 / 75 %, baking cookies 38 / 88 %). Compiles with zero errors.
+- Not read: per-act correlations for 544 of 600 acts (scrambled columns); r = 0.12 from the 56 clean ones is used for all.
+- Next: Gooskens minimal-exposure rows; IPUMS housing extract.
+
 ## 2026-10-18 (6), Claude Opus 5.5
 - Checked: a second, independent reading of Der & Deary Table 1 and Pearsons Table II and Figure 19 agrees with the first: 26 of 26 coefficients, 88 of 88 table values, Figure 19 within 0.04 dB. No code change.
 - Next: optional user data (Buss & Craik 1981; IPUMS housing; Gooskens all 16 rows).

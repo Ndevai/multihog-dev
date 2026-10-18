@@ -37,3 +37,59 @@ export function settingRatio(behaviour, situation) {
     return { ratio: APPROPRIATE[s][b] / mean, rating: APPROPRIATE[s][b] };
 }
 export { BEHAVIOURS, SITUATIONS };
+// Acts done before ("have you ever…"): Buss 1981 (dissertation, Appendix III), the percentage of men and of women among
+// Berkeley undergraduates, about 1980, who had ever performed each of 600 acts (data/buss.ts). The player's act is matched
+// to the listed act sharing the most of its words, rarer words first; more than half of the act's words must match.
+// The character's trait moves the share: a trait correlates with a single act at r = 0.12 (mean of the 56 acts whose
+// correlations read cleanly: aloof acts × IAS aloof octant 0.10, dominant acts × CPI Dominance 0.14), turned into a
+// biserial correlation ρ = r·√(p(1−p)) ÷ φ(τ), τ = Φ⁻¹(1 − p), and P(act | z) = Φ((ρz − τ) ÷ √(1 − ρ²)) [stated process].
+// Disposition → trait: dominant and gregarious +extraversion, submissive and aloof −extraversion, agreeable
+// +agreeableness, quarrelsome −agreeableness [ASSUMED mapping onto the Big Five].
+import { BUSS } from './data/buss.js';
+const STOP = new Set(['the', 'and', 'with', 'for', 'into', 'from', 'that', 'was', 'her', 'his', 'him', 'she', 'had', 'did', 'not', 'when', 'about', 'than', 'rather', 'even', 'though', 'although', 'were', 'this', 'there', 'their', 'they', 'them', 'who', 'what', 'out', 'off', 'at']);
+const stemW = (w) => w.replace(/(ing|ed|es|s)$/, '').replace(/(.)\1$/, '$1');
+const wordsOf = (t) => [...new Set(t.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(x => x.length > 2 && !STOP.has(x)).map(stemW))];
+let ACT_WORDS = [], ACT_DF = new Map();
+const dPhi = (x) => 0.3989423 * Math.exp(-x * x / 2);
+const invPhi = (p) => { let lo = -8, hi = 8; for (let i = 0; i < 60; i++) {
+    const m = (lo + hi) / 2;
+    if (phi(m) < p)
+        lo = m;
+    else
+        hi = m;
+} return (lo + hi) / 2; };
+const TRAIT_OF = { dominant: ['extraversion', 1], gregarious: ['extraversion', 1], submissive: ['extraversion', -1], aloof: ['extraversion', -1], agreeable: ['agreeableness', 1], quarrelsome: ['agreeableness', -1] };
+export const ACT_R = 0.12;
+/** The listed act a player's act matches, or null. */
+export function matchPastAct(text) {
+    if (ACT_WORDS.length !== BUSS.length) {
+        ACT_WORDS = BUSS.map(r => wordsOf(r[1]));
+        ACT_DF = new Map();
+        for (const ws of ACT_WORDS)
+            for (const x of ws)
+                ACT_DF.set(x, (ACT_DF.get(x) ?? 0) + 1);
+    }
+    const w = wordsOf(text);
+    if (!w.length)
+        return null;
+    let best = -1, key = [0, 0];
+    ACT_WORDS.forEach((ws, i) => {
+        const m = w.filter(x => ws.includes(x));
+        const k = [m.length, m.reduce((t, x) => t + Math.log(BUSS.length / (ACT_DF.get(x) ?? 1)), 0)];
+        if (k[0] > key[0] || (k[0] === key[0] && k[1] > key[1])) {
+            best = i;
+            key = k;
+        }
+    });
+    if (best < 0 || key[0] * 2 <= w.length || key[0] * 2 <= ACT_WORDS[best].length - 1)
+        return null;
+    const r = BUSS[best];
+    return { act: r[1], category: r[0], men: r[2] / 100, women: r[3] / 100 };
+}
+/** Share of people of the character's sex and trait level (z on the act's trait) who have ever done the act. */
+export function pastActShare(p, z, category) {
+    const sign = TRAIT_OF[category]?.[1] ?? 0, q = Math.min(0.99, Math.max(0.01, p)), tau = invPhi(1 - q);
+    const rho = Math.min(0.9, ACT_R * Math.sqrt(q * (1 - q)) / dPhi(tau));
+    return phi((rho * sign * z - tau) / Math.sqrt(1 - rho * rho));
+}
+export const pastActTrait = (category) => TRAIT_OF[category]?.[0] ?? null;

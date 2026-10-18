@@ -17,7 +17,7 @@ import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
 import { WATER_SOURCES, drinkWater } from './waterborne.js';
 import { pigment } from './pigment.js';
-import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, levelZ, stateShare, settingRatio } from './acts.js';
+import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, levelZ, stateShare, settingRatio, matchPastAct, pastActShare, pastActTrait } from './acts.js';
 import type { Trait } from './acts.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES, deathCause } from './disease.js';
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
@@ -1038,6 +1038,7 @@ export function registerRulesTools(enabled: boolean): void {
         language: str('For "something the character can do" when it is speaking a language: the language as named ("japanese", "modern japanese", "old mandarin")'),
         skill: { type: 'string', enum: ['reading and writing', 'counting and simple sums'], description: 'For "something the character can do" when it is one of these' },
         faith: { type: 'string', enum: FAITHS, description: 'For "what the character is" when it is a religion' },
+        past_act: str('For "something that happened before" when it is something the character once did ("hit someone who annoyed me", "asked someone out on a date"): the act in a few words, first person'),
         marital: { type: 'string', enum: ['never married', 'married now or before'], description: 'For "what the character is" when it is their marital state' },
         age: { type: 'number', description: 'With marital: the character\'s age' },
         lived_to: { type: 'number', description: 'For a claim that needs someone to have lived to an age (the character\'s own age; a parent alive now): that age' },
@@ -1102,6 +1103,19 @@ export function registerRulesTools(enabled: boolean): void {
         if (lives) a = { ...a, base_share: Math.max(0.001, lives.share) as unknown as string };
         const speaks = a.kind === 'something the character can do' && a.language ? speakShare(a.language, st.setting?.country, y) : null;
         if (speaks) a = { ...a, base_share: Math.max(0.001, speaks.share) as unknown as string };
+        // An act done before: the measured share of people of the character's sex who had ever done it (Buss 1981), moved by
+        // their place on the matching trait (acts.ts).
+        let past: { share: number; act: string } | null = null;
+        if (a.kind === 'something that happened before' && a.past_act) {
+            const m = matchPastAct(a.past_act), tr = m ? pastActTrait(m.category) : null;
+            if (m && tr) {
+                const prof = ((st.traits ??= {})[a.who] ??= {});
+                if (a.trait === tr && a.trait_level) prof[tr] = levelZ(a.trait_level);
+                prof[tr] ??= Math.max(-2.5, Math.min(2.5, gauss(rng)));
+                past = { share: pastActShare(sex === 'female' ? m.women : m.men, prof[tr], m.category), act: m.act };
+                a = { ...a, base_share: Math.max(0.001, past.share) as unknown as string };
+            }
+        }
         // An act of the character's own choosing: the share of their hours spent in states at the act's level (Fleeson 2001),
         // scaled by how fitting the act is in the setting against its average fit (Price & Bouffard 1974) [scaling ASSUMED].
         let act: { share: number; z: number; rating: number | null } | null = null;
@@ -1116,7 +1130,7 @@ export function registerRulesTools(enabled: boolean): void {
         const rare = shareOf(a.base_share) <= 0.05 || !!far || !!absent || !!foreign;
         if ((far || absent || foreign) && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
-        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${faith ? ` (${Math.round(faith.share * 1000) / 10} % of people in ${faith.country}, ${faith.year}, are ${a.faith})` : ''}${lives ? ` (${Math.round(lives.share * 1000) / 10} % live from ${Number(a.alive_at) || 0} to ${a.lived_to}, ${lives.country} life table ${lives.years})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}${act ? ` (someone at ${a.who}'s level of ${a.trait} acts this way in ${Math.round(act.share * 1000) / 10} % of moments${act.rating !== null ? `; ${a.behaviour} rated ${act.rating} of 9 for fit ${a.situation === 'own room' ? 'in one\'s own room' : `at ${a.situation}`}` : ''}; each step that makes it fit raises the chance)` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
+        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${faith ? ` (${Math.round(faith.share * 1000) / 10} % of people in ${faith.country}, ${faith.year}, are ${a.faith})` : ''}${lives ? ` (${Math.round(lives.share * 1000) / 10} % live from ${Number(a.alive_at) || 0} to ${a.lived_to}, ${lives.country} life table ${lives.years})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}${past ? ` (${Math.round(past.share * 1000) / 10} % of people like ${a.who} have ever done this: "${past.act}")` : ''}${act ? ` (someone at ${a.who}'s level of ${a.trait} acts this way in ${Math.round(act.share * 1000) / 10} % of moments${act.rating !== null ? `; ${a.behaviour} rated ${act.rating} of 9 for fit ${a.situation === 'own room' ? 'in one\'s own room' : `at ${a.situation}`}` : ''}; each step that makes it fit raises the chance)` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;
