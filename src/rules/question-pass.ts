@@ -191,6 +191,11 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         if (time !== null) setStoryTime(time);
         if (plan.at && !scenePosition()) setScenePosition(plan.at[0], plan.at[1]);
         calls = validCalls(plan.calls);
+        // The day's weather is decided by code every turn the story has a calendar date and a place, whether or not the
+        // question model asked: a narrator describes the sky unasked (a reply set in Rio, April 1822, had no Weather call).
+        const pos = scenePosition(), now = storyTime();
+        if (pos && now !== null && now / 1440 > 146097 && !calls.some(c => c.tool === 'Weather') && REGISTRY.has('Weather'))
+            calls.push({ tool: 'Weather', args: { latitude: pos.lat, longitude: pos.lon } } as Call);
         await runAll(calls);
         if ((plan.then.length || plan.need.length || results.some(r => /Call Interpret/.test(r.result))) && calls.length < MAX_CALLS) {
             // Tools asked for by name in "need", and Interpret when a result calls for it, get their arguments now.

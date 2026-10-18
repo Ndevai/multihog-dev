@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (18), Claude Opus 5.5
+- Fixed: the narrator described Rio's weather (April 1822) with no engine result; the question pass now adds a Weather call every turn the story has a date and a place, so code decides the sky before anyone describes it.
+- Checked (harness, stub model): Rio 14/4/1822 → Weather added, 28 / 19 °C, 0.1 mm.
+
 ## 2026-10-18 (17), Claude Opus 5.5
 - Changed: a single bleeding leg or arm now reads precomputed Pulse runs (40 runs: 2 sexes × 2 limbs × 10 severities × 60 minutes), so it costs no waiting on the phone; Pulse decides death (a cut femoral artery at severity 0.8 kills a man in 27 min, 2.94 L lost). Live Pulse remains for two or more bleeding limbs, within 60 s per PassTime.
 - Fixed: a stopped bleed ended its Pulse track only at the track's end; it now ends at once, and the old vital signs are cleared.
