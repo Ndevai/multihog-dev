@@ -814,12 +814,14 @@ const NERVE_MPS = 49;                                  // Chen 2016 AANEM: media
 const SYNAPSE_S = 0.0007;                              // More & Donelan 2018
 const twitch = (mass: number) => 0.0043 * mass ** 0.21 + 0.0176 * mass ** 0.20; // More & Donelan 2018: electromechanical + force generation
 const RT_CV = 36.42 / 297;                              // Petri 2020 spread
-// Simple reaction time by age and sex (Der & Deary 2006, Psychol Aging 21:62, Table 1, 7,130 adults 18–94; the table's Box–Cox
-// polynomial inverted to ms in the Senses handoff, rounding error several ms [RAW]): men 277, 290, 324, 399 ms and women 295,
-// 301, 344, 462 ms at ages 18, 45, 65, 80; linear between, held outside. Scales the reaction ÷ a man of 30 [reference ASSUMED].
-const RT_AGES = [18, 45, 65, 80], RT_MS = { male: [277, 290, 324, 399], female: [295, 301, 344, 462] };
-const rtMs = (age: number, sex: string) => { const v = RT_MS[sex === 'female' ? 'female' : 'male'], a = Math.max(18, Math.min(80, age));
-    const i = Math.min(2, RT_AGES.findIndex((x, k) => a >= x && a <= RT_AGES[k + 1])); return v[i] + (v[i + 1] - v[i]) * (a - RT_AGES[i]) / (RT_AGES[i + 1] - RT_AGES[i]); };
+// Simple reaction time by age and sex (Der & Deary 2006, Psychol Aging 21:62, Table 1, 7,130 adults 18–94): the table's
+// Box–Cox polynomial y = b0 + b1 a + b2 a² + b3 a³ + man × (bs + b4 a + b5 a²), a = age − 44.9, inverted as ms = (1 + λy)^(1/λ),
+// λ = −1.65. Gives men 277, 281, 290, 324, 399 ms and women 295, 294, 301, 344, 462 ms at ages 18, 30, 45, 65, 80; held
+// below 18 and above 85, where the cubic runs toward the transform's pole (women 567 ms at 85, 833 at 90) [ASSUMED cut]. Scales the reaction ÷ a man of 30 [reference ASSUMED].
+const RT_B = [0.6060111935, 0.0000002515, 0.0000000097, 0.0000000001, -0.0000029779, 0.0000000044, -0.0000000031];
+const rtMs = (age: number, sex: string) => { const a = Math.max(18, Math.min(85, age)) - 44.9, m = sex === 'female' ? 0 : 1;
+    const y = RT_B[0] + RT_B[1] * a + RT_B[2] * a * a + RT_B[3] * a ** 3 + m * (RT_B[4] + RT_B[5] * a + RT_B[6] * a * a);
+    return (1 - 1.65 * y) ** (-1 / 1.65); };
 export const reactionFactor = (p: Person | null | undefined) => p?.age == null ? 1 : rtMs(p.age, p.sex ?? 'male') / rtMs(30, 'male');
 const LIMB_MOVE_S = 0.242;                              // VencesBrito 2011 karate punch: moving a limb (block)
 const BODY_MOVE_S = 0.715;                              // Wakatsuki & Yamada 2020: reactive side-step movement time (dodge)

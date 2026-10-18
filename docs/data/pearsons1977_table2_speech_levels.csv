@@ -1,0 +1,12 @@
+place,subplace,background_leq_db,background_sd_db,speech_at_1m_leq_db,speech_at_1m_sd_db,second_column_label,second_column_leq_db,second_column_sd_db,pos_b_7m_leq_db,pos_b_7m_sd_db,note,source_page,checked_on_image
+Schools,I,48.0,2.0,69.0,4.0,"Pos. A, 2 m",62.0,5.0,57.0,4.0,speech at 1 m measured; background measured with typical student activity (footnote 2); quiet-period background 47 dB,printed p. 46 (PDF p. 55),yes
+Schools,II,51.0,3.0,73.0,4.0,"Pos. A, 2 m",66.0,5.0,62.0,6.0,speech at 1 m measured; background measured with typical student activity (footnote 2); quiet-period background 43 dB,printed p. 46 (PDF p. 55),yes
+Homes - Outside,Urban,61.0,5.0,65.0,4.0,Conversation distance,66.0,4.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Homes - Outside,Suburban,48.0,4.0,55.0,5.0,Conversation distance,56.0,5.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Homes - Inside,Urban,48.0,2.0,57.0,6.0,Conversation distance,57.0,6.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Homes - Inside,Suburban,41.0,3.0,55.0,5.0,Conversation distance,55.0,5.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Hospitals,Nurses,52.0,5.0,56.0,3.0,Conversation distance,57.0,4.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Hospitals,Patients,45.0,2.0,56.0,2.0,Conversation distance,55.0,1.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Department Stores,,54.0,4.0,58.0,3.0,Conversation distance,61.0,3.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Trains,,74.0,3.0,66.0,2.0,Conversation distance,73.0,3.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes
+Aircraft,,79.0,3.0,68.0,4.0,Conversation distance,77.0,4.0,,,speech corrected to 1 m,printed p. 46 (PDF p. 55),yes

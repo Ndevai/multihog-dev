@@ -1,0 +1,27 @@
+outcome,parameter,estimate,se,f,p_gt_f,eta_squared,source_page,checked_on_image
+SRT mean,Intercept,0.6060111935,3.6921508E-7,,,,printed p. 66 (PDF p. 5),yes
+SRT mean,Age,0.0000002515,2.523713E-8,"1,007.76",<.0001,,printed p. 66 (PDF p. 5),yes
+SRT mean,Age^2,0.0000000097,1.0046087E-9,205.10,<.0001,.145,printed p. 66 (PDF p. 5),yes
+SRT mean,Age^3,0.0000000001,3.556609E-11,9.91,.0017,,printed p. 66 (PDF p. 5),yes
+SRT mean,Sex,-0.0000029779,5.4592303E-7,100.64,<.0001,.012,printed p. 66 (PDF p. 5),yes
+SRT mean,Age*sex,0.0000000044,2.3858424E-8,0.34,.5603,,printed p. 66 (PDF p. 5),yes
+SRT mean,Age^2*sex,-0.0000000031,1.3219769E-9,5.56,.0184,.001,printed p. 66 (PDF p. 5),yes
+SRT ISD,Intercept,2.148890098,0.00238173,,,,printed p. 66 (PDF p. 5),yes
+SRT ISD,Age,0.001594583,0.00008856,594.16,<.0001,,printed p. 66 (PDF p. 5),yes
+SRT ISD,Age^2,0.000079802,0.00000488,264.06,<.0001,.107,printed p. 66 (PDF p. 5),yes
+SRT ISD,Sex,-0.016784090,0.00288069,33.95,<.0001,.004,printed p. 66 (PDF p. 5),yes
+CRT mean,Intercept,0.7997475115,9.6802073E-7,,,,printed p. 66 (PDF p. 5),yes
+CRT mean,Age,0.0000016995,6.616757E-8,"4,006.14",<.0001,,printed p. 66 (PDF p. 5),yes
+CRT mean,Age^2,0.0000000210,2.6339174E-9,101.84,<.0001,.365,printed p. 66 (PDF p. 5),yes
+CRT mean,Age^3,0.0000000001,9.32484E-11,1.81,.1791,,printed p. 66 (PDF p. 5),yes
+CRT mean,Sex,-0.0000026562,1.4313197E-6,31.32,<.0001,.003,printed p. 66 (PDF p. 5),yes
+CRT mean,Age*sex,0.0000000519,6.2552832E-8,0.01,.9101,,printed p. 66 (PDF p. 5),yes
+CRT mean,Age^2*sex,-0.0000000104,3.4660044E-9,9.00,.0027,.001,printed p. 66 (PDF p. 5),yes
+CRT ISD,Intercept,2.499384309,0.00144255,,,,printed p. 66 (PDF p. 5),yes
+CRT ISD,Age,0.002044210,0.00011700,"1,940.54",<.0001,,printed p. 66 (PDF p. 5),yes
+CRT ISD,Age^2,0.000030828,0.00000419,86.38,<.0001,.218,printed p. 66 (PDF p. 5),yes
+CRT ISD,Age^3,-0.000000470,0.00000018,0.68,.4111,,printed p. 66 (PDF p. 5),yes
+CRT ISD,Sex,-0.017092024,0.00217163,159.80,<.0001,.017,printed p. 66 (PDF p. 5),yes
+CRT ISD,Age*sex,-0.000374711,0.00017699,0.08,.7744,,printed p. 66 (PDF p. 5),yes
+CRT ISD,Age^2*sex,-0.000009681,0.00000613,0.10,.7575,,printed p. 66 (PDF p. 5),yes
+CRT ISD,Age^3*sex,0.000000654,0.00000028,5.62,.0178,.001,printed p. 66 (PDF p. 5),yes
