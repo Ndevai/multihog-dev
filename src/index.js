@@ -2,7 +2,7 @@
 // question pass names the outcomes in doubt and the engine decides them; the narrator gets the brief, the story time,
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
 import { pulseSelfTest } from './rules/pulse.js';
-import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, } from './rules/rules-tools.js';
+import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, } from './rules/rules-tools.js';
 import { runQuestionPass, decidedInjection, turnLog } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
@@ -345,6 +345,11 @@ function wireEvents() {
             t?.info('Pulse test running (up to a minute)…');
             const r = await pulseSelfTest();
             t?.success(r, 'Pulse', { timeOut: 0, extendedTimeOut: 0 });
+            return r;
+        } }));
+    c.SlashCommandParser?.addCommandObject(c.SlashCommand.fromProps({ name: 'rules-replay', helpString: 'Replays every recorded change of the world and says whether it rebuilds the current state exactly.', callback: async () => {
+            const r = historyCheck();
+            globalThis.toastr?.success(r, 'History', { timeOut: 0, extendedTimeOut: 0 });
             return r;
         } }));
     c.SlashCommandParser?.addCommandObject(c.SlashCommand.fromProps({ name: 'rules-log', helpString: 'This turn\'s decisions: each call, its arguments, the random draws it used and its result.', callback: async () => turnLog() }));

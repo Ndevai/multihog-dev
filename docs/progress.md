@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (26), Claude Opus 5.5
+- Added, borrowed from three projects: (1) every change of the world stored as a diff with its call and draws; /rules-replay rebuilds the state from them and catches changes made outside the tools (Orchestrated Reality). (2) Act times several characters on one clock with a merged timeline (Thing' Sandbox). (3) [KNOWS] picks each character's facts by recency + importance + relevance (Generative Agents); RecordFact takes importance 1–10.
+- Checked (harness): replay exact over 6 changes, a hand edit caught; café timeline Marie 3.5 s, John 8.2 s; memory keeps an old relevant fact and an important one, drops old meals.
+- Not done: contention (two actors for one door), embedding relevance, Concordia-style components.
+
 ## 2026-10-18 (25), Claude Opus 5.5
 - Added: tool Act. Characters have a recorded spot; walking between spots takes distance ÷ their own speed, posture and hand motions take MTM-1 standard times; the clock moves by exactly those seconds (hh:mm:ss) and bodies run alongside. Distances are recorded once and reused, so leaving from the doorway is shorter than from the bedroom. The audit flags times the narrator invents.
 - Checked (harness): bedroom → street 42 s, doorway → street 29 s, 1.5 km 18 min; a later different distance is refused; MTM pace and gait speed agree (0.77 m step).

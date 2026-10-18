@@ -23,8 +23,9 @@ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPID
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
-import { act, honest, type Step } from './actions.js';
+import { actTogether, honest, type Step } from './actions.js';
 import { formatStoryTime } from './clock.js';
+import { diff, record, truncate, verify, type History } from './world-log.js';
 import { loadChem, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -52,6 +53,8 @@ import type { GearSpec, StrikeInput } from './body-engine.js';
 export interface EngineStore {
     state: RuleState; snapshots: Record<number, { state: RuleState; calls: number }>; salt: string; calls?: number; version?: number;
     decided?: { turn: string; out: Record<string, string> } | null;
+    /** Every state change as a diff, with its call (world-log.ts). */
+    history?: History;
     /** The question pass of one turn: the calls asked for and what they returned (kept so a swipe reuses the same calls). */
     asked?: { turn: string; calls: { tool: string; args: Record<string, unknown> }[]; results: { tool: string; result: string; draws?: number[] }[]; time?: number | null; present?: string[];
         read?: { phrase: string; id: string; label: string; year: number | null }[] } | null;
@@ -65,6 +68,15 @@ const KEEP_SNAPSHOTS = 30;
 export interface RegisteredTool { name: ToolName; description: string; properties: Props; required: readonly string[]; exec: (args: Args) => Promise<unknown> }
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map<string, RegisteredTool>();
+
+/** Replays the history on its base: whether it rebuilds the current state exactly. */
+export function historyCheck(): string {
+    const s = store(), h = s.history;
+    if (!h?.log.length) return 'No recorded changes yet.';
+    const bad = verify(h, s.state);
+    const tools = Object.entries(h.log.reduce((m, e) => (m[e.tool] = (m[e.tool] ?? 0) + 1, m), {} as Record<string, number>)).map(([t, n]) => `${t} ${n}`).join(', ');
+    return `${h.log.length} recorded changes (${tools}). Replay ${bad ? `does NOT rebuild the state; differs at ${bad} (a change was made outside the tools)` : 'rebuilds the current state exactly'}.`;
+}
 
 export function store(): EngineStore {
     const ctx = SillyTavern.getContext();
@@ -105,6 +117,7 @@ export function onRulesGenerationStarted(type?: string): void {
         if (snap) {
             s.state = structuredClone(snap.state ?? (snap as unknown as RuleState));
             s.calls = snap.calls ?? 0;
+            if (s.history) truncate(s.history, chat.length - 1);
         }
         s.decided = null;
     } else if (!type || type === 'normal') {
@@ -360,7 +373,10 @@ function storyNow(st: RuleState): number | null {
 
 /** Sets the story time (minutes, clock.ts) for this chat. */
 export function setStoryTime(t: number): void {
-    store().state.clock = { t, add: 0 };
+    const s = store(), before = structuredClone(s.state);
+    s.state.clock = { t, add: 0 };
+    s.history ??= { base: before, log: [], n: 0 };
+    record(s.history, { msg: SillyTavern.getContext().chat?.length ?? 0, tool: 'set time', args: { t }, draws: [], ops: diff(before, s.state) });
     save();
 }
 
@@ -439,7 +455,8 @@ export function knowledgeInjection(): string {
     const ctx = SillyTavern.getContext();
     if (!ctx.chatMetadata) return '';
     const a = store().asked;
-    return knowledgeBlock(store().state, a?.turn === turnKey(ctx.chat) ? a.present : undefined);
+    const scene = (ctx.chat ?? []).slice(-2).map((m: { mes?: string }) => m.mes ?? '').join(' ');
+    return knowledgeBlock(store().state, a?.turn === turnKey(ctx.chat) ? a.present : undefined, scene);
 }
 
 /** Sets the scene's position (and the latitude light and weather use). */
@@ -495,7 +512,11 @@ export function registerRulesTools(enabled: boolean): void {
             await loadRaws();
             const prior = decided(name, args);
             if (prior) return `Already decided this turn; this result stands. ${prior}`;
+            const before = structuredClone(store().state);
             const out = plain(await action(args as ArgsOf<Ps, Req[number]>));
+            const s = store();
+            s.history ??= { base: before, log: [], n: 0 };
+            record(s.history, { msg: SillyTavern.getContext().chat?.length ?? 0, tool: name, args, draws: [...LAST_DRAWS], ops: diff(before, s.state) });
             remember(name, args, out);
             (globalThis as { _rpgRefreshRenderedView?: () => void })._rpgRefreshRenderedView?.();
             return out;
@@ -1028,6 +1049,7 @@ export function registerRulesTools(enabled: boolean): void {
         cause: str('For an event: who or what caused it, as the story has it: a character\'s name, "a natural force", or "unknown"'),
         secret: { type: 'boolean', description: 'The knowers keep it hidden from others (an affair, a crime, a plan)' },
         kind: { type: 'string', enum: ['event', 'knowledge'], description: 'event: something that happened or was said (default); knowledge: something learned by study or training (a name, a concept, a craft\'s facts), which fades less and then holds' },
+        importance: { type: 'number', description: 'How much it matters to the knowers, 1–10: 1 purely mundane (brushing teeth, a meal), 10 extremely poignant (a death, a break-up, a betrayal, an acceptance)' },
     }, ['fact'], a => run(st => {
         const how = a.how === KNOWN_HOW[4] && a.told_by ? `told by ${a.told_by}` : a.how;
         if (a.cause && !['a natural force', 'unknown'].includes(a.cause.toLowerCase())) { const c = whoAny(st, a.cause); if (!c.p) return c.error; }
@@ -1035,6 +1057,7 @@ export function registerRulesTools(enabled: boolean): void {
         const f = learn(st, text, a.known_by ?? [], !!a.common_knowledge, how ? Object.fromEntries((a.known_by ?? []).map(k => [k, how])) : {});
         if (a.secret && !a.common_knowledge) f.secret = true;
         if (a.kind === 'knowledge') f.kind = 'knowledge';
+        if (a.importance != null) f.imp = Math.min(10, Math.max(1, Math.round(a.importance)));
         return `Fact ${f.id} recorded: ${f.text.replace(/[.!?]?$/, '.')} Known by ${f.everyone ? 'everyone' : f.knowers.join(', ') || 'no one yet'}.`;
     }));
 
@@ -1071,7 +1094,7 @@ export function registerRulesTools(enabled: boolean): void {
             description: 'For a claim whose base share is "almost no one": the events it needs, in order, each given the ones before (arrive in the country, reach the place, stay there). Required then.' },
     }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
         if (a.kind === 'something the character has') account(st, a.who);
-        // A thing not yet invented at the story's date, or never made in this world, cannot be had (history.ts).
+        // A thing not yet invented at the story's date, or never made in this world, cannot be had (world-log.ts).
         const y = storyYear(st);
         const late = a.kind === 'something the character has' && a.item ? cannotExist(a.item, y, CURRENT_BOOK, 'thing')
             : a.kind === 'something the character can do' && a.language ? cannotExist(a.language, y, CURRENT_BOOK, 'language')
@@ -1503,21 +1526,26 @@ export function registerRulesTools(enabled: boolean): void {
         return [head, ...lines].join('\n');
     }); });
 
-    tool('Act', 'Time a character\'s physical actions before narrating them: walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives, not your own. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
-        who: str('Character acting'),
-        steps: { type: 'array', description: 'Actions in order', items: { type: 'object', properties: {
+    const STEP_ITEM = { type: 'object', properties: {
             do: { type: 'string', enum: ['be_at', 'walk_to', 'sit', 'stand', 'bend', 'kneel', 'arise', 'kneel_both', 'arise_both', 'turn', 'sidestep', 'reach', 'grasp', 'release', 'look'] },
             to: str('Spot, named with its place: "John\'s house: living room", "John\'s house: front door", "Rue de Rivoli"'),
             distance_m: { type: 'number', description: 'Walking distance to the spot, m, from the scene\'s layout; needed only the first time' },
             cm: { type: 'number', description: 'Reach distance, cm' },
             grade_pct: { type: 'number', description: 'Slope or stairs, % (a staircase about 60)' },
             load_kg: { type: 'number', description: 'Load carried, kg' },
-        }, required: ['do'] } },
-    }, ['who', 'steps'], a => run((st, rng) => {
-        const { p, error } = who(st, a.who);
-        if (!p) return error;
-        const r = act(st, a.who, p, a.steps as Step[], (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
+        }, required: ['do'] } as const;
+    tool('Act', 'Time characters\' physical actions before narrating them; when several characters act at the same time, put them all in one call (actors): walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives, not your own. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
+        who: str('Character acting (one actor)'),
+        actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), steps: { type: 'array', items: STEP_ITEM } }, required: ['who', 'steps'] } },
+        steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
+    }, [], a => run((st, rng) => {
+        const list = (a.actors as unknown as { who: string; steps: Step[] }[] | undefined) ?? (a.who && a.steps ? [{ who: String(a.who), steps: a.steps as unknown as Step[] }] : []);
+        if (!list.length) return 'Give who and steps, or actors. Nothing recorded.';
+        const actors: { who: string; p: Person; steps: Step[] }[] = [];
+        for (const x of list) { const { p, error } = who(st, x.who); if (!p) return error; actors.push({ who: x.who, p, steps: x.steps }); }
+        const r = actTogether(st, actors, p => (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
         if ('error' in r) return `${r.error} Nothing recorded.`;
+        const names = new Set(actors.map(x => x.who));
         let tail = '';
         if (st.clock) {
             st.clock.add += r.seconds / 60;
@@ -1526,13 +1554,13 @@ export function registerRulesTools(enabled: boolean): void {
             const mins = Math.floor(st.clock.sec / 60);
             if (mins > 0) {
                 st.clock.sec -= mins * 60;
-                const others = new Set(Object.keys(st.people ?? {}).filter(n => n !== a.who));
-                const ev = advanceAll(st.people || {}, mins, others, rng, { active: new Set([a.who]) });
+                const others = new Set(Object.keys(st.people ?? {}).filter(n => !names.has(n)));
+                const ev = advanceAll(st.people || {}, mins, others, rng, { active: names });
                 if (ev.events.length) tail = ` Meanwhile: ${ev.events.join('; ')}.`;
             }
             tail = ` Clock now ${formatStoryTime(storyNow(st)!)}.` + tail;
         } else tail = ' No story clock set ([TIME] missing): durations given, clock not moved.';
-        return `${r.lines.join('; ')}. Total ${honest(r.seconds)}.${tail}`;
+        return `${r.text}. Span ${honest(r.seconds)}.${tail}`;
     }));
 
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {

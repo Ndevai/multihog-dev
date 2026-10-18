@@ -96,11 +96,34 @@ export const knows = (st, name, text) => (st.facts ?? []).some(f => norm(f.text)
 // reads every line, to catch a character acting on what only others know. A secret is a fact its knowers keep hidden.
 /** The [KNOWS] block: common knowledge, then each character's own facts, newest last; only `present` characters' lines
  *  when given. Empty when nothing is recorded. */
-export function knowledgeBlock(st, present) {
+// Which facts a character has in mind when there are more than FACTS_SHOWN: retrieval score = recency + importance +
+// relevance, each min-max scaled to 0–1 over the candidates, equal weights (Park et al. 2023, "Generative Agents", UIST,
+// §4.1). Recency decays × 0.995 per story hour since the fact was learned (Park: since last retrieved [ASSUMED: learned]);
+// without a clock, per fact recorded since. Importance 1–10 as recorded (RecordFact `importance`, Park's scale: 1 mundane,
+// 10 life-changing; 5 when not given [ASSUMED]). Relevance: share of the fact's content words found in the last two
+// messages [ASSUMED: word overlap stands in for Park's embedding similarity]. The chosen facts are shown oldest first.
+const STOP = new Set('the a an and or of to in on at by for with from is was were are be been his her their its this that it he she they them him as not no but into out up'.split(' '));
+const words = (t) => new Set(t.toLowerCase().match(/[\p{L}\p{N}]+/gu)?.filter(w => w.length > 2 && !STOP.has(w)) ?? []);
+export function pickFacts(st, list, who, scene, n = FACTS_SHOWN) {
+    if (list.length <= n)
+        return list;
+    const now = st.clock ? st.clock.t + st.clock.add : null, maxSeq = Math.max(...list.map(f => f.seq ?? 0)), sw = words(scene);
+    const raw = list.map(f => {
+        const at = who ? f.at?.[norm(who)] : undefined;
+        const hours = now !== null && at != null ? Math.max(0, (now - at) / 60) : maxSeq - (f.seq ?? 0);
+        const fw = words(f.text), hit = [...fw].filter(w => sw.has(w)).length;
+        return { f, rec: 0.995 ** hours, imp: f.imp ?? 5, rel: fw.size ? hit / fw.size : 0 };
+    });
+    const scale = (k) => { const v = raw.map(r => r[k]), lo = Math.min(...v), hi = Math.max(...v); return (x) => hi > lo ? (x - lo) / (hi - lo) : 0; };
+    const [r, i, l] = [scale('rec'), scale('imp'), scale('rel')];
+    const top = raw.map(x => ({ f: x.f, s: r(x.rec) + i(x.imp) + l(x.rel) })).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.f);
+    return list.filter(f => top.includes(f));
+}
+export function knowledgeBlock(st, present, scene = '') {
     const facts = [...(st.facts ?? [])].sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
     if (!facts.length)
         return '';
-    const last = (list, n) => list.slice(-FACTS_SHOWN).map(f => `${f.text}${n && f.from?.[norm(n)] ? ` (${f.from[norm(n)]})` : ''}${f.secret ? ' [secret: kept hidden]' : ''}`).join(' | ');
+    const last = (list, n) => pickFacts(st, list, n, scene).map(f => `${f.text}${n && f.from?.[norm(n)] ? ` (${f.from[norm(n)]})` : ''}${f.secret ? ' [secret: kept hidden]' : ''}`).join(' | ');
     const lines = [];
     const common = facts.filter(f => f.everyone);
     if (common.length)

@@ -5,6 +5,7 @@ import { pulseSelfTest } from './rules/pulse.js';
 import {
     registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat,
     RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY,
+    historyCheck,
 } from './rules/rules-tools.js';
 import { runQuestionPass, decidedInjection, turnLog, type Chooser } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
@@ -327,6 +328,11 @@ function wireEvents(): void {
         t?.info('Pulse test running (up to a minute)…');
         const r = await pulseSelfTest();
         t?.success(r, 'Pulse', { timeOut: 0, extendedTimeOut: 0 });
+        return r;
+    } }));
+    c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-replay', helpString: 'Replays every recorded change of the world and says whether it rebuilds the current state exactly.', callback: async () => {
+        const r = historyCheck();
+        (globalThis as { toastr?: { success: (m: string, t: string, o: object) => void } }).toastr?.success(r, 'History', { timeOut: 0, extendedTimeOut: 0 });
         return r;
     } }));
     c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-log', helpString: 'This turn\'s decisions: each call, its arguments, the random draws it used and its result.', callback: async () => turnLog() }));

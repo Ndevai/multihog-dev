@@ -35,8 +35,8 @@ export function honest(seconds: number): string {
 
 export interface Step { do: string; to?: string; distance_m?: number; cm?: number; grade_pct?: number; load_kg?: number }
 /** Runs the steps for one person; returns the seconds taken and one line per step, or an error. Records the new spot. */
-export function act(st: State, who: string, p: Person, steps: Step[], country: string | null): { seconds: number; lines: string[] } | { error: string } {
-    let total = 0; const lines: string[] = [];
+export function act(st: State, who: string, p: Person, steps: Step[], country: string | null): { seconds: number; lines: string[]; marks: [number, string][] } | { error: string } {
+    let total = 0; const lines: string[] = [], marks: [number, string][] = [];
     for (const s of steps) {
         let t: number, what: string;
         if (s.do === 'walk_to') {
@@ -59,7 +59,25 @@ export function act(st: State, who: string, p: Person, steps: Step[], country: s
         } else if (MTM[s.do]) {
             t = MTM[s.do].tmu * TMU_S; what = MTM[s.do].does;
         } else return { error: `Unknown action "${s.do}". Known: walk_to, be_at, reach, ${Object.keys(MTM).join(', ')}.` };
-        total += t; lines.push(`${who} ${what}: ${honest(t)}`);
+        total += t; lines.push(`${who} ${what}: ${honest(t)}`); marks.push([total, `${who} ${what.split(' at ')[0].replace(/ from .* to /, ' to ')}`]);
     }
-    return { seconds: total, lines };
+    return { seconds: total, lines, marks };
+}
+
+/** Several characters acting over the same span (borrowed from the intentions-then-resolution tick of Thing' Sandbox,
+ *  github.com/zebrr/Thing-Sandbox): every actor's steps are timed on one clock; the span lasts as long as the slowest; the
+ *  merged timeline says who finishes what first. */
+export function actTogether(st: State, actors: { who: string; p: Person; steps: Step[] }[], country: (p: Person) => string | null): { seconds: number; text: string } | { error: string } {
+    const backup = structuredClone({ links: st.links, at: actors.map(a => a.p.at) });
+    const runs: { who: string; seconds: number; lines: string[]; marks: [number, string][] }[] = [];
+    for (const a of actors) {
+        const r = act(st, a.who, a.p, a.steps, country(a.p));
+        if ('error' in r) { st.links = backup.links; actors.forEach((x, i) => { x.p.at = backup.at[i]; }); return { error: `${a.who}: ${r.error}` }; }
+        runs.push({ who: a.who, ...r });
+    }
+    const seconds = Math.max(0, ...runs.map(r => r.seconds));
+    const lines = runs.map(r => `${r.lines.join('; ')} (${honest(r.seconds)} in all)`);
+    if (runs.length < 2) return { seconds, text: lines.join(' ') };
+    const tl = runs.flatMap(r => r.marks).sort((a, b) => a[0] - b[0]).map(([t, w]) => `${honest(t)} ${w}`);
+    return { seconds, text: `${lines.join('. ')}. Timeline: ${tl.join('; ')}` };
 }

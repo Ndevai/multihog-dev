@@ -29,7 +29,7 @@ export function honest(seconds) {
 /** Runs the steps for one person; returns the seconds taken and one line per step, or an error. Records the new spot. */
 export function act(st, who, p, steps, country) {
     let total = 0;
-    const lines = [];
+    const lines = [], marks = [];
     for (const s of steps) {
         let t, what;
         if (s.do === 'walk_to') {
@@ -73,6 +73,29 @@ export function act(st, who, p, steps, country) {
             return { error: `Unknown action "${s.do}". Known: walk_to, be_at, reach, ${Object.keys(MTM).join(', ')}.` };
         total += t;
         lines.push(`${who} ${what}: ${honest(t)}`);
+        marks.push([total, `${who} ${what.split(' at ')[0].replace(/ from .* to /, ' to ')}`]);
     }
-    return { seconds: total, lines };
+    return { seconds: total, lines, marks };
+}
+/** Several characters acting over the same span (borrowed from the intentions-then-resolution tick of Thing' Sandbox,
+ *  github.com/zebrr/Thing-Sandbox): every actor's steps are timed on one clock; the span lasts as long as the slowest; the
+ *  merged timeline says who finishes what first. */
+export function actTogether(st, actors, country) {
+    const backup = structuredClone({ links: st.links, at: actors.map(a => a.p.at) });
+    const runs = [];
+    for (const a of actors) {
+        const r = act(st, a.who, a.p, a.steps, country(a.p));
+        if ('error' in r) {
+            st.links = backup.links;
+            actors.forEach((x, i) => { x.p.at = backup.at[i]; });
+            return { error: `${a.who}: ${r.error}` };
+        }
+        runs.push({ who: a.who, ...r });
+    }
+    const seconds = Math.max(0, ...runs.map(r => r.seconds));
+    const lines = runs.map(r => `${r.lines.join('; ')} (${honest(r.seconds)} in all)`);
+    if (runs.length < 2)
+        return { seconds, text: lines.join(' ') };
+    const tl = runs.flatMap(r => r.marks).sort((a, b) => a[0] - b[0]).map(([t, w]) => `${honest(t)} ${w}`);
+    return { seconds, text: `${lines.join('. ')}. Timeline: ${tl.join('; ')}` };
 }
