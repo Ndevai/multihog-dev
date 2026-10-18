@@ -700,6 +700,11 @@ export function registerRulesTools(enabled: boolean): void {
     // A strong feeling raises the voice: peak speech level of 48 women students enacting a message, strong minus weak intensity,
     // anger +4.46 dB, liking +1.19 dB (Kimble, Forte & Yoshikawa 1981, J Pers 49:271, Table 2, mean of camera and person targets).
     const FEELING_DB: Record<string, number> = { 'intense anger': 4.46, 'intense affection': 1.19 };
+    // In noise people raise their voice without meaning to (Lombard effect): face to face, speech holds 55 dB at 1 m up to 48 dB
+    // of background, then rises 0.6 dB per dB of noise, reaching 67 dB at 70 dB of noise (Pearsons, Bennett & Fidell 1977,
+    // EPA-600/1-77-025, abstract and Table II; A-weighted, applied to the engine's overall levels [ASSUMED]); held above 70 dB
+    // [ASSUMED]. Applies to a normal voice; a chosen effort is the speaker's own.
+    const lombardDb = (noiseDb: number) => 0.6 * Math.max(0, Math.min(70, noiseDb) - 48);
     tool('Communicate', 'Decide what a message carries from one character to another (speech or gesture) before narrating a reply or reaction. Returns whether the words, only the tone, or nothing reaches the listener.', {
         speaker: str('Character sending the message'),
         listener: str('Character receiving it'),
@@ -729,7 +734,7 @@ export function registerRulesTools(enabled: boolean): void {
         // A speaker without voice whispers at every effort: a whisper, or a loud whisper when they raise it.
         const effort = s.p.voice === 'whisper' ? (!a.effort || a.effort === 'normal' || a.effort === 'whisper' ? 'whisper' : 'loud whisper') : a.effort ?? 'normal';
         const langs = [s.p.languages?.map(x => stageKey(x, year)), l.p.languages?.map(x => stageKey(x, year))];
-        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none', louder_db: a.feeling ? FEELING_DB[a.feeling] : 0 });
+        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none', louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0) });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out)) return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
         // English speech is already on the page in its own words; another language's words are not. A whisper loses voicing
