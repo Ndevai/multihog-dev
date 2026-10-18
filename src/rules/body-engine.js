@@ -9,6 +9,7 @@ import { grip, gripNorm } from './strength.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
+import { foodEnergy } from './substance.js';
 import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { relatedShare } from './intelligibility.js';
 import { pulseWound } from './pulse.js';
@@ -1399,12 +1400,15 @@ export function choke(p, seconds, holder = null, rng = Math.random) {
     }
     return `Choke held ${s} s: still conscious (would black out at ${round(at)} s).`;
 }
-/** Drinking and eating: water in L, food in kcal, taken off the deficits (never below 0). */
-export function intake(p, { water_l = 0, food_kcal = 0, alcohol_g = 0 } = {}) {
+/** Drinking and eating: water in L, food energy (kcal, or from its composition, §6.19; alcohol 7 kcal/g), taken off the
+ * deficits (never below 0). Returns a note when the stated energy contradicts the composition. */
+export function intake(p, a = {}) {
     p.needs ??= { waterL: 0, kcal: 0, awake: 0, slept: 0, waterDeath: null, foodDeath: null };
-    p.needs.alcohol = (p.needs.alcohol || 0) + Math.max(0, Number(alcohol_g) || 0) / (WIDMARK_R * p.mass * 1000) * 100;
-    p.needs.waterL = Math.max(0, p.needs.waterL - Math.max(0, Number(water_l) || 0));
-    p.needs.kcal = Math.max(0, p.needs.kcal - Math.max(0, Number(food_kcal) || 0));
+    p.needs.alcohol = (p.needs.alcohol || 0) + Math.max(0, Number(a.alcohol_g) || 0) / (WIDMARK_R * p.mass * 1000) * 100;
+    p.needs.waterL = Math.max(0, p.needs.waterL - Math.max(0, Number(a.water_l) || 0));
+    const e = foodEnergy(a);
+    p.needs.kcal = Math.max(0, p.needs.kcal - e.kcal);
+    return e.note;
 }
 /** Listener hearing for acoustics.js: { shift, deaf } (species threshold, one of two ears lost +3 dB, bands out of range). */
 function earOf(l, lc) {
@@ -1433,7 +1437,7 @@ export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight',
     return `${vs} ${level} (${what}).`;
 }
 /**
- * Holding a load by the hands (§6.10): hanging by the hands (load = own body mass) or carrying something by handles. Holds
+ * Holding a load by the hands (§6.19): hanging by the hands (load = own body mass) or carrying something by handles. Holds
  * when the per-hand load ≤ grip strength × the hand's working capacity (grasp ability, cold forearm force factor). Humans only
  * (Dodds 2014 norms); hands counted from working GRASP parts.
  */

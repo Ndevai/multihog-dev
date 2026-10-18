@@ -685,17 +685,21 @@ export function registerRulesTools(enabled: boolean): void {
         who: str('Character name'),
         water_l: { type: 'number', description: 'Water drunk, litres (a cup 0.25, a bottle 0.5–1)' },
         food_kcal: { type: 'number', description: 'Food energy eaten, kcal (bread slice 80, apple 95, meal 600–900)' },
+        food_g: { type: 'number', description: 'Weight of food eaten, g, when known' },
+        carb_g: { type: 'number', description: 'Carbohydrate in it, g, when known (code computes the energy and checks food_kcal)' },
+        protein_g: { type: 'number', description: 'Protein in it, g, when known' },
+        fat_g: { type: 'number', description: 'Fat in it, g, when known' },
         alcohol_g: { type: 'number', description: 'Pure alcohol drunk, grams (beer 330 mL 13 g, wine glass 150 mL 14 g, spirit shot 40 mL 13 g)' },
         water_source: { type: 'string', enum: WATER_SOURCES, description: 'Where untreated water came from; leave out for treated tap or bottled water' },
         boiled: { type: 'boolean', description: 'The water was brought to a rolling boil first' },
     }, ['who'], a => run((st, rng) => {
         const { p, error } = who(st, a.who);
         if (!p) return error;
-        intake(p, a);
+        const note = intake(p, a);
         // Boiling at a rolling boil kills the reference pathogens (WHO 2015, technical brief "Boil water").
         const w = a.water_source && !a.boiled ? drinkWater(a.water_source, Number(a.water_l) || 0, rng) : null;
         const sick = w?.ill.length ? ` ${a.who} caught ${w.ill.join(' and ')}: diarrhoea and cramps start within days.` : w?.infected.length ? ` ${a.who} carries an infection without falling ill.` : '';
-        return status(a.who, p) + sick;
+        return (note ? `Food: ${note}. ` : '') + status(a.who, p) + sick;
     }));
 
     // A strong feeling raises the voice: peak speech level of 48 women students enacting a message, strong minus weak intensity,

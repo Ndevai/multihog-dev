@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (21), Claude Opus 5.5
+- Added: substance records checked against their atoms (§6.19): molar mass, oxygen demand and heat of burning from the formula; records that contradict it are refused, gaps filled from the family. Food energy from carbohydrate, protein and fat (Atwater) with hard limits; alcohol now counts 7 kcal/g.
+- Checked: 79 records, 1 contradiction (propyne, a misprint in the source), 5 suspect; leave-one-out error 1.8 %; harness BodyIntake refuses impossible foods.
+- Not done: hazards from structure (needs a structure string per record); sulfur, phosphorus and salts.
+
 ## 2026-10-18 (20), Claude Opus 5.5
 - Changed: walking pace and walking energy come from one energy model (Load Carriage Decision Aid, Looney et al. 2022) instead of Tobler's curve and Pandolf. Flat-road pace stays the measured gait speed by age and sex; ground and load move it with the cheapest speed per metre; slopes slow the walker until the cost fits the power they can keep up for 2.8 h (fitted to Tobler). Climbs now depend on each person's fitness, age, altitude and blood loss.
 - Checked (Node, harness): cheapest speed 1.29 m/s (expected ~1.3); flat 5.16 km/h, +10 % 3.84 (Tobler 3.63), RMS error 0.39 km/h over 0–30 %; 318 W at 5 km/h (Compendium 3.5 MET ≈ 3.9 here); PassTime with walking runs.

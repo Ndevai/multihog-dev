@@ -725,6 +725,24 @@ Surprise: when the defenders were unaware of the attack until it struck, the sha
 
 Casualties and duration: copied from one real battle in CDB90 (US Army Concepts Analysis Agency, Database of Battles 1990; open copy github.com/jrnold/CDB90, whose cleaned files set every negative code to missing, so outcomes were re-read from the original WKS files: 398 attacker wins, 217 losses, 43 draws, 2 unknown) of the same era (1600–1900, 1901–1973) and outcome, chosen at random among the 10 nearest in force ratio and total size (distance |Δ ln ratio| + |Δ ln size|) [ASSUMED: k = 10, equal weights]. Battles with reinforcements are left out, as Helmbold 1995 (CAA-RP-95-1) did, leaving 427. Size enters because the loser's casualty share falls from 27 % in battles under 10 000 men to 12 % at 10 000–50 000. The battle's casualty shares (killed, wounded, captured, missing) are applied to the story's forces and its active fighting hours are reported. Medians, 1600–1900: attacker won: attackers 9 %, defenders 27 %, 8 hours; attacker lost: attackers 22 %, defenders 9 %. 1901–1973: won 3.5 % / 14 %, 48 hours; lost 4.6 % / 4.6 %. After 1973 the 1901–1973 battles are used [ASSUMED]. Draws (3 % before 1900, 10 % after) are folded into failures, as in the Dupuy tables.
 
+### 6.19 Substances checked against their atoms
+
+A substance record is a name, a formula and measured values (`rules/substances.json`). Code derives what the atoms fix and refuses records that contradict it (decided 2026-10-18, from the user: constrain by composition, fill gaps from the family, measured values win over family guesses, a broken conservation law means the record is wrong).
+
+| Quantity | Rule | Source |
+|---|---|---|
+| molar mass | sum of atomic weights (H 1.008, C 12.011, N 14.007, O 15.999) | IUPAC conventional atomic weights |
+| oxygen to burn it | mol O2 = C + H ÷ 4 − O ÷ 2 (to CO2, liquid water, N2) | element balance |
+| heat of burning | ≈ 442 kJ per mol O2: median over the 68 records with 2 or more carbons; leave-one-out median error 1.8 %, 90 % within 7.1 % (propyne left out); a family with 3 or more measured members (fatty acids 437, alcohols) uses its own median [ASSUMED for any unmeasured substance] | Thornton 1917 rule, fitted on The Engineering ToolBox (2017) "Combustion Heat" table and Chemistry LibreTexts "Foods and Fuels" (glucose 15.6 kJ/g, valine 2922 kJ/mol) |
+| verdict | measured vs atoms: within 10 % ok, 10–20 % suspect, beyond 20 % contradiction (refused, estimate used) [ASSUMED thresholds]; one-carbon molecules and H2 not judged (11–29 % off: their bonds differ from chains) | |
+| food energy | carbohydrate 4, protein 4, fat 9, alcohol 7 kcal/g; parts heavier than the food refused; more than 9 kcal per g of food refused (pure fat is the ceiling); a stated kcal more than 20 % off the composition replaced by it [ASSUMED tolerance] | Atwater general factors, FAO 2003, Food and Nutrition Paper 77, ch. 3 |
+
+Check (`node tools/check-substances.mjs`): 62 ok, 5 suspect, 1 contradiction, 11 not judged. The contradiction is propyne, printed 185 kJ/mol where its atoms allow 1768 (a misprint in the source table). Suspect: propanal printed 1522, atoms allow 1768 (−13.9 %, likely another misprint); acetylene, ketene (strained or triple bonds hold more energy, +16–18 %), dimethyl ether and methyl formate (+10 %). The table also prints 1-butanol as C4H10 (oxygen missing); its heat sits −7 % from what C4H10 allows, inside the ok band: a formula error that keeps the heat near the chain rule is not caught. Estimates: sucrose 15.5 kJ/g, stearic acid 39.9 kJ/g, leucine 27.8 kJ/g. Glucose measured 15.6 kJ/g, atoms allow 14.8 (−5 %).
+
+Fix found by the same rule: alcohol drunk now counts 7 kcal/g toward food energy (before, it raised blood alcohol only). BodyIntake takes `food_g`, `carb_g`, `protein_g`, `fat_g`. Checks (harness): 50 g carbohydrate, 10 protein, 5 fat stated as 900 kcal → 285 kcal used; 2000 kcal in 100 g → 900 used; 60 g of parts in 50 g → refused.
+
+Not done: hazards from structure (an O–O bond, as in hydrogen peroxide) need a structure string per record, not only the formula; the formula alone cannot tell H2O2 from other H:O 1:1 arrangements. Other elements (S, P, salts) have no weights here yet. Body-run records will carry dose with molar mass when they are wired in (moles, not effects, are checked).
+
 ## 7. Tools
 
 | Tool | Change |

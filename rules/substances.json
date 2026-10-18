@@ -1,0 +1,574 @@
+{
+"_note": "Standard heats of combustion (gross, to CO2, liquid H2O, N2). EngineeringToolbox = The Engineering ToolBox (2017) \"Combustion Heat\" table, printed as is (1-Butanol printed C4H10, kept: the checker reads the record as given); LibreTexts = Chemistry LibreTexts, TRU Fundamentals 3.9 \"Foods and Fuels\" (valine -2922 kJ/mol, glucose 15.6 kJ/g). Nitrogen-oxygen and energetic compounds of the source table left out.",
+"substances": [
+{
+"name": "Acetaldehyde",
+"formula": "C2H4O",
+"state": "liq",
+"dHc_kJmol": 1167.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Acetamide",
+"formula": "C2H5NO",
+"state": "cry",
+"dHc_kJmol": 1185.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Acetic acid",
+"formula": "C2H4O2",
+"state": "liq",
+"dHc_kJmol": 874.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Acetone",
+"formula": "C3H6O",
+"state": "liq",
+"dHc_kJmol": 1790.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Acetonitrile",
+"formula": "C2H3N",
+"state": "liq",
+"dHc_kJmol": 1256.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Acetylene",
+"formula": "C2H2",
+"state": "gas",
+"dHc_kJmol": 1300.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "l-Alanine",
+"formula": "C3H7NO2",
+"state": "cry",
+"dHc_kJmol": 1577.0,
+"src": "EngineeringToolbox",
+"family": "amino acid"
+},
+{
+"name": "Ammonia",
+"formula": "NH3",
+"state": "gas",
+"dHc_kJmol": 383.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Aniline",
+"formula": "C6H7N",
+"state": "liq",
+"dHc_kJmol": 3393.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Anthracene",
+"formula": "C14H10",
+"state": "cry",
+"dHc_kJmol": 7068.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Benzene",
+"formula": "C6H6",
+"state": "liq",
+"dHc_kJmol": 3268.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Benzoic acid",
+"formula": "C7H6O2",
+"state": "cry",
+"dHc_kJmol": 3228.2,
+"src": "EngineeringToolbox"
+},
+{
+"name": "1,3-Butadiene",
+"formula": "C4H6",
+"state": "gas",
+"dHc_kJmol": 2542.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Butane",
+"formula": "C4H10",
+"state": "gas",
+"dHc_kJmol": 2878.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "1-Butanol",
+"formula": "C4H10",
+"state": "liq",
+"dHc_kJmol": 2676.0,
+"src": "EngineeringToolbox",
+"family": "alcohol"
+},
+{
+"name": "2-Butanone",
+"formula": "C4H8O",
+"state": "liq",
+"dHc_kJmol": 2444.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "1-Butene",
+"formula": "C4H8",
+"state": "gas",
+"dHc_kJmol": 2718.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "cis-2-Butene",
+"formula": "C4H8",
+"state": "gas",
+"dHc_kJmol": 2710.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "trans-2-Butene",
+"formula": "C4H8",
+"state": "gas",
+"dHc_kJmol": 2706.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Butanoic acid",
+"formula": "C4H8O2",
+"state": "liq",
+"dHc_kJmol": 2183.6,
+"src": "EngineeringToolbox",
+"family": "fatty acid"
+},
+{
+"name": "Butylbenzene",
+"formula": "C10H14",
+"state": "liq",
+"dHc_kJmol": 5872.7,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Carbon (graphite)",
+"formula": "C",
+"state": "cry",
+"dHc_kJmol": 394.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Carbon monoxide",
+"formula": "CO",
+"state": "gas",
+"dHc_kJmol": 283.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Cyclobutane",
+"formula": "C4H8",
+"state": "gas",
+"dHc_kJmol": 2745.1,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Cyclobutene",
+"formula": "C4H6",
+"state": "gas",
+"dHc_kJmol": 2588.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Cyclohexane",
+"formula": "C6H12",
+"state": "liq",
+"dHc_kJmol": 3920.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Cyclopentane",
+"formula": "C5H10",
+"state": "liq",
+"dHc_kJmol": 3291.6,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Cyclopropane",
+"formula": "C3H6",
+"state": "gas",
+"dHc_kJmol": 2091.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Decane",
+"formula": "C10H22",
+"state": "liq",
+"dHc_kJmol": 6778.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Diethyl ether",
+"formula": "C4H10O",
+"state": "liq",
+"dHc_kJmol": 2724.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Dimethyl ether",
+"formula": "C2H6O",
+"state": "gas",
+"dHc_kJmol": 1460.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Ethane",
+"formula": "C2H6",
+"state": "gas",
+"dHc_kJmol": 1561.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "1,2-Ethanediol",
+"formula": "C2H6O2",
+"state": "liq",
+"dHc_kJmol": 1185.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Ethanol",
+"formula": "C2H6O",
+"state": "liq",
+"dHc_kJmol": 1367.0,
+"src": "EngineeringToolbox",
+"family": "alcohol"
+},
+{
+"name": "Ethyl acetate",
+"formula": "C4H8O2",
+"state": "liq",
+"dHc_kJmol": 2238.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Ethylene",
+"formula": "C2H4",
+"state": "gas",
+"dHc_kJmol": 1411.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Formaldehyde",
+"formula": "CH2O",
+"state": "gas",
+"dHc_kJmol": 571.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Formic acid",
+"formula": "CH2O2",
+"state": "liq",
+"dHc_kJmol": 254.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Glycerol",
+"formula": "C3H8O3",
+"state": "liq",
+"dHc_kJmol": 1654.0,
+"src": "EngineeringToolbox",
+"family": "polyol"
+},
+{
+"name": "Heptane",
+"formula": "C7H16",
+"state": "liq",
+"dHc_kJmol": 4817.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Heptanoic acid",
+"formula": "C7H14O2",
+"state": "liq",
+"dHc_kJmol": 4145.2,
+"src": "EngineeringToolbox",
+"family": "fatty acid"
+},
+{
+"name": "Hexane",
+"formula": "C6H14",
+"state": "liq",
+"dHc_kJmol": 4163.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Hexadecanoic acid",
+"formula": "C16H32O2",
+"state": "liq",
+"dHc_kJmol": 10031.3,
+"src": "EngineeringToolbox",
+"family": "fatty acid"
+},
+{
+"name": "Hexanoic acid",
+"formula": "C6H12O2",
+"state": "liq",
+"dHc_kJmol": 3492.2,
+"src": "EngineeringToolbox",
+"family": "fatty acid"
+},
+{
+"name": "Hydrogen",
+"formula": "H2",
+"state": "gas",
+"dHc_kJmol": 286.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Hydrogen cyanide",
+"formula": "CHN",
+"state": "gas",
+"dHc_kJmol": 672.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Ketene",
+"formula": "C2H2O",
+"state": "gas",
+"dHc_kJmol": 1025.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Methane",
+"formula": "CH4",
+"state": "gas",
+"dHc_kJmol": 891.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Methanol",
+"formula": "CH4O",
+"state": "liq",
+"dHc_kJmol": 726.0,
+"src": "EngineeringToolbox",
+"family": "alcohol"
+},
+{
+"name": "Methyl acetate",
+"formula": "C3H6O2",
+"state": "liq",
+"dHc_kJmol": 1592.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Methylamine",
+"formula": "CH5N",
+"state": "gas",
+"dHc_kJmol": 1086.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Methylcyclohexane",
+"formula": "C7H14",
+"state": "liq",
+"dHc_kJmol": 4565.3,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Methylcyclopentane",
+"formula": "C6H12",
+"state": "liq",
+"dHc_kJmol": 3938.1,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Methyl formate",
+"formula": "C2H4O2",
+"state": "liq",
+"dHc_kJmol": 973.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Methyl tert-butyl ether",
+"formula": "C5H12O",
+"state": "liq",
+"dHc_kJmol": 3369.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Naphthalene",
+"formula": "C10H8",
+"state": "cry",
+"dHc_kJmol": 5157.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Nonane",
+"formula": "C9H20",
+"state": "liq",
+"dHc_kJmol": 6125.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Octane",
+"formula": "C8H18",
+"state": "liq",
+"dHc_kJmol": 5470.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "1-Octanol",
+"formula": "C8H18O",
+"state": "liq",
+"dHc_kJmol": 5294.0,
+"src": "EngineeringToolbox",
+"family": "alcohol"
+},
+{
+"name": "Pentane",
+"formula": "C5H12",
+"state": "liq",
+"dHc_kJmol": 3509.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Pentanoic acid",
+"formula": "C5H10O2",
+"state": "liq",
+"dHc_kJmol": 2837.3,
+"src": "EngineeringToolbox",
+"family": "fatty acid"
+},
+{
+"name": "1-Pentanol",
+"formula": "C5H12O",
+"state": "liq",
+"dHc_kJmol": 3331.0,
+"src": "EngineeringToolbox",
+"family": "alcohol"
+},
+{
+"name": "Phenanthrene",
+"formula": "C14H10",
+"state": "cry",
+"dHc_kJmol": 7055.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Phenol",
+"formula": "C6H6O",
+"state": "cry",
+"dHc_kJmol": 3054.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Propanal",
+"formula": "C3H6O",
+"state": "liq",
+"dHc_kJmol": 1522.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Propane",
+"formula": "C3H8",
+"state": "gas",
+"dHc_kJmol": 2220.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Propanenitrile",
+"formula": "C3H5N",
+"state": "liq",
+"dHc_kJmol": 1911.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Propanoic acid",
+"formula": "C3H6O2",
+"state": "liq",
+"dHc_kJmol": 1527.3,
+"src": "EngineeringToolbox"
+},
+{
+"name": "1-Propanol",
+"formula": "C3H8O",
+"state": "liq",
+"dHc_kJmol": 2021.0,
+"src": "EngineeringToolbox",
+"family": "alcohol"
+},
+{
+"name": "2-Propanol",
+"formula": "C3H8O",
+"state": "liq",
+"dHc_kJmol": 2006.0,
+"src": "EngineeringToolbox",
+"family": "alcohol"
+},
+{
+"name": "Propene",
+"formula": "C3H6",
+"state": "gas",
+"dHc_kJmol": 2058.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Propyne",
+"formula": "C3H4",
+"state": "gas",
+"dHc_kJmol": 185.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Pyridine",
+"formula": "C5H5N",
+"state": "liq",
+"dHc_kJmol": 2782.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Toluene",
+"formula": "C7H8",
+"state": "liq",
+"dHc_kJmol": 3910.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Trimethylamine",
+"formula": "C3H9N",
+"state": "gas",
+"dHc_kJmol": 2443.0,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Undecane",
+"formula": "C11H24",
+"state": "liq",
+"dHc_kJmol": 7431.4,
+"src": "EngineeringToolbox"
+},
+{
+"name": "Urea",
+"formula": "CH4N2O",
+"state": "cry",
+"dHc_kJmol": 632.7,
+"src": "EngineeringToolbox"
+},
+{
+"name": "l-Valine",
+"formula": "C5H11NO2",
+"state": "cry",
+"dHc_kJmol": 2922.0,
+"src": "LibreTexts",
+"family": "amino acid"
+},
+{
+"name": "Glucose",
+"formula": "C6H12O6",
+"state": "cry",
+"dHc_kJg": 15.6,
+"src": "LibreTexts",
+"family": "carbohydrate"
+}
+]
+}
