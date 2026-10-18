@@ -67,6 +67,8 @@ export interface BodyTiming { nerve_mps?: number; limb_m?: number; sense_s?: Rec
 
 /** One character's body as the engine keeps it. */
 export interface Person {
+    /** Named spot the character is at (actions.ts), e.g. "John's house: living room". */
+    at?: string;
     species: string; mass: number; lost: number; red: number; wounds: Wound[]; nextId: number;
     dead: string | null; deathIn: number | null; deathMode?: 'bleeding' | 'stopped'; minute: number; net: Net;
     age?: number; sex?: string; region?: string | null; body?: BodyTiming;
@@ -105,7 +107,9 @@ export interface RuleState {
     /** Trust between two characters after a betrayal, by "truster→betrayer" (social.ts trustAgain). */
     trust?: Record<string, { lied: boolean; repair: string; kept: number }>;
     /** Story clock: the time set with /rules-time (minutes, clock.ts) and the minutes PassTime has run since. */
-    clock?: { t: number; add: number };
+    clock?: { t: number; add: number; sec?: number };
+    /** Distances between named spots, metres, keyed 'a|b' with a < b (actions.ts); recorded once, reused after. */
+    links?: Record<string, number>;
     latitude?: number;
     /** Big Five place of each character, z-scores by trait (acts.ts), drawn once when first needed. */
     traits?: Record<string, Record<string, number>>;

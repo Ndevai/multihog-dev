@@ -976,6 +976,8 @@ export function status(who, p) {
     }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
+    if (p.at)
+        out.push(`at ${p.at}`);
     return out.join('. ') + '.';
 }
 // Knockout: a blunt blow to a HEAD part knocks out when the momentum reaching the head's tissue (after armour) is at least

@@ -738,6 +738,7 @@ export function status(who: string, p: Person): string {
     }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
+    if (p.at) out.push(`at ${p.at}`);
     return out.join('. ') + '.';
 }
 

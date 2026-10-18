@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (25), Claude Opus 5.5
+- Added: tool Act. Characters have a recorded spot; walking between spots takes distance ÷ their own speed, posture and hand motions take MTM-1 standard times; the clock moves by exactly those seconds (hh:mm:ss) and bodies run alongside. Distances are recorded once and reused, so leaving from the doorway is shorter than from the bedroom. The audit flags times the narrator invents.
+- Checked (harness): bedroom → street 42 s, doorway → street 29 s, 1.5 km 18 min; a later different distance is refused; MTM pace and gait speed agree (0.77 m step).
+- Not done: doors and stairs as steps, simultaneous actors, sound travel, layouts from building data.
+
 ## 2026-10-18 (24), Claude Opus 5.5
 - Added: solid fuels from their elements (wood, peat, lignite, coal, refuse), with water and ash; mixtures of compounds by mass. Substance takes both.
 - Checked: heat from elements within 3 % of 5 measured fuels, median 2.7 % on 74 compounds; wet wood 8.0 vs 7.7 MJ/kg measured.

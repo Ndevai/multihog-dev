@@ -766,6 +766,18 @@ Check (`node tools/check-substances.mjs`): 64 ok, 6 suspect, 3 contradictions, 6
 
 Cross-check of two independent sources: heat of burning from the measured heat of formation (Hess) against the burning table of `substances.json`: 61 compounds, median difference 0.01 %; propyne 1938 vs the printed 185 confirms the misprint independently. Tool Substance (narrator): a compound by name or SMILES at the scene temperature → state, heat of burning, whether its vapour catches fire from a flame (temperature ≥ flash point), autoignition, limits, and any problems found. Example: acetone at −30 °C: liquid, 30.8 kJ/g, vapour not ignitable by a flame below −20 °C. Mixtures (kerosene, wood, food) are not single compounds and are refused. Fuels and mixtures (fourth pass). A solid fuel is its elements: higher heating value (dry, MJ/kg) = 0.3491 C + 1.1783 H + 0.1005 S − 0.1034 O − 0.0151 N − 0.0211 ash, wt % (Channiwala & Parikh 2002, Fuel 81:1051); wet: × (1 − water share); in practice (lower value) minus 2.443 MJ/kg for each kg of water present or formed from the hydrogen (8.937 × H). `rules/fuels.json`: wood, peat, lignite, bituminous coal, refuse-derived fuel (Speight, Synthetic Fuels Handbook, Table D.1, dry ash-free; measured HHV 20.2, 22.1, 23.3, 32.6, 22.6 MJ/kg). Checks: the formula gives these within 3 %; on 74 pure compounds median 2.7 % off, 90 % within 10.2 %; clean wood at 50 % water, 1.3 % ash: 8.0 / 9.8 MJ/kg vs 7.7 / 9.6 measured (Table D.3). Wood at 20 % water 14.5 MJ/kg, at 85 % 0.7. A mixture of compounds is given by mass ("ethanol 40%, water 60%"): heat = sum of the burning parts' heats × their shares (40 % ethanol: 11.9 kJ/g), elements summed, shares must add to 100. Not done: a mixture's boiling, flash point and fire limits (need vapour pressures: Raoult's law with each part's vapour-pressure curve); kerosene and petrol as sets of compounds (needs a sourced surrogate composition); salts and metals; pressure and altitude (boiling points are at 1 atm).
 
+### 6.20 Actions and the clock
+
+Decided 2026-10-18 with the user: the clock moves only by computed durations (duration = amount ÷ rate); one clock for everyone; positions are state, not words, so "John leaves his house" takes longer from the bedroom than from the doorway; a time digit is shown only when a process gives it. Tool Act (`actions.ts`): a character's steps in order.
+
+| Step | Duration | Source |
+|---|---|---|
+| walk_to a spot | recorded distance ÷ own walking speed (§6.7a: age, sex, country, slope, load) | §6.7a |
+| sit 34.7, stand from sitting 43.4, bend / stoop / kneel on one knee 29.0, arise 31.9, kneel on both knees 69.4, arise 76.7, turn the body 45–90° 18.6, sidestep 17.0, grasp 2.0, release 2.0, focus the eyes 7.3 TMU | × 0.036 s per TMU | MTM-1 data card, MTM Association 2019 (experienced person, normal effort) |
+| reach | 6.1 TMU at 10 cm to 18.2 at 80 cm, linear between [interpolation ASSUMED], +0.24 TMU per cm beyond [ASSUMED] | MTM-1, case A |
+
+Positions: `be_at` records a spot ("John's house: front door"); `walk_to` needs the distance the first time two spots are joined (`distance_m`, from the scene), keeps it in the chat state and reuses it, ignoring a later different figure (said in the result). Clock: the story clock gains each action's exact seconds and shows hh:mm:ss once seconds are non-zero; bodies (bleeding, food, heat) run in whole minutes, the remaining seconds carried to the next action. Precision: each step's duration is reported to the digit its spread allows, spread 10 % [ASSUMED] (1.6 s, 29 s, 18 min); the clock itself keeps the exact sum, which reproduces from the steps (the check of invertibility). The audit now flags a clock time or action duration in the narration that no PassTime or Act result gives. Cross-check: MTM's 15.0 TMU (0.54 s) per pace and the gait speed 1.43 m/s of a man in his 30s imply a 0.77 m step. Example (man of 35, Paris): stand 1.6 s, bedroom → living room 6 m 4.4 s, → front door 8 m 5.9 s, reach 50 cm 0.47 s, grasp 0.072 s, → street 40 m 29 s: 42 s, 10:18:00 → 10:18:42; from the doorway the same exit is 29 s. Not done: door opening and stairs as their own steps (stairs as grade_pct for now), several characters acting at once in one call (each Act runs the others as resting), sound travel time between spots, the scene layout drawn from building data when no distance is given.
+
 ## 7. Tools
 
 | Tool | Change |
@@ -809,6 +821,7 @@ Each tool input is either a scene fact (visible in the story: distance, temperat
 | NameCharacter | sex, birth year | story facts | first name by US frequency (§6.11) |
 | Disease | disease, population, immune share | story facts | incubation and outbreak size (§6.15) |
 | Weather | station | scene fact | rain and temperature by WGEN (§6.16) |
+| Act | who, steps (be_at, walk_to, sit, stand, bend, kneel, reach, grasp…) | durations, clock, spot | MTM-1 times and own walking speed; moves the clock (§6.20) |
 | Substance | compound (name or SMILES), temperature | scene fact | state, burning, flash point, fire limits from measured data or structure (§6.19) |
 | Choose | options and their shares | outcome guess, as labelled bands | drawn in code (§6.17) |
 | BodySize | country, sex, birth year, story year | story facts | height and mass from NCD-RisC (§6.11) |

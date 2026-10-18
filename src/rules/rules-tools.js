@@ -20,6 +20,8 @@ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPID
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
+import { act, honest } from './actions.js';
+import { formatStoryTime } from './clock.js';
 import { loadChem, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -38,7 +40,7 @@ import { HOW, transfer, give, account, possessionsBlock } from './possessions.js
 import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode, soundOf } from './colex.js';
 import { resolveLanguage, stageKey } from './languages.js';
 import { str, checkArgs } from './tool-schema.js';
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
@@ -1629,6 +1631,42 @@ export function registerRulesTools(enabled) {
             return [head, ...lines].join('\n');
         });
     });
+    tool('Act', 'Time a character\'s physical actions before narrating them: walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives, not your own. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
+        who: str('Character acting'),
+        steps: { type: 'array', description: 'Actions in order', items: { type: 'object', properties: {
+                    do: { type: 'string', enum: ['be_at', 'walk_to', 'sit', 'stand', 'bend', 'kneel', 'arise', 'kneel_both', 'arise_both', 'turn', 'sidestep', 'reach', 'grasp', 'release', 'look'] },
+                    to: str('Spot, named with its place: "John\'s house: living room", "John\'s house: front door", "Rue de Rivoli"'),
+                    distance_m: { type: 'number', description: 'Walking distance to the spot, m, from the scene\'s layout; needed only the first time' },
+                    cm: { type: 'number', description: 'Reach distance, cm' },
+                    grade_pct: { type: 'number', description: 'Slope or stairs, % (a staircase about 60)' },
+                    load_kg: { type: 'number', description: 'Load carried, kg' },
+                }, required: ['do'] } },
+    }, ['who', 'steps'], a => run((st, rng) => {
+        const { p, error } = who(st, a.who);
+        if (!p)
+            return error;
+        const r = act(st, a.who, p, a.steps, (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
+        if ('error' in r)
+            return `${r.error} Nothing recorded.`;
+        let tail = '';
+        if (st.clock) {
+            st.clock.add += r.seconds / 60;
+            // The body runs in whole minutes: seconds wait until they make a minute.
+            st.clock.sec = (st.clock.sec ?? 0) + r.seconds;
+            const mins = Math.floor(st.clock.sec / 60);
+            if (mins > 0) {
+                st.clock.sec -= mins * 60;
+                const others = new Set(Object.keys(st.people ?? {}).filter(n => n !== a.who));
+                const ev = advanceAll(st.people || {}, mins, others, rng, { active: new Set([a.who]) });
+                if (ev.events.length)
+                    tail = ` Meanwhile: ${ev.events.join('; ')}.`;
+            }
+            tail = ` Clock now ${formatStoryTime(storyNow(st))}.` + tail;
+        }
+        else
+            tail = ' No story clock set ([TIME] missing): durations given, clock not moved.';
+        return `${r.lines.join('; ')}. Total ${honest(r.seconds)}.${tail}`;
+    }));
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },

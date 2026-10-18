@@ -13,9 +13,9 @@ function epochDays(y: number, m: number, d: number): number {
 /** Minutes for "1850-03-14 18:40", "1850-03-14", "Day 3 07:15" or "Day 3"; null when the text is none of these. */
 export function parseStoryTime(text: string): number | null {
     const s = String(text ?? '').trim();
-    const hm = s.match(/(\d{1,2}):(\d{2})\s*$/);
-    const minutes = hm ? Number(hm[1]) * 60 + Number(hm[2]) : 0;
-    if (hm && (Number(hm[1]) > 23 || Number(hm[2]) > 59)) return null;
+    const hm = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/);
+    const minutes = hm ? Number(hm[1]) * 60 + Number(hm[2]) + (hm[3] ? Number(hm[3]) / 60 : 0) : 0;
+    if (hm && (Number(hm[1]) > 23 || Number(hm[2]) > 59 || Number(hm[3] ?? 0) > 59)) return null;
     const date = s.match(/^(-?\d{1,4})-(\d{1,2})-(\d{1,2})\b/);
     if (date) {
         const [y, m, d] = date.slice(1).map(Number);
@@ -30,8 +30,10 @@ export function parseStoryTime(text: string): number | null {
 
 /** "Thursday 14 March 1850, 18:40" for a calendar time, "Day 3, 07:15" for a day count. */
 export function formatStoryTime(t: number): string {
-    const days = Math.floor(t / DAY), min = Math.round(t - days * DAY);
-    const clock = `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+    // Seconds appear once an action (actions.ts) has moved the clock by less than a minute; otherwise hh:mm.
+    const totalS = Math.round(t * 60), days = Math.floor(totalS / 86400), s = totalS - days * 86400;
+    const hh = String(Math.floor(s / 3600)).padStart(2, '0'), mm = String(Math.floor(s / 60) % 60).padStart(2, '0'), ss = s % 60;
+    const clock = `${hh}:${mm}${ss ? ':' + String(ss).padStart(2, '0') : ''}`;
     if (days < CALENDAR_FROM) return `Day ${days + 1}, ${clock}`;
     const d = new Date(0); d.setUTCFullYear(1, 0, 1); d.setUTCDate(d.getUTCDate() + days);
     const label = d.toLocaleDateString('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
