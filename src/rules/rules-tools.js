@@ -1561,7 +1561,7 @@ export function registerRulesTools(enabled) {
                 continue;
             if (w.running && w.speed_kmh == null)
                 return `Give speed_kmh for ${w.who}'s running. Nothing recorded.`;
-            const kmh = w.speed_kmh ?? walkSpeedKmh(w.grade_pct ?? 0, w.terrain ?? 'dirt road', p.age ?? 35, p.sex ?? 'male', p.weather ? placeCountry(p.weather) : null);
+            const kmh = w.speed_kmh ?? walkSpeedKmh(w.grade_pct ?? 0, w.terrain ?? 'dirt road', p.age ?? 35, p.sex ?? 'male', (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
             try {
                 p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass);
             }
