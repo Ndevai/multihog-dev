@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (6), Claude Opus 5.5
+- Checked: a second, independent reading of Der & Deary Table 1 and Pearsons Table II and Figure 19 agrees with the first: 26 of 26 coefficients, 88 of 88 table values, Figure 19 within 0.04 dB. No code change.
+- Next: optional user data (Buss & Craik 1981; IPUMS housing; Gooskens all 16 rows).
+
 ## 2026-10-18 (5), Claude Opus 5.5
 - Changed: reaction time by age and sex now uses Der & Deary's exact formula instead of four points with straight lines between; at 70 a man reacts 1.21 × as slowly as at 30 (was 1.23), a woman of 80 1.64 × (was 1.63). Ages over 85 hold at 85, where the formula stops being trustworthy.
 - Checked: the formula reproduces the handoff's 18/45/65/80 values to the ms. Lombard rule against Pearsons Table II (9 places): mean gap 1.1 dB, largest 2.2 dB (train). Compiles with zero errors.
