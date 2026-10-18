@@ -20,7 +20,7 @@ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPID
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
-import { TERRAIN, pandolf, runWatts, metOf, walkSpeedKmh } from './work.js';
+import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
@@ -1580,9 +1580,10 @@ export function registerRulesTools(enabled) {
                     continue;
                 if (w.running && w.speed_kmh == null)
                     return `Give speed_kmh for ${w.who}'s running. Nothing recorded.`;
-                const kmh = w.speed_kmh ?? walkSpeedKmh(w.grade_pct ?? 0, w.terrain ?? 'dirt road', p.age ?? 35, p.sex ?? 'male', (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
+                let kmh;
                 try {
-                    p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass);
+                    kmh = w.speed_kmh ?? walkSpeedKmh(p, w.grade_pct ?? 0, w.terrain ?? 'dirt road', w.load_kg ?? 0, (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
+                    p.workMet = metOf(w.running ? runWatts(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road') : walkWatts(p, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass);
                 }
                 catch (e) {
                     return `${e.message} Nothing recorded.`;
