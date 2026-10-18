@@ -1,0 +1,136 @@
+{
+  "Name": "Naloxone",
+  "MolarMass": {
+    "ScalarMassPerAmount": {
+      "Value": 327.37,
+      "Unit": "g/mol"
+    }
+  },
+  "State": "Liquid",
+  "Bioavailability": {
+    "Intramuscular": {
+      "Scalar0To1": {
+        "Value": 0.35
+      }
+    }
+  },
+  "Clearance": {
+    "SystemicClearance": {
+      "FractionExcretedInFeces": {
+        "Scalar0To1": {
+        }
+      },
+      "FractionUnboundInPlasma": {
+        "Scalar0To1": {
+          "Value": 0.65
+        }
+      },
+      "IntrinsicClearance": {
+        "ScalarVolumePerTimeMass": {
+          "Unit": "mL/min kg"
+        }
+      },
+      "RenalClearance": {
+        "ScalarVolumePerTimeMass": {
+          "Unit": "mL/min kg"
+        }
+      },
+      "SystemicClearance": {
+        "ScalarVolumePerTimeMass": {
+          "Value": 35.43,
+          "Unit": "mL/min kg"
+        }
+      }
+    },
+    "RenalClearance": {
+      "Clearance": {
+        "ScalarVolumePerTimeMass": {
+          "Unit": "mL/min kg"
+        }
+      }
+    }
+  },
+  "Pharmacokinetics": {
+    "Physicochemicals": {
+      "AcidDissociationConstant": {
+        "Value": 7.94
+      },
+      "BindingProtein": "Albumin",
+      "BloodPlasmaRatio": {
+        "Value": 0.65
+      },
+      "FractionUnboundInPlasma": {
+        "Scalar0To1": {
+          "Value": 0.65
+        }
+      },
+      "IonicState": "Acid",
+      "LogP": {
+        "Value": 1.47
+      }
+    }
+  },
+  "Pharmacodynamics": {
+    "Bronchodilation": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "DiastolicPressureModifier": {
+      "ScalarNegative1To1": {
+        "Value": 0.1
+      }
+    },
+    "EC50": {
+      "ScalarMassPerVolume": {
+        "Value": 0.0089,
+        "Unit": "ug/mL"
+      }
+    },
+    "EMaxShapeParameter": {
+      "Value": 1.0
+    },
+    "HeartRateModifier": {
+      "ScalarNegative1To1": {
+        "Value": 0.1
+      }
+    },
+    "NeuromuscularBlock": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "PupillaryResponse": {
+      "ReactivityModifier": {
+        "ScalarNegative1To1": {
+        }
+      },
+      "SizeModifier": {
+        "ScalarNegative1To1": {
+        }
+      }
+    },
+    "RespirationRateModifier": {
+      "ScalarNegative1To1": {
+        "Value": 1.0
+      }
+    },
+    "Sedation": {
+      "ScalarNegative1To1": {
+        "Value": -1.0
+      }
+    },
+    "SystolicPressureModifier": {
+      "ScalarNegative1To1": {
+        "Value": 0.1
+      }
+    },
+    "TidalVolumeModifier": {
+      "ScalarNegative1To1": {
+        "Value": 1.0
+      }
+    },
+    "TubularPermeabilityModifier": {
+      "ScalarNegative1To1": {
+      }
+    }
+  }
+}

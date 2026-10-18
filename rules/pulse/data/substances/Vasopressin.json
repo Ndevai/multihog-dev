@@ -1,0 +1,128 @@
+{
+  "Name": "Vasopressin",
+  "MolarMass": {
+    "ScalarMassPerAmount": {
+      "Value": 1084.2,
+      "Unit": "g/mol"
+    }
+  },
+  "State": "Liquid",
+  "Clearance": {
+    "SystemicClearance": {
+      "FractionExcretedInFeces": {
+        "Scalar0To1": {
+        }
+      },
+      "FractionUnboundInPlasma": {
+        "Scalar0To1": {
+          "Value": 0.7
+        }
+      },
+      "IntrinsicClearance": {
+        "ScalarVolumePerTimeMass": {
+          "Value": 3.0,
+          "Unit": "mL/min kg"
+        }
+      },
+      "RenalClearance": {
+        "ScalarVolumePerTimeMass": {
+          "Value": 4.0,
+          "Unit": "mL/min kg"
+        }
+      },
+      "SystemicClearance": {
+        "ScalarVolumePerTimeMass": {
+          "Value": 9.0,
+          "Unit": "mL/min kg"
+        }
+      }
+    },
+    "RenalClearance": {
+      "Clearance": {
+        "ScalarVolumePerTimeMass": {
+          "Value": 4.0,
+          "Unit": "mL/min kg"
+        }
+      }
+    }
+  },
+  "Pharmacokinetics": {
+    "Physicochemicals": {
+      "AcidDissociationConstant": {
+        "Value": 10.26
+      },
+      "BindingProtein": "AAG",
+      "BloodPlasmaRatio": {
+        "Value": 0.6
+      },
+      "FractionUnboundInPlasma": {
+        "Scalar0To1": {
+          "Value": 0.7
+        }
+      },
+      "IonicState": "WeakBase",
+      "LogP": {
+        "Value": -4.8
+      }
+    }
+  },
+  "Pharmacodynamics": {
+    "Bronchodilation": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "DiastolicPressureModifier": {
+      "ScalarNegative1To1": {
+        "Value": 0.2
+      }
+    },
+    "EC50": {
+      "ScalarMassPerVolume": {
+        "Value": 1.5E-4,
+        "Unit": "ug/mL"
+      }
+    },
+    "EMaxShapeParameter": {
+      "Value": 10.0
+    },
+    "HeartRateModifier": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "NeuromuscularBlock": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "PupillaryResponse": {
+      "ReactivityModifier": {
+        "ScalarNegative1To1": {
+        }
+      },
+      "SizeModifier": {
+        "ScalarNegative1To1": {
+        }
+      }
+    },
+    "RespirationRateModifier": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "Sedation": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "SystolicPressureModifier": {
+      "ScalarNegative1To1": {
+        "Value": 0.2
+      }
+    },
+    "TidalVolumeModifier": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "TubularPermeabilityModifier": {
+      "ScalarNegative1To1": {
+      }
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "ConvergenceCriteria": {
+    "Consume Meal": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Pneumonia": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Chronic Ventricular Systolic Dysfunction": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Dehydration": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Resting": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Acute Respiratory Distress Syndrome": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Impaired Alveolar Exchange": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Initial Environmental Conditions": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Feedback": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Chronic Renal Stenosis": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "AdvanceUntilStable": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Chronic Pericardial Effusion": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Chronic Anemia": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Pulmonary Fibrosis": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Sepsis": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Chronic Obstructive Pulmonary Disease": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    },
+    "Pulmonary Shunt": {
+      "ScalarTime": {
+        "Value": 600.0,
+        "Unit": "s"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "Name": "GenericParticulate",
+  "State": "Liquid",
+  "Aerosolization": {
+    "BronchioleModifier": {
+      "ScalarNegative1To1": {
+      }
+    },
+    "InflammationCoefficient": {
+      "Scalar0To1": {
+      }
+    },
+    "ParticulateSizeDistribution": {
+      "HistogramFractionVsLength": {
+        "Histogram": {
+          "Dependent": {
+            "Value": [1.0]
+          },
+          "Independent": {
+            "Value": [1.0, 1.0]
+          },
+          "IndependentUnit": "um"
+        }
+      }
+    }
+  }
+}

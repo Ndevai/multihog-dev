@@ -28,6 +28,7 @@ import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from './turn.js';
+import { prepareBleeding } from './pulse.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
@@ -1451,7 +1452,7 @@ export function registerRulesTools(enabled: boolean): void {
                 running: { type: 'boolean', description: 'Running rather than walking' },
             }, required: ['who'] },
         },
-    }, ['minutes'], a => run((st, rng) => {
+    }, ['minutes'], async a => { await prepareBleeding(store().state.people ?? {}, Math.max(0, Math.round(a.minutes))); return run((st, rng) => {
         const asked = Math.max(0, Math.round(a.minutes));
         const walkers: [string, Person, number][] = [];
         for (const w of a.walking || []) {
@@ -1480,7 +1481,7 @@ export function registerRulesTools(enabled: boolean): void {
             : `${elapsed} minutes passed.`) + (walked.length ? ` ${walked.join('; ')}.` : '');
         const lines = Object.entries(st.people || {}).map(([who, p]) => status(who, p));
         return [head, ...lines].join('\n');
-    }));
+    }); });
 
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {
         who: str('Caster name'),

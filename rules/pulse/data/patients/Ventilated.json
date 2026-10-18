@@ -1,0 +1,15 @@
+{
+  "Name": "Ventilated",
+  "Age": {
+    "ScalarTime": {
+      "Value": 62.0,
+      "Unit": "yr"
+    }
+  },
+  "Height": {
+    "ScalarLength": {
+      "Value": 64.35,
+      "Unit": "in"
+    }
+  }
+}

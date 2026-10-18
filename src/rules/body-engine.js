@@ -11,6 +11,7 @@ import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { relatedShare } from './intelligibility.js';
+import { pulseWound } from './pulse.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp, burnedTBSA } from './thermal/exposure.js';
 export const DAY_MIN = 24 * 60;
 const HOUR = 60 / DAY_MIN;
@@ -430,7 +431,19 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
                 return;
             }
         }
-        const bleeding = p.wounds.reduce((s, w) => s + w.bleed, 0);
+        // Limb arteries: the flow Pulse computed for this minute (pulse.ts), while its track lasts; then each such wound keeps
+        // its share of Pulse's last flow under the engine's rules.
+        let bleeding = p.wounds.reduce((s, w) => s + w.bleed, 0);
+        if (p.pulse && p.pulse.at < p.pulse.track.length) {
+            const m = p.pulse.track[p.pulse.at++], ws = p.wounds.filter(pulseWound), own = ws.reduce((s, w) => s + w.bleed, 0);
+            bleeding += m.rate - own;
+            const { rate: _r, ...vitals } = m;
+            p.pulseLast = vitals;
+            for (const w of ws)
+                w.bleed = round(own > 0 ? m.rate * w.bleed / own : m.rate / ws.length, 1);
+            if (p.pulse.at >= p.pulse.track.length)
+                p.pulse = null;
+        }
         p.lost += bleeding;
         if (p.lost >= LETHAL_LOSS_ML_KG * p.mass) {
             p.lost = LETHAL_LOSS_ML_KG * p.mass;
@@ -858,7 +871,9 @@ export function status(who, p) {
         out.push(`${who}: unconscious (${p.unconscious})`);
     const f = lossFraction(p);
     const c = creatureOf(p);
-    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): no blood`);
+    const v = p.pulseLast;
+    const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} % (Pulse)` : null;
+    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): no blood`);
     if (p.deathIn !== null)
         out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
     if (p.red > 0 || p.lost > 0)

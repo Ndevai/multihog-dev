@@ -73,7 +73,7 @@ BUILT 2026-10-17 (acts.ts, Claim kind "something the character chooses to do now
 
 ## Order of work
 
-1. Body engine. The user runs SillyTavern without a computer, so a local sidecar has no machine to run on: the route is Pulse compiled to WebAssembly (its xcompile `web-wasm` target, PulseC static) and loaded inside the extension; BioGears only if it gains a WASM build. Steps: build Pulse WASM in a Codespace, call it from body-engine.ts per PassTime step. (Former plan: BioGears sidecar: build, wrap one HTTP call (state in, actions, state out), map BodySize to patient file, swap §5–6 rules listed above.)
+1. Body engine. STARTED 2026-10-18: Pulse built to WebAssembly and running limb-artery bleeding (df-body-engine.md §5.1a); next: trunk vessels, the character's own body (Pulse patient from BodySize, stabilised once), cold water, drugs. The user runs SillyTavern without a computer, so a local sidecar has no machine to run on: the route is Pulse compiled to WebAssembly (its xcompile `web-wasm` target, PulseC static) and loaded inside the extension; BioGears only if it gains a WASM build. Steps: build Pulse WASM in a Codespace, call it from body-engine.ts per PassTime step. (Former plan: BioGears sidecar: build, wrap one HTTP call (state in, actions, state out), map BodySize to patient file, swap §5–6 rules listed above.)
 2. Open-Meteo call in Weather and BodyEnvironment for 1940 onward. DONE 2026-10-13 (reanalysis.ts). 20CRv3 for 1851–1939 DONE 2026-10-18 (via PSL getdaily.pl and SillyTavern's CORS proxy); before 1851 the Berkeley Earth monthly shift.
 3. Census sampler from NAPP and Mosaic extracts (the user downloads them after registering).
 

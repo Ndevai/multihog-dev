@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (15), Claude Opus 5.5
+- Changed: a bleeding leg or arm artery now runs on Pulse, a full physiology simulation (heart, vessels, lungs, kidneys), compiled to run inside the extension on a phone. Blood flow falls as pressure falls, the heart speeds up, and the narrator gets pulse, blood pressure, breathing and oxygen. Up to 15 story minutes per PassTime are simulated; beyond that the rules continue from Pulse's last flow.
+- Checked (Node): WebAssembly matches native Pulse to 0.1 (leg bleed 0.8: pulse 72 → 107, lost 1,577 mL in 10 min); through PassTime: class II at 5 min, class III at 10 min with flow down to 134 mL/min. Compiles with zero errors.
+- Cost: 5.8 MB of new files; about 5.5 s per simulated minute in Node, likely 2–3 × that on a phone.
+- Next: test on the phone (Worker loading, speed); then trunk vessels and the character's own body.
+
 ## 2026-10-18 (14), Claude Opus 5.5
 - Tried (not applied): intelligibility for any language pair from one universal representation (ASJP word lists for 6,126 languages, articulatory-feature segment costs), calibrated on Gooskens's 57 minimal-exposure cells. Leave-one-out error 11.8 points at best, r ≈ −0.5; at the 40-word resolution the predictions crowd into 15–35 % (Czech → Slovak 33 % vs 87.5 measured). Recorded with scripts in docs/data/asjp-attempt.
 - Next: a representation that carries running speech and cognacy (see df-body-engine.md, Related languages).

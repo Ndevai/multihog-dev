@@ -21,6 +21,8 @@ export interface Wound {
     infection: boolean | null; splinted: boolean; heals: number | null; healed: boolean;
     depth?: BurnDepth | null; vessel?: Vessel; clotIn?: number | null; functionLost?: boolean; permanent?: boolean; severed?: boolean;
     fracture?: Fracture; openGrade?: string; open?: boolean;
+    /** Pulse Hemorrhage severity (0–1) fixed when Pulse first ran the wound. */
+    pulseSev?: number;
 }
 
 /** Magic network of rule 576: capacity C, nodes N, reserve R, efficiency P, today's flow F and exercise E. */
@@ -70,6 +72,10 @@ export interface Person {
     age?: number; sex?: string; region?: string | null; body?: BodyTiming;
     unconscious?: string | null; apnea?: number | null; drowning?: boolean; paralysed?: boolean; exhausted?: boolean;
     needs?: Needs; env?: Env | null; thermal?: ThermalState; weather?: string | null; workMet?: number | null;
+    /** Pulse: minute-by-minute flow and vital signs prepared for the coming PassTime, and wounds already applied to its engine. */
+    pulse?: { track: { rate: number; hr: number; map: number; sys: number; dia: number; rr: number; spo2: number }[]; at: number } | null; pulseWounds?: number[];
+    /** Vital signs at the end of the last Pulse minute. */
+    pulseLast?: { hr: number; map: number; sys: number; dia: number; rr: number; spo2: number } | null;
     altitude?: Altitude | null; acclim?: number; baseAlt?: number | null;
     co?: { hb: number; o2: 'air' | 'oxygen' | 'hyperbaric' } | null; venom?: VenomCourse | null;
     sepsis?: Course | null; peritonitis?: Course | null;

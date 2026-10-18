@@ -25,6 +25,7 @@ import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
 import { turnKey } from './turn.js';
+import { prepareBleeding } from './pulse.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
@@ -1568,46 +1569,49 @@ export function registerRulesTools(enabled) {
                     running: { type: 'boolean', description: 'Running rather than walking' },
                 }, required: ['who'] },
         },
-    }, ['minutes'], a => run((st, rng) => {
-        const asked = Math.max(0, Math.round(a.minutes));
-        const walkers = [];
-        for (const w of a.walking || []) {
-            const p = st.people?.[w.who];
-            if (!p)
-                continue;
-            if (w.running && w.speed_kmh == null)
-                return `Give speed_kmh for ${w.who}'s running. Nothing recorded.`;
-            const kmh = w.speed_kmh ?? walkSpeedKmh(w.grade_pct ?? 0, w.terrain ?? 'dirt road', p.age ?? 35, p.sex ?? 'male', (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
-            try {
-                p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass);
+    }, ['minutes'], async (a) => {
+        await prepareBleeding(store().state.people ?? {}, Math.max(0, Math.round(a.minutes)));
+        return run((st, rng) => {
+            const asked = Math.max(0, Math.round(a.minutes));
+            const walkers = [];
+            for (const w of a.walking || []) {
+                const p = st.people?.[w.who];
+                if (!p)
+                    continue;
+                if (w.running && w.speed_kmh == null)
+                    return `Give speed_kmh for ${w.who}'s running. Nothing recorded.`;
+                const kmh = w.speed_kmh ?? walkSpeedKmh(w.grade_pct ?? 0, w.terrain ?? 'dirt road', p.age ?? 35, p.sex ?? 'male', (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
+                try {
+                    p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass);
+                }
+                catch (e) {
+                    return `${e.message} Nothing recorded.`;
+                }
+                walkers.push([w.who, p, kmh]);
             }
-            catch (e) {
-                return `${e.message} Nothing recorded.`;
-            }
-            walkers.push([w.who, p, kmh]);
-        }
-        // Characters outdoors at a weather station: time runs in hour steps, each taking the air temperature at its start.
-        const t0 = storyNow(st), weathered = t0 !== null && Object.values(st.people || {}).some(p => p.weather && p.env);
-        let elapsed = 0, events = [];
-        do {
-            if (weathered)
-                applyWeather(st.people, t0 + elapsed);
-            const step = weathered ? Math.min(60, asked - elapsed) : asked - elapsed;
-            const r = advanceAll(st.people || {}, step, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []) });
-            elapsed += r.elapsed;
-            events = r.events;
-            if (events.length || r.elapsed < step)
-                break;
-        } while (elapsed < asked);
-        if (t0 !== null && st.clock)
-            st.clock.add += elapsed;
-        const walked = walkers.map(([n, p, kmh]) => { const met = p.workMet ?? 0; delete p.workMet; return `${n} walked ${Math.round(kmh * elapsed / 60 * 10) / 10} km at ${Math.round(met * 10) / 10} MET`; });
-        const head = (events.length
-            ? `Time stopped after ${elapsed} of ${asked} minutes: ${events.join('; ')}. ${asked - elapsed} minutes remain.`
-            : `${elapsed} minutes passed.`) + (walked.length ? ` ${walked.join('; ')}.` : '');
-        const lines = Object.entries(st.people || {}).map(([who, p]) => status(who, p));
-        return [head, ...lines].join('\n');
-    }));
+            // Characters outdoors at a weather station: time runs in hour steps, each taking the air temperature at its start.
+            const t0 = storyNow(st), weathered = t0 !== null && Object.values(st.people || {}).some(p => p.weather && p.env);
+            let elapsed = 0, events = [];
+            do {
+                if (weathered)
+                    applyWeather(st.people, t0 + elapsed);
+                const step = weathered ? Math.min(60, asked - elapsed) : asked - elapsed;
+                const r = advanceAll(st.people || {}, step, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []) });
+                elapsed += r.elapsed;
+                events = r.events;
+                if (events.length || r.elapsed < step)
+                    break;
+            } while (elapsed < asked);
+            if (t0 !== null && st.clock)
+                st.clock.add += elapsed;
+            const walked = walkers.map(([n, p, kmh]) => { const met = p.workMet ?? 0; delete p.workMet; return `${n} walked ${Math.round(kmh * elapsed / 60 * 10) / 10} km at ${Math.round(met * 10) / 10} MET`; });
+            const head = (events.length
+                ? `Time stopped after ${elapsed} of ${asked} minutes: ${events.join('; ')}. ${asked - elapsed} minutes remain.`
+                : `${elapsed} minutes passed.`) + (walked.length ? ` ${walked.join('; ')}.` : '');
+            const lines = Object.entries(st.people || {}).map(([who, p]) => status(who, p));
+            return [head, ...lines].join('\n');
+        });
+    });
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },

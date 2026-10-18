@@ -1,0 +1,60 @@
+{
+  "Name": "Ringers",
+  "Component": [{
+    "Name": "Sodium",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 2.9887,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Chloride",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 3.8644,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Potassium",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 0.1564,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Calcium",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 0.0601,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Lactate",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 2.494,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Oxygen",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 0.0329,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "CarbonDioxide",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 1.013,
+        "Unit": "g/L"
+      }
+    }
+  }]
+}

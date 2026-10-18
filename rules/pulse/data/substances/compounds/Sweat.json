@@ -1,0 +1,52 @@
+{
+  "Name": "Sweat",
+  "Component": [{
+    "Name": "Sodium",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 1.0,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Chloride",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 1.5,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Potassium",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 0.2,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Calcium",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 0.02,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Lactate",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 0.01,
+        "Unit": "g/L"
+      }
+    }
+  }, {
+    "Name": "Urea",
+    "Concentration": {
+      "ScalarMassPerVolume": {
+        "Value": 0.003,
+        "Unit": "g/L"
+      }
+    }
+  }]
+}
