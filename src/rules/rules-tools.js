@@ -28,7 +28,7 @@ import { turnKey } from './turn.js';
 import { rollFormula, parseTable, pickTier } from './dice.js';
 import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
-import { skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, neverMarriedShare, climateShift, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
+import { strangerAgeSex, skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, neverMarriedShare, climateShift, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
 import { H_YEARS } from './data/body-size.js';
 import { CURRENT_BOOK, farFrom } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
@@ -1484,12 +1484,24 @@ export function registerRulesTools(enabled) {
                 q.bmiZ = bmiZOf(BUILDS[b], q.sex, st.setting?.country, storyYear(st));
         return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m, rng);
     }));
-    tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales.', {
+    tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
         occupation: str('Only when the story already fixes it, in a word or two (innkeeper, carter, blacksmith, servant)'),
         min_age: { type: 'number', description: 'Only when the story already fixes it (e.g. 18 for someone serving drinks)' },
     }, ['who'], a => run((st, rng) => {
+        // Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex
+        // come from the country's stable population (population.ts); occupation and birthplace are left to the story.
+        const c = st.setting?.country, y = storyYear(st);
+        const english = !c || (/united kingdom|england|wales/i.test(c) && (y === null || Math.abs(y - 1881) <= 40));
+        const local = english ? null : strangerAgeSex(c, y, rng, { sex: a.sex ?? null, minAge: Number(a.min_age) || 0 });
+        if (local) {
+            const { p } = who(st, a.who);
+            if (p)
+                Object.assign(p, { age: local.age, sex: local.sex });
+            const noun = local.age < 15 ? (local.sex === 'female' ? 'girl' : 'boy') : local.sex === 'female' ? 'woman' : 'man';
+            return `${a.who}: a ${local.age}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (age and sex as drawn from ${local.country}'s population in ${y}; occupation and birthplace as the story sets them).`;
+        }
         const r = drawPerson({ sex: a.sex ?? null, occupation: a.occupation ?? null, minAge: Number(a.min_age) || 0 }, rng);
         if ('error' in r)
             return r.error;

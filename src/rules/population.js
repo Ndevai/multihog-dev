@@ -268,3 +268,24 @@ export function climateShift(country, year, month) {
     const row = r ? r[1][year - r[0]] : null;
     return row?.[month - 1] ?? null;
 }
+// A stranger's age and sex where no census file covers the scene: the stable population of the country's life table
+// (Lotka): people aged x are in proportion to l(x)·e^(−r·x), r = the yearly growth of the country's population over the
+// 10 years before the story year (Clio Infra total population) [stated process; ASSUMED: a stable population, no
+// migration]. Sex: men and women in proportion to their own l(x)·e^(−r·x) summed over ages, with 105 boys born per 100 girls
+// (the sex ratio at birth of human populations without sex selection [ASSUMED value]). Ages 0–100, one-year steps.
+export function strangerAgeSex(country, year, rng, { sex = null, minAge = 0 } = {}) {
+    if (!country || year === null || !survival(country, 'male', year, 0, 1))
+        return null;
+    const p0 = countryFact('population', country, year - 10), p1 = countryFact('population', country, year);
+    const r = p0 && p1 && p1.year > p0.year ? Math.log(p1.v / p0.v) / (p1.year - p0.year) : 0;
+    const w = (s) => Array.from({ length: 101 }, (_, x) => x < minAge ? 0 : (survival(country, s, year, 0, x)?.share ?? 0) * Math.exp(-r * x) * (s === 'male' ? 1.05 : 1));
+    const wm = w('male'), wf = w('female'), sm = wm.reduce((a, b) => a + b, 0), sf = wf.reduce((a, b) => a + b, 0);
+    const s = sex ?? (rng() * (sm + sf) < sm ? 'male' : 'female'), ws = s === 'male' ? wm : wf, tot = s === 'male' ? sm : sf;
+    let u = rng() * tot, age = 100;
+    for (let x = 0; x <= 100; x++)
+        if ((u -= ws[x]) < 0) {
+            age = x;
+            break;
+        }
+    return { age, sex: s, country: survival(country, s, year, 0, 1).country, growth: r };
+}

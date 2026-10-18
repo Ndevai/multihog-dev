@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (11), Claude Opus 5.5
+- Changed: a stranger outside England around 1881 gets age and sex from their own country's population in the story year (life table and population growth), not from 1881 England; occupation and birthplace are left to the story. Brazil 1990: median age 23, 35 % children (1991 census about 22 and 35 %).
+- Fixed in the check harness: it now loads the start-up data (life tables, Clio, languages) as SillyTavern does.
+- Checked: Sweden 1990 median 36 (actual about 38); Japan 2010 median 41 (actual 45; low fertility breaks the stable-population assumption). Compiles with zero errors.
+- Next: occupations by country need IPUMS census samples (user's extract).
+
 ## 2026-10-18 (10), Claude Opus 5.5
 - Checked in a Node run of the real tools (SillyTavern faked, no phone needed): Weather Recife 15 Jul 1990 (ERA5, 29 / 22 °C), Communicate Portuguese → Spanish listener in Brazil ("some words; the gist only", 46.2 %), Claim with past_act, BodySize, PassTime.
 - Fixed: walking pace by country used only a character's weather place, so it was skipped for characters without one; it now falls back to the scene's country (Brazil: 4.8 → 3.9 km/h for a girl of 13).

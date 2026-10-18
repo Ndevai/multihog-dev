@@ -18,6 +18,10 @@ globalThis.fetch = async (u, o) => {
     return { ok: true, status: 200, json: async () => JSON.parse(b), text: async () => String(b), arrayBuffer: async () => b };
 };
 const m = await import(`${REPO}/src/rules/rules-tools.js`);
+// The data the extension loads at start-up (src/index.ts).
+const R = `${REPO}/src/rules`;
+await Promise.all([(await import(`${R}/things.js`)).loadThings(), (await import(`${R}/colex.js`)).loadColex(), (await import(`${R}/languages.js`)).loadLanguageYears(),
+    (await import(`${R}/history.js`)).loadChat(), (await import(`${R}/population.js`)).loadPopulation()]);
 m.registerRulesTools(true);
 export async function call(name, args) { ctx.chat.push({ mes: `turn ${++turn}`, is_user: true }); return tools.get(name).action(args); }
 export { tools, ctx, m };
