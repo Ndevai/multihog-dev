@@ -35,13 +35,13 @@ const CLOZE = {
 // Brazilian Portuguese (scene in Brazil): no measured scores. Shifted from the European Portuguese cells by the slope of
 // the minimal-exposure Romance scores on phonetic distance (Levenshtein, 97 Swadesh concepts transcribed by rule in
 // Peninsular Spanish, European and São Paulo Portuguese, Italian, French and Romanian, docs/data/romance_swadesh_ipa.tsv;
-// slope −112 points per unit distance, mean of the fits over 14 and over 11 cells without Romanian listeners, r = −0.55 /
-// −0.59) times the change in distance: Spanish–Brazilian 0.521 vs Spanish–European 0.609 → +9.9 both ways [stated
-// process; the transcriptions are the model's own, by rule]. Check: the line alone gives Spanish → European 37.0 /
-// 34.7 vs 35.7 measured.
+// slope −119 points per unit distance, mean of the fits over 14 and over 11 cells without Romanian listeners, r = −0.57 /
+// −0.62) times the change in distance: Spanish–Brazilian 0.507 vs Spanish–European 0.595 → +10.5 both ways [stated
+// process; the transcriptions are the model's own, by rule; Portuguese nasal vowels before a stop keep the short nasal
+// consonant, grande [ˈgɾɐ̃ndɨ]]. Check: the line alone gives Spanish → European 38.2 / 35.9 vs 35.7 measured.
 const BRAZIL = {
-    spanish: { portuguese: 45.6 }, italian: { portuguese: 27.2 }, romanian: { portuguese: 21.0 }, french: { portuguese: 18.9 },
-    portuguese: { spanish: 71.9, italian: 47.9, romanian: 15.0, french: 12.6 },
+    spanish: { portuguese: 46.2 }, italian: { portuguese: 27.4 }, romanian: { portuguese: 21.0 }, french: { portuguese: 18.8 },
+    portuguese: { spanish: 72.5, italian: 48.1, romanian: 15.0, french: 12.5 },
 };
 /** The best share (0–1) of a speaker's language a listener understands through a related language they know, or null. */
 export function relatedShare(listener, speaker, brazil = false) {

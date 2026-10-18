@@ -3,8 +3,8 @@
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
 ## 2026-10-18 (9), Claude Opus 5.5
-- Changed: in Brazil, Portuguese and the other Romance languages understand each other at shifted shares: a Spanish speaker follows 45.6 % of Brazilian Portuguese (35.7 % of European), a Brazilian 71.9 % of Spanish. Built from phonetic distance on 97 everyday words in six varieties, calibrated on the 14 measured Romance scores.
-- Checked: distance Spanish–Brazilian 0.521 < Spanish–European 0.609; the fitted line puts Spanish → European at 37.0 / 34.7 against 35.7 measured; fit r = −0.55 / −0.59. Compiles with zero errors.
+- Changed: in Brazil, Portuguese and the other Romance languages understand each other at shifted shares: a Spanish speaker follows 46.2 % of Brazilian Portuguese (35.7 % of European), a Brazilian 72.5 % of Spanish (after the user's correction: nasal vowels before a stop keep their nasal consonant, grande [ˈgɾɐ̃ndɨ]; 12 words, was 45.6 / 71.9). Built from phonetic distance on 97 everyday words in six varieties, calibrated on the 14 measured Romance scores.
+- Checked: distance Spanish–Brazilian 0.507 < Spanish–European 0.595; the fitted line puts Spanish → European at 38.2 / 35.9 against 35.7 measured; fit r = −0.57 / −0.62. Compiles with zero errors.
 - User check wanted: the Portuguese columns of docs/data/romance_swadesh_ipa.tsv.
 - Next: IPUMS housing extract; Jensen 1989 if found.
 
