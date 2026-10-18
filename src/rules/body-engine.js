@@ -1507,7 +1507,7 @@ export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, 
 }
 /** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
 export const SPEECH_OVERRIDE = {};
-export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none', louder_db = 0 } = {}) {
+export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none', louder_db = 0, brazil = false } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc)
         return 'Creature data is not loaded.';
@@ -1548,7 +1548,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     let words = r.words, related = '';
     if (a?.length && b?.length && !a.some(x => b.includes(x))) {
         // A related language the listener knows carries part of the words (intelligibility.ts).
-        const rel = relatedShare(b, a);
+        const rel = relatedShare(b, a, brazil);
         if (!rel)
             return `${ls} hears speech in a language it does not know (${a.join(', ')}); only tone and gestures carry.`;
         words *= rel.share;

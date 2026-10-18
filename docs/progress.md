@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (9), Claude Opus 5.5
+- Changed: in Brazil, Portuguese and the other Romance languages understand each other at shifted shares: a Spanish speaker follows 45.6 % of Brazilian Portuguese (35.7 % of European), a Brazilian 71.9 % of Spanish. Built from phonetic distance on 97 everyday words in six varieties, calibrated on the 14 measured Romance scores.
+- Checked: distance Spanish–Brazilian 0.521 < Spanish–European 0.609; the fitted line puts Spanish → European at 37.0 / 34.7 against 35.7 measured; fit r = −0.55 / −0.59. Compiles with zero errors.
+- User check wanted: the Portuguese columns of docs/data/romance_swadesh_ipa.tsv.
+- Next: IPUMS housing extract; Jensen 1989 if found.
+
 ## 2026-10-18 (8), Claude Opus 5.5
 - Changed: a related language is understood at the score of listeners who had never been exposed to it (Gooskens 2018, minimal-exposure figures), not the score of all listeners, many of whom learned it: a Dane follows 43.8 % of Swedish (was 56.7), a Portuguese 62.0 % of Spanish (was 77.4). Nine empty cells filled by the ratio for the same language heard by others.
 - Recorded from the paper's conclusions: 40 % = tentative threshold for a two-language conversation; scores are conservative (no foreigner talk, no time to adapt).

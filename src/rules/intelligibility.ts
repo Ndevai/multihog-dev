@@ -33,11 +33,23 @@ const CLOZE: Record<string, Record<string, number>> = {
     slovene: { bulgarian: 18.6, croatian: 71.8, czech: 18.1, polish: 12.6, slovak: 18.8 },
 };
 
+// Brazilian Portuguese (scene in Brazil): no measured scores. Shifted from the European Portuguese cells by the slope of
+// the minimal-exposure Romance scores on phonetic distance (Levenshtein, 97 Swadesh concepts transcribed by rule in
+// Peninsular Spanish, European and São Paulo Portuguese, Italian, French and Romanian, docs/data/romance_swadesh_ipa.tsv;
+// slope −112 points per unit distance, mean of the fits over 14 and over 11 cells without Romanian listeners, r = −0.55 /
+// −0.59) times the change in distance: Spanish–Brazilian 0.521 vs Spanish–European 0.609 → +9.9 both ways [stated
+// process; the transcriptions are the model's own, by rule]. Check: the line alone gives Spanish → European 37.0 /
+// 34.7 vs 35.7 measured.
+const BRAZIL: Record<string, Record<string, number>> = {
+    spanish: { portuguese: 45.6 }, italian: { portuguese: 27.2 }, romanian: { portuguese: 21.0 }, french: { portuguese: 18.9 },
+    portuguese: { spanish: 71.9, italian: 47.9, romanian: 15.0, french: 12.6 },
+};
+
 /** The best share (0–1) of a speaker's language a listener understands through a related language they know, or null. */
-export function relatedShare(listener: string[], speaker: string[]): { share: number; from: string; heard: string } | null {
+export function relatedShare(listener: string[], speaker: string[], brazil = false): { share: number; from: string; heard: string } | null {
     let best: { share: number; from: string; heard: string } | null = null;
     for (const l of listener) for (const s of speaker) {
-        const v = CLOZE[l]?.[s];
+        const v = (brazil ? BRAZIL[l]?.[s] : undefined) ?? CLOZE[l]?.[s];
         if (v != null && (!best || v / 100 > best.share)) best = { share: v / 100, from: l, heard: s };
     }
     return best;

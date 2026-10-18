@@ -1230,13 +1230,13 @@ export function listen(ls: string, l: Person, { sound = undefined as string | un
 
 export interface MessageInput {
     means?: 'speech' | 'gesture'; lit?: boolean; languages?: (string[] | null | undefined)[]; distance?: number; effort?: Effort;
-    noise?: string; noise_db?: number | null; barrier?: string; louder_db?: number;
+    noise?: string; noise_db?: number | null; barrier?: string; louder_db?: number; brazil?: boolean;
 }
 
 /** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
 export const SPEECH_OVERRIDE: Record<string, boolean> = {};
 
-export function communicate(sp: string, s: Person, ls: string, l: Person, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none', louder_db = 0 }: MessageInput = {}): string {
+export function communicate(sp: string, s: Person, ls: string, l: Person, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none', louder_db = 0, brazil = false }: MessageInput = {}): string {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc) return 'Creature data is not loaded.';
     const talks = (c: Creature) => SPEECH_OVERRIDE[c.id] ?? (c.flags.includes('CAN_SPEAK') || c.flags.includes('INTELLIGENT'));
@@ -1266,7 +1266,7 @@ export function communicate(sp: string, s: Person, ls: string, l: Person, { mean
     let words = r.words, related = '';
     if (a?.length && b?.length && !a.some(x => b.includes(x))) {
         // A related language the listener knows carries part of the words (intelligibility.ts).
-        const rel = relatedShare(b, a);
+        const rel = relatedShare(b, a, brazil);
         if (!rel) return `${ls} hears speech in a language it does not know (${a.join(', ')}); only tone and gestures carry.`;
         words *= rel.share;
         related = `; ${rel.heard} understood through ${rel.from}`;
