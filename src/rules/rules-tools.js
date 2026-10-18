@@ -13,6 +13,7 @@ import { NORMALS } from './data/wmo-normals.js';
 import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET_ONLY, basketWage } from './prices.js';
 import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
+import { WATER_SOURCES, drinkWater } from './waterborne.js';
 import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, levelZ, stateShare, settingRatio } from './acts.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES, deathCause } from './disease.js';
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
@@ -700,17 +701,22 @@ export function registerRulesTools(enabled) {
             return out.join('\n');
         });
     });
-    tool('BodyIntake', 'Record drinking or eating the moment it happens.', {
+    tool('BodyIntake', 'Record drinking or eating the moment it happens; untreated water may carry infection.', {
         who: str('Character name'),
         water_l: { type: 'number', description: 'Water drunk, litres (a cup 0.25, a bottle 0.5–1)' },
         food_kcal: { type: 'number', description: 'Food energy eaten, kcal (bread slice 80, apple 95, meal 600–900)' },
         alcohol_g: { type: 'number', description: 'Pure alcohol drunk, grams (beer 330 mL 13 g, wine glass 150 mL 14 g, spirit shot 40 mL 13 g)' },
-    }, ['who'], a => run(st => {
+        water_source: { type: 'string', enum: WATER_SOURCES, description: 'Where untreated water came from; leave out for treated tap or bottled water' },
+        boiled: { type: 'boolean', description: 'The water was brought to a rolling boil first' },
+    }, ['who'], a => run((st, rng) => {
         const { p, error } = who(st, a.who);
         if (!p)
             return error;
         intake(p, a);
-        return status(a.who, p);
+        // Boiling at a rolling boil kills the reference pathogens (WHO 2015, technical brief "Boil water").
+        const w = a.water_source && !a.boiled ? drinkWater(a.water_source, Number(a.water_l) || 0, rng) : null;
+        const sick = w?.ill.length ? ` ${a.who} caught ${w.ill.join(' and ')}: diarrhoea and cramps start within days.` : w?.infected.length ? ` ${a.who} carries an infection without falling ill.` : '';
+        return status(a.who, p) + sick;
     }));
     // A strong feeling raises the voice: peak speech level of 48 women students enacting a message, strong minus weak intensity,
     // anger +4.46 dB, liking +1.19 dB (Kimble, Forte & Yoshikawa 1981, J Pers 49:271, Table 2, mean of camera and person targets).
