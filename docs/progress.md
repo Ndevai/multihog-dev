@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (13), Claude Opus 5.5
+- Changed: a stranger outside 1881 England now also lives in a household drawn from their country's surveys (UN household database, 187 countries, 1960–2021): its size and type (alone, couple, couple with children, single parent, extended family, non-relatives). Brazil 1990: average household of 4.2, 1.6 % of people alone.
+- Checked in the harness: implied household averages match the surveys within 0.03 (Brazil, India); UK 2011 2.50 vs 2.35.
+- Next: rooms and building materials need IPUMS (user's access pending).
+
 ## 2026-10-18 (12), Claude Opus 5.5
 - Changed: a stranger of 15 or over outside 1881 England works or not by the measured employment rate of their sex and age, and works in an occupation group drawn from their country's labour surveys (ILOSTAT, 200 countries, 1969–2025): in Brazil 1990, a woman of 30 works with 51.5 % chance, most often in service and sales (35 %).
 - Checked in the harness: draws match the ratios (51.6 % vs 51.5 %). Compiles with zero errors.

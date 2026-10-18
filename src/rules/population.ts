@@ -14,6 +14,7 @@ let OWW: Record<string, Record<string, [number, [string, number][]]>> = {};
 let FAITH: Record<string, Record<string, Record<string, number>>> = {};
 type IloRow = [number, ...number[]];
 let ILO: { groups: string[]; bands: number[]; occ: Record<string, Record<string, (number | string)[][]>>; epr: Record<string, Record<string, IloRow[]>> } | null = null;
+let HOUSEHOLD: { cols: string[]; rows: Record<string, (number | string | null)[][]> } | null = null;
 let loading: Promise<void> | null = null;
 export function loadPopulation(): Promise<void> {
     loading ??= Promise.all([
@@ -28,6 +29,7 @@ export function loadPopulation(): Promise<void> {
         fetch(new URL('../../rules/compendium.json', import.meta.url)).then(r => r.json()).then(d => { COMPENDIUM = d; }),
         fetch(new URL('../../rules/berkeley.json', import.meta.url)).then(r => r.json()).then(d => { BERKELEY = d; }),
         fetch(new URL('../../rules/ilo.json', import.meta.url)).then(r => r.json()).then(d => { ILO = d; }),
+        fetch(new URL('../../rules/household.json', import.meta.url)).then(r => r.json()).then(d => { HOUSEHOLD = d; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
 }
@@ -289,4 +291,37 @@ export function strangerWork(country: string | null | undefined, sex: 'male' | '
     let u = rng(), g = 9;
     for (let i = 0; i < 10; i++) if ((u -= Number(o[2 + i])) < 0) { g = i; break; }
     return { works: true, group: ILO.groups[g], employed, year: Number(e[0]), country: c };
+}
+
+// The household a stranger lives in: UN DESA Population Division, Database on Household Size and Composition 2022 (CC BY
+// 3.0 IGO; 1,004 surveys and censuses, 187 countries, 1960–2021; IPUMS-I, DHS, MICS, UN Demographic Yearbook, EU LFS):
+// households by size (1, 2–3, 4–5, 6+ members) and type. A person, not a household, is drawn, so a size k is weighted by
+// k × its share of households [stated process]; within 2–3 and 4–5 each size is equally likely, and 6+ is 6 plus a
+// geometric excess whose mean makes the survey's average household size come out [ASSUMED shapes]. Type, given the
+// size: 1 → living alone; 2 → couple only, single parent, extended or non-relatives by their shares; 3+ → couple with
+// children, single parent, extended or non-relatives by their shares [ASSUMED: type independent of size within these].
+// Under 18 nobody lives alone. Nearest survey within 25 years; on a tie IPUMS, then DYB, DHS, MICS, LFS [ASSUMED order].
+const SRC_ORDER = ['IPUMS', 'DYB', 'DHS', 'MICS', 'LFS'];
+export function strangerHousehold(country: string | null | undefined, year: number | null, age: number, rng: () => number):
+    { size: number; type: string; country: string; year: number; source: string } | null {
+    if (!HOUSEHOLD || !country || year === null) return null;
+    const c = pick(Object.keys(HOUSEHOLD.rows), country);
+    if (!c) return null;
+    const rows = HOUSEHOLD.rows[c];
+    const r = rows.reduce((b, x) => { const d = Math.abs(Number(x[0]) - year) - Math.abs(Number(b[0]) - year);
+        return d < -0.5 || (Math.abs(d) <= 0.5 && SRC_ORDER.indexOf(String(x[12])) < SRC_ORDER.indexOf(String(b[12]))) ? x : b; });
+    if (Math.abs(Number(r[0]) - year) > 25) return null;
+    const [avg, h1, h23, h45, h6] = r.slice(1, 6).map(Number), tot = h1 + h23 + h45 + h6;
+    const m6 = h6 > 0 ? Math.max(6.5, (avg * tot - h1 - 2.5 * h23 - 4.5 * h45) / h6) : 6.5, q = 1 / (m6 - 5);   // geometric on 6, 7, … with mean m6
+    const H = (k: number) => k === 1 ? h1 : k <= 3 ? h23 / 2 : k <= 5 ? h45 / 2 : h6 * q * (1 - q) ** (k - 6);
+    const w = Array.from({ length: 20 }, (_, i) => i + 1).map(k => k === 1 && age < 18 ? 0 : k * H(k));
+    let u = rng() * w.reduce((a, b) => a + b, 0), size = 20;
+    for (let i = 0; i < 20; i++) if ((u -= w[i]) < 0) { size = i + 1; break; }
+    const share = (i: number) => Number(r[i] ?? 0);
+    const types: [string, number][] = size === 1 ? [['living alone', 1]] : size === 2
+        ? [['a couple', share(7)], ['a single parent and child', share(9)], ['extended family', share(10)], ['non-relatives', share(11)]]
+        : [['a couple with children', share(8)], ['a single parent with children', share(9)], ['extended family', share(10)], ['non-relatives', share(11)]];
+    let v = rng() * types.reduce((a, t) => a + t[1], 0), type = types[0][0];
+    for (const t of types) if ((v -= t[1]) < 0) { type = t[0]; break; }
+    return { size, type, country: c, year: Math.floor(Number(r[0])), source: String(r[12]) };
 }
