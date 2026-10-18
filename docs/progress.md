@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (22), Claude Opus 5.5
+- Added: molecular structure (SMILES) per substance; the engine counts the atoms, finds rings and groups, and derives boiling and melting points, heat of formation and heat of burning (Joback). Records whose formula disagrees with their structure are refused; peroxide bonds are reported.
+- Checked: same atoms and groups as RDKit + thermo on 79 + 41 of 43 molecules (2 deliberate differences); heat error median 0.4 % (oxygen rule 1.6 %); now catches the 1-butanol misprint the formula alone missed; 3 contradictions, 6 suspect.
+- Not done: S, P, salts, metals; measured boiling points to check predicted states.
+
 ## 2026-10-18 (21), Claude Opus 5.5
 - Added: substance records checked against their atoms (§6.19): molar mass, oxygen demand and heat of burning from the formula; records that contradict it are refused, gaps filled from the family. Food energy from carbohydrate, protein and fat (Atwater) with hard limits; alcohol now counts 7 kcal/g.
 - Checked: 79 records, 1 contradiction (propyne, a misprint in the source), 5 suspect; leave-one-out error 1.8 %; harness BodyIntake refuses impossible foods.

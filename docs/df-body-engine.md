@@ -741,7 +741,19 @@ Check (`node tools/check-substances.mjs`): 62 ok, 5 suspect, 1 contradiction, 11
 
 Fix found by the same rule: alcohol drunk now counts 7 kcal/g toward food energy (before, it raised blood alcohol only). BodyIntake takes `food_g`, `carb_g`, `protein_g`, `fat_g`. Checks (harness): 50 g carbohydrate, 10 protein, 5 fat stated as 900 kcal → 285 kcal used; 2000 kcal in 100 g → 900 used; 60 g of parts in 50 g → refused.
 
-Not done: hazards from structure (an O–O bond, as in hydrogen peroxide) need a structure string per record, not only the formula; the formula alone cannot tell H2O2 from other H:O 1:1 arrangements. Other elements (S, P, salts) have no weights here yet. Body-run records will carry dose with molar mass when they are wired in (moles, not effects, are checked).
+Structure (added 2026-10-18, second pass). Records carry a SMILES string (`smiles`); `structure.ts` reads it (organic atoms, aromatic rings, brackets, branches, ring closures), counts every atom including implicit hydrogens, finds ring atoms, and sorts the atoms into the 40 Joback groups (Joback & Reid 1987, Chem Eng Commun 57:233; coefficients from the thermo library, MIT licence, `rules/joback.json`; nitro group left out). From the groups: boiling point (stated mean error 12.9 K), melting point (22.6 K), gas heat of formation (9.2 kJ/mol), heats of vaporisation (3.9 %) and fusion (38.7 %), heat capacity. Heat of burning by Hess's law: products CO2 −393.51, liquid water −285.83, SO2 −296.81 kJ/mol (CODATA, Cox, Wagman & Medvedev 1989); liquid = gas − vaporisation, crystal = gas − vaporisation − fusion [ASSUMED: values at the boiling and melting points stand for 298 K].
+
+| Check | Rule |
+|---|---|
+| formula | the record's formula must equal the atoms of its structure, else contradiction |
+| heat (structure) | Joback estimate: within 5 % ok, 5–10 % suspect, beyond 10 % contradiction [ASSUMED thresholds]; outside its domain a miss is at most suspect: one-carbon molecules, and crystals with N–H groups (amides, amino acids, urea: their hydrogen-bonded lattices hold energy Joback's vaporisation + fusion misses; 7–21 % low on this table) [ASSUMED domain] |
+| heat (formula only) | the oxygen rule above |
+| hazards | an O–O single bond is reported (peroxide: decomposes to oxygen and heat, an oxidiser); groups are not applied across it (outside the fitted compounds) |
+| burns at all | oxygen demand ≤ 0 (H2O2: −0.5 mol O2) → does not burn |
+
+Out-of-sample error on this table (Joback was fitted on other compounds): median 0.4 %, 90 % within 2.4 %, against 1.6 % and 6.1 % for the oxygen rule. Reader checked against RDKit 2026.09.1 + thermo 0.6.1: same formula and groups for all 79 records, and for 41 of 43 other molecules (halides, thiols, thiophene, pyrrole, indole, amines, esters, nitriles, sugars, amino acids); the 2 differences are deliberate: benzaldehyde gets the aldehyde group (thermo's pattern requires a non-aromatic neighbour carbon), hydrogen peroxide gets none (O–O). Anhydrides are refused, as in thermo.
+
+Check (`node tools/check-substances.mjs`): 64 ok, 6 suspect, 3 contradictions, 6 not judged. Contradictions: 1-butanol (printed C4H10, its structure is C4H10O; the heat matches C4H10O within 0.3 %), propanal (printed 1522 kJ/mol, its groups give 1818: −16.3 %), propyne (185 vs 1939). Suspect: urea −20.9 %, formic acid −11.2 % (outside the domain), acetamide −8.4 %, alanine −6.6 %, cyclobutene +5.6 % (ring strain), methyl formate (formate esters fit no Joback group; oxygen rule +10.1 %). Estimates: sucrose 16.7 kJ/g, stearic acid 39.9, leucine 27.8; hydrogen peroxide: does not burn, O–O reported. Not done: sulfur and phosphorus records, salts and metals (no groups), measured boiling and melting points to check the state predictions.
 
 ## 7. Tools
 

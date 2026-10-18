@@ -1,3 +1,13 @@
+// Substance records checked against their composition (docs/df-body-engine.md §6.19). A record is a name, a formula and
+// measured values; code derives what the atoms fix (molar mass, oxygen to burn it, heat of burning) and compares.
+// Atomic weights: IUPAC conventional values (H 1.008, C 12.011, N 14.007, O 15.999).
+// Heat of burning from oxygen demand: ΔHc ≈ k × mol O2, mol O2 = C + H ÷ 4 − O ÷ 2 (products CO2, liquid H2O, N2)
+// (Thornton 1917 rule; k fitted here as the median over the 68 measured records with 2 or more carbons, 442 kJ per mol O2;
+// leave-one-out median error 1.8 %, 90 % within 7.1 %, propyne left out). One-carbon molecules and H2 sit 11–29 % off (their
+// bonds differ from C–C and C–H chains), so they are not judged. Verdict: within 10 % ok, 10–20 % suspect, beyond 20 %
+// contradiction (the record is refused and the estimate used) [ASSUMED: thresholds above the leave-one-out spread].
+// A family (fatty acid, alcohol, amino acid, …) with 3 or more measured members fills a gap with its own median k.
+import { parseSmiles, formulaOf, formulaString, jobackGroups, jobackProps, combustionKJmol, hazards, loadJoback } from './structure.js';
 const WEIGHT = { H: 1.008, C: 12.011, N: 14.007, O: 15.999 };
 export function parseFormula(f) {
     const out = {};
@@ -21,7 +31,7 @@ const median = (x) => { const a = [...x].sort((p, q) => p - q), m = a.length >> 
 let table = [], K = 442, KFAM = {};
 let loading = null;
 export function loadSubstances() {
-    loading ??= fetch(new URL('../../rules/substances.json', import.meta.url)).then(r => r.json()).then((d) => {
+    loading ??= Promise.all([loadJoback(), fetch(new URL('../../rules/substances.json', import.meta.url)).then(r => r.json())]).then(([, d]) => {
         table = d.substances;
         const k = (rows) => median(rows.map(s => measuredKJmol(s) / o2Mol(s.formula)));
         const judged = table.filter(s => (parseFormula(s.formula).C ?? 0) >= 2 && measuredKJmol(s) != null);
@@ -36,7 +46,7 @@ export function loadSubstances() {
 }
 export const substanceTable = () => table;
 /** Heat of burning, kJ/mol and kJ/g: the measured record when there is one that passes the check, else the estimate. */
-export function heatOf(formula, family) {
+export function heatOf(formula, family, smiles, state = 'gas') {
     const rec = table.find(s => s.formula.replace(/\s+/g, '') === formula.replace(/\s+/g, ''));
     const M = molarMass(formula);
     if (rec) {
@@ -44,19 +54,56 @@ export function heatOf(formula, family) {
         if (c.verdict !== 'contradiction' && c.measured != null)
             return { kJmol: c.measured, kJg: c.measured / M, measured: true, note: `${rec.name}, measured (${rec.src})` };
     }
+    if (smiles) {
+        const st = fromStructure(smiles, state);
+        if (st.kJmol != null)
+            return { kJmol: st.kJmol, kJg: st.kJmol / M, measured: false, note: `estimated from its groups of atoms (Joback) [ASSUMED]` };
+    }
+    if (o2Mol(formula) <= 0)
+        return { kJmol: 0, kJg: 0, measured: false, note: 'does not burn: its atoms already hold the oxygen they need (it can give oxygen off instead)' };
     const k = family && KFAM[family] ? KFAM[family] : K;
     const e = k * o2Mol(formula);
     return { kJmol: e, kJg: e / M, measured: false, note: `estimated from oxygen demand, ${Math.round(k)} kJ per mol O2${family && KFAM[family] ? ` (${family} median)` : ''} [ASSUMED]` };
 }
-/** Compares a record's measured heat with what its atoms allow. */
+/** What the structure fixes: formula, hazards, and the Joback heat of burning (null when its groups do not cover it). */
+export function fromStructure(smiles, state = 'gas') {
+    const m = parseSmiles(smiles), f = formulaOf(m), g = jobackGroups(m);
+    const p = g.groups ? jobackProps(g.groups) : null;
+    return { formula: formulaString(f), hazards: hazards(m), kJmol: p ? combustionKJmol(f, p, state) : null, why: g.groups ? (p ? null : 'group without coefficients') : g.why };
+}
+const hasNH = (smi) => { const m = parseSmiles(smi); return m.atoms.some(a => a.el === 'N' && a.h > 0); };
+const sameFormula = (a, b) => JSON.stringify(Object.entries(parseFormula(a)).sort()) === JSON.stringify(Object.entries(parseFormula(b)).sort());
+/** Compares a record with what its atoms allow. With a structure: the formula must match it, and the heat is judged against
+ * the Joback estimate (ok within 5 %, suspect 5–10 %, contradiction beyond 10 % inside its domain) [ASSUMED thresholds; out-of-sample error
+ * on this table: median 0.4 %, 90 % within 2.4 %]. Without one: the oxygen rule (10 / 20 %; fewer than 2 carbons not judged). */
 export function checkSubstance(s) {
-    const measured = measuredKJmol(s), k = s.family && KFAM[s.family] ? KFAM[s.family] : K, predicted = k * o2Mol(s.formula);
+    const measured = measuredKJmol(s), problems = [];
+    if (s.smiles) {
+        const st = fromStructure(s.smiles, s.state ?? 'gas');
+        if (!sameFormula(st.formula, s.formula))
+            problems.push(`formula ${s.formula} disagrees with the structure (${st.formula})`);
+        problems.push(...st.hazards);
+        if (st.kJmol != null) {
+            if (measured == null)
+                return { measured, predicted: st.kJmol, errPct: null, verdict: problems.length && problems[0].startsWith('formula') ? 'contradiction' : 'not judged', by: 'Joback', problems };
+            const errPct = (measured - st.kJmol) / st.kJmol * 100, a = Math.abs(errPct);
+            // Outside the domain where the estimate holds, a large miss is only suspect: one-carbon molecules, and crystals
+            // with N–H groups (amides, amino acids, urea: hydrogen-bonded or zwitterion lattices hold more energy than Joback's
+            // vaporisation + fusion; on this table they sit 7–21 % low) [ASSUMED domain, from the misses on this table].
+            const f = parseFormula(s.formula), inDomain = (f.C ?? 0) >= 2 && !(s.state === 'cry' && hasNH(s.smiles));
+            const verdict = problems.some(p => p.startsWith('formula')) || (a > 10 && inDomain) ? 'contradiction' : a > 5 ? 'suspect' : 'ok';
+            return { measured, predicted: st.kJmol, errPct, verdict, by: 'Joback', problems };
+        }
+        if (problems.some(p => p.startsWith('formula')))
+            return { measured, predicted: NaN, errPct: null, verdict: 'contradiction', by: 'structure', problems };
+    }
+    const k = s.family && KFAM[s.family] ? KFAM[s.family] : K, predicted = k * o2Mol(s.formula);
     if (measured == null)
-        return { measured, predicted, errPct: null, verdict: 'not judged' };
+        return { measured, predicted, errPct: null, verdict: 'not judged', by: 'oxygen rule', problems };
     const errPct = (measured - predicted) / predicted * 100, a = Math.abs(errPct);
     if ((parseFormula(s.formula).C ?? 0) < 2)
-        return { measured, predicted, errPct, verdict: 'not judged' };
-    return { measured, predicted, errPct, verdict: a <= 10 ? 'ok' : a <= 20 ? 'suspect' : 'contradiction' };
+        return { measured, predicted, errPct, verdict: 'not judged', by: 'oxygen rule', problems };
+    return { measured, predicted, errPct, verdict: a <= 10 ? 'ok' : a <= 20 ? 'suspect' : 'contradiction', by: 'oxygen rule', problems };
 }
 // Food energy from composition: Atwater general factors, carbohydrate 4, protein 4, fat 9, alcohol 7 kcal/g (FAO 2003, Food
 // energy – methods of analysis and conversion factors, FAO Food and Nutrition Paper 77, ch. 3). Hard limits from the atoms:
