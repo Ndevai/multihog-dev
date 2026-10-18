@@ -1,17 +1,43 @@
 import { aerobicFactor } from './thermal/altitude.js';
-// Walking with a load (docs/df-body-engine.md §6.7): Pandolf, Givoni & Goldman 1977 (J Appl Physiol 43:577), as given on
-// Wikipedia "Pandolf equation": M (W) = 1.5 W + 2.0 (W + L)(L / W)² + η (W + L)(1.5 V² + 0.35 V G); W body kg, L load kg,
-// V m/s, G grade %. Terrain η: Soule & Goldman 1972 (J Appl Physiol 32:706).
+// Walking with a load (docs/df-body-engine.md §6.7). Terrain η: Soule & Goldman 1972 (J Appl Physiol 32:706).
 import type { Person, Gauss } from './types.js';
 
 export const TERRAIN: Record<string, number> = { road: 1.0, 'dirt road': 1.1, 'light brush': 1.2, 'heavy brush': 1.5, swamp: 1.8, 'loose sand': 2.1,
     'snow 15 cm': 2.5, 'snow 25 cm': 3.3, 'snow 35 cm': 4.1 };
 
-// Walking pace when the story gives none: Tobler's hiking function W = 6·e^(−3.5·|S + 0.05|) km/h, S = slope as rise ÷ run
-// (Tobler 1993, NCGIA Technical Report 93-1, Fig. II, fitted to Imhof 1950); off roads × 0.6. Scaled by normal gait speed
-// for age and sex ÷ Tobler's flat 5.04 km/h (Bohannon & Andrews 2011, Physiotherapy 97:182, Table 2, cm/s: men 20s 135.8,
-// 30s 143.3, 40s 143.4, 50s 143.3, 60s 133.9, 70s 126.2, 80+ 96.8; women 134.1, 133.7, 139.0, 131.3, 124.1, 113.2, 94.3)
-// [ASSUMED: the age-sex ratio carries over to slopes].
+// Walking cost: Load Carriage Decision Aid (Looney et al. 2022, Med Sci Sports Exerc 54:1251, PMC8919998, Eq. 4; bias
+// −0.08 ± 0.59 W/kg on 7 outside data sets, speeds 0.45–1.97 m/s, backpacks to 66 % of body mass):
+// M (W/kg body) = rest + [0.19 + η (1.78 S^0.58 + 0.27 S⁴ + 34 S G (1 − 1.05^(1 − 1.1^(100 G + 32))))] × (1 + 1.96 (L/W)^1.36),
+// S m/s, G rise ÷ run, η Soule & Goldman terrain. The grade term (LCDA graded walking) was not validated in that study.
+// Rest: Cunningham 500 + 22 × lean kg kcal/day (as used there), lean share 0.80 men, 0.70 women, at 70 kg [ASSUMED] → 1.20 / 1.09 W/kg.
+export function walkWkg(sex: string | null | undefined, loadShare: number, speedMs: number, grade: number, eta: number): number {
+    const rest = (500 + 22 * (sex === 'female' ? 0.70 : 0.80) * 70) * 4184 / 86400 / 70;
+    const g = 34 * speedMs * grade * (1 - 1.05 ** (1 - 1.1 ** (100 * grade + 32)));
+    return rest + (0.19 + eta * (1.78 * speedMs ** 0.58 + 0.27 * speedMs ** 4 + g)) * (1 + 1.96 * Math.max(0, loadShare) ** 1.36);
+}
+/** Metabolic rate (W) walking. */
+export function walkWatts(p: { mass: number; sex?: string | null }, loadKg: number | null | undefined, speedMs: number, gradePct: number | null | undefined = 0, terrain = 'dirt road'): number {
+    const eta = TERRAIN[terrain];
+    if (eta == null) throw new Error(`Unknown terrain "${terrain}". Known: ${Object.keys(TERRAIN).join(', ')}.`);
+    return walkWkg(p.sex, (loadKg || 0) / p.mass, speedMs, (gradePct || 0) / 100, eta) * p.mass;
+}
+// Cheapest speed per metre: the S that minimises M ÷ S (golden-section search, 0.2–2.5 m/s). Level road, no load: 1.31 m/s men.
+export function cheapestMs(sex: string | null | undefined, loadShare: number, grade: number, eta: number): number {
+    const f = (v: number) => walkWkg(sex, loadShare, v, grade, eta) / v;
+    let lo = 0.2, hi = 2.5; const k = (Math.sqrt(5) - 1) / 2;
+    for (let i = 0; i < 60; i++) { const a = hi - k * (hi - lo), b = lo + k * (hi - lo); if (f(a) < f(b)) hi = b; else lo = a; }
+    return (lo + hi) / 2;
+}
+
+// Walking pace when the story gives none (docs/df-body-engine.md §6.7a). Level road, no load: normal gait speed by age and
+// sex (Bohannon & Andrews 2011, Physiotherapy 97:182, Table 2, cm/s: men 20s 135.8, 30s 143.3, 40s 143.4, 50s 143.3, 60s
+// 133.9, 70s 126.2, 80+ 96.8; women 134.1, 133.7, 139.0, 131.3, 124.1, 113.2, 94.3) × the country's pace of life. Measured
+// speed wins over the energy optimum (1.31 m/s men), which it matches within 10 % from 20 to 69.
+// Ground and load: the speed moves with the cheapest speed, × cheapest(η, load) ÷ cheapest(road, none).
+// Slope and heavy going: the walker spends at most the larger of (a) the power of their level walk and (b) the power they
+// could keep up for H hours (Wu & Wang 2002 time limit on their own VO2max, §6.7b); speed falls until the cost fits.
+// H = WALK_HOURS = 2.8 h, fitted to Tobler's hiking function (Tobler 1993, NCGIA TR 93-1) for a man of 35 at 0–30 % uphill (RMS error 0.39 km/h)
+// [ASSUMED: fitted]. Downhill steeper than −5 %: × Tobler's fall from its −5 % peak (footing and braking, not energy) [ASSUMED].
 const GAIT = { male: [135.8, 143.3, 143.4, 143.3, 133.9, 126.2, 96.8], female: [134.1, 133.7, 139.0, 131.3, 124.1, 113.2, 94.3] };
 // Pace of life by country: mean seconds for a lone adult to walk 60 ft (18.3 m) downtown on a clear summer working morning
 // (Levine & Norenzayan 1999, J Cross-Cult Psychol 30:178, Table 1, about 1990s; 31 countries, mean 13.54 s). The walk
@@ -19,22 +45,21 @@ const GAIT = { male: [135.8, 143.3, 143.4, 143.3, 133.9, 126.2, 96.8], female: [
 // carries to other years, places outside downtowns and the age-sex gait above, whose samples are taken as the 31-country mean].
 const PACE_S: Record<string, number> = { 'Switzerland': 11.80, 'Ireland': 11.13, 'Germany': 12.01, 'Japan': 12.11, 'Italy': 12.75, 'United Kingdom of Great Britain and Northern Ireland': 12.00, 'Sweden': 12.92, 'Austria': 14.08, 'Netherlands (Kingdom of the)': 11.45, 'Hong Kong, China': 13.10, 'France': 12.34, 'Poland': 12.90, 'Costa Rica': 13.33, 'Taiwan': 13.58, 'Singapore': 14.75, 'United States of America': 12.03, 'Canada': 12.86, 'Republic of Korea': 13.76, 'Hungary': 13.75, 'Czechia': 13.80, 'Greece': 13.10, 'Kenya': 12.58, 'China': 14.26, 'Bulgaria': 15.57, 'Romania': 16.72, 'Jordan': 15.79, 'Syrian Arab Republic': 15.95, 'El Salvador': 14.04, 'Brazil': 16.76, 'Indonesia': 14.82, 'Mexico': 13.56 };
 const PACE_MEAN_S = Object.values(PACE_S).reduce((s, x) => s + x, 0) / Object.keys(PACE_S).length;
-export function walkSpeedKmh(gradePct = 0, terrain = 'dirt road', age = 35, sex = 'male', country: string | null = null): number {
-    const tobler = 6 * Math.exp(-3.5 * Math.abs(gradePct / 100 + 0.05)) * (/road/.test(terrain) ? 1 : 0.6);
-    const g = GAIT[sex === 'female' ? 'female' : 'male'][Math.max(0, Math.min(6, Math.floor(age / 10) - 2))];
-    const pace = country && PACE_S[country] ? PACE_MEAN_S / PACE_S[country] : 1;
-    return tobler * (g * 0.036) / 5.04 * pace;
-}
-
-// Downhill: Pandolf with the negative grade, minus the Santee et al. 2001 correction CF = η [G (W + L) V ÷ 3.5 − (W + L)
-// (G + 6)² ÷ W + 25 − V²] (as recalled; −5 % at 1.34 m/s gives 82 % of level cost, −10 % gives 77 %) [ASSUMED: unverified].
-/** Metabolic rate (W) walking. */
-export function pandolf(bodyKg: number, loadKg: number | null | undefined, speedMs: number, gradePct: number | null | undefined = 0, terrain = 'dirt road'): number {
+export const WALK_HOURS = 2.8;
+const tobler = (G: number) => 6 * Math.exp(-3.5 * Math.abs(G + 0.05));
+export function walkSpeedKmh(p: Person, gradePct = 0, terrain = 'dirt road', loadKg = 0, country: string | null = null, hours = WALK_HOURS): number {
     const eta = TERRAIN[terrain];
     if (eta == null) throw new Error(`Unknown terrain "${terrain}". Known: ${Object.keys(TERRAIN).join(', ')}.`);
-    const W = bodyKg, L = loadKg || 0, V = speedMs, G = gradePct || 0;
-    const m = 1.5 * W + 2.0 * (W + L) * (L / W) ** 2 + eta * (W + L) * (1.5 * V ** 2 + 0.35 * V * G);
-    return G >= 0 ? m : m - eta * (G * (W + L) * V / 3.5 - (W + L) * (G + 6) ** 2 / W + 25 - V ** 2);
+    const age = p.age ?? 35, sex = p.sex ?? 'male', G = gradePct / 100, Ls = (loadKg || 0) / p.mass;
+    const pace = country && PACE_S[country] ? PACE_MEAN_S / PACE_S[country] : 1;
+    const level = GAIT[sex === 'female' ? 'female' : 'male'][Math.max(0, Math.min(6, Math.floor(age / 10) - 2))] / 100 * pace;
+    const want = level * cheapestMs(sex, Ls, 0, eta) / cheapestMs(sex, 0, 0, 1);
+    const rl = Math.log(26.12 / hours) / 4.81, sustain = (1 + rl * (Math.max(10.5, vo2avail(p)) / 3.5 - 1)) * 1.163;
+    const cap = Math.max(walkWkg(sex, 0, level, 0, 1), sustain);
+    let v = want;
+    if (walkWkg(sex, Ls, v, G, eta) > cap) { let lo = 0.05, hi = v; for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (walkWkg(sex, Ls, m, G, eta) > cap) hi = m; else lo = m; } v = lo; }
+    if (G < -0.05) v *= tobler(G) / tobler(-0.05);
+    return v * 3.6;
 }
 
 // Running: ACSM running equation, VO2 (mL/kg/min) = 0.2 v + 0.9 v × grade + 3.5, v in m/min, grade as a fraction (as given

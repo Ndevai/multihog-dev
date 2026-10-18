@@ -23,7 +23,7 @@ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPID
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
-import { TERRAIN, pandolf, runWatts, metOf, walkSpeedKmh } from './work.js';
+import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
 import { SKILL_LEVELS, STYLES } from './df/combat.js';
@@ -1459,9 +1459,11 @@ export function registerRulesTools(enabled: boolean): void {
             const p = st.people?.[w.who];
             if (!p) continue;
             if (w.running && w.speed_kmh == null) return `Give speed_kmh for ${w.who}'s running. Nothing recorded.`;
-            const kmh = w.speed_kmh ?? walkSpeedKmh(w.grade_pct ?? 0, w.terrain ?? 'dirt road', p.age ?? 35, p.sex ?? 'male', (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
-            try { p.workMet = metOf((w.running ? runWatts : pandolf)(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass); }
-            catch (e) { return `${(e as Error).message} Nothing recorded.`; }
+            let kmh: number;
+            try {
+                kmh = w.speed_kmh ?? walkSpeedKmh(p, w.grade_pct ?? 0, w.terrain ?? 'dirt road', w.load_kg ?? 0, (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
+                p.workMet = metOf(w.running ? runWatts(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road') : walkWatts(p, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass);
+            } catch (e) { return `${(e as Error).message} Nothing recorded.`; }
             walkers.push([w.who, p, kmh]);
         }
         // Characters outdoors at a weather station: time runs in hour steps, each taking the air temperature at its start.

@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (20), Claude Opus 5.5
+- Changed: walking pace and walking energy come from one energy model (Load Carriage Decision Aid, Looney et al. 2022) instead of Tobler's curve and Pandolf. Flat-road pace stays the measured gait speed by age and sex; ground and load move it with the cheapest speed per metre; slopes slow the walker until the cost fits the power they can keep up for 2.8 h (fitted to Tobler). Climbs now depend on each person's fitness, age, altitude and blood loss.
+- Checked (Node, harness): cheapest speed 1.29 m/s (expected ~1.3); flat 5.16 km/h, +10 % 3.84 (Tobler 3.63), RMS error 0.39 km/h over 0–30 %; 318 W at 5 km/h (Compendium 3.5 MET ≈ 3.9 here); PassTime with walking runs.
+- Not done: no downhill speed-up from energy (Tobler's −5 % peak); combat injuries from tissue mechanics next.
+
 ## 2026-10-18 (19), Claude Opus 5.5
 - Changed: bleeding arteries of the chest and belly also run on precomputed Pulse runs (aorta and trunk muscle vessels, 20 more runs); the neck stays on the rules (Pulse has no carotid). A major chest artery at 450 mL/min kills a man in 12 min; a smaller trunk artery at 120 mL/min in 43 min.
 - Checked (harness), compiles with zero errors.
