@@ -18,7 +18,7 @@ A SillyTavern extension where code decides outcomes and the language model narra
 
 ## How to check
 1. `npx tsc -p .` compiles with zero errors (it also emits the `.js` files, which are committed).
-2. A Node scratch script outside the repo loads the changed functions (shim `fetch` with `fs.readFileSync`) and prints a few known values; compare them with the source.
+2. A Node scratch script outside the repo loads the changed functions (shim `fetch` with `fs.readFileSync`) and prints a few known values; compare them with the source. To run whole tools as SillyTavern would, import `tools/st-harness.mjs` (fake context, files read from the repo): `const { call, m } = await import('./tools/st-harness.mjs'); m.setStoryTime(parseStoryTime('1990-07-15 14:00')); await call('Weather', { place: 'Recife' })`. Each call counts as a new turn.
 3. The user tests inside SillyTavern; write no test suites.
 
 ## How to finish
