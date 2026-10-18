@@ -1,6 +1,7 @@
 // Rules Engine for SillyTavern: code decides outcomes, the narrator writes them (docs/df-body-engine.md). Each turn a
 // question pass names the outcomes in doubt and the engine decides them; the narrator gets the brief, the story time,
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
+import { pulseSelfTest } from './rules/pulse.js';
 import {
     registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat,
     RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY,
@@ -320,6 +321,7 @@ function wireEvents(): void {
     wireEvents();
     registerRulesStatsCommand();
     const c = ctx() as Ctx & { SlashCommand?: { fromProps(p: object): unknown }; SlashCommandParser?: { addCommandObject(x: unknown): void } };
+    c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-pulse-test', helpString: 'Runs the body simulation (Pulse) for 2 minutes of a leg bleed and reports the vital signs and the time it took.', callback: async () => pulseSelfTest() }));
     c.SlashCommandParser?.addCommandObject(c.SlashCommand!.fromProps({ name: 'rules-log', helpString: 'This turn\'s decisions: each call, its arguments, the random draws it used and its result.', callback: async () => turnLog() }));
     registerRulesEvalCommand(send);
     registerTimeCommand();

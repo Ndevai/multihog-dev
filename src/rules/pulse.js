@@ -86,3 +86,26 @@ export async function prepareBleeding(people, minutes) {
 }
 /** Whether a wound's flow comes from Pulse this minute. */
 export const pulseWound = pulsed;
+/** /rules-pulse-test: starts a throwaway Pulse patient, bleeds the right leg at severity 0.8 for 2 minutes, and reports the
+ *  vital signs and how long the phone took. */
+export async function pulseSelfTest() {
+    const t0 = Date.now();
+    try {
+        await rpc('boot');
+        const t1 = Date.now();
+        if (!(await rpc('start', 'selftest', 'StandardMale@0s.json.gz')))
+            return 'Pulse loaded but the patient state did not.';
+        await rpc('act', 'selftest', { AnyAction: [{ PatientAction: { Hemorrhage: { Compartment: 'RightLeg', Severity: { Scalar0To1: { Value: 0.8 } } } } }] });
+        const t2 = Date.now();
+        const tr = await rpc('run', 'selftest', 2);
+        const t3 = Date.now();
+        await rpc('stop', 'selftest');
+        const m = tr?.[tr.length - 1];
+        if (!m)
+            return 'Pulse ran no minutes.';
+        return `Pulse works. After 2 min of a severe leg bleed: pulse ${Math.round(m.hr)}/min, blood pressure ${Math.round(m.sys)}/${Math.round(m.dia)} mmHg, lost ${Math.round(m.lost)} mL (expected about 74–75/min and 360 mL at 2 min). Loading ${((t1 - t0) / 1000).toFixed(1)} s, patient ${((t2 - t1) / 1000).toFixed(1)} s, ${((t3 - t2) / 2000).toFixed(1)} s per simulated minute.`;
+    }
+    catch (e) {
+        return `Pulse failed: ${e.message}`;
+    }
+}
