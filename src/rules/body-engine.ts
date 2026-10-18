@@ -814,6 +814,13 @@ const NERVE_MPS = 49;                                  // Chen 2016 AANEM: media
 const SYNAPSE_S = 0.0007;                              // More & Donelan 2018
 const twitch = (mass: number) => 0.0043 * mass ** 0.21 + 0.0176 * mass ** 0.20; // More & Donelan 2018: electromechanical + force generation
 const RT_CV = 36.42 / 297;                              // Petri 2020 spread
+// Simple reaction time by age and sex (Der & Deary 2006, Psychol Aging 21:62, Table 1, 7,130 adults 18–94; the table's Box–Cox
+// polynomial inverted to ms in the Senses handoff, rounding error several ms [RAW]): men 277, 290, 324, 399 ms and women 295,
+// 301, 344, 462 ms at ages 18, 45, 65, 80; linear between, held outside. Scales the reaction ÷ a man of 30 [reference ASSUMED].
+const RT_AGES = [18, 45, 65, 80], RT_MS = { male: [277, 290, 324, 399], female: [295, 301, 344, 462] };
+const rtMs = (age: number, sex: string) => { const v = RT_MS[sex === 'female' ? 'female' : 'male'], a = Math.max(18, Math.min(80, age));
+    const i = Math.min(2, RT_AGES.findIndex((x, k) => a >= x && a <= RT_AGES[k + 1])); return v[i] + (v[i + 1] - v[i]) * (a - RT_AGES[i]) / (RT_AGES[i + 1] - RT_AGES[i]); };
+export const reactionFactor = (p: Person | null | undefined) => p?.age == null ? 1 : rtMs(p.age, p.sex ?? 'male') / rtMs(30, 'male');
 const LIMB_MOVE_S = 0.242;                              // VencesBrito 2011 karate punch: moving a limb (block)
 const BODY_MOVE_S = 0.715;                              // Wakatsuki & Yamada 2020: reactive side-step movement time (dodge)
 const HEAR_DB = 25;                                     // WHO: normal hearing threshold at or below 25 dB
@@ -850,7 +857,7 @@ function defenceDone(a: StrikeInput, t: Timing, defender: Person | null, rng: Rn
     const nerve = Math.max(1, (body.nerve_mps ?? NERVE_MPS) - NERVE_PER_C * limbCold(defender, 'arm'));
     const motor = SYNAPSE_S + (body.limb_m ?? REACH_M * size(m, EXP_LENGTH)) / nerve + twitch(m);
     const rt = (channel: 'sight' | 'hearing') => ((body.sense_s?.[channel] ?? SENSE_S[channel]) + (body.decide_s ?? DECIDE_S) + motor)
-        * Math.max(0.5, 1 + RT_CV * gauss(rng));
+        * reactionFactor(defender) * Math.max(0.5, 1 + RT_CV * gauss(rng));
     const done: number[] = [];
     const perceive = (from: number, reaction: number) => done.push(Math.max(from, intentFrom) + reaction);
     // Sense organs. Human monocular field 107° temporal, 60° nasal (Rönne 1915): a blow from the side (90°) is seen only by

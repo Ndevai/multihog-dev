@@ -356,6 +356,8 @@ Pain: DF's wiki states only that pain halves rolls and may knock out "depending 
 
 Falls: age moves the death chance by odds × 1.05 per year (Lapostolle et al. 2005, Crit Care Med 33:1239: 287 falls over 3 m near Paris, 34 % died; multivariate, also height OR 1.24 per floor, hard surface 2.7, head first 16.7), centred on the sample's mean age 37.2 [centring ASSUMED]; BodyFall `age`. Check: 15.6 m, 56 % at 37.2, 35 % at 20, 79 % at 60.
 
+Reaction by age and sex (defence timing in BodyStrike): the whole reaction scales with simple reaction time ÷ a man of 30 (Der & Deary 2006, Psychol Aging 21:62, Table 1, 7,130 adults; the Box–Cox polynomial inverted to ms, error several ms [RAW]): men 277, 290, 324, 399 ms, women 295, 301, 344, 462 ms at 18, 45, 65, 80, linear between, held outside. Check: factor 0.98 at 20 (man), 1.06 at 45 (woman), 1.23 at 70 (man), 1.63 at 80 (woman).
+
 ### 6.2 Communication
 
 Communicate decides what a message carries before the narrator writes a reply or reaction.

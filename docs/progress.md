@@ -5,7 +5,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-18 (2), Claude Opus 5.5
 - Changed: a normal voice rises in noise (Lombard effect, Pearsons 1977): talking on a busy street now works at 2 m.
 - Considered and left: Luks 2019 altitude guideline (doses only, no effect sizes; the measured AMS/HACE/HAPE rates stay).
-- Next: the four pending CSV sections; Gooskens minimal-exposure scores and Der & Deary reaction times (numbers already in the Senses handoff).
+- Also: defensive reaction scales with age and sex (Der & Deary 2006): 1.23× at 70, 1.63× for a woman of 80.
+- Next: the four pending CSV sections; Gooskens minimal-exposure scores need all 16 rows from the PDF (Senses section).
 
 ## 2026-10-18, Claude Opus 5.5
 - Changed: job 2b done. Real places get the reconstructed weather of the actual day from 1851 to 1939 (20th Century Reanalysis v3 via NOAA PSL), ERA5 from 1940; before 1851 the generator with the Berkeley Earth monthly shift.
