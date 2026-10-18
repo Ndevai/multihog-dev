@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (12), Claude Opus 5.5
+- Changed: a stranger of 15 or over outside 1881 England works or not by the measured employment rate of their sex and age, and works in an occupation group drawn from their country's labour surveys (ILOSTAT, 200 countries, 1969–2025): in Brazil 1990, a woman of 30 works with 51.5 % chance, most often in service and sales (35 %).
+- Checked in the harness: draws match the ratios (51.6 % vs 51.5 %). Compiles with zero errors.
+- Next: IPUMS (before 1969 and housing) once the user's access is approved.
+
 ## 2026-10-18 (11), Claude Opus 5.5
 - Changed: a stranger outside England around 1881 gets age and sex from their own country's population in the story year (life table and population growth), not from 1881 England; occupation and birthplace are left to the story. Brazil 1990: median age 23, 35 % children (1991 census about 22 and 35 %).
 - Fixed in the check harness: it now loads the start-up data (life tables, Clio, languages) as SillyTavern does.

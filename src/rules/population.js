@@ -11,6 +11,7 @@ let LIFE = null;
 let CITIES = [], ISCO = [];
 let OWW = {};
 let FAITH = {};
+let ILO = null;
 let loading = null;
 export function loadPopulation() {
     loading ??= Promise.all([
@@ -24,6 +25,7 @@ export function loadPopulation() {
         fetch(new URL('../../rules/religion.json', import.meta.url)).then(r => r.json()).then(d => { FAITH = d.shares; }),
         fetch(new URL('../../rules/compendium.json', import.meta.url)).then(r => r.json()).then(d => { COMPENDIUM = d; }),
         fetch(new URL('../../rules/berkeley.json', import.meta.url)).then(r => r.json()).then(d => { BERKELEY = d; }),
+        fetch(new URL('../../rules/ilo.json', import.meta.url)).then(r => r.json()).then(d => { ILO = d; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
 }
@@ -288,4 +290,31 @@ export function strangerAgeSex(country, year, rng, { sex = null, minAge = 0 } = 
             break;
         }
     return { age, sex: s, country: survival(country, s, year, 0, 1).country, growth: r };
+}
+// Whether a stranger aged 15 or over works, and in which occupation group: ILOSTAT (ILO), national labour force surveys and
+// censuses as reported to the ILO, 1969–2025, 200 countries (rules/ilo.json, downloaded 2026-10-18 from sdmx.ilo.org:
+// DF_EMP_DWAP_SEX_AGE_RT, employment-to-population ratio by sex and 10-year age band; DF_EMP_TEMP_SEX_OCU_NB, employment by
+// sex and ISCO-08 major group, else ISCO-88, the source with most groups). Works with the band's ratio, then a major group
+// by its share of the employed of that sex. The nearest survey year within 25 years [ASSUMED, as for the other series].
+export function strangerWork(country, sex, age, year, rng) {
+    if (!ILO || !country || year === null || age < 15)
+        return null;
+    const c = pick(Object.keys(ILO.epr), country), s = sex === 'female' ? 'f' : 'm';
+    const near = (rows) => rows?.length ? rows.reduce((b, r) => Math.abs(Number(r[0]) - year) < Math.abs(Number(b[0]) - year) ? r : b) : null;
+    const e = c ? near(ILO.epr[c]?.[s]) : null;
+    if (!c || !e || Math.abs(Number(e[0]) - year) > 25)
+        return null;
+    const band = ILO.bands.reduce((k, b, i) => age >= b ? i : k, 0), employed = Number(e[1 + band]);
+    if (rng() >= employed)
+        return { works: false, group: null, employed, year: Number(e[0]), country: c };
+    const o = ILO.occ[c] ? near(ILO.occ[c][s]) : null;
+    if (!o || Math.abs(Number(o[0]) - year) > 25)
+        return { works: true, group: null, employed, year: Number(e[0]), country: c };
+    let u = rng(), g = 9;
+    for (let i = 0; i < 10; i++)
+        if ((u -= Number(o[2 + i])) < 0) {
+            g = i;
+            break;
+        }
+    return { works: true, group: ILO.groups[g], employed, year: Number(e[0]), country: c };
 }

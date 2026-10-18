@@ -12,6 +12,8 @@ let LIFE: { ages: number[]; tables: Record<string, Record<string, [number, numbe
 let CITIES: { n: string; k: string; la: number; lo: number; p: [number, number][] }[] = [], ISCO: [string, string][] = [];
 let OWW: Record<string, Record<string, [number, [string, number][]]>> = {};
 let FAITH: Record<string, Record<string, Record<string, number>>> = {};
+type IloRow = [number, ...number[]];
+let ILO: { groups: string[]; bands: number[]; occ: Record<string, Record<string, (number | string)[][]>>; epr: Record<string, Record<string, IloRow[]>> } | null = null;
 let loading: Promise<void> | null = null;
 export function loadPopulation(): Promise<void> {
     loading ??= Promise.all([
@@ -25,6 +27,7 @@ export function loadPopulation(): Promise<void> {
         fetch(new URL('../../rules/religion.json', import.meta.url)).then(r => r.json()).then(d => { FAITH = d.shares; }),
         fetch(new URL('../../rules/compendium.json', import.meta.url)).then(r => r.json()).then(d => { COMPENDIUM = d; }),
         fetch(new URL('../../rules/berkeley.json', import.meta.url)).then(r => r.json()).then(d => { BERKELEY = d; }),
+        fetch(new URL('../../rules/ilo.json', import.meta.url)).then(r => r.json()).then(d => { ILO = d; }),
     ]).then(() => undefined).catch(e => { console.warn('[Rules engine] population data not loaded:', e); loading = null; });
     return loading;
 }
@@ -265,4 +268,25 @@ export function strangerAgeSex(country: string | null | undefined, year: number 
     let u = rng() * tot, age = 100;
     for (let x = 0; x <= 100; x++) if ((u -= ws[x]) < 0) { age = x; break; }
     return { age, sex: s, country: survival(country, s, year, 0, 1)!.country, growth: r };
+}
+
+// Whether a stranger aged 15 or over works, and in which occupation group: ILOSTAT (ILO), national labour force surveys and
+// censuses as reported to the ILO, 1969–2025, 200 countries (rules/ilo.json, downloaded 2026-10-18 from sdmx.ilo.org:
+// DF_EMP_DWAP_SEX_AGE_RT, employment-to-population ratio by sex and 10-year age band; DF_EMP_TEMP_SEX_OCU_NB, employment by
+// sex and ISCO-08 major group, else ISCO-88, the source with most groups). Works with the band's ratio, then a major group
+// by its share of the employed of that sex. The nearest survey year within 25 years [ASSUMED, as for the other series].
+export function strangerWork(country: string | null | undefined, sex: 'male' | 'female', age: number, year: number | null, rng: () => number):
+    { works: boolean; group: string | null; employed: number; year: number; country: string } | null {
+    if (!ILO || !country || year === null || age < 15) return null;
+    const c = pick(Object.keys(ILO.epr), country), s = sex === 'female' ? 'f' : 'm';
+    const near = <T extends (number | string)[]>(rows: T[] | undefined) => rows?.length ? rows.reduce((b, r) => Math.abs(Number(r[0]) - year) < Math.abs(Number(b[0]) - year) ? r : b) : null;
+    const e = c ? near(ILO.epr[c]?.[s]) : null;
+    if (!c || !e || Math.abs(Number(e[0]) - year) > 25) return null;
+    const band = ILO.bands.reduce((k, b, i) => age >= b ? i : k, 0), employed = Number(e[1 + band]);
+    if (rng() >= employed) return { works: false, group: null, employed, year: Number(e[0]), country: c };
+    const o = ILO.occ[c] ? near(ILO.occ[c][s]) : null;
+    if (!o || Math.abs(Number(o[0]) - year) > 25) return { works: true, group: null, employed, year: Number(e[0]), country: c };
+    let u = rng(), g = 9;
+    for (let i = 0; i < 10; i++) if ((u -= Number(o[2 + i])) < 0) { g = i; break; }
+    return { works: true, group: ILO.groups[g], employed, year: Number(e[0]), country: c };
 }
