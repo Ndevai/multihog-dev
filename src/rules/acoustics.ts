@@ -42,16 +42,36 @@ export const classOf = (table: Record<string, number>, label: string | undefined
 export const BARRIER: Record<string, number> = { none: 0, 'curtain or tent': 1, 'wooden door': 20, 'plaster wall': 25, 'brick wall': 200, 'stone wall': 500 };
 const massLaw = (m: number, f: number) => m ? Math.max(0, 20 * Math.log10(m * f) - 47) : 0;
 
+/** Air between source and listener: temperature °C, relative humidity %, pressure kPa. */
+export interface Air { tC?: number; rh?: number; kPa?: number }
+/**
+ * Sound absorbed by the air, dB per km, from the air's temperature, humidity and pressure: ISO 9613-1:1993 (relaxation of
+ * oxygen and nitrogen molecules, which take up the wave's energy and give it back as heat; water vapour shifts their
+ * relaxation frequencies). Checked against ISO 9613-2 Table 2: 10 °C, 70 % gives 1.0, 1.9, 3.7, 9.7, 33.1, 118 dB/km at
+ * 250 Hz–8 kHz (table 1.0, 1.9, 3.7, 9.7, 32.8, 117); 20 °C, 70 %: 1.1, 2.8, 5.0, 9.0, 23.1, 77.6 (1.1, 2.8, 5.0, 9.0,
+ * 22.9, 76.6).
+ */
+export function airAbsorption(f: number, { tC = 10, rh = 70, kPa = 101.325 }: Air = {}): number {
+    const T = tC + 273.15, T0 = 293.15, pr = 101.325, p = kPa / pr;
+    const h = rh * 10 ** (-6.8346 * (273.16 / T) ** 1.261 + 4.6151) / p;
+    const frO = p * (24 + 4.04e4 * h * (0.02 + h) / (0.391 + h));
+    const frN = p * (T / T0) ** -0.5 * (9 + 280 * h * Math.exp(-4.170 * ((T / T0) ** (-1 / 3) - 1)));
+    return 8686 * f * f * (1.84e-11 / p * (T / T0) ** 0.5 + (T / T0) ** -2.5 * (0.01275 * Math.exp(-2239.1 / T) / (frO + f * f / frO) + 0.1068 * Math.exp(-3352 / T) / (frN + f * f / frN)));
+}
+/** Speed of sound in air, m/s: c = 331.3 √(1 + t / 273.15) (ideal gas, dry air; humidity adds under 0.5 %). */
+export const soundSpeed = (tC = 10) => 331.3 * Math.sqrt(1 + tC / 273.15);
+
 /** Octave-band levels (dB spectrum level) of a sound of `effort` (or overall `spl` at 1 m, pink) after distance and barrier. */
-function arriving({ effort, spl, distance, barrier }: { effort?: Effort | null; spl?: number | null; distance: number; barrier: string }): number[] {
+function arriving({ effort, spl, distance, barrier, air }: { effort?: Effort | null; spl?: number | null; distance: number; barrier: string; air?: Air }): number[] {
     const d = Math.max(1, distance);
     const src = effort ? SPEECH[effort] : BANDS.map((_, i) => (spl ?? 0) - 10 * Math.log10(6) - DELTA[i]);
-    return src.map((e, i) => e - 20 * Math.log10(d) - AIR[i] * d / 1000 - massLaw(BARRIER[barrier] ?? 0, BANDS[i]));
+    // The wave spreads over a sphere (−20 log10 d), the air takes energy from it per band, a wall reflects most of it.
+    return src.map((e, i) => e - 20 * Math.log10(d) - (air ? airAbsorption(BANDS[i], air) : AIR[i]) * d / 1000 - massLaw(BARRIER[barrier] ?? 0, BANDS[i]));
 }
 
 /** The listener's hearing: threshold shift (one value or one per band), deaf bands. */
 export interface Ear { shift?: number | number[]; deaf?: number[] }
-export interface ReachInput extends Ear { effort?: Effort; spl?: number | null; distance?: number; barrier?: string; noise?: string; noiseDb?: number | null }
+export interface ReachInput extends Ear { effort?: Effort; spl?: number | null; distance?: number; barrier?: string; noise?: string; noiseDb?: number | null; air?: Air }
 /**
  * What reaches a listener: { sii, words (share of key words understood in sentences with context: logistic link
  * p = 1 ÷ (1 + e^(−0.29 (30 SII − 15 + 2.70))), SPIN-High fit of 30 normal-hearing listeners, Shen & Kern 2018, Trends Hear
@@ -59,8 +79,8 @@ export interface ReachInput extends Ear { effort?: Effort; spl?: number | null; 
  * sound peaks, 15 dB above the band average, exceed the disturbance in at least one band) }. shift: listener threshold above
  * normal human hearing, dB; deaf: band indices the listener cannot hear.
  */
-export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [] }: ReachInput) {
-    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier });
+export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air }: ReachInput) {
+    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier, air });
     const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
     const n = BANDS.map((_, i) => nDb - 10 * Math.log10(6) - DELTA[i]);
     let sii = 0, audible = false;
@@ -81,8 +101,8 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
 export const BAND_HZ = BANDS;
 
 /** Whether a sound of overall `spl` dB at 1 m is heard: { audible, margin } with margin = best band peak − disturbance, dB. */
-export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [] }: ReachInput & { spl: number }) {
-    const e = arriving({ spl, distance, barrier });
+export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air }: ReachInput & { spl: number }) {
+    const e = arriving({ spl, distance, barrier, air });
     const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
     let margin = -Infinity;
     e.forEach((ei, i) => {

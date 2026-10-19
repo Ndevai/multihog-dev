@@ -3,7 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
-import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL, classOf } from './acoustics.js';
+import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL, classOf, soundSpeed } from './acoustics.js';
 import { see, acuityOf } from './vision.js';
 import { grip, gripNorm } from './strength.js';
 import { endothermMinute } from './thermal/endotherm.js';
@@ -1251,10 +1251,11 @@ export function listen(ls: string, l: Person, { sound = undefined as string | un
     if (spl == null) return `Unknown sound "${sound}". Known: ${Object.keys(SOUNDS).join(', ')}; or give spl_db at 1 m.`;
     const ear = earOf(l, lc);
     if (ear.ears && !ear.earsOk) return `${ls} cannot hear (no working ear).`;
-    const r = hearSound({ spl, distance, barrier, noise, ...ear });
+    const air = l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined;
+    const r = hearSound({ spl, distance, barrier, noise, ...ear, air });
     const what = `${sound ?? `${spl} dB at 1 m`} at ${distance} m, ${noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     console.debug?.('[Rules engine]', ls, `margin ${r.margin} dB`);
-    return r.audible ? `${ls} hears it (${what}).` : `${ls} does not hear it: too faint over the background (${what}).`;
+    return r.audible ? `${ls} hears it${distance >= 170 ? `, ${Math.round(distance / soundSpeed(l.env?.tdb ?? 10) * 10) / 10} s after it is made` : ''} (${what}).` : `${ls} does not hear it: too faint over the background (${what}).`;
 }
 
 export interface MessageInput {
@@ -1284,7 +1285,7 @@ export function communicate(sp: string, s: Person, ls: string, l: Person, { mean
     if (anyWorks(l, lc, flag('HEAR')) === false) return `${ls} cannot hear it.`;
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
-    const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
+    const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc), air: l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined });
     l.heard = { from: sp, snr: r.snr, whisper: /whisper/.test(effort) };
     const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible) return `${ls} goes on as before; ${sp}'s voice is lost in the background (${where}).`;
