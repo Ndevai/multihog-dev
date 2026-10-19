@@ -3,7 +3,7 @@
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
 import { pulseSelfTest } from './rules/pulse.js';
 import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, } from './rules/rules-tools.js';
-import { runQuestionPass, decidedInjection, turnLog } from './rules/question-pass.js';
+import { runQuestionPass, decidedInjection, turnLog, setGuided } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
@@ -31,7 +31,21 @@ function settings() {
     all[NAME] = { ...DEFAULTS, ...(all[NAME] || {}) };
     return all[NAME];
 }
-const send = (system, user) => { const s = settings(); return sendModel(system, user, { profile: s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' }); };
+// A connection that refuses the plan's schema (a 400, an unknown field) is asked again without it, and the plan goes back to
+// being read from free text for the rest of the session.
+const send = async (system, user, o = {}) => {
+    const s = settings(), base = { profile: s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' };
+    if (!o.schema)
+        return sendModel(system, user, base);
+    try {
+        return await sendModel(system, user, { ...base, schema: o.schema });
+    }
+    catch (e) {
+        console.warn('[Rules engine] schema refused; plans read from text from now on:', e);
+        setGuided(false);
+        return sendModel(system, user, base);
+    }
+};
 // Card text shown to the question model, characters per field [ASSUMED]: enough for species, build and training.
 const CARD_CHARS = 1500;
 /** The player's persona, the character card and the scenario: where species, build and training are written. */
@@ -336,6 +350,8 @@ function wireEvents() {
 }
 (async () => {
     registerRulesTools(settings().enabled);
+    // Constrained decoding on by default; a connection that refuses it turns it off on the first refusal (send above).
+    setGuided(true);
     void loadColex();
     void loadLanguageYears();
     void loadThings();

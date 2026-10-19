@@ -10,7 +10,7 @@ import fs from 'node:fs';
 const { send, MODEL, EFFORT } = await import('./nvidia.mjs');
 const { ctx } = await import('./st-harness.mjs');
 const Q = await import('../src/rules/question-pass.js');
-Q.setGuided(!!(await import('./nvidia.mjs')).GUIDED);
+const G = (await import('./nvidia.mjs')).GUIDED; Q.setGuided(!!G && G !== 'off');
 const T = await import('../src/rules/rules-tools.js');
 const A = await import('../src/rules/rules-audit.js');
 const C = await import('../src/rules/clock.js');
@@ -79,7 +79,7 @@ for (const [si, story] of chosen) {
             const history = ctx.chat.slice(0, -1).map(m => `${m.is_user ? 'PLAYER' : 'NARRATOR'}: ${m.mes}`).join('\n\n');
             reply = await send(`${NARRATOR}\n\n${cast}\n\n${inj}`, `${history ? `${history}\n\n` : ''}PLAYER: ${turn.player}`);
             const st = ctx.chatMetadata.rulesEngine?.state ?? {};
-            const events = A.parseAudit(await send(A.AUDIT_SYSTEM, A.buildAuditPrompt(reply, results, (await import('../src/rules/knowledge.js')).knowledgeBlock(st), now === null ? '' : C.formatStoryTime(now)))) ?? [];
+            const events = A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(reply, results, (await import('../src/rules/knowledge.js')).knowledgeBlock(st), now === null ? '' : C.formatStoryTime(now)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];
             for (const e of events) f.push(`rule check: "${e.quote.slice(0, 120)}" → ${e.tool} (${e.problem ?? 'unbacked'})`);
         } catch (e) { f.push(`narrator or check failed: ${e.message}`); }
         ctx.chat.push({ is_user: false, name: 'Narrator', mes: reply, swipe_id: 0 });

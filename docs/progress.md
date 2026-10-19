@@ -402,3 +402,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - plan-schema.ts builds the plan's schema from the tools' own argument schemas: each call is one of the picked tools, {"tool": its name (const), "args": exactly its arguments, required ones required, enums as enums, no other keys}; time is pattern-checked (YYYY-MM-DD HH:MM). 2.8 KB for two tools, 40 KB for all.
 - question-pass.ts sends the schema with every planner request when GUIDED is on (setGuided); the instruction then asks for the JSON alone, the questions living in the model's reasoning. The follow-on and rule-check rounds widen the schema to the tools they add. The readers that repair plans stay as the fallback for connections without it.
 - tools/probe-guided.mjs finds which switch the endpoint honours for the model (a schema the model would not follow by itself: {"zebra": 7}). tools/nvidia.mjs sends the schema per EVAL_GUIDED=nvext|vllm|openai. Next: the SillyTavern send path, the tool picker and the rule check, once the probe says which switch works.
+
+## 2026-10-19 (28) Constrained decoding on
+
+- Probe on NVIDIA, GLM-5.3, twice: response_format json_schema and guided_json pass ({"zebra": 7} returned exactly, 1–4 s); nvext.guided_json and nvext.guided_choice are refused (400, unknown field).
+- send.ts sends the schema as response_format json_schema (and SillyTavern's json_schema field; through custom_include_body for a Custom source, as JSON, which is YAML). index.ts turns it on at start; a connection that refuses it is asked again without it and plans go back to being read from text for the session.
+- Schemas for the three answers code reads: the plan (plan-schema.ts), the tool picker (names of offered tools only), the rule check (events with quote, a listed tool, a listed problem). The narrator writes free text.
+- Runners default to EVAL_GUIDED=openai (response_format); EVAL_GUIDED=off for the old path, to compare.

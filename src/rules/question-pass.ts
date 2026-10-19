@@ -103,6 +103,8 @@ const oneLine = (t: { name: string; description: string }) => `${t.name}: ${t.de
 // for the follow-on round ("need").
 export const PICK_SYSTEM = `You choose which rule tools the next reply of a roleplay may need. Code decides outcomes with these tools. Read the scene and the player's message and name every tool whose outcome the reply may need: an action that may fail, a blow, a sound or sight, a message, a person's response, the time an action takes, time passing, the weather, an item changing hands, a fact established or learned, something the player states about their own character, a new person. When unsure whether a tool applies, include it. Write only the JSON {"tools":["Name", ...]}.`;
 const PICK_MESSAGES = 3;
+/** The picker's answer as a schema: names of offered tools only. */
+const pickSchema = () => ({ type: 'object', additionalProperties: false, required: ['tools'], properties: { tools: { type: 'array', items: { type: 'string', enum: [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(t => t.name) } } } });
 
 /** The tools the question model asks for, or null when its answer cannot be read (then every tool is shown). */
 export async function pickTools(chat: STMessage[], send: (system: string, user: string) => Promise<string>): Promise<Set<string> | null> {
@@ -204,7 +206,9 @@ export const setGuided = (v: boolean) => { GUIDED = v; };
 const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}; a plan with zero calls is {"calls":[]}.');
 export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser): Promise<typeof READ> {
     const planTools = { current: undefined as Set<string> | undefined };
-    const send: Send = (system, user) => system === QUESTION_SYSTEM && GUIDED ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current) }) : sendRaw(system, user);
+    const send: Send = (system, user) => !GUIDED ? sendRaw(system, user)
+        : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current) })
+        : system === PICK_SYSTEM ? sendRaw(system, user, { schema: pickSchema() }) : sendRaw(system, user);
     const ctx = SillyTavern.getContext();
     setRead([]);
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size) return [];

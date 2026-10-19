@@ -21,9 +21,10 @@ if (!key) { console.log('No NVIDIA key found. Run: NVIDIA_API_KEY=nvapi-... node
 // reasoning_effort ('low' or 'high'; anything else is maximum) (vLLM issue 54744). EVAL_EFFORT=high to test the default.
 export const EFFORT = process.env.EVAL_EFFORT ?? 'low';
 // Constrained decoding for the plan, as tools/probe-guided.mjs found the endpoint honours it: EVAL_GUIDED=nvext (nvext.guided_json),
-// vllm (guided_json), openai (response_format json_schema); unset sends no schema.
-export const GUIDED = process.env.EVAL_GUIDED ?? '';
-const guide = schema => !schema || !GUIDED ? {} : GUIDED === 'nvext' ? { nvext: { guided_json: schema } } : GUIDED === 'vllm' ? { guided_json: schema } : { response_format: { type: 'json_schema', json_schema: { name: 'plan', schema, strict: true } } };
+// vllm (guided_json), openai (response_format json_schema, the default: the probe found it and guided_json honoured for
+// GLM-5.3, nvext refused); EVAL_GUIDED=off sends no schema.
+export const GUIDED = process.env.EVAL_GUIDED ?? 'openai';
+const guide = schema => !schema || !GUIDED || GUIDED === 'off' ? {} : GUIDED === 'nvext' ? { nvext: { guided_json: schema } } : GUIDED === 'vllm' ? { guided_json: schema } : { response_format: { type: 'json_schema', json_schema: { name: 'plan', schema, strict: true } } };
 export async function send(system, user, opts = {}, model = MODEL) {
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {

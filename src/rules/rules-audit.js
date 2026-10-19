@@ -4,7 +4,7 @@ import { setFlags } from './audit-flags.js';
 import { turnKey } from './turn.js';
 import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
-import { askedResults, askedArgs, isMiss } from './question-pass.js';
+import { askedResults, askedArgs, isMiss, GUIDED } from './question-pass.js';
 const MAX_RETRIES = 1;
 export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the rule-engine results of the same turn.
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
@@ -12,6 +12,11 @@ Engine-governed events: a player's claim about their own character (what they ar
 Also list each place where a character states or acts on a fact that the KNOWS list gives only to other characters, with tool KNOWS and problem unknown_to_them; a character also knows what they perceive in the scene now and what they learn in this reply.
 This list is complete: report the events of these kinds. A stated duration is a number with a unit of time, or a clock time. An event is backed when an engine result of the matching tool describes it.
 First write EVIDENCE: one line per engine-governed event in the reply, giving its words and the engine result that backs or contradicts it. Then write the JSON {"events":[{"quote":"exact words from the reply","tool":"Act|WorkOut|Sickness|Transfer|Claim|BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|SocialResponse|HoldOn|Chase|Price|Disease|Weather|Choose|Battle|KNOWS","problem":"unbacked|contradicts|unknown_to_them"}]}. An empty list means every event is backed.`;
+/** The rule check under constrained decoding: the JSON alone, the evidence in the model's reasoning; and its schema. */
+export const AUDIT_GUIDED = AUDIT_SYSTEM.replace(/First write EVIDENCE:[^\n]*?Then write the JSON /, 'Write the JSON ');
+export const auditSchema = () => ({ type: 'object', additionalProperties: false, required: ['events'], properties: { events: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['quote', 'tool', 'problem'], properties: {
+                    quote: { type: 'string' }, tool: { type: 'string', enum: [...TOOLS, 'KNOWS'] }, problem: { type: 'string', enum: ['unbacked', 'contradicts', 'unknown_to_them'] }
+                } } } } });
 export function buildAuditPrompt(reply, results, knows = '', clock = '') {
     const lines = results.length
         ? results.map((r, i) => `${i + 1}. ${r.tool}: ${r.result}`).join('\n')
@@ -74,7 +79,7 @@ export async function onRulesAuditMessage(messageId, deps) {
     const key = turnKey(ctx.chat);
     const reply = msg.mes;
     const st = ctx.chatMetadata.rulesEngine?.state ?? {}, now = st.clock ? st.clock.t + st.clock.add : null;
-    const raw = await deps.send(AUDIT_SYSTEM, buildAuditPrompt(reply, turnResults(ctx), knowledgeBlock(st), now === null ? '' : formatStoryTime(now)));
+    const raw = await deps.send(GUIDED ? AUDIT_GUIDED : AUDIT_SYSTEM, buildAuditPrompt(reply, turnResults(ctx), knowledgeBlock(st), now === null ? '' : formatStoryTime(now)), GUIDED ? { schema: auditSchema() } : undefined);
     if (!deps.ownsChat() || ctx.chat[messageId] !== msg || msg.mes !== reply)
         return null;
     const events = parseAudit(raw);

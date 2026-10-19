@@ -7,7 +7,7 @@ import fs from 'node:fs';
 const { send, MODEL, EFFORT } = await import('./nvidia.mjs');
 const { ctx } = await import('./st-harness.mjs');
 const Q = await import('../src/rules/question-pass.js');
-Q.setGuided(!!(await import('./nvidia.mjs')).GUIDED);
+const G = (await import('./nvidia.mjs')).GUIDED; Q.setGuided(!!G && G !== 'off');
 const T = await import('../src/rules/rules-tools.js');
 const A = await import('../src/rules/rules-audit.js');
 const C = await import('../src/rules/clock.js');
@@ -52,7 +52,7 @@ for (const [i, sc] of PLAY.slice(0, n).entries()) {
         const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.RULES_BRIEF, timeBlock(), B.bodyBlock(B.trackedPeople()), Q.decidedInjection()].filter(Boolean).join('\n\n');
         reply = await send(`${NARRATOR}\n\n${cast}\n\n${inj}`, sc.player);
         const now = T.storyTime();
-        events = A.parseAudit(await send(A.AUDIT_SYSTEM, A.buildAuditPrompt(reply, results, '', now === null ? '' : C.formatStoryTime(now)))) ?? [];
+        events = A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(reply, results, '', now === null ? '' : C.formatStoryTime(now)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];
         for (const e of events) f.push(`rule check: "${e.quote.slice(0, 120)}" → ${e.tool} (${e.problem ?? 'unbacked'})`);
     } catch (e) { f.push(`narrator or check failed: ${e.message}`); }
     faults.push(...f.map(x => `#${i + 1} ${x}`));

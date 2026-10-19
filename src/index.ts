@@ -7,7 +7,7 @@ import {
     RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY,
     historyCheck,
 } from './rules/rules-tools.js';
-import { runQuestionPass, decidedInjection, turnLog, type Chooser } from './rules/question-pass.js';
+import { runQuestionPass, decidedInjection, turnLog, setGuided, type Chooser } from './rules/question-pass.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
@@ -53,7 +53,14 @@ function settings(): Settings {
     return all[NAME];
 }
 
-const send = (system: string, user: string) => { const s = settings(); return sendModel(system, user, { profile: s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' }); };
+// A connection that refuses the plan's schema (a 400, an unknown field) is asked again without it, and the plan goes back to
+// being read from free text for the rest of the session.
+const send = async (system: string, user: string, o: { schema?: Record<string, unknown> } = {}) => {
+    const s = settings(), base = { profile: s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' };
+    if (!o.schema) return sendModel(system, user, base);
+    try { return await sendModel(system, user, { ...base, schema: o.schema }); }
+    catch (e) { console.warn('[Rules engine] schema refused; plans read from text from now on:', e); setGuided(false); return sendModel(system, user, base); }
+};
 
 // Card text shown to the question model, characters per field [ASSUMED]: enough for species, build and training.
 const CARD_CHARS = 1500;
@@ -320,6 +327,8 @@ function wireEvents(): void {
 
 (async () => {
     registerRulesTools(settings().enabled);
+    // Constrained decoding on by default; a connection that refuses it turns it off on the first refusal (send above).
+    setGuided(true);
     void loadColex(); void loadLanguageYears(); void loadThings(); void loadChat(); void loadPopulation();
     wireEvents();
     registerRulesStatsCommand();

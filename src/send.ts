@@ -46,13 +46,19 @@ async function textOf(raw: Raw): Promise<string> {
 const effortBody = (effort?: string) => effort ? { reasoning_effort: effort, chat_template_kwargs: { reasoning_effort: effort } } : {};
 const effortYaml = (effort: string | undefined, body = '') => !effort || /chat_template_kwargs|reasoning_effort/.test(body) ? body : `${body ? `${body.trim()}\n` : ''}reasoning_effort: ${effort}\nchat_template_kwargs:\n  reasoning_effort: ${effort}`;
 
-export async function sendModel(system: string, user: string, opts: { profile?: string; maxTokens?: number; effort?: string } = {}): Promise<string> {
+// Constrained decoding (plan-schema.ts): the schema goes out as response_format json_schema, the form the NVIDIA endpoint
+// honours for GLM-5.3 (tools/probe-guided.mjs: guided_json and response_format pass, nvext is refused), and as SillyTavern's
+// own json_schema field. For a Custom source the body goes through custom_include_body, which reads YAML; JSON is YAML.
+const formatBody = (schema?: Record<string, unknown>) => schema ? { response_format: { type: 'json_schema', json_schema: { name: 'plan', strict: true, schema } } } : {};
+const formatYaml = (schema: Record<string, unknown> | undefined, body = '') => !schema ? body : `${body ? `${body.trim()}\n` : ''}response_format: ${JSON.stringify(formatBody(schema).response_format)}`;
+
+export async function sendModel(system: string, user: string, opts: { profile?: string; maxTokens?: number; effort?: string; schema?: Record<string, unknown> } = {}): Promise<string> {
     const ctx = SillyTavern.getContext() as unknown as SendCtx;
     const messages = [{ role: 'system', content: system }, { role: 'user', content: user }];
     const maxTokens = opts.maxTokens && opts.maxTokens > 0 ? opts.maxTokens : undefined;
     if (opts.profile && ctx.ConnectionManagerRequestService) {
         return textOf(await ctx.ConnectionManagerRequestService.sendRequest(opts.profile, messages, maxTokens,
-            { stream: true, extractData: true, includePreset: true, includeInstruct: true }, effortBody(opts.effort)));
+            { stream: true, extractData: true, includePreset: true, includeInstruct: true }, { ...effortBody(opts.effort), ...formatBody(opts.schema), ...opts.schema ? { json_schema: { name: 'plan', strict: true, value: opts.schema } } : {} }));
     }
     const live = ctx.chatCompletionSettings;
     if (ctx.mainApi === 'openai' && live && ctx.ChatCompletionService) {
@@ -61,8 +67,9 @@ export async function sendModel(system: string, user: string, opts: { profile?: 
             stream: true, messages, max_tokens: maxTokens, model: live[MODEL_KEYS[source]] || live.openai_model || live.custom_model,
             chat_completion_source: source, custom_url: live.custom_url, reverse_proxy: live.reverse_proxy, proxy_password: live.proxy_password,
             vertexai_region: live.vertexai_region, zai_endpoint: live.zai_endpoint, siliconflow_endpoint: live.siliconflow_endpoint,
-            minimax_endpoint: live.minimax_endpoint, custom_include_body: source === 'custom' ? effortYaml(opts.effort, live.custom_include_body) : live.custom_include_body,
+            minimax_endpoint: live.minimax_endpoint, custom_include_body: source === 'custom' ? formatYaml(opts.schema, effortYaml(opts.effort, live.custom_include_body)) : live.custom_include_body,
             ...(opts.effort ? { reasoning_effort: opts.effort } : {}),
+            ...(opts.schema ? { json_schema: { name: 'plan', strict: true, value: opts.schema } } : {}),
         }, {}, true));
     }
     if (!ctx.generateRaw) throw new Error('No model connection available for the rules engine.');
