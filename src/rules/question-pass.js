@@ -37,6 +37,14 @@ FOLLOW-ON QUESTIONS
 {then}
 
 Write the calls for the follow-on questions these results leave in doubt; a question a result settles or rules out gets no call. Same format: QUESTIONS, then the JSON {"calls":[...]}.`;
+// A call the tool refused (an argument missing or malformed) goes back once with the tool's own message, and so does a plan
+// that cannot be read or leaves out the scene's position: the planner corrects its own call, as a tool error is fed back
+// in ReAct (Yao et al. 2023). A London 1888 turn lost its Act and Look this way, and a London 1899 turn ran nothing.
+const REPAIR = `YOUR LAST ANSWER
+{problems}
+
+Write the corrected calls only, same format: QUESTIONS, then the JSON {"calls":[...]} (with "at" and "time" when asked for above).`;
+const REFUSED = /not run; fix and call again|Nothing recorded\.?\s*$/;
 /** One line per argument: name, * when required, type or allowed values, description. */
 function describe(name, p, required, depth = 0) {
     const pad = '  '.repeat(depth + 1), req = required ? '*' : '';
@@ -187,7 +195,8 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
         const only = await pickTools(chat, send) ?? undefined;
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only), thingsBlock(found)].filter(Boolean).join('\n\n');
-        const plan = rawPlan(await send(QUESTION_SYSTEM, prompt));
+        const lastPlanText = String(await send(QUESTION_SYSTEM, prompt) ?? '');
+        const plan = rawPlan(lastPlanText);
         setRead(await resolveRead(found, plan, choose));
         present = plan.present;
         time = plan.time && storyTime() === null ? parseStoryTime(plan.time) : null;
@@ -196,12 +205,40 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         if (plan.at && !scenePosition())
             setScenePosition(plan.at[0], plan.at[1]);
         calls = validCalls(plan.calls);
+        const dropped = plan.calls.filter(c => !calls.includes(c));
+        const unread = !/\{\s*"calls"/.test(lastPlanText);
+        const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
+        if (unread || dropped.length || noPlace) {
+            const problems = [unread ? 'It had no readable {"calls":[...]} JSON.' : '',
+                ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'no such tool'}.`),
+                noPlace ? 'It gave no "at": add [latitude, longitude] of the scene from the scene or scenario.' : ''].filter(Boolean);
+            const fix = rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`));
+            if (fix.at && !scenePosition())
+                setScenePosition(fix.at[0], fix.at[1]);
+            if (fix.time && storyTime() === null) {
+                time = parseStoryTime(fix.time);
+                if (time !== null)
+                    setStoryTime(time);
+            }
+            calls = [...calls, ...validCalls(fix.calls)].slice(0, MAX_CALLS);
+            plan.then.push(...fix.then);
+        }
         // The day's weather is decided by code every turn the story has a calendar date and a place, whether or not the
         // question model asked: a narrator describes the sky unasked (a reply set in Rio, April 1822, had no Weather call).
         const pos = scenePosition(), now = storyTime();
         if (pos && now !== null && now / 1440 > 146097 && !calls.some(c => c.tool === 'Weather') && REGISTRY.has('Weather'))
             calls.push({ tool: 'Weather', args: { latitude: pos.lat, longitude: pos.lon } });
         await runAll(calls);
+        // Refused calls: the tool's message goes back once; a corrected call's result replaces the refusal.
+        const bad = results.map((r, i) => ({ r, i })).filter(x => REFUSED.test(x.r.result));
+        if (bad.length) {
+            const fixed = validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', bad.map(({ r, i }) => `${r.tool} ${JSON.stringify(calls[i].args)} → ${r.result}`).join('\n'))}`)));
+            const keep = results.filter(r => !REFUSED.test(r.result)), keptCalls = calls.filter((_, i) => !REFUSED.test(results[i].result));
+            results.length = 0;
+            results.push(...keep);
+            await runAll(fixed);
+            calls = [...keptCalls, ...fixed];
+        }
         if ((plan.then.length || plan.need.length || results.some(r => /Call Interpret/.test(r.result))) && calls.length < MAX_CALLS) {
             // Tools asked for by name in "need", and Interpret when a result calls for it, get their arguments now.
             const extra = only ? [...new Set([...plan.need, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Interpret'] : []])].filter(n => !only.has(n)) : [];

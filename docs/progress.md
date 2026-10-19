@@ -256,3 +256,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Act refused "actors[0] must be an object": the model listed actors by name or as JSON text. The schema check now reads an object sent as JSON text, and a bare name where an object with `who` is expected becomes `{who: name}`. An actor without steps takes the call's own `steps`; with neither, the call says which actor needs steps.
 - Look was called with no distance and nothing on the map. The `distance_m` description now says it is needed unless both are placed with Layout.
+
+## 2026-10-19 (8) The planner corrects its own refused calls
+
+- A London 1899 turn ran no tool at all (no Act, and no Weather because the plan gave no position), so the narrator's drizzle and the step out were unbacked. The 1888 turn lost Act and Look to argument errors with no second try.
+- question-pass.ts now sends one repair request (REPAIR) when the plan has no readable JSON, drops a call for a missing required argument (it names the arguments), or leaves out "at" for a dated scene with no position. After the calls run, results the tool refused ("not run; fix and call again", "Nothing recorded") go back once with the tool's own message; a corrected call's result replaces the refusal. Source: tool errors fed back to the model (ReAct, Yao et al. 2023).
+- Tested with a scripted model: a Look missing its arguments and the missing position were sent back; the position then gave Weather; an Act with an actor and no steps was refused, corrected and run.
