@@ -1536,7 +1536,7 @@ export function chase(pn, pursuer, fn, fleeing, gap_m, rng = Math.random) {
     return `${pn} catches ${fn} after ${round(gap_m / (vp - vf), 1)} s, ${round(vp * gap_m / (vp - vf))} m run: ${pn} is faster${lame(fleeing)}.`;
 }
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
-export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, noise = 'quiet room (25 dB)', barrier = 'none' } = {}) {
+export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, noise = 'quiet room (25 dB)', barrier = 'none', way = undefined } = {}) {
     const lc = creatureOf(l);
     if (!lc)
         return 'Creature data is still loading.';
@@ -1549,14 +1549,14 @@ export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, 
     if (ear.ears && !ear.earsOk)
         return `${ls} is deaf (ears out of action).`;
     const air = l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined;
-    const r = hearSound({ spl, distance, barrier, noise, ...ear, air });
+    const r = hearSound({ spl, distance, barrier, noise, ...ear, air, way });
     const what = `${sound ?? `${spl} dB at 1 m`} at ${distance} m, ${noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     console.debug?.('[Rules engine]', ls, `margin ${r.margin} dB`);
     return r.audible ? `${ls} hears it${distance >= 170 ? `, ${Math.round(distance / soundSpeed(l.env?.tdb ?? 10) * 10) / 10} s after it is made` : ''} (${what}).` : `${ls} misses it: too faint over the background (${what}).`;
 }
 /** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
 export const SPEECH_OVERRIDE = {};
-export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room (25 dB)', noise_db = null, barrier = 'none', louder_db = 0, brazil = false } = {}) {
+export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room (25 dB)', noise_db = null, barrier = 'none', louder_db = 0, brazil = false, way } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc)
         return 'Creature data is still loading.';
@@ -1583,7 +1583,7 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
         return `${ls} is deaf to it (ears out of action).`;
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
-    const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc), air: l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined });
+    const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc), air: l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined, way });
     l.heard = { from: sp, snr: r.snr, whisper: /whisper/.test(effort) };
     const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible)

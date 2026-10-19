@@ -8,6 +8,7 @@ import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock, recalls } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './emotion.js';
 import { skyLight } from './sky.js';
+import type { Way } from './acoustics.js';
 import { findPlace, simulatePlaceYear, hourTemp, placeCountry } from './weather.js';
 import { observedDay, cachedDay, reanalysisMissed } from './reanalysis.js';
 import { NORMALS } from './data/wmo-normals.js';
@@ -25,7 +26,7 @@ import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, statu
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, type Step } from './actions.js';
 import { parseFormula, molarMass } from './substance.js';
-import { airHook, inRoom, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING, type Room } from './rooms.js';
+import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING, type Room } from './rooms.js';
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify, type History } from './world-log.js';
 import { violations } from './invariants.js';
@@ -382,6 +383,30 @@ ${RULES_PRINCIPLES}
 </rule_engine>`;
 
 /** Between two people placed on the map: straight distance, their rooms, and whether an open doorway joins them. */
+// The way a sound travels (acoustics.ts Way): the ground, an obstacle, the wind and sun for outdoors; the room's volume and
+// absorption when both are in one. Absorption: walls, floor and ceiling of a square room times the lining's coefficient at
+// 500 Hz–1 kHz (brick 0.03, concrete 0.02, gypsum board 0.05, wood 0.10), furnishing 0.1 per m² of floor, 0.45 m² per person
+// [ASSUMED typical values from absorption tables].
+const ALPHA: Record<string, number> = { brick: 0.03, concrete: 0.02, 'gypsum board': 0.05, wood: 0.10 };
+const GROUND: Record<string, number> = { 'paved, water or ice': 0, mixed: 0.5, 'grass, fields or soil': 1 };
+const WAY_PROPS = {
+    ground: { type: 'string', enum: Object.keys(GROUND), description: 'Outdoors: the ground between them. Default mixed.' },
+    obstacle_m: { type: 'number', description: 'Outdoors: how far a wall, house or crest between them rises above the straight line from source to ear, m' },
+    wind: { type: 'string', enum: ['toward the listener', 'across', 'toward the source'], description: 'Outdoors: which way the wind blows along the way. Default across.' },
+    wind_ms: { type: 'number', description: 'Wind speed at 10 m, m/s, when the story sets it. Default: the recorded day\'s wind where known.' },
+    source_height_m: { type: 'number', description: 'Height of the source above the ground, m (a voice 1.6, a bell tower 20). Default 1.5.' },
+} as const;
+function wayFor(st: RuleState, l: Person, a: { ground?: string; obstacle_m?: number; wind?: string; wind_ms?: number; source_height_m?: number; tone_hz?: number }, sameRoom: boolean): Way {
+    const room = roomOf(st, l);
+    if (room && sameRoom) {
+        const F = room.floor ?? (room.m3 / (room.h ?? 2.5)), h = room.h ?? 2.5, S = 2 * F + 4 * Math.sqrt(F) * h;
+        const people = Object.values(st.people ?? {}).filter(p => roomOf(st, p) === room).length;
+        return { room: { m3: room.m3, absorption: S * (ALPHA[room.lining ?? 'brick'] ?? 0.03) + 0.1 * F + 0.45 * people }, toneHz: a.tone_hz };
+    }
+    const t = storyNow(st), sun = t !== null && t / 1440 > 146097 && st.latitude != null && Number.isFinite(st.latitude) ? skyLight(t, st.latitude).sunAlt >= 0 : undefined;
+    const obs = l.weather ? weatherAt(l.weather, t)?.observed : undefined;
+    return { ground: GROUND[a.ground ?? 'mixed'] ?? 0.5, obstacle_m: a.obstacle_m, wind: (a.wind as Way['wind']) ?? 'across', windMs: a.wind_ms ?? obs?.windMs, sunUp: sun, hs: a.source_height_m, hr: 1.5, toneHz: a.tone_hz };
+}
 function between(st: RuleState, a: Person, b: Person): { d: number | null; ra: string | null; rb: string | null; open: boolean } | null {
     if (!st.map || !a.at || !b.at) return null;
     const ra = roomAt(st.map, a.at) ?? (st.rooms?.[a.at] ? a.at : null), rb = roomAt(st.map, b.at) ?? (st.rooms?.[b.at] ? b.at : null);
@@ -791,6 +816,7 @@ export function registerRulesTools(enabled: boolean): void {
         feeling: { type: 'string', enum: ['intense anger', 'intense affection'], description: 'When the speaker voices a strong feeling: it raises the voice within the chosen effort' },
         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between them. Default none.' },
+        ...WAY_PROPS,
         speaker_species: str('Speaker\'s DF creature when the engine has no record of them yet.'),
         listener_species: str('Listener\'s DF creature when the engine has no record of them yet.'),
         speaker_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the speaker knows, when the story states them; kept for later calls.' },
@@ -812,8 +838,8 @@ export function registerRulesTools(enabled: boolean): void {
         const langs = [s.p.languages?.map(x => stageKey(x, year)), l.p.languages?.map(x => stageKey(x, year))];
         // On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default].
         const geo = between(st, s.p, l.p);
-        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0), brazil: /brazil/i.test(st.setting?.country ?? '') });
-        if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out)) return out;
+        const out = communicate(a.speaker, s.p, a.listener, l.p, { way: wayFor(st, l.p, a, geo ? geo.ra === geo.rb : (!a.barrier || a.barrier === 'none')), means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0), brazil: /brazil/i.test(st.setting?.country ?? '') });
+        if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language foreign to it/.test(out)) return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
         // English speech is already on the page in its own words; another language's words are not. A whisper loses voicing
         // in any language, English included (colex.ts).
@@ -1309,11 +1335,13 @@ export function registerRulesTools(enabled: boolean): void {
         distance_m: { type: 'number', description: 'Distance from the sound, m' },
         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
+        tone_hz: { type: 'number', description: 'For a tonal sound (a bell, a whistle, a horn): its pitch, Hz (a church bell 300–600, a whistle 2000–3000)' },
+        ...WAY_PROPS,
         reveals: str('The fact hearing it would teach, one short sentence (a secret overheard, who is coming); learned only if heard'),
     }, ['listener', 'distance_m'], a => run(st => {
         const l = who(st, a.listener, a.listener_species);
         if (!l.p) return l.error;
-        const out = listen(a.listener, l.p, { sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? 'none' });
+        const out = listen(a.listener, l.p, { way: wayFor(st, l.p, a, !a.barrier || a.barrier === 'none'), sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? 'none' });
         return / hears it /.test(out) && a.reveals ? `${out} ${a.listener} now knows: ${learnt(st, a.reveals, a.listener, KNOWN_HOW[1])}` : out;
     }));
 

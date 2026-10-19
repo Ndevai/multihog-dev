@@ -1,6 +1,7 @@
 // Speech and sound reaching a listener (docs/df-body-engine.md §4.3). Speech Intelligibility Index, ANSI/ASA S3.5-1997
 // octave-band procedure, constants from Table 4 as packaged in the R package SII (Warnes & Shaver, CRAN): band centre, band
 // width (10 log Hz), importance, speech spectrum levels at 1 m by vocal effort, reference internal noise.
+import { def, k } from './constants.js';
 const BANDS = [250, 500, 1000, 2000, 4000, 8000];
 const DELTA = [22.48, 25.48, 28.48, 31.48, 34.48, 37.48];
 const IMPORTANCE = [0.0617, 0.1671, 0.2373, 0.2648, 0.2142, 0.0549];
@@ -61,17 +62,91 @@ export function airAbsorption(f: number, { tC = 10, rh = 70, kPa = 101.325 }: Ai
 /** Speed of sound in air, m/s: c = 331.3 √(1 + t / 273.15) (ideal gas, dry air; humidity adds under 0.5 %). */
 export const soundSpeed = (tC = 10) => 331.3 * Math.sqrt(1 + tC / 273.15);
 
+/**
+ * The way between source and listener, outdoors or in a room. ground: the ground factor G (0 hard: paved, water, ice;
+ * 1 porous: grass, fields, soil; ISO 9613-2 §7.3.1). hs, hr: source and listener heights, m. obstacle_m: how far an
+ * obstacle (a wall, a house, a crest) rises above the straight line between them. wind: the wind's direction along the way;
+ * windMs: wind speed at 10 m. sunUp: sun above the horizon (sets the temperature gradient). room: volume m³ and absorption
+ * area m² of the room both are in. toneHz: pitch of a tonal sound (a bell's note, a whistle): its energy sits in that band.
+ */
+export interface Way { ground?: number; hs?: number; hr?: number; obstacle_m?: number; wind?: 'toward the listener' | 'across' | 'toward the source'; windMs?: number; sunUp?: boolean; room?: { m3: number; absorption: number }; toneHz?: number }
+
+/**
+ * Ground effect, dB per band (negative = louder): ISO 9613-2:1996 §7.3.1, Table 3. The wave reflected by the ground meets
+ * the direct one; hard ground adds up to 3 dB per end, porous ground cancels part of the middle bands (the "ground dip").
+ * As and Ar for the source and listener regions; Am for the middle region, q = 0 when d ≤ 30 (hs + hr).
+ */
+export function groundEffect(f: number, d: number, G: number, hs = 1.5, hr = 1.5): number {
+    const e = 1 - Math.exp(-d / 50);
+    const end = (h: number) => f <= 250 ? -1.5 + G * (1.5 + 8.6 * Math.exp(-0.09 * h * h) * e)
+        : f <= 500 ? -1.5 + G * (1.5 + 14.0 * Math.exp(-0.46 * h * h) * e)
+        : f <= 1000 ? -1.5 + G * (1.5 + 5.0 * Math.exp(-0.9 * h * h) * e) : -1.5 * (1 - G);
+    const q = d <= 30 * (hs + hr) ? 0 : 1 - 30 * (hs + hr) / d;
+    return end(hs) + end(hr) - 3 * q * (1 - G);
+}
+/**
+ * An obstacle's screening, dB: ISO 9613-2 §7.4, Dz = 10 lg(3 + (C2/λ) C3 z Kmet), C2 = 20, C3 = 1 (one edge), z = path
+ * difference over the top (here the top midway: z = 2√((d/2)² + h²) − d), Kmet = exp(−√(dss dsr d / (2 z)) / 2000),
+ * capped at 20 dB. The wave bends over the edge, longer waves (low pitch) more.
+ */
+export function screening(f: number, d: number, h: number, tC = 10): number {
+    if (!(h > 0)) return 0;
+    const lambda = soundSpeed(tC) / f, half = Math.hypot(d / 2, h), z = 2 * half - d;
+    const kmet = Math.exp(-Math.sqrt(half * half * d / (2 * z)) / 2000);
+    return Math.min(20, 10 * Math.log10(3 + 20 / lambda * z * kmet));
+}
+/**
+ * Upward refraction: where the sound speed falls with height (sunny day: air colder upward; upwind: wind slower near the
+ * ground), rays bend up and leave a shadow zone. A linear gradient g bends rays into arcs of radius R = c/|g|; the last ray
+ * that grazes the ground reaches r = √(2R)(√hs + √hr) (geometry of the arc, as in Embleton 1996, JASA 100:31). Gradient:
+ * temperature dc/dz = (c / 2T) dT/dz; wind, log profile u(z) = u10 ln(z/z0) / ln(10/z0), du/dz = u10 / (z ln(10/z0)) at the
+ * mean height, z0 = 0.05 m (short grass) [ASSUMED]. Returns the shadow's start, m, or null when the rays bend down.
+ */
+export function shadowStart(way: Way, tC = 10): number | null {
+    const hs = way.hs ?? 1.5, hr = way.hr ?? 1.5, z = Math.max(0.5, (hs + hr) / 2), c = soundSpeed(tC);
+    const dTdz = way.sunUp === undefined ? 0 : way.sunUp ? k('dayDTdz') : k('nightDTdz');
+    const sign = way.wind === 'toward the listener' ? 1 : way.wind === 'toward the source' ? -1 : 0;
+    const g = c / (2 * (tC + 273.15)) * dTdz + sign * (way.windMs ?? 0) / (z * Math.log(10 / 0.05));
+    if (g >= 0) return null;
+    return Math.sqrt(2 * c / -g) * (Math.sqrt(hs) + Math.sqrt(hr));
+}
+def({ id: 'dayDTdz', value: -0.1, unit: 'K/m near the ground, sun up', status: 'assumed', src: 'daytime lapse near sunlit ground, stronger than the adiabatic −0.0098 K/m', range: [-0.5, -0.01], file: 'acoustics.ts' });
+def({ id: 'nightDTdz', value: 0.05, unit: 'K/m near the ground, sun down', status: 'assumed', src: 'night inversion over cooling ground', range: [0, 0.2], file: 'acoustics.ts' });
+def({ id: 'shadowDb', value: 20, unit: 'dB beyond the shadow start', status: 'assumed', src: 'measured shadow-zone losses of 10–30 dB in the middle bands (Embleton 1996)', range: [10, 30], file: 'acoustics.ts' });
+/**
+ * Sound in a room, dB per band at the listener: the reverberant field of a diffuse room, Lrev = Lw + 10 lg(4/A)
+ * (Sabine), with Lw = Lp(1 m) + 11 (free-field spreading over a sphere of 1 m); the part arriving after 50 ms blurs speech
+ * like noise (Lochner & Burger 1964; Bradley's U50): its share of the reverberant energy is e^(−13.8 × 0.05 / T), T the
+ * reverberation time 0.161 V / A.
+ */
+export function roomSound(levelAt1m: number, room: { m3: number; absorption: number }): { early: number; late: number } {
+    const A = Math.max(1, room.absorption), T = 0.161 * room.m3 / A, rev = levelAt1m + 11 + 10 * Math.log10(4 / A), late = Math.exp(-0.69 / T);
+    // The first 50 ms of reflections join the direct sound and help (Barron & Lee 1988); the rest blurs it.
+    return { early: rev + 10 * Math.log10(1 - late), late: rev + 10 * Math.log10(late) };
+}
+const add = (a: number, b: number) => 10 * Math.log10(10 ** (a / 10) + 10 ** (b / 10));
+
 /** Octave-band levels (dB spectrum level) of a sound of `effort` (or overall `spl` at 1 m, pink) after distance and barrier. */
-function arriving({ effort, spl, distance, barrier, air }: { effort?: Effort | null; spl?: number | null; distance: number; barrier: string; air?: Air }): number[] {
-    const d = Math.max(1, distance);
-    const src = effort ? SPEECH[effort] : BANDS.map((_, i) => (spl ?? 0) - 10 * Math.log10(6) - DELTA[i]);
-    // The wave spreads over a sphere (−20 log10 d), the air takes energy from it per band, a wall reflects most of it.
-    return src.map((e, i) => e - 20 * Math.log10(d) - (air ? airAbsorption(BANDS[i], air) : AIR[i]) * d / 1000 - massLaw(BARRIER[barrier] ?? 0, BANDS[i]));
+function arriving({ effort, spl, distance, barrier, air, way = {} }: { effort?: Effort | null; spl?: number | null; distance: number; barrier: string; air?: Air; way?: Way }): number[] {
+    const d = Math.max(1, distance), tC = air?.tC ?? 10;
+    // A tone puts its energy in its own band; a noise spreads it evenly over the six (pink) [ASSUMED for noise].
+    const tone = way.toneHz ? BANDS.reduce((b, f, i) => Math.abs(Math.log2(f / way.toneHz!)) < Math.abs(Math.log2(BANDS[b] / way.toneHz!)) ? i : b, 0) : -1;
+    const src = effort ? SPEECH[effort] : BANDS.map((_, i) => tone >= 0 ? (i === tone ? (spl ?? 0) - DELTA[i] : -99) : (spl ?? 0) - 10 * Math.log10(6) - DELTA[i]);
+    const shadow = way.room ? null : shadowStart(way, tC);
+    // The wave spreads over a sphere (−20 log10 d); the air takes energy per band; the ground's reflection adds or cancels;
+    // an obstacle screens (its screening replaces the ground term, ISO 9613-2 §7.4); upward-bent rays leave a shadow; a wall
+    // between rooms passes what the mass law lets through.
+    return src.map((e, i) => {
+        const f = BANDS[i], ground = way.ground != null && !way.room ? groundEffect(f, d, way.ground, way.hs, way.hr) : 0;
+        const screen = way.obstacle_m ? Math.max(0, screening(f, d, way.obstacle_m, tC) - Math.max(0, ground)) : 0;
+        const shade = shadow != null && d > shadow ? k('shadowDb') * Math.min(1, (d - shadow) / shadow) : 0;
+        return e - 20 * Math.log10(d) - (air ? airAbsorption(f, air) : AIR[i]) * d / 1000 - (screen ? Math.max(ground, screen) : ground) - shade - massLaw(BARRIER[barrier] ?? 0, f);
+    });
 }
 
 /** The listener's hearing: threshold shift (one value or one per band), deaf bands. */
 export interface Ear { shift?: number | number[]; deaf?: number[] }
-export interface ReachInput extends Ear { effort?: Effort; spl?: number | null; distance?: number; barrier?: string; noise?: string; noiseDb?: number | null; air?: Air }
+export interface ReachInput extends Ear { effort?: Effort; spl?: number | null; distance?: number; barrier?: string; noise?: string; noiseDb?: number | null; air?: Air; way?: Way }
 /**
  * What reaches a listener: { sii, words (share of key words understood in sentences with context: logistic link
  * p = 1 ÷ (1 + e^(−0.29 (30 SII − 15 + 2.70))), SPIN-High fit of 30 normal-hearing listeners, Shen & Kern 2018, Trends Hear
@@ -79,10 +154,13 @@ export interface ReachInput extends Ear { effort?: Effort; spl?: number | null; 
  * sound peaks, 15 dB above the band average, exceed the disturbance in at least one band) }. shift: listener threshold above
  * normal human hearing, dB; deaf: band indices the listener cannot hear.
  */
-export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air }: ReachInput) {
-    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier, air });
+export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air, way }: ReachInput) {
+    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier, air, way });
     const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
-    const n = BANDS.map((_, i) => nDb - 10 * Math.log10(6) - DELTA[i]);
+    // In a room, the late part of the speaker's own sound adds to the noise band by band.
+    const src1 = spl == null ? SPEECH[effort] : BANDS.map((_, i) => spl - 10 * Math.log10(6) - DELTA[i]);
+    const n = BANDS.map((_, i) => { const b = nDb - 10 * Math.log10(6) - DELTA[i]; return way?.room ? add(b, roomSound(src1[i], way.room).late) : b; });
+    if (way?.room) e.forEach((v, i) => { e[i] = add(v, roomSound(src1[i], way.room!).early); });
     let sii = 0, audible = false;
     e.forEach((ei, i) => {
         if (deaf.includes(i)) return;
@@ -101,8 +179,9 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
 export const BAND_HZ = BANDS;
 
 /** Whether a sound of overall `spl` dB at 1 m is heard: { audible, margin } with margin = best band peak − disturbance, dB. */
-export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air }: ReachInput & { spl: number }) {
-    const e = arriving({ spl, distance, barrier, air });
+export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air, way }: ReachInput & { spl: number }) {
+    const e = arriving({ spl, distance, barrier, air, way });
+    if (way?.room) e.forEach((v, i) => { e[i] = add(v, roomSound(spl - 10 * Math.log10(6) - DELTA[i], way.room!).early); });
     const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
     let margin = -Infinity;
     e.forEach((ei, i) => {
