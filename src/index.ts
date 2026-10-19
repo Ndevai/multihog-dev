@@ -29,8 +29,8 @@ const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
 
-interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; profile: string; maxTokens: number }
-const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, profile: '', maxTokens: 0 };
+interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; profile: string; maxTokens: number; effort: string }
+const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, profile: '', maxTokens: 0, effort: 'low' };
 
 interface Ctx {
     chat: STMessage[]; chatMetadata: Record<string, any>; extensionSettings: Record<string, any>;
@@ -53,7 +53,7 @@ function settings(): Settings {
     return all[NAME];
 }
 
-const send = (system: string, user: string) => { const s = settings(); return sendModel(system, user, { profile: s.profile, maxTokens: s.maxTokens }); };
+const send = (system: string, user: string) => { const s = settings(); return sendModel(system, user, { profile: s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' }); };
 
 // Card text shown to the question model, characters per field [ASSUMED]: enough for species, build and training.
 const CARD_CHARS = 1500;
@@ -275,6 +275,8 @@ async function buildSettings(): Promise<void> {
     const tokens = document.getElementById('rules_engine_max_tokens') as HTMLInputElement;
     tokens.value = String(s.maxTokens || '');
     tokens.addEventListener('change', () => { settings().maxTokens = Math.max(0, Number(tokens.value) || 0); ctx().saveSettingsDebounced(); });
+    const effort = document.getElementById('rules_engine_effort') as HTMLSelectElement | null;
+    if (effort) { effort.value = s.effort ?? 'low'; effort.addEventListener('change', () => { settings().effort = effort.value; ctx().saveSettingsDebounced(); }); }
     const time = document.getElementById('rules_engine_time') as HTMLInputElement;
     time.addEventListener('change', () => {
         const t = parseStoryTime(time.value);

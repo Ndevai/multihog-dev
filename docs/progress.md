@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-19 (3), Claude Opus 5.5
+- Eval in Termux (tools/run-eval.mjs, NVIDIA, GLM 5.3, reasoning low, same two steps as play): 10 scenes in 6 min, 9 fully correct, tool precision 90.9 %, recall 100 %, arguments 100 %; the one miss is an extra Communicate beside SocialResponse in scene 8. Before, in the browser at the model's default (maximum) thinking: about 15 min per scene, 3 of 10.
+- Changed: the engine's own calls (question pass, rule check, /rules-eval) send reasoning_effort (setting, default low) as a field and in chat_template_kwargs (and in the custom source's extra body). The narrator's own replies are SillyTavern's and keep their settings.
+
 ## 2026-10-19 (2), Claude Opus 5.5
 - Changed: the magic tool (CastSpell) and the "network" magic line of the status are shown only when the world book has an entry about magic (kind or name: magic, spell, sorcery, wizard, witch, mana). Reason: magic has no lower layer in the engine (stages and costs set by hand, derived from nothing), so it is offered only where the story says it exists; it also took space in every tool list.
 - Open: magic built on the physics layer (a spell's effect costed in energy by the same rules as heat, motion and chemistry, paid from the caster's body).

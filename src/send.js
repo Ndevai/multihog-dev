@@ -34,12 +34,18 @@ async function textOf(raw) {
     const r = raw;
     return r.content ?? r.message?.content ?? r.choices?.[0]?.message?.content ?? r.choices?.[0]?.text ?? '';
 }
+// Thinking: GLM-5.3's chat template reads reasoning_effort ('low' or 'high'; anything else is maximum; vLLM issue 54744),
+// passed as reasoning_effort and in chat_template_kwargs (how NVIDIA's endpoint hands options to the template). Measured with
+// tools/run-eval.mjs on NVIDIA, 10 scenes: low 6 min, 9 of 10 right; unset 876 s for one scene, 3 of 10 right in the
+// browser run.
+const effortBody = (effort) => effort ? { reasoning_effort: effort, chat_template_kwargs: { reasoning_effort: effort } } : {};
+const effortYaml = (effort, body = '') => !effort || /chat_template_kwargs|reasoning_effort/.test(body) ? body : `${body ? `${body.trim()}\n` : ''}reasoning_effort: ${effort}\nchat_template_kwargs:\n  reasoning_effort: ${effort}`;
 export async function sendModel(system, user, opts = {}) {
     const ctx = SillyTavern.getContext();
     const messages = [{ role: 'system', content: system }, { role: 'user', content: user }];
     const maxTokens = opts.maxTokens && opts.maxTokens > 0 ? opts.maxTokens : undefined;
     if (opts.profile && ctx.ConnectionManagerRequestService) {
-        return textOf(await ctx.ConnectionManagerRequestService.sendRequest(opts.profile, messages, maxTokens, { stream: true, extractData: true, includePreset: true, includeInstruct: true }));
+        return textOf(await ctx.ConnectionManagerRequestService.sendRequest(opts.profile, messages, maxTokens, { stream: true, extractData: true, includePreset: true, includeInstruct: true }, effortBody(opts.effort)));
     }
     const live = ctx.chatCompletionSettings;
     if (ctx.mainApi === 'openai' && live && ctx.ChatCompletionService) {
@@ -48,7 +54,8 @@ export async function sendModel(system, user, opts = {}) {
             stream: true, messages, max_tokens: maxTokens, model: live[MODEL_KEYS[source]] || live.openai_model || live.custom_model,
             chat_completion_source: source, custom_url: live.custom_url, reverse_proxy: live.reverse_proxy, proxy_password: live.proxy_password,
             vertexai_region: live.vertexai_region, zai_endpoint: live.zai_endpoint, siliconflow_endpoint: live.siliconflow_endpoint,
-            minimax_endpoint: live.minimax_endpoint, custom_include_body: live.custom_include_body,
+            minimax_endpoint: live.minimax_endpoint, custom_include_body: source === 'custom' ? effortYaml(opts.effort, live.custom_include_body) : live.custom_include_body,
+            ...(opts.effort ? { reasoning_effort: opts.effort } : {}),
         }, {}, true));
     }
     if (!ctx.generateRaw)

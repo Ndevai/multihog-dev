@@ -12,6 +12,8 @@
             <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
             <label for="rules_engine_max_tokens"><small>Reply length for those calls, tokens (empty: the connection's own)</small></label>
             <input id="rules_engine_max_tokens" class="text_pole" type="number" min="0" step="100" />
+            <label for="rules_engine_effort"><small>Thinking for those calls (GLM 5.3 reads low or high; anything else is maximum). Low: 10 eval scenes in 6 min, 9 right; maximum: 15 min per scene, 3 right.</small></label>
+            <select id="rules_engine_effort" class="text_pole"><option value="low">low</option><option value="high">high</option><option value="">model default</option></select>
             <label for="rules_engine_time"><small>Story time of this chat (1850-03-14 18:40, or Day 3 07:15); PassTime moves it on</small></label>
             <input id="rules_engine_time" class="text_pole" type="text" placeholder="1850-03-14 18:40" />
             <hr />

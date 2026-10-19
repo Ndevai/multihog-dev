@@ -23,7 +23,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
 const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
-const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, profile: '', maxTokens: 0 };
+const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, profile: '', maxTokens: 0, effort: 'low' };
 const ctx = () => SillyTavern.getContext();
 const toastr = globalThis.toastr;
 function settings() {
@@ -31,7 +31,7 @@ function settings() {
     all[NAME] = { ...DEFAULTS, ...(all[NAME] || {}) };
     return all[NAME];
 }
-const send = (system, user) => { const s = settings(); return sendModel(system, user, { profile: s.profile, maxTokens: s.maxTokens }); };
+const send = (system, user) => { const s = settings(); return sendModel(system, user, { profile: s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' }); };
 // Card text shown to the question model, characters per field [ASSUMED]: enough for species, build and training.
 const CARD_CHARS = 1500;
 /** The player's persona, the character card and the scenario: where species, build and training are written. */
@@ -276,6 +276,11 @@ async function buildSettings() {
     const tokens = document.getElementById('rules_engine_max_tokens');
     tokens.value = String(s.maxTokens || '');
     tokens.addEventListener('change', () => { settings().maxTokens = Math.max(0, Number(tokens.value) || 0); ctx().saveSettingsDebounced(); });
+    const effort = document.getElementById('rules_engine_effort');
+    if (effort) {
+        effort.value = s.effort ?? 'low';
+        effort.addEventListener('change', () => { settings().effort = effort.value; ctx().saveSettingsDebounced(); });
+    }
     const time = document.getElementById('rules_engine_time');
     time.addEventListener('change', () => {
         const t = parseStoryTime(time.value);
