@@ -1611,16 +1611,19 @@ const watch = (p) => ({
     heat: coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis, peritonitis: !!p.peritonitis,
 });
-// Quantities whose thresholds mark events: blood lost share (classes at 15, 30, 40 %), carboxyhaemoglobin (unconscious 30 %,
-// dead 40 %).
-const levels = (p) => ({ loss: lossFraction(p), hb: p.co?.hb ?? 0 });
-const THRESH = { loss: [0.15, 0.3, 0.4], hb: [0.3, 0.4] };
+const levels = (p) => ({ loss: lossFraction(p), hb: p.co?.hb ?? 0, water: p.needs ? p.needs.waterL / p.mass * 100 : 0, work: p.needs?.work ?? 0, core: p.thermal?.stageCore ?? p.thermal?.core ?? 37 });
+const UP = { loss: [0.15, 0.3, 0.4], hb: [0.3, 0.4], water: [2, 5, 8], work: [1], core: [40] };
+const DOWN = { core: [35, 32, 28, 24] };
 function crossing(a, b) {
     let f = 1;
-    for (const k of ['loss', 'hb'])
-        for (const t of THRESH[k])
-            if (a[k] < t && b[k] >= t)
-                f = Math.min(f, (t - a[k]) / (b[k] - a[k]));
+    for (const key of Object.keys(a)) {
+        for (const t of UP[key] ?? [])
+            if (a[key] < t && b[key] >= t)
+                f = Math.min(f, (t - a[key]) / (b[key] - a[key]));
+        for (const t of DOWN[key] ?? [])
+            if (a[key] >= t && b[key] < t)
+                f = Math.min(f, (a[key] - t) / (a[key] - b[key]));
+    }
     return f;
 }
 function changes(who, a, b) {
@@ -1677,7 +1680,7 @@ export function advanceAll(people, minutes, resting = new Set(), rng = Math.rand
                 frac = Math.min(frac, crossing(lv, levels(p)));
             }
         }
-        // The event's moment inside the minute: where the quantity that crossed its threshold crossed it, the quantity taken
+        // The event's moment inside the minute: where the first quantity that crossed its threshold crossed it, the quantity taken
         // as changing evenly over the minute [ASSUMED]; events with no such quantity count at the minute's end.
         if (events.length)
             return { elapsed: m - 1 + frac, events };

@@ -1315,13 +1315,19 @@ const watch = (p: Person) => ({
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis, peritonitis: !!p.peritonitis,
 });
 
-// Quantities whose thresholds mark events: blood lost share (classes at 15, 30, 40 %), carboxyhaemoglobin (unconscious 30 %,
-// dead 40 %).
-const levels = (p: Person) => ({ loss: lossFraction(p), hb: p.co?.hb ?? 0 });
-const THRESH: Record<'loss' | 'hb', number[]> = { loss: [0.15, 0.3, 0.4], hb: [0.3, 0.4] };
-function crossing(a: { loss: number; hb: number }, b: { loss: number; hb: number }): number {
+// Quantities whose thresholds mark events, and the thresholds: blood lost share (classes at 15, 30, 40 %), carboxyhaemoglobin
+// (unconscious 30 %, dead 40 %), water deficit as % of body mass (thirst 2, 5, 8), work done ÷ the day's limit (exhausted at 1),
+// core temperature (heat stroke above 40 °C rising; hypothermia stages below 35, 32, 28, 24 falling).
+type Levels = Record<'loss' | 'hb' | 'water' | 'work' | 'core', number>;
+const levels = (p: Person): Levels => ({ loss: lossFraction(p), hb: p.co?.hb ?? 0, water: p.needs ? p.needs.waterL / p.mass * 100 : 0, work: p.needs?.work ?? 0, core: p.thermal?.stageCore ?? p.thermal?.core ?? 37 });
+const UP: Partial<Record<keyof Levels, number[]>> = { loss: [0.15, 0.3, 0.4], hb: [0.3, 0.4], water: [2, 5, 8], work: [1], core: [40] };
+const DOWN: Partial<Record<keyof Levels, number[]>> = { core: [35, 32, 28, 24] };
+function crossing(a: Levels, b: Levels): number {
     let f = 1;
-    for (const k of ['loss', 'hb'] as const) for (const t of THRESH[k]) if (a[k] < t && b[k] >= t) f = Math.min(f, (t - a[k]) / (b[k] - a[k]));
+    for (const key of Object.keys(a) as (keyof Levels)[]) {
+        for (const t of UP[key] ?? []) if (a[key] < t && b[key] >= t) f = Math.min(f, (t - a[key]) / (b[key] - a[key]));
+        for (const t of DOWN[key] ?? []) if (a[key] >= t && b[key] < t) f = Math.min(f, (a[key] - t) / (a[key] - b[key]));
+    }
     return f;
 }
 
@@ -1361,7 +1367,7 @@ export function advanceAll(people: Record<string, Person>, minutes: number, rest
             const ev = changes(who, before, watch(p));
             if (ev.length) { events.push(...ev); frac = Math.min(frac, crossing(lv, levels(p))); }
         }
-        // The event's moment inside the minute: where the quantity that crossed its threshold crossed it, the quantity taken
+        // The event's moment inside the minute: where the first quantity that crossed its threshold crossed it, the quantity taken
         // as changing evenly over the minute [ASSUMED]; events with no such quantity count at the minute's end.
         if (events.length) return { elapsed: m - 1 + frac, events };
     }
