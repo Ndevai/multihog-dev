@@ -385,6 +385,11 @@ ${RULES_PRINCIPLES}
 /** Between two people placed on the map: straight distance, their rooms, and whether an open doorway joins them. */
 /** Act's steps as the planner sends them: steps nested one level too deep, or a step written as words, made into steps. */
 function prepareAct(raw: Args): Args {
+    // A list of actor objects sent as "action" or "actions" is the actors.
+    for (const key of ['action', 'actions'] as const) {
+        const v = (raw as Record<string, unknown>)[key];
+        if (Array.isArray(v) && v.length && v.every(x => x && typeof x === 'object') && !raw.actors) { raw = { ...raw, actors: v as Args['actors'] }; delete (raw as Record<string, unknown>)[key]; }
+    }
     const fix = (list: unknown, who: string): unknown => !Array.isArray(list) ? list : list.flatMap((s: Record<string, unknown>) => {
         if (s && !s.do && Array.isArray(s.steps)) return fix(s.steps, who) as unknown[];
         if (s && !s.do && typeof s.action === 'string') { const r = stepsFromWords(s.action, who, (s.distance_m ?? raw.distance_m) as number | undefined); return 'error' in r ? [s] : r.steps; }
@@ -1537,7 +1542,14 @@ export function registerRulesTools(enabled: boolean): void {
         // come from the country's stable population (population.ts); occupation and birthplace are left to the story.
         const c = st.setting?.country, y = storyYear(st);
         const english = !c || (/united kingdom|england|wales/i.test(c) && (y === null || Math.abs(y - 1881) <= 40));
-        const local = english ? null : strangerAgeSex(c, y, rng, { sex: a.sex ?? null, minAge: Number(a.min_age) || 0 });
+        // A stated occupation means a person at work: age and sex are drawn from the people who work there and then, each draw
+        // kept with the ILO share of its sex and age in work (rejection sampling); 50 tries, then the last draw.
+        let local = english ? null : strangerAgeSex(c, y, rng, { sex: a.sex ?? null, minAge: Number(a.min_age) || 0 });
+        if (local && a.occupation) for (let i = 0; i < 50 && local; i++) {
+            const w = strangerWork(c, local.sex, local.age, y, rng);
+            if (w ? w.works : local.age >= 15) break;
+            local = strangerAgeSex(c, y, rng, { sex: a.sex ?? null, minAge: Number(a.min_age) || 0 });
+        }
         if (local) {
             const { p } = who(st, a.who);
             if (p) Object.assign(p, { age: local.age, sex: local.sex });
@@ -1548,11 +1560,18 @@ export function registerRulesTools(enabled: boolean): void {
             const home = hh ? hh.size === 1 ? '; lives alone' : `; lives in a household of ${hh.size} (${hh.type})` : '';
             return `${a.who}: a ${local.age}-year-old ${noun}${job}${home} (age and sex as drawn from ${local.country}'s population in ${y}${work ? `; work from ILO figures for ${work.country}, ${work.year}` : ''}${hh ? `; household from ${hh.source} ${hh.year}` : ''}; birthplace as the story sets it).`;
         }
-        const r = drawPerson({ sex: a.sex ?? null, occupation: a.occupation ?? null, minAge: Number(a.min_age) || 0 }, rng);
+        // A country the population tables do not reach (Brazil 1822) takes age and sex from the 1881 census of England and
+        // Wales, the nearest table held, with occupation and birthplace as the story sets them: the English census's jobs
+        // ("Railway Guard" for a Rio guard in 1822) belong to England in 1881.
+        // Elsewhere, the census's people of that occupation still give its sex and age (guards are men of working age); the
+        // job's name stays the story's.
+        let r = drawPerson({ sex: a.sex ?? null, occupation: a.occupation ?? null, minAge: Number(a.min_age) || 0 }, rng);
+        if ('error' in r && !english) r = drawPerson({ sex: a.sex ?? null, occupation: null, minAge: a.occupation ? Math.max(15, Number(a.min_age) || 0) : Number(a.min_age) || 0 }, rng);
         if ('error' in r) return r.error;
         const { p } = who(st, a.who);
         if (p) Object.assign(p, { age: r.age, sex: r.sex });
         const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+        if (!english) return `${a.who}: a ${r.age}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (age and sex drawn from the 1881 census of England and Wales${a.occupation ? ', among its people of that occupation' : ''}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
         return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child' : 'occupation unlisted in the census'}; born in ${r.born}.`;
     }));
 
