@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (35), Claude Opus 5.5
+- Added: docs/constants.md now also lists every assumption still written only in a comment (187 tags across the rules, file and line), the to-do list for the registry; apnea death time (5 min, range 4–10) and the heat-death ceiling moved into the registry, so suffocation outcomes are checked for fragility.
+- Not done: the other 187 tags (most are rule shapes, not single numbers).
+
 ## 2026-10-18 (34), Claude Opus 5.5
 - Added: tool Layout, the map under the spots: positions and room outlines; walking distances, stairs between floors, room sizes, room membership, hearing through walls and sight between rooms now come from the plan; a recorded distance shorter than the straight line is refused.
 - Checked (harness): voice through a wall vs an open door; sight blocked between rooms; stairs added between floors; a too-short distance refused.

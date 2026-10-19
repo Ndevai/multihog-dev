@@ -11,6 +11,7 @@ import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { foodEnergy } from './substance.js';
 import { drugMinute, drugStatus } from './drugs.js';
+import { def, k } from './constants.js';
 import type { Creature, Part, Layer, Tissue } from './df/raws.js';
 import type { StrikeWeapon, Shot, WornItem, Portion, Style } from './df/combat.js';
 import type { Side } from './df/sublocations.js';
@@ -279,7 +280,7 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         drugMinute(p);
-        if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
+        if (p.apnea != null && ++p.apnea >= APNEA_DEATH()) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
         // Smoke breathed in: inhalation injury, +17 on the burn score (Osler et al. 2010) once any burn exists.
         if (p.env?.smoke && !p.inhalation && !has(p, 'NOBREATHE')) { p.inhalation = true; burnRisk(p, rng); }
@@ -302,7 +303,7 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
             const st = coreStage(heat.core);
             if (st === 'hypothermia IV') { p.dead = 'hypothermia'; return; }
             // Above the highest core temperature anyone survived, 46.5 °C (Wikipedia, Hyperthermia: 10 July 1980) → dead [ASSUMED ceiling].
-            if (heat.core > 46.5) { p.dead = 'hyperthermia'; return; }
+            if (heat.core > k('heatDeathCore')) { p.dead = 'hyperthermia'; return; }
             // Heat stroke: survived when core is back under 40 °C within 30 min (PMC11438465); past that, death 26.5 % if
             // exertional, 63.2 % classic (MedLink), 1–3 days later [ASSUMED timing]. The roll stands after cooling.
             if (st === 'heat stroke' || (p.heatStroke?.min ?? 0) >= 30) {
@@ -674,7 +675,7 @@ export function setEnvironment(p: Person, env: EnvInput | null): void {
 export function status(who: string, p: Person): string {
     if (p.dead) return `${who}: dead (${p.dead}).`;
     const out: string[] = [];
-    if (p.apnea != null) out.push(`${who}: not breathing, unconscious; dies in ${APNEA_DEATH_MIN - p.apnea} min`);
+    if (p.apnea != null) out.push(`${who}: not breathing, unconscious; dies in ${APNEA_DEATH() - p.apnea} min`);
     else if (p.unconscious) out.push(`${who}: unconscious (${p.unconscious})`);
     const f = lossFraction(p);
     const c = creatureOf(p);
@@ -750,13 +751,15 @@ export function status(who: string, p: Person): string {
 // (97 KOs in 222 BKFC 2022 bouts). Without breathing: death after 5 min (Merck Manual, respiratory arrest).
 const KO_MOMENTUM = 158.0;
 // Chokes: unconscious after 6.2–10.5 s of a locked hold on the neck (by choke type; mean 9.0 s, 81 chokes on fully resisting
-// trained fighters, Int J Perf Anal Sport 2020); held 5 min → dead (no gas exchange, as APNEA_DEATH_MIN).
+// trained fighters, Int J Perf Anal Sport 2020); held 5 min → dead (no gas exchange, as apneaDeathMin).
 const CHOKE_LOC_S = [6.2, 10.5];
 // Default face area of held DF items: shield Ø 85 cm (Viking round shields 80–90 cm, Hurstwic); buckler Ø 30 cm
 // (reenactment guidance "10–12 in upwards", Vikings wiki). Thickness 0.9 cm (surviving shields 6–12 mm, Hurstwic).
 const HELD_FACE_CM2: Record<string, number> = { ITEM_SHIELD_SHIELD: Math.PI * 42.5 ** 2, ITEM_SHIELD_BUCKLER: Math.PI * 15 ** 2 };
 const HELD_THICK_CM = 0.9;
-const APNEA_DEATH_MIN = 5;
+def({ id: 'apneaDeathMin', value: 5, unit: 'min without breath', status: 'assumed', src: 'death after minutes without gas exchange (no source recorded; anoxic brain injury begins within minutes)', range: [4, 10], file: 'body-engine.ts' });
+def({ id: 'heatDeathCore', value: 46.5, unit: '°C core', status: 'sourced', src: 'highest core temperature survived (Wikipedia, Hyperthermia: 10 July 1980), taken as the ceiling', file: 'body-engine.ts' });
+const APNEA_DEATH = () => k('apneaDeathMin');
 // Survival (Tipton & Montgomery 2025, Exp Physiol "The physiology of survival: fluid and food"): net water loss 1.5 L/day at
 // rest, 4 L/day active or in heat; water lost 5 % of body mass → headache, light-headedness; 8 % → performance significantly
 // impaired; death at 15–20 %. Energy use 1400 kcal/day at rest, 2400 active; total starvation kills in 40–60 days.
@@ -1118,7 +1121,7 @@ export function choke(p: Person, seconds: number, holder: Person | null = null, 
     if (p.dead) return 'Already dead.';
     const s = Math.max(0, Number(seconds) || 0);
     const at = between(rng, CHOKE_LOC_S as [number, number]);
-    if (s >= APNEA_DEATH_MIN * 60) { p.dead = 'strangulation'; return `Choke held ${s} s: dead (strangulation).`; }
+    if (s >= APNEA_DEATH() * 60) { p.dead = 'strangulation'; return `Choke held ${s} s: dead (strangulation).`; }
     if (s >= at) { p.unconscious = 'choked'; return `Choke held ${s} s: unconscious at ${round(at)} s.`; }
     return `Choke held ${s} s: still conscious (would black out at ${round(at)} s).`;
 }

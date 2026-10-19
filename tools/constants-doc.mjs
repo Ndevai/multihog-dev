@@ -21,5 +21,18 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
 |---|---|---|---|---|---|---|
 ${rows.map(r => `| ${r.id} | ${r.value} | ${r.unit} | ${r.status} | ${r.range ? r.range.join('–') : ''} | ${r.src} | ${r.file} |`).join('\n')}
 `;
-writeFileSync(new URL('../docs/constants.md', import.meta.url), md);
-console.log(`docs/constants.md: ${rows.length} constants`);
+// Every assumption still written only in a comment: [ASSUMED …] or [RAW …] tags across src/rules (TypeScript sources).
+const tags = [];
+const walk = dir => { for (const f of readdirSync(dir, { withFileTypes: true })) { const p = new URL(f.name + (f.isDirectory() ? '/' : ''), dir); if (f.isDirectory()) walk(p); else if (f.name.endsWith('.ts')) readFileSync(p, 'utf8').split('\n').forEach((l, i) => { const m = l.match(/\[(ASSUMED|RAW)[^\]]*\]/); if (m && !l.includes("status: '")) tags.push([p.pathname.split('/src/rules/')[1], i + 1, m[1], l.replace(/^\s*(\/\/|\*)\s*/, '').trim().slice(0, 150).replace(/\|/g, '/')]); }); } };
+walk(new URL('../src/rules/', import.meta.url));
+const md2 = md + `
+## Assumptions not yet registered
+
+${tags.length} tags written only in comments (${tags.filter(t => t[2] === 'ASSUMED').length} assumed, ${tags.filter(t => t[2] === 'RAW').length} raw); each is a candidate for the registry above.
+
+| File | Line | Kind | Text |
+|---|---|---|---|
+${tags.map(t => `| ${t[0]} | ${t[1]} | ${t[2].toLowerCase()} | ${t[3]} |`).join('\n')}
+`;
+writeFileSync(new URL('../docs/constants.md', import.meta.url), md2);
+console.log(`docs/constants.md: ${rows.length} constants, ${tags.length} unregistered tags`);

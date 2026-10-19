@@ -11,6 +11,7 @@ import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { foodEnergy } from './substance.js';
 import { drugMinute, drugStatus } from './drugs.js';
+import { def, k } from './constants.js';
 import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { relatedShare } from './intelligibility.js';
 import { pulseWound } from './pulse.js';
@@ -308,7 +309,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         drugMinute(p);
-        if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) {
+        if (p.apnea != null && ++p.apnea >= APNEA_DEATH()) {
             p.dead = p.drowning ? 'drowning' : 'suffocation';
             return;
         }
@@ -352,7 +353,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
                 return;
             }
             // Above the highest core temperature anyone survived, 46.5 °C (Wikipedia, Hyperthermia: 10 July 1980) → dead [ASSUMED ceiling].
-            if (heat.core > 46.5) {
+            if (heat.core > k('heatDeathCore')) {
                 p.dead = 'hyperthermia';
                 return;
             }
@@ -883,7 +884,7 @@ export function status(who, p) {
         return `${who}: dead (${p.dead}).`;
     const out = [];
     if (p.apnea != null)
-        out.push(`${who}: not breathing, unconscious; dies in ${APNEA_DEATH_MIN - p.apnea} min`);
+        out.push(`${who}: not breathing, unconscious; dies in ${APNEA_DEATH() - p.apnea} min`);
     else if (p.unconscious)
         out.push(`${who}: unconscious (${p.unconscious})`);
     const f = lossFraction(p);
@@ -992,13 +993,15 @@ export function status(who, p) {
 // (97 KOs in 222 BKFC 2022 bouts). Without breathing: death after 5 min (Merck Manual, respiratory arrest).
 const KO_MOMENTUM = 158.0;
 // Chokes: unconscious after 6.2–10.5 s of a locked hold on the neck (by choke type; mean 9.0 s, 81 chokes on fully resisting
-// trained fighters, Int J Perf Anal Sport 2020); held 5 min → dead (no gas exchange, as APNEA_DEATH_MIN).
+// trained fighters, Int J Perf Anal Sport 2020); held 5 min → dead (no gas exchange, as apneaDeathMin).
 const CHOKE_LOC_S = [6.2, 10.5];
 // Default face area of held DF items: shield Ø 85 cm (Viking round shields 80–90 cm, Hurstwic); buckler Ø 30 cm
 // (reenactment guidance "10–12 in upwards", Vikings wiki). Thickness 0.9 cm (surviving shields 6–12 mm, Hurstwic).
 const HELD_FACE_CM2 = { ITEM_SHIELD_SHIELD: Math.PI * 42.5 ** 2, ITEM_SHIELD_BUCKLER: Math.PI * 15 ** 2 };
 const HELD_THICK_CM = 0.9;
-const APNEA_DEATH_MIN = 5;
+def({ id: 'apneaDeathMin', value: 5, unit: 'min without breath', status: 'assumed', src: 'death after minutes without gas exchange (no source recorded; anoxic brain injury begins within minutes)', range: [4, 10], file: 'body-engine.ts' });
+def({ id: 'heatDeathCore', value: 46.5, unit: '°C core', status: 'sourced', src: 'highest core temperature survived (Wikipedia, Hyperthermia: 10 July 1980), taken as the ceiling', file: 'body-engine.ts' });
+const APNEA_DEATH = () => k('apneaDeathMin');
 // Survival (Tipton & Montgomery 2025, Exp Physiol "The physiology of survival: fluid and food"): net water loss 1.5 L/day at
 // rest, 4 L/day active or in heat; water lost 5 % of body mass → headache, light-headedness; 8 % → performance significantly
 // impaired; death at 15–20 %. Energy use 1400 kcal/day at rest, 2400 active; total starvation kills in 40–60 days.
@@ -1399,7 +1402,7 @@ export function choke(p, seconds, holder = null, rng = Math.random) {
         return 'Already dead.';
     const s = Math.max(0, Number(seconds) || 0);
     const at = between(rng, CHOKE_LOC_S);
-    if (s >= APNEA_DEATH_MIN * 60) {
+    if (s >= APNEA_DEATH() * 60) {
         p.dead = 'strangulation';
         return `Choke held ${s} s: dead (strangulation).`;
     }
