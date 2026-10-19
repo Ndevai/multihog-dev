@@ -380,3 +380,18 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - tools/run-story.mjs plays three 4-turn stories (Whitechapel 1888: out, to the market, buy apples, home and give one to her brother; a York inn 1820: sit, order, overhear a whisper, tell the innkeeper; Lisbon 1755: climb, drop into the garden, creep to a window, look in) with each reply kept in the chat and the state saved per message, as SillyTavern does. Faults per turn and across turns: refusals left after the repair, no tool, an expected tool missing, the clock running back or standing still after an action, every rule-check flag including facts a character could not know ([KNOWS] passed to the check). Writes story-result.txt.
 - actions.ts `distanceIn`: a distance written in the words ("three hundred yards", "half a mile", "fifty feet", "2 km") gives walk_to its distance when none is passed (international yard 0.9144 m, foot 0.3048 m, mile 1609.344 m).
 - Open: running is timed at walking pace.
+
+## 2026-10-19 (26) First story run: 12 faults in 12 turns, and what the turns showed
+
+- Clock: a scenario's "a quarter past six in the evening" became 19:00 (only digits and the part of the day were read). clock.ts `wordClock` reads clock times in words ("a quarter past six", "half past three", "ten to nine", "eleven o'clock"), morning or afternoon from the part of the day nearby: 18:15, 15:30, 08:50, 23:00.
+- The planner copied the prompt's example time "1850-03-14 18:40" into a Lisbon 1755 call; QUESTION_SYSTEM now names the form (YYYY-MM-DD HH:MM) with no example date.
+- Posture: Tom sat down twice; a seated person now sits in no time, and rises (1.6 s, MTM) before walking.
+- Words to steps: walking verbs add creep, sneak, tiptoe, crawl, steal, stroll, stride, wander, dash, return; the spot is the phrase after to / into / onto / towards, then across, then home or back, then at / by / near. Creeping, sneaking, tiptoeing and crawling walk at creepFactor × walking speed (0.5, range 0.3–0.7, assumed): 20 m in 28 s.
+- A walk home timed twice (PassTime walking and a repair-added Act): the motion repair counts PassTime with walkers as the walk's time.
+- NewCharacter: a role noun as the name is the occupation when none is given ("the costermonger" was drawn as a child of 8; now a Costermonger, Huckster, Street Seller from the census).
+- A louder second call to the innkeeper returned the first, quieter result: Communicate's decision now includes the effort (raised: lost; shout: the voice heard, words lost).
+- Interpret refused fits naming a referent ("the two men"): the listener then takes the word as spoken.
+- Purposeful perception: Tom listening for a whisper and Mara listening at the window had their misses left out of [DECIDED], and the narrator filled in half-heard words. A Listen or Look with "reveals" (a perception the scene aims at) now keeps its miss in [DECIDED]; misses without it stay silent.
+- The narrator copied the BodyCheck marker onto every result ("*(raised voice … → FAILURE)*"); the brief now says every other result is told in the story's own words.
+- "4 pences" → "4 pence".
+- Open: rain within the day (the narrator's drizzle easing was flagged against a daily total); running at walking pace.

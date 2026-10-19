@@ -4,7 +4,7 @@ import { setFlags } from './audit-flags.js';
 import { turnKey } from './turn.js';
 import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
-import { askedResults, isMiss } from './question-pass.js';
+import { askedResults, askedArgs, isMiss } from './question-pass.js';
 const MAX_RETRIES = 1;
 export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the rule-engine results of the same turn.
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
@@ -58,7 +58,7 @@ export function takeAuditNote() {
     pending = null;
     if (!p)
         return null;
-    const r = askedResults(), missed = (tool) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result)); };
+    const r = askedResults(), missed = (tool) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result, askedArgs()[r.indexOf(x)])); };
     const events = p.events.filter(e => !missed(e.tool));
     return events.length ? correctionNote(events, p.decided) : null;
 }

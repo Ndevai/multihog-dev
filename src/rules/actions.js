@@ -1,3 +1,11 @@
+// Actions take the time their physics gives (docs/df-body-engine.md §6.20). The clock moves only by computed durations:
+// duration = amount ÷ rate. A walk is distance ÷ the walker's own speed (§6.7a); a change of posture or a hand motion takes
+// its standard time from Methods-Time Measurement (MTM-1 data card, MTM Association 2019; 1 TMU = 0.036 s), the time an
+// experienced person takes at normal effort. Positions are named spots; the distance between two spots is recorded the
+// first time it is given and reused after, so "leaves the house" from the doorway and from the living room differ.
+// Precision: each duration is shown to the digit its spread allows, spread 10 % of the duration [ASSUMED: within-person
+// variation of a repeated motion].
+import { def, k as kc } from './constants.js';
 import { walkSpeedKmh } from './work.js';
 import { walkFromMap } from './map.js';
 export const TMU_S = 0.036;
@@ -94,6 +102,14 @@ export function act(st, who, p, steps, country) {
                 lines.push(`${who} is already at ${s.to}`);
                 continue;
             }
+            // A seated person rises before walking.
+            if (p.posture === 'sitting' && MTM.stand) {
+                const up = MTM.stand.tmu * TMU_S;
+                total += up;
+                lines.push(`${who} ${MTM.stand.does}: ${honest(up)}`);
+                marks.push([total, `${who} stands`]);
+            }
+            p.posture = 'standing';
             st.links ??= {};
             const k = key(p.at, s.to), known = st.links[k], via = known == null && s.distance_m == null ? shortest(st.links, p.at, s.to) : null;
             const fromMap = known == null && s.distance_m == null && !via && st.map ? walkFromMap(st.map, p.at, s.to) : null;
@@ -110,7 +126,7 @@ export function act(st, who, p, steps, country) {
             }
             if (known == null && !via && !fromMap)
                 st.links[k] = d;
-            const v = walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2);
+            const v = walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2) * (s.pace === 'creep' ? kc('creepFactor') : 1);
             t = d / v;
             what = `walks ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : fromMap ? ' (from the map)' : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
             p.at = s.to;
@@ -142,9 +158,17 @@ export function act(st, who, p, steps, country) {
             t = reachTmu(cm) * TMU_S;
             what = `reaches ${cm} cm`;
         }
+        else if ((s.do === 'sit' && p.posture === 'sitting') || ((s.do === 'stand' || s.do === 'arise') && p.posture === 'standing')) {
+            lines.push(`${who} is already ${p.posture}`);
+            continue;
+        }
         else if (MTM[s.do]) {
             t = MTM[s.do].tmu * TMU_S;
             what = MTM[s.do].does;
+            if (s.do === 'sit')
+                p.posture = 'sitting';
+            else if (s.do === 'stand' || s.do === 'arise')
+                p.posture = 'standing';
         }
         else
             return { error: `Unknown action "${s.do}". Known: walk_to, be_at, stairs_up, stairs_down, reach, ${Object.keys(MTM).join(', ')}.` };
@@ -176,6 +200,7 @@ export function actTogether(st, actors, country) {
     const tl = runs.flatMap(r => r.marks).sort((a, b) => a[0] - b[0]).map(([t, w]) => `${honest(t)} ${w}`);
     return { seconds, text: `${lines.join('. ')}. Timeline: ${tl.join('; ')}` };
 }
+def({ id: 'creepFactor', value: 0.5, unit: '× walking speed', status: 'assumed', src: 'stealthy walking is slower than ordinary walking (no measured value held)', range: [0.3, 0.7], file: 'actions.ts' });
 // An action written in plain words, as steps: each recognized verb in its order in the text gives the motion it names.
 // Walking verbs need a distance (the one thing words cannot give); the spot walked to is the phrase after onto / into / to /
 // out of, else "outside".
@@ -187,14 +212,19 @@ const WORD_STEPS = [
     [/\b(turn|turns|turned)\b/, () => [{ do: 'turn' }]],
     [/\b(pick|picks|picked) up\b|\b(grab|grabs|grabbed|grasp|grasps)\b/, () => [{ do: 'reach' }, { do: 'grasp' }]],
     [/\b(reach|reaches|reached)\b/, () => [{ do: 'reach' }]],
-    [/\b(go|goes|going|went|walk|walks|walking|walked|step|steps|stepping|stepped|cross|crosses|crossing|crossed|leave|leaves|leaving|enter|enters|entering|entered|exit|exits|exiting|exited|head|heads|heading|headed|come|comes|coming|came|move|moves|moving|moved|carry|carries|carrying|carried|bring|brings|bringing|brought|fetch|fetches|fetching|fetched|run|runs|running|ran|hurry|hurries|hurried)\b/, (who, rest, d) => {
+    [/\b(go|goes|going|went|walk|walks|walking|walked|step|steps|stepping|stepped|cross|crosses|crossing|crossed|leave|leaves|leaving|enter|enters|entering|entered|exit|exits|exiting|exited|head|heads|heading|headed|come|comes|coming|came|move|moves|moving|moved|carry|carries|carrying|carried|bring|brings|bringing|brought|fetch|fetches|fetching|fetched|run|runs|running|ran|hurry|hurries|hurried|stroll|strolls|strolled|stride|strides|strode|wander|wanders|wandered|dash|dashes|dashed|return|returns|returned|creep|creeps|creeping|crept|sneak|sneaks|sneaking|sneaked|snuck|tiptoe|tiptoes|tiptoed|crawl|crawls|crawled|steal|steals|stole)\b/, (who, rest, d) => {
             if (d == null || !(d > 0))
                 return 'Walking needs distance_m (the distance from the scene).';
             const end = '(?:[,.;]| and | then |$)';
             // The spot keeps the text's own capitals ("Tom's table"): matched on the lower-case text, read from the original.
-            const to = rest.match(new RegExp(`\\b(?:onto|into|to|towards?|across)\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim()
+            const to = rest.match(new RegExp(`\\b(?:onto|into|to|towards?)\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim()
+                ?? rest.match(new RegExp(`\\bacross\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim()
+                ?? rest.match(/\b(home|back)\b/)?.[1]
+                ?? rest.match(new RegExp(`\\b(?:at|by|beside|near)\\s+(?:the\\s+|a\\s+)?(.+?)${end}`))?.[1]?.trim()
                 ?? rest.match(new RegExp(`\\bout of\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim().replace(/^/, 'outside ');
-            return [{ do: 'walk_to', to: to || `outside, near where ${who} stood`, distance_m: d }];
+            // Creeping, sneaking, tiptoeing, crawling: a slower pace.
+            const slow = /^(creep|crept|sneak|snuck|tiptoe|crawl|steal|stole)/.test(rest);
+            return [{ do: 'walk_to', to: to || `outside, near where ${who} stood`, distance_m: d, ...slow ? { pace: 'creep' } : {} }];
         }],
 ];
 // A distance written in the words: "300 yards", "three hundred yards", "half a mile", "2 km", "fifty feet". Units: metre

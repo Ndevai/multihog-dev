@@ -19,6 +19,25 @@ const DATE_FORMS = [
     [new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+of)?\\s+${MONTH}\\.?,?\\s+(\\d{4})\\b`, 'i'), m => [+m[3], monthNo(m[2]), +m[1]]],
     [new RegExp(`\\b${MONTH}\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})\\b`, 'i'), m => [+m[3], monthNo(m[1]), +m[2]]],
 ];
+const HOUR_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+const MIN_WORDS = { five: 5, ten: 10, 'a quarter': 15, quarter: 15, twenty: 20, 'twenty-five': 25, 'twenty five': 25, half: 30 };
+/** A clock time in words ("a quarter past six", "half past three", "ten to nine", "six o'clock"), as minutes of a 12-hour
+ *  clock; the part of the day nearby decides morning or afternoon. */
+function wordClock(s) {
+    const t = s.toLowerCase(), H = Object.keys(HOUR_WORDS).join('|'), M = Object.keys(MIN_WORDS).sort((a, b) => b.length - a.length).join('|');
+    let m = t.match(new RegExp(`\\b(${M})\\s+(?:minutes\\s+)?(past|after|to|before)\\s+(${H}|\\d{1,2})\\b`));
+    let min = null;
+    if (m) {
+        const h = HOUR_WORDS[m[3]] ?? Number(m[3]), d = MIN_WORDS[m[1]];
+        min = /to|before/.test(m[2]) ? ((h + 11) % 12) * 60 + 60 - d : (h % 12) * 60 + d;
+    }
+    else if ((m = t.match(new RegExp(`\\b(${H}|\\d{1,2})\\s+o'?\\s?clock\\b`))))
+        min = ((HOUR_WORDS[m[1]] ?? Number(m[1])) % 12) * 60;
+    if (min === null)
+        return null;
+    const pm = /\b(afternoon|evening|night|p\.?m\.?)\b/.test(t) && !/\b(morning|a\.?m\.?)\b/.test(t);
+    return pm && !(/\bnight\b/.test(t) && min < 4 * 60) ? min + 12 * 60 : min;
+}
 /** Hour and minute written after a date: 14:20, 2:20 pm, 2 pm, 14h20. */
 function clockIn(s) {
     const m = s.match(/\b(\d{1,2})(?:[:h](\d{2})(?::(\d{2}))?)?\s*([ap])\.?m\b/i) ?? s.match(/\b(\d{1,2})[:h](\d{2})(?::(\d{2}))?\b/);
@@ -52,7 +71,8 @@ export function findStoryTime(text) {
         const days = epochDays(y, mo, d);
         if (days < CALENDAR_FROM)
             continue;
-        const after = s.slice(m.index + m[0].length, m.index + m[0].length + 25).replace(/^T/, ' '), hm = clockIn(after) ?? dayPart(s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 60));
+        const after = s.slice(m.index + m[0].length, m.index + m[0].length + 25).replace(/^T/, ' '), near = s.slice(Math.max(0, m.index - 60), m.index + m[0].length + 80);
+        const hm = clockIn(after) ?? wordClock(near) ?? dayPart(s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 60));
         if (!best || m.index < best.at)
             best = { at: m.index, t: days * DAY + (hm ?? 720) };
     }

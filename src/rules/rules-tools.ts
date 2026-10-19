@@ -201,7 +201,7 @@ export function plain(out: unknown): unknown {
 // so an unwanted outcome cannot be re-rolled by calling again (models drop correct answers when pushed: Sharma et al. 2024).
 const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^\p{L}\p{N}.]+/gu, ' ').trim();
 export type Args = Record<string, unknown>;
-const DECIDES: Partial<Record<ToolName, (a: Args) => unknown[]>> = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], WorkOut: a => [a.who, a.problem], Sickness: a => [a.who, a.situation], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means], Interpret: a => [a.listener, a.speaker, a.word], Trust: a => [a.who, a.other, a.event], Listen: a => [a.listener, a.sound ?? a.spl_db],
+const DECIDES: Partial<Record<ToolName, (a: Args) => unknown[]>> = { RollTheDice: a => [a.who, a.for], Claim: a => [a.who, a.claim], Transfer: a => [a.item, a.from, a.to, a.how], WorkOut: a => [a.who, a.problem], Sickness: a => [a.who, a.situation], BodyCheck: a => [a.who, a.task], Communicate: a => [a.speaker, a.listener, a.means, a.effort], Interpret: a => [a.listener, a.speaker, a.word], Trust: a => [a.who, a.other, a.event], Listen: a => [a.listener, a.sound ?? a.spl_db],
     Look: a => [a.viewer, a.target ?? a.size_m], SocialResponse: a => [a.situation, a.who, a.speaker ?? a.request ?? ''],
     HoldOn: a => [a.who], Chase: a => [a.pursuer, a.fleeing],
     Weather: a => [a.place], Choose: a => [a.who, ...((a.options as { option?: string }[] | undefined) ?? []).map(o => o?.option).sort()], NewCharacter: a => [a.who], NameCharacter: a => [a.who], BodySize: a => [a.who], Disease: a => [a.question, a.disease, a.who ?? a.population], Battle: a => [a.place, a.year] };
@@ -336,7 +336,7 @@ function whoAny(st: RuleState, name: string, speciesArg?: string): Who {
 
 // Principles shared by both briefs.
 const RULES_PRINCIPLES = `Principles
-- Write each BodyCheck result in [DECIDED] as *(its task → SUCCESS)* or *(its task → FAILURE)*, as the result gives it, right after the sentence that narrates it.
+- Write each BodyCheck result in [DECIDED] as *(its task → SUCCESS)* or *(its task → FAILURE)*, as the result gives it, right after the sentence that narrates it. Every other result is told in the story's own words.
 - The world is real history with the additions in [WORLD]; everything else is as in real history.
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
@@ -907,9 +907,10 @@ export function registerRulesTools(enabled: boolean): void {
         const heard = who(st, a.listener).p?.heard;
         if (who(st, a.speaker).p?.voice === 'whisper' || heard?.from === a.speaker && heard.whisper) for (const x of whisperedAs(a.word, code)) weight.set(x.concept, x.rate / (1 - x.rate));
         if (heard?.from === a.speaker) for (const x of noisyAs(a.word, code, heard.snr)) weight.set(x.concept, Math.max(weight.get(x.concept) ?? 0, x.rate / (1 - x.rate)));
-        const valid = [...weight.keys()];
         const fits = [...new Set((a.fits ?? []).map(x => x.trim().toLowerCase().replace(/ if (whispered|misheard)$/, '').replace(/ = .*$/, '')))].filter(x => weight.has(x));
-        if (!fits.length) return `Give fits from: ${valid.join('; ')}.`;
+        // Fits that name none of the readings: the listener takes the word as spoken.
+        if (!fits.length) fits.push(String(a.word).trim().toLowerCase());
+        if (!weight.has(fits[0])) return `${a.listener} takes "${a.word}" as spoken.`;
         let u = rng() * fits.reduce((t, x) => t + weight.get(x)!, 0), reading = fits[fits.length - 1];
         for (const x of fits) if ((u -= weight.get(x)!) < 0) { reading = x; break; }
         if (reading === meant) return `${a.listener} takes "${a.word}" as ${a.speaker} meant it.`;
@@ -1540,6 +1541,8 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who'], a => run((st, rng) => {
         // Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex
         // come from the country's stable population (population.ts); occupation and birthplace are left to the story.
+        // A role noun as the name ("the costermonger") is the occupation when none is given: a costermonger was drawn as a child.
+        if (!a.occupation) { const role = /^(?:the |an? )?([a-z][a-z-]*(?: [a-z][a-z-]*)?)$/.exec(String(a.who).trim())?.[1]; if (role && !/^(person|man|woman|boy|girl|child|stranger|figure|someone|somebody|other|men|women)\b/.test(role)) a = { ...a, occupation: role }; }
         const c = st.setting?.country, y = storyYear(st);
         const english = !c || (/united kingdom|england|wales/i.test(c) && (y === null || Math.abs(y - 1881) <= 40));
         // A stated occupation means a person at work: age and sex are drawn from the people who work there and then, each draw

@@ -5,7 +5,7 @@ import { setFlags } from './audit-flags.js';
 import { turnKey } from './turn.js';
 import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
-import { askedResults, isMiss } from './question-pass.js';
+import { askedResults, askedArgs, isMiss } from './question-pass.js';
 
 /** One flagged event: the reply's words, the tool that should decide it (or KNOWS), and the problem. */
 export interface AuditEvent { quote: string; tool: string; problem?: 'unbacked' | 'contradicts' | 'unknown_to_them' }
@@ -68,7 +68,7 @@ export function takeAuditNote() {
     const p = pending;
     pending = null;
     if (!p) return null;
-    const r = askedResults(), missed = (tool: string) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result)); };
+    const r = askedResults(), missed = (tool: string) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result, askedArgs()[r.indexOf(x)])); };
     const events = p.events.filter(e => !missed(e.tool));
     return events.length ? correctionNote(events, p.decided) : null;
 }

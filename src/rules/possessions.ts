@@ -12,7 +12,7 @@ type Held = { item: string; qty: number; owner?: string };
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').replace(/^(a|an|the|some)\s+/, '').trim();
 /** Same item, singular or plural ("shilling", "Shillings", "boxes"). */
 const same = (a: string, b: string) => { const x = norm(a), y = norm(b); return x === y || `${x}s` === y || `${y}s` === x || `${x}es` === y || `${y}es` === x; };
-const count = (n: number, item: string) => n === 1 ? item : /s$/.test(item) ? `${n} ${item}` : `${n} ${item}s`;
+const count = (n: number, item: string) => n === 1 ? item : /(s|pence)$/.test(item) ? `${n} ${item}` : `${n} ${item}s`;
 
 function holding(st: RuleState, who: string): Held[] {
     st.items ??= {};

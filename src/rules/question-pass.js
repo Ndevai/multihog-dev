@@ -29,7 +29,7 @@ Read the scene and the player's message. Find each thing the next reply will sta
 Ask about the things this reply shows. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
 A player's message that states something new about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A new person who first acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one call per person. One call per question; calls run in the order given, so put time passing after the actions it follows.
-When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. The first time the scene or scenario says where the scene is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
+When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": the scene's date and hour as YYYY-MM-DD HH:MM (or "Day 1 HH:MM" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. The first time the scene or scenario says where the scene is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
 First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}. A plan with zero calls is {"calls":[]}.`;
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
 // FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
@@ -265,7 +265,7 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         calls = dedupe(valid);
         const unread = !/\{\s*"calls"/.test(lastPlanText);
         // A motion the player's message names (step out, sit down, cross the room) needs its time: code reads the verb.
-        const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act') && REGISTRY.has('Act') && !/No motion recognized/.test(JSON.stringify(stepsFromWords(said, 'x', 1)));
+        const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && !/No motion recognized/.test(JSON.stringify(stepsFromWords(said, 'x', 1)));
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
         if (unread || dropped.length || noPlace || motion) {
             const problems = [unread ? 'Write the plan as the JSON {"calls":[...]}.' : '',
@@ -364,6 +364,12 @@ export function turnLog() {
         return 'No question pass this turn.';
     return a.calls.map((c, i) => `${i + 1}. ${c.tool} ${JSON.stringify(c.args)}\n   draws: ${a.results[i]?.draws?.join(', ') || 'none'}\n   → ${a.results[i]?.result ?? ''}`).join('\n');
 }
+/** This turn's call arguments, in the order of its results. */
+export function askedArgs() {
+    const ctx = SillyTavern.getContext();
+    const a = ctx.chatMetadata ? store().asked : null;
+    return a && a.turn === turnKey(ctx.chat) ? a.calls.map(c => c.args) : [];
+}
 /** This turn's question-pass results, for the check pass. */
 export function askedResults() {
     const ctx = SillyTavern.getContext();
@@ -375,9 +381,9 @@ export function askedResults() {
 /** The [DECIDED] block for the narrator, '' when the pass decided nothing this turn. */
 /** A perception that did not happen: the narrator's silence about it says as much (Grice, Quantity), and naming the missed
  *  sound or sight would put it in the reply. Kept in the turn's results for the rule check. */
-export const isMiss = (tool, result) => (tool === 'Listen' && /misses it/.test(result)) || (tool === 'Look' && /misses it/.test(result));
+export const isMiss = (tool, result, args) => !args?.reveals && (tool === 'Listen' || tool === 'Look') && /misses it/.test(result);
 export function decidedInjection() {
-    const r = askedResults().filter(x => !isMiss(x.tool, x.result));
+    const r = askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]));
     if (!r.length)
         return '';
     return `[DECIDED]\nOutcomes the rule engine decided for this reply. Narrate them as given; they stand.\n${r.map(x => `- ${x.tool}: ${x.result}`).join('\n')}\n[/DECIDED]`;

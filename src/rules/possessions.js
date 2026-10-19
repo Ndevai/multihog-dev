@@ -2,7 +2,7 @@ export const HOW = ['given', 'sold', 'bought', 'lent', 'returned', 'stolen', 'ta
 const norm = (s) => s.toLowerCase().replace(/\s+/g, ' ').replace(/^(a|an|the|some)\s+/, '').trim();
 /** Same item, singular or plural ("shilling", "Shillings", "boxes"). */
 const same = (a, b) => { const x = norm(a), y = norm(b); return x === y || `${x}s` === y || `${y}s` === x || `${x}es` === y || `${y}es` === x; };
-const count = (n, item) => n === 1 ? item : /s$/.test(item) ? `${n} ${item}` : `${n} ${item}s`;
+const count = (n, item) => n === 1 ? item : /(s|pence)$/.test(item) ? `${n} ${item}` : `${n} ${item}s`;
 function holding(st, who) {
     st.items ??= {};
     return (st.items[who] ??= []);

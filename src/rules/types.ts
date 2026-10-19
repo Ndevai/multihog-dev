@@ -69,6 +69,8 @@ export interface BodyTiming { nerve_mps?: number; limb_m?: number; sense_s?: Rec
 export interface Person {
     /** Named spot the character is at (actions.ts), e.g. "John's house: living room". */
     at?: string;
+    /** Sitting or standing, as the last Act left them (actions.ts). */
+    posture?: 'sitting' | 'standing';
     /** The room whose air this person last breathed (rooms.ts). */
     airFrom?: string | null;
     species: string; mass: number; lost: number; red: number; wounds: Wound[]; nextId: number;
