@@ -75,7 +75,7 @@ const PICK_SYSTEM = `You choose which rule tools the next reply of a roleplay ma
 const PICK_MESSAGES = 3;
 
 /** The tools the question model asks for, or null when its answer cannot be read (then every tool is shown). */
-async function pickTools(chat: STMessage[], send: (system: string, user: string) => Promise<string>): Promise<Set<string> | null> {
+export async function pickTools(chat: STMessage[], send: (system: string, user: string) => Promise<string>): Promise<Set<string> | null> {
     const index = [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(oneLine).join('\n');
     const recent = chat.filter(m => !m.is_system).slice(-PICK_MESSAGES).map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
     const text = String(await send(PICK_SYSTEM, `TOOLS\n${index}\n\nSCENE (the last message is the player's)\n${recent}`) ?? '');

@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-19, Claude Opus 5.5
+- Eval result from the phone (GLM 5.3, 10 scenes): 3 of 10 fully correct; tool precision 100 %, recall 30 %, arguments 26.9 %, quiet 100 %; missed BodyStrike 0/2, Listen 0/1, Look 0/1, SocialResponse 0/3.
+- Found: /rules-eval showed every tool's arguments in full (about 15,000 tokens, grown by the new tools), while play first picks the tools and shows only those in full. Changed: the eval now takes the same two steps as play and reports when the picking step left a needed tool out.
+- Next: rerun /rules-eval 10 and read the per-scene lines to see which step misses.
+
 ## 2026-10-18 (36), Claude Opus 5.5
 - Added: event moments inside the minute for thirst, exhaustion and core temperature; fragility census tool over six scenes (four judgements found to decide outcomes: wood CO yield, doorway coefficient, doorway minimum ΔT, charcoal carbon share).
 - Not done: a full event queue; calibration against population statistics (needs base-rate data per rule); narrator tool-use score (run /rules-eval in SillyTavern).

@@ -1,7 +1,7 @@
 // Scores the question pass on the scenes of eval-scenes.ts (docs/df-body-engine.md §7.4): which tools it calls (precision,
 // recall), whether the arguments that decide each outcome are right, and whether it stays quiet when nothing is in doubt.
 // A call counts as made only when it would run: known tool, required arguments present, arguments passing the schema check.
-import { QUESTION_SYSTEM, questionPrompt, rawCalls } from './question-pass.js';
+import { QUESTION_SYSTEM, questionPrompt, rawCalls, pickTools } from './question-pass.js';
 import { REGISTRY } from './rules-tools.js';
 import { checkArgs } from './tool-schema.js';
 import { EVAL_SCENES, EVAL_TRACKER } from './eval-scenes.js';
@@ -80,14 +80,22 @@ export async function runEval(send, scenes = EVAL_SCENES, onProgress, stopped = 
         }
         const chat = [{ name: 'NARRATOR', mes: s.context }, { is_user: true, name: 'PLAYER', mes: s.player }];
         let text = '', failedRequest = false;
+        // The same two steps as play: the tool-picking call, then the question call with full arguments for the picked tools
+        // only (before 2026-10-19 the eval showed every tool in full, about 15,000 tokens, which play never does).
+        let only;
         try {
-            text = await send(QUESTION_SYSTEM, questionPrompt(chat, '', s.tracker ?? EVAL_TRACKER));
+            only = await pickTools(chat, send) ?? undefined;
+            text = await send(QUESTION_SYSTEM, questionPrompt(chat, '', s.tracker ?? EVAL_TRACKER, only));
         }
         catch (e) {
             failedRequest = true;
             console.warn('[Rules eval] scene', s.id, e);
         }
         const r = scoreScene(s, rawCalls(text));
+        if (only)
+            for (const e of s.expect)
+                if (!only.has(e.tool))
+                    r.failed.unshift(`picking step left out ${e.tool}`);
         if (failedRequest)
             r.invalid.push('request failed');
         else if (!/"calls"/.test(text))

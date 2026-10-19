@@ -68,7 +68,7 @@ const oneLine = (t) => `${t.name}: ${t.description.split(/(?<=\.)\s/)[0]}`;
 const PICK_SYSTEM = `You choose which rule tools the next reply of a roleplay may need. Code decides outcomes with these tools. Read the scene and the player's message and name every tool whose outcome the reply may need: an action that may fail, a blow, a sound or sight that may be missed, a message, a person's open response, time passing, an item changing hands, a fact established or learned, something the player states about their own character, a new person. When unsure whether a tool applies, include it. Write only the JSON {"tools":["Name", ...]}.`;
 const PICK_MESSAGES = 3;
 /** The tools the question model asks for, or null when its answer cannot be read (then every tool is shown). */
-async function pickTools(chat, send) {
+export async function pickTools(chat, send) {
     const index = [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(oneLine).join('\n');
     const recent = chat.filter(m => !m.is_system).slice(-PICK_MESSAGES).map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
     const text = String(await send(PICK_SYSTEM, `TOOLS\n${index}\n\nSCENE (the last message is the player's)\n${recent}`) ?? '');
