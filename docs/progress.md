@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-19 (4), Claude Opus 5.5
+- Narrator with low reasoning effort (set in SillyTavern's Additional Parameters): a reply in about 15 s.
+- Found in the user's log: the reply checker had no story clock and its JSON tool list lacked Act, so "at half past three" and "the bell rang the three-quarter hour" went unchecked. Changed: the checker gets the engine's clock and may flag Act events.
+
 ## 2026-10-19 (3), Claude Opus 5.5
 - Eval in Termux (tools/run-eval.mjs, NVIDIA, GLM 5.3, reasoning low, same two steps as play): 10 scenes in 6 min, 9 fully correct, tool precision 90.9 %, recall 100 %, arguments 100 %; the one miss is an extra Communicate beside SocialResponse in scene 8. Before, in the browser at the model's default (maximum) thinking: about 15 min per scene, 3 of 10.
 - Changed: the engine's own calls (question pass, rule check, /rules-eval) send reasoning_effort (setting, default low) as a field and in chat_template_kwargs (and in the custom source's extra body). The narrator's own replies are SillyTavern's and keep their settings.

@@ -2,6 +2,7 @@
 // Code then redoes the reply once with the missing calls named; a second failure is shown to the user.
 
 import { turnKey } from './turn.js';
+import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
 import { askedResults } from './question-pass.js';
 
@@ -16,13 +17,13 @@ List each event in the reply that the engine governs and that no engine result b
 Engine-governed events: a player's claim about their own character (what they are, an item they have) taking effect; an item changing hands, found, lost or used up; a character working something out or failing to; someone vomiting or feeling sick; a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a check succeeding or failing; an attack landing or missing; story time passing (minutes, hours, days); a clock time or a duration of an action stated in the narration ("at 10:19", "forty seconds later", "it took him a minute to reach the door") that no PassTime or Act result gives, with tool Act; a spell being cast; a treatment working; skin burned by touching something hot. Where distance, noise, darkness, injury, a possible lie or a stranger's free choice leaves it in doubt: a sound heard or missed; someone or something spotted or recognized at a distance; a message understood or not; a statement believed or seen through as a lie; a bystander stepping in or not; an order to hurt someone obeyed or refused; a stranger agreeing to or declining a small request; a grip held or lost; a pursuer catching someone or not; romantic interest after a first meeting; a price, wage or bill stated for a European city between 1500 and 1913; when a disease's symptoms start or how many fall ill in an outbreak; the day's weather; a character's pick among several real options; an attack on a defended position succeeding or failing.
 Also list each place where a character states or acts on a fact that the KNOWS list gives only to other characters, with tool KNOWS and problem unknown_to_them; a character also knows what they perceive in the scene now and what they learn in this reply.
 An event is backed when an engine result of the matching tool describes it. Intentions, threats, dialogue and misses described as misses are not events.
-First write EVIDENCE: one line per engine-governed event in the reply, giving its words and the engine result that backs or contradicts it. Then write the JSON {"events":[{"quote":"exact words from the reply","tool":"WorkOut|Sickness|Transfer|Claim|BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|SocialResponse|HoldOn|Chase|Price|Disease|Weather|Choose|Battle|KNOWS","problem":"unbacked|contradicts|unknown_to_them"}]}. An empty list means every event is backed.`;
+First write EVIDENCE: one line per engine-governed event in the reply, giving its words and the engine result that backs or contradicts it. Then write the JSON {"events":[{"quote":"exact words from the reply","tool":"Act|WorkOut|Sickness|Transfer|Claim|BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|SocialResponse|HoldOn|Chase|Price|Disease|Weather|Choose|Battle|KNOWS","problem":"unbacked|contradicts|unknown_to_them"}]}. An empty list means every event is backed.`;
 
-export function buildAuditPrompt(reply: string, results: TurnResult[], knows = ''): string {
+export function buildAuditPrompt(reply: string, results: TurnResult[], knows = '', clock = ''): string {
     const lines = results.length
         ? results.map((r, i) => `${i + 1}. ${r.tool}: ${r.result}`).join('\n')
         : '(no engine results this turn)';
-    return `ENGINE RESULTS\n${lines}\n\n${knows ? `KNOWS\n${knows.replace(/^\[\/?KNOWS\]\n?/gm, '').trim()}\n\n` : ''}REPLY\n${reply}`;
+    return `${clock ? `STORY CLOCK (from the engine; a clock time in the reply that differs from it, or a duration no result gives, is an Act event)\n${clock}\n\n` : ''}ENGINE RESULTS\n${lines}\n\n${knows ? `KNOWS\n${knows.replace(/^\[\/?KNOWS\]\n?/gm, '').trim()}\n\n` : ''}REPLY\n${reply}`;
 }
 
 const TOOLS = new Set(['Act', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'BodyCheck', 'BodyStrike', 'BodyWound', 'BodyFall', 'PassTime', 'CastSpell', 'BodyTreat', 'RollTheDice', 'BodyContact', 'Listen', 'Look', 'Communicate', 'SocialResponse', 'HoldOn', 'Chase', 'Price', 'Disease', 'Weather', 'Choose', 'Battle']);
@@ -78,7 +79,8 @@ export async function onRulesAuditMessage(messageId: number, deps: AuditDeps): P
     if (!msg || msg.is_user || msg.is_system || msg.extra?.tool_invocations || !String(msg.mes ?? '').trim() || !ctx.chatMetadata) return null;
     const key = turnKey(ctx.chat);
     const reply = msg.mes;
-    const raw = await deps.send(AUDIT_SYSTEM, buildAuditPrompt(reply, turnResults(ctx), knowledgeBlock(ctx.chatMetadata.rulesEngine?.state ?? {})));
+    const st = ctx.chatMetadata.rulesEngine?.state ?? {}, now = st.clock ? st.clock.t + st.clock.add : null;
+    const raw = await deps.send(AUDIT_SYSTEM, buildAuditPrompt(reply, turnResults(ctx), knowledgeBlock(st), now === null ? '' : formatStoryTime(now)));
     if (!deps.ownsChat() || ctx.chat[messageId] !== msg || msg.mes !== reply) return null;
     const events = parseAudit(raw);
     if (!events) return null;
