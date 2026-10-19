@@ -51,7 +51,8 @@ function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: strin
         // An enum filled from data that has not loaded yet checks nothing.
         if (!p.enum || !p.enum.length) return { v: s };
         const key = (x: string) => x.toLowerCase().replace(/\s+/g, ' ').trim();
-        const hit = p.enum.find(o => o === s) ?? p.enum.find(o => key(o) === key(s));
+        const head = (x: string) => key(x).split('(')[0].trim();
+        const hit = p.enum.find(o => o === s) ?? p.enum.find(o => key(o) === key(s)) ?? (p.enum.filter(o => head(o) === head(s)).length === 1 ? p.enum.find(o => head(o) === head(s)) : undefined);
         if (hit) return { v: hit };
         // A labelled band ("50% half") also matches its words alone ("half").
         const words = (x: string) => key(x).replace(/^\d+(\.\d+)?\s*%\s*/, '');

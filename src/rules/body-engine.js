@@ -3,7 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
-import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL } from './acoustics.js';
+import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL, classOf } from './acoustics.js';
 import { see, acuityOf } from './vision.js';
 import { grip, gripNorm } from './strength.js';
 import { endothermMinute } from './thermal/endotherm.js';
@@ -1140,7 +1140,7 @@ function defenceDone(a, t, defender, rng) {
     const eyeSees = (e) => sideFlag ? e.flags.includes(sideFlag) || !e.flags.some(f => f === 'LEFT' || f === 'RIGHT') : a.facing !== false;
     const sees = a.lit !== false && dir !== 'back' && eyes.some(eyeSees);
     // A named sound source (Listen presets) at the attack's starting distance gives the level by spherical spreading.
-    const db = a.noise_sound && SOUNDS[a.noise_sound] != null ? SOUNDS[a.noise_sound] - 20 * Math.log10(Math.max(1, a.distance_m ?? 1)) : a.noise_db || 0, level = db - hearingShift(defender?.species) - (earsOk < ears.length ? 3 : 0);
+    const db = a.noise_sound && SOUNDS[classOf(SOUNDS, a.noise_sound) ?? ''] != null ? SOUNDS[classOf(SOUNDS, a.noise_sound)] - 20 * Math.log10(Math.max(1, a.distance_m ?? 1)) : a.noise_db || 0, level = db - hearingShift(defender?.species) - (earsOk < ears.length ? 3 : 0);
     const audible = earsOk > 0 && inRange(defender?.species, db, a.noise_khz);
     if (awake && sees)
         perceive(0, rt('sight'));
@@ -1536,13 +1536,13 @@ export function chase(pn, pursuer, fn, fleeing, gap_m, rng = Math.random) {
     return `${pn} catches ${fn} after ${round(gap_m / (vp - vf), 1)} s, ${round(vp * gap_m / (vp - vf))} m run: ${pn} is faster${lame(fleeing)}.`;
 }
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
-export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, noise = 'quiet room', barrier = 'none' } = {}) {
+export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, noise = 'quiet room (25 dB)', barrier = 'none' } = {}) {
     const lc = creatureOf(l);
     if (!lc)
         return 'Creature data is not loaded.';
     if (l.dead || l.unconscious)
         return `${ls} perceives nothing (${l.dead ? 'dead' : 'unconscious'}).`;
-    const spl = spl_db ?? (sound ? SOUNDS[sound] : undefined);
+    const spl = spl_db ?? (sound ? SOUNDS[classOf(SOUNDS, sound) ?? ''] : undefined);
     if (spl == null)
         return `Unknown sound "${sound}". Known: ${Object.keys(SOUNDS).join(', ')}; or give spl_db at 1 m.`;
     const ear = earOf(l, lc);
@@ -1555,7 +1555,7 @@ export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, 
 }
 /** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
 export const SPEECH_OVERRIDE = {};
-export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room', noise_db = null, barrier = 'none', louder_db = 0, brazil = false } = {}) {
+export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room (25 dB)', noise_db = null, barrier = 'none', louder_db = 0, brazil = false } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc)
         return 'Creature data is not loaded.';

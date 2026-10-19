@@ -30,7 +30,8 @@ function coerce(name, p, v) {
         if (!p.enum || !p.enum.length)
             return { v: s };
         const key = (x) => x.toLowerCase().replace(/\s+/g, ' ').trim();
-        const hit = p.enum.find(o => o === s) ?? p.enum.find(o => key(o) === key(s));
+        const head = (x) => key(x).split('(')[0].trim();
+        const hit = p.enum.find(o => o === s) ?? p.enum.find(o => key(o) === key(s)) ?? (p.enum.filter(o => head(o) === head(s)).length === 1 ? p.enum.find(o => head(o) === head(s)) : undefined);
         if (hit)
             return { v: hit };
         // A labelled band ("50% half") also matches its words alone ("half").

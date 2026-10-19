@@ -19,15 +19,25 @@ const XI = [-3.9, -9.7, -12.5, -17.7, -25.9, -7.1];
 const AIR = [1.0, 1.9, 3.7, 9.7, 32.8, 117];
 // Background noise at the listener, overall dB SPL (Wikipedia, Sound pressure: examples), spread evenly over the six octaves
 // (pink noise) [ASSUMED shape].
-// Labels name a loudness class, with the measured example in parentheses.
-export const NOISE = { 'silent night': 10, 'quiet room': 25, 'conversation nearby': 50, 'busy street (traffic)': 67.5,
-    'loud room (television)': 75, 'loud machine nearby (vacuum cleaner)': 85, 'pounding work close by (jackhammer)': 100 };
+// Labels name a loudness class and its level; the measured examples stay in this comment, since a modern example in the label
+// (television, traffic) drew modern scenes into historical ones (an 1820 inn read as "loud room (television)").
+export const NOISE = { 'silent night (10 dB)': 10, 'quiet room (25 dB)': 25, 'conversation nearby (50 dB)': 50, 'busy street (68 dB)': 67.5,
+    'loud room (75 dB)': 75, 'loud machine nearby (85 dB)': 85, 'pounding work close by (100 dB)': 100 };
 // Sound sources, overall dB SPL at 1 m: Wikipedia "Sound pressure" examples (.30-06 rifle 171 at 1 m; jet engine 150 at 1 m;
 // jackhammer 100 at 1 m; normal conversation 40–60 at 1 m → 50; vacuum cleaner 85 at 1.8 m → 90; passenger car at 30 km/h
 // 65–70 at 10 m → 87.5); footsteps on gravel or sand about 60–62 dBA at the walker's ear (Larsson et al. 2015, Noise Health
 // 17:227, citing earlier recordings), ear about 1.5 m from the feet → 64 at 1 m [ASSUMED distance].
-export const SOUNDS = { 'gunshot (rifle)': 171, 'deafening roar (jet engine)': 150, 'loud pounding (jackhammer)': 100,
-    'loud drone (vacuum cleaner)': 90, 'passing vehicle (car at 30 km/h)': 87.5, 'footsteps on gravel or sand': 64, 'quiet conversation': 50 };
+export const SOUNDS = { 'gunshot (171 dB at 1 m)': 171, 'deafening roar (150 dB at 1 m)': 150, 'loud pounding (100 dB at 1 m)': 100,
+    'loud drone (90 dB at 1 m)': 90, 'passing vehicle (88 dB at 1 m)': 87.5, 'footsteps on gravel or sand (64 dB at 1 m)': 64, 'quiet conversation (50 dB at 1 m)': 50 };
+/** A sound or noise class by its label, or by its words before the parenthesis (labels saved before the levels were added). */
+export const classOf = (table, label) => {
+    if (label == null)
+        return undefined;
+    if (label in table)
+        return label;
+    const head = (x) => x.toLowerCase().split('(')[0].trim();
+    return Object.keys(table).find(k => head(k) === head(label));
+};
 // Walls and doors: field mass law, TL = 20 log10(m f) − 47 dB, m surface mass kg/m² (e.g. Long, Architectural Acoustics);
 // surface masses from material density × thickness [ASSUMED values].
 export const BARRIER = { none: 0, 'curtain or tent': 1, 'wooden door': 20, 'plaster wall': 25, 'brick wall': 200, 'stone wall': 500 };
@@ -45,9 +55,9 @@ function arriving({ effort, spl, distance, barrier }) {
  * sound peaks, 15 dB above the band average, exceed the disturbance in at least one band) }. shift: listener threshold above
  * normal human hearing, dB; deaf: band indices the listener cannot hear.
  */
-export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room', noiseDb = null, shift = 0, deaf = [] }) {
+export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [] }) {
     const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier });
-    const nDb = noiseDb ?? NOISE[noise] ?? 25;
+    const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
     const n = BANDS.map((_, i) => nDb - 10 * Math.log10(6) - DELTA[i]);
     let sii = 0, audible = false;
     e.forEach((ei, i) => {
@@ -68,9 +78,9 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
 }
 export const BAND_HZ = BANDS;
 /** Whether a sound of overall `spl` dB at 1 m is heard: { audible, margin } with margin = best band peak − disturbance, dB. */
-export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room', noiseDb = null, shift = 0, deaf = [] }) {
+export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [] }) {
     const e = arriving({ spl, distance, barrier });
-    const nDb = noiseDb ?? NOISE[noise] ?? 25;
+    const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
     let margin = -Infinity;
     e.forEach((ei, i) => {
         if (deaf.includes(i))

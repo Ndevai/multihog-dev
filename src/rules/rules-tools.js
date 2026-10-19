@@ -324,12 +324,12 @@ const RULES_PRINCIPLES = `Principles
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
 - A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.
-- The time of day is the one in [TIME]; an action's duration comes from an Act or PassTime result. A clock time or duration the narration states otherwise (a church clock, "twenty minutes later") is left out.
+- Clock times and durations in the narration are the ones in [TIME] and in Act and PassTime results; the rest of the passing of time is told without numbers (a while, at once).
 - A character who took a word in another meaning ([KNOWS]: "took … to mean …") acts on that meaning; the narration keeps the English word as spoken, and may quote the words as they sounded, spelled as [KNOWS] gives them (sètï, sèdï), when the misunderstanding comes out.`;
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
 export const RULES_BRIEF_DECIDED = `<rule_engine>
 Outcomes in [DECIDED] come from the rule engine; narrate each as given, in the order it happens.
-An action whose outcome [DECIDED] does not give is narrated up to the moment its outcome would show; the next turn decides it.
+An action [DECIDED] leaves open is narrated up to the moment its outcome would show; the next turn decides it.
 ${RULES_PRINCIPLES}
 </rule_engine>`;
 export const RULES_BRIEF = `<rule_engine>
@@ -595,7 +595,7 @@ export function registerRulesTools(enabled) {
         return rows ? `${lead}. Tier: ${pickTier(rows, r.total).label}. Narrate this tier.` : `${lead}. Use this amount as rolled.`;
     }));
     // Severity (vessel, fracture) is decided in code; the narrator names only the cause and place.
-    tool('BodyWound', 'Record a wound the moment it happens when BodyStrike did not make it: a burn, a bite, an accident, a fall injury, or a hit by a weapon BodyStrike does not cover (arrow, bolt, bullet). Returns what the wound is and the body state.', {
+    tool('BodyWound', 'Record a wound the moment it happens, for wounds from a burn, a bite, an accident, a fall, or an arrow, bolt or bullet (BodyStrike records the wounds of melee blows itself). Returns what the wound is and the body state.', {
         who: str('Character name'),
         species,
         part: partArg,
@@ -854,7 +854,7 @@ export function registerRulesTools(enabled) {
         const langs = [s.p.languages?.map(x => stageKey(x, year)), l.p.languages?.map(x => stageKey(x, year))];
         // On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default].
         const geo = between(st, s.p, l.p);
-        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0), brazil: /brazil/i.test(st.setting?.country ?? '') });
+        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0), brazil: /brazil/i.test(st.setting?.country ?? '') });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out))
             return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
@@ -1156,7 +1156,7 @@ export function registerRulesTools(enabled) {
     // Koevering & Kleinberg 2024).
     tool('Choose', 'Decide what a character does when they have several real options (fight, flee or bargain; which road; whom to trust), before narrating it. Give each option with how many people in their place would take it; code draws one.', {
         who: str('The character choosing'),
-        options: { type: 'array', items: { type: 'object', properties: { option: { type: 'string' }, share: { type: 'string', enum: SHARES } }, required: ['option', 'share'] }, description: 'Two or more distinct options (not two wordings of one), each with the share of people in this character\'s place who would take it' },
+        options: { type: 'array', items: { type: 'object', properties: { option: { type: 'string' }, share: { type: 'string', enum: SHARES } }, required: ['option', 'share'] }, description: 'Two or more options, each a different act, each with the share of people in this character\'s place who would take it' },
     }, ['who', 'options'], a => run((st, rng) => {
         const seen = new Set(), opts = (a.options ?? []).filter(o => o?.option && !seen.has(o.option.toLowerCase().trim()) && seen.add(o.option.toLowerCase().trim()));
         if (opts.length < 2)
@@ -1417,7 +1417,7 @@ export function registerRulesTools(enabled) {
         const l = who(st, a.listener, a.listener_species);
         if (!l.p)
             return l.error;
-        const out = listen(a.listener, l.p, { sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none' });
+        const out = listen(a.listener, l.p, { sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? 'none' });
         return / hears it /.test(out) && a.reveals ? `${out} ${a.listener} now knows: ${learnt(st, a.reveals, a.listener, KNOWN_HOW[1])}` : out;
     }));
     tool('Look', 'Decide whether a character sees something at a distance (a person, an animal, a vehicle) before narrating it. Code rolls notice / recognize / identify from size, distance, light and visibility.', {
@@ -1426,7 +1426,7 @@ export function registerRulesTools(enabled) {
         target: str('What might be seen, a few words'),
         size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, horse 0.6, wagon or car 1.5)' },
         distance_m: { type: 'number', description: 'Distance, m: needed unless viewer and target_who are both placed with Layout' },
-        light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Only for an overcast sky or artificial light. Leave it out otherwise: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
+        light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Set for an overcast sky or artificial light; code takes daylight, twilight, moonlight and starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
         reveals: str('The fact seeing it would teach, one short sentence (who it is, what they are doing); learned only if identified'),
@@ -1623,7 +1623,7 @@ export function registerRulesTools(enabled) {
         const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
         return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child, no occupation' : 'no stated occupation'}; born in ${r.born}.`;
     }));
-    tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
+    tool('BodyCheck', 'Resolve a physical or skilled action whose outcome is in doubt, before narrating it: climbing, jumping, swimming, lifting or forcing something, balancing, sneaking, picking a lock, riding, a craft or a trade task (the other tools cover blows, falls, holds, chases, hearing, seeing, messages and people\'s responses). The body state in [BODY] is applied in code.', {
         who: str('Character acting'),
         species,
         task: str('The task in a few words. A real second attempt names it ("pick lock, 2nd try"); the same task again this turn returns the first result.'),
@@ -1635,7 +1635,7 @@ export function registerRulesTools(enabled) {
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
         timed: { type: 'boolean', description: 'The task must be done within a time that leaves no slack (a lock picked before the guard turns, a sum shouted in a race)' },
         fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
-        override: { type: 'boolean', description: 'Set only after BodyCheck named another tool and the task is genuinely not what that tool decides' },
+        override: { type: 'boolean', description: 'Set after BodyCheck named another tool, when the task differs from what that tool decides' },
     }, ['who', 'task', 'reference_class', 'base_share', 'share'], a => run((st, rng) => { const w = whoAny(st, a.who, a.species); return w.p ? check(w.p, { ...a, share: combined(a) }, rng) : w.error; }));
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
@@ -1733,7 +1733,7 @@ export function registerRulesTools(enabled) {
             riser_cm: { type: 'number', description: 'For stairs: step height, cm, when the story sets it (steep old stair 20, modern 17)' },
             tread_cm: { type: 'number', description: 'For stairs: step depth, cm' },
         }, required: ['do'] };
-    tool('Act', 'Time characters\' physical actions before narrating them; when several characters act at the same time, put them all in one call (actors): walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives, not your own. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
+    tool('Act', 'Time characters\' physical actions before narrating them; when several characters act at the same time, put them all in one call (actors): walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
         who: str('Character acting (one actor)'),
         actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
         steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
