@@ -291,6 +291,28 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         const pos = scenePosition(), now = storyTime();
         if (pos && now !== null && now / 1440 > 146097 && !calls.some(c => c.tool === 'Weather') && REGISTRY.has('Weather'))
             calls.push({ tool: 'Weather', args: { latitude: pos.lat, longitude: pos.lon } });
+        // Every person a call names who is new to the story and outside the cast gets NewCharacter first, drawn by code: a role
+        // noun is their occupation ("the innkeeper" → innkeeper). An innkeeper the plan used without one was a blank body.
+        if (REGISTRY.has('NewCharacter')) {
+            const PERSON = ['who', 'speaker', 'listener', 'viewer', 'pursuer', 'fleeing', 'other', 'attacker', 'target', 'requester_name'];
+            const known = new Set([...Object.keys(s.state.people ?? {}), String(ctx.name1 ?? '')].map(x => x.toLowerCase()));
+            const castText = tracker.toLowerCase();
+            const named = new Set(calls.filter(c => c.tool === 'NewCharacter').map(c => String(c.args.who ?? '').toLowerCase()));
+            const fresh = [];
+            for (const c of calls)
+                for (const k of PERSON) {
+                    const v = c.args[k];
+                    if (typeof v !== 'string' || !v.trim())
+                        continue;
+                    const n = v.trim(), low = n.toLowerCase();
+                    if (known.has(low) || named.has(low) || castText.includes(`${low} (`) || castText.includes(`${low}:`) || (present ?? []).some(x => x.toLowerCase() === low && castText.includes(low)))
+                        continue;
+                    const role = /^(?:the |an? )?([a-z][a-z -]*)$/.exec(n)?.[1];
+                    named.add(low);
+                    fresh.push({ tool: 'NewCharacter', args: role ? { who: n, occupation: role } : { who: n } });
+                }
+            calls = [...fresh, ...calls];
+        }
         // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
         // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
         calls = [...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')];

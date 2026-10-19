@@ -572,7 +572,7 @@ export function fall(p, height, opts = {}, rng = Math.random) {
         p.dead = 'fall';
         return `Fall ${height} m: dies.`;
     }
-    return `Fall ${height} m: survives. Injuries: narrate, then record with BodyWound.`;
+    return `Fall ${height} m: survives; its injuries come from BodyWound.`;
 }
 /** part → whether it works: no severing, unjoined fracture or lost function on it or above it on its CON chain. */
 export function worksFn(p, c = creatureOf(p)) {

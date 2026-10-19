@@ -362,3 +362,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - The item law: an item enters the story when its giver had none on record (a baker the story has not listed selling a loaf); invariants.ts.
 - SocialResponse to a favour, statement or order whose words this turn's Communicate lost: the person answers the voice only and the request waits for a message that gets through.
 - run-play counts results with "refused" as faults.
+
+## 2026-10-19 (23) Third play run: 8 faults; Act forms, new people, coins, failed climbs
+
+- Act refused three times in new shapes: actors with their own action, a step written as words, steps nested one level too deep. `prepareAct` (rules-tools.ts) reads all three before the schema check; actor items take action and distance_m; Act's description leads with the plain-words form (who, action, distance_m), steps as the exact form. Walking verbs add carry, bring, fetch, run, hurry; the spot keeps the text's capitals ("Tom's table").
+- Every person a call names who is new to the story and outside the cast (and the player) gets NewCharacter first, drawn by code; a role noun is the occupation ("the innkeeper" → Innkeeper, Hotel Keeper, Publican).
+- The narrator's "a penny ha'penny" was flagged against "0.69 g of silver": both were right. Price now adds the coins of the place: London by the pound's silver that year (the Lindert/Jastram series behind "value of English money"): 0.69 g in 1820 = about 1½ d; Paris 1803–1914 by the Germinal franc, 4.5 g fine silver: 1.33 g = about 30 centimes. A wage share under a tenth of a day is given in hours of a 10-hour day [ASSUMED].
+- A failed climb ended in a narrated drop and scrapes no result backed. BodyCheck takes height_m for a climb: a failure is a slip at a height drawn evenly over the climb [ASSUMED] and the fall from it (fall death chance, then "its injuries come from BodyWound").

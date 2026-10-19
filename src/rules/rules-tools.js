@@ -363,6 +363,45 @@ World
 ${RULES_PRINCIPLES}
 </rule_engine>`;
 /** Between two people placed on the map: straight distance, their rooms, and whether an open doorway joins them. */
+/** Act's steps as the planner sends them: steps nested one level too deep, or a step written as words, made into steps. */
+function prepareAct(raw) {
+    const fix = (list, who) => !Array.isArray(list) ? list : list.flatMap((s) => {
+        if (s && !s.do && Array.isArray(s.steps))
+            return fix(s.steps, who);
+        if (s && !s.do && typeof s.action === 'string') {
+            const r = stepsFromWords(s.action, who, (s.distance_m ?? raw.distance_m));
+            return 'error' in r ? [s] : r.steps;
+        }
+        return [s];
+    });
+    const out = { ...raw, steps: fix(raw.steps, String(raw.who ?? 'they')) };
+    if (Array.isArray(raw.actors))
+        out.actors = raw.actors.map((x) => x && typeof x === 'object' ? { ...x, steps: fix(x.steps, String(x.who ?? 'they')) } : x);
+    if (out.steps === undefined)
+        delete out.steps;
+    return out;
+}
+// A price in the coins of the place, so the narration names what changes hands: English money by the pound's silver that
+// year (Lindert 2006 from Jastram 1981, the series behind "value of English money"); the French franc of 7 Germinal an XI
+// (1803–1914): 5 g of silver at 9/10 fine, 4.5 g of fine silver.
+function coinsOf(g, city, year) {
+    if (city === 'London') {
+        const perPound = poundSilver(1, year);
+        if (!perPound)
+            return '';
+        const d = g / (perPound / 240);
+        const q = Math.round(d * 4), frac = ['', '¼', '½', '¾'][q % 4];
+        if (d < 12)
+            return ` (about ${Math.floor(q / 4) || ''}${frac || (q < 4 ? '¼' : '')} d)`;
+        const sh = Math.floor(d / 12), dd = Math.round(d - sh * 12);
+        return sh < 20 ? ` (about ${sh} s ${dd} d)` : ` (about £${Math.floor(sh / 20)} ${sh % 20} s)`;
+    }
+    if (city === 'Paris' && year >= 1803 && year <= 1914) {
+        const c = Math.round(g / 4.5 * 100);
+        return c < 100 ? ` (about ${c} centimes)` : ` (about ${Math.round(c) / 100} francs)`;
+    }
+    return '';
+}
 // The way a sound travels (acoustics.ts Way): the ground, an obstacle, the wind and sun for outdoors; the room's volume and
 // absorption when both are in one. Absorption: walls, floor and ceiling of a square room times the lining's coefficient at
 // 500 Hz–1 kHz (brick 0.03, concrete 0.02, gypsum board 0.05, wood 0.10), furnishing 0.1 per m² of floor, 0.45 m² per person
@@ -552,7 +591,7 @@ export function registerRulesTools(enabled) {
     const tool = (name, description, properties, required, action) => {
         const exec = async (raw) => {
             // Arguments are checked against the schema at the boundary; a call with errors runs nothing and says what to fix.
-            const { args, errors } = checkArgs(properties, required, raw ?? {});
+            const { args, errors } = checkArgs(properties, required, name === 'Act' ? prepareAct(raw ?? {}) : raw ?? {});
             if (errors.length)
                 return `${name} waits: fix and call again: ${errors.join('; ')}.`;
             await loadRaws();
@@ -1015,8 +1054,9 @@ export function registerRulesTools(enabled) {
         if ('error' in r)
             return r.error;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
-        const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? Math.round(r.labourDays) : Math.round(r.labourDays * 10) / 10} days`;
-        return `${r.what} in ${a.city}, ${year}: ${g} g of silver${days}${r.note ? ` (${r.note})` : ''}.`;
+        // Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length].
+        const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? `${Math.round(r.labourDays)} days` : r.labourDays >= 0.1 ? `${Math.round(r.labourDays * 10) / 10} days` : `${Math.max(0.1, Math.round(r.labourDays * 100) / 10)} hours of a 10-hour day`}`;
+        return `${r.what} in ${a.city}, ${year}: ${g} g of silver${coinsOf(r.silver, a.city, year)}${days}${r.note ? ` (${r.note})` : ''}.`;
     }));
     tool('PlaceProfile', 'Decide how large, how urban, how violent and how deadly for infants a country or city is in a year, before narrating a crowd, a town\'s size, a murder rate or a child\'s survival. Returns population, urban share, murders per 100,000, infant deaths per 1,000 births and the nearest listed city.', {
         country: str('The country. Default: the setting\'s country.'),
@@ -1659,6 +1699,7 @@ export function registerRulesTools(enabled) {
     tool('BodyCheck', 'Resolve a physical or skilled action whose outcome is in doubt, before narrating it: climbing, jumping, swimming, lifting or forcing something, balancing, sneaking, picking a lock, riding, a craft or a trade task (the other tools cover blows, falls, holds, chases, hearing, seeing, messages and people\'s responses). The body state in [BODY] is applied in code.', {
         who: str('Character acting'),
         species,
+        height_m: { type: 'number', description: 'For a climb: its height, m; a failure is then a fall from where the grip went' },
         task: str('The task in a few words. A real second attempt names it ("pick lock, 2nd try"); the same task again this turn returns the first result.'),
         reference_class: str('The wider class of attempts this one belongs to (e.g. "amateurs picking an old door lock")'),
         base_share: { type: 'string', enum: SHARES, description: 'How many attempts in that reference class succeed.' },
@@ -1669,7 +1710,18 @@ export function registerRulesTools(enabled) {
         timed: { type: 'boolean', description: 'The task must be done within a tight time (a lock picked before the guard turns, a sum shouted in a race)' },
         fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
         override: { type: 'boolean', description: 'Set after BodyCheck named another tool, when the task differs from what that tool decides' },
-    }, ['who', 'task', 'reference_class', 'base_share', 'share'], a => run((st, rng) => { const w = whoAny(st, a.who, a.species); return w.p ? check(w.p, { ...a, share: combined(a) }, rng) : w.error; }));
+    }, ['who', 'task', 'reference_class', 'base_share', 'share'], a => run((st, rng) => {
+        const w = whoAny(st, a.who, a.species);
+        if (!w.p)
+            return w.error;
+        const out = check(w.p, { ...a, share: combined(a) }, rng);
+        // A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it.
+        if (a.height_m && /FAILURE/.test(out)) {
+            const h = Math.round(rng() * Number(a.height_m) * 10) / 10;
+            return `${out.replace('; the body as it was', '')} ${h < 0.5 ? `${a.who} slips back before leaving the ground.` : `${a.who} loses the grip at ${h} m. ${fall(w.p, h, {}, rng)}`}`;
+        }
+        return out;
+    }));
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
         wound: { type: 'number', description: 'Wound id, for a treatment of one wound (antivenom, antibiotics, laparotomy, oxygen and transfuse treat the whole body)' },
@@ -1766,9 +1818,9 @@ export function registerRulesTools(enabled) {
             riser_cm: { type: 'number', description: 'For stairs: step height, cm, when the story sets it (steep old stair 20, modern 17)' },
             tread_cm: { type: 'number', description: 'For stairs: step depth, cm' },
         }, required: ['do'] };
-    tool('Act', 'Time characters\' physical actions before narrating them; when several characters act at the same time, put them all in one call (actors): walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
+    tool('Act', 'Time characters\' physical actions before narrating them, and move the story clock by exactly that time. Give who, action (the action in plain words: "steps out onto the street", "sits down at a table") and distance_m for any walking; for several characters at the same time, actors, each with who, action and distance_m. steps is the exact form: walking between spots, sitting, standing, bending, kneeling, turning, reaching, grasping. Narrate the times it gives. Record where a character is with be_at; a walking distance is kept once given.', {
         who: str('Character acting (one actor)'),
-        actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
+        actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), action: str('The action in plain words'), distance_m: { type: 'number', description: 'Walking distance, m' }, steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
         steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
         action: str('For one actor, the action in plain words (an alternative to steps) ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m'),
         distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
@@ -1784,7 +1836,12 @@ export function registerRulesTools(enabled) {
         const words = Array.isArray(a.action) ? a.action.join(', then ') : a.action ? String(a.action) : '';
         const fromWords = (w) => { if (!words)
             return []; const r = stepsFromWords(words, w, a.distance_m); return 'error' in r ? [] : r.steps; };
-        const list = (a.actors?.map(x => ({ who: x.who, steps: x.steps ?? a.steps ?? fromWords(x.who) })))
+        // Each actor's own action in words, a step written as words, and steps nested one level too deep are all read.
+        const own = (x) => { if (!x.action)
+            return []; const r = stepsFromWords(x.action, x.who, x.distance_m ?? a.distance_m); return 'error' in r ? [] : r.steps; };
+        const flat = (st, w) => st?.flatMap(s => s.steps && !s.do ? s.steps
+            : !s.do && s.action ? (() => { const r = stepsFromWords(String(s.action), w, s.distance_m ?? a.distance_m); return 'error' in r ? [] : r.steps; })() : [s]);
+        const list = (a.actors?.map(x => ({ who: x.who, steps: flat(x.steps, x.who) ?? (own(x).length ? own(x) : undefined) ?? flat(a.steps, x.who) ?? fromWords(x.who) })))
             ?? (a.who && a.steps ? [{ who: String(a.who), steps: a.steps }] : []);
         if (list.some(x => !x.steps.length)) {
             const why = words ? stepsFromWords(words, '', a.distance_m) : null;
