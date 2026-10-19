@@ -3,8 +3,9 @@
 // can see, per turn and across turns: a refusal left after the repair, a turn that ran no tool, an expected tool missing,
 // the clock running back or standing still after an action, each rule-check flag (an outcome no result backs, a fact a
 // character could not know). Usage (in Termux, from the extension folder):
-//   node tools/run-story.mjs [stories]          e.g. node tools/run-story.mjs 3
-// Writes story-result.txt: the faults first, then each turn with its calls, reply and planner answers.
+//   node tools/run-story.mjs [story numbers]          e.g. node tools/run-story.mjs 2 3   (all three when none given)
+// Writes story-result.txt after every turn (the faults first, then each turn with its calls, reply and planner answers),
+// so a run Android stops keeps what it finished; run the remaining story numbers to go on.
 import fs from 'node:fs';
 const { send, MODEL, EFFORT } = await import('./nvidia.mjs');
 const { ctx } = await import('./st-harness.mjs');
@@ -40,12 +41,15 @@ const STORIES = [
 ];
 const NARRATOR = "You narrate the world in a story with the player's character. Narrate in third person, past tense, 2–3 paragraphs of 3–5 sentences, plain register. The player's character does what the player writes.";
 const REFUSED = /refused|fix and call again|State unchanged\.?\s*$|needs a calendar date|^Give /;
-const n = Number(process.argv[2]) || STORIES.length;
+const pick = process.argv.slice(2).map(Number).filter(x => x >= 1 && x <= STORIES.length);
+const chosen = (pick.length ? pick : STORIES.map((_, i) => i + 1)).map(i => [i - 1, STORIES[i - 1]]);
 const sent = [];
 const logSend = async (system, user) => { const out = await send(system, user); sent.push({ system: system.slice(0, 60), out }); return out; };
 const faults = [], log = [];
 const t0 = Date.now();
-for (const [si, story] of STORIES.slice(0, n).entries()) {
+const total = chosen.reduce((x, [, s]) => x + s.turns.length, 0);
+const save = () => fs.writeFileSync(new URL('../story-result.txt', import.meta.url), `${MODEL}, reasoning ${EFFORT}, ${Math.round((Date.now() - t0) / 60000)} min, ${new Date().toISOString()}\n${faults.length} fault(s) in ${log.length} of ${total} turns\n${faults.join('\n')}\n\n${log.join('\n')}\n`);
+for (const [si, story] of chosen) {
     ctx.chatMetadata = {}; ctx.chat = [];
     const cast = `[CAST]\n${story.cast}\nScenario: ${story.scenario}\n[/CAST]`;
     const timeBlock = () => { const t = T.storyTime(); return t === null ? '' : `[TIME]\n${C.formatStoryTime(t)}\n[/TIME]`; };
@@ -80,10 +84,9 @@ for (const [si, story] of STORIES.slice(0, n).entries()) {
         lastClock = now;
         faults.push(...f.map(x => `${tag} ${x}`));
         log.push(`=== ${tag}: ${turn.player}\nclock: ${now === null ? 'none' : C.formatStoryTime(now)}\nfaults: ${f.length ? '\n  ' + f.join('\n  ') : 'none'}\n--- calls\n${calls}\n--- reply\n${reply}\n--- planner answers\n${sent.filter(s => /prepare one turn|choose which/.test(s.system)).map(s => s.out.slice(-1200)).join('\n- - -\n')}\n`);
+        save();
         console.log(`story ${si + 1} turn ${ti + 1} done (${Math.round((Date.now() - t0) / 1000)} s): ${f.length} fault(s)`);
     }
 }
-const total = STORIES.slice(0, n).reduce((x, s) => x + s.turns.length, 0);
-const text = `${MODEL}, reasoning ${EFFORT}, ${Math.round((Date.now() - t0) / 60000)} min, ${new Date().toISOString()}\n${faults.length} fault(s) in ${total} turns\n${faults.join('\n')}\n\n${log.join('\n')}`;
-fs.writeFileSync(new URL('../story-result.txt', import.meta.url), text + '\n');
+save();
 console.log(`\n${faults.length} fault(s) in ${total} turns\n${faults.join('\n')}\n\nFull turns saved to story-result.txt`);
