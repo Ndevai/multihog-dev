@@ -10,6 +10,7 @@ import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { foodEnergy } from './substance.js';
+import { drugMinute, drugStatus } from './drugs.js';
 import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { relatedShare } from './intelligibility.js';
 import { pulseWound } from './pulse.js';
@@ -306,6 +307,7 @@ export function advance(p, minutes, resting, rng = Math.random, { active = false
         p.unconscious = null;
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
+        drugMinute(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) {
             p.dead = p.drowning ? 'drowning' : 'suffocation';
             return;
@@ -976,6 +978,11 @@ export function status(who, p) {
     }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
+    {
+        const d = drugStatus(p);
+        if (d)
+            out.push(d);
+    }
     if (p.at)
         out.push(`at ${p.at}`);
     return out.join('. ') + '.';

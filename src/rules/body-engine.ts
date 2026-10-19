@@ -10,6 +10,7 @@ import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { foodEnergy } from './substance.js';
+import { drugMinute, drugStatus } from './drugs.js';
 import type { Creature, Part, Layer, Tissue } from './df/raws.js';
 import type { StrikeWeapon, Shot, WornItem, Portion, Style } from './df/combat.js';
 import type { Side } from './df/sublocations.js';
@@ -277,6 +278,7 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
     if (minutes > 0 && (p.unconscious === 'knocked out' || p.unconscious === 'choked')) p.unconscious = null;
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
+        drugMinute(p);
         if (p.apnea != null && ++p.apnea >= APNEA_DEATH_MIN) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
         // Smoke breathed in: inhalation injury, +17 on the burn score (Osler et al. 2010) once any burn exists.
@@ -738,6 +740,7 @@ export function status(who: string, p: Person): string {
     }
     const n = p.net, s = stage(n);
     out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
+    { const d = drugStatus(p); if (d) out.push(d); }
     if (p.at) out.push(`at ${p.at}`);
     return out.join('. ') + '.';
 }

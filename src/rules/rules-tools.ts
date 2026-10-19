@@ -29,6 +29,7 @@ import { airHook, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING,
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify, type History } from './world-log.js';
 import { violations } from './invariants.js';
+import { loadDrugs, startDose } from './drugs.js';
 import { resetUsed, fragileCandidates, withOverride } from './constants.js';
 import { heatingValue, heatFromFormation, loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
@@ -64,7 +65,7 @@ export interface EngineStore {
         read?: { phrase: string; id: string; label: string; year: number | null }[] } | null;
 }
 
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
 type ToolName = typeof TOOLS[number];
 const KEEP_SNAPSHOTS = 30;
 
@@ -1646,6 +1647,17 @@ export function registerRulesTools(enabled: boolean): void {
         const joined = (st.openings ?? []).filter(o => o.a === a.room || o.b === a.room).map(o => `${o.a === a.room ? o.b : o.a} (${o.m2} m², ${Math.round(exchangeM3s(st.rooms![o.a], st.rooms![o.b], o) * 3600)} m³/h each way now)`);
         const inside = Object.entries(st.people ?? {}).filter(([, p]) => p.at === a.room).map(([n]) => n);
         return `${describeAir(a.room, r)}. Inside: ${inside.join(', ') || 'no one'}.${joined.length ? ` Open to: ${joined.join(', ')}.` : ''} The air changes minute by minute as time passes (PassTime, Act).`;
+    }); });
+
+    tool('Dose', 'Record a medicine given to a character, when the story has it given (an injection by a doctor, an anaesthetic, an adrenaline pen); its course over the next 90 minutes then runs on precomputed Pulse runs: pulse, blood pressure, breathing, sedation, muscle block. Time passes with PassTime or Act.', {
+        who: str('Character given the medicine'),
+        substance: { type: 'string', enum: ['Midazolam:IM', 'Lorazepam:IM', 'Ketamine:IM', 'Propofol:IV', 'Succinylcholine:IM', 'Rocuronium:IV', 'Epinephrine:IM'], description: 'Medicine and route (IM into a muscle, IV into a vein)' },
+        mg: { type: 'number', description: 'Dose, mg' },
+    }, ['who', 'substance', 'mg'], async a => { await loadDrugs(); return run(st => {
+        const { p, error } = who(st, a.who);
+        if (!p) return error;
+        const r = startDose(p, a.substance, a.mg);
+        return 'error' in r ? `${r.error} Nothing recorded.` : `${a.who}: ${r.note} given; its course runs as time passes.`;
     }); });
 
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {
