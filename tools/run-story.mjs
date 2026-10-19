@@ -4,7 +4,7 @@
 // the clock running back or standing still after an action, each rule-check flag (an outcome no result backs, a fact a
 // character could not know). Usage (in Termux, from the extension folder):
 //   node tools/run-story.mjs [story numbers]          e.g. node tools/run-story.mjs 2 3   (all three when none given)
-// Writes story-result.txt after every turn (the faults first, then each turn with its calls, reply and planner answers),
+// Writes story-result-<story numbers>.txt after every turn (the faults first, then each turn with its calls, reply and planner answers),
 // so a run Android stops keeps what it finished; run the remaining story numbers to go on.
 import fs from 'node:fs';
 const { send, MODEL, EFFORT } = await import('./nvidia.mjs');
@@ -47,8 +47,10 @@ const sent = [];
 const logSend = async (system, user) => { const out = await send(system, user); sent.push({ system: system.slice(0, 60), out }); return out; };
 const faults = [], log = [];
 const t0 = Date.now();
+// Each run writes its own file, named by its stories, so running the stories one after another keeps every result.
+const OUT = `story-result-${chosen.map(([i]) => i + 1).join('-')}.txt`;
 const total = chosen.reduce((x, [, s]) => x + s.turns.length, 0);
-const save = () => fs.writeFileSync(new URL('../story-result.txt', import.meta.url), `${MODEL}, reasoning ${EFFORT}, ${Math.round((Date.now() - t0) / 60000)} min, ${new Date().toISOString()}\n${faults.length} fault(s) in ${log.length} of ${total} turns\n${faults.join('\n')}\n\n${log.join('\n')}\n`);
+const save = () => fs.writeFileSync(new URL(`../${OUT}`, import.meta.url), `${MODEL}, reasoning ${EFFORT}, ${Math.round((Date.now() - t0) / 60000)} min, ${new Date().toISOString()}\n${faults.length} fault(s) in ${log.length} of ${total} turns\n${faults.join('\n')}\n\n${log.join('\n')}\n`);
 for (const [si, story] of chosen) {
     ctx.chatMetadata = {}; ctx.chat = [];
     const cast = `[CAST]\n${story.cast}\nScenario: ${story.scenario}\n[/CAST]`;
@@ -89,4 +91,4 @@ for (const [si, story] of chosen) {
     }
 }
 save();
-console.log(`\n${faults.length} fault(s) in ${total} turns\n${faults.join('\n')}\n\nFull turns saved to story-result.txt`);
+console.log(`\n${faults.length} fault(s) in ${total} turns\n${faults.join('\n')}\n\nFull turns saved to ${OUT}`);
