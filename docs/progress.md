@@ -395,3 +395,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - The narrator copied the BodyCheck marker onto every result ("*(raised voice … → FAILURE)*"); the brief now says every other result is told in the story's own words.
 - "4 pences" → "4 pence".
 - Open: rain within the day (the narrator's drizzle easing was flagged against a daily total); running at walking pace.
+
+## 2026-10-19 (27) Constrain the planner's output instead of reading it back
+
+- Every fix since the play runs began has read a malformed plan back into shape (actors as text, actions as lists, steps nested, time inside arguments, field names off by a letter). That is recovering an exact input from a lossy output; the losses recur in new shapes. Constrained decoding removes them at the source: the server masks every token that would leave the output invalid against a JSON schema, so the output is valid by construction (Willard & Louf 2023, "Efficient Guided Generation for Large Language Models", the Outlines method; Dong et al. 2024, XGrammar). NVIDIA NIM documents it as nvext.guided_json; vLLM takes guided_json and response_format json_schema.
+- plan-schema.ts builds the plan's schema from the tools' own argument schemas: each call is one of the picked tools, {"tool": its name (const), "args": exactly its arguments, required ones required, enums as enums, no other keys}; time is pattern-checked (YYYY-MM-DD HH:MM). 2.8 KB for two tools, 40 KB for all.
+- question-pass.ts sends the schema with every planner request when GUIDED is on (setGuided); the instruction then asks for the JSON alone, the questions living in the model's reasoning. The follow-on and rule-check rounds widen the schema to the tools they add. The readers that repair plans stay as the fallback for connections without it.
+- tools/probe-guided.mjs finds which switch the endpoint honours for the model (a schema the model would not follow by itself: {"zebra": 7}). tools/nvidia.mjs sends the schema per EVAL_GUIDED=nvext|vllm|openai. Next: the SillyTavern send path, the tool picker and the rule check, once the probe says which switch works.

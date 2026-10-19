@@ -10,6 +10,7 @@ import fs from 'node:fs';
 const { send, MODEL, EFFORT } = await import('./nvidia.mjs');
 const { ctx } = await import('./st-harness.mjs');
 const Q = await import('../src/rules/question-pass.js');
+Q.setGuided(!!(await import('./nvidia.mjs')).GUIDED);
 const T = await import('../src/rules/rules-tools.js');
 const A = await import('../src/rules/rules-audit.js');
 const C = await import('../src/rules/clock.js');
@@ -44,7 +45,7 @@ const REFUSED = /refused|fix and call again|State unchanged\.?\s*$|needs a calen
 const pick = process.argv.slice(2).map(Number).filter(x => x >= 1 && x <= STORIES.length);
 const chosen = (pick.length ? pick : STORIES.map((_, i) => i + 1)).map(i => [i - 1, STORIES[i - 1]]);
 const sent = [];
-const logSend = async (system, user) => { const out = await send(system, user); sent.push({ system: system.slice(0, 60), out }); return out; };
+const logSend = async (system, user, opts) => { const out = await send(system, user, opts); sent.push({ system: system.slice(0, 60), out }); return out; };
 const faults = [], log = [];
 const t0 = Date.now();
 // Each run writes its own file, named by its stories, so running the stories one after another keeps every result.

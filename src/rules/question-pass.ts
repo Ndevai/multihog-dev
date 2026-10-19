@@ -10,6 +10,7 @@ import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
 import { stepsFromWords } from './actions.js';
+import { planSchema } from './plan-schema.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
@@ -195,7 +196,15 @@ export function questionPrompt(chat: STMessage[], knows: string, tracker = '', o
  * Runs the question pass for a generation whose last message is the player's. A swipe of the same turn reuses the calls
  * asked the first time; the engine state was restored to the turn's start, so the same calls give the same outcomes.
  */
-export async function runQuestionPass(chat: STMessage[], send: (system: string, user: string) => Promise<string>, tracker = '', choose?: Chooser): Promise<typeof READ> {
+export type Send = (system: string, user: string, opts?: { schema?: Record<string, unknown> }) => Promise<string>;
+/** Constrained decoding for the plan (plan-schema.ts): set when the connection honours a JSON schema (tools/probe-guided.mjs). */
+export let GUIDED = false;
+export const setGuided = (v: boolean) => { GUIDED = v; };
+// Under constrained decoding the answer is the JSON plan alone; the model's reasoning carries the questions.
+const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}; a plan with zero calls is {"calls":[]}.');
+export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser): Promise<typeof READ> {
+    const planTools = { current: undefined as Set<string> | undefined };
+    const send: Send = (system, user) => system === QUESTION_SYSTEM && GUIDED ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current) }) : sendRaw(system, user);
     const ctx = SillyTavern.getContext();
     setRead([]);
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size) return [];
@@ -213,6 +222,7 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         if (flags.length && calls.length < MAX_CALLS) {
             await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
             const tools = new Set(flags.map(f => f.tool));
+            planTools.current = tools;
             const prompt = questionPrompt(chat, knowledgeBlock(s.state), tracker, tools);
             const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n') || '(none)')
                 .replace('{then}', flags.map(f => `- The reply needs: "${f.quote}" (${f.tool})`).join('\n'));
@@ -225,6 +235,7 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
         const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
         const only = await pickTools(chat, send) ?? undefined;
+        planTools.current = only;
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only), thingsBlock(found)].filter(Boolean).join('\n\n');
         const lastPlanText = String(await send(QUESTION_SYSTEM, prompt) ?? '');
         const plan = hoist(rawPlan(lastPlanText));
@@ -313,6 +324,7 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         if ((plan.then.length || plan.need.length || results.some(r => /Call Interpret/.test(r.result))) && calls.length < MAX_CALLS) {
             // Tools asked for by name in "need", and Interpret when a result calls for it, get their arguments now.
             const extra = only ? [...new Set([...plan.need, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Interpret'] : []])].filter(n => !only.has(n)) : [];
+            if (only) planTools.current = new Set([...only, ...extra]);
             const added = extra.length ? `MORE TOOLS\n${toolCatalogue(new Set(extra)).split('\n\nOTHER TOOLS')[0]}\n\n` : '';
             const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n') || '(none)')
                 .replace('{then}', [...plan.then, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Which meaning does each listener take from the words a result names?'] : []].map(q => `- ${q}`).join('\n'));

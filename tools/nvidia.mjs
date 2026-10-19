@@ -20,12 +20,16 @@ if (!key) { console.log('No NVIDIA key found. Run: NVIDIA_API_KEY=nvapi-... node
 // finished: scene 2 timed out after 300 s). GLM-5.3 has no switch to turn thinking off; its chat template reads
 // reasoning_effort ('low' or 'high'; anything else is maximum) (vLLM issue 54744). EVAL_EFFORT=high to test the default.
 export const EFFORT = process.env.EVAL_EFFORT ?? 'low';
-export async function send(system, user, model = MODEL) {
+// Constrained decoding for the plan, as tools/probe-guided.mjs found the endpoint honours it: EVAL_GUIDED=nvext (nvext.guided_json),
+// vllm (guided_json), openai (response_format json_schema); unset sends no schema.
+export const GUIDED = process.env.EVAL_GUIDED ?? '';
+const guide = schema => !schema || !GUIDED ? {} : GUIDED === 'nvext' ? { nvext: { guided_json: schema } } : GUIDED === 'vllm' ? { guided_json: schema } : { response_format: { type: 'json_schema', json_schema: { name: 'plan', schema, strict: true } } };
+export async function send(system, user, opts = {}, model = MODEL) {
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
             const r = await fetch(`${BASE}/chat/completions`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0, max_tokens: 8192, stream: true,
-                    reasoning_effort: EFFORT, chat_template_kwargs: { reasoning_effort: EFFORT } }) });
+                    reasoning_effort: EFFORT, chat_template_kwargs: { reasoning_effort: EFFORT }, ...guide(opts?.schema) }) });
             if (r.status === 429) { await new Promise(res => setTimeout(res, 15000 * attempt)); continue; }
             if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`);
             let out = '', buf = '';

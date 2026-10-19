@@ -7,6 +7,7 @@ import fs from 'node:fs';
 const { send, MODEL, EFFORT } = await import('./nvidia.mjs');
 const { ctx } = await import('./st-harness.mjs');
 const Q = await import('../src/rules/question-pass.js');
+Q.setGuided(!!(await import('./nvidia.mjs')).GUIDED);
 const T = await import('../src/rules/rules-tools.js');
 const A = await import('../src/rules/rules-audit.js');
 const C = await import('../src/rules/clock.js');
@@ -26,7 +27,7 @@ const PLAY = [
 const NARRATOR = 'You narrate the world in a story with the player\'s character. Narrate in third person, past tense, 2–3 paragraphs of 3–5 sentences, plain register. The player\'s character does only what the player writes.';
 const n = Number(process.argv[2]) || PLAY.length;
 const sent = [];
-const logSend = async (system, user) => { const out = await send(system, user); sent.push({ system: system.slice(0, 60), user: user.slice(-1500), out }); return out; };
+const logSend = async (system, user, opts) => { const out = await send(system, user, opts); sent.push({ system: system.slice(0, 60), user: user.slice(-1500), out }); return out; };
 const faults = [], turns = [];
 const t0 = Date.now();
 for (const [i, sc] of PLAY.slice(0, n).entries()) {
