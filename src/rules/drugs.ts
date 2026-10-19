@@ -28,7 +28,7 @@ export function startDose(p: Person, key: string, mg: number): { note: string } 
     const t = TABLE?.[key];
     if (!t) return { error: `No runs for ${key}. Known: ${drugKeys().join(', ')}.` };
     const eff = mg * PULSE_KG / p.mass;
-    if (eff < t.mg[0]) return { error: `${mg} mg is below the smallest run (${t.mg[0]} mg for 77 kg; ${(t.mg[0] * p.mass / PULSE_KG).toFixed(1)} mg for this body); its effect is not modelled.` };
+    if (eff < t.mg[0]) return { error: `${mg} mg is below the smallest run (${t.mg[0]} mg for 77 kg; ${(t.mg[0] * p.mass / PULSE_KG).toFixed(1)} mg for this body); the runs start above this dose.` };
     let i = t.mg.findIndex(x => x >= eff), f = 0, held = false;
     if (i < 0) { i = t.mg.length - 1; held = true; } else if (i > 0) { f = (Math.log(eff) - Math.log(t.mg[i - 1])) / (Math.log(t.mg[i]) - Math.log(t.mg[i - 1])); i -= 1; }
     const a = t.runs[i], b = t.runs[Math.min(i + 1, t.runs.length - 1)], n = Math.min(a.length, b.length);
@@ -52,5 +52,5 @@ export function drugMinute(p: Person): void {
 export function drugStatus(p: Person): string | null {
     const q = p as Person & { drug?: { key: string; mg: number; rows: number[][]; t: number } | null; drugLast?: DrugRow | null };
     const r = q.drugLast; if (!q.drug || !r) return null;
-    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', cannot move (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''} (Pulse)`;
+    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', motionless (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''} (Pulse)`;
 }

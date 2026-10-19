@@ -57,7 +57,7 @@ function hoist(plan) {
     }
     return plan;
 }
-const REFUSED = /not run; fix and call again|Nothing recorded\.?\s*$|needs a calendar date/;
+const REFUSED = /fix and call again|State unchanged\.?\s*$|needs a calendar date/;
 // The same call twice, or Weather twice (one day has one weather), runs once.
 const dedupe = (list) => list.filter((c, i) => list.findIndex(d => d.tool === c.tool && (c.tool === 'Weather' || JSON.stringify(d.args) === JSON.stringify(c.args))) === i);
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -87,7 +87,7 @@ export function toolCatalogue(only) {
     const tools = [...REGISTRY.values()].filter(t => !SKIP.has(t.name));
     const full = tools.filter(t => !only || only.has(t.name)).map(t => `${t.name}: ${t.description}\n${Object.entries(t.properties).map(([k, p]) => describe(k, p, t.required.includes(k))).join('\n')}`).join('\n\n');
     const rest = only ? tools.filter(t => !only.has(t.name)) : [];
-    return rest.length ? `${full}\n\nOTHER TOOLS (arguments not shown: to use one, add its name to "need" and its question to "then")\n${rest.map(oneLine).join('\n')}` : full;
+    return rest.length ? `${full}\n\nOTHER TOOLS (arguments on request: to use one, add its name to "need" and its question to "then")\n${rest.map(oneLine).join('\n')}` : full;
 }
 const oneLine = (t) => `${t.name}: ${t.description.split(/(?<=\.)\s/)[0]}`;
 // Which tools a turn needs, asked first: every tool's arguments come to about 10,500 tokens, most turns use two to four
@@ -265,9 +265,9 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         const unread = !/\{\s*"calls"/.test(lastPlanText);
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
         if (unread || dropped.length || noPlace) {
-            const problems = [unread ? 'It had no readable {"calls":[...]} JSON.' : '',
-                ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'no such tool'}.`),
-                noPlace ? 'It gave no "at": add [latitude, longitude] of the scene from the scene or scenario.' : ''].filter(Boolean);
+            const problems = [unread ? 'Write the plan as the JSON {"calls":[...]}.' : '',
+                ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'unknown tool'}.`),
+                noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : ''].filter(Boolean);
             const fix = hoist(rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`)));
             if (fix.at && !scenePosition())
                 setScenePosition(fix.at[0], fix.at[1]);
@@ -349,7 +349,7 @@ export function askedResults() {
 /** The [DECIDED] block for the narrator, '' when the pass decided nothing this turn. */
 /** A perception that did not happen: the narrator's silence about it says as much (Grice, Quantity), and naming the missed
  *  sound or sight would put it in the reply. Kept in the turn's results for the rule check. */
-export const isMiss = (tool, result) => (tool === 'Listen' && /does not hear it/.test(result)) || (tool === 'Look' && /does not see it/.test(result));
+export const isMiss = (tool, result) => (tool === 'Listen' && /misses it/.test(result)) || (tool === 'Look' && /misses it/.test(result));
 export function decidedInjection() {
     const r = askedResults().filter(x => !isMiss(x.tool, x.result));
     if (!r.length)

@@ -64,7 +64,7 @@ function resolveAt(name, year) {
         const s = named.stage;
         if (year !== null && !inside(year, s.from, s.to)) {
             const now = STAGES[named.lang].find(x => inside(year, x.from, x.to));
-            return { label: s.name, list: s.list, refused: `${s.name} is spoken ${span(s.from, s.to)}, not in ${year}${now ? `; ${named.lang} in ${year} is ${now.name}` : ''}` };
+            return { label: s.name, list: s.list, refused: `${s.name} is spoken ${span(s.from, s.to)}; ${year} lies outside that span${now ? `; ${named.lang} in ${year} is ${now.name}` : ''}` };
         }
         return { label: s.name, list: s.list };
     }
@@ -74,11 +74,11 @@ function resolveAt(name, year) {
             return { label: last.name, list: last.list };
         }
         const s = STAGES[k].find(x => inside(year, x.from, x.to));
-        return s ? { label: s.name, list: s.list } : { label: name, list: null, refused: `${name} is not attested in ${year}` };
+        return s ? { label: s.name, list: s.list } : { label: name, list: null, refused: `${name}: unattested in ${year}` };
     }
     // Others: the modern word list (undefined: colex.ts matches by name), unless Wikidata dates the language.
     const y = YEARS[k];
     if (y && year !== null && !inside(year, y[0], y[1]))
-        return { label: name, list: undefined, refused: `${name} is spoken ${span(y[0], y[1])}, not in ${year}` };
+        return { label: name, list: undefined, refused: `${name} is spoken ${span(y[0], y[1])}; ${year} lies outside that span` };
     return { label: name, list: undefined };
 }

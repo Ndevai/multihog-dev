@@ -201,7 +201,7 @@ export function contactBurn(p, regions, material, tempC, seconds, rng = Math.ran
             for (const part of frostParts(creatureOf(p), b.seg))
                 made.push(addWound(p, { part, type: 'burn', depth: b.depth }, rng)); });
     burnRisk(p, rng);
-    return `Skin surface at ${round(ti, 1)} °C for ${seconds} s: ${made.length ? `${made.length} ${made[0].depth ?? ''} burn wound(s) on ${[...new Set(made.map(w => w.part))].join(', ')}` : 'no burn'}.`;
+    return `Skin surface at ${round(ti, 1)} °C for ${seconds} s: ${made.length ? `${made.length} ${made[0].depth ?? ''} burn wound(s) on ${[...new Set(made.map(w => w.part))].join(', ')}` : 'skin unharmed'}.`;
 }
 export function treat(p, id, treatment, rng = Math.random, { training = 'untrained' } = {}) {
     const w = p.wounds.find(x => x.id === id);
@@ -214,7 +214,7 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
     // Antibiotics for a bloodstream infection: case fatality 15–50 % (Wikipedia, Staphylococcus aureus), drawn uniform.
     if (treatment === 'antibiotics') {
         if (!p.sepsis)
-            return 'Antibiotics given; no bloodstream infection recorded.';
+            return 'Antibiotics given; the blood is clear of infection on record.';
         if (!p.sepsis.treated) {
             p.sepsis.treated = true;
             p.sepsis.fatal = p.sepsis.fatal && rng() < (0.15 + rng() * 0.35) / 0.8;
@@ -223,7 +223,7 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
     }
     if (treatment === 'laparotomy') {
         if (!p.peritonitis)
-            return 'Laparotomy: no opened gut recorded.';
+            return 'Laparotomy: the gut is intact on record.';
         if (!p.peritonitis.repaired) {
             p.peritonitis.repaired = true;
             p.peritonitis.fatal = p.peritonitis.fatal && rng() < 0.045 / 0.87;
@@ -232,7 +232,7 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
     }
     if (treatment === 'oxygen' || treatment === 'hyperbaric_oxygen') {
         if (!p.co)
-            return 'Oxygen given; no carbon monoxide recorded.';
+            return 'Oxygen given; the blood holds zero carbon monoxide on record.';
         p.co.o2 = treatment === 'oxygen' ? 'oxygen' : 'hyperbaric';
         return `${treatment === 'oxygen' ? '100 % oxygen' : 'Hyperbaric oxygen'} given: carboxyhaemoglobin half-life ${CO_HALF[p.co.o2]} min once out of the gas.`;
     }
@@ -273,7 +273,7 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
     }
     if (treatment === 'load') {
         if (!w.fracture || (w.fracture.joins ?? 0) <= 0 || w.splinted)
-            return `Wound ${id}: loaded, no added risk.`;
+            return `Wound ${id}: loaded; the risk stays as it was.`;
         if (rng() < 0.325) {
             w.fracture.crooked = true;
             return `Wound ${id}: bone shifted; it will heal crooked.`;
@@ -533,7 +533,7 @@ export function cast(p, complexity) {
         cost /= 2;
     cost = Math.round(cost / net.P);
     if (net.R < cost)
-        return `Cast does not start: needs ${cost} PE, has ${Math.floor(net.R)}.`;
+        return `Too little PE to cast: needs ${cost}, has ${Math.floor(net.R)}.`;
     net.R -= cost;
     if (complexity > max)
         return `Cast fails: complexity ${complexity} exceeds stage ${st} max ${max}. ${cost} PE lost.`;
@@ -885,14 +885,14 @@ export function status(who, p) {
         return `${who}: dead (${p.dead}).`;
     const out = [];
     if (p.apnea != null)
-        out.push(`${who}: not breathing, unconscious; dies in ${APNEA_DEATH() - p.apnea} min`);
+        out.push(`${who}: breath stopped, unconscious; dies in ${APNEA_DEATH() - p.apnea} min`);
     else if (p.unconscious)
         out.push(`${who}: unconscious (${p.unconscious})`);
     const f = lossFraction(p);
     const c = creatureOf(p);
     const v = p.pulseLast;
     const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} % (Pulse)` : null;
-    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): no blood`);
+    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): bloodless`);
     if (p.deathIn !== null)
         out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
     if (p.red > 0 || p.lost > 0)
@@ -910,12 +910,12 @@ export function status(who, p) {
         if (w.fracture) {
             const fr = w.fracture;
             if (fr.joins !== null)
-                bits.push(fr.never ? 'will not join' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : (fr.full ?? 0) > 0 ? `light use; full in ${round(fr.full ?? 0)} days` : 'healed');
+                bits.push(fr.never ? 'stays broken for good' : fr.joins > 0 ? `joins in ${round(fr.joins)} days` : (fr.full ?? 0) > 0 ? `light use; full in ${round(fr.full ?? 0)} days` : 'healed');
             if (fr.crooked)
                 bits.push(/arm|hand|finger/.test(w.part) ? `crooked: grip ${CROOKED_GRIP * 100}%` : 'crooked');
         }
         if (w.functionLost && w.permanent)
-            bits.push('function lost for good (tissue that never heals)');
+            bits.push('function lost for good (tissue that stays as it is)');
         else if (w.functionLost && !w.healed)
             bits.push('function lost until it closes');
         if (w.infection)
@@ -926,7 +926,7 @@ export function status(who, p) {
         const works = worksFn(p, c);
         const down = c.parts.filter(x => !works(x) && (x.flags.some(f => Object.values(FUNCTIONS).includes(f)) || x.flags.includes('LIMB')));
         if (down.length)
-            out.push(`not working: ${down.map(x => x.name).join(', ')}`);
+            out.push(`out of action: ${down.map(x => x.name).join(', ')}`);
     }
     const reduced = Object.entries(abilities(p)).filter(([, v]) => v < 1);
     if (reduced.length)
@@ -945,7 +945,7 @@ export function status(who, p) {
     if ((p.needs?.work ?? 0) > 0)
         out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs.work * 100)} % of what can be kept up`);
     if ((p.heatStroke?.min ?? 0) >= 30)
-        out.push(`heat stroke not cooled within 30 min: about ${p.heatStroke.exertional ? '1 in 4' : '2 in 3'} die within days`);
+        out.push(`heat stroke uncooled for 30 min: about ${p.heatStroke.exertional ? '1 in 4' : '2 in 3'} die within days`);
     if (p.burnDeath)
         out.push(`burned ${burnedTBSA(p)} % of body surface: about ${Math.round(p.burnDeath.p * 100)} % of such patients die within 2 weeks`);
     if (p.co)
@@ -958,7 +958,7 @@ export function status(who, p) {
         const v = p.venom;
         const sy = activeSymptoms(v).map(e => `${e.kind} ${e.sev}`).join(', ');
         if (sy)
-            out.push(`venom symptoms (DF severity 0–100): ${sy}${activeSymptoms(v).some(e => e.kind === 'paralysis') ? '; paralysed: cannot move, still breathing' : ''}`);
+            out.push(`venom symptoms (DF severity 0–100): ${sy}${activeSymptoms(v).some(e => e.kind === 'paralysis') ? '; paralysed: motionless, still breathing' : ''}`);
         if (v.kind === 'df')
             out.push(`envenomed by ${v.species.toLowerCase().replace(/_/g, ' ')} (${v.min} min ago): fictional venom, DF symptoms only`);
         else if (v.kind === 'pain')
@@ -1176,12 +1176,12 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     const tc = creatureOf(target);
     const ac = creature(attacker?.species ?? a.species ?? 'HUMAN');
     if (!tc || !ac)
-        return 'Creature data is not loaded. Nothing recorded.';
+        return 'Creature data is still loading. State unchanged.';
     const aMass = attacker?.mass ?? a.mass ?? ac.size / 1000;
     let part = a.part ? findPart(tc, a.part)
         : randomHitPart(tc, rng, { attackerCm3: aMass * 1000, flies: ac.parts.some(x => x.flags.includes('FLIER')) });
     if (!part || part.flags.includes('INTERNAL'))
-        return `${tc.name} has no part "${a.part}" to aim at. Parts: ${aimable(tc).join(', ')}. Nothing recorded.`;
+        return `Aim at one of ${tc.name}'s parts: ${aimable(tc).join(', ')}. State unchanged.`;
     const mass = attacker?.mass ?? a.mass ?? ac.size / 1000;
     const iSize = mass * 1000;
     const worn = [];
@@ -1194,14 +1194,14 @@ export function strike(target, a, attacker = null, rng = Math.random) {
         const spec = typeof g === 'string' ? { item: g } : g;
         const it = armorOf(spec.item) ?? (spec.covers?.length || spec.held_in || spec.size_cm ? customGearOf(spec.item) : null);
         if (!it)
-            return `No gear "${spec.item}": name a DF item with its material ("iron helm", "leather armor"), or give covers, held_in or size_cm with a material first ("iron skullcap"). Nothing recorded.`;
+            return `No gear "${spec.item}": name a DF item with its material ("iron helm", "leather armor"), or give covers, held_in or size_cm with a material first ("iron skullcap"). State unchanged.`;
         // Held: in the named part, else a working GRASP part for DF shields; dropped from the hit when no holding part works.
         if (spec.held_in || it.kind === 'ITEM_SHIELD') {
             const holder = spec.held_in ? findPart(tc, spec.held_in) : tc.parts.find(x => x.flags.includes('GRASP') && works(x));
             if (spec.held_in && !holder)
-                return `${tc.name} has no part "${spec.held_in}". Nothing recorded.`;
+                return `Give held_in as one of ${tc.name}'s parts. State unchanged.`;
             if (!holder || !works(holder)) {
-                notes.push(`${it.name} not held (no working hand)`);
+                notes.push(`${it.name} lies unheld: the hands are out of action`);
                 continue;
             }
             it.held = holder;
@@ -1209,7 +1209,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
             const face = dims.length >= 2 ? dims[0] * dims[1] : dims.length === 1 ? Math.PI * (dims[0] / 2) ** 2
                 : HELD_FACE_CM2[it.id ?? ''] ?? null;
             if (!face)
-                return `${it.name}: give size_cm (diameter, or width and height). Nothing recorded.`;
+                return `${it.name}: give size_cm (diameter, or width and height). State unchanged.`;
             it.face = face;
             it.thick = Number(spec.thickness_cm) || HELD_THICK_CM;
         }
@@ -1222,15 +1222,15 @@ export function strike(target, a, attacker = null, rng = Math.random) {
             for (const cv of spec.covers) {
                 const pt = findPart(tc, cv.part);
                 if (!pt)
-                    return `${tc.name} has no part "${cv.part}" for ${it.name}. Nothing recorded.`;
+                    return `Give the part ${it.name} covers as one of ${tc.name}'s parts. State unchanged.`;
                 const known = Object.keys(sublocationsOf(pt) || {});
                 const subs = cv.sublocations?.length ? cv.sublocations.map(x => String(x).trim().toLowerCase()) : null;
                 const bad = subs?.find(x => !known.includes(x));
                 if (bad)
-                    return `${pt.name} has no sub-location "${bad}"${known.length ? ` (${known.join(', ')})` : ''}. Nothing recorded.`;
+                    return `${pt.name}'s sub-locations: ${known.join(', ') || 'the whole part only'}. State unchanged.`;
                 const mat = cv.material ? gearMaterialOf(cv.material) : null;
                 if (cv.material && !mat)
-                    return `No material "${cv.material}". Nothing recorded.`;
+                    return `No material "${cv.material}". State unchanged.`;
                 const sides = cv.sides?.length ? cv.sides.filter((x) => x === 'front' || x === 'back') : undefined;
                 (portions[pt.id] ??= []).push({ subs, sides, coverage: pct(cv.coverage ?? 100), ...(mat ? { mat, elastic: mat.kind === 'thread' } : {}) });
             }
@@ -1253,11 +1253,11 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     if (a.launcher) {
         const lw = weaponOf(a.launcher);
         if (!lw?.ranged)
-            return `No DF launcher "${a.launcher}" (bow, crossbow, blowgun). Nothing recorded.`;
+            return `No DF launcher "${a.launcher}" (bow, crossbow, blowgun). State unchanged.`;
         const am = ammoOf(lw.ranged.ammoClass);
         const mat = gearMaterialOf(a.material || 'iron');
         if (!am || !mat)
-            return `No ammunition for ${a.launcher}${a.material ? ` in ${a.material}` : ''}. Nothing recorded.`;
+            return `No ammunition for ${a.launcher}${a.material ? ` in ${a.material}` : ''}. State unchanged.`;
         w = shot(lw, am, mat);
         verb = 'shot';
         means = 'shot';
@@ -1265,10 +1265,10 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     else if (a.weapon) {
         const wp = weaponOf(a.weapon);
         if (!wp)
-            return `No weapon "${a.weapon}". Nothing recorded.`;
+            return `No weapon "${a.weapon}". State unchanged.`;
         const metal = metalOf(a.material || 'iron');
         if (!metal)
-            return `No metal "${a.material}". Nothing recorded.`;
+            return `No metal "${a.material}". State unchanged.`;
         const atk = wp.attacks.find(x => norm(x.verb) === norm(a.attack)) ?? wp.attacks[0];
         w = { ...itemWeapon(wp, atk, metal), piercing: atk.contact < atk.penetration };
         verb = atk.verb;
@@ -1277,10 +1277,10 @@ export function strike(target, a, attacker = null, rng = Math.random) {
     else {
         const atk = ac.attacks.find(x => norm(x.id) === norm(a.attack) || norm(x.verb) === norm(a.attack));
         if (!atk)
-            return `${ac.name} has no attack "${a.attack}". Attacks: ${ac.attacks.map(x => x.verb).join(', ') || 'none'}. Nothing recorded.`;
+            return `${ac.name}'s attacks: ${ac.attacks.map(x => x.verb).join(', ') || 'none'}. State unchanged.`;
         const bw = bodyWeapon(ac, atk, iSize, attacker ? worksFn(attacker, ac) : () => true);
         if (!bw)
-            return `The attacker cannot ${atk.verb} now: no working part for it. Nothing recorded.`;
+            return `The attacker's parts for ${atk.verb} are all out of action. State unchanged.`;
         w = { ...bw, piercing: atk.contactPerc < atk.penetrationPerc };
         verb = atk.verb;
         bite = atk.id === 'BITE';
@@ -1316,7 +1316,7 @@ export function strike(target, a, attacker = null, rng = Math.random) {
             ? { approach: 0, reach: a.distance_m ?? 10, strike: (a.distance_m ?? 10) / SHOT_MPS }
             : impactTime(at, rng);
         if (!t)
-            return `${verb} at ${part.name}: out of reach (${a.distance_m} m, no approach). Nothing lands.`;
+            return `${verb} at ${part.name}: stays out of reach (${a.distance_m} m); the blow falls short.`;
         const impact = t.approach + t.strike;
         // The defender reacts at `ready`, then moves: a dodge moves the body out of the way; a block puts a limb in the
         // blow's way (with the held item, else the forearm itself).
@@ -1400,7 +1400,7 @@ export function choke(p, seconds, holder = null, rng = Math.random) {
     if (!c?.parts.some(x => x.cats.includes('NECK') || x.flags.includes('THROAT')))
         return 'No neck to choke.';
     if (holder && abilities(holder).grasp === 0)
-        return 'The holder has no working hand to hold a choke.';
+        return 'The holder\'s hands are out of action for a choke.';
     if (p.dead)
         return 'Already dead.';
     const s = Math.max(0, Number(seconds) || 0);
@@ -1438,17 +1438,17 @@ function earOf(l, lc) {
 export function look(vs, v, { size_m = 0.5, distance_m = 10, light = 'daylight', lightLabel = null, visibility_m = 20000 } = {}, rng = Math.random) {
     const vc = creatureOf(v);
     if (!vc)
-        return 'Creature data is not loaded.';
+        return 'Creature data is still loading.';
     if (v.dead || v.unconscious)
-        return `${vs} perceives nothing (${v.dead ? 'dead' : 'unconscious'}).`;
+        return `${vs} is ${v.dead ? 'dead' : 'unconscious'}.`;
     const eyes = vc.parts.filter(x => x.flags.includes('SIGHT'));
     if (eyes.length && !eyes.some(worksFn(v, vc)))
-        return `${vs} cannot see (no working eye).`;
+        return `${vs} is blind (eyes out of action).`;
     const r = see({ size: size_m, distance: distance_m, light, visibility: visibility_m, acuityFactor: acuityOf(v.species) });
     const u = rng();
     const what = `${size_m} m target at ${distance_m} m, ${lightLabel ?? light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}`;
-    const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse) but not which one'
-        : u < r.detect ? 'notices something there but cannot tell what' : 'does not see it';
+    const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse); which one stays unclear'
+        : u < r.detect ? 'notices something there; what it is stays unclear' : 'misses it';
     return `${vs} ${level} (${what}).`;
 }
 /**
@@ -1465,11 +1465,11 @@ export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false, s
     if (!thermalCapable(p.species))
         return `${who}: grip norms exist for humans only; use BodyCheck.`;
     if (p.dead || p.unconscious)
-        return `${who} cannot hold anything (${p.dead ? 'dead' : 'unconscious'}).`;
+        return `${who} is ${p.dead ? 'dead' : 'unconscious'}: the hands hang slack.`;
     const c = creatureOf(p), works = worksFn(p, c);
     const n = Math.min(hands, c.parts.filter(x => x.flags.includes('GRASP') && works(x)).length);
     if (!n)
-        return `${who} has no working hand to hold with.`;
+        return `${who}'s hands are out of action.`;
     const g = grip(p, () => gauss(rng)) * forceFactor(limbCold(p, 'arm')) * (fingertips ? FINGERTIP_SHARE[climber] ?? FINGERTIP_SHARE.no : 1);
     const load = hanging ? p.mass : load_kg ?? 0, per = load / n;
     const norm = gripNorm(p.age, p.sex, p.region ?? null);
@@ -1477,7 +1477,7 @@ export function holdLoad(who, p, { load_kg = null, hands = 2, hanging = false, s
     const hand = `${n === 1 ? 'one hand' : `${n} hands`}${fingertips ? ', fingertips only' : ''}${cold}`;
     console.debug?.('[Rules engine]', who, `${round(per)} kg per hand; grip ${round(g)} kg; norm ${round(norm.mean)} ± ${round(norm.sd)} kg`);
     if (per > g)
-        return `${who} cannot hold it: too heavy for ${p.sex === 'female' ? 'her' : 'his'} grip (${hand}).`;
+        return `${who} loses hold: too heavy for ${p.sex === 'female' ? 'her' : 'his'} grip (${hand}).`;
     // Hold time at a share f of maximal grip: ET = 33.55 f^−1.61 s (grip power model, Frey Law & Avin 2010, Ergonomics 53:109,
     // Table 2, meta-analysis of static endurance; R² 0.748).
     const et = 33.55 * Math.max(0.05, per / g) ** -1.61;
@@ -1532,55 +1532,55 @@ export function chase(pn, pursuer, fn, fleeing, gap_m, rng = Math.random) {
     const lame = (q) => (abilities(q).stance ?? 1) < 1 ? ', slowed by injured legs' : '';
     console.debug?.('[Rules engine]', `${pn} ${round(vp * 3.6)} km/h, ${fn} ${round(vf * 3.6)} km/h`);
     if (vp <= vf)
-        return `${fn} gets away: ${pn} is not faster${lame(pursuer)}.`;
+        return `${fn} gets away: ${fn} runs as fast as ${pn} or faster${lame(pursuer)}.`;
     return `${pn} catches ${fn} after ${round(gap_m / (vp - vf), 1)} s, ${round(vp * gap_m / (vp - vf))} m run: ${pn} is faster${lame(fleeing)}.`;
 }
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
 export function listen(ls, l, { sound = undefined, spl_db = null, distance = 1, noise = 'quiet room (25 dB)', barrier = 'none' } = {}) {
     const lc = creatureOf(l);
     if (!lc)
-        return 'Creature data is not loaded.';
+        return 'Creature data is still loading.';
     if (l.dead || l.unconscious)
-        return `${ls} perceives nothing (${l.dead ? 'dead' : 'unconscious'}).`;
+        return `${ls} is ${l.dead ? 'dead' : 'unconscious'}.`;
     const spl = spl_db ?? (sound ? SOUNDS[classOf(SOUNDS, sound) ?? ''] : undefined);
     if (spl == null)
         return `Unknown sound "${sound}". Known: ${Object.keys(SOUNDS).join(', ')}; or give spl_db at 1 m.`;
     const ear = earOf(l, lc);
     if (ear.ears && !ear.earsOk)
-        return `${ls} cannot hear (no working ear).`;
+        return `${ls} is deaf (ears out of action).`;
     const air = l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined;
     const r = hearSound({ spl, distance, barrier, noise, ...ear, air });
     const what = `${sound ?? `${spl} dB at 1 m`} at ${distance} m, ${noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     console.debug?.('[Rules engine]', ls, `margin ${r.margin} dB`);
-    return r.audible ? `${ls} hears it${distance >= 170 ? `, ${Math.round(distance / soundSpeed(l.env?.tdb ?? 10) * 10) / 10} s after it is made` : ''} (${what}).` : `${ls} does not hear it: too faint over the background (${what}).`;
+    return r.audible ? `${ls} hears it${distance >= 170 ? `, ${Math.round(distance / soundSpeed(l.env?.tdb ?? 10) * 10) / 10} s after it is made` : ''} (${what}).` : `${ls} misses it: too faint over the background (${what}).`;
 }
 /** Species whose speech the world book sets against the DF raws (trolls that talk), by DF creature id. */
 export const SPEECH_OVERRIDE = {};
 export function communicate(sp, s, ls, l, { means = 'speech', lit = true, languages = [null, null], distance = 1, effort = 'normal', noise = 'quiet room (25 dB)', noise_db = null, barrier = 'none', louder_db = 0, brazil = false } = {}) {
     const sc = creatureOf(s), lc = creatureOf(l);
     if (!sc || !lc)
-        return 'Creature data is not loaded.';
+        return 'Creature data is still loading.';
     const talks = (c) => SPEECH_OVERRIDE[c.id] ?? (c.flags.includes('CAN_SPEAK') || c.flags.includes('INTELLIGENT'));
     const anyWorks = (p, c, test) => { const parts = c.parts.filter(test); const w = worksFn(p, c); return parts.length ? parts.some(w) : null; };
     const flag = (f) => (x) => x.flags.includes(f);
     if (l.dead || l.unconscious)
-        return `${ls} perceives nothing (${l.dead ? 'dead' : 'unconscious'}).`;
+        return `${ls} is ${l.dead ? 'dead' : 'unconscious'}.`;
     if (means === 'gesture') {
         if (anyWorks(l, lc, flag('SIGHT')) === false || !lit)
-            return `${ls} cannot see the gesture.`;
-        return `${ls} sees the gesture${talks(lc) ? '' : `; it reads posture and movement as its species does (${lc.name}: cannot talk)`}.`;
+            return `${ls} misses the gesture (${!lit ? 'too dark' : 'eyes out of action'}).`;
+        return `${ls} sees the gesture${talks(lc) ? '' : `; it reads posture and movement as its species does (${lc.name}: a speechless species)`}.`;
     }
     if (s.dead || s.unconscious)
-        return `${sp} makes no sound (${s.dead ? 'dead' : 'unconscious'}).`;
+        return `${sp} is ${s.dead ? 'dead' : 'unconscious'}: silent.`;
     if (!talks(sc))
-        return `${sp} cannot produce speech (${sc.name}: cannot talk); it makes its species' own sounds.`;
+        return `${sp} makes its species' own sounds (${sc.name}: a speechless species).`;
     if (anyWorks(s, sc, flag('BREATHE')) === false)
-        return `${sp} has no voice: not breathing.`;
+        return `${sp} is voiceless: breath stopped.`;
     if (anyWorks(s, sc, flag('MOUTH')) === false)
         return `${sp}'s speech is unintelligible: mouth not working.`;
     const slurred = anyWorks(s, sc, x => x.cats.includes('TONGUE')) === false;
     if (anyWorks(l, lc, flag('HEAR')) === false)
-        return `${ls} cannot hear it.`;
+        return `${ls} is deaf to it (ears out of action).`;
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
     const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc), air: l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined });
@@ -1592,20 +1592,20 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     if (r.words < 0.2)
         return `${ls} hears ${sp}'s voice; the words are lost in the noise (${where}).`;
     if (!talks(lc))
-        return `${ls} hears the sounds and their tone; the words carry no meaning (${lc.name}: cannot talk).`;
+        return `${ls} hears the sounds and their tone; words are beyond its species (${lc.name}: a speechless species).`;
     const [a, b] = languages;
     let words = r.words, related = '';
     if (a?.length && b?.length && !a.some(x => b.includes(x))) {
         // A related language the listener knows carries part of the words (intelligibility.ts).
         const rel = relatedShare(b, a, brazil);
         if (!rel)
-            return `${ls} hears speech in a language it does not know (${a.join(', ')}); only tone and gestures carry.`;
+            return `${ls} hears speech in a language foreign to it (${a.join(', ')}); tone and gestures carry.`;
         words *= rel.share;
         related = `; ${rel.heard} understood through ${rel.from}`;
     }
     // Share of key words → plain words (bands [ASSUMED]): the narrator gets how much of the message carries, not a figure.
-    const heard = words >= 0.95 ? 'every word' : words >= 0.7 ? 'most words; a few are lost' : words >= 0.4 ? 'some words; the gist only' : 'scattered words; not the meaning';
-    return `${ls} hears ${sp} and makes out ${heard} (${where}${related})${slurred ? '; slurred (tongue not working): short, simple words only' : ''}.`;
+    const heard = words >= 0.95 ? 'every word' : words >= 0.7 ? 'most words; a few are lost' : words >= 0.4 ? 'some words; the gist only' : 'scattered words; the meaning is lost';
+    return `${ls} hears ${sp} and makes out ${heard} (${where}${related})${slurred ? '; slurred (tongue out of action): short, simple words carry' : ''}.`;
 }
 // Interruptions (NetHack occupations, Pathos Interrupt): time stops at the first change in anyone's condition.
 const waterStage = (p) => { const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0; return pct >= 8 ? 3 : pct >= 5 ? 2 : pct >= 2 ? 1 : 0; };
@@ -1655,7 +1655,7 @@ function changes(who, a, b) {
         if (b.heat !== a.heat)
             out.push(`${who}: ${b.heat ?? 'core temperature between 35 and 40 °C'} (core ${b.core} °C)`);
         if (b.exhausted && !a.exhausted)
-            out.push(`${who} is exhausted and cannot keep working or walking`);
+            out.push(`${who} is exhausted and stops working and walking`);
         if (b.ams && !a.ams)
             out.push(`${who} has acute mountain sickness`);
         if (b.oedema && !a.oedema)
@@ -1764,12 +1764,12 @@ function checkOdds(p, { share, uses = [], exertion = 'none', on_feet = false, ti
         return { chance: 0, limit: 'hypothermia II: impaired consciousness' };
     const lacking = uses.find(u => u in FUNCTIONS && !(u in scores));
     if (lacking)
-        return { chance: 0, limit: `no ${lacking}` };
+        return { chance: 0, limit: `lacking ${lacking}` };
     const used = uses.filter((u) => u in scores);
     const risk = uses.includes('alertness') ? crashRisk(impairmentBac(p)) : 1;
     const zero = used.find(u => scores[u] === 0);
     if (zero)
-        return { chance: 0, limit: `no working ${zero}` };
+        return { chance: 0, limit: `${zero} out of action` };
     for (const k of ['thinking', 'aerobic'])
         if (k in scores)
             used.push(k);
@@ -1808,11 +1808,11 @@ const ROUTES = [[/\b(hear|hears|heard|listen|overhear|noise)\b/i, 'Listen (sound
 export function check(p, task, rng = Math.random) {
     const route = ROUTES.find(([re]) => re.test(task.task ?? ''));
     if (route && !task.override)
-        return `${task.task}: decided by ${route[1]}, not BodyCheck. Call that tool. (If this task is genuinely different, call BodyCheck again with override: true.)`;
+        return `${task.task}: decided by ${route[1]}; call that tool. (For a different task, call BodyCheck again with override: true.)`;
     const { chance, limit } = checkOdds(p, task);
     const ok = rng() < chance;
     console.debug?.('[Rules engine]', task.task, `chance ${round(chance * 100, 2)} %`);
     // The cause is stated either way: an outcome without one invites the narrator to invent it.
     return ok ? `${task.task}: SUCCESS${limit ? `, despite ${limit}` : ''}.`
-        : `${task.task}: FAILURE, ${limit ? `because of ${limit}` : 'an ordinary failure: no injury or condition caused it'}.`;
+        : `${task.task}: FAILURE, ${limit ? `because of ${limit}` : 'an ordinary failure: chance alone'}.`;
 }

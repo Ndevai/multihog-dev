@@ -89,7 +89,7 @@ export function act(st, who, p, steps, country) {
             if (!p.at && s.distance_m != null)
                 p.at = `where ${who} stood`;
             if (!p.at)
-                return { error: `${who} has no recorded spot; give from: set with a first step {"do":"be_at","to":"<spot>"}, or give distance_m.` };
+                return { error: `${who}'s spot is still open: start with {"do":"be_at","to":"<spot>"}, or give distance_m.` };
             if (p.at === s.to) {
                 lines.push(`${who} is already at ${s.to}`);
                 continue;

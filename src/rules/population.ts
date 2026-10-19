@@ -192,10 +192,10 @@ export function wageByTrade(trade: string, country: string, year: number): { cod
     const c = pick(Object.keys(OWW), country);
     if (!c) return { error: `No wage data for "${country}" (1953–2008, 192 countries).` };
     const ys = Object.keys(OWW[c]).map(Number), near = ys.reduce((b, y) => Math.abs(y - year) < Math.abs(b - year) ? y : b, ys[0]);
-    if (Math.abs(near - year) > 5) return { error: `${c}: wage data for ${ys[0]}–${ys[ys.length - 1]}, none within 5 years of ${year}.` };
+    if (Math.abs(near - year) > 5) return { error: `${c}: wage data for ${ys[0]}–${ys[ys.length - 1]}; the nearest year lies more than 5 years from ${year}.` };
     const [median, rows] = OWW[c][near], by = (n: number) => rows.filter(([k]) => k.split('/').some(x => codes.some(y => y.slice(0, n) === x.slice(0, n)))).map(r => r[1]);
     const v = by(4).length ? by(4) : by(3);
-    if (!v.length) return { error: `${c} ${near}: no figure for ${trade} (ISCO-88 ${codes.join(', ')}).` };
+    if (!v.length) return { error: `${c} ${near}: the data list other trades than ${trade} (ISCO-88 ${codes.join(', ')}).` };
     const usd = v.reduce((t, x) => t + x, 0) / v.length;
     return { codes, usd, relative: usd / median, year: near, country: c };
 }

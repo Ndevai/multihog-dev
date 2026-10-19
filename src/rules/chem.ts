@@ -81,7 +81,7 @@ export function heatFromFormation(r: Row): { kJmol: number; phase: string } | nu
 export function describe(q: string, tempC = 20): string {
     const T = tempC + 273.15;
     let r = findCompound(q), smi = r?.smi ?? null;
-    if (!r) { try { parseSmiles(q); smi = q; } catch { return `"${q}" is not in the compound table (3796 single compounds; mixtures such as kerosene or wood are not) and is not a SMILES structure. Name one compound or give its SMILES.`; } }
+    if (!r) { try { parseSmiles(q); smi = q; } catch { return `Name one compound from the table (3796 single compounds; mixtures such as kerosene or wood are outside it) or give its SMILES ("${q}" fits neither).`; } }
     const e = (() => { try { return estimate(smi!); } catch { return null; } })();
     const formula = r?.f ?? (e ? formulaString(e.formula) : '?');
     const parts: string[] = [`${r?.n ?? q} (${formula}${r ? `, CAS ${r.cas}` : ''}, ${(() => { try { return molarMass(formula).toFixed(1) + ' g/mol'; } catch { return 'molar mass n/a'; } })()})`];
@@ -93,7 +93,7 @@ export function describe(q: string, tempC = 20): string {
     }
     const hc = r ? heatFromFormation(r) : null;
     const burnable = (() => { try { return o2Mol(formula) > 0 && /C|H/.test(formula) && formula !== 'H2O'; } catch { return false; } })();
-    if (!burnable) parts.push('does not burn');
+    if (!burnable) parts.push('incombustible');
     else if (hc) parts.push(`burns: ${(hc.kJmol / molarMass(formula)).toFixed(1)} kJ/g (from its measured heat of formation)`);
     else if (e?.props) { const k = combustionKJmol(e.formula, e.props, 'gas'); if (k != null) parts.push(`burns: about ${(k / molarMass(formula)).toFixed(1)} kJ/g as gas [estimated from its groups]`); }
     const tf = r?.Tf ?? (r ? derivedFlash(r) : null), tfTag = r?.Tf != null ? '' : ' [from its vapour pressure and lower limit]';
@@ -135,16 +135,16 @@ export function describeMixture(text: string, tempC = 20): string {
     const parts = text.split(/[,;+]/).map(x => x.trim()).filter(Boolean).map(x => { const m = x.match(/^(.*?)\s+([\d.]+)\s*%$/); return m ? { q: m[1], w: Number(m[2]) } : null; });
     if (parts.some(p => !p)) return `Give a mixture as "name share%, name share%" by mass (e.g. "ethanol 40%, water 60%").`;
     const total = parts.reduce((s, p) => s + p!.w, 0);
-    if (Math.abs(total - 100) > 0.5) return `The shares add up to ${total} %, not 100 %; nothing computed.`;
+    if (Math.abs(total - 100) > 0.5) return `The shares add up to ${total} %; give shares that add up to 100 %.`;
     let heat = 0; const els: Record<string, number> = {}, lines: string[] = [];
     for (const p of parts) {
-        const r = findCompound(p!.q); if (!r) return `"${p!.q}" is not in the compound table; nothing computed.`;
+        const r = findCompound(p!.q); if (!r) return `Give "${p!.q}" as a compound from the table or as its SMILES.`;
         const f = parseFormula(r.f), M = molarMass(r.f), h = heatFromFormation(r);
         for (const [e, n] of Object.entries(f)) els[e] = (els[e] ?? 0) + p!.w * n * molarMassOf(e) / M;
         const burns = o2Mol(r.f) > 0 && r.f !== 'H2O';
         if (burns && h) heat += p!.w / 100 * h.kJmol / M;
         const T = tempC + 273.15, st = r.Tb != null && r.Tm != null ? (T >= r.Tb ? 'gas' : T >= r.Tm ? 'liquid' : 'solid') : '?';
-        lines.push(`${r.n} ${p!.w} % (${st} on its own${burns ? (h ? `, ${(h.kJmol / M).toFixed(1)} kJ/g` : ', heat unknown') : ', does not burn'})`);
+        lines.push(`${r.n} ${p!.w} % (${st} on its own${burns ? (h ? `, ${(h.kJmol / M).toFixed(1)} kJ/g` : ', heat unknown') : ', incombustible'})`);
     }
     // Liquid mixture: mole fractions, then boiling point and flash point by UNIFAC (vapour.ts).
     const rows = parts.map(p => findCompound(p!.q)!), mol = rows.map((r, i) => parts[i]!.w / molarMass(r.f)), mt = mol.reduce((a, b) => a + b, 0);

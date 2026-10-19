@@ -36,14 +36,14 @@ const REQUIRED = ['what', 'kind', 'cause', 'reaches', 'reflections'];
 export function checkEntry(raw) {
     const { args, errors } = checkArgs(ENTRY, REQUIRED, raw);
     if (args.species && !creatureId(String(args.species)))
-        errors.push(`species "${args.species}" is not a DF creature`);
+        errors.push(`species: give a DF creature (got "${args.species}")`);
     if (!args.worldwide && (args.lat == null || args.lon == null))
         errors.push('give lat and lon of its area, or worldwide: true');
     if (args.lat != null && Math.abs(Number(args.lat)) > 90 || args.lon != null && Math.abs(Number(args.lon)) > 180)
         errors.push('lat is −90 to 90, lon −180 to 180');
     const n = args.reflections?.length ?? 0;
     if (n && (n < 1 || n > 15))
-        errors.push(`reflections: give 1 to 15, not ${n}`);
+        errors.push(`reflections: give 1 to 15 (got ${n})`);
     return errors.length ? { errors } : { entry: args, errors };
 }
 /** The book of the open chat, as last applied; read by the tools that check what exists. */
@@ -72,7 +72,7 @@ function areaWords(e, here) {
     if (e.worldwide)
         return 'everywhere';
     if (e.lat == null || e.lon == null)
-        return 'area not given';
+        return 'area still open';
     const radius = e.radius_km ?? 300;
     if (!here)
         return `around ${Math.abs(e.lat).toFixed(1)}°${e.lat >= 0 ? 'N' : 'S'} ${Math.abs(e.lon).toFixed(1)}°${e.lon >= 0 ? 'E' : 'W'}, within ${radius} km`;
@@ -101,7 +101,7 @@ export function worldBlock(book, here = null, sunUp = null) {
         return out.length ? `, ${out.join(', ')}` : '';
     };
     const line = (e) => {
-        const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', does not talk'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}${now(e)}` : '';
+        const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', speechless'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}${now(e)}` : '';
         return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${areaWords(e, here)}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}`;
     };
     return `[WORLD]\nThis world is real history with these additions. Everything else is as in real history.\n${book.map(line).join('\n')}\n[/WORLD]`;

@@ -112,7 +112,7 @@ export function describe(q, tempC = 20) {
             smi = q;
         }
         catch {
-            return `"${q}" is not in the compound table (3796 single compounds; mixtures such as kerosene or wood are not) and is not a SMILES structure. Name one compound or give its SMILES.`;
+            return `Name one compound from the table (3796 single compounds; mixtures such as kerosene or wood are outside it) or give its SMILES ("${q}" fits neither).`;
         }
     }
     const e = (() => { try {
@@ -144,7 +144,7 @@ export function describe(q, tempC = 20) {
         return false;
     } })();
     if (!burnable)
-        parts.push('does not burn');
+        parts.push('incombustible');
     else if (hc)
         parts.push(`burns: ${(hc.kJmol / molarMass(formula)).toFixed(1)} kJ/g (from its measured heat of formation)`);
     else if (e?.props) {
@@ -192,13 +192,13 @@ export function describeMixture(text, tempC = 20) {
         return `Give a mixture as "name share%, name share%" by mass (e.g. "ethanol 40%, water 60%").`;
     const total = parts.reduce((s, p) => s + p.w, 0);
     if (Math.abs(total - 100) > 0.5)
-        return `The shares add up to ${total} %, not 100 %; nothing computed.`;
+        return `The shares add up to ${total} %; give shares that add up to 100 %.`;
     let heat = 0;
     const els = {}, lines = [];
     for (const p of parts) {
         const r = findCompound(p.q);
         if (!r)
-            return `"${p.q}" is not in the compound table; nothing computed.`;
+            return `Give "${p.q}" as a compound from the table or as its SMILES.`;
         const f = parseFormula(r.f), M = molarMass(r.f), h = heatFromFormation(r);
         for (const [e, n] of Object.entries(f))
             els[e] = (els[e] ?? 0) + p.w * n * molarMassOf(e) / M;
@@ -206,7 +206,7 @@ export function describeMixture(text, tempC = 20) {
         if (burns && h)
             heat += p.w / 100 * h.kJmol / M;
         const T = tempC + 273.15, st = r.Tb != null && r.Tm != null ? (T >= r.Tb ? 'gas' : T >= r.Tm ? 'liquid' : 'solid') : '?';
-        lines.push(`${r.n} ${p.w} % (${st} on its own${burns ? (h ? `, ${(h.kJmol / M).toFixed(1)} kJ/g` : ', heat unknown') : ', does not burn'})`);
+        lines.push(`${r.n} ${p.w} % (${st} on its own${burns ? (h ? `, ${(h.kJmol / M).toFixed(1)} kJ/g` : ', heat unknown') : ', incombustible'})`);
     }
     // Liquid mixture: mole fractions, then boiling point and flash point by UNIFAC (vapour.ts).
     const rows = parts.map(p => findCompound(p.q)), mol = rows.map((r, i) => parts[i].w / molarMass(r.f)), mt = mol.reduce((a, b) => a + b, 0);

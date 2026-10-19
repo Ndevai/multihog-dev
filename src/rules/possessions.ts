@@ -51,8 +51,8 @@ export function transfer(st: RuleState, a: { item: string; quantity?: number; fr
     if (a.from) {
         const list = holding(st, a.from), have = list.find(x => same(x.item, a.item));
         owner = have ? have.owner ?? a.from : a.from;
-        if (!have && st.accounted?.includes(a.from)) return `${a.from} has no ${a.item} on record (holds: ${list.map(x => count(x.qty, x.item)).join(', ') || 'nothing'}). Nothing recorded.`;
-        if (have && have.qty < qty) return `${a.from} has only ${count(have.qty, have.item)}. Nothing recorded.`;
+        if (!have && st.accounted?.includes(a.from)) return `${a.from}'s belongings on record: ${list.map(x => count(x.qty, x.item)).join(', ') || 'empty hands'}; ${a.item} is outside them. State unchanged.`;
+        if (have && have.qty < qty) return `${a.from} has only ${count(have.qty, have.item)}. State unchanged.`;
         if (have) { have.qty -= qty; if (!have.qty) list.splice(list.indexOf(have), 1); }
     }
     const owns = a.to ? ownerAfter(a.how, owner, a.from, a.to) : undefined;

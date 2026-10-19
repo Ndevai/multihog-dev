@@ -23,8 +23,8 @@ First write EVIDENCE: one line per engine-governed event in the reply, giving it
 export function buildAuditPrompt(reply: string, results: TurnResult[], knows = '', clock = ''): string {
     const lines = results.length
         ? results.map((r, i) => `${i + 1}. ${r.tool}: ${r.result}`).join('\n')
-        : '(no engine results this turn)';
-    return `${clock ? `STORY CLOCK (from the engine; a clock time in the reply that differs from it, or a duration no result gives, is an Act event)\n${clock}\n\n` : ''}ENGINE RESULTS\n${lines}\n\n${knows ? `KNOWS\n${knows.replace(/^\[\/?KNOWS\]\n?/gm, '').trim()}\n\n` : ''}REPLY\n${reply}`;
+        : '(this turn ran zero tools)';
+    return `${clock ? `STORY CLOCK (from the engine; each clock time in the reply matches it, and each duration comes from a result; any other one is an Act event)\n${clock}\n\n` : ''}ENGINE RESULTS\n${lines}\n\n${knows ? `KNOWS\n${knows.replace(/^\[\/?KNOWS\]\n?/gm, '').trim()}\n\n` : ''}REPLY\n${reply}`;
 }
 
 const TOOLS = new Set(['Act', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'BodyCheck', 'BodyStrike', 'BodyWound', 'BodyFall', 'PassTime', 'CastSpell', 'BodyTreat', 'RollTheDice', 'BodyContact', 'Listen', 'Look', 'Communicate', 'SocialResponse', 'HoldOn', 'Chase', 'Price', 'Disease', 'Weather', 'Choose', 'Battle']);
@@ -44,7 +44,7 @@ export function parseAudit(text: unknown): AuditEvent[] | null {
 }
 
 export function correctionNote(events: AuditEvent[], decided = false): string {
-    const items = events.map(e => e.tool === 'KNOWS' ? `- "${e.quote}" → the character does not know this yet: they learn it on the page first (seen, heard, told), or act without it`
+    const items = events.map(e => e.tool === 'KNOWS' ? `- "${e.quote}" → the character learns this on the page first (seen, heard, told), or acts on what they know`
         : `- "${e.quote}" → ${e.tool}${e.problem === 'contradicts' ? ' (narrate what it returns)' : ''}`).join('\n');
     return `<rule_engine_correction>\n${decided ? 'The previous draft of this reply stated these events ahead of the rule engine. Narrate each as [DECIDED] gives it; an event [DECIDED] leaves open is told up to the moment its outcome would show:' : 'The previous draft of this reply stated these events ahead of the rule engine. For each, call the named tool and narrate what it returns:'}\n${items}\n</rule_engine_correction>`;
 }

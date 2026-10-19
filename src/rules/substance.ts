@@ -50,7 +50,7 @@ export function heatOf(formula: string, family?: string, smiles?: string, state 
     const M = molarMass(formula);
     if (rec) { const c = checkSubstance(rec); if (c.verdict !== 'contradiction' && c.measured != null) return { kJmol: c.measured, kJg: c.measured / M, measured: true, note: `${rec.name}, measured (${rec.src})` }; }
     if (smiles) { const st = fromStructure(smiles, state); if (st.kJmol != null) return { kJmol: st.kJmol, kJg: st.kJmol / M, measured: false, note: `estimated from its groups of atoms (Joback) [ASSUMED]` }; }
-    if (o2Mol(formula) <= 0) return { kJmol: 0, kJg: 0, measured: false, note: 'does not burn: its atoms already hold the oxygen they need (it can give oxygen off instead)' };
+    if (o2Mol(formula) <= 0) return { kJmol: 0, kJg: 0, measured: false, note: 'incombustible: its atoms already hold the oxygen they need (it can give oxygen off)' };
     const k = family && KFAM[family] ? KFAM[family] : K;
     const e = k * o2Mol(formula);
     return { kJmol: e, kJg: e / M, measured: false, note: `estimated from oxygen demand, ${Math.round(k)} kJ per mol O2${family && KFAM[family] ? ` (${family} median)` : ''} [ASSUMED]` };

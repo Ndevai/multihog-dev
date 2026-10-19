@@ -43,9 +43,9 @@ export function transfer(st, a) {
         const list = holding(st, a.from), have = list.find(x => same(x.item, a.item));
         owner = have ? have.owner ?? a.from : a.from;
         if (!have && st.accounted?.includes(a.from))
-            return `${a.from} has no ${a.item} on record (holds: ${list.map(x => count(x.qty, x.item)).join(', ') || 'nothing'}). Nothing recorded.`;
+            return `${a.from}'s belongings on record: ${list.map(x => count(x.qty, x.item)).join(', ') || 'empty hands'}; ${a.item} is outside them. State unchanged.`;
         if (have && have.qty < qty)
-            return `${a.from} has only ${count(have.qty, have.item)}. Nothing recorded.`;
+            return `${a.from} has only ${count(have.qty, have.item)}. State unchanged.`;
         if (have) {
             have.qty -= qty;
             if (!have.qty)

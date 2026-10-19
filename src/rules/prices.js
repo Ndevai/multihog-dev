@@ -21,7 +21,7 @@ export function basketWage(market, skilled, year) {
         return { error: `No wage data for "${market}".` };
     const s = skilled && m.s.length ? m.s : m.u.length ? m.u : m.s, r = annual(s, year);
     if (!r)
-        return { error: `${market}: wages ${s[0]?.[0]}–${s.at(-1)?.[0]}, none within 10 years of ${year}.` };
+        return { error: `${market}: wages ${s[0]?.[0]}–${s.at(-1)?.[0]}; the nearest year lies more than 10 years from ${year}.` };
     return { rw: r.v, daysPerYear: 365 / r.v, at: r.at, country: m.c, class: skilled && m.s.length ? 'skilled' : 'unskilled' };
 }
 export const PRICE_QUESTIONS = ['price of goods', 'daily wage', 'yearly cost of living for one person', 'value of English money'];

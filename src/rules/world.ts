@@ -40,11 +40,11 @@ export type Entry = { what: string; kind: string; since?: number; worldwide?: bo
 /** The entry as the schema wants it, or the errors to fix. A species must be a DF creature. */
 export function checkEntry(raw: Record<string, unknown>): { entry?: Entry; errors: string[] } {
     const { args, errors } = checkArgs(ENTRY, REQUIRED, raw);
-    if (args.species && !creatureId(String(args.species))) errors.push(`species "${args.species}" is not a DF creature`);
+    if (args.species && !creatureId(String(args.species))) errors.push(`species: give a DF creature (got "${args.species}")`);
     if (!args.worldwide && (args.lat == null || args.lon == null)) errors.push('give lat and lon of its area, or worldwide: true');
     if (args.lat != null && Math.abs(Number(args.lat)) > 90 || args.lon != null && Math.abs(Number(args.lon)) > 180) errors.push('lat is −90 to 90, lon −180 to 180');
     const n = (args.reflections as string[] | undefined)?.length ?? 0;
-    if (n && (n < 1 || n > 15)) errors.push(`reflections: give 1 to 15, not ${n}`);
+    if (n && (n < 1 || n > 15)) errors.push(`reflections: give 1 to 15 (got ${n})`);
     return errors.length ? { errors } : { entry: args as Entry, errors };
 }
 
@@ -74,7 +74,7 @@ const NEAR_KM = 300;
 /** The entry's area in words, relative to the scene when its position is known; coordinates otherwise. */
 function areaWords(e: Entry, here: { lat: number; lon: number } | null): string {
     if (e.worldwide) return 'everywhere';
-    if (e.lat == null || e.lon == null) return 'area not given';
+    if (e.lat == null || e.lon == null) return 'area still open';
     const radius = e.radius_km ?? 300;
     if (!here) return `around ${Math.abs(e.lat).toFixed(1)}°${e.lat >= 0 ? 'N' : 'S'} ${Math.abs(e.lon).toFixed(1)}°${e.lon >= 0 ? 'E' : 'W'}, within ${radius} km`;
     const d = distKm(here.lat, here.lon, e.lat, e.lon);
@@ -98,7 +98,7 @@ export function worldBlock(book: Entry[], here: { lat: number; lon: number } | n
         return out.length ? `, ${out.join(', ')}` : '';
     };
     const line = (e: Entry) => {
-        const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', does not talk'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}${now(e)}` : '';
+        const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', speechless'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}${now(e)}` : '';
         return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${areaWords(e, here)}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}`;
     };
     return `[WORLD]\nThis world is real history with these additions. Everything else is as in real history.\n${book.map(line).join('\n')}\n[/WORLD]`;

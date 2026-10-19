@@ -73,7 +73,7 @@ export function cannotExist(name, year, book = [], as) {
         return resolveLanguage(name, year, book).refused ?? '';
     const k = name.trim().toLowerCase();
     const e = book.find(x => x.since != null && (x.what.toLowerCase().includes(k) || k.includes(x.what.toLowerCase().replace(/s$/, '')) || x.species?.toLowerCase() === k));
-    return e && year < e.since ? `${e.what} exist in this world only since ${e.since}, not in ${year}` : '';
+    return e && year < e.since ? `${e.what} exist in this world from ${e.since} on; ${year} is earlier` : '';
 }
 let CHAT = null, chatLoading = null;
 export function loadChat() {

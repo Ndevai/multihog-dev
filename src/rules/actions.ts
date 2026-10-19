@@ -72,7 +72,7 @@ export function act(st: State, who: string, p: Person, steps: Step[], country: s
             if (!s.to) return { error: 'walk_to needs to (the spot walked to).' };
             // With a distance given, a walk needs no named start: the time follows from the distance alone.
             if (!p.at && s.distance_m != null) p.at = `where ${who} stood`;
-            if (!p.at) return { error: `${who} has no recorded spot; give from: set with a first step {"do":"be_at","to":"<spot>"}, or give distance_m.` };
+            if (!p.at) return { error: `${who}'s spot is still open: start with {"do":"be_at","to":"<spot>"}, or give distance_m.` };
             if (p.at === s.to) { lines.push(`${who} is already at ${s.to}`); continue; }
             st.links ??= {};
             const k = key(p.at, s.to), known = st.links[k], via = known == null && s.distance_m == null ? shortest(st.links, p.at, s.to) : null;

@@ -60,7 +60,7 @@ export function heatOf(formula, family, smiles, state = 'gas') {
             return { kJmol: st.kJmol, kJg: st.kJmol / M, measured: false, note: `estimated from its groups of atoms (Joback) [ASSUMED]` };
     }
     if (o2Mol(formula) <= 0)
-        return { kJmol: 0, kJg: 0, measured: false, note: 'does not burn: its atoms already hold the oxygen they need (it can give oxygen off instead)' };
+        return { kJmol: 0, kJg: 0, measured: false, note: 'incombustible: its atoms already hold the oxygen they need (it can give oxygen off)' };
     const k = family && KFAM[family] ? KFAM[family] : K;
     const e = k * o2Mol(formula);
     return { kJmol: e, kJg: e / M, measured: false, note: `estimated from oxygen demand, ${Math.round(k)} kJ per mol O2${family && KFAM[family] ? ` (${family} median)` : ''} [ASSUMED]` };

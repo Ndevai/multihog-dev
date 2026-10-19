@@ -212,7 +212,7 @@ function decisions(): Record<string, string> {
 }
 const decided = (name: ToolName, a: Args) => { const k = decisionKey(name, a); return k ? decisions()[k] : null; };
 // A refusal (an argument or the date missing) decides nothing, so a corrected call runs instead of repeating it.
-const REFUSAL = /not run; fix and call again|Nothing recorded\.?\s*$|needs a calendar date|^Give /;
+const REFUSAL = /fix and call again|State unchanged\.?\s*$|needs a calendar date|^Give /;
 function remember(name: ToolName, a: Args, out: unknown) { const k = decisionKey(name, a); if (k && typeof out === 'string' && !REFUSAL.test(out)) { decisions()[k] = out; save(); } }
 
 // Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
@@ -289,7 +289,7 @@ const partArg = str('Body part by its name: e.g. head, throat, upper body, lower
 
 /** Species id from a tool argument: 'HUMAN' when absent, null when no DF creature matches. */
 const speciesOf = (text: string | null | undefined) => text ? creatureId(text) : 'HUMAN';
-const noSpecies = (text: string | null | undefined) => `No DF creature "${text}". Nothing recorded.`;
+const noSpecies = (text: string | null | undefined) => `No DF creature "${text}". State unchanged.`;
 
 /** What the engine has recorded about `name`: species, mass and languages; {} for a character it has not met. */
 function recorded(name: string | null | undefined): { mass?: number; species?: string; languages?: string[] } {
@@ -323,7 +323,7 @@ function who(st: RuleState, rawName: string | null | undefined, speciesArg?: str
     const sp = speciesOf(text);
     if (!sp) return { error: noSpecies(text) };
     // DF names some creatures only in legends ([DOES_NOT_EXIST], no body): chimera, centaur, griffon.
-    if (!known && !creature(sp)?.parts.length) return { error: `DF defines no body for "${text}" (a creature of legend only). Nothing recorded.` };
+    if (!known && !creature(sp)?.parts.length) return { error: `"${text}" is a creature of legend in DF, bodiless there. State unchanged.` };
     return { p: person(st, name, Number(massArg) || t.mass, sp) };
 }
 
@@ -538,7 +538,7 @@ export function registerRulesTools(enabled: boolean): void {
         const exec = async (raw: Args) => {
             // Arguments are checked against the schema at the boundary; a call with errors runs nothing and says what to fix.
             const { args, errors } = checkArgs(properties, required, raw ?? {});
-            if (errors.length) return `${name} not run; fix and call again: ${errors.join('; ')}.`;
+            if (errors.length) return `${name} waits: fix and call again: ${errors.join('; ')}.`;
             await loadRaws();
             const prior = decided(name, args);
             if (prior) return `Already decided this turn; this result stands. ${prior}`;
@@ -547,7 +547,7 @@ export function registerRulesTools(enabled: boolean): void {
             let out: unknown = plain(await action(args as ArgsOf<Ps, Req[number]>));
             const s = store();
             const broken = violations(before, s.state, name, args as Record<string, unknown>);
-            if (broken.length) { s.state = before; save(); return `${name} refused: the result would break a law of the world (${broken.join('; ')}). Nothing recorded; correct the call.`; }
+            if (broken.length) { s.state = before; save(); return `${name} refused: the result would break a law of the world (${broken.join('; ')}). State unchanged; correct the call.`; }
             // Sensitivity (constants.ts): rerun the call on the same state and draws with each judged constant it used at the ends
             // of its range; when the outcome's words change (numbers aside), the result says which assumption it rests on.
             const cands = fragileCandidates();
@@ -583,7 +583,7 @@ export function registerRulesTools(enabled: boolean): void {
         const rows = a.kind === 'table' ? parseTable(a.table ?? '') : null;
         if (a.kind === 'table' && !rows) return 'Nothing was rolled. Call again with table as contiguous rows, e.g. "1-5 Junk | 6-10 Common | 11-20 Rare".';
         const r = rollFormula(a.formula, rng);
-        if (!r) return `Nothing was rolled: "${a.formula}" is not a dice formula. Use e.g. "1d20" or "2d6+3".`;
+        if (!r) return `Give a dice formula such as "1d20" or "2d6+3" (got "${a.formula}").`;
         const lead = `${a.who ? `${a.who} rolls` : 'Rolled'} ${r.formula} for ${a.for}: ${r.total}`;
         return rows ? `${lead}. Tier: ${pickTier(rows, r.total).label}. Narrate this tier.` : `${lead}. Use this amount as rolled.`;
     }));
@@ -594,12 +594,12 @@ export function registerRulesTools(enabled: boolean): void {
         species,
         part: partArg,
         type: { type: 'string', enum: ['cut', 'puncture', 'blunt', 'burn', 'bite'] },
-        depth: { type: 'string', enum: ['superficial', 'partial', 'deep_partial', 'full'], description: 'Burns: superficial = red, no blisters; partial = blisters; deep_partial = pale, scars; full = through the skin.' },
+        depth: { type: 'string', enum: ['superficial', 'partial', 'deep_partial', 'full'], description: 'Burns: superficial = red, dry skin; partial = blisters; deep_partial = pale, scars; full = through the skin.' },
     }, ['who', 'part', 'type'], a => run((st, rng) => {
         const { p, error } = who(st, a.who, a.species);
         if (!p) return error;
         const c = creatureOf(p)!, part = findPart(c, a.part);
-        if (!part) return `${a.who} has no part "${a.part}". Parts: ${c.parts.map(x => x.name).join(', ')}. Nothing recorded.`;
+        if (!part) return `${a.who}'s parts: ${c.parts.map(x => x.name).join(', ')}. State unchanged.`;
         const w = ['cut', 'puncture', 'bite'].includes(a.type) ? openWound(p, part, a.type, rng) : addWound(p, { part, type: a.type, depth: a.depth }, rng);
         return `Wound ${w.id} recorded. ${status(a.who, p)}`;
     }));
@@ -742,10 +742,10 @@ export function registerRulesTools(enabled: boolean): void {
             if (place) setPlace(st, place);
             if (a.air_c == null && w) a = { ...a, air_c: w.tempC, radiant_c: a.radiant_c ?? w.tempC };
             if (a.air_c == null) { out.push(a.altitude_m != null ? status(name, p) : 'air_c is required.'); continue; }
-            if (!thermalCapable(p.species) && !creatureOf(p)?.homeotherm) { out.push(`${name}: cold-blooded; body temperature not simulated; not recorded.`); continue; }
+            if (!thermalCapable(p.species) && !creatureOf(p)?.homeotherm) { out.push(`${name}: cold-blooded; the body takes the air's temperature (left to the story).`); continue; }
             try {
                 setEnvironment(p, { ...a, air_c: a.air_c, clothing: { ensemble: a.ensemble, garments: a.garments } });
-            } catch (e) { return `${(e as Error).message} Nothing recorded.`; }
+            } catch (e) { return `${(e as Error).message} State unchanged.`; }
             out.push(status(name, p));
         }
         return out.join('\n');
@@ -796,14 +796,14 @@ export function registerRulesTools(enabled: boolean): void {
         speaker_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the speaker knows, when the story states them; kept for later calls.' },
         listener_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the listener knows, when the story states them; kept for later calls.' },
         message: str('What the message says, one short sentence. When it reaches the listener, the listener comes to know it.'),
-        speaker_voice: { type: 'string', enum: ['normal', 'whisper only (no vocal-fold vibration)'], description: 'When the story states that the speaker cannot voice (larynx removed, vocal folds paralysed); kept for later calls.' },
+        speaker_voice: { type: 'string', enum: ['normal', 'whisper only (no vocal-fold vibration)'], description: 'When the story makes the speaker voiceless (larynx removed, vocal folds paralysed); kept for later calls.' },
     }, ['speaker', 'listener'], a => run(st => {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (!s.p || !l.p) return s.error || l.error;
         // A language is the stage spoken in the story's year; one not spoken then is refused (languages.ts).
         const year = storyYear(st);
         const late = [...a.speaker_languages ?? [], ...a.listener_languages ?? []].map(x => cannotExist(x, year, CURRENT_BOOK, 'language')).find(Boolean);
-        if (late) return `Nothing recorded: ${late}.`;
+        if (late) return `State unchanged: ${late}.`;
         if (a.speaker_languages?.length) s.p.languages = a.speaker_languages.map(x => x.trim().toLowerCase());
         if (a.listener_languages?.length) l.p.languages = a.listener_languages.map(x => x.trim().toLowerCase());
         if (a.speaker_voice) { if (a.speaker_voice === 'normal') delete s.p.voice; else s.p.voice = 'whisper'; }
@@ -875,7 +875,7 @@ export function registerRulesTools(enabled: boolean): void {
         const types = occTypes({ about: a.about, good: a.good !== false, wants: a.wants_it_for_them !== false, cameTrue: a.came_true !== false,
             praiseworthy: a.praiseworthy !== false, result: a.result_for_them ?? 'none', appealing: a.appealing !== false });
         if (!types) return `Unknown appraisal "${a.about}". Use one of: ${ABOUT.join('; ')}.`;
-        if (a.matters === MATTERS[0]) return `${a.who} feels nothing in particular${a.target ? ` about ${a.target}` : ''}: below the threshold of an emotion.`;
+        if (a.matters === MATTERS[0]) return `${a.who} stays calm${a.target ? ` about ${a.target}` : ''}: too little at stake for an emotion.`;
         const strong = a.matters === MATTERS[2];
         const words = (t: string) => { const w = TYPES[t].words.split(', '), h = Math.ceil(w.length / 2); return (strong ? w.slice(h - 1) : w.slice(0, h)).join(', '); };
         const [main, ...with_] = types;
@@ -970,7 +970,7 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who', 'sex', 'birth_year'], a => run((st, rng) => {
         const year = a.year ?? storyYear(st), country = a.country ?? st.setting?.country;
         if (year == null) return NO_YEAR;
-        if (!country) return 'Give country: no place is set yet.';
+        if (!country) return 'Give country: the scene\'s place is still open.';
         const shift = a.birth_year < H_YEARS[0] ? heightShift(country, a.birth_year, H_YEARS[0]) ?? 0 : 0;
         const r = bodySize(country, a.sex, a.birth_year, year, () => gauss(rng), shift);
         if ('error' in r) return r.error;
@@ -1021,7 +1021,7 @@ export function registerRulesTools(enabled: boolean): void {
         defenders: { type: 'number', description: 'Soldiers defending' },
         year: { type: 'number', description: 'Story year. Default: the year in [TIME].' },
         place: str('The position attacked, a few words'),
-        surprise: { type: 'boolean', description: 'The defenders were unaware of the attack until it struck (no warning from sentries or scouts)' },
+        surprise: { type: 'boolean', description: 'The defenders were unaware of the attack until it struck (unwarned by sentries or scouts)' },
     }, ['attackers', 'defenders'], a => run((st, rng) => {
         const year = a.year ?? storyYear(st);
         if (year == null) return NO_YEAR;
@@ -1051,7 +1051,7 @@ export function registerRulesTools(enabled: boolean): void {
 
     tool('Weather', 'Decide the day\'s weather at the story\'s place from the date and hour in [TIME], before describing it: rain, snow or dry, the amount, the day\'s high and low and the temperature now. The same date always gives the same weather.', {
         place: str('The town or city the scene is in or nearest to ("Lyon", "Kyoto", "Sydney, Australia"); for a fictional or remote place, the nearest real town or give latitude and longitude. Default: the last place given.'),
-        latitude: { type: 'number', description: 'For a place with no data: latitude; the nearest listed city is used' },
+        latitude: { type: 'number', description: 'For a place outside the weather lists: latitude; the nearest listed city is used' },
         longitude: { type: 'number', description: 'Longitude, with latitude' },
     }, [], async a => {
         const s0 = store().state, k0 = s0.setting?.place && !a.place && a.latitude == null ? { key: s0.setting.place, label: s0.setting.label ?? '', lat: s0.latitude ?? null, lon: s0.longitude ?? null, country: s0.setting.country ?? null } : null;
@@ -1059,7 +1059,7 @@ export function registerRulesTools(enabled: boolean): void {
         return run(st => {
         const known = st.setting?.place && !a.place && a.latitude == null ? { key: st.setting.place, label: st.setting.label ?? '', lat: st.latitude ?? null, lon: st.longitude ?? null, country: st.setting.country ?? null } : null;
         const place = known ?? findPlace(a.place, a.latitude, a.longitude);
-        if (!place) return a.place ? `No weather data for "${a.place}": give the nearest real town, or latitude and longitude.` : 'Give place: no place is set yet.';
+        if (!place) return a.place ? `Give the nearest real town to "${a.place}", or latitude and longitude.` : 'Give place: the scene\'s place is still open.';
         const w = weatherAt(place.key, storyNow(st));
         if (!w) return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
         setPlace(st, place);
@@ -1068,7 +1068,7 @@ export function registerRulesTools(enabled: boolean): void {
         const o = w.observed, snowy = o ? o.snowCm > 0 : (d.tmaxC + d.tminC) / 2 <= 1.0;
         const sky = !d.wet ? 'dry' : snowy ? `snow, ${o ? `${Math.round(o.snowCm * 10) / 10} cm` : `${amount} of water`} over the day` : `rain, ${amount} over the day`;
         const c = coordsOf(place.key), missed = !o && c && reanalysisMissed(c[0], c[1], date.getFullYear());
-        const extra = missed ? ' (generated: the 20th Century Reanalysis could not be reached; is enableCorsProxy on in SillyTavern\'s config.yaml?)' : !o ? '' : o.source === 'ERA5' ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : ' (that day\'s weather as reconstructed from pressure records, 20th Century Reanalysis)';
+        const extra = missed ? ' (generated: the 20th Century Reanalysis was unreachable; is enableCorsProxy on in SillyTavern\'s config.yaml?)' : !o ? '' : o.source === 'ERA5' ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : ' (that day\'s weather as reconstructed from pressure records, 20th Century Reanalysis)';
         return `${place.label}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${sky}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C${extra}.`;
         });
     });
@@ -1154,7 +1154,7 @@ export function registerRulesTools(enabled: boolean): void {
         }
         if (!a.in_world) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
-            return `${a.claim}: false; there is no such thing in this world. ${a.who} acts on it and meets the world as it is; narrate that.`;
+            return `${a.claim}: false; this world lacks such a thing. ${a.who} acts on it and meets the world as it is; narrate that.`;
         }
         const sp = a.kind === 'what the character is' && a.species ? creatureId(a.species) : null;
         if (a.species && a.kind === 'what the character is' && !sp) return noSpecies(a.species);
@@ -1164,10 +1164,10 @@ export function registerRulesTools(enabled: boolean): void {
         if (a.kind === 'something the character knows') {
             const f = recordedFact(st, a.claim);
             if (f && !f.everyone && !f.knowers.some(k => k.toLowerCase() === a.who.toLowerCase()))
-                return `${a.claim}: false; ${a.who} has not learned this${f.secret ? ' (another\'s secret)' : ''}. They learn it only on the page: seen, overheard, told or worked out. Nothing recorded.`;
+                return `${a.claim}: false; ${a.who} is still unaware of this${f.secret ? ' (another\'s secret)' : ''}. They learn it on the page: seen, overheard, told or worked out. State unchanged.`;
             // Forgotten by now: adults recalled no more with cues and questions than unprompted (Bauer & Larkina 2016), so a
             // claim to remember it does not bring it back; seeing, hearing or being told it again does.
-            if (f && !recalls(st, f, a.who)) return `${a.claim}: false; ${a.who} has forgotten it. Being reminded on the page (told, seeing it again) brings it back. Nothing recorded.`;
+            if (f && !recalls(st, f, a.who)) return `${a.claim}: false; ${a.who} has forgotten it. Being reminded on the page (told, seeing it again) brings it back. State unchanged.`;
             if (f) return `${a.claim}: holds; ${a.who} already knows it. Recorded.`;
         }
         // A claim rarer than the lowest band is decomposed into the chain of events it needs, each a share given the ones
@@ -1221,7 +1221,7 @@ export function registerRulesTools(enabled: boolean): void {
         const rare = shareOf(a.base_share) <= 0.05 || !!far || !!absent || !!foreign;
         if ((far || absent || foreign) && shareOf(a.base_share) > 0.05) a = { ...a, base_share: '5% almost no one' };
         const path = (a.path ?? []).filter(x => x?.step);
-        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} not yet in use in ${absent.country}${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language} has no speech community in ${st.setting?.country})` : ''}${faith ? ` (${Math.round(faith.share * 1000) / 10} % of people in ${faith.country}, ${faith.year}, are ${a.faith})` : ''}${lives ? ` (${Math.round(lives.share * 1000) / 10} % live from ${Number(a.alive_at) || 0} to ${a.lived_to}, ${lives.country} life table ${lives.years})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}${past ? ` (${Math.round(past.share * 1000) / 10} % of people like ${a.who} have ever done this: "${past.act}")` : ''}${act ? ` (someone at ${a.who}'s level of ${a.trait} acts this way in ${Math.round(act.share * 1000) / 10} % of moments${act.rating !== null ? `; ${a.behaviour} rated ${act.rating} of 9 for fit ${a.situation === 'own room' ? 'in one\'s own room' : `at ${a.situation}`}` : ''}; each step that makes it fit raises the chance)` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
+        if (rare && path.length < 2) return `A claim this rare needs its path${far ? ` (${far.what} live ${far.km} km away, outside the scene)` : ''}${absent ? ` (${a.item} comes into use in ${absent.country} later${absent.first ? `: first recorded ${absent.first}` : ''})` : ''}${foreign ? ` (${a.language}: its speakers live outside ${st.setting?.country})` : ''}${faith ? ` (${Math.round(faith.share * 1000) / 10} % of people in ${faith.country}, ${faith.year}, are ${a.faith})` : ''}${lives ? ` (${Math.round(lives.share * 1000) / 10} % live from ${Number(a.alive_at) || 0} to ${a.lived_to}, ${lives.country} life table ${lives.years})` : ''}${speaks ? ` (${Math.round(speaks.share * 1000) / 10} % of people in ${speaks.country} speak ${a.language})` : ''}${skill ? ` (${Math.round(skill.share * 1000) / 10} % of people in ${skill.country}${skill.from ? `, ${skill.from} figure` : ''})` : ''}${past ? ` (${Math.round(past.share * 1000) / 10} % of people like ${a.who} have ever done this: "${past.act}")` : ''}${act ? ` (someone at ${a.who}'s level of ${a.trait} acts this way in ${Math.round(act.share * 1000) / 10} % of moments${act.rating !== null ? `; ${a.behaviour} rated ${act.rating} of 9 for fit ${a.situation === 'own room' ? 'in one\'s own room' : `at ${a.situation}`}` : ''}; each step that makes it fit raises the chance)` : ''}: two or more steps, in order, each with its reference class and shares given the steps before.`;
         if (rare) {
             const cap = combined(a), each = path.map(x => combined(x)), product = each.reduce((t, x) => t * x, 1);
             const scale = product > cap ? (cap / product) ** (1 / each.length) : 1;
@@ -1242,7 +1242,7 @@ export function registerRulesTools(enabled: boolean): void {
         }
         if (sp) {
             const p = st.people?.[a.who];
-            if (p?.wounds.length) return `${a.who} has wounds on record; a change of body comes through the story (a spell, a transformation), not a claim. Nothing recorded.`;
+            if (p?.wounds.length) return `${a.who} has wounds on record; a change of body comes through the story (a spell, a transformation), and Claim covers what already holds. State unchanged.`;
             if (p) delete st.people![a.who];
             person(st, a.who, undefined, sp);
         }
@@ -1263,9 +1263,9 @@ export function registerRulesTools(enabled: boolean): void {
         how: { type: 'string', enum: HOW },
     }, ['item', 'how'], a => run(st => {
         const own = inalienable(st, a.item);
-        if (own) return `Nothing recorded: ${own}.`;
+        if (own) return `State unchanged: ${own}.`;
         const late = cannotExist(a.item, storyYear(st), CURRENT_BOOK, 'thing');
-        return late ? `Nothing recorded: ${late}.` : transfer(st, a);
+        return late ? `State unchanged: ${late}.` : transfer(st, a);
     }));
 
     // The data give the share of students who solve such a problem in the time; the estimate for this character is
@@ -1305,7 +1305,7 @@ export function registerRulesTools(enabled: boolean): void {
         listener: str('Character who might hear it'),
         listener_species: str('Listener\'s DF creature when the engine has no record of them yet.'),
         sound: { type: 'string', enum: Object.keys(SOUNDS) },
-        spl_db: { type: 'number', description: 'Loudness at 1 m, dB SPL, for a sound that fits no class in the list (from a published measurement)' },
+        spl_db: { type: 'number', description: 'Loudness at 1 m, dB SPL, for a sound outside the classes in the list (from a published measurement)' },
         distance_m: { type: 'number', description: 'Distance from the sound, m' },
         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
@@ -1332,9 +1332,9 @@ export function registerRulesTools(enabled: boolean): void {
         const v = who(st, a.viewer, a.viewer_species);
         if (!v.p) return v.error;
         const tp = a.target_who ? st.people?.[a.target_who] : undefined, geo = tp ? between(st, v.p, tp) : null;
-        if (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open) return `${a.viewer} cannot see ${a.target}: ${geo.ra} and ${geo.rb} have no open doorway between them.`;
+        if (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open) return `A wall stands between ${a.viewer} and ${a.target}: ${geo.ra} and ${geo.rb}, every doorway shut.`;
         const dist = a.distance_m ?? geo?.d ?? null;
-        if (dist == null) return 'Give distance_m (or place both on the map with Layout and give target_who). Nothing recorded.';
+        if (dist == null) return 'Give distance_m (or place both on the map with Layout and give target_who). State unchanged.';
         if (Number.isFinite(a.latitude)) st.latitude = a.latitude;
         // Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED].
         const t = storyNow(st);
@@ -1384,7 +1384,7 @@ export function registerRulesTools(enabled: boolean): void {
             case SOCIAL[4]: {
                 if (!a.sex) return 'Give sex for a first meeting.';
                 const pr = interestChance(a.sex, !!a.many_options);
-                return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'is not interested'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
+                return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'leaves it at this meeting'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
             }
             case SOCIAL[5]: {
                 const p = orderChance(a.order_kind ?? '');
@@ -1418,11 +1418,11 @@ export function registerRulesTools(enabled: boolean): void {
             case 'promised to change': case 'promised to change and apologized':
                 if (!t) return `No betrayal of ${a.who} by ${a.other} on record.`;
                 t.repair = a.event === 'promised to change' ? TRUST_REPAIR[1] : TRUST_REPAIR[2]; return `Recorded: ${a.other} ${a.event}.`;
-            case 'kept faith once': if (!t) return `No betrayal on record; nothing to repair.`; t.kept++; return `Recorded: ${a.other} kept faith (${t.kept} time${t.kept > 1 ? 's' : ''} since the betrayal).`;
+            case 'kept faith once': if (!t) return `The record holds zero betrayals by ${a.other}.`; t.kept++; return `Recorded: ${a.other} kept faith (${t.kept} time${t.kept > 1 ? 's' : ''} since the betrayal).`;
             default: {
                 if (!t) return `No betrayal of ${a.who} by ${a.other} on record: decide trust between them with SocialResponse or Choose.`;
                 const p = trustAgain(t.lied, t.repair, t.kept);
-                return `${a.who} ${rng() < p ? 'trusts' : 'keeps their guard up with'} ${a.other} this time (betrayed${t.lied ? ' with lies' : ''}; ${t.repair === 'none' ? 'no promise' : t.repair}; good faith kept ${t.kept} time${t.kept === 1 ? '' : 's'} since).`;
+                return `${a.who} ${rng() < p ? 'trusts' : 'keeps their guard up with'} ${a.other} this time (betrayed${t.lied ? ' with lies' : ''}; ${t.repair === 'none' ? 'promised nothing' : t.repair}; good faith kept ${t.kept} time${t.kept === 1 ? '' : 's'} since).`;
             }
         }
     }));
@@ -1447,12 +1447,12 @@ export function registerRulesTools(enabled: boolean): void {
         pursuer: str('Character chasing'), pursuer_species: str('Pursuer\'s DF creature when the engine has no record of them yet.'),
         fleeing: str('Character running away'), fleeing_species: str('Fleeing character\'s DF creature when the engine has no record of them yet.'),
         gap_m: { type: 'number', description: 'Head start, m' },
-        pursuer_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human pursuer the engine has no sex for' },
-        fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing the engine has no sex for' },
+        pursuer_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human pursuer missing from the engine\'s records' },
+        fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing, missing from the engine\'s records' },
         pursuer_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The pursuer\'s build, when the story states it (BodySize draws it otherwise)' },
         fleeing_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The fleeing character\'s build, when the story states it (BodySize draws it otherwise)' },
-        pursuer_age: { type: 'number', description: 'For a human pursuer the engine has no age for, years' },
-        fleeing_age: { type: 'number', description: 'For a human fleeing the engine has no age for, years' },
+        pursuer_age: { type: 'number', description: 'For a human pursuer missing from the engine\'s records, years' },
+        fleeing_age: { type: 'number', description: 'For a human fleeing, missing from the engine\'s records, years' },
     }, ['pursuer', 'fleeing', 'gap_m'], a => run((st, rng) => {
         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
         if (!p.p || !f.p) return p.error || f.error;
@@ -1480,7 +1480,7 @@ export function registerRulesTools(enabled: boolean): void {
             if (p) Object.assign(p, { age: local.age, sex: local.sex });
             const noun = local.age < 18 ? (local.sex === 'female' ? 'girl' : 'boy') : local.sex === 'female' ? 'woman' : 'man';
             const work = a.occupation ? null : strangerWork(c, local.sex, local.age, y, rng);
-            const job = a.occupation ? `; occupation: ${a.occupation}` : local.age < 15 ? '; a child' : !work ? '' : !work.works ? '; not in paid work' : work.group ? `; works, among ${work.group} (the narrator names the job)` : '; works';
+            const job = a.occupation ? `; occupation: ${a.occupation}` : local.age < 15 ? '; a child' : !work ? '' : !work.works ? '; outside paid work' : work.group ? `; works, among ${work.group} (the narrator names the job)` : '; works';
             const hh = strangerHousehold(c, y, local.age, rng);
             const home = hh ? hh.size === 1 ? '; lives alone' : `; lives in a household of ${hh.size} (${hh.type})` : '';
             return `${a.who}: a ${local.age}-year-old ${noun}${job}${home} (age and sex as drawn from ${local.country}'s population in ${y}${work ? `; work from ILO figures for ${work.country}, ${work.year}` : ''}${hh ? `; household from ${hh.source} ${hh.year}` : ''}; birthplace as the story sets it).`;
@@ -1490,7 +1490,7 @@ export function registerRulesTools(enabled: boolean): void {
         const { p } = who(st, a.who);
         if (p) Object.assign(p, { age: r.age, sex: r.sex });
         const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
-        return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child, no occupation' : 'no stated occupation'}; born in ${r.born}.`;
+        return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child' : 'occupation unlisted in the census'}; born in ${r.born}.`;
     }));
 
     tool('BodyCheck', 'Resolve a physical or skilled action whose outcome is in doubt, before narrating it: climbing, jumping, swimming, lifting or forcing something, balancing, sneaking, picking a lock, riding, a craft or a trade task (the other tools cover blows, falls, holds, chases, hearing, seeing, messages and people\'s responses). The body state in [BODY] is applied in code.', {
@@ -1503,7 +1503,7 @@ export function registerRulesTools(enabled: boolean): void {
         uses: { type: 'array', items: { type: 'string', enum: [...Object.keys(FUNCTIONS), 'alertness'] }, description: 'Body abilities the task depends on: grasp (hands, claws that hold), stance (feet), sight, hearing, smell, breathing; alertness for tasks needing attention, judgment or quick reactions (driving, aiming, spotting, fine work).' },
         exertion: { type: 'string', enum: ['none', 'light', 'heavy'] },
         on_feet: { type: 'boolean', description: 'The task needs standing or walking unaided' },
-        timed: { type: 'boolean', description: 'The task must be done within a time that leaves no slack (a lock picked before the guard turns, a sum shouted in a race)' },
+        timed: { type: 'boolean', description: 'The task must be done within a tight time (a lock picked before the guard turns, a sum shouted in a race)' },
         fine: { type: 'boolean', description: 'The task needs fine finger work with bare fingers (tying a knot, loading a cartridge, picking a lock, writing)' },
         override: { type: 'boolean', description: 'Set after BodyCheck named another tool, when the task differs from what that tool decides' },
     }, ['who', 'task', 'reference_class', 'base_share', 'share'], a => run((st, rng) => { const w = whoAny(st, a.who, a.species); return w.p ? check(w.p, { ...a, share: combined(a) }, rng) : w.error; }));
@@ -1512,7 +1512,7 @@ export function registerRulesTools(enabled: boolean): void {
         who: str('Character name'),
         wound: { type: 'number', description: 'Wound id, for a treatment of one wound (antivenom, antibiotics, laparotomy, oxygen and transfuse treat the whole body)' },
         treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load', 'antivenom', 'antibiotics', 'laparotomy', 'oxygen', 'hyperbaric_oxygen'] },
-        training: { type: 'string', enum: ['untrained', 'instructions', 'trained'], description: 'For stop_bleeding: the person treating has no first-aid training, has written or phone instructions, or has formal bleeding-control training (medic, Stop the Bleed course). Default untrained.' },
+        training: { type: 'string', enum: ['untrained', 'instructions', 'trained'], description: 'For stop_bleeding: untrained (a lay person), instructions (written or by phone), trained (medic, Stop the Bleed course). Default untrained.' },
     }, ['who', 'treatment'], a => run((st, rng) => {
         const { p, error } = whoAny(st, a.who);
         if (!p) return error;
@@ -1553,12 +1553,12 @@ export function registerRulesTools(enabled: boolean): void {
         for (const w of a.walking || []) {
             const p = st.people?.[w.who];
             if (!p) continue;
-            if (w.running && w.speed_kmh == null) return `Give speed_kmh for ${w.who}'s running. Nothing recorded.`;
+            if (w.running && w.speed_kmh == null) return `Give speed_kmh for ${w.who}'s running. State unchanged.`;
             let kmh: number;
             try {
                 kmh = w.speed_kmh ?? walkSpeedKmh(p, w.grade_pct ?? 0, w.terrain ?? 'dirt road', w.load_kg ?? 0, (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
                 p.workMet = metOf(w.running ? runWatts(p.mass, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road') : walkWatts(p, w.load_kg, kmh / 3.6, w.grade_pct, w.terrain ?? 'dirt road'), p.mass);
-            } catch (e) { return `${(e as Error).message} Nothing recorded.`; }
+            } catch (e) { return `${(e as Error).message} State unchanged.`; }
             walkers.push([w.who, p, kmh]);
         }
         // Characters outdoors at a weather station: time runs in hour steps, each taking the air temperature at its start.
@@ -1602,7 +1602,7 @@ export function registerRulesTools(enabled: boolean): void {
     }, [], a => run((st, rng) => {
         if (a.who && !a.steps && !a.actors && a.action) {
             const r = stepsFromWords(Array.isArray(a.action) ? (a.action as unknown[]).join(', then ') : String(a.action), String(a.who), a.distance_m as number | undefined);
-            if ('error' in r) return `${r.error} ${ACT_EXAMPLE} Nothing recorded.`;
+            if ('error' in r) return `${r.error} ${ACT_EXAMPLE} State unchanged.`;
             a = { ...a, steps: r.steps as unknown as typeof a.steps };
         }
         // An actor listed without steps takes the call's own steps (a model may name the actors and give the steps once).
@@ -1611,12 +1611,12 @@ export function registerRulesTools(enabled: boolean): void {
         const fromWords = (w: string) => { if (!words) return []; const r = stepsFromWords(words, w, a.distance_m as number | undefined); return 'error' in r ? [] : r.steps; };
         const list = ((a.actors as unknown as { who: string; steps?: Step[] }[] | undefined)?.map(x => ({ who: x.who, steps: x.steps ?? (a.steps as unknown as Step[] | undefined) ?? fromWords(x.who) })))
             ?? (a.who && a.steps ? [{ who: String(a.who), steps: a.steps as unknown as Step[] }] : []);
-        if (list.some(x => !x.steps.length)) { const why = words ? stepsFromWords(words, '', a.distance_m as number | undefined) : null; return `Give steps for ${list.filter(x => !x.steps.length).map(x => x.who).join(', ')}${why && 'error' in why ? ` (${why.error})` : ''}. ${ACT_EXAMPLE} Nothing recorded.`; }
-        if (!list.length) return `Give who and steps (or action), or actors. ${ACT_EXAMPLE} Nothing recorded.`;
+        if (list.some(x => !x.steps.length)) { const why = words ? stepsFromWords(words, '', a.distance_m as number | undefined) : null; return `Give steps for ${list.filter(x => !x.steps.length).map(x => x.who).join(', ')}${why && 'error' in why ? ` (${why.error})` : ''}. ${ACT_EXAMPLE} State unchanged.`; }
+        if (!list.length) return `Give who and steps (or action), or actors. ${ACT_EXAMPLE} State unchanged.`;
         const actors: { who: string; p: Person; steps: Step[] }[] = [];
         for (const x of list) { const { p, error } = who(st, x.who); if (!p) return error; actors.push({ who: x.who, p, steps: x.steps }); }
         const r = actTogether(st, actors, p => (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
-        if ('error' in r) return `${r.error} Nothing recorded.`;
+        if ('error' in r) return `${r.error} State unchanged.`;
         const names = new Set(actors.map(x => x.who));
         let tail = '';
         if (st.clock) {
@@ -1631,7 +1631,7 @@ export function registerRulesTools(enabled: boolean): void {
                 if (ev.events.length) tail = ` Meanwhile: ${ev.events.join('; ')}.`;
             }
             tail = ` Clock now ${formatStoryTime(storyNow(st)!)}.` + tail;
-        } else tail = ' No story clock set ([TIME] missing): durations given, clock not moved.';
+        } else tail = ' The story clock is still open ([TIME] unset): durations given, the clock stays where it is.';
         return `${r.text}. Span ${honest(r.seconds)}.${tail}`;
     }));
 
@@ -1649,7 +1649,7 @@ export function registerRulesTools(enabled: boolean): void {
         air_changes_per_hour: { type: 'number', description: 'Only when the story sets it (sealed 0, window wide open about 5); otherwise code draws a house\'s typical leak rate once' },
         air_c: { type: 'number', description: 'Air temperature inside, °C. Default 20.' },
         outdoor_co2_ppm: { type: 'number', description: 'Carbon dioxide outside, ppm. Default 420 (present day); about 280 before 1800.' },
-        fires: { type: 'array', description: 'What burns inside now (empty list: nothing)', items: { type: 'object', properties: {
+        fires: { type: 'array', description: 'What burns inside now (an empty list: every fire out)', items: { type: 'object', properties: {
             fuel: { type: 'string', description: `${Object.keys(FIRE_FUELS).join(', ')}, or a compound burnt in a lamp or burner (ethanol, methane, propane, octane)` },
             kg_per_hour: { type: 'number', description: 'Fuel burnt per hour, kg (a brazier about 0.5–1 kg/h of charcoal, an open wood fire 1–3, an oil lamp 0.01)' },
             co_g_per_kg: { type: 'number', description: 'Carbon monoxide per kg burnt, when known; otherwise the measured household-stove value' },
@@ -1661,13 +1661,13 @@ export function registerRulesTools(enabled: boolean): void {
         const outline = st.map?.rooms[a.room];
         if (outline) { a = { ...a, floor_m2: a.floor_m2 ?? Math.round(area(outline.corners) * 10) / 10, height_m: a.height_m ?? outline.height }; }
         const vol = a.volume_m3 ?? (a.floor_m2 && a.height_m ? a.floor_m2 * a.height_m : undefined);
-        if (!old && !(vol && vol > 0)) return `Give volume_m3 (or floor_m2 and height_m) for ${a.room} (first time). Nothing recorded.`;
+        if (!old && !(vol && vol > 0)) return `Give volume_m3 (or floor_m2 and height_m) for ${a.room} (first time). State unchanged.`;
         const fires: Room['fires'] = [];
         for (const f of a.fires ?? []) {
             const k = f.fuel.trim().toLowerCase(), known = FIRE_FUELS[k];
             if (known) { fires.push({ fuel: k, kgh: f.kg_per_hour, C: known.C, H: known.H, O: known.O, coEF: f.co_g_per_kg ?? known.coEF, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : known.note, lhv: heatingValue({ C: known.C, H: known.H, O: known.O }, k === 'charcoal' ? 0 : f.moisture_pct ?? 20).lhvWet }); continue; }
             const c = findCompound(k);
-            if (!c) return `Unknown fuel "${f.fuel}". Known: ${Object.keys(FIRE_FUELS).join(', ')}, or a compound name. Nothing recorded.`;
+            if (!c) return `Unknown fuel "${f.fuel}". Known: ${Object.keys(FIRE_FUELS).join(', ')}, or a compound name. State unchanged.`;
             const el = parseFormula(c.f), M = molarMass(c.f), pct = (e: string, w: number) => (el[e] ?? 0) * w / M * 100;
             const hf = heatFromFormation(c), hhv = hf ? hf.kJmol / M : 0; // kJ/g = MJ/kg
             fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : 'burns to CO2 [ASSUMED]', lhv: hhv - 2.443 * 8.937 * pct('H', 1.008) / 100 });
@@ -1699,7 +1699,7 @@ export function registerRulesTools(enabled: boolean): void {
         const { p, error } = who(st, a.who);
         if (!p) return error;
         const r = startDose(p, a.substance, a.mg);
-        return 'error' in r ? `${r.error} Nothing recorded.` : `${a.who}: ${r.note} given; its course runs as time passes.`;
+        return 'error' in r ? `${r.error} State unchanged.` : `${a.who}: ${r.note} given; its course runs as time passes.`;
     }); });
 
     tool('Layout', 'Place spots and rooms on the scene\'s plan, in metres, once the story fixes where things are: then walking distances, room sizes, who can hear or see whom through walls come from the plan. x east, y north from any corner of the scene; floor 0 the ground floor.', {
@@ -1714,7 +1714,7 @@ export function registerRulesTools(enabled: boolean): void {
     }, [], a => run(st => {
         const m = mapOf(st), out: string[] = [];
         for (const r of (a.rooms ?? []) as { room: string; corners: number[][]; floor?: number; height_m?: number }[]) {
-            if (!Array.isArray(r.corners) || r.corners.length < 3) return `Room ${r.room} needs at least 3 corners. Nothing recorded.`;
+            if (!Array.isArray(r.corners) || r.corners.length < 3) return `Room ${r.room} needs at least 3 corners. State unchanged.`;
             m.rooms[r.room] = { corners: r.corners.map(c => [Number(c[0]), Number(c[1])] as [number, number]), floor: r.floor ?? 0, height: r.height_m ?? 2.5 };
             out.push(`${r.room}: ${area(m.rooms[r.room].corners).toFixed(1)} m², ${(area(m.rooms[r.room].corners) * (r.height_m ?? 2.5)).toFixed(0)} m³`);
         }
