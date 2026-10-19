@@ -270,3 +270,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Refusals are no longer kept as the turn's decision (rules-tools.ts `remember`), so a corrected call runs instead of returning "Already decided".
 - Weather runs once per turn and an identical call runs once (`dedupe`).
 - Act: walk_to with distance_m and no recorded spot starts from "where X stood"; the time needs only the distance.
+
+## 2026-10-19 (10) A date written in the scene sets the clock
+
+- The player had given the date, and the turn still ran with no clock. The clock was set only from the plan's "time", and only from "1899-09-19 14:20" exactly.
+- clock.ts `findStoryTime` reads a written date anywhere in a text: 1899-09-19, 19/09/1899 (day first), 19 September 1899, 19th of Sept 1899, September 19, 1899, with the hour written after it (14:20, 2:20 pm, 14h20; noon when none [ASSUMED]). `parseStoryTime` falls back to it, so a plan's "time" in any of these forms is read.
+- question-pass.ts: when the plan gives no time and the story has none, the player's message, then the cast and scenario, then the recent messages are searched for a date.

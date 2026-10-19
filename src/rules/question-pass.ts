@@ -6,7 +6,7 @@
 // tools itself; a call already made here returns the same result (the turn's decision ledger).
 import { turnKey } from './turn.js';
 import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, type Args } from './rules-tools.js';
-import { parseStoryTime } from './clock.js';
+import { parseStoryTime, findStoryTime } from './clock.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
@@ -207,6 +207,12 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         setRead(await resolveRead(found, plan, choose));
         present = plan.present;
         time = plan.time && storyTime() === null ? parseStoryTime(plan.time) : null;
+        // A date written in the player's message, the cast and scenario, or the recent scene sets the clock when the plan
+        // gives none (a London 1899 date stated by the player reached no tool).
+        if (time === null && storyTime() === null) {
+            const texts = [String(chat[chat.length - 1].mes ?? ''), tracker, ...chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES).reverse().map(m => String(m.mes ?? ''))];
+            for (const t of texts) { const f = findStoryTime(t); if (f !== null) { time = f; break; } }
+        }
         if (time !== null) setStoryTime(time);
         if (plan.at && !scenePosition()) setScenePosition(plan.at[0], plan.at[1]);
         const valid = validCalls(plan.calls), dropped = plan.calls.filter(c => !valid.includes(c));

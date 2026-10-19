@@ -10,8 +10,46 @@ function epochDays(y: number, m: number, d: number): number {
     return Math.round((t.getTime() - e.getTime()) / 864e5);
 }
 
-/** Minutes for "1850-03-14 18:40", "1850-03-14", "Day 3 07:15" or "Day 3"; null when the text is none of these. */
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MONTH = '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
+const monthNo = (w: string) => MONTHS.indexOf(w.slice(0, 3).toLowerCase()) + 1;
+// The written forms a date takes in a scene or a model's answer: 1899-09-19, 19/09/1899 (day first, as the Weather tool
+// asks), 19 September 1899, 19th of September 1899, September 19, 1899. The year is four digits.
+const DATE_FORMS: [RegExp, (m: RegExpMatchArray) => [number, number, number]][] = [
+    [/\b(\d{4})-(\d{1,2})-(\d{1,2})(?=\b|T)/, m => [+m[1], +m[2], +m[3]]],
+    [/\b(\d{1,2})[/.](\d{1,2})[/.](\d{4})\b/, m => [+m[3], +m[2], +m[1]]],
+    [new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+of)?\\s+${MONTH}\\.?,?\\s+(\\d{4})\\b`, 'i'), m => [+m[3], monthNo(m[2]), +m[1]]],
+    [new RegExp(`\\b${MONTH}\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})\\b`, 'i'), m => [+m[3], monthNo(m[1]), +m[2]]],
+];
+/** Hour and minute written after a date: 14:20, 2:20 pm, 2 pm, 14h20. */
+function clockIn(s: string): number | null {
+    const m = s.match(/\b(\d{1,2})(?:[:h](\d{2})(?::(\d{2}))?)?\s*([ap])\.?m\b/i) ?? s.match(/\b(\d{1,2})[:h](\d{2})(?::(\d{2}))?\b/);
+    if (!m) return null;
+    let h = +m[1]; const mi = +(m[2] ?? 0), se = +(m[3] ?? 0);
+    if (m[4]) { if (h < 1 || h > 12) return null; h = h % 12 + (m[4].toLowerCase() === 'p' ? 12 : 0); }
+    return h > 23 || mi > 59 || se > 59 ? null : h * 60 + mi + se / 60;
+}
+/** The first calendar date written anywhere in a text, with the hour written after it (noon when none [ASSUMED]); null when none. */
+export function findStoryTime(text: string): number | null {
+    const s = String(text ?? '');
+    let best: { at: number; t: number } | null = null;
+    for (const [re, get] of DATE_FORMS) {
+        const m = s.match(re); if (!m || m.index == null) continue;
+        const [y, mo, d] = get(m);
+        if (mo < 1 || mo > 12 || d < 1 || d > 31 || y < 400) continue;
+        const days = epochDays(y, mo, d); if (days < CALENDAR_FROM) continue;
+        const after = s.slice(m.index + m[0].length, m.index + m[0].length + 25).replace(/^T/, ' '), hm = clockIn(after);
+        if (!best || m.index < best.at) best = { at: m.index, t: days * DAY + (hm ?? 720) };
+    }
+    return best?.t ?? null;
+}
+
+/** Minutes for "1850-03-14 18:40", "1850-03-14", "Day 3 07:15" or "Day 3", or a written date (findStoryTime); else null. */
 export function parseStoryTime(text: string): number | null {
+    const strict = parseStrict(text);
+    return strict ?? findStoryTime(text);
+}
+function parseStrict(text: string): number | null {
     const s = String(text ?? '').trim();
     const hm = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*$/);
     const minutes = hm ? Number(hm[1]) * 60 + Number(hm[2]) + (hm[3] ? Number(hm[3]) / 60 : 0) : 0;
