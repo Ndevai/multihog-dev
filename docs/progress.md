@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (30), Claude Opus 5.5
+- Added: a room fire's heat and smoke. Heat from the fuel's atoms; an open door feeds and caps the fire; hot-layer temperature by the standard fire-engineering formula (MQH), smoke filling a closed room (Yamana–Tanaka), flames out at 15 % oxygen, flashover at 600 °C; people below or inside the layer get its air and radiant heat.
+- Checked (harness): 482 kW wood fire in a parlour with the door open, layer 376 °C at 10 min, the man below it burned by radiant heat; closed cellar smokes down in 10 min, fire out at about 25 min with CO 2,500 ppm.
+- Not done: soot and irritant gases, gas flow between rooms, wall linings beyond concrete checked.
+
 ## 2026-10-18 (29), Claude Opus 5.5
 - Added: vapour pressure for 1426 compounds; flash points derived from vapour pressure and the lower fire limit (used when unmeasured, and to check measured ones); liquid mixtures by UNIFAC from their groups of atoms: boiling point, first vapour, flash point. Substance reports them.
 - Checked: derived flash points median 4.1 K off on 236 compounds; UNIFAC equals thermo's to 4 digits; ethanol–water flash points within 1.7 K from 30 to 96 % (dilute ones 5–12 K low).

@@ -22,10 +22,10 @@ import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, statu
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest } from './actions.js';
 import { parseFormula, molarMass } from './substance.js';
-import { airHook, describeAir, drawAch, FIRE_FUELS, OUT_O2 } from './rooms.js';
+import { airHook, describeAir, drawAch, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify } from './world-log.js';
-import { loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
+import { heatingValue, heatFromFormation, loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
 import { loadRaws, creatureId, creature, meleeWeaponNames, weaponMetalNames } from './df/index.js';
@@ -1708,7 +1708,12 @@ export function registerRulesTools(enabled) {
     }));
     tool('Room', 'Set up or change the air of an enclosed space (a room, a cellar, a tent, a mine gallery) when its air matters: a fire, a stove or a lamp burning inside, many people in a closed room, gas filling it. Characters whose spot (Act be_at / walk_to) is this room breathe its air every minute: carbon monoxide, carbon dioxide, oxygen. Call again when a fire starts or goes out.', {
         room: str('The spot name, as used in Act ("John\'s house: kitchen")'),
-        volume_m3: { type: 'number', description: 'Volume, m³ (floor area × ceiling height; a 4 × 4 m room with a 2.5 m ceiling is 40). Needed the first time.' },
+        volume_m3: { type: 'number', description: 'Volume, m³ (floor area × ceiling height; a 4 × 4 m room with a 2.5 m ceiling is 40). Needed the first time unless floor_m2 and height_m are given.' },
+        floor_m2: { type: 'number', description: 'Floor area, m² (needed for a fire\'s heat and smoke)' },
+        height_m: { type: 'number', description: 'Ceiling height, m (needed for a fire\'s heat and smoke)' },
+        lining: { type: 'string', enum: Object.keys(LINING), description: 'What the walls and ceiling are made of. Default brick.' },
+        opening_m2: { type: 'number', description: 'Area of an open door or window, m² (a door about 1.6; 0 when all are shut)' },
+        opening_height_m: { type: 'number', description: 'Height of that opening, m (a door about 2)' },
         air_changes_per_hour: { type: 'number', description: 'Only when the story sets it (sealed 0, window wide open about 5); otherwise code draws a house\'s typical leak rate once' },
         air_c: { type: 'number', description: 'Air temperature inside, °C. Default 20.' },
         outdoor_co2_ppm: { type: 'number', description: 'Carbon dioxide outside, ppm. Default 420 (present day); about 280 before 1800.' },
@@ -1716,38 +1721,59 @@ export function registerRulesTools(enabled) {
                     fuel: { type: 'string', description: `${Object.keys(FIRE_FUELS).join(', ')}, or a compound burnt in a lamp or burner (ethanol, methane, propane, octane)` },
                     kg_per_hour: { type: 'number', description: 'Fuel burnt per hour, kg (a brazier about 0.5–1 kg/h of charcoal, an open wood fire 1–3, an oil lamp 0.01)' },
                     co_g_per_kg: { type: 'number', description: 'Carbon monoxide per kg burnt, when known; otherwise the measured household-stove value' },
+                    moisture_pct: { type: 'number', description: 'For wood and other solid fuels: water, % of wet weight (seasoned 20, green 50). Default 20.' },
                 }, required: ['fuel', 'kg_per_hour'] } },
     }, ['room'], async (a) => {
         await loadChem();
         return run((st, rng) => {
             st.rooms ??= {};
             const old = st.rooms[a.room];
-            if (!old && !(a.volume_m3 && a.volume_m3 > 0))
-                return `Give volume_m3 for ${a.room} (first time). Nothing recorded.`;
+            const vol = a.volume_m3 ?? (a.floor_m2 && a.height_m ? a.floor_m2 * a.height_m : undefined);
+            if (!old && !(vol && vol > 0))
+                return `Give volume_m3 (or floor_m2 and height_m) for ${a.room} (first time). Nothing recorded.`;
             const fires = [];
             for (const f of a.fires ?? []) {
                 const k = f.fuel.trim().toLowerCase(), known = FIRE_FUELS[k];
                 if (known) {
-                    fires.push({ fuel: k, kgh: f.kg_per_hour, C: known.C, H: known.H, O: known.O, coEF: f.co_g_per_kg ?? known.coEF, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : known.note });
+                    fires.push({ fuel: k, kgh: f.kg_per_hour, C: known.C, H: known.H, O: known.O, coEF: f.co_g_per_kg ?? known.coEF, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : known.note, lhv: heatingValue({ C: known.C, H: known.H, O: known.O }, k === 'charcoal' ? 0 : f.moisture_pct ?? 20).lhvWet });
                     continue;
                 }
                 const c = findCompound(k);
                 if (!c)
                     return `Unknown fuel "${f.fuel}". Known: ${Object.keys(FIRE_FUELS).join(', ')}, or a compound name. Nothing recorded.`;
                 const el = parseFormula(c.f), M = molarMass(c.f), pct = (e, w) => (el[e] ?? 0) * w / M * 100;
-                fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : 'burns to CO2 [ASSUMED]' });
+                const hf = heatFromFormation(c), hhv = hf ? hf.kJmol / M : 0; // kJ/g = MJ/kg
+                fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_kg != null ? `CO ${f.co_g_per_kg} g/kg as given` : 'burns to CO2 [ASSUMED]', lhv: hhv - 2.443 * 8.937 * pct('H', 1.008) / 100 });
             }
-            const r = old ?? { m3: a.volume_m3, ach: a.air_changes_per_hour ?? Math.round(drawAch(() => gauss(rng)) * 100) / 100, co: 0, co2: a.outdoor_co2_ppm ?? 420, o2: OUT_O2, out: { co: 0, co2: a.outdoor_co2_ppm ?? 420 }, air_c: a.air_c ?? 20, fires: [] };
-            if (a.volume_m3)
-                r.m3 = a.volume_m3;
+            const r = old ?? { m3: vol, ach: a.air_changes_per_hour ?? Math.round(drawAch(() => gauss(rng)) * 100) / 100, co: 0, co2: a.outdoor_co2_ppm ?? 420, o2: OUT_O2, out: { co: 0, co2: a.outdoor_co2_ppm ?? 420 }, air_c: a.air_c ?? 20, fires: [] };
+            if (vol)
+                r.m3 = vol;
+            if (a.floor_m2)
+                r.floor = a.floor_m2;
+            if (a.height_m)
+                r.h = a.height_m;
+            if (a.lining)
+                r.lining = a.lining;
+            if (a.opening_m2 != null)
+                r.vent = a.opening_m2 > 0 ? { m2: a.opening_m2, h: a.opening_height_m ?? 2 } : null;
             if (a.air_changes_per_hour != null)
                 r.ach = a.air_changes_per_hour;
             if (a.air_c != null)
                 r.air_c = a.air_c;
             if (a.outdoor_co2_ppm != null)
                 r.out.co2 = a.outdoor_co2_ppm;
-            if (a.fires)
+            if (a.fires) {
+                if (!r.fires.length && fires.length) {
+                    r.fireMin = 0;
+                    r.base_c = r.air_c;
+                    r.hot = undefined;
+                }
+                if (!fires.length) {
+                    r.hot = undefined;
+                    r.layer = undefined;
+                }
                 r.fires = fires;
+            }
             st.rooms[a.room] = r;
             const inside = Object.entries(st.people ?? {}).filter(([, p]) => p.at === a.room).map(([n]) => n);
             return `${describeAir(a.room, r)}. Inside: ${inside.join(', ') || 'no one'}. The air changes minute by minute as time passes (PassTime, Act).`;
