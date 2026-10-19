@@ -35,7 +35,14 @@ function coerce(name, p, v) {
         const starts = p.enum.filter(o => key(o).startsWith(key(s)));
         if (s.trim() && starts.length === 1)
             return { v: starts[0] };
-        return { error: `${name} "${s}" is not an option (${p.enum.length <= SHOWN ? p.enum.join(' | ') : `${p.enum.slice(0, SHOWN).join(' | ')} …`})` };
+        // A long list is shown as the options nearest the given words (shared words, then shorter first), so the call can be
+        // corrected from what it meant ("dress (long sleeve, long)" → the long-sleeve dresses and gowns), not from the list's start.
+        if (p.enum.length <= SHOWN)
+            return { error: `${name} "${s}" is not an option (${p.enum.join(' | ')})` };
+        const ws = (x) => new Set(key(x).split(/[^a-z0-9]+/).filter(w => w.length > 1));
+        const want = ws(s), near = p.enum.map(o => { const ow = ws(o); return { o, n: [...want].filter(w => ow.has(w) || [...ow].some(v => v.includes(w) || w.includes(v))).length, l: o.length }; })
+            .filter(x => x.n > 0).sort((a, b) => b.n - a.n || a.l - b.l).slice(0, 10).map(x => x.o);
+        return { error: `${name} "${s}" is not an option; nearest: ${near.length ? near.join(' | ') : p.enum.slice(0, SHOWN).join(' | ')} (${p.enum.length} options in all)` };
     }
     if (p.type === 'array') {
         const list = Array.isArray(v) ? v : [v];

@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-19 (6), Claude Opus 5.5
+- User's log: Act now called for stepping out (front door → street 5 m, 3.5 s; clock 12:42:03), the checker gets the clock, the narrator's "a quarter to one" matches it. BodyEnvironment failed on the garment "dress (long sleeve, long)": the error listed the first 30 of the garment list, none a dress. Changed: an unknown value in a long list now gets the 10 nearest options by shared words (here the long-sleeve gowns and shirtdresses), so the call can be corrected.
+
 ## 2026-10-19 (5), Claude Opus 5.5
 - From the user's log ("I step out of my house onto the streets of Paris"): the planner called Weather and Look but no Act, so the clock did not move, and the narrator invented clock times ("half past three", "seventeen minutes past three by the church clock"). Changed: the planner is told that moving in the scene or changing posture → Act; the narrator is told the time of day is [TIME]'s and durations come from Act or PassTime; eval scene 58 tests it.
 
