@@ -319,6 +319,7 @@ const RULES_PRINCIPLES = `Principles
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
 - A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.
+- The time of day is the one in [TIME]; an action's duration comes from an Act or PassTime result. A clock time or duration the narration states otherwise (a church clock, "twenty minutes later") is left out.
 - A character who took a word in another meaning ([KNOWS]: "took … to mean …") acts on that meaning; the narration keeps the English word as spoken, and may quote the words as they sounded, spelled as [KNOWS] gives them (sètï, sèdï), when the misunderstanding comes out.`;
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
 export const RULES_BRIEF_DECIDED = `<rule_engine>

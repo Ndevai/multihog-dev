@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-19 (5), Claude Opus 5.5
+- From the user's log ("I step out of my house onto the streets of Paris"): the planner called Weather and Look but no Act, so the clock did not move, and the narrator invented clock times ("half past three", "seventeen minutes past three by the church clock"). Changed: the planner is told that moving in the scene or changing posture → Act; the narrator is told the time of day is [TIME]'s and durations come from Act or PassTime; eval scene 58 tests it.
+
 ## 2026-10-19 (4), Claude Opus 5.5
 - Narrator with low reasoning effort (set in SillyTavern's Additional Parameters): a reply in about 15 s.
 - Found in the user's log: the reply checker had no story clock and its JSON tool list lacked Act, so "at half past three" and "the bell rang the three-quarter hour" went unchecked. Changed: the checker gets the engine's clock and may flag Act events.
