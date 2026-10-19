@@ -14,6 +14,36 @@ export const MTM = {
 };
 export const reachTmu = (cm) => cm <= 10 ? 6.1 : cm <= 80 ? 6.1 + (cm - 10) * (18.2 - 6.1) / 70 : 18.2 + (cm - 80) * 0.24;
 const key = (a, b) => [a, b].sort().join('|');
+/** Shortest walk between two spots through recorded links (Dijkstra); null when they are not joined. */
+export function shortest(links, from, to) {
+    const adj = {};
+    for (const [k, m] of Object.entries(links)) {
+        const [a, b] = k.split('|');
+        (adj[a] ??= []).push([b, m]);
+        (adj[b] ??= []).push([a, m]);
+    }
+    const dist = { [from]: 0 }, prev = {}, done = new Set();
+    for (;;) {
+        let u = null;
+        for (const [n, d] of Object.entries(dist))
+            if (!done.has(n) && (u === null || d < dist[u]))
+                u = n;
+        if (u === null)
+            return null;
+        if (u === to) {
+            const path = [to];
+            while (path[0] !== from)
+                path.unshift(prev[path[0]]);
+            return { m: dist[to], path };
+        }
+        done.add(u);
+        for (const [v, m] of adj[u] ?? [])
+            if (dist[u] + m < (dist[v] ?? Infinity)) {
+                dist[v] = dist[u] + m;
+                prev[v] = u;
+            }
+    }
+}
 /** Rounds to the digit the spread allows: spread = 10 % of x [ASSUMED]. */
 export function honest(seconds) {
     if (seconds <= 0)
@@ -61,15 +91,15 @@ export function act(st, who, p, steps, country) {
                 continue;
             }
             st.links ??= {};
-            const k = key(p.at, s.to), known = st.links[k];
-            const d = known ?? s.distance_m;
+            const k = key(p.at, s.to), known = st.links[k], via = known == null && s.distance_m == null ? shortest(st.links, p.at, s.to) : null;
+            const d = known ?? s.distance_m ?? via?.m;
             if (d == null || !(d > 0))
                 return { error: `No distance recorded between ${p.at} and ${s.to}; give distance_m (the scene's layout) and it is kept for later.` };
-            if (known == null)
+            if (known == null && !via)
                 st.links[k] = d;
             const v = walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2);
             t = d / v;
-            what = `walks ${d} m from ${p.at} to ${s.to} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
+            what = `walks ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
             p.at = s.to;
         }
         else if (s.do === 'stairs_up' || s.do === 'stairs_down') {

@@ -25,6 +25,7 @@ import { parseFormula, molarMass } from './substance.js';
 import { airHook, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify } from './world-log.js';
+import { violations } from './invariants.js';
 import { heatingValue, heatFromFormation, loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -350,6 +351,8 @@ World
 - A price, a wage or a bill → Price. A contagious disease → Disease. An attack by one army or unit on a defended position → Battle. A spell → CastSpell. A random pick (a door, a coin, a card) or a loot or random-event table → RollTheDice with kind "table"; a quantity → kind "amount".
 ${RULES_PRINCIPLES}
 </rule_engine>`;
+/** Minutes as "49 min 23 s" (whole minutes shown bare). */
+const mmss = (m) => { const s = Math.round(m * 60), mm = Math.floor(s / 60), ss = s % 60; return ss ? `${mm} min ${ss} s` : `${mm} min`; };
 /** Story time in minutes (see clock.ts): the time set with /rules-time plus the minutes PassTime has run since; null when unset. */
 function storyNow(st) {
     return st.clock ? st.clock.t + st.clock.add : null;
@@ -513,6 +516,12 @@ export function registerRulesTools(enabled) {
             const before = structuredClone(store().state);
             const out = plain(await action(args));
             const s = store();
+            const broken = violations(before, s.state, name, args);
+            if (broken.length) {
+                s.state = before;
+                save();
+                return `${name} refused: the result would break a law of the world (${broken.join('; ')}). Nothing recorded; correct the call.`;
+            }
             s.history ??= { base: before, log: [], n: 0 };
             record(s.history, { msg: SillyTavern.getContext().chat?.length ?? 0, tool: name, args, draws: [...LAST_DRAWS], ops: diff(before, s.state) });
             remember(name, args, out);
@@ -1650,7 +1659,7 @@ export function registerRulesTools(enabled) {
                 st.clock.add += elapsed;
             const walked = walkers.map(([n, p, kmh]) => { const met = p.workMet ?? 0; delete p.workMet; return `${n} walked ${Math.round(kmh * elapsed / 60 * 10) / 10} km at ${Math.round(met * 10) / 10} MET`; });
             const head = (events.length
-                ? `Time stopped after ${elapsed} of ${asked} minutes: ${events.join('; ')}. ${asked - elapsed} minutes remain.`
+                ? `Time stopped after ${mmss(elapsed)} of ${asked} minutes: ${events.join('; ')}. ${mmss(asked - elapsed)} remain.`
                 : `${elapsed} minutes passed.`) + (walked.length ? ` ${walked.join('; ')}.` : '');
             const lines = Object.entries(st.people || {}).map(([who, p]) => status(who, p));
             return [head, ...lines].join('\n');

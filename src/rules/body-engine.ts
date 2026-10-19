@@ -1309,6 +1309,16 @@ const watch = (p: Person) => ({
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis, peritonitis: !!p.peritonitis,
 });
 
+// Quantities whose thresholds mark events: blood lost share (classes at 15, 30, 40 %), carboxyhaemoglobin (unconscious 30 %,
+// dead 40 %).
+const levels = (p: Person) => ({ loss: lossFraction(p), hb: p.co?.hb ?? 0 });
+const THRESH: Record<'loss' | 'hb', number[]> = { loss: [0.15, 0.3, 0.4], hb: [0.3, 0.4] };
+function crossing(a: { loss: number; hb: number }, b: { loss: number; hb: number }): number {
+    let f = 1;
+    for (const k of ['loss', 'hb'] as const) for (const t of THRESH[k]) if (a[k] < t && b[k] >= t) f = Math.min(f, (t - a[k]) / (b[k] - a[k]));
+    return f;
+}
+
 function changes(who: string, a: Watch, b: Watch): string[] {
     const out: string[] = [];
     if (b.dead && !a.dead) out.push(`${who} dies (${b.dead})`);
@@ -1338,12 +1348,16 @@ export function advanceAll(people: Record<string, Person>, minutes: number, rest
     for (let m = 1; m <= total; m++) {
         eachMinute?.();
         const events: string[] = [];
+        let frac = 1;
         for (const [who, p] of Object.entries(people)) {
-            const before = watch(p);
+            const before = watch(p), lv = levels(p);
             advance(p, 1, resting.has(who), rng, { active: active.has(who), sleeping: sleeping.has(who) });
-            events.push(...changes(who, before, watch(p)));
+            const ev = changes(who, before, watch(p));
+            if (ev.length) { events.push(...ev); frac = Math.min(frac, crossing(lv, levels(p))); }
         }
-        if (events.length) return { elapsed: m, events };
+        // The event's moment inside the minute: where the quantity that crossed its threshold crossed it, the quantity taken
+        // as changing evenly over the minute [ASSUMED]; events with no such quantity count at the minute's end.
+        if (events.length) return { elapsed: m - 1 + frac, events };
     }
     return { elapsed: total, events: [] };
 }
