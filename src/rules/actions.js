@@ -197,7 +197,22 @@ const WORD_STEPS = [
             return [{ do: 'walk_to', to: to || `outside, near where ${who} stood`, distance_m: d }];
         }],
 ];
+// A distance written in the words: "300 yards", "three hundred yards", "half a mile", "2 km", "fifty feet". Units: metre
+// 1, yard 0.9144, foot 0.3048, mile 1609.344, kilometre 1000 (international yard and pound, 1959).
+const UNIT = [[/^(?:m|metres?|meters?)$/, 1], [/^(?:yds?|yards?)$/, 0.9144], [/^(?:ft|feet|foot)$/, 0.3048], [/^(?:mi|miles?)$/, 1609.344], [/^(?:km|kilometres?|kilometers?)$/, 1000]];
+const NUM = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, hundred: 100, 'a hundred': 100, 'half a': 0.5, 'a quarter of a': 0.25 };
+export function distanceIn(text) {
+    const m = text.toLowerCase().match(/\b((?:\d+(?:[.,]\d+)?)|half a|a quarter of a|a hundred|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty|fifty|sixty|hundred)(?:\s+(hundred|thousand))?\s*(m|metres?|meters?|yds?|yards?|ft|feet|foot|mi|miles?|km|kilometres?|kilometers?)\b/);
+    if (!m)
+        return null;
+    let n = /\d/.test(m[1]) ? Number(m[1].replace(',', '.')) : NUM[m[1]];
+    if (m[2])
+        n *= m[2] === 'hundred' ? 100 : 1000;
+    const u = UNIT.find(([re]) => re.test(m[3]));
+    return u && n > 0 ? Math.round(n * u[1] * 10) / 10 : null;
+}
 export function stepsFromWords(text, who, distance) {
+    distance ??= distanceIn(text) ?? undefined;
     const t = text.toLowerCase(), found = [];
     const orig = (low) => { if (!low)
         return low; const i = t.indexOf(low); return i >= 0 ? text.slice(i, i + low.length) : low; };

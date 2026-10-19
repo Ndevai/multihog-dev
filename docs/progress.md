@@ -374,3 +374,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - The fault: an Act whose actor list came as "actions" (refused as "action must be text"); a second Act for the same walk ran. `prepareAct` reads a list of actor objects under action or actions as the actors.
 - Found in the turns: the Rio guard of 1822 was drawn as "Railway Guard, born in this county": Brazil 1822 is outside the population tables, and the fallback took the 1881 English census's job and birthplace. Now, outside England and Wales a stated occupation keeps the story's word; its sex and age come from the census's people of that occupation (guards: men of working age), or from working-age people when the census has no match; birthplace is the story's. Where the country's tables exist, a stated occupation draws age and sex kept with the ILO share of that sex and age in work (rejection sampling, 50 tries).
+
+## 2026-10-19 (25) Stories of several turns; distances in words
+
+- tools/run-story.mjs plays three 4-turn stories (Whitechapel 1888: out, to the market, buy apples, home and give one to her brother; a York inn 1820: sit, order, overhear a whisper, tell the innkeeper; Lisbon 1755: climb, drop into the garden, creep to a window, look in) with each reply kept in the chat and the state saved per message, as SillyTavern does. Faults per turn and across turns: refusals left after the repair, no tool, an expected tool missing, the clock running back or standing still after an action, every rule-check flag including facts a character could not know ([KNOWS] passed to the check). Writes story-result.txt.
+- actions.ts `distanceIn`: a distance written in the words ("three hundred yards", "half a mile", "fifty feet", "2 km") gives walk_to its distance when none is passed (international yard 0.9144 m, foot 0.3048 m, mile 1609.344 m).
+- Open: running is timed at walking pace.
