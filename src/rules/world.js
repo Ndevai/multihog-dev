@@ -104,11 +104,11 @@ export function worldBlock(book, here = null, sunUp = null) {
         const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', does not talk'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}${now(e)}` : '';
         return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${areaWords(e, here)}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}`;
     };
-    return `[WORLD]\nThis world is real history with these additions. Areas of life an addition does not reach are as in real history.\n${book.map(line).join('\n')}\n[/WORLD]`;
+    return `[WORLD]\nThis world is real history with these additions. Everything else is as in real history.\n${book.map(line).join('\n')}\n[/WORLD]`;
 }
 export const FILL_SYSTEM = `You write one entry of a world book for a story set in real history with additions. Change as little real history as the addition needs.
 From the user's line, fill: what, kind, since (a year, or leave it out for always), its area as lat and lon of the centre with radius_km (or worldwide: true), cause (one sentence: how it came to be), reaches (only the areas of life the cause reaches), reflections (3 to 7 short facts everyone in that world knows, each in a reached area), and for a creature or a people: species (the Dwarf Fortress creature its body is), speaks, active, weakness.
-Write cause and reflections without present-day country names; name a place only as people there at that date would.
+In cause and reflections, name each place as people there at that date named it.
 Allowed values: kind ${KINDS.join(' | ')}; reaches ${DOMAINS.join(' | ')}; active ${ACTIVE.join(' | ')}; weakness ${WEAKNESS.join(' | ')}.
 Write only the JSON object.`;
 /** The last JSON object in the model's text, or null. */

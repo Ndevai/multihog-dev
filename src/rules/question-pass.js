@@ -8,6 +8,7 @@ import { turnKey } from './turn.js';
 import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition } from './rules-tools.js';
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
+import { takeFlags } from './audit-flags.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import { loadColex } from './colex.js';
@@ -23,25 +24,25 @@ const SKIP_ALWAYS = new Set(['BodyStatus']);
 /** Tools the question model is not shown: BodyStatus always, magic tools in a world without magic. */
 const SKIP = { has: (n) => SKIP_ALWAYS.has(n) || (MAGIC_TOOLS.has(n) && !worldHasMagic()) };
 export const QUESTION_SYSTEM = `You prepare one turn of a roleplay for its narrator. Code decides outcomes with the tools listed below; the narrator then writes what they return.
-Read the scene and the player's message. Find each thing the next reply will state that code decides. Two kinds: outcomes in doubt (an action that may fail, a blow that may land, a sound or sight that may be missed, a message that may not be understood, a person whose response is open), and facts code fixes even when nothing is in doubt (the time an action or a wait takes, the day's weather, an item changing hands, a new person's age and sex, a fact the scene establishes or a character learns).
+Read the scene and the player's message. Find each thing the next reply will state that code decides. Two kinds: outcomes in doubt (an action that may fail, a blow that may land, whether a sound is heard or a sight seen, whether a message is understood, how a person responds), and facts code fixes even when nothing is in doubt (the time an action or a wait takes, the day's weather, an item changing hands, a new person's age and sex, a fact the scene establishes or a character learns).
 Ask about the things this reply shows. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
-A player's message that states something the story has not established about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A person the story has not described who acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
+A player's message that states something new about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A new person who first acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one call per person. One call per question; calls run in the order given, so put time passing after the actions it follows.
-When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. When the scene's position is not yet known and the scene or scenario says where it is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
-First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}. When the reply will state none of these, write {"calls":[]}.`;
+When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. The first time the scene or scenario says where the scene is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
+First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}. A plan with zero calls is {"calls":[]}.`;
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
 // FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
-const FOLLOW_ON = `RESULTS SO FAR
+export const FOLLOW_ON = `RESULTS SO FAR
 {results}
 
 FOLLOW-ON QUESTIONS
 {then}
 
-Write the calls for the follow-on questions these results leave in doubt; a question a result settles or rules out gets no call. Same format: QUESTIONS, then the JSON {"calls":[...]}.`;
+Write a call for each follow-on question these results leave open. Same format: QUESTIONS, then the JSON {"calls":[...]}.`;
 // A call the tool refused (an argument missing or malformed) goes back once with the tool's own message, and so does a plan
 // that cannot be read or leaves out the scene's position: the planner corrects its own call, as a tool error is fed back
 // in ReAct (Yao et al. 2023). A London 1888 turn lost its Act and Look this way, and a London 1899 turn ran nothing.
-const REPAIR = `YOUR LAST ANSWER
+export const REPAIR = `YOUR LAST ANSWER
 {problems}
 
 Write the corrected calls only, same format: QUESTIONS, then the JSON {"calls":[...]} (with "at" and "time" when asked for above). A value that depends on another call's result (a fall's height after a failed climb) goes in "then" as a question; you will get that result first.`;
@@ -93,7 +94,7 @@ const oneLine = (t) => `${t.name}: ${t.description.split(/(?<=\.)\s/)[0]}`;
 // tools, and function-calling accuracy falls as the number of functions offered grows (Patil et al. 2025, BFCL), so the
 // question model gets the full arguments of the tools named here and one line for the rest. A tool it then needs is added
 // for the follow-on round ("need").
-const PICK_SYSTEM = `You choose which rule tools the next reply of a roleplay may need. Code decides outcomes with these tools. Read the scene and the player's message and name every tool whose outcome the reply may need: an action that may fail, a blow, a sound or sight that may be missed, a message, a person's open response, time passing, an item changing hands, a fact established or learned, something the player states about their own character, a new person. When unsure whether a tool applies, include it. Write only the JSON {"tools":["Name", ...]}.`;
+export const PICK_SYSTEM = `You choose which rule tools the next reply of a roleplay may need. Code decides outcomes with these tools. Read the scene and the player's message and name every tool whose outcome the reply may need: an action that may fail, a blow, a sound or sight, a message, a person's response, the time an action takes, time passing, the weather, an item changing hands, a fact established or learned, something the player states about their own character, a new person. When unsure whether a tool applies, include it. Write only the JSON {"tools":["Name", ...]}.`;
 const PICK_MESSAGES = 3;
 /** The tools the question model asks for, or null when its answer cannot be read (then every tool is shown). */
 export async function pickTools(chat, send) {
@@ -207,6 +208,18 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         if (time !== null && storyTime() === null)
             setStoryTime(time);
         await runAll(calls);
+        // A rewrite after the rule check: each flagged event gets its tool run now, from the results so far.
+        const flags = takeFlags().filter(f => REGISTRY.has(f.tool));
+        if (flags.length && calls.length < MAX_CALLS) {
+            await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
+            const tools = new Set(flags.map(f => f.tool));
+            const prompt = questionPrompt(chat, knowledgeBlock(s.state), tracker, tools);
+            const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n') || '(none)')
+                .replace('{then}', flags.map(f => `- The reply needs: "${f.quote}" (${f.tool})`).join('\n'));
+            const more = dedupe(validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${follow}`))).filter(c => tools.has(c.tool))).slice(0, MAX_CALLS - calls.length);
+            await runAll(more);
+            calls = [...calls, ...more];
+        }
     }
     else {
         await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);

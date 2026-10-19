@@ -336,11 +336,11 @@ function whoAny(st: RuleState, name: string, speciesArg?: string): Who {
 // Principles shared by both briefs.
 const RULES_PRINCIPLES = `Principles
 - Write each BodyCheck result in [DECIDED] as *(its task → SUCCESS)* or *(its task → FAILURE)*, as the result gives it, right after the sentence that narrates it.
-- The world is real history with the additions in [WORLD]; an area of life an addition does not reach is as in real history.
+- The world is real history with the additions in [WORLD]; everything else is as in real history.
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
 - A player's message says what their character tries. Whether it works comes from the rule engine, also when the message states the result or disputes an earlier one; a result stands. What it states about the character holds as [DECIDED] or [KNOWS] gives it; the world is as the scenario and the world's facts give it.
-- Clock times and durations in the narration are the ones in [TIME] and in Act and PassTime results; the rest of the passing of time is told without numbers (a while, at once).
+- Clock times and durations in the narration are the ones in [TIME] and in Act and PassTime results; the rest of the passing of time is told in words (a while, at once).
 - A character who took a word in another meaning ([KNOWS]: "took … to mean …") acts on that meaning; the narration keeps the English word as spoken, and may quote the words as they sounded, spelled as [KNOWS] gives them (sètï, sèdï), when the misunderstanding comes out.`;
 
 /** The brief when the question pass has decided this turn: the narrator writes [DECIDED] and calls nothing. */
@@ -367,14 +367,14 @@ Surroundings
 Senses
 - A sound that might be heard → Listen. Something that might be seen → Look. A message whose arrival is in doubt, or that teaches a fact → Communicate; a word it names as having several meanings → Interpret.
 People
-- A character the story has not described → NewCharacter; their first name → NameCharacter; their height and mass → BodySize.
+- A new character, at first appearance → NewCharacter; their first name → NameCharacter; their height and mass → BodySize.
 - A person's response to a possible lie, an emergency, an order to hurt someone, a stranger's small favour, order or request to go first, or a first meeting → SocialResponse.
 - A betrayal, a promise or apology after one, faith kept, or whether the betrayed one trusts the betrayer again → Trust.
 - A character's pick among several real options → Choose. A character's feelings about something → Appraise.
 - A fact the story establishes, or something a character learns → RecordFact.
 - A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness.
 - An item changing hands, found, made, lost or used up → Transfer, once the story has it happen.
-- A player's message stating something the story has not established about their own character (what they are, an item they have, something they can do or did) → Claim, before the actions that rely on it.
+- A player's message stating something new about their own character (what they are, an item they have, something they can do or did) → Claim, before the actions that rely on it.
 - Give a character's species, and their mass when the story states it, in the first rule-tool call about them; the engine keeps both after that.
 World
 - A price, a wage or a bill → Price. A contagious disease → Disease. An attack by one army or unit on a defended position → Battle. A spell → CastSpell. A random pick (a door, a coin, a card) or a loot or random-event table → RollTheDice with kind "table"; a quantity → kind "amount".
@@ -607,9 +607,9 @@ export function registerRulesTools(enabled: boolean): void {
     tool('BodyStrike', 'Resolve an attack before narrating it: whether it lands, which tissue layers it cuts or smashes, and the wounds it records. Narrate a miss as a miss.', {
         who: str('Character hit'),
         species,
-        part: str('Body part aimed at, by name (head, throat, upper body, right upper arm, left eye…). Omit when the blow is not aimed at a part: the location is then drawn.'),
-        attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…). Omit for a shot.'),
-        weapon: { type: 'string', enum: MELEE, description: 'Melee weapon used, if any; the nearest kind for a weapon not listed (a club as a mace, a knife as a dagger).' },
+        part: str('Body part aimed at, by name (head, throat, upper body, right upper arm, left eye…). For an unaimed blow leave it empty: code draws the location.'),
+        attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…). Empty for a shot.'),
+        weapon: { type: 'string', enum: MELEE, description: 'Melee weapon used, if any; for any other weapon the nearest kind (a club as a mace, a knife as a dagger).' },
         material: { type: 'string', enum: WEAPON_MATERIALS, description: 'Material of the weapon (a metal) or of the ammunition (a metal, bone or wood). Default iron.' },
         launcher: { type: 'string', enum: ['bow', 'crossbow', 'blowgun'], description: 'For a shot; the ammunition is its arrow, bolt or dart in material. Call it after the shot is on target (BodyCheck for aim); the target can still dodge or block it.' },
         skill: { type: 'string', enum: SKILL_LEVELS, description: 'Attacker\'s fighting skill level. Dabbling = untrained.' },
@@ -630,8 +630,8 @@ export function registerRulesTools(enabled: boolean): void {
                             type: 'object',
                             properties: {
                                 part: str('Body part name'),
-                                sublocations: { type: 'array', items: { type: 'string', enum: SUBLOCATION_NAMES() }, description: 'Covered sub-locations of the part; omit for the whole part.' },
-                                sides: { type: 'array', items: { type: 'string', enum: ['front', 'back'] }, description: 'Covered side; omit for both (a breastplate without a back plate = front).' },
+                                sublocations: { type: 'array', items: { type: 'string', enum: SUBLOCATION_NAMES() }, description: 'Covered sub-locations of the part. Default: the whole part.' },
+                                sides: { type: 'array', items: { type: 'string', enum: ['front', 'back'] }, description: 'Covered side. Default: both (a breastplate alone = front).' },
                                 coverage: { type: 'number', description: '% of those sub-locations the portion covers (gaps, holes, mesh); default 100.' },
                                 material: str('Material of this portion when it differs from the item\'s (a leather nape guard on an iron helm).'),
                             },
@@ -648,17 +648,17 @@ export function registerRulesTools(enabled: boolean): void {
             },
         },
         attacker: str('Attacker name; a tracked attacker uses its own species, mass and wounds'),
-        attacker_species: str('Attacker\'s DF creature when the attacker is not tracked. Default human.'),
-        attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg when not tracked; default the species\' adult mass.' },
+        attacker_species: str('Attacker\'s DF creature, for an attacker missing from [BODY]. Default human.'),
+        attacker_mass_kg: { type: 'number', description: 'Attacker body mass in kg, for an attacker missing from [BODY]; default the species\' adult mass.' },
         target_mass_kg: { type: 'number', description: 'Body mass of the character hit, in kg, the first time this character appears; default the species\' adult mass.' },
         awake: { type: 'boolean', description: 'Target awake. Default true.' },
         facing: { type: 'boolean', description: 'Target looking toward the attacker. Default true.' },
         lit: { type: 'boolean', description: 'Enough light for the target to see the attacker. Default true.' },
         noise_db: { type: 'number', description: 'Sound level of the attacker at the target in dB(A). 0 = silent.' },
-        noise_sound: { type: 'string', enum: Object.keys(SOUNDS), description: 'The attacker\'s sound, when it is one of these (level at the target is computed from distance_m); use instead of noise_db.' },
+        noise_sound: { type: 'string', enum: Object.keys(SOUNDS), description: 'The attacker\'s sound, when it is one of these (level at the target is computed from distance_m); the alternative to noise_db.' },
         under_fire: { type: 'boolean', description: 'For a shot: the shooter is being shot at.' },
-        noise_khz: { type: 'number', description: 'Main pitch of that sound in kHz, when it is a tone (whistle, ultrasonic call). Omit for ordinary noise.' },
-        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Omit when already within reach.' },
+        noise_khz: { type: 'number', description: 'Main pitch of that sound in kHz, when it is a tone (whistle, ultrasonic call). Default: broadband noise.' },
+        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Default: within reach.' },
         approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
         sense_range_m: { type: 'number', description: 'Range of any non-visual sense the target has that detects an approaching attacker (e.g. telepathy), in m.' },
         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
@@ -700,28 +700,28 @@ export function registerRulesTools(enabled: boolean): void {
         garments: {
             type: 'array',
             description: 'Clothing as garments (alone or on top of an ensemble). Name from the list or clo for anything else; covers = body regions (head, neck, chest, back, torso, pelvis, shoulders, arms, forearms, hands, thighs, lower legs, legs, feet, or one side: left hand…)',
-            items: { type: 'object', properties: { name: { type: 'string', enum: Object.keys(GARMENTS), description: 'Garment from the list; give clo instead for anything else' }, clo: { type: 'number', description: 'Insulation of a garment not in the list, clo' }, covers: { type: 'array', items: { type: 'string', enum: REGION_WORDS } } }, required: ['covers'] },
+            items: { type: 'object', properties: { name: { type: 'string', enum: Object.keys(GARMENTS), description: 'Garment from the list; for any other garment, its clo' }, clo: { type: 'number', description: 'Insulation of any other garment, clo' }, covers: { type: 'array', items: { type: 'string', enum: REGION_WORDS } } }, required: ['covers'] },
         },
         water_c: { type: 'number', description: 'Water temperature, °C, when any body region is in water' },
         immersed: { type: 'array', items: { type: 'string', enum: IMMERSION_WORDS }, description: 'Regions in water: "whole body" (neck down, head out), "submerged" (head under too), or regions (legs, feet, torso, arms…)' },
-        swimming: { type: 'boolean', description: 'Swimming (set met 6 unless faster); cold arms end swimming' },
+        swimming: { type: 'boolean', description: 'Swimming (met 6 for ordinary swimming, higher for faster); cold arms end swimming' },
         afloat: { type: 'boolean', description: 'Kept afloat with the head out by a life jacket, wreckage or a boat' },
         water_speed_ms: { type: 'number', description: 'Water moving past the body (current, swimming), m/s. Default 0' },
         immersion_suit: { type: 'boolean', description: 'Clothing is a dry suit or immersion suit that keeps water out' },
         face_covered: { type: 'boolean', description: 'Face covered (mask, balaclava, scarf over the face). Default false' },
-        met: { type: 'number', description: 'Activity in METs for the whole span when fixed (Compendium of Physical Activities values: sleeping 0.95, sitting quietly 1.3, walking 3 mph 3.5). Omit to follow PassTime (sleeping 0.95, resting 1.3, active 3.5)' },
-        activity: str('What the characters are doing, in plain words ("chopping wood", "sitting in a lecture", "rowing a boat"), when met is not given: code takes the Compendium value'),
+        met: { type: 'number', description: 'Activity in METs for the whole span when fixed (Compendium of Physical Activities values: sleeping 0.95, sitting quietly 1.3, walking 3 mph 3.5). Default: as PassTime sets it (sleeping 0.95, resting 1.3, active 3.5)' },
+        activity: str('What the characters are doing, in plain words ("chopping wood", "sitting in a lecture", "rowing a boat"), code takes the Compendium value (or give met)'),
         altitude_m: { type: 'number', description: 'Altitude above sea level, m, whenever it changes by 500 m or more. 0 = sea level' },
-        sudden_ascent: { type: 'boolean', description: 'Arrived at this altitude within minutes (aircraft, magic, a fall upward) rather than by climbing' },
+        sudden_ascent: { type: 'boolean', description: 'Arrived at this altitude within minutes (aircraft, magic, a fall upward) ' },
         decompression: { type: 'boolean', description: 'A pressurized cabin or enclosure suddenly opened at this altitude (breath torn out; shorter time conscious)' },
         co_ppm: { type: 'number', description: 'Carbon monoxide in the air, ppm (fire smoke in a room 1000–10 000; car exhaust in a closed garage several thousand; a faulty heater 100–1000); 0 = fresh air' },
-        o2_pct: { type: 'number', description: 'Oxygen in the air, % (normal 20.9; a fire-filled or sealed room or gas-displaced air lower); omit for normal air' },
+        o2_pct: { type: 'number', description: 'Oxygen in the air, % (normal 20.9; a fire-filled or sealed room or gas-displaced air lower). Default: 20.9' },
         smoke: { type: 'boolean', description: 'Breathing fire smoke (causes inhalation injury)' },
         swimmer: { type: 'boolean', description: 'Whether the character can swim, when the story has established it; otherwise code draws it once (46 % of adults)' },
         deep_water: { type: 'boolean', description: 'Water over the head. Default true when immersed.' },
         clear: { type: 'boolean', description: 'Remove recorded conditions' },
-        weather_place: str('Outdoors: the town or city the characters are in or nearest to ("Lyon", "Sydney, Australia"); air temperature then follows that place\'s weather as PassTime runs (air_c may be left out). Leave it out indoors.'),
-        latitude: { type: 'number', description: 'With weather_place for a place not in the lists (fictional or remote): its latitude; the nearest listed city is used' },
+        weather_place: str('Outdoors: the town or city the characters are in or nearest to ("Lyon", "Sydney, Australia"); air temperature then follows that place\'s weather as PassTime runs (air_c then optional).'),
+        latitude: { type: 'number', description: 'With weather_place for any other place (fictional or remote): its latitude; the nearest listed city is used' },
         longitude: { type: 'number', description: 'Longitude, with latitude' },
     }, ['who'], async a => {
         if (a.weather_place) await prefetchWeather(findPlace(a.weather_place, a.latitude, a.longitude), storyNow(store().state));
@@ -761,7 +761,7 @@ export function registerRulesTools(enabled: boolean): void {
         protein_g: { type: 'number', description: 'Protein in it, g, when known' },
         fat_g: { type: 'number', description: 'Fat in it, g, when known' },
         alcohol_g: { type: 'number', description: 'Pure alcohol drunk, grams (beer 330 mL 13 g, wine glass 150 mL 14 g, spirit shot 40 mL 13 g)' },
-        water_source: { type: 'string', enum: WATER_SOURCES, description: 'Where untreated water came from; leave out for treated tap or bottled water' },
+        water_source: { type: 'string', enum: WATER_SOURCES, description: 'Where untreated water came from (river, well, rain barrel). Default: treated tap or bottled water' },
         boiled: { type: 'boolean', description: 'The water was brought to a rolling boil first' },
     }, ['who'], a => run((st, rng) => {
         const { p, error } = who(st, a.who);
@@ -951,7 +951,7 @@ export function registerRulesTools(enabled: boolean): void {
         return out.length ? `${c ?? a.city}, ${year}: ${out.join('; ')}.` : 'No figures for that place and year.';
     }));
 
-    tool('NameCharacter', 'Give a first name to a character in an American setting whose name the story has not fixed, before naming them. Drawn by how many US babies of that sex got the name in their birth decade (1910–2029).', {
+    tool('NameCharacter', 'Give a first name to a character in an American setting whose name is still open, before naming them. Drawn by how many US babies of that sex got the name in their birth decade (1910–2029).', {
         who: str('Label of the character (e.g. "the waitress")'),
         sex: { type: 'string', enum: ['male', 'female'] },
         birth_year: { type: 'number', description: 'Year of birth (story year minus age)' },
@@ -960,7 +960,7 @@ export function registerRulesTools(enabled: boolean): void {
         return n ? `${a.who}: first name ${n}.` : 'US name data cover births 1910–2029.';
     }));
 
-    tool('BodySize', 'Decide the height and body mass of an adult character the story has not described, before describing them, from their country, sex and birth year; eye and hair colour too where the country has data (15 European and Central Asian countries). Records the mass for the body rules.', {
+    tool('BodySize', 'Decide the height and body mass of an adult character whose build the story leaves open, before describing them, from their country, sex and birth year; eye and hair colour too where the country has data (15 European and Central Asian countries). Records the mass for the body rules.', {
         who: str('The character'),
         country: str('Country the character grew up in (present-day name, e.g. United Kingdom, Nigeria, Japan). Default: the country of the last place given.'),
         sex: { type: 'string', enum: ['male', 'female'] },
@@ -1113,17 +1113,17 @@ export function registerRulesTools(enabled: boolean): void {
     // A player's message is plain language: what it states about their character or the world becomes a fact only through
     // a draw, like an action ("say yes or roll the dice", Baker 2004, Dogs in the Vineyard). The chance combines the setting's
     // base share with the estimate for this story, as BodyCheck does; the result is recorded either way, so it stays.
-    tool('Claim', 'Decide whether something a player\'s message states about their own character holds, when the story has not established it: what the character is, an item they have, an ability of body or skill, something that happened to them before, something outside their control happening to them now (a slip, a faint, a cramp). Permission comes from the people who give it (SocialResponse or Choose); what a place allows comes from the scene and the world\'s facts. Returns whether it holds; either way it is recorded and stays.', {
+    tool('Claim', 'Decide whether something a player\'s message states about their own character holds, when it is new to the story: what the character is, an item they have, an ability of body or skill, something that happened to them before, something outside their control happening to them now (a slip, a faint, a cramp). Permission comes from the people who give it (SocialResponse or Choose); what a place allows comes from the scene and the world\'s facts. Returns whether it holds; either way it is recorded and stays.', {
         who: str('The player\'s character making the claim'),
         claim: str('The claim, one short sentence ("Mary is a cat", "Mary has a pistol in her coat", "the cellar door is unlocked")'),
         kind: { type: 'string', enum: ['what the character is', 'something the character has', 'something the character can do', 'something that happened before', 'something happening to the character now', 'something the character knows', 'something the character chooses to do now'] },
         trait: { type: 'string', enum: TRAITS, description: 'For "something the character chooses to do now": the personality trait the act expresses (shouting, partying: extraversion; insulting, fighting: agreeableness, low pole; slacking off: conscientiousness, low pole; panicking, crying: emotional stability, low pole; reading, questioning: intellect)' },
-        trait_level: { type: 'string', enum: LEVELS, description: 'The character\'s place on that trait among people, when the story has shown it ("hard-working": conscientiousness high). Otherwise leave out: code draws it once and keeps it.' },
+        trait_level: { type: 'string', enum: LEVELS, description: 'The character\'s place on that trait among people, when the story has shown it ("hard-working": conscientiousness high). Default: code draws it once and keeps it.' },
         act_pole: { type: 'string', enum: POLES, description: 'With trait: whether the act shows much of the trait or little of it' },
         act_strength: { type: 'string', enum: STRENGTHS, description: 'With trait: mild (a raised voice) or strong (screaming)' },
         behaviour: { type: 'string', enum: BEHAVIOURS, description: 'With trait, when one fits: the act as one of these' },
         situation: { type: 'string', enum: SETTINGS, description: 'With behaviour, when one fits: the setting as one of these' },
-        in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world: real history for the date, plus [WORLD] (orcs in a world whose book has orcs; a revolver after 1836). False: the claim does not hold.' },
+        in_world: { type: 'boolean', description: 'The kind of thing claimed exists in this world: real history for the date, plus [WORLD] (orcs in a world whose book has orcs; a revolver after 1836). False: the claim fails.' },
         species: str('For "what the character is": the DF creature claimed (cat, dragon, horse), when it is a creature'),
         item: str('For "something the character has": the item, a few words ("revolver", "12 shillings" as item "shilling" with the count in the claim)'),
         language: str('For "something the character can do" when it is speaking a language: the language as named ("japanese", "modern japanese", "old mandarin")'),
@@ -1258,8 +1258,8 @@ export function registerRulesTools(enabled: boolean): void {
     tool('Transfer', 'Record an item changing hands, entering or leaving the story, once the story has it happen: given, sold, bought, lent, returned, stolen, taken by force, found, made, lost, used up, dropped. Whether it happens comes first from the tool that decides how (SocialResponse or Choose for an agreement, Look for a theft that may be seen, HoldOn or BodyStrike for a struggle, Price for what it costs). Returns the new holder and, when it differs, the owner; [HAS] then shows both.', {
         item: str('The item, a few words, singular ("revolver", "shilling", "loaf of bread")'),
         quantity: { type: 'number', description: 'How many. Default 1.' },
-        from: str('Who had it; leave out when it comes from the world (found, made, bought from someone untracked)'),
-        to: str('Who or where has it now: a person, or a place when it is left there ("the west hall window"), so it can be found later; leave out when it leaves the story (used up, sold away)'),
+        from: str('Who had it. Default: the world (found, made, bought from someone untracked)'),
+        to: str('Who or where has it now: a person, or a place when it is left there ("the west hall window"), so it can be found later. Default: out of the story (used up, sold away)'),
         how: { type: 'string', enum: HOW },
     }, ['item', 'how'], a => run(st => {
         const own = inalienable(st, a.item);
@@ -1322,7 +1322,7 @@ export function registerRulesTools(enabled: boolean): void {
         viewer_species: str('Viewer\'s DF creature when the engine has no record of them yet.'),
         target: str('What might be seen, a few words'),
         size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, horse 0.6, wagon or car 1.5)' },
-        distance_m: { type: 'number', description: 'Distance, m: needed unless viewer and target_who are both placed with Layout' },
+        distance_m: { type: 'number', description: 'Distance, m; Layout gives it when viewer and target_who are both placed' },
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Set for an overcast sky or artificial light; code takes daylight, twilight, moonlight and starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
@@ -1430,7 +1430,7 @@ export function registerRulesTools(enabled: boolean): void {
     tool('HoldOn', 'Decide whether a person can hang on by their hands (a ledge, a rope, a branch) or carry a load by its handles, before narrating it.', {
         who: str('Character holding on'),
         hanging: { type: 'boolean', description: 'Hanging by the hands: the load is the character\'s own body' },
-        load_kg: { type: 'number', description: 'Mass carried by handles, kg (when not hanging)' },
+        load_kg: { type: 'number', description: 'Mass carried by handles, kg (carrying)' },
         hands: { type: 'number', description: 'Hands used, 1 or 2. Default 2.' },
         seconds: { type: 'number', description: 'How long the hold must last, s (until help arrives, to cross the gap)' },
         fingertips: { type: 'boolean', description: 'Only the fingertips hold: a ledge, a window sill, a narrow edge' },
@@ -1449,8 +1449,8 @@ export function registerRulesTools(enabled: boolean): void {
         gap_m: { type: 'number', description: 'Head start, m' },
         pursuer_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human pursuer the engine has no sex for' },
         fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing the engine has no sex for' },
-        pursuer_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The pursuer\'s build, when the story states it and BodySize has not drawn it' },
-        fleeing_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The fleeing character\'s build, when the story states it and BodySize has not drawn it' },
+        pursuer_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The pursuer\'s build, when the story states it (BodySize draws it otherwise)' },
+        fleeing_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The fleeing character\'s build, when the story states it (BodySize draws it otherwise)' },
         pursuer_age: { type: 'number', description: 'For a human pursuer the engine has no age for, years' },
         fleeing_age: { type: 'number', description: 'For a human fleeing the engine has no age for, years' },
     }, ['pursuer', 'fleeing', 'gap_m'], a => run((st, rng) => {
@@ -1464,7 +1464,7 @@ export function registerRulesTools(enabled: boolean): void {
         return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m, rng);
     }));
 
-    tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character who appears for the first time and whom the story has not described (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
+    tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character new to the story (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
         occupation: str('Only when the story already fixes it, in a word or two (innkeeper, carter, blacksmith, servant)'),
@@ -1510,7 +1510,7 @@ export function registerRulesTools(enabled: boolean): void {
 
     tool('BodyTreat', 'Apply a treatment to a wound. load = putting weight on a fractured part.', {
         who: str('Character name'),
-        wound: { type: 'number', description: 'Wound id (not needed for antivenom, antibiotics, laparotomy, oxygen or transfuse)' },
+        wound: { type: 'number', description: 'Wound id, for a treatment of one wound (antivenom, antibiotics, laparotomy, oxygen and transfuse treat the whole body)' },
         treatment: { type: 'string', enum: ['stop_bleeding', 'clean', 'splint', 'transfuse', 'load', 'antivenom', 'antibiotics', 'laparotomy', 'oxygen', 'hyperbaric_oxygen'] },
         training: { type: 'string', enum: ['untrained', 'instructions', 'trained'], description: 'For stop_bleeding: the person treating has no first-aid training, has written or phone instructions, or has formal bleeding-control training (medic, Stop the Bleed course). Default untrained.' },
     }, ['who', 'treatment'], a => run((st, rng) => {
@@ -1534,17 +1534,17 @@ export function registerRulesTools(enabled: boolean): void {
 
     tool('PassTime', 'Advance story time for every tracked character. Call before narrating any time passing. List who is active (working, fighting) and who sleeps; walkers go in walking with speed, load, slope and terrain. Time stops early when someone\'s condition changes; narrate that moment, then call again for the remaining minutes.', {
         minutes: { type: 'number', description: 'Minutes that pass' },
-        resting: { type: 'array', items: { type: 'string' }, description: 'Characters not casting or fighting during this time' },
+        resting: { type: 'array', items: { type: 'string' }, description: 'Characters at rest during this time' },
         active: { type: 'array', items: { type: 'string' }, description: 'Characters walking, working, fighting or in heat during this time (more water and food used)' },
         sleeping: { type: 'array', items: { type: 'string' }, description: 'Characters asleep during this time' },
         walking: {
             type: 'array',
             description: 'Characters walking or marching during this time, with pace, load and ground; sets their energy use, heat and distance covered',
             items: { type: 'object', properties: {
-                who: str('Character'), speed_kmh: { type: 'number', description: 'Walking speed, km/h, when the story sets it (stroll 3, brisk 6.5); otherwise leave out: code takes the normal pace for the slope, ground, age and sex' },
+                who: str('Character'), speed_kmh: { type: 'number', description: 'Walking speed, km/h, when the story sets it (stroll 3, brisk 6.5). Default: the normal pace for the slope, ground, age and sex' },
                 load_kg: { type: 'number', description: 'Carried load, kg' }, grade_pct: { type: 'number', description: 'Slope, % (uphill positive)' },
                 terrain: { type: 'string', enum: Object.keys(TERRAIN) },
-                running: { type: 'boolean', description: 'Running rather than walking' },
+                running: { type: 'boolean', description: 'Running pace' },
             }, required: ['who'] },
         },
     }, ['minutes'], async a => { await prepareBleeding(store().state.people ?? {}, Math.max(0, Math.round(a.minutes))); return run((st, rng) => {
@@ -1597,7 +1597,7 @@ export function registerRulesTools(enabled: boolean): void {
         who: str('Character acting (one actor)'),
         actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
         steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
-        action: str('Instead of steps, for one actor: the action in plain words ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m'),
+        action: str('For one actor, the action in plain words (an alternative to steps) ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m'),
         distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
     }, [], a => run((st, rng) => {
         if (a.who && !a.steps && !a.actors && a.action) {
@@ -1637,7 +1637,7 @@ export function registerRulesTools(enabled: boolean): void {
 
     tool('Room', 'Set up or change the air of an enclosed space (a room, a cellar, a tent, a mine gallery) when its air matters: a fire, a stove or a lamp burning inside, many people in a closed room, gas filling it. Characters whose spot (Act be_at / walk_to) is this room breathe its air every minute: carbon monoxide, carbon dioxide, oxygen. Call again when a fire starts or goes out.', {
         room: str('The spot name, as used in Act ("John\'s house: kitchen")'),
-        volume_m3: { type: 'number', description: 'Volume, m³ (floor area × ceiling height; a 4 × 4 m room with a 2.5 m ceiling is 40). Needed the first time unless floor_m2 and height_m are given.' },
+        volume_m3: { type: 'number', description: 'Volume, m³ (floor area × ceiling height; a 4 × 4 m room with a 2.5 m ceiling is 40). Needed the first time, or floor_m2 and height_m.' },
         floor_m2: { type: 'number', description: 'Floor area, m² (needed for a fire\'s heat and smoke)' },
         height_m: { type: 'number', description: 'Ceiling height, m (needed for a fire\'s heat and smoke)' },
         lining: { type: 'string', enum: Object.keys(LINING), description: 'What the walls and ceiling are made of. Default brick.' },
