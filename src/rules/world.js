@@ -48,6 +48,10 @@ export function checkEntry(raw) {
 }
 /** The book of the open chat, as last applied; read by the tools that check what exists. */
 export let CURRENT_BOOK = [];
+/** Whether this world has magic: a world-book entry whose kind or name speaks of it. Without one, the magic tool and the
+ *  magic line of the status are hidden: magic has no lower layer in the engine (its stages and costs are set by hand, not
+ *  derived from anything else), so it is only offered where the story's own book says it exists. */
+export const worldHasMagic = () => CURRENT_BOOK.some(e => /\b(magic|magical|spell|spells|sorcer|wizard|witch|mana)/i.test(`${e.kind} ${e.what}`));
 /** Applies the book's mechanical switches to the engine: speech per DF creature, and the book the tools check against. */
 export function applyWorld(book) {
     CURRENT_BOOK = book;

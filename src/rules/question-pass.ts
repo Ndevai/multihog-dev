@@ -5,8 +5,9 @@
 // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
 // tools itself; a call already made here returns the same result (the turn's decision ledger).
 import { turnKey } from './turn.js';
-import { REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, type Args } from './rules-tools.js';
+import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, type Args } from './rules-tools.js';
 import { parseStoryTime } from './clock.js';
+import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
 import { loadColex } from './colex.js';
@@ -19,7 +20,9 @@ import { loadThings, thingsIn, thingsBlock, setRead, READ, type Found } from './
 const MAX_CALLS = 8, SCENE_MESSAGES = 8, MESSAGE_CHARS = 1500, TRACKER_CHARS = 4000;
 // Enums longer than this are shown as free text; the tool then names the valid values in its reply [ASSUMED].
 const ENUM_SHOWN = 40;
-const SKIP = new Set(['BodyStatus']);
+const SKIP_ALWAYS = new Set(['BodyStatus']);
+/** Tools the question model is not shown: BodyStatus always, magic tools in a world without magic. */
+const SKIP = { has: (n: string) => SKIP_ALWAYS.has(n) || (MAGIC_TOOLS.has(n) && !worldHasMagic()) };
 
 export const QUESTION_SYSTEM = `You prepare one turn of a roleplay for its narrator. Code decides outcomes with the tools listed below; the narrator then writes what they return.
 Read the scene and the player's message. Find each outcome the next reply will need that is in doubt: an action that may fail, a blow that may land, a sound or sight that may be missed, a message that may not be understood, a person whose response is open, time that passes, a fact the scene establishes or a character learns.

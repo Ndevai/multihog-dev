@@ -41,7 +41,7 @@ import { PROBLEMS, solveShare } from './thinking.js';
 import { cannotExist, notYetIn } from './history.js';
 import { strangerAgeSex, strangerWork, strangerHousehold, skillShare, spokenThere, speakShare, faithShare, survival, FAITHS, heightShift, wageRatio, activityMet, neverMarriedShare, climateShift, wageByTrade, countryFact, cityNear, cityPopulation } from './population.js';
 import { H_YEARS } from './data/body-size.js';
-import { CURRENT_BOOK, farFrom } from './world.js';
+import { CURRENT_BOOK, farFrom, worldHasMagic } from './world.js';
 import { SICK_SITUATIONS, sickness } from './sickness.js';
 import { HOW, transfer, give, account, possessionsBlock } from './possessions.js';
 import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode, soundOf } from './colex.js';
@@ -60,6 +60,8 @@ export function historyCheck() {
     const tools = Object.entries(h.log.reduce((m, e) => (m[e.tool] = (m[e.tool] ?? 0) + 1, m), {})).map(([t, n]) => `${t} ${n}`).join(', ');
     return `${h.log.length} recorded changes (${tools}). Replay ${bad ? `does NOT rebuild the state; differs at ${bad} (a change was made outside the tools)` : 'rebuilds the current state exactly'}.`;
 }
+/** Tools offered only in worlds whose book has magic (world.ts worldHasMagic). */
+export const MAGIC_TOOLS = new Set(['CastSpell']);
 export function store() {
     const ctx = SillyTavern.getContext();
     ctx.chatMetadata.rulesEngine ??= { state: { people: {} }, snapshots: {}, version: STATE_VERSION };
@@ -568,7 +570,7 @@ export function registerRulesTools(enabled) {
         };
         REGISTRY.set(name, { name, description, properties, required, exec });
         registerFunctionTool({ name, displayName: name, description, parameters: { type: 'object', properties, required: [...required] }, action: exec, formatMessage: () => '',
-            shouldRegister: () => !questionPassRan() });
+            shouldRegister: () => !questionPassRan() && (!MAGIC_TOOLS.has(name) || worldHasMagic()) });
     };
     tool('RollTheDice', 'Rolls dice for a quantity or a tier table and returns the result; the returned amount or tier is binding. Checks go through BodyCheck. One formula per call; for several independent rolls make several calls, each with its own "for".', {
         kind: { type: 'string', enum: ['amount', 'table'], description: '"amount": a quantity. "table": a tier table, given in table; the tier is returned.' },

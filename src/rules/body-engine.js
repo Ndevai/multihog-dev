@@ -12,6 +12,7 @@ import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { foodEnergy } from './substance.js';
 import { drugMinute, drugStatus } from './drugs.js';
 import { def, k } from './constants.js';
+import { worldHasMagic } from './world.js';
 import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance, hapeChance, HACE_DEATH_H, tucRange } from './thermal/altitude.js';
 import { relatedShare } from './intelligibility.js';
 import { pulseWound } from './pulse.js';
@@ -977,8 +978,10 @@ export function status(who, p) {
             out.push(`cold brain: mental tasks take ${round(1 / thinkSpeed(p), 2)} × as long (accuracy holds), keeps ${Math.round(keepsNew(p) * 100)} % of new information (recall of known things intact)`);
         out.push(`core ${round(th.core, 1)} °C${th.set != null ? ` (normal ${round(th.set, 1)})` : ''}${st ? ` (${st})` : ''}${th.coldest ? `, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})` : ''}`);
     }
-    const n = p.net, s = stage(n);
-    out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
+    if (worldHasMagic()) {
+        const n = p.net, s = stage(n);
+        out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`);
+    }
     {
         const d = drugStatus(p);
         if (d)

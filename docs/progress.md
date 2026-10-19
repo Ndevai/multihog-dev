@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-19 (2), Claude Opus 5.5
+- Changed: the magic tool (CastSpell) and the "network" magic line of the status are shown only when the world book has an entry about magic (kind or name: magic, spell, sorcery, wizard, witch, mana). Reason: magic has no lower layer in the engine (stages and costs set by hand, derived from nothing), so it is offered only where the story says it exists; it also took space in every tool list.
+- Open: magic built on the physics layer (a spell's effect costed in energy by the same rules as heat, motion and chemistry, paid from the caster's body).
+
 ## 2026-10-19, Claude Opus 5.5
 - Eval result from the phone (GLM 5.3, 10 scenes): 3 of 10 fully correct; tool precision 100 %, recall 30 %, arguments 26.9 %, quiet 100 %; missed BodyStrike 0/2, Listen 0/1, Look 0/1, SocialResponse 0/3.
 - Found: /rules-eval showed every tool's arguments in full (about 15,000 tokens, grown by the new tools), while play first picks the tools and shows only those in full. Changed: the eval now takes the same two steps as play and reports when the picking step left a needed tool out.
