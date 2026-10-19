@@ -145,7 +145,7 @@ export function breathe(r, p) {
 export const roomOf = (st, p) => (p.at && st.rooms?.[p.at]) || null;
 export function exchangeM3s(ra, rb, o) {
     const Ta = (ra.hot ?? ra.air_c) + 273.15, Tb = (rb.hot ?? rb.air_c) + 273.15, dT = Math.max(1, Math.abs(Ta - Tb)), W = o.m2 / o.h;
-    return 0.6 / 3 * W * o.h * Math.sqrt(9.81 * o.h * dT / ((Ta + Tb) / 2));
+    return 0.8 / 3 * W * Math.sqrt(9.81 * dT / ((Ta + Tb) / 2)) * o.h ** 1.5;
 }
 export function exchangeMinute(rooms, openings) {
     for (const o of openings) {

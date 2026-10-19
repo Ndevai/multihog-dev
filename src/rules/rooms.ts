@@ -126,14 +126,18 @@ export function breathe(r: Room, p: Person): void {
 }
 
 export const roomOf = (st: RuleState, p: Person): Room | null => (p.at && st.rooms?.[p.at]) || null;
-// Between rooms through an open doorway: warm air goes out at the top and cool air comes in below; each way
-// Q = (C_d ÷ 3) W H √(g H ΔT ÷ T̄) m³/s, C_d 0.6 (Brown & Solvason 1962, Int J Heat Mass Transfer 5:859, as used in
-// interzonal airflow models) [equation as recalled]; ΔT at least 1 K [ASSUMED: drafts and body heat keep air moving through
-// an open door]. Each minute the two rooms swap that volume of air, so the gases even out.
+// Between rooms through an open doorway: warm air goes out at the top and cool air comes in below. Each way
+// Q = C (W ÷ 3) √(g Δρ ÷ ρ̄) H^(3/2) m³/s (Brown & Solvason 1962, Int J Heat Mass Transfer 5:859, eq. 6; Δρ ÷ ρ̄ = ΔT ÷ T̄
+// for air). C: the paper gives 0.6 for sharp-edged orifices to 0.98; its measurements (Fig. 5, air, openings 3–12 in high,
+// Grashof number 10⁶–10⁸) lie between C 0.6 and 1.0 and rise toward 1.0 with the Grashof number and thinner walls; at
+// 10⁸ with the thinnest walls (t/H 0.19–0.35) they read about C 0.8 → C = 0.8 (a door, Gr about 10⁹, lies beyond the tested
+// range) [read from the figure, extrapolated]. The paper finds heat and mass carried alike, so gases move with the air.
+// ΔT at least 1 K [ASSUMED: drafts and body heat keep air moving through an open door]. Each minute the two rooms swap that
+// volume of air.
 export interface Opening { a: string; b: string; m2: number; h: number }
 export function exchangeM3s(ra: Room, rb: Room, o: Opening): number {
     const Ta = (ra.hot ?? ra.air_c) + 273.15, Tb = (rb.hot ?? rb.air_c) + 273.15, dT = Math.max(1, Math.abs(Ta - Tb)), W = o.m2 / o.h;
-    return 0.6 / 3 * W * o.h * Math.sqrt(9.81 * o.h * dT / ((Ta + Tb) / 2));
+    return 0.8 / 3 * W * Math.sqrt(9.81 * dT / ((Ta + Tb) / 2)) * o.h ** 1.5;
 }
 export function exchangeMinute(rooms: Record<string, Room>, openings: Opening[]): void {
     for (const o of openings) {
