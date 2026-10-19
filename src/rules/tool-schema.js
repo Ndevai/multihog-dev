@@ -53,6 +53,18 @@ function coerce(name, p, v) {
             out.push(r.v); });
         return errs.length ? { error: errs.join('; ') } : { v: out };
     }
+    // Models sometimes send an object as JSON text, or a name where an object with a "who" is expected.
+    if (typeof v === 'string') {
+        const t = v.trim();
+        try {
+            const o = JSON.parse(t);
+            if (o && typeof o === 'object' && !Array.isArray(o))
+                v = o;
+        }
+        catch { /* not JSON */ }
+        if (typeof v === 'string' && p.properties.who && t)
+            v = { who: t };
+    }
     if (typeof v !== 'object' || v === null || Array.isArray(v))
         return { error: `${name} must be an object` };
     const r = checkArgs(p.properties, p.required ?? [], v, `${name}.`);

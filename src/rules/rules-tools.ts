@@ -1317,7 +1317,7 @@ export function registerRulesTools(enabled: boolean): void {
         viewer_species: str('Viewer\'s DF creature when the engine has no record of them yet.'),
         target: str('What might be seen, a few words'),
         size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, horse 0.6, wagon or car 1.5)' },
-        distance_m: { type: 'number', description: 'Distance, m (left out when both are on the map)' },
+        distance_m: { type: 'number', description: 'Distance, m: needed unless viewer and target_who are both placed with Layout' },
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Only for an overcast sky or artificial light. Leave it out otherwise: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
@@ -1589,10 +1589,13 @@ export function registerRulesTools(enabled: boolean): void {
         }, required: ['do'] } as const;
     tool('Act', 'Time characters\' physical actions before narrating them; when several characters act at the same time, put them all in one call (actors): walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives, not your own. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
         who: str('Character acting (one actor)'),
-        actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), steps: { type: 'array', items: STEP_ITEM } }, required: ['who', 'steps'] } },
+        actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
         steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
     }, [], a => run((st, rng) => {
-        const list = (a.actors as unknown as { who: string; steps: Step[] }[] | undefined) ?? (a.who && a.steps ? [{ who: String(a.who), steps: a.steps as unknown as Step[] }] : []);
+        // An actor listed without steps takes the call's own steps (a model may name the actors and give the steps once).
+        const list = ((a.actors as unknown as { who: string; steps?: Step[] }[] | undefined)?.map(x => ({ who: x.who, steps: x.steps ?? (a.steps as unknown as Step[] | undefined) ?? [] })))
+            ?? (a.who && a.steps ? [{ who: String(a.who), steps: a.steps as unknown as Step[] }] : []);
+        if (list.some(x => !x.steps.length)) return `Give steps for ${list.filter(x => !x.steps.length).map(x => x.who).join(', ')}. Nothing recorded.`;
         if (!list.length) return 'Give who and steps, or actors. Nothing recorded.';
         const actors: { who: string; p: Person; steps: Step[] }[] = [];
         for (const x of list) { const { p, error } = who(st, x.who); if (!p) return error; actors.push({ who: x.who, p, steps: x.steps }); }

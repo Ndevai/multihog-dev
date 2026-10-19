@@ -69,6 +69,8 @@ function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: strin
         list.forEach((x, i) => { const r = coerce(`${name}[${i}]`, p.items, x); if (r.error) errs.push(r.error); else out.push(r.v); });
         return errs.length ? { error: errs.join('; ') } : { v: out };
     }
+    // Models sometimes send an object as JSON text, or a name where an object with a "who" is expected.
+    if (typeof v === 'string') { const t = v.trim(); try { const o = JSON.parse(t); if (o && typeof o === 'object' && !Array.isArray(o)) v = o; } catch { /* not JSON */ } if (typeof v === 'string' && p.properties.who && t) v = { who: t }; }
     if (typeof v !== 'object' || v === null || Array.isArray(v)) return { error: `${name} must be an object` };
     const r = checkArgs(p.properties, p.required ?? [], v as Record<string, unknown>, `${name}.`);
     return r.errors.length ? { error: r.errors.join('; ') } : { v: r.args };

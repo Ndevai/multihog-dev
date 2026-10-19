@@ -251,3 +251,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Set up Codespaces + OpenCode so other models can continue (`AGENTS.md`, `opencode.json`, `.devcontainer/`).
 - Checked: compiled with zero errors; welder Germany 1980 US$7.07/h; Agra 1699 a year's basket = 63 days of work; Paris 1700 = 530,000 people.
 - Next: job 2 in `docs/superset-models.md` (Open-Meteo weather for story dates from 1940), then job 1 (BioGears), then job 3 (census sampler, needs the user's IPUMS downloads).
+
+## 2026-10-19 (7) Act and Look calls from the 1888 London log
+
+- Act refused "actors[0] must be an object": the model listed actors by name or as JSON text. The schema check now reads an object sent as JSON text, and a bare name where an object with `who` is expected becomes `{who: name}`. An actor without steps takes the call's own `steps`; with neither, the call says which actor needs steps.
+- Look was called with no distance and nothing on the map. The `distance_m` description now says it is needed unless both are placed with Layout.
