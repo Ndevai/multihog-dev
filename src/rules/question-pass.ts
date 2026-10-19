@@ -321,8 +321,11 @@ export function askedResults(): { tool: string; result: string }[] {
 }
 
 /** The [DECIDED] block for the narrator, '' when the pass decided nothing this turn. */
+/** A perception that did not happen: the narrator's silence about it says as much (Grice, Quantity), and naming the missed
+ *  sound or sight would put it in the reply. Kept in the turn's results for the rule check. */
+export const isMiss = (tool: string, result: string) => (tool === 'Listen' && /does not hear it/.test(result)) || (tool === 'Look' && /does not see it/.test(result));
 export function decidedInjection(): string {
-    const r = askedResults();
+    const r = askedResults().filter(x => !isMiss(x.tool, x.result));
     if (!r.length) return '';
     return `[DECIDED]\nOutcomes the rule engine decided for this reply. Narrate them as given; they stand.\n${r.map(x => `- ${x.tool}: ${x.result}`).join('\n')}\n[/DECIDED]`;
 }

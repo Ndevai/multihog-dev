@@ -5,7 +5,7 @@ import { setFlags } from './audit-flags.js';
 import { turnKey } from './turn.js';
 import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
-import { askedResults } from './question-pass.js';
+import { askedResults, isMiss } from './question-pass.js';
 
 /** One flagged event: the reply's words, the tool that should decide it (or KNOWS), and the problem. */
 export interface AuditEvent { quote: string; tool: string; problem?: 'unbacked' | 'contradicts' | 'unknown_to_them' }
@@ -60,13 +60,17 @@ export function turnResults(ctx: STContext): TurnResult[] {
         .concat(askedResults());
 }
 
-let pendingNote: string | null = null;
+let pending: { events: AuditEvent[]; decided: boolean } | null = null;
 
-/** Interceptor: the correction for the reply being redone, once. */
+/** Interceptor, after the question pass: the correction for the reply being redone, once. A flagged event whose tool now
+ *  returned a miss (a sound not heard) is left out of the note: the rewrite then has no reason to name it. */
 export function takeAuditNote() {
-    const note = pendingNote;
-    pendingNote = null;
-    return note;
+    const p = pending;
+    pending = null;
+    if (!p) return null;
+    const r = askedResults(), missed = (tool: string) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result)); };
+    const events = p.events.filter(e => !missed(e.tool));
+    return events.length ? correctionNote(events, p.decided) : null;
 }
 
 export interface AuditDeps { send(system: string, user: string): Promise<string>; ownsChat(): boolean; generate(type: string): void; toast(msg: string): void }
@@ -91,7 +95,7 @@ export async function onRulesAuditMessage(messageId: number, deps: AuditDeps): P
     const tries = ctx.chatMetadata.rulesAuditRetries?.turn === key ? ctx.chatMetadata.rulesAuditRetries.count : 0;
     if (tries < MAX_RETRIES) {
         ctx.chatMetadata.rulesAuditRetries = { turn: key, count: tries + 1 };
-        pendingNote = correctionNote(events, askedResults().length > 0);
+        pending = { events, decided: askedResults().length > 0 };
         setFlags(events.filter(e => e.tool !== 'KNOWS'));
         deps.generate('swipe');
     } else {

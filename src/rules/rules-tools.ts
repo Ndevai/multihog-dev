@@ -856,7 +856,7 @@ export function registerRulesTools(enabled: boolean): void {
         const why = weight.get(reading) === 1 ? `one word in ${a.language}` : `heard as that word in ${a.language}`;
         const s1 = soundOf(a.word, code), s2 = soundOf(reading, code);
         learn(st, `${a.listener} took ${a.speaker}'s word for "${a.word}"${s1 ? ` (${s1})` : ''} to mean "${reading}"${s2 && s2 !== s1 ? ` (${s2})` : ''} (${why})`, [a.listener], false, { [a.listener]: 'heard it' });
-        return `${a.listener} takes "${a.word}" to mean "${reading}"; ${a.speaker} does not know. Narrate the English word as spoken; the misreading shows only through what ${a.listener} says and does, now or when it comes to matter.`;
+        return `${a.listener} takes "${a.word}" to mean "${reading}"; ${a.speaker} is unaware of it. Narrate the English word as spoken; the misreading shows only through what ${a.listener} says and does, now or when it comes to matter.`;
     }));
 
     tool('Appraise', 'Decide which emotions a character feels about something, before narrating their feelings. The answers describe how the character sees it; the emotion types follow from them.', {
@@ -1150,11 +1150,11 @@ export function registerRulesTools(enabled: boolean): void {
             : a.kind === 'what the character is' && a.species ? cannotExist(a.species, y, CURRENT_BOOK, 'being') : '';
         if (late) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
-            return `${a.claim}: does not hold; ${late}. ${a.who} acts on it and meets the world as it is; narrate that.`;
+            return `${a.claim}: false; ${late}. ${a.who} acts on it and meets the world as it is; narrate that.`;
         }
         if (!a.in_world) {
             learn(st, `Not so: ${a.claim.replace(/[.!?]?$/, '.')}`, [a.who], false, { [a.who]: 'found out' });
-            return `${a.claim}: does not hold; there is no such thing in this world. ${a.who} acts on it and meets the world as it is; narrate that.`;
+            return `${a.claim}: false; there is no such thing in this world. ${a.who} acts on it and meets the world as it is; narrate that.`;
         }
         const sp = a.kind === 'what the character is' && a.species ? creatureId(a.species) : null;
         if (a.species && a.kind === 'what the character is' && !sp) return noSpecies(a.species);
@@ -1164,10 +1164,10 @@ export function registerRulesTools(enabled: boolean): void {
         if (a.kind === 'something the character knows') {
             const f = recordedFact(st, a.claim);
             if (f && !f.everyone && !f.knowers.some(k => k.toLowerCase() === a.who.toLowerCase()))
-                return `${a.claim}: does not hold; ${a.who} has not learned this${f.secret ? ' (another\'s secret)' : ''}. They learn it only on the page: seen, overheard, told or worked out. Nothing recorded.`;
+                return `${a.claim}: false; ${a.who} has not learned this${f.secret ? ' (another\'s secret)' : ''}. They learn it only on the page: seen, overheard, told or worked out. Nothing recorded.`;
             // Forgotten by now: adults recalled no more with cues and questions than unprompted (Bauer & Larkina 2016), so a
             // claim to remember it does not bring it back; seeing, hearing or being told it again does.
-            if (f && !recalls(st, f, a.who)) return `${a.claim}: does not hold; ${a.who} has forgotten it. Being reminded on the page (told, seeing it again) brings it back. Nothing recorded.`;
+            if (f && !recalls(st, f, a.who)) return `${a.claim}: false; ${a.who} has forgotten it. Being reminded on the page (told, seeing it again) brings it back. Nothing recorded.`;
             if (f) return `${a.claim}: holds; ${a.who} already knows it. Recorded.`;
         }
         // A claim rarer than the lowest band is decomposed into the chain of events it needs, each a share given the ones
@@ -1229,7 +1229,7 @@ export function registerRulesTools(enabled: boolean): void {
             if (failed >= 0) {
                 const got = path.slice(0, failed).map(x => x.step);
                 learn(st, `Not so: ${claim}${got.length ? ` (${got.join('; ')}: yes; ${path[failed].step}: no)` : ''}`, [a.who], false, { [a.who]: 'found out' });
-                return `${a.claim}: does not hold. ${got.length ? `What holds: ${got.join('; ')}. ` : ''}What did not happen: ${path[failed].step}. ${a.who} acts on it and meets the world as it is; narrate that.`;
+                return `${a.claim}: false. ${got.length ? `What holds: ${got.join('; ')}. ` : ''}What did not happen: ${path[failed].step}. ${a.who} acts on it and meets the world as it is; narrate that.`;
             }
             learn(st, `${claim} (${path.map(x => x.step).join('; ')})`, [a.who], false, { [a.who]: 'their own' });
             if (a.kind === 'something the character has' && a.item) give(st, a.who, a.item, Math.max(1, Math.round(a.quantity ?? 1)));
@@ -1238,7 +1238,7 @@ export function registerRulesTools(enabled: boolean): void {
         const holds = rng() < combined(a);
         if (!holds) {
             learn(st, `Not so: ${claim}`, [a.who], false, { [a.who]: 'found out' });
-            return `${a.claim}: does not hold. ${a.who} acts on it and meets the world as it is; narrate that.`;
+            return `${a.claim}: false. ${a.who} acts on it and meets the world as it is; narrate that.`;
         }
         if (sp) {
             const p = st.people?.[a.who];
@@ -1373,7 +1373,7 @@ export function registerRulesTools(enabled: boolean): void {
             }
             case SOCIAL[1]: {
                 const n = Number(a.others) || 0, p = helpChance(n, a.emergency ?? 'victim in danger');
-                return `${a.who} ${rng() < p ? 'steps in to help' : 'does not step in'} (${n > 0 ? `with ${n} other${n > 1 ? 's' : ''} watching` : 'alone with it'}).`;
+                return `${a.who} ${rng() < p ? 'steps in to help' : 'stays out of it'} (${n > 0 ? `with ${n} other${n > 1 ? 's' : ''} watching` : 'alone with it'}).`;
             }
             case SOCIAL[2]: {
                 const p = a.order ? obeyShare(a.order, storyYear(st)) : null;
@@ -1422,7 +1422,7 @@ export function registerRulesTools(enabled: boolean): void {
             default: {
                 if (!t) return `No betrayal of ${a.who} by ${a.other} on record: decide trust between them with SocialResponse or Choose.`;
                 const p = trustAgain(t.lied, t.repair, t.kept);
-                return `${a.who} ${rng() < p ? 'trusts' : 'does not trust'} ${a.other} this time (betrayed${t.lied ? ' with lies' : ''}; ${t.repair === 'none' ? 'no promise' : t.repair}; good faith kept ${t.kept} time${t.kept === 1 ? '' : 's'} since).`;
+                return `${a.who} ${rng() < p ? 'trusts' : 'keeps their guard up with'} ${a.other} this time (betrayed${t.lied ? ' with lies' : ''}; ${t.repair === 'none' ? 'no promise' : t.repair}; good faith kept ${t.kept} time${t.kept === 1 ? '' : 's'} since).`;
             }
         }
     }));

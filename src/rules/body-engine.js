@@ -256,7 +256,7 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
         if ((w.vessel === 'femoral' || w.vessel === 'limb_artery') && w.bleed > 0) {
             const pr = { untrained: 0.1835, instructions: 0.4414, trained: 0.90 }[training] ?? 0.1835;
             if (rng() >= pr)
-                return `Wound ${id}: the tourniquet does not stop the bleeding (applied by someone ${training === 'trained' ? 'trained in bleeding control' : training === 'instructions' ? 'following instructions' : 'untrained'}); still ${w.bleed} mL/min.`;
+                return `Wound ${id}: the bleeding goes on under the tourniquet (applied by someone ${training === 'trained' ? 'trained in bleeding control' : training === 'instructions' ? 'following instructions' : 'untrained'}); still ${w.bleed} mL/min.`;
             w.bleed = 0;
             return `Wound ${id}: tourniquet on, bleeding stopped.`;
         }
@@ -1586,10 +1586,10 @@ export function communicate(sp, s, ls, l, { means = 'speech', lit = true, langua
     l.heard = { from: sp, snr: r.snr, whisper: /whisper/.test(effort) };
     const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible)
-        return `${ls} does not hear ${sp} (${where}).`;
+        return `${ls} goes on as before; ${sp}'s voice is lost in the background (${where}).`;
     console.debug?.('[Rules engine]', ls, `words ${Math.round(r.words * 100)} %, SII ${r.sii}`);
     if (r.words < 0.2)
-        return `${ls} hears that ${sp} is speaking but makes out almost no words (${where}).`;
+        return `${ls} hears ${sp}'s voice; the words are lost in the noise (${where}).`;
     if (!talks(lc))
         return `${ls} hears the sounds and their tone; the words carry no meaning (${lc.name}: cannot talk).`;
     const [a, b] = languages;

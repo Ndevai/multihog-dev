@@ -242,7 +242,7 @@ export function treat(p: Person, id: number, treatment: string, rng: Rng = Math.
     if (treatment === 'stop_bleeding') {
         if ((w.vessel === 'femoral' || w.vessel === 'limb_artery') && w.bleed > 0) {
             const pr = ({ untrained: 0.1835, instructions: 0.4414, trained: 0.90 } as Record<string, number>)[training] ?? 0.1835;
-            if (rng() >= pr) return `Wound ${id}: the tourniquet does not stop the bleeding (applied by someone ${training === 'trained' ? 'trained in bleeding control' : training === 'instructions' ? 'following instructions' : 'untrained'}); still ${w.bleed} mL/min.`;
+            if (rng() >= pr) return `Wound ${id}: the bleeding goes on under the tourniquet (applied by someone ${training === 'trained' ? 'trained in bleeding control' : training === 'instructions' ? 'following instructions' : 'untrained'}); still ${w.bleed} mL/min.`;
             w.bleed = 0; return `Wound ${id}: tourniquet on, bleeding stopped.`;
         }
         w.bleed = 0; return `Wound ${id}: bleeding stopped.`;
@@ -1287,9 +1287,9 @@ export function communicate(sp: string, s: Person, ls: string, l: Person, { mean
     const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc) });
     l.heard = { from: sp, snr: r.snr, whisper: /whisper/.test(effort) };
     const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
-    if (!r.audible) return `${ls} does not hear ${sp} (${where}).`;
+    if (!r.audible) return `${ls} goes on as before; ${sp}'s voice is lost in the background (${where}).`;
     console.debug?.('[Rules engine]', ls, `words ${Math.round(r.words * 100)} %, SII ${r.sii}`);
-    if (r.words < 0.2) return `${ls} hears that ${sp} is speaking but makes out almost no words (${where}).`;
+    if (r.words < 0.2) return `${ls} hears ${sp}'s voice; the words are lost in the noise (${where}).`;
     if (!talks(lc)) return `${ls} hears the sounds and their tone; the words carry no meaning (${lc.name}: cannot talk).`;
     const [a, b] = languages;
     let words = r.words, related = '';

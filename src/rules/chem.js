@@ -154,7 +154,7 @@ export function describe(q, tempC = 20) {
     }
     const tf = r?.Tf ?? (r ? derivedFlash(r) : null), tfTag = r?.Tf != null ? '' : ' [from its vapour pressure and lower limit]';
     if (tf != null)
-        parts.push(T >= tf ? `vapour catches fire from a flame at this temperature (flash point ${Math.round(tf - 273.15)} °C${tfTag})` : `vapour does not catch fire from a flame until ${Math.round(tf - 273.15)} °C (flash point${tfTag})`);
+        parts.push(T >= tf ? `vapour catches fire from a flame at this temperature (flash point ${Math.round(tf - 273.15)} °C${tfTag})` : `vapour catches fire from a flame from ${Math.round(tf - 273.15)} °C (flash point${tfTag})`);
     if (r) {
         const pv = psat(r, T);
         if (pv != null && T < (r.Tb ?? Infinity))

@@ -27,7 +27,7 @@ export function sickness(who: string, a: SickArgs, rng: Rng): string {
     if (a.situation === 'a sea crossing') {
         const v = seaShare(a);
         if (u < v) return `${who} is seasick and vomits during the crossing.`;
-        return (u - v) / (1 - v) < UNWELL_NOT_VOMITING ? `${who} feels seasick during the crossing but does not vomit.` : `${who} is not seasick.`;
+        return (u - v) / (1 - v) < UNWELL_NOT_VOMITING ? `${who} feels seasick during the crossing and keeps the food down.` : `${who} is not seasick.`;
     }
     const n = [a.sex === 'female', !!a.motion_sickness_before, a.smoker === false, !!a.opioids].filter(Boolean).length;
     return u < APFEL[n] ? `${who} is sick with nausea or vomiting within a day of the operation.` : `${who} wakes from the operation without nausea.`;

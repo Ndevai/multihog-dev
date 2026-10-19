@@ -4,7 +4,7 @@ import { setFlags } from './audit-flags.js';
 import { turnKey } from './turn.js';
 import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
-import { askedResults } from './question-pass.js';
+import { askedResults, isMiss } from './question-pass.js';
 const MAX_RETRIES = 1;
 export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the rule-engine results of the same turn.
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
@@ -50,12 +50,17 @@ export function turnResults(ctx) {
         .map(t => ({ tool: t.name, result: String(t.result) }))
         .concat(askedResults());
 }
-let pendingNote = null;
-/** Interceptor: the correction for the reply being redone, once. */
+let pending = null;
+/** Interceptor, after the question pass: the correction for the reply being redone, once. A flagged event whose tool now
+ *  returned a miss (a sound not heard) is left out of the note: the rewrite then has no reason to name it. */
 export function takeAuditNote() {
-    const note = pendingNote;
-    pendingNote = null;
-    return note;
+    const p = pending;
+    pending = null;
+    if (!p)
+        return null;
+    const r = askedResults(), missed = (tool) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result)); };
+    const events = p.events.filter(e => !missed(e.tool));
+    return events.length ? correctionNote(events, p.decided) : null;
 }
 /**
  * MESSAGE_RECEIVED. deps: { send(system, user) → text, ownsChat() → boolean, generate(type), toast(msg) }.
@@ -82,7 +87,7 @@ export async function onRulesAuditMessage(messageId, deps) {
     const tries = ctx.chatMetadata.rulesAuditRetries?.turn === key ? ctx.chatMetadata.rulesAuditRetries.count : 0;
     if (tries < MAX_RETRIES) {
         ctx.chatMetadata.rulesAuditRetries = { turn: key, count: tries + 1 };
-        pendingNote = correctionNote(events, askedResults().length > 0);
+        pending = { events, decided: askedResults().length > 0 };
         setFlags(events.filter(e => e.tool !== 'KNOWS'));
         deps.generate('swipe');
     }

@@ -97,7 +97,7 @@ export function describe(q: string, tempC = 20): string {
     else if (hc) parts.push(`burns: ${(hc.kJmol / molarMass(formula)).toFixed(1)} kJ/g (from its measured heat of formation)`);
     else if (e?.props) { const k = combustionKJmol(e.formula, e.props, 'gas'); if (k != null) parts.push(`burns: about ${(k / molarMass(formula)).toFixed(1)} kJ/g as gas [estimated from its groups]`); }
     const tf = r?.Tf ?? (r ? derivedFlash(r) : null), tfTag = r?.Tf != null ? '' : ' [from its vapour pressure and lower limit]';
-    if (tf != null) parts.push(T >= tf ? `vapour catches fire from a flame at this temperature (flash point ${Math.round(tf - 273.15)} °C${tfTag})` : `vapour does not catch fire from a flame until ${Math.round(tf - 273.15)} °C (flash point${tfTag})`);
+    if (tf != null) parts.push(T >= tf ? `vapour catches fire from a flame at this temperature (flash point ${Math.round(tf - 273.15)} °C${tfTag})` : `vapour catches fire from a flame from ${Math.round(tf - 273.15)} °C (flash point${tfTag})`);
     if (r) { const pv = psat(r, T); if (pv != null && T < (r.Tb ?? Infinity)) parts.push(`vapour pressure ${pv < 100 ? pv.toPrecision(2) + ' Pa' : (pv / 1000).toPrecision(3) + ' kPa'}`); }
     if (r?.Ta != null) parts.push(`ignites without a flame at ${Math.round(r.Ta - 273.15)} °C`);
     if (r?.LFL != null && r?.UFL != null) parts.push(`burns in air between ${+(r.LFL * 100).toFixed(1)} and ${+(r.UFL * 100).toFixed(1)} % vapour`);
