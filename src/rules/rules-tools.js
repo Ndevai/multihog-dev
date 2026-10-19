@@ -22,7 +22,7 @@ import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, statu
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest } from './actions.js';
 import { parseFormula, molarMass } from './substance.js';
-import { airHook, describeAir, drawAch, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
+import { airHook, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify } from './world-log.js';
 import { heatingValue, heatFromFormation, loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
@@ -1714,6 +1714,9 @@ export function registerRulesTools(enabled) {
         lining: { type: 'string', enum: Object.keys(LINING), description: 'What the walls and ceiling are made of. Default brick.' },
         opening_m2: { type: 'number', description: 'Area of an open door or window, m² (a door about 1.6; 0 when all are shut)' },
         opening_height_m: { type: 'number', description: 'Height of that opening, m (a door about 2)' },
+        doorways: { type: 'array', description: 'Open doorways from this room into other rooms set up with Room (replaces this room\'s list; empty when all are shut)', items: { type: 'object', properties: {
+                    room: str('The other room'), m2: { type: 'number', description: 'Opening area, m² (a door about 1.6)' }, height_m: { type: 'number', description: 'Opening height, m (a door about 2)' },
+                }, required: ['room'] } },
         air_changes_per_hour: { type: 'number', description: 'Only when the story sets it (sealed 0, window wide open about 5); otherwise code draws a house\'s typical leak rate once' },
         air_c: { type: 'number', description: 'Air temperature inside, °C. Default 20.' },
         outdoor_co2_ppm: { type: 'number', description: 'Carbon dioxide outside, ppm. Default 420 (present day); about 280 before 1800.' },
@@ -1775,8 +1778,15 @@ export function registerRulesTools(enabled) {
                 r.fires = fires;
             }
             st.rooms[a.room] = r;
+            if (a.doorways) {
+                const missing = a.doorways.filter(d => !st.rooms[d.room]).map(d => d.room);
+                if (missing.length)
+                    return `Set up ${missing.join(', ')} with Room first (volume), then join the doorways. Nothing else changed.`;
+                st.openings = (st.openings ?? []).filter(o => o.a !== a.room && o.b !== a.room).concat(a.doorways.map(d => ({ a: a.room, b: d.room, m2: d.m2 ?? 1.6, h: d.height_m ?? 2 })));
+            }
+            const joined = (st.openings ?? []).filter(o => o.a === a.room || o.b === a.room).map(o => `${o.a === a.room ? o.b : o.a} (${o.m2} m², ${Math.round(exchangeM3s(st.rooms[o.a], st.rooms[o.b], o) * 3600)} m³/h each way now)`);
             const inside = Object.entries(st.people ?? {}).filter(([, p]) => p.at === a.room).map(([n]) => n);
-            return `${describeAir(a.room, r)}. Inside: ${inside.join(', ') || 'no one'}. The air changes minute by minute as time passes (PassTime, Act).`;
+            return `${describeAir(a.room, r)}. Inside: ${inside.join(', ') || 'no one'}.${joined.length ? ` Open to: ${joined.join(', ')}.` : ''} The air changes minute by minute as time passes (PassTime, Act).`;
         });
     });
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {

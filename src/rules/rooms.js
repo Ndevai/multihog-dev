@@ -143,11 +143,30 @@ export function breathe(r, p) {
     }
 }
 export const roomOf = (st, p) => (p.at && st.rooms?.[p.at]) || null;
+export function exchangeM3s(ra, rb, o) {
+    const Ta = (ra.hot ?? ra.air_c) + 273.15, Tb = (rb.hot ?? rb.air_c) + 273.15, dT = Math.max(1, Math.abs(Ta - Tb)), W = o.m2 / o.h;
+    return 0.6 / 3 * W * o.h * Math.sqrt(9.81 * o.h * dT / ((Ta + Tb) / 2));
+}
+export function exchangeMinute(rooms, openings) {
+    for (const o of openings) {
+        const ra = rooms[o.a], rb = rooms[o.b];
+        if (!ra || !rb)
+            continue;
+        const v = Math.min(exchangeM3s(ra, rb, o) * 60, ra.m3 / 2, rb.m3 / 2); // m³ swapped this minute
+        for (const k of ['co', 'co2', 'o2']) {
+            const d = rb[k] - ra[k];
+            ra[k] += d * v / ra.m3;
+            rb[k] -= d * v / rb.m3;
+        } // conserves the gas
+    }
+}
 /** The per-minute hook for advanceAll: every room's air moves one minute and its occupants breathe it. */
 export function airHook(st) {
     if (!st.rooms || !Object.keys(st.rooms).length)
         return null;
     return () => {
+        if (st.openings?.length)
+            exchangeMinute(st.rooms, st.openings);
         for (const [name, r] of Object.entries(st.rooms)) {
             const inside = Object.values(st.people ?? {}).filter(p => p.at === name);
             airMinute(r, inside);

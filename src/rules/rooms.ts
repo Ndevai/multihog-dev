@@ -126,10 +126,28 @@ export function breathe(r: Room, p: Person): void {
 }
 
 export const roomOf = (st: RuleState, p: Person): Room | null => (p.at && st.rooms?.[p.at]) || null;
+// Between rooms through an open doorway: warm air goes out at the top and cool air comes in below; each way
+// Q = (C_d ÷ 3) W H √(g H ΔT ÷ T̄) m³/s, C_d 0.6 (Brown & Solvason 1962, Int J Heat Mass Transfer 5:859, as used in
+// interzonal airflow models) [equation as recalled]; ΔT at least 1 K [ASSUMED: drafts and body heat keep air moving through
+// an open door]. Each minute the two rooms swap that volume of air, so the gases even out.
+export interface Opening { a: string; b: string; m2: number; h: number }
+export function exchangeM3s(ra: Room, rb: Room, o: Opening): number {
+    const Ta = (ra.hot ?? ra.air_c) + 273.15, Tb = (rb.hot ?? rb.air_c) + 273.15, dT = Math.max(1, Math.abs(Ta - Tb)), W = o.m2 / o.h;
+    return 0.6 / 3 * W * o.h * Math.sqrt(9.81 * o.h * dT / ((Ta + Tb) / 2));
+}
+export function exchangeMinute(rooms: Record<string, Room>, openings: Opening[]): void {
+    for (const o of openings) {
+        const ra = rooms[o.a], rb = rooms[o.b]; if (!ra || !rb) continue;
+        const v = Math.min(exchangeM3s(ra, rb, o) * 60, ra.m3 / 2, rb.m3 / 2); // m³ swapped this minute
+        for (const k of ['co', 'co2', 'o2'] as const) { const d = rb[k] - ra[k]; ra[k] += d * v / ra.m3; rb[k] -= d * v / rb.m3; } // conserves the gas
+    }
+}
+
 /** The per-minute hook for advanceAll: every room's air moves one minute and its occupants breathe it. */
 export function airHook(st: RuleState): (() => void) | null {
     if (!st.rooms || !Object.keys(st.rooms).length) return null;
     return () => {
+        if (st.openings?.length) exchangeMinute(st.rooms!, st.openings);
         for (const [name, r] of Object.entries(st.rooms!)) {
             const inside = Object.values(st.people ?? {}).filter(p => p.at === name);
             airMinute(r, inside); heatMinute(r);

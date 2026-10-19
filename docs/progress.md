@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (31), Claude Opus 5.5
+- Added: open doorways between rooms; gases flow through them by the doorway exchange formula (Brown & Solvason), conserving the gas.
+- Checked (harness): a charcoal brazier in the kitchen kills a sleeper in the next room within 2 h through an open door.
+- Not done: heat and smoke layers through doorways.
+
 ## 2026-10-18 (30), Claude Opus 5.5
 - Added: a room fire's heat and smoke. Heat from the fuel's atoms; an open door feeds and caps the fire; hot-layer temperature by the standard fire-engineering formula (MQH), smoke filling a closed room (Yamana–Tanaka), flames out at 15 % oxygen, flashover at 600 °C; people below or inside the layer get its air and radiant heat.
 - Checked (harness): 482 kW wood fire in a parlour with the door open, layer 376 °C at 10 min, the man below it burned by radiant heat; closed cellar smokes down in 10 min, fire out at about 25 min with CO 2,500 ppm.

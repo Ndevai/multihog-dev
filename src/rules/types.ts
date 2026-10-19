@@ -114,6 +114,8 @@ export interface RuleState {
     links?: Record<string, number>;
     /** Air of rooms by spot name (rooms.ts). */
     rooms?: Record<string, import('./rooms.js').Room>;
+    /** Open doorways between rooms (rooms.ts). */
+    openings?: import('./rooms.js').Opening[];
     latitude?: number;
     /** Big Five place of each character, z-scores by trait (acts.ts), drawn once when first needed. */
     traits?: Record<string, Record<string, number>>;
