@@ -85,8 +85,11 @@ export function act(st, who, p, steps, country) {
         if (s.do === 'walk_to') {
             if (!s.to)
                 return { error: 'walk_to needs to (the spot walked to).' };
+            // With a distance given, a walk needs no named start: the time follows from the distance alone.
+            if (!p.at && s.distance_m != null)
+                p.at = `where ${who} stood`;
             if (!p.at)
-                return { error: `${who} has no recorded spot; give from: set with a first step {"do":"be_at","to":"<spot>"}.` };
+                return { error: `${who} has no recorded spot; give from: set with a first step {"do":"be_at","to":"<spot>"}, or give distance_m.` };
             if (p.at === s.to) {
                 lines.push(`${who} is already at ${s.to}`);
                 continue;

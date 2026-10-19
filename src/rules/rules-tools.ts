@@ -208,7 +208,9 @@ function decisions(): Record<string, string> {
     return s.decided.out;
 }
 const decided = (name: ToolName, a: Args) => { const k = decisionKey(name, a); return k ? decisions()[k] : null; };
-function remember(name: ToolName, a: Args, out: unknown) { const k = decisionKey(name, a); if (k && typeof out === 'string') { decisions()[k] = out; save(); } }
+// A refusal (an argument or the date missing) decides nothing, so a corrected call runs instead of repeating it.
+const REFUSAL = /not run; fix and call again|Nothing recorded\.?\s*$|needs a calendar date|^Give /;
+function remember(name: ToolName, a: Args, out: unknown) { const k = decisionKey(name, a); if (k && typeof out === 'string' && !REFUSAL.test(out)) { decisions()[k] = out; save(); } }
 
 // Same turn + same call order → same random draws, so a swipe repeats outcomes instead of re-rolling them.
 // The draws each call used, kept with its result (question-pass.ts), so an outcome can be traced: same state, same

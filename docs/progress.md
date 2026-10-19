@@ -262,3 +262,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - A London 1899 turn ran no tool at all (no Act, and no Weather because the plan gave no position), so the narrator's drizzle and the step out were unbacked. The 1888 turn lost Act and Look to argument errors with no second try.
 - question-pass.ts now sends one repair request (REPAIR) when the plan has no readable JSON, drops a call for a missing required argument (it names the arguments), or leaves out "at" for a dated scene with no position. After the calls run, results the tool refused ("not run; fix and call again", "Nothing recorded") go back once with the tool's own message; a corrected call's result replaces the refusal. Source: tool errors fed back to the model (ReAct, Yao et al. 2023).
 - Tested with a scripted model: a Look missing its arguments and the missing position were sent back; the position then gave Weather; an Act with an actor and no steps was refused, corrected and run.
+
+## 2026-10-19 (9) Present-day scenes get today's date
+
+- A modern London turn (bus, delivery van, no date given) ran Weather twice, both refused for want of a date; the narrator then invented the rain.
+- The question prompt now carries TODAY (the device's date and hour) while STORY STATE has no [TIME]; QUESTION_SYSTEM: a present-day scene with no date given takes it. A "needs a calendar date" refusal goes back in the repair round with that instruction, and the refused call runs again once the date is set.
+- Refusals are no longer kept as the turn's decision (rules-tools.ts `remember`), so a corrected call runs instead of returning "Already decided".
+- Weather runs once per turn and an identical call runs once (`dedupe`).
+- Act: walk_to with distance_m and no recorded spot starts from "where X stood"; the time needs only the distance.

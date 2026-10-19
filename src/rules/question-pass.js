@@ -26,7 +26,7 @@ Read the scene and the player's message. Find each outcome the next reply will n
 Ask only about outcomes this reply must show. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
 A player's message that states something the story has not established about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A person the story has not described who acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one call per person. One call per question; calls run in the order given, so put time passing after the actions it follows.
-When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). When the scene's position is not yet known and the scene or scenario says where it is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
+When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": "1850-03-14 18:40" (or "Day 1 08:00" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. When the scene's position is not yet known and the scene or scenario says where it is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
 First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}. When nothing is in doubt, write {"calls":[]}.`;
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
 // FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
@@ -44,7 +44,12 @@ const REPAIR = `YOUR LAST ANSWER
 {problems}
 
 Write the corrected calls only, same format: QUESTIONS, then the JSON {"calls":[...]} (with "at" and "time" when asked for above).`;
-const REFUSED = /not run; fix and call again|Nothing recorded\.?\s*$/;
+const REFUSED = /not run; fix and call again|Nothing recorded\.?\s*$|needs a calendar date/;
+// The same call twice, or Weather twice (one day has one weather), runs once.
+const dedupe = (list) => list.filter((c, i) => list.findIndex(d => d.tool === c.tool && (c.tool === 'Weather' || JSON.stringify(d.args) === JSON.stringify(c.args))) === i);
+const pad2 = (n) => String(n).padStart(2, '0');
+/** The real date and hour, for a present-day scene that gives none. */
+const today = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 /** One line per argument: name, * when required, type or allowed values, description. */
 function describe(name, p, required, depth = 0) {
     const pad = '  '.repeat(depth + 1), req = required ? '*' : '';
@@ -162,7 +167,8 @@ export function questionPrompt(chat, knows, tracker = '', only) {
     const recent = chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES)
         .map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
     const state = tracker.trim() ? `STORY STATE\n${tracker.trim().slice(0, TRACKER_CHARS)}\n\n` : '';
-    return `TOOLS\n${toolCatalogue(only)}\n\n${state}${knows ? `${knows}\n\n` : ''}SCENE (the last message is the player's)\n${recent}`;
+    const now = /\[TIME\]/.test(tracker) ? '' : `TODAY\n${today()}\n\n`;
+    return `TOOLS\n${toolCatalogue(only)}\n\n${state}${now}${knows ? `${knows}\n\n` : ''}SCENE (the last message is the player's)\n${recent}`;
 }
 /**
  * Runs the question pass for a generation whose last message is the player's. A swipe of the same turn reuses the calls
@@ -204,8 +210,8 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
             setStoryTime(time);
         if (plan.at && !scenePosition())
             setScenePosition(plan.at[0], plan.at[1]);
-        calls = validCalls(plan.calls);
-        const dropped = plan.calls.filter(c => !calls.includes(c));
+        const valid = validCalls(plan.calls), dropped = plan.calls.filter(c => !valid.includes(c));
+        calls = dedupe(valid);
         const unread = !/\{\s*"calls"/.test(lastPlanText);
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
         if (unread || dropped.length || noPlace) {
@@ -220,7 +226,7 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
                 if (time !== null)
                     setStoryTime(time);
             }
-            calls = [...calls, ...validCalls(fix.calls)].slice(0, MAX_CALLS);
+            calls = dedupe([...calls, ...validCalls(fix.calls)]).slice(0, MAX_CALLS);
             plan.then.push(...fix.then);
         }
         // The day's weather is decided by code every turn the story has a calendar date and a place, whether or not the
@@ -232,12 +238,26 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         // Refused calls: the tool's message goes back once; a corrected call's result replaces the refusal.
         const bad = results.map((r, i) => ({ r, i })).filter(x => REFUSED.test(x.r.result));
         if (bad.length) {
-            const fixed = validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', bad.map(({ r, i }) => `${r.tool} ${JSON.stringify(calls[i].args)} → ${r.result}`).join('\n'))}`)));
+            const fp = rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', bad.map(({ r, i }) => `${r.tool} ${JSON.stringify(calls[i].args)} → ${r.result}${/calendar date/.test(r.result) ? ' Add "time" with the date (TODAY for a present-day scene).' : ''}`).join('\n'))}`));
+            if (fp.at && !scenePosition())
+                setScenePosition(fp.at[0], fp.at[1]);
+            if (fp.time && storyTime() === null) {
+                time = parseStoryTime(fp.time);
+                if (time !== null)
+                    setStoryTime(time);
+            }
+            const fixed = validCalls(fp.calls);
+            // A call refused only for want of a date runs again once the date is set.
+            if (time !== null)
+                for (const { i } of bad)
+                    if (/calendar date/.test(results[i]?.result ?? '') && !fixed.some(c => c.tool === calls[i].tool))
+                        fixed.push(calls[i]);
             const keep = results.filter(r => !REFUSED.test(r.result)), keptCalls = calls.filter((_, i) => !REFUSED.test(results[i].result));
             results.length = 0;
             results.push(...keep);
-            await runAll(fixed);
-            calls = [...keptCalls, ...fixed];
+            const fresh = dedupe([...keptCalls, ...fixed]).slice(keptCalls.length);
+            await runAll(fresh);
+            calls = [...keptCalls, ...fresh];
         }
         if ((plan.then.length || plan.need.length || results.some(r => /Call Interpret/.test(r.result))) && calls.length < MAX_CALLS) {
             // Tools asked for by name in "need", and Interpret when a result calls for it, get their arguments now.

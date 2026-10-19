@@ -191,7 +191,9 @@ function decisions() {
     return s.decided.out;
 }
 const decided = (name, a) => { const k = decisionKey(name, a); return k ? decisions()[k] : null; };
-function remember(name, a, out) { const k = decisionKey(name, a); if (k && typeof out === 'string') {
+// A refusal (an argument or the date missing) decides nothing, so a corrected call runs instead of repeating it.
+const REFUSAL = /not run; fix and call again|Nothing recorded\.?\s*$|needs a calendar date|^Give /;
+function remember(name, a, out) { const k = decisionKey(name, a); if (k && typeof out === 'string' && !REFUSAL.test(out)) {
     decisions()[k] = out;
     save();
 } }
