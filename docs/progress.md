@@ -293,3 +293,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - tool-schema.ts: a one-item list where one value is wanted is that value.
 - Act takes `action` (plain words) with `distance_m` for one actor. actions.ts `stepsFromWords`: each recognized verb, in its order in the text, gives its motion (sit, stand / get up, kneel, bend, turn, reach, pick up / grab = reach + grasp, walking verbs = walk_to). The spot is the phrase after onto / into / to / towards / across, else "outside" the place after "out of". Walking without a distance is refused with that reason. Each verb counts once.
 - Act's refusals carry an example call in both forms.
+
+## 2026-10-19 (14) Faults found by a runner, not in play
+
+- tools/run-play.mjs plays eight first turns through the whole pipeline with the real model (tool picking, plan, repair, calls, a narrator reply, the rule check) and lists each fault: a refusal left after the repair, no tool run, no clock, no Weather, an expected tool missing, each rule-check flag. Writes play-result.txt (faults first, then each turn with calls, reply and planner answers). The turns are the ones played so far (London 1867, 1888, 1899, present day) and four more (Paris bakery, York inn, Lisbon wall, Rio shout).
+- tools/nvidia.mjs: the connection and key lookup the runners share.
+- A date the player wrote now wins over the plan's date.

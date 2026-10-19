@@ -206,7 +206,9 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         const plan = rawPlan(lastPlanText);
         setRead(await resolveRead(found, plan, choose));
         present = plan.present;
-        time = plan.time && storyTime() === null ? parseStoryTime(plan.time) : null;
+        // A date the player wrote is read by code and wins over the plan's; the plan's comes next, then the cast and scene.
+        const written = storyTime() === null ? findStoryTime(String(chat[chat.length - 1].mes ?? '')) : null;
+        time = written ?? (plan.time && storyTime() === null ? parseStoryTime(plan.time) : null);
         // A date written in the player's message, the cast and scenario, or the recent scene sets the clock when the plan
         // gives none (a London 1899 date stated by the player reached no tool).
         if (time === null && storyTime() === null) {
