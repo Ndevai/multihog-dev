@@ -42,6 +42,8 @@ function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: strin
         return { error: `${name} must be true or false` };
     }
     if (p.type === 'string') {
+        // A one-item list where one value is wanted (who: ["Mary"]) is that value.
+        if (Array.isArray(v) && v.length === 1 && (typeof v[0] === 'string' || typeof v[0] === 'number')) v = v[0];
         if (typeof v !== 'string' && typeof v !== 'number') return { error: `${name} must be text` };
         const s = String(v);
         // An enum filled from data that has not loaded yet checks nothing.

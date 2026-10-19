@@ -176,3 +176,38 @@ export function actTogether(st, actors, country) {
     const tl = runs.flatMap(r => r.marks).sort((a, b) => a[0] - b[0]).map(([t, w]) => `${honest(t)} ${w}`);
     return { seconds, text: `${lines.join('. ')}. Timeline: ${tl.join('; ')}` };
 }
+// An action written in plain words, as steps: each recognized verb in its order in the text gives the motion it names.
+// Walking verbs need a distance (the one thing words cannot give); the spot walked to is the phrase after onto / into / to /
+// out of, else "outside".
+const WORD_STEPS = [
+    [/\b(sit|sits|sat|sitting)\b/, () => [{ do: 'sit' }]],
+    [/\b(stand|stands|stood|standing|getting up|get up|gets up|got up|rise|rises|rose)\b/, () => [{ do: 'stand' }]],
+    [/\bkneel(s|ed|ing)?\b|\bknelt\b/, () => [{ do: 'kneel' }]],
+    [/\b(bend|bends|bent|stoop|stoops|stooped)\b/, () => [{ do: 'bend' }]],
+    [/\b(turn|turns|turned)\b/, () => [{ do: 'turn' }]],
+    [/\b(pick|picks|picked) up\b|\b(grab|grabs|grabbed|grasp|grasps)\b/, () => [{ do: 'reach' }, { do: 'grasp' }]],
+    [/\b(reach|reaches|reached)\b/, () => [{ do: 'reach' }]],
+    [/\b(go|goes|going|went|walk|walks|walking|walked|step|steps|stepping|stepped|cross|crosses|crossing|crossed|leave|leaves|leaving|enter|enters|entering|entered|exit|exits|exiting|exited|head|heads|heading|headed|come|comes|coming|came|move|moves|moving|moved)\b/, (who, rest, d) => {
+            if (d == null || !(d > 0))
+                return 'Walking needs distance_m (the distance from the scene).';
+            const end = '(?:[,.;]| and | then |$)';
+            const to = rest.match(new RegExp(`\\b(?:onto|into|to|towards?|across)\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim()
+                ?? rest.match(new RegExp(`\\bout of\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim().replace(/^/, 'outside ');
+            return [{ do: 'walk_to', to: to || `outside, near where ${who} stood`, distance_m: d }];
+        }],
+];
+export function stepsFromWords(text, who, distance) {
+    const t = text.toLowerCase(), found = [];
+    for (const [re, make] of WORD_STEPS) {
+        const m = t.match(re);
+        if (!m || m.index == null)
+            continue;
+        const r = make(who, t.slice(m.index), distance);
+        if (typeof r === 'string')
+            return { error: r };
+        found.push({ at: m.index, steps: r });
+    }
+    if (!found.length)
+        return { error: `No motion recognized in "${text}": give steps.` };
+    return { steps: found.sort((a, b) => a.at - b.at).flatMap(f => f.steps) };
+}

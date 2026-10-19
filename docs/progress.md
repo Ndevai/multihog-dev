@@ -286,3 +286,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-19 (12) Weather runs first
 
 - Full 1867 log: the same Act walked Mary at 1.43 m/s before Weather ran and 1.62 m/s after. Walking pace scales by country (Levine & Norenzayan), and the country is set by Weather. The question pass now runs Weather calls before the others; tested: 1.62 m/s on the first draft and on a rewrite.
+
+## 2026-10-19 (13) Act in plain words
+
+- London 1951 log: the planner called Act as {"who":["Mary"],"action":"stepping out of her house onto the street"}; refused (who must be text), the repair dropped the action and kept no steps, so no time was decided.
+- tool-schema.ts: a one-item list where one value is wanted is that value.
+- Act takes `action` (plain words) with `distance_m` for one actor. actions.ts `stepsFromWords`: each recognized verb, in its order in the text, gives its motion (sit, stand / get up, kneel, bend, turn, reach, pick up / grab = reach + grasp, walking verbs = walk_to). The spot is the phrase after onto / into / to / towards / across, else "outside" the place after "out of". Walking without a distance is refused with that reason. Each verb counts once.
+- Act's refusals carry an example call in both forms.

@@ -20,7 +20,7 @@ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPID
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
-import { actTogether, honest } from './actions.js';
+import { actTogether, honest, stepsFromWords } from './actions.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
 import { formatStoryTime } from './clock.js';
@@ -1720,6 +1720,7 @@ export function registerRulesTools(enabled) {
             return [head, ...lines].join('\n');
         });
     });
+    const ACT_EXAMPLE = 'Example: {"who":"Mary","steps":[{"do":"be_at","to":"Mary\'s house: hall"},{"do":"walk_to","to":"street outside Mary\'s house","distance_m":4}]} or {"who":"Mary","action":"steps out onto the street","distance_m":4}.';
     const STEP_ITEM = { type: 'object', properties: {
             do: { type: 'string', enum: ['be_at', 'walk_to', 'stairs_up', 'stairs_down', 'sit', 'stand', 'bend', 'kneel', 'arise', 'kneel_both', 'arise_both', 'turn', 'sidestep', 'reach', 'grasp', 'release', 'look'] },
             to: str('Spot, named with its place: "John\'s house: living room", "John\'s house: front door", "Rue de Rivoli"'),
@@ -1736,14 +1737,22 @@ export function registerRulesTools(enabled) {
         who: str('Character acting (one actor)'),
         actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
         steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
+        action: str('Instead of steps, for one actor: the action in plain words ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m'),
+        distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
     }, [], a => run((st, rng) => {
+        if (a.who && !a.steps && !a.actors && a.action) {
+            const r = stepsFromWords(String(a.action), String(a.who), a.distance_m);
+            if ('error' in r)
+                return `${r.error} ${ACT_EXAMPLE} Nothing recorded.`;
+            a = { ...a, steps: r.steps };
+        }
         // An actor listed without steps takes the call's own steps (a model may name the actors and give the steps once).
         const list = (a.actors?.map(x => ({ who: x.who, steps: x.steps ?? a.steps ?? [] })))
             ?? (a.who && a.steps ? [{ who: String(a.who), steps: a.steps }] : []);
         if (list.some(x => !x.steps.length))
             return `Give steps for ${list.filter(x => !x.steps.length).map(x => x.who).join(', ')}. Nothing recorded.`;
         if (!list.length)
-            return 'Give who and steps, or actors. Nothing recorded.';
+            return `Give who and steps (or action), or actors. ${ACT_EXAMPLE} Nothing recorded.`;
         const actors = [];
         for (const x of list) {
             const { p, error } = who(st, x.who);
