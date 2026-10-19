@@ -26,6 +26,25 @@ export function honest(seconds) {
     }
     return `${v.toFixed(dec)} s`;
 }
+// Crowds and stairs: the SFPE emergency-movement model (Nelson & Mowrer, SFPE Handbook of Fire Protection Engineering, as
+// implemented in Pathfinder, Thunderhead Engineering technical reference): speed along the line of travel = k (1 − 0.266 D),
+// D persons per m², unimpeded (0.85 k) below 0.54 per m² [equation as recalled from the Handbook]. k: level 1.40; stairs by
+// riser ÷ tread, 7.5/10 in 1.00, 7/11 1.08, 6.5/12 1.16, 6.5/13 1.23, linear to 1.40 at slope 0, beyond 0.75 extended down
+// along the last segment to at least 0.034 (Pathfinder). Here the walker's own level speed is scaled by the model's ratios:
+// crowd (1 − 0.266 D) ÷ (1 − 0.266 × 0.54), held at D 3.55 (Pathfinder's maximum density); stairs k ÷ 1.40 [ASSUMED: same
+// up and down; the SFPE values come from descents].
+const STAIR_K = [[0, 1.40], [0.5, 1.23], [6.5 / 12, 1.16], [7 / 11, 1.08], [0.75, 1.00]];
+export function stairK(slope) {
+    if (slope >= 0.75)
+        return Math.max(0.034, 1.00 - (1.08 - 1.00) / (0.75 - 7 / 11) * (slope - 0.75));
+    for (let i = 1; i < STAIR_K.length; i++)
+        if (slope <= STAIR_K[i][0]) {
+            const [x0, y0] = STAIR_K[i - 1], [x1, y1] = STAIR_K[i];
+            return y0 + (y1 - y0) * (slope - x0) / (x1 - x0);
+        }
+    return 1.00;
+}
+export const crowdFactor = (d = 0) => d <= 0.54 ? 1 : (1 - 0.266 * Math.min(d, 3.55)) / (1 - 0.266 * 0.54);
 /** Runs the steps for one person; returns the seconds taken and one line per step, or an error. Records the new spot. */
 export function act(st, who, p, steps, country) {
     let total = 0;
@@ -48,10 +67,25 @@ export function act(st, who, p, steps, country) {
                 return { error: `No distance recorded between ${p.at} and ${s.to}; give distance_m (the scene's layout) and it is kept for later.` };
             if (known == null)
                 st.links[k] = d;
-            const v = walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6;
+            const v = walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2);
             t = d / v;
-            what = `walks ${d} m from ${p.at} to ${s.to} at ${v.toFixed(2)} m/s${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
+            what = `walks ${d} m from ${p.at} to ${s.to} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
             p.at = s.to;
+        }
+        else if (s.do === 'stairs_up' || s.do === 'stairs_down') {
+            if (!s.steps || !(s.steps > 0))
+                return { error: `${s.do} needs steps (how many; a storey of 2.8 m is about 16).` };
+            const r = s.riser_cm ?? 17.8, tr = s.tread_cm ?? 27.9; // 7 in / 11 in [ASSUMED typical]
+            const along = s.steps * Math.hypot(r, tr) / 100, k = stairK(r / tr);
+            // Up: also no faster than the climb their energy allows at full aerobic power (the §6.7a cost at the stair's grade,
+            // spent at VO2max: the limit time of Wu & Wang at relative load 1, 0.213 h) [ASSUMED: a storey or two is climbed at
+            // up to VO2max]. Man of 35: 0.51 m/s along a 7/11 stair; woman of 75: 0.18.
+            const flat = walkSpeedKmh(p, 0, 'road', s.load_kg ?? 0, country) / 3.6 * k / 1.40;
+            const v = (s.do === 'stairs_up' ? Math.min(flat, walkSpeedKmh(p, r / tr * 100, 'road', s.load_kg ?? 0, country, 0.213) / 3.6) : flat) * crowdFactor(s.crowd_per_m2);
+            t = along / v;
+            what = `goes ${s.do === 'stairs_up' ? 'up' : 'down'} ${s.steps} steps (${along.toFixed(1)} m along the stair, ${v.toFixed(2)} m/s)`;
+            if (s.to)
+                p.at = s.to;
         }
         else if (s.do === 'be_at') {
             if (!s.to)
@@ -70,7 +104,7 @@ export function act(st, who, p, steps, country) {
             what = MTM[s.do].does;
         }
         else
-            return { error: `Unknown action "${s.do}". Known: walk_to, be_at, reach, ${Object.keys(MTM).join(', ')}.` };
+            return { error: `Unknown action "${s.do}". Known: walk_to, be_at, stairs_up, stairs_down, reach, ${Object.keys(MTM).join(', ')}.` };
         total += t;
         lines.push(`${who} ${what}: ${honest(t)}`);
         marks.push([total, `${who} ${what.split(' at ')[0].replace(/ from .* to /, ' to ')}`]);

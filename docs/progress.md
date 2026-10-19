@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (28), Claude Opus 5.5
+- Added: stairs (up and down) and crowd density in Act, from the SFPE emergency-movement model; climbing is also held to what the person's aerobic power allows.
+- Checked: man of 35 climbs a storey in 10 s (0.51 m/s along the stair), woman of 75 at 0.18 m/s; a crowd of 2 per m² cuts speed to 55 %.
+- Not done: doors, doorway flow, contention.
+
 ## 2026-10-18 (27), Claude Opus 5.5
 - Added: tool Room. A room's air moves minute by minute (CO, CO2, O2) from what burns in it (by the fuel's atoms) and who breathes in it, with the house leak rate drawn from US measurements; people whose spot is the room breathe it.
 - Checked (harness): charcoal brazier, 30 m³, sleeping man: unconscious at 50 min, dead at 59; hand calculation agrees within the leak.

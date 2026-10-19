@@ -1657,12 +1657,16 @@ export function registerRulesTools(enabled) {
         });
     });
     const STEP_ITEM = { type: 'object', properties: {
-            do: { type: 'string', enum: ['be_at', 'walk_to', 'sit', 'stand', 'bend', 'kneel', 'arise', 'kneel_both', 'arise_both', 'turn', 'sidestep', 'reach', 'grasp', 'release', 'look'] },
+            do: { type: 'string', enum: ['be_at', 'walk_to', 'stairs_up', 'stairs_down', 'sit', 'stand', 'bend', 'kneel', 'arise', 'kneel_both', 'arise_both', 'turn', 'sidestep', 'reach', 'grasp', 'release', 'look'] },
             to: str('Spot, named with its place: "John\'s house: living room", "John\'s house: front door", "Rue de Rivoli"'),
             distance_m: { type: 'number', description: 'Walking distance to the spot, m, from the scene\'s layout; needed only the first time' },
             cm: { type: 'number', description: 'Reach distance, cm' },
             grade_pct: { type: 'number', description: 'Slope or stairs, % (a staircase about 60)' },
             load_kg: { type: 'number', description: 'Load carried, kg' },
+            crowd_per_m2: { type: 'number', description: 'People per m² on the way when crowded (busy street 0.5, packed market 2, crush 3.5)' },
+            steps: { type: 'number', description: 'For stairs: number of steps (a storey about 16)' },
+            riser_cm: { type: 'number', description: 'For stairs: step height, cm, when the story sets it (steep old stair 20, modern 17)' },
+            tread_cm: { type: 'number', description: 'For stairs: step depth, cm' },
         }, required: ['do'] };
     tool('Act', 'Time characters\' physical actions before narrating them; when several characters act at the same time, put them all in one call (actors): walking between spots of the scene, sitting, standing, bending, kneeling, turning, reaching, grasping. Code computes each duration and moves the story clock by exactly that much; narrate the times it gives, not your own. Record where a character is with be_at; give distance_m the first time two spots are walked between (it is kept).', {
         who: str('Character acting (one actor)'),
