@@ -336,7 +336,7 @@ function whoAny(st: RuleState, name: string, speciesArg?: string): Who {
 
 // Principles shared by both briefs.
 const RULES_PRINCIPLES = `Principles
-- Write each BodyCheck result in [DECIDED] as *(its task → SUCCESS)* or *(its task → FAILURE)*, as the result gives it, right after the sentence that narrates it. Every other result is told in the story's own words.
+- Every result is told in the story's own words: what happens, as the people there see and hear it.
 - The world is real history with the additions in [WORLD]; everything else is as in real history.
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
@@ -400,6 +400,25 @@ function prepareAct(raw: Args): Args {
     if (out.steps === undefined) delete out.steps;
     return out;
 }
+
+/** Moves the story clock by an action's seconds; the body runs in whole minutes, so seconds wait until they make one. */
+function passSeconds(st: RuleState, seconds: number, names: Set<string>, rng: Rng): string {
+    if (!st.clock) return ' The story clock is still open ([TIME] unset): durations given, the clock stays where it is.';
+    let tail = '';
+    st.clock.add += seconds / 60;
+    st.clock.sec = (st.clock.sec ?? 0) + seconds;
+    const mins = Math.floor(st.clock.sec / 60);
+    if (mins > 0) {
+        st.clock.sec -= mins * 60;
+        const others = new Set(Object.keys(st.people ?? {}).filter(n => !names.has(n)));
+        const ev = advanceAll(st.people || {}, mins, others, rng, { active: names, eachMinute: airHook(st) });
+        if (ev.events.length) tail = ` Meanwhile: ${ev.events.join('; ')}.`;
+    }
+    return ` Clock now ${formatStoryTime(storyNow(st)!)}.` + tail;
+}
+// Speaking takes time: English conversation runs at about 196 words a minute over the whole conversation time (Yuan,
+// Liberman & Cieri 2006, Switchboard; 214 in CallHome, 193 in Fisher).
+const WORDS_PER_S = 196 / 60;
 
 // A price in the coins of the place, so the narration names what changes hands: English money by the pound's silver that
 // year (Lindert 2006 from Jastram 1981, the series behind "value of English money"); the French franc of 7 Germinal an XI
@@ -857,7 +876,7 @@ export function registerRulesTools(enabled: boolean): void {
         listener_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the listener knows, when the story states them; kept for later calls.' },
         message: str('What the message says, one short sentence. When it reaches the listener, the listener comes to know it.'),
         speaker_voice: { type: 'string', enum: ['normal', 'whisper only (no vocal-fold vibration)'], description: 'When the story makes the speaker voiceless (larynx removed, vocal folds paralysed); kept for later calls.' },
-    }, ['speaker', 'listener'], a => run(st => {
+    }, ['speaker', 'listener'], a => run((st, rng) => {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (!s.p || !l.p) return s.error || l.error;
         // A language is the stage spoken in the story's year; one not spoken then is refused (languages.ts).
@@ -873,7 +892,10 @@ export function registerRulesTools(enabled: boolean): void {
         // On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default].
         const geo = between(st, s.p, l.p);
         const out = communicate(a.speaker, s.p, a.listener, l.p, { way: wayFor(st, l.p, a, geo ? geo.ra === geo.rb : (!a.barrier || a.barrier === 'none')), means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0), brazil: /brazil/i.test(st.setting?.country ?? '') });
-        if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language foreign to it/.test(out)) return out;
+        // The message takes its speaking time on the clock.
+        const said = a.message ? Math.max(1, String(a.message).trim().split(/\s+/).length / WORDS_PER_S) : 0;
+        const talk = said ? `${passSeconds(st, said, new Set([a.speaker, a.listener]), rng)}`.replace(/^ Clock now/, ` Said in ${honest(said)}; clock now`) : '';
+        if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language foreign to it/.test(out)) return out + talk;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
         // English speech is already on the page in its own words; another language's words are not. A whisper loses voicing
         // in any language, English included (colex.ts).
@@ -884,7 +906,7 @@ export function registerRulesTools(enabled: boolean): void {
         const stage = spoken ? resolveLanguage(spoken, year, CURRENT_BOOK) : null;
         const shared = spoken ? sharedIn(a.message, spoken, 3, whispers, stage!.list, snr) : [];
         const one = shared.length ? ` In ${stage!.label}${whispers ? ', whispered,' : ''} a word can also be taken as: ${shared.map(x => `"${x.word}"${x.sound ? ` = ${x.sound}` : ''} (${x.also.slice(0, 4).join(', ')})`).join('; ')}. Call Interpret for each one whose reading changes what ${a.listener} does.` : '';
-        return `${out} ${a.listener} now knows: ${a.message.replace(/[.!?]?$/, '.')}${one}`;
+        return `${out} ${a.listener} now knows: ${a.message.replace(/[.!?]?$/, '.')}${one}${talk}`;
     }));
 
     // A listener takes a word that has several meanings in the spoken language in the one the scene supports; when the scene
@@ -1725,19 +1747,7 @@ export function registerRulesTools(enabled: boolean): void {
         if ('error' in r) return `${r.error} State unchanged.`;
         const names = new Set(actors.map(x => x.who));
         let tail = '';
-        if (st.clock) {
-            st.clock.add += r.seconds / 60;
-            // The body runs in whole minutes: seconds wait until they make a minute.
-            st.clock.sec = (st.clock.sec ?? 0) + r.seconds;
-            const mins = Math.floor(st.clock.sec / 60);
-            if (mins > 0) {
-                st.clock.sec -= mins * 60;
-                const others = new Set(Object.keys(st.people ?? {}).filter(n => !names.has(n)));
-                const ev = advanceAll(st.people || {}, mins, others, rng, { active: names, eachMinute: airHook(st) });
-                if (ev.events.length) tail = ` Meanwhile: ${ev.events.join('; ')}.`;
-            }
-            tail = ` Clock now ${formatStoryTime(storyNow(st)!)}.` + tail;
-        } else tail = ' The story clock is still open ([TIME] unset): durations given, the clock stays where it is.';
+        tail = passSeconds(st, r.seconds, names, rng);
         return `${r.text}. Span ${honest(r.seconds)}.${tail}`;
     }));
 

@@ -127,11 +127,18 @@ export function roomSound(levelAt1m: number, room: { m3: number; absorption: num
 const add = (a: number, b: number) => 10 * Math.log10(10 ** (a / 10) + 10 ** (b / 10));
 
 /** Octave-band levels (dB spectrum level) of a sound of `effort` (or overall `spl` at 1 m, pink) after distance and barrier. */
-function arriving({ effort, spl, distance, barrier, air, way = {} }: { effort?: Effort | null; spl?: number | null; distance: number; barrier: string; air?: Air; way?: Way }): number[] {
+// The Lombard effect: talkers raise their voices in noise without meaning to. Face to face (levels at 1 m), the voice stays
+// near 55 dB until the background reaches about 48 dB, then rises about 0.6 dB per dB, levelling off near 67 dB around a
+// 70 dB background (Pearsons, Bennett & Fidell 1977, EPA-600/1-77-025). Quiet-room levels at 1 m by effort: casual 52,
+// normal 57, raised 64, loud 73, shout 85 dB. A talker at a chosen effort is raised further only when the noise asks for
+// more than that effort gives over normal.
+const PEARSONS: Partial<Record<Effort, number>> = { normal: 57, raised: 64, loud: 73, shout: 85 };
+export const lombardDb = (effort: Effort, noiseDb: number) => /whisper/.test(effort) ? 0 : Math.max(0, Math.min(12, 0.6 * (noiseDb - 48)) - ((PEARSONS[effort] ?? 57) - 57));
+function arriving({ effort, spl, distance, barrier, air, way = {}, boost = 0 }: { effort?: Effort | null; spl?: number | null; distance: number; barrier: string; air?: Air; way?: Way; boost?: number }): number[] {
     const d = Math.max(1, distance), tC = air?.tC ?? 10;
     // A tone puts its energy in its own band; a noise spreads it evenly over the six (pink) [ASSUMED for noise].
     const tone = way.toneHz ? BANDS.reduce((b, f, i) => Math.abs(Math.log2(f / way.toneHz!)) < Math.abs(Math.log2(BANDS[b] / way.toneHz!)) ? i : b, 0) : -1;
-    const src = effort ? SPEECH[effort] : BANDS.map((_, i) => tone >= 0 ? (i === tone ? (spl ?? 0) - DELTA[i] : -99) : (spl ?? 0) - 10 * Math.log10(6) - DELTA[i]);
+    const src = effort ? SPEECH[effort].map(x => x + boost) : BANDS.map((_, i) => tone >= 0 ? (i === tone ? (spl ?? 0) - DELTA[i] : -99) : (spl ?? 0) - 10 * Math.log10(6) - DELTA[i]);
     const shadow = way.room ? null : shadowStart(way, tC);
     // The wave spreads over a sphere (−20 log10 d); the air takes energy per band; the ground's reflection adds or cancels;
     // an obstacle screens (its screening replaces the ground term, ISO 9613-2 §7.4); upward-bent rays leave a shadow; a wall
@@ -155,8 +162,8 @@ export interface ReachInput extends Ear { effort?: Effort; spl?: number | null; 
  * normal human hearing, dB; deaf: band indices the listener cannot hear.
  */
 export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air, way }: ReachInput) {
-    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier, air, way });
     const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
+    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier, air, way, boost: spl == null ? lombardDb(effort, nDb) : 0 });
     // In a room, the late part of the speaker's own sound adds to the noise band by band.
     const src1 = spl == null ? SPEECH[effort] : BANDS.map((_, i) => spl - 10 * Math.log10(6) - DELTA[i]);
     const n = BANDS.map((_, i) => { const b = nDb - 10 * Math.log10(6) - DELTA[i]; return way?.room ? add(b, roomSound(src1[i], way.room).late) : b; });
