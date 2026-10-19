@@ -7,6 +7,7 @@
 // variation of a repeated motion].
 import type { Person, RuleState as State } from './types.js';
 import { walkSpeedKmh } from './work.js';
+import { walkFromMap } from './map.js';
 
 export const TMU_S = 0.036;
 // MTM-1 body motions, TMU: bend, stoop or kneel on one knee 29.0; arise 31.9; kneel on both knees 69.4; arise 76.7; sit
@@ -73,11 +74,17 @@ export function act(st: State, who: string, p: Person, steps: Step[], country: s
             if (p.at === s.to) { lines.push(`${who} is already at ${s.to}`); continue; }
             st.links ??= {};
             const k = key(p.at, s.to), known = st.links[k], via = known == null && s.distance_m == null ? shortest(st.links, p.at, s.to) : null;
-            const d = known ?? s.distance_m ?? via?.m;
-            if (d == null || !(d > 0)) return { error: `No distance recorded between ${p.at} and ${s.to}; give distance_m (the scene's layout) and it is kept for later.` };
-            if (known == null && !via) st.links[k] = d;
+            const fromMap = known == null && s.distance_m == null && !via && st.map ? walkFromMap(st.map, p.at, s.to) : null;
+            const d = known ?? s.distance_m ?? via?.m ?? fromMap?.m;
+            if (d == null || !(d > 0)) return { error: `No distance recorded between ${p.at} and ${s.to}; give distance_m (the scene's layout) or place both spots with Layout, and it is kept for later.` };
+            if (fromMap && fromMap.floors !== 0) {
+                // Different floors: the level walk, then a storey's stairs per floor (16 steps of 17.8 cm ≈ 2.85 m) [ASSUMED].
+                const sub = act(st, who, { ...p, at: undefined } as Person, [{ do: fromMap.floors > 0 ? 'stairs_up' : 'stairs_down', steps: 16 * Math.abs(fromMap.floors), load_kg: s.load_kg, crowd_per_m2: s.crowd_per_m2 }], country);
+                if (!('error' in sub)) { total += sub.seconds; lines.push(...sub.lines); }
+            }
+            if (known == null && !via && !fromMap) st.links[k] = d;
             const v = walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2);
-            t = d / v; what = `walks ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
+            t = d / v; what = `walks ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : fromMap ? ' (from the map)' : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
             p.at = s.to;
         } else if (s.do === 'stairs_up' || s.do === 'stairs_down') {
             if (!s.steps || !(s.steps > 0)) return { error: `${s.do} needs steps (how many; a storey of 2.8 m is about 16).` };

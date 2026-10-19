@@ -114,6 +114,8 @@ export interface RuleState {
     links?: Record<string, number>;
     /** Air of rooms by spot name (rooms.ts). */
     rooms?: Record<string, import('./rooms.js').Room>;
+    /** Positions of spots and outlines of rooms (map.ts). */
+    map?: import('./map.js').MapState;
     /** Open doorways between rooms (rooms.ts). */
     openings?: import('./rooms.js').Opening[];
     latitude?: number;

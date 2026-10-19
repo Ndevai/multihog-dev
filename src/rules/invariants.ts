@@ -3,10 +3,11 @@
 // the history. Laws: time only runs forward; the dead stay dead; amounts are within their physical bounds (blood lost between
 // 0 and all of it, mass above 0, deficits not negative, gas shares between 0 and 100 %); items are conserved except where
 // the story moves them in or out of the world (Transfer from or to nobody, a Claim); a walking distance is never longer than a
-// known detour through a third spot (the shortest walk between two spots cannot exceed a route via another).
+// known detour through a third spot (the shortest walk between two spots cannot exceed a route via another), nor shorter than the straight line between their places on the map.
 import type { RuleState } from './types.js';
 import { bloodVolume } from './body-engine.js';
 import { shortest } from './actions.js';
+import { shortcuts } from './map.js';
 
 const now = (st: RuleState) => st.clock ? st.clock.t + st.clock.add : null;
 const totals = (st: RuleState) => { const t: Record<string, number> = {}; for (const list of Object.values(st.items ?? {})) for (const x of list) t[x.item.toLowerCase()] = (t[x.item.toLowerCase()] ?? 0) + x.qty; return t; };
@@ -30,7 +31,7 @@ export function violations(before: RuleState, after: RuleState, tool: string, ar
         const ta = totals(before), tb = totals(after);
         for (const k of new Set([...Object.keys(ta), ...Object.keys(tb)])) if (Math.abs((ta[k] ?? 0) - (tb[k] ?? 0)) > 1e-9) out.push(`${k}: ${ta[k] ?? 0} in the world became ${tb[k] ?? 0} without entering or leaving it`);
     }
-    out.push(...detours(after));
+    out.push(...detours(after), ...shortcuts(after));
     return out;
 }
 

@@ -22,10 +22,11 @@ import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, statu
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest } from './actions.js';
 import { parseFormula, molarMass } from './substance.js';
-import { airHook, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
+import { airHook, inRoom, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify } from './world-log.js';
 import { violations } from './invariants.js';
+import { mapOf, area, roomAt, straight } from './map.js';
 import { loadDrugs, startDose } from './drugs.js';
 import { resetUsed, fragileCandidates, withOverride } from './constants.js';
 import { heatingValue, heatFromFormation, loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
@@ -46,7 +47,7 @@ import { HOW, transfer, give, account, possessionsBlock } from './possessions.js
 import { sharedIn, sharedWith, whisperedAs, noisyAs, languageCode, soundOf } from './colex.js';
 import { resolveLanguage, stageKey } from './languages.js';
 import { str, checkArgs } from './tool-schema.js';
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Layout', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'];
 const KEEP_SNAPSHOTS = 30;
 /** Tools registered while the engine is on, by name. */
 export const REGISTRY = new Map();
@@ -353,6 +354,15 @@ World
 - A price, a wage or a bill → Price. A contagious disease → Disease. An attack by one army or unit on a defended position → Battle. A spell → CastSpell. A random pick (a door, a coin, a card) or a loot or random-event table → RollTheDice with kind "table"; a quantity → kind "amount".
 ${RULES_PRINCIPLES}
 </rule_engine>`;
+/** Between two people placed on the map: straight distance, their rooms, and whether an open doorway joins them. */
+function between(st, a, b) {
+    if (!st.map || !a.at || !b.at)
+        return null;
+    const ra = roomAt(st.map, a.at) ?? (st.rooms?.[a.at] ? a.at : null), rb = roomAt(st.map, b.at) ?? (st.rooms?.[b.at] ? b.at : null);
+    const open = !!(st.openings ?? []).some(o => (o.a === ra && o.b === rb) || (o.a === rb && o.b === ra));
+    const d = straight(st.map, a.at, b.at);
+    return { d: d == null ? null : Math.round(d * 10) / 10, ra, rb, open };
+}
 /** The first sentence of b that a does not contain (the changed outcome). */
 const firstDiff = (a, b) => { const sa = new Set(a.split(/(?<=[.;])\s+/).map(x => x.replace(/-?\d+(\.\d+)?/g, '#'))); return b.split(/(?<=[.;])\s+/).find(x => !sa.has(x.replace(/-?\d+(\.\d+)?/g, '#')))?.slice(0, 160) ?? b.slice(0, 160); };
 /** Minutes as "49 min 23 s" (whole minutes shown bare). */
@@ -834,7 +844,9 @@ export function registerRulesTools(enabled) {
         // A speaker without voice whispers at every effort: a whisper, or a loud whisper when they raise it.
         const effort = s.p.voice === 'whisper' ? (!a.effort || a.effort === 'normal' || a.effort === 'whisper' ? 'whisper' : 'loud whisper') : a.effort ?? 'normal';
         const langs = [s.p.languages?.map(x => stageKey(x, year)), l.p.languages?.map(x => stageKey(x, year))];
-        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? 'none', louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0), brazil: /brazil/i.test(st.setting?.country ?? '') });
+        // On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default].
+        const geo = between(st, s.p, l.p);
+        const out = communicate(a.speaker, s.p, a.listener, l.p, { means: a.means, lit: a.lit !== false, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room', barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: (a.feeling ? FEELING_DB[a.feeling] : 0) + (effort === 'normal' ? lombardDb(NOISE[a.noise ?? 'quiet room'] ?? 25) : 0), brazil: /brazil/i.test(st.setting?.country ?? '') });
         if (!a.message || !/makes out (every word|most words|some words)|sees the gesture/.test(out) || /language it does not know/.test(out))
             return out;
         learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
@@ -1405,21 +1417,28 @@ export function registerRulesTools(enabled) {
         viewer_species: str('Viewer\'s DF creature when the engine has no record of them yet.'),
         target: str('What might be seen, a few words'),
         size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, horse 0.6, wagon or car 1.5)' },
-        distance_m: { type: 'number', description: 'Distance, m' },
+        distance_m: { type: 'number', description: 'Distance, m (left out when both are on the map)' },
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Only for an overcast sky or artificial light. Leave it out otherwise: code takes daylight, twilight, moonlight or starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
         reveals: str('The fact seeing it would teach, one short sentence (who it is, what they are doing); learned only if identified'),
-    }, ['viewer', 'size_m', 'distance_m'], a => run((st, rng) => {
+        target_who: str('When the target is a tracked character: their name (distance and walls then come from the map)'),
+    }, ['viewer', 'size_m'], a => run((st, rng) => {
         const v = who(st, a.viewer, a.viewer_species);
         if (!v.p)
             return v.error;
+        const tp = a.target_who ? st.people?.[a.target_who] : undefined, geo = tp ? between(st, v.p, tp) : null;
+        if (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open)
+            return `${a.viewer} cannot see ${a.target}: ${geo.ra} and ${geo.rb} have no open doorway between them.`;
+        const dist = a.distance_m ?? geo?.d ?? null;
+        if (dist == null)
+            return 'Give distance_m (or place both on the map with Layout and give target_who). Nothing recorded.';
         if (Number.isFinite(a.latitude))
             st.latitude = a.latitude;
         // Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED].
         const t = storyNow(st);
         const sky = !a.light && t !== null && t / 1440 > 146097 && st.latitude != null && Number.isFinite(st.latitude) ? skyLight(t, st.latitude) : null;
-        const out = look(a.viewer, v.p, { size_m: a.size_m, distance_m: a.distance_m, light: sky?.lux ?? a.light ?? 'daylight', lightLabel: sky?.label ?? null, visibility_m: a.visibility_m ?? 20000 }, rng);
+        const out = look(a.viewer, v.p, { size_m: a.size_m, distance_m: dist, light: sky?.lux ?? a.light ?? 'daylight', lightLabel: sky?.label ?? null, visibility_m: a.visibility_m ?? 20000 }, rng);
         return / identifies it /.test(out) && a.reveals ? `${out} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : out;
     }));
     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
@@ -1768,6 +1787,10 @@ export function registerRulesTools(enabled) {
         return run((st, rng) => {
             st.rooms ??= {};
             const old = st.rooms[a.room];
+            const outline = st.map?.rooms[a.room];
+            if (outline) {
+                a = { ...a, floor_m2: a.floor_m2 ?? Math.round(area(outline.corners) * 10) / 10, height_m: a.height_m ?? outline.height };
+            }
             const vol = a.volume_m3 ?? (a.floor_m2 && a.height_m ? a.floor_m2 * a.height_m : undefined);
             if (!old && !(vol && vol > 0))
                 return `Give volume_m3 (or floor_m2 and height_m) for ${a.room} (first time). Nothing recorded.`;
@@ -1822,7 +1845,7 @@ export function registerRulesTools(enabled) {
                 st.openings = (st.openings ?? []).filter(o => o.a !== a.room && o.b !== a.room).concat(a.doorways.map(d => ({ a: a.room, b: d.room, m2: d.m2 ?? 1.6, h: d.height_m ?? 2 })));
             }
             const joined = (st.openings ?? []).filter(o => o.a === a.room || o.b === a.room).map(o => `${o.a === a.room ? o.b : o.a} (${o.m2} m², ${Math.round(exchangeM3s(st.rooms[o.a], st.rooms[o.b], o) * 3600)} m³/h each way now)`);
-            const inside = Object.entries(st.people ?? {}).filter(([, p]) => p.at === a.room).map(([n]) => n);
+            const inside = Object.entries(st.people ?? {}).filter(([, p]) => inRoom(st, p, a.room)).map(([n]) => n);
             return `${describeAir(a.room, r)}. Inside: ${inside.join(', ') || 'no one'}.${joined.length ? ` Open to: ${joined.join(', ')}.` : ''} The air changes minute by minute as time passes (PassTime, Act).`;
         });
     });
@@ -1840,6 +1863,29 @@ export function registerRulesTools(enabled) {
             return 'error' in r ? `${r.error} Nothing recorded.` : `${a.who}: ${r.note} given; its course runs as time passes.`;
         });
     });
+    tool('Layout', 'Place spots and rooms on the scene\'s plan, in metres, once the story fixes where things are: then walking distances, room sizes, who can hear or see whom through walls come from the plan. x east, y north from any corner of the scene; floor 0 the ground floor.', {
+        spots: { type: 'array', description: 'Spots with their position', items: { type: 'object', properties: {
+                    spot: str('Spot name, as used in Act ("John\'s house: kitchen")'), x_m: { type: 'number', description: 'x, m' }, y_m: { type: 'number', description: 'y, m' },
+                    floor: { type: 'number', description: 'Floor number (0 ground, 1 first, -1 cellar). Default 0.' }, room: str('The room it is in, when it has an outline'),
+                }, required: ['spot', 'x_m', 'y_m'] } },
+        rooms: { type: 'array', description: 'Rooms by their corners', items: { type: 'object', properties: {
+                    room: str('Room name (also usable as a spot and in Room)'), corners: { type: 'array', items: { type: 'array', items: { type: 'number' } }, description: 'Corners [[x, y], …] in order, m' },
+                    floor: { type: 'number', description: 'Floor number. Default 0.' }, height_m: { type: 'number', description: 'Ceiling height, m. Default 2.5.' },
+                }, required: ['room', 'corners'] } },
+    }, [], a => run(st => {
+        const m = mapOf(st), out = [];
+        for (const r of (a.rooms ?? [])) {
+            if (!Array.isArray(r.corners) || r.corners.length < 3)
+                return `Room ${r.room} needs at least 3 corners. Nothing recorded.`;
+            m.rooms[r.room] = { corners: r.corners.map(c => [Number(c[0]), Number(c[1])]), floor: r.floor ?? 0, height: r.height_m ?? 2.5 };
+            out.push(`${r.room}: ${area(m.rooms[r.room].corners).toFixed(1)} m², ${(area(m.rooms[r.room].corners) * (r.height_m ?? 2.5)).toFixed(0)} m³`);
+        }
+        for (const p of (a.spots ?? [])) {
+            m.spots[p.spot] = { x: p.x_m, y: p.y_m, floor: p.floor ?? 0, ...(p.room ? { room: p.room } : {}) };
+            out.push(`${p.spot} at (${p.x_m}, ${p.y_m}) floor ${p.floor ?? 0}${roomAt(m, p.spot) ? `, in ${roomAt(m, p.spot)}` : ''}`);
+        }
+        return out.length ? `Placed: ${out.join('; ')}.` : 'Nothing given.';
+    }));
     tool('CastSpell', 'Resolve a spell cast before narrating it.', {
         who: str('Caster name'),
         complexity: { type: 'number', description: 'Spell complexity 1-9' },

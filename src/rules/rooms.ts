@@ -8,6 +8,7 @@ import { equivalentAltitude } from './thermal/altitude.js';
 import { setAltitude, setEnvironment } from './body-engine.js';
 import type { Rng } from './types.js';
 import { def, k } from './constants.js';
+import { roomAt } from './map.js';
 
 const FILE = 'rooms.ts';
 def({ id: 'flameOutO2', value: 15, unit: '% O2', status: 'assumed', src: 'limiting oxygen of flaming solid fuels', range: [13, 17], file: FILE });
@@ -147,7 +148,9 @@ export function breathe(r: Room, p: Person): void {
     if (r.o2 < 20.9) { p.baseAlt ??= p.altitude?.m ?? 0; const m = Math.round(equivalentAltitude(r.o2, p.baseAlt)); if (Math.abs((p.altitude?.m ?? 0) - m) >= 50) setAltitude(p, m, true); }
 }
 
-export const roomOf = (st: RuleState, p: Person): Room | null => (p.at && st.rooms?.[p.at]) || null;
+/** Whether a person is in a room: their spot is the room, or lies in its outline on the map. */
+export const inRoom = (st: RuleState, p: Person, name: string) => !!p.at && (p.at === name || (!!st.map && roomAt(st.map, p.at) === name));
+export const roomOf = (st: RuleState, p: Person): Room | null => { if (!p.at) return null; const n = st.rooms?.[p.at] ? p.at : st.map ? roomAt(st.map, p.at) : null; return (n && st.rooms?.[n]) || null; };
 // Between rooms through an open doorway: warm air goes out at the top and cool air comes in below. Each way
 // Q = C (W ÷ 3) √(g Δρ ÷ ρ̄) H^(3/2) m³/s (Brown & Solvason 1962, Int J Heat Mass Transfer 5:859, eq. 6; Δρ ÷ ρ̄ = ΔT ÷ T̄
 // for air). C: the paper gives 0.6 for sharp-edged orifices to 0.98; its measurements (Fig. 5, air, openings 3–12 in high,
@@ -175,12 +178,12 @@ export function airHook(st: RuleState): (() => void) | null {
     return () => {
         if (st.openings?.length) exchangeMinute(st.rooms!, st.openings);
         for (const [name, r] of Object.entries(st.rooms!)) {
-            const inside = Object.values(st.people ?? {}).filter(p => p.at === name);
+            const inside = Object.values(st.people ?? {}).filter(p => inRoom(st, p, name));
             airMinute(r, inside); heatMinute(r);
             for (const p of inside) { breathe(r, p); feelHeat(r, p); p.airFrom = name; }
         }
         // Out of a tracked room: back to clean outside air.
-        for (const p of Object.values(st.people ?? {})) if (p.airFrom && p.at !== p.airFrom && !(p.at && st.rooms![p.at])) {
+        for (const p of Object.values(st.people ?? {})) if (p.airFrom && !inRoom(st, p, p.airFrom) && !roomOf(st, p)) {
             if (p.env) p.env.co = 0; if (p.baseAlt != null) { setAltitude(p, p.baseAlt); p.baseAlt = null; } p.airFrom = null;
         }
     };

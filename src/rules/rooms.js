@@ -1,6 +1,7 @@
 import { equivalentAltitude } from './thermal/altitude.js';
 import { setAltitude, setEnvironment } from './body-engine.js';
 import { def, k } from './constants.js';
+import { roomAt } from './map.js';
 const FILE = 'rooms.ts';
 def({ id: 'flameOutO2', value: 15, unit: '% O2', status: 'assumed', src: 'limiting oxygen of flaming solid fuels', range: [13, 17], file: FILE });
 def({ id: 'coWood', value: 50, unit: 'g CO per kg', status: 'assumed', src: 'midpoint of 15–85 g/kg for non-charcoal solid fuels, IPCC EFDB India Annex 7', range: [15, 85], file: FILE });
@@ -166,7 +167,10 @@ export function breathe(r, p) {
             setAltitude(p, m, true);
     }
 }
-export const roomOf = (st, p) => (p.at && st.rooms?.[p.at]) || null;
+/** Whether a person is in a room: their spot is the room, or lies in its outline on the map. */
+export const inRoom = (st, p, name) => !!p.at && (p.at === name || (!!st.map && roomAt(st.map, p.at) === name));
+export const roomOf = (st, p) => { if (!p.at)
+    return null; const n = st.rooms?.[p.at] ? p.at : st.map ? roomAt(st.map, p.at) : null; return (n && st.rooms?.[n]) || null; };
 export function exchangeM3s(ra, rb, o) {
     const Ta = (ra.hot ?? ra.air_c) + 273.15, Tb = (rb.hot ?? rb.air_c) + 273.15, dT = Math.max(k('doorMinDT'), Math.abs(Ta - Tb)), W = o.m2 / o.h;
     return k('doorC') / 3 * W * Math.sqrt(9.81 * dT / ((Ta + Tb) / 2)) * o.h ** 1.5;
@@ -192,7 +196,7 @@ export function airHook(st) {
         if (st.openings?.length)
             exchangeMinute(st.rooms, st.openings);
         for (const [name, r] of Object.entries(st.rooms)) {
-            const inside = Object.values(st.people ?? {}).filter(p => p.at === name);
+            const inside = Object.values(st.people ?? {}).filter(p => inRoom(st, p, name));
             airMinute(r, inside);
             heatMinute(r);
             for (const p of inside) {
@@ -203,7 +207,7 @@ export function airHook(st) {
         }
         // Out of a tracked room: back to clean outside air.
         for (const p of Object.values(st.people ?? {}))
-            if (p.airFrom && p.at !== p.airFrom && !(p.at && st.rooms[p.at])) {
+            if (p.airFrom && !inRoom(st, p, p.airFrom) && !roomOf(st, p)) {
                 if (p.env)
                     p.env.co = 0;
                 if (p.baseAlt != null) {

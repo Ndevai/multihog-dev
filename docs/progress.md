@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (34), Claude Opus 5.5
+- Added: tool Layout, the map under the spots: positions and room outlines; walking distances, stairs between floors, room sizes, room membership, hearing through walls and sight between rooms now come from the plan; a recorded distance shorter than the straight line is refused.
+- Checked (harness): voice through a wall vs an open door; sight blocked between rooms; stairs added between floors; a too-short distance refused.
+- Not done: walls as segments (sight lines across a room's corner), outdoor maps from coordinates.
+
 ## 2026-10-18 (33), Claude Opus 5.5
 - Added: the 28 precomputed Pulse runs wired in as tool Dose (per-kg dose, log-dose interpolation, engine rules for breathing and consciousness; thresholds registered with ranges).
 - Checked (harness): courses run minute by minute, apnea rule takes over where breathing stops, history replays exactly.

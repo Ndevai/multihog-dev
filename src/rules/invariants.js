@@ -1,5 +1,6 @@
 import { bloodVolume } from './body-engine.js';
 import { shortest } from './actions.js';
+import { shortcuts } from './map.js';
 const now = (st) => st.clock ? st.clock.t + st.clock.add : null;
 const totals = (st) => { const t = {}; for (const list of Object.values(st.items ?? {}))
     for (const x of list)
@@ -32,7 +33,7 @@ export function violations(before, after, tool, args) {
             if (Math.abs((ta[k] ?? 0) - (tb[k] ?? 0)) > 1e-9)
                 out.push(`${k}: ${ta[k] ?? 0} in the world became ${tb[k] ?? 0} without entering or leaving it`);
     }
-    out.push(...detours(after));
+    out.push(...detours(after), ...shortcuts(after));
     return out;
 }
 /** Recorded walking distances longer than a route through other spots. */
