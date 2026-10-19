@@ -276,3 +276,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - The player had given the date, and the turn still ran with no clock. The clock was set only from the plan's "time", and only from "1899-09-19 14:20" exactly.
 - clock.ts `findStoryTime` reads a written date anywhere in a text: 1899-09-19, 19/09/1899 (day first), 19 September 1899, 19th of Sept 1899, September 19, 1899, with the hour written after it (14:20, 2:20 pm, 14h20; noon when none [ASSUMED]). `parseStoryTime` falls back to it, so a plan's "time" in any of these forms is read.
 - question-pass.ts: when the plan gives no time and the story has none, the player's message, then the cast and scenario, then the recent messages are searched for a date.
+
+## 2026-10-19 (11) A rewrite starts from the turn's start; a repair adds only what was asked
+
+- London 1867 log: the date was read (24 March 1867, 12:36) and Act, Weather and PlaceProfile ran. Two faults remained.
+- The repair round asked only for "at"; the model rewrote the whole plan and its second Act ran too (front door → street, then inside → street: 6.6 s for one step out). A repair now takes every call only when the plan was unreadable; otherwise only calls of the dropped or refused tools.
+- The rule check's rewrite (a swipe) ran the turn's calls on the clock the first draft had moved (12:36:07 → 12:36:13). GENERATION_STARTED of a normal turn fires before the player's message joins the chat, so the turn's snapshot sits one place earlier than the swipe looked. The swipe now takes the snapshot at the reply or, failing that, at the player's message. Tested: a rewrite gives the same 12:36:03.

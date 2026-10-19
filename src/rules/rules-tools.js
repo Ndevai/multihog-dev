@@ -102,7 +102,10 @@ export function onRulesGenerationStarted(type) {
     const chat = ctx.chat || [];
     const rewrites = (type === 'swipe' || type === 'regenerate') && chat.length && !chat[chat.length - 1].is_user;
     if (rewrites) {
-        const snap = s.snapshots[chat.length - 1];
+        // GENERATION_STARTED of a normal turn fires before the player's message joins the chat, so that turn's snapshot sits at
+        // the player's message (length − 2); one taken with the message already in sits at the reply (length − 1). A London
+        // 1867 rewrite found neither under the old key alone and ran the turn's Act calls a second time on the moved clock.
+        const snap = s.snapshots[chat.length - 1] ?? s.snapshots[chat.length - 2];
         if (snap) {
             s.state = structuredClone(snap.state ?? snap);
             s.calls = snap.calls ?? 0;

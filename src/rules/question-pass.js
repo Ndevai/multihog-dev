@@ -238,7 +238,10 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
                 if (time !== null)
                     setStoryTime(time);
             }
-            calls = dedupe([...calls, ...validCalls(fix.calls)]).slice(0, MAX_CALLS);
+            // The answer replaces only what was asked: every call when the plan was unreadable, the dropped tools' calls otherwise
+            // (asked only for "at", a model rewrote the whole plan and its Act ran twice).
+            const asked = new Set(dropped.map(c => c.tool));
+            calls = dedupe([...calls, ...validCalls(fix.calls).filter(c => unread || asked.has(c.tool))]).slice(0, MAX_CALLS);
             plan.then.push(...fix.then);
         }
         // The day's weather is decided by code every turn the story has a calendar date and a place, whether or not the
@@ -258,7 +261,7 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
                 if (time !== null)
                     setStoryTime(time);
             }
-            const fixed = validCalls(fp.calls);
+            const refusedTools = new Set(bad.map(({ r }) => r.tool)), fixed = validCalls(fp.calls).filter(c => refusedTools.has(c.tool));
             // A call refused only for want of a date runs again once the date is set.
             if (time !== null)
                 for (const { i } of bad)
