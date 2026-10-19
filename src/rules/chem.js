@@ -2,10 +2,11 @@
 // physics and against what their structure allows (docs/df-body-engine.md §6.19). Measured values win; estimates fill gaps.
 import { parseSmiles, formulaOf, formulaString, jobackGroups, jobackProps, combustionKJmol, hazards, loadJoback, stateAt } from './structure.js';
 import { molarMass, o2Mol, parseFormula } from './substance.js';
+import { derivedFlash, mixtureFlash, bubble, loadUnifac, psat } from './vapour.js';
 let DB = null, byName = null;
 let loading = null;
 export function loadChem() {
-    loading ??= Promise.all([loadJoback(), fetch(new URL('../../rules/chem.json', import.meta.url)).then(r => r.json())]).then(([, d]) => {
+    loading ??= Promise.all([loadJoback(), loadUnifac(), fetch(new URL('../../rules/chem.json', import.meta.url)).then(r => r.json())]).then(([, , d]) => {
         DB = d;
         byName = new Map();
         for (const r of DB.rows) {
@@ -51,6 +52,13 @@ export function checkCompound(r) {
         out.push(`suspect: melting point ${r.Tm} K above boiling point ${r.Tb} K (sublimes at 1 atm, or one value is wrong; ${sourceOf(r, 'Tm')} / ${sourceOf(r, 'Tb')})`);
     if (r.Tf != null && r.Tb != null && r.Tf > r.Tb + 10)
         out.push(`contradiction: flash point ${r.Tf} K above boiling point ${r.Tb} K (${sourceOf(r, 'Tf')})`);
+    // Measured flash point vs the one its vapour pressure and lower limit give (§6.19, vapour.ts): beyond 25 K suspect
+    // (90 % of compounds agree within 18.5 K) [ASSUMED threshold].
+    if (r.Tf != null && r.Tb != null && r.Tb > 298.15) {
+        const d = derivedFlash(r);
+        if (d != null && Math.abs(d - r.Tf) > 25)
+            out.push(`suspect: flash point ${r.Tf} K, but its vapour pressure reaches the lower limit at ${Math.round(d)} K (${sourceOf(r, 'Tf')})`);
+    }
     if (r.Tf != null && r.Ta != null && r.Ta <= r.Tf)
         out.push(`contradiction: autoignition ${r.Ta} K at or below flash point ${r.Tf} K (${sourceOf(r, 'Ta')})`);
     let f = null;
@@ -144,8 +152,14 @@ export function describe(q, tempC = 20) {
         if (k != null)
             parts.push(`burns: about ${(k / molarMass(formula)).toFixed(1)} kJ/g as gas [estimated from its groups]`);
     }
-    if (r?.Tf != null)
-        parts.push(T >= r.Tf ? `vapour catches fire from a flame at this temperature (flash point ${Math.round(r.Tf - 273.15)} °C)` : `vapour does not catch fire from a flame until ${Math.round(r.Tf - 273.15)} °C (flash point)`);
+    const tf = r?.Tf ?? (r ? derivedFlash(r) : null), tfTag = r?.Tf != null ? '' : ' [from its vapour pressure and lower limit]';
+    if (tf != null)
+        parts.push(T >= tf ? `vapour catches fire from a flame at this temperature (flash point ${Math.round(tf - 273.15)} °C${tfTag})` : `vapour does not catch fire from a flame until ${Math.round(tf - 273.15)} °C (flash point${tfTag})`);
+    if (r) {
+        const pv = psat(r, T);
+        if (pv != null && T < (r.Tb ?? Infinity))
+            parts.push(`vapour pressure ${pv < 100 ? pv.toPrecision(2) + ' Pa' : (pv / 1000).toPrecision(3) + ' kPa'}`);
+    }
     if (r?.Ta != null)
         parts.push(`ignites without a flame at ${Math.round(r.Ta - 273.15)} °C`);
     if (r?.LFL != null && r?.UFL != null)
@@ -194,7 +208,12 @@ export function describeMixture(text, tempC = 20) {
         const T = tempC + 273.15, st = r.Tb != null && r.Tm != null ? (T >= r.Tb ? 'gas' : T >= r.Tm ? 'liquid' : 'solid') : '?';
         lines.push(`${r.n} ${p.w} % (${st} on its own${burns ? (h ? `, ${(h.kJmol / M).toFixed(1)} kJ/g` : ', heat unknown') : ', does not burn'})`);
     }
+    // Liquid mixture: mole fractions, then boiling point and flash point by UNIFAC (vapour.ts).
+    const rows = parts.map(p => findCompound(p.q)), mol = rows.map((r, i) => parts[i].w / molarMass(r.f)), mt = mol.reduce((a, b) => a + b, 0);
+    const mix = rows.map((r, i) => ({ r, x: mol[i] / mt }));
+    const bp = bubble(mix), fp = mixtureFlash(mix);
+    const liquid = bp && fp != null ? ` As a liquid mixture (UNIFAC): boils at ${(bp.T - 273.15).toFixed(0)} °C, its first vapour ${mix.map((m, i) => `${m.r.n} ${(bp.y[i] * 100).toFixed(0)} %`).join(', ')} by moles; vapour catches fire from a flame from ${(fp - 273.15).toFixed(0)} °C (flash point${tempC + 273.15 >= fp ? ', reached at this temperature' : ''}).` : bp ? ` As a liquid mixture (UNIFAC): boils at ${(bp.T - 273.15).toFixed(0)} °C.` : '';
     const elText = Object.entries(els).sort((a, b) => b[1] - a[1]).map(([e, v]) => `${e} ${v.toFixed(1)} %`).join(', ');
-    return `Mixture: ${lines.join('; ')}. Burnt completely it gives ${heat.toFixed(1)} kJ per g of mixture (water in it only takes heat away). Elements by mass: ${elText}. Boiling, flash point and fire limits of a mixture need its vapour pressures, which the engine does not have yet; each part's own values are in Substance for that part.`;
+    return `Mixture: ${lines.join('; ')}. Burnt completely it gives ${heat.toFixed(1)} kJ per g of mixture (water in it only takes heat away). Elements by mass: ${elText}.${liquid}`;
 }
 const molarMassOf = (e) => molarMass(e);

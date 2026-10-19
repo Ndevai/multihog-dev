@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (29), Claude Opus 5.5
+- Added: vapour pressure for 1426 compounds; flash points derived from vapour pressure and the lower fire limit (used when unmeasured, and to check measured ones); liquid mixtures by UNIFAC from their groups of atoms: boiling point, first vapour, flash point. Substance reports them.
+- Checked: derived flash points median 4.1 K off on 236 compounds; UNIFAC equals thermo's to 4 digits; ethanol–water flash points within 1.7 K from 30 to 96 % (dilute ones 5–12 K low).
+- Not done: kerosene and petrol as compound sets; dilute aqueous flash points.
+
 ## 2026-10-18 (28), Claude Opus 5.5
 - Added: stairs (up and down) and crowd density in Act, from the SFPE emergency-movement model; climbing is also held to what the person's aerobic power allows.
 - Checked: man of 35 climbs a storey in 10 s (0.51 m/s along the stair), woman of 75 at 0.18 m/s; a crowd of 2 per m² cuts speed to 55 %.
