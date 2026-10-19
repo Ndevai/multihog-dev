@@ -99,7 +99,7 @@ const oneLine = (t) => `${t.name}: ${t.description.split(/(?<=\.)\s/)[0]}`;
 export const PICK_SYSTEM = `You choose which rule tools the next reply of a roleplay may need. Code decides outcomes with these tools. Read the scene and the player's message and name every tool whose outcome the reply may need: an action that may fail, a blow, a sound or sight, a message, a person's response, the time an action takes, time passing, the weather, an item changing hands, a fact established or learned, something the player states about their own character, a new person. When unsure whether a tool applies, include it. Write only the JSON {"tools":["Name", ...]}.`;
 const PICK_MESSAGES = 3;
 /** The picker's answer as a schema: names of offered tools only. */
-const pickSchema = () => ({ type: 'object', additionalProperties: false, required: ['tools'], properties: { tools: { type: 'array', items: { type: 'string', enum: [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(t => t.name) } } } });
+const pickSchema = () => ({ type: 'object', additionalProperties: false, required: ['tools'], properties: { tools: { type: 'array', maxItems: 10, items: { type: 'string', enum: [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(t => t.name) } } } });
 /** The tools the question model asks for, or null when its answer cannot be read (then every tool is shown). */
 export async function pickTools(chat, send) {
     const index = [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(oneLine).join('\n');

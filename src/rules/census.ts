@@ -18,9 +18,14 @@ const OCC_MIN_AGE = 15;
 const occupied = (sex: string) => OCCUPATIONS.reduce((s, o) => s + (sex === 'female' ? o.f : o.m), 0)
     / AGES.filter(a => a[0] >= OCC_MIN_AGE).reduce((s, a) => s + a[col(sex)], 0);
 
+// Everyday names for trades the census lists under another word (its "Innkeeper, Hotel Keeper, Publican" is the landlord).
+const SAME_TRADE: Record<string, string> = { landlord: 'innkeeper', landlady: 'innkeeper', publican: 'innkeeper', 'tavern keeper': 'innkeeper', barman: 'innkeeper',
+    barmaid: 'innkeeper', tapster: 'innkeeper', maid: 'domestic indoor servant', housemaid: 'domestic indoor servant', 'serving girl': 'inn, hotel servant', 'serving maid': 'inn, hotel servant', potboy: 'inn, hotel servant', servant: 'domestic indoor servant', watchman: 'watchman', porter: 'porter', constable: 'police', policeman: 'police',
+    coster: 'costermonger', 'street seller': 'costermonger', cabman: 'cab', cabby: 'cab', sailor: 'seaman', soldier: 'army' };
 export const findOccupation = (text: string): Occupation | null => {
-    const t = norm(text);
-    return t ? OCCUPATIONS.find(o => norm(o.name).split(' ').includes(t)) ?? OCCUPATIONS.find(o => norm(o.name).includes(t)) ?? null : null;
+    const raw = norm(text).replace(/^(the|a|an) /, ''), t = SAME_TRADE[raw] ?? raw;
+    const find = (w: string) => OCCUPATIONS.find(o => norm(o.name).split(' ').includes(w)) ?? OCCUPATIONS.find(o => norm(o.name).includes(w));
+    return t ? find(t) ?? t.split(' ').reverse().map(w => find(SAME_TRADE[w] ?? w)).find(Boolean) ?? null : null;
 };
 
 // Birthplace of people living in England and Wales, 1881 (Ravenstein 1885, "The Laws of Migration", J Stat Soc London

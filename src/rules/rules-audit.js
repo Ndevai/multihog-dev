@@ -14,7 +14,7 @@ This list is complete: report the events of these kinds. A stated duration is a 
 First write EVIDENCE: one line per engine-governed event in the reply, giving its words and the engine result that backs or contradicts it. Then write the JSON {"events":[{"quote":"exact words from the reply","tool":"Act|WorkOut|Sickness|Transfer|Claim|BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|SocialResponse|HoldOn|Chase|Price|Disease|Weather|Choose|Battle|KNOWS","problem":"unbacked|contradicts|unknown_to_them"}]}. An empty list means every event is backed.`;
 /** The rule check under constrained decoding: the JSON alone, the evidence in the model's reasoning; and its schema. */
 export const AUDIT_GUIDED = AUDIT_SYSTEM.replace(/First write EVIDENCE:[^\n]*?Then write the JSON /, 'Write the JSON ');
-export const auditSchema = () => ({ type: 'object', additionalProperties: false, required: ['events'], properties: { events: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['quote', 'tool', 'problem'], properties: {
+export const auditSchema = () => ({ type: 'object', additionalProperties: false, required: ['events'], properties: { events: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, required: ['quote', 'tool', 'problem'], properties: {
                     quote: { type: 'string' }, tool: { type: 'string', enum: [...TOOLS, 'KNOWS'] }, problem: { type: 'string', enum: ['unbacked', 'contradicts', 'unknown_to_them'] }
                 } } } } });
 export function buildAuditPrompt(reply, results, knows = '', clock = '') {

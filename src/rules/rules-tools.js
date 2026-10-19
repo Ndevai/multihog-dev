@@ -1684,6 +1684,15 @@ export function registerRulesTools(enabled) {
         // Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex
         // come from the country's stable population (population.ts); occupation and birthplace are left to the story.
         // A role noun as the name ("the costermonger") is the occupation when none is given: a costermonger was drawn as a child.
+        // A crowd is a place's people (PlaceProfile), one person at a time here; "man" and "woman" in the name fix sex and adulthood.
+        if (/\b(crowd|passers-by|passersby|people|folk|street|everyone|townsfolk|villagers)\b/i.test(String(a.who)))
+            return `NewCharacter draws one person; the people of a place come from PlaceProfile, and each one who acts gets their own NewCharacter. State unchanged.`;
+        const adult = /\b(man|men|fellow|gentleman|woman|lady)\b/i.exec(String(a.who))?.[1]?.toLowerCase();
+        if (adult)
+            a = { ...a, sex: a.sex ?? (/woman|lady/.test(adult) ? 'female' : 'male'), min_age: Math.max(18, Number(a.min_age) || 0) };
+        const young = /\b(girl|boy|maid|lad|lass)\b/i.exec(String(a.who))?.[1]?.toLowerCase();
+        if (young && !a.sex)
+            a = { ...a, sex: /girl|maid|lass/.test(young) ? 'female' : 'male' };
         if (!a.occupation) {
             const role = /^(?:the |an? )?([a-z][a-z-]*(?: [a-z][a-z-]*)?)$/.exec(String(a.who).trim())?.[1];
             if (role && !/^(person|man|woman|boy|girl|child|stranger|figure|someone|somebody|other|men|women)\b/.test(role))

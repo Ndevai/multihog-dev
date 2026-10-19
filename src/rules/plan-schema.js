@@ -8,7 +8,7 @@ export function propSchema(p, enumMax = 200) {
     if (p.type === 'boolean')
         return { type: 'boolean' };
     if (p.type === 'array')
-        return { type: 'array', items: propSchema(p.items, enumMax) };
+        return { type: 'array', items: propSchema(p.items, enumMax), maxItems: 12 };
     return { type: 'object', properties: Object.fromEntries(Object.entries(p.properties).map(([k, q]) => [k, propSchema(q, enumMax)])), required: [...(p.required ?? [])], additionalProperties: false };
 }
 /** The plan: calls of the named tools (all when none named), follow-on questions, tools wanted next, time, place, people. */
@@ -21,12 +21,14 @@ export function planSchema(only) {
     return {
         type: 'object', additionalProperties: false, required: ['calls'],
         properties: {
-            calls: { type: 'array', items: tools.length ? { anyOf: tools.map(call) } : {} },
-            then: { type: 'array', items: { type: 'string' } },
-            need: { type: 'array', items: { type: 'string', enum: [...REGISTRY.keys()] } },
+            // Bounded lists: under constrained decoding a model can repeat one call until the token limit cuts the JSON (a Room
+            // call 30 times over in a York inn turn, BodyFall in Lisbon), and the plan is lost.
+            calls: { type: 'array', items: tools.length ? { anyOf: tools.map(call) } : {}, maxItems: 8 },
+            then: { type: 'array', items: { type: 'string' }, maxItems: 4 },
+            need: { type: 'array', items: { type: 'string', enum: [...REGISTRY.keys()] }, maxItems: 6 },
             time: { type: 'string', pattern: '^(\\d{4}-\\d{2}-\\d{2}|Day \\d+) \\d{2}:\\d{2}$' },
             at: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 },
-            present: { type: 'array', items: { type: 'string' } },
+            present: { type: 'array', items: { type: 'string' }, maxItems: 12 },
         },
     };
 }

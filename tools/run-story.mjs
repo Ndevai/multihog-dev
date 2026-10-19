@@ -67,7 +67,8 @@ for (const [si, story] of chosen) {
         const results = Q.askedResults(), calls = Q.turnLog();
         for (const r of results) if (REFUSED.test(r.result)) f.push(`refused after repair: ${r.tool}: ${r.result.slice(0, 200)}`);
         if (!results.length) f.push('no tool ran');
-        for (const tool of turn.want) if (!results.some(r => r.tool === tool)) f.push(`missing ${tool}`);
+        // A walk timed by PassTime with walkers counts as the turn's Act.
+        for (const tool of turn.want) if (!results.some(r => r.tool === tool || (tool === 'Act' && r.tool === 'PassTime' && /walked/.test(r.result)))) f.push(`missing ${tool}`);
         const now = T.storyTime();
         if (now === null) f.push('no story clock');
         else if (lastClock !== null && now < lastClock) f.push(`clock ran back: ${C.formatStoryTime(lastClock)} → ${C.formatStoryTime(now)}`);

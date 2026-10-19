@@ -22,7 +22,7 @@ First write EVIDENCE: one line per engine-governed event in the reply, giving it
 
 /** The rule check under constrained decoding: the JSON alone, the evidence in the model's reasoning; and its schema. */
 export const AUDIT_GUIDED = AUDIT_SYSTEM.replace(/First write EVIDENCE:[^\n]*?Then write the JSON /, 'Write the JSON ');
-export const auditSchema = () => ({ type: 'object', additionalProperties: false, required: ['events'], properties: { events: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['quote', 'tool', 'problem'], properties: {
+export const auditSchema = () => ({ type: 'object', additionalProperties: false, required: ['events'], properties: { events: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, required: ['quote', 'tool', 'problem'], properties: {
     quote: { type: 'string' }, tool: { type: 'string', enum: [...TOOLS, 'KNOWS'] }, problem: { type: 'string', enum: ['unbacked', 'contradicts', 'unknown_to_them'] } } } } } });
 export function buildAuditPrompt(reply: string, results: TurnResult[], knows = '', clock = ''): string {
     const lines = results.length
