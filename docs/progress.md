@@ -299,3 +299,15 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - tools/run-play.mjs plays eight first turns through the whole pipeline with the real model (tool picking, plan, repair, calls, a narrator reply, the rule check) and lists each fault: a refusal left after the repair, no tool run, no clock, no Weather, an expected tool missing, each rule-check flag. Writes play-result.txt (faults first, then each turn with calls, reply and planner answers). The turns are the ones played so far (London 1867, 1888, 1899, present day) and four more (Paris bakery, York inn, Lisbon wall, Rio shout).
 - tools/nvidia.mjs: the connection and key lookup the runners share.
 - A date the player wrote now wins over the plan's date.
+
+## 2026-10-19 (15) First run-play: 18 faults in 8 turns, causes fixed
+
+- Act refused twice (actors listed without steps, the action given as "actions"): arguments named a little off ("actions", "distance", "Who") are read as the listed one (tool-schema.ts); an actor without steps takes the call's action in words; several texts where one is wanted are joined in order.
+- Present-day turn ran no clock: the plan put "time" inside Weather's arguments. A plan's "time" and position are now taken from a call's arguments when the plan gives none (`hoist`).
+- Paris turn had no position: a place named in the player's message, cast, scenario or scene now places it (weather.ts `placeIn`, character names skipped).
+- Lisbon night read as noon (the dark sky then contradicted the clock): a written part of the day sets the hour (morning 09:00, afternoon 15:00, evening 19:00, night 22:00, dawn 06:00, dusk 18:30, noon, midnight) [ASSUMED].
+- Choose options sent as plain texts: a text where an object is wanted fills its first required text field; Choose then asks for the missing shares.
+- BodyFall with height "result of the dice roll": the repair note now says a value that depends on another result goes in "then".
+- The narrator copied the brief's "*(Climb → SUCCESS)*" example into a bakery scene: the brief now says to write each BodyCheck result as *(its task → SUCCESS / FAILURE)*.
+- A 15-year-old baker was "a man": under 18 is a boy or a girl.
+- SocialResponse refused a baker's sale as a "small favour": the description says a sale, a served drink or a paid service is the person's trade and goes ahead.

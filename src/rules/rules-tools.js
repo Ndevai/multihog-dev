@@ -319,7 +319,7 @@ function whoAny(st, name, speciesArg) {
 }
 // Principles shared by both briefs.
 const RULES_PRINCIPLES = `Principles
-- Write each check the engine decided as *(Climb → SUCCESS)* right after the sentence that narrates it.
+- Write each BodyCheck result in [DECIDED] as *(its task → SUCCESS)* or *(its task → FAILURE)*, as the result gives it, right after the sentence that narrates it.
 - The world is real history with the additions in [WORLD]; an area of life an addition does not reach is as in real history.
 - Words come only from species that can talk (or that [WORLD] says talk) (Dwarf Fortress CAN_SPEAK or INTELLIGENT: humans, dwarves, elves, goblins, animal people); an animal makes the sounds and movements of its species.
 - Characters speak and act from common knowledge, their own line in [KNOWS], and what they perceive now. Facts in [KNOWS] stay true. A character uses and hands over only what [HAS] or the scene gives them.
@@ -1451,7 +1451,7 @@ export function registerRulesTools(enabled) {
     }));
     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
     // enums; function-calling accuracy drops as the number of functions grows, Patil et al. 2025, BFCL).
-    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour, obey an order from a stranger acting outside their office, let a stranger go first (a turn, a place in line, a machine), or want to see someone again after a first meeting, refuse an unfair split, or punish someone who cheated the group.', {
+    tool('SocialResponse', 'Decide how a person responds in a social situation whose outcome is in doubt, before narrating it: whether they take a statement for a lie, step in to help in an emergency, carry out an order to hurt someone, grant a stranger a small favour (something unpaid and outside their work: a sale, a served drink or a paid service is their trade and goes ahead), obey an order from a stranger acting outside their office, let a stranger go first (a turn, a place in line, a machine), or want to see someone again after a first meeting, refuse an unfair split, or punish someone who cheated the group.', {
         situation: { type: 'string', enum: SOCIAL },
         who: str('The person whose response is decided'),
         speaker: str('For a statement: who made it'),
@@ -1607,7 +1607,7 @@ export function registerRulesTools(enabled) {
             const { p } = who(st, a.who);
             if (p)
                 Object.assign(p, { age: local.age, sex: local.sex });
-            const noun = local.age < 15 ? (local.sex === 'female' ? 'girl' : 'boy') : local.sex === 'female' ? 'woman' : 'man';
+            const noun = local.age < 18 ? (local.sex === 'female' ? 'girl' : 'boy') : local.sex === 'female' ? 'woman' : 'man';
             const work = a.occupation ? null : strangerWork(c, local.sex, local.age, y, rng);
             const job = a.occupation ? `; occupation: ${a.occupation}` : local.age < 15 ? '; a child' : !work ? '' : !work.works ? '; not in paid work' : work.group ? `; works, among ${work.group} (the narrator names the job)` : '; works';
             const hh = strangerHousehold(c, y, local.age, rng);
@@ -1620,7 +1620,7 @@ export function registerRulesTools(enabled) {
         const { p } = who(st, a.who);
         if (p)
             Object.assign(p, { age: r.age, sex: r.sex });
-        const noun = r.age < 15 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+        const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
         return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child, no occupation' : 'no stated occupation'}; born in ${r.born}.`;
     }));
     tool('BodyCheck', 'Resolve an action with an uncertain outcome that no other rule tool resolves, before narrating it. The body state in [BODY] is applied in code.', {
@@ -1741,16 +1741,22 @@ export function registerRulesTools(enabled) {
         distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
     }, [], a => run((st, rng) => {
         if (a.who && !a.steps && !a.actors && a.action) {
-            const r = stepsFromWords(String(a.action), String(a.who), a.distance_m);
+            const r = stepsFromWords(Array.isArray(a.action) ? a.action.join(', then ') : String(a.action), String(a.who), a.distance_m);
             if ('error' in r)
                 return `${r.error} ${ACT_EXAMPLE} Nothing recorded.`;
             a = { ...a, steps: r.steps };
         }
         // An actor listed without steps takes the call's own steps (a model may name the actors and give the steps once).
-        const list = (a.actors?.map(x => ({ who: x.who, steps: x.steps ?? a.steps ?? [] })))
+        // An actor listed without steps takes the call's own steps, or its action in words.
+        const words = Array.isArray(a.action) ? a.action.join(', then ') : a.action ? String(a.action) : '';
+        const fromWords = (w) => { if (!words)
+            return []; const r = stepsFromWords(words, w, a.distance_m); return 'error' in r ? [] : r.steps; };
+        const list = (a.actors?.map(x => ({ who: x.who, steps: x.steps ?? a.steps ?? fromWords(x.who) })))
             ?? (a.who && a.steps ? [{ who: String(a.who), steps: a.steps }] : []);
-        if (list.some(x => !x.steps.length))
-            return `Give steps for ${list.filter(x => !x.steps.length).map(x => x.who).join(', ')}. Nothing recorded.`;
+        if (list.some(x => !x.steps.length)) {
+            const why = words ? stepsFromWords(words, '', a.distance_m) : null;
+            return `Give steps for ${list.filter(x => !x.steps.length).map(x => x.who).join(', ')}${why && 'error' in why ? ` (${why.error})` : ''}. ${ACT_EXAMPLE} Nothing recorded.`;
+        }
         if (!list.length)
             return `Give who and steps (or action), or actors. ${ACT_EXAMPLE} Nothing recorded.`;
         const actors = [];

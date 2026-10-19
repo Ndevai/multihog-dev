@@ -7,6 +7,7 @@
 import { turnKey } from './turn.js';
 import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition } from './rules-tools.js';
 import { parseStoryTime, findStoryTime } from './clock.js';
+import { placeIn } from './weather.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import { loadColex } from './colex.js';
@@ -43,7 +44,18 @@ Write the calls for the follow-on questions these results leave in doubt; a ques
 const REPAIR = `YOUR LAST ANSWER
 {problems}
 
-Write the corrected calls only, same format: QUESTIONS, then the JSON {"calls":[...]} (with "at" and "time" when asked for above).`;
+Write the corrected calls only, same format: QUESTIONS, then the JSON {"calls":[...]} (with "at" and "time" when asked for above). A value that depends on another call's result (a fall's height after a failed climb) goes in "then" as a question; you will get that result first.`;
+/** A plan that puts the story time or the scene's position inside a call's arguments ("time" on Weather or Act) gives them
+ *  as the plan's own. */
+function hoist(plan) {
+    for (const c of plan.calls) {
+        if (!plan.time && typeof c.args.time === 'string')
+            plan.time = c.args.time;
+        if (!plan.at && typeof c.args.latitude === 'number' && typeof c.args.longitude === 'number')
+            plan.at = [c.args.latitude, c.args.longitude];
+    }
+    return plan;
+}
 const REFUSED = /not run; fix and call again|Nothing recorded\.?\s*$|needs a calendar date/;
 // The same call twice, or Weather twice (one day has one weather), runs once.
 const dedupe = (list) => list.filter((c, i) => list.findIndex(d => d.tool === c.tool && (c.tool === 'Weather' || JSON.stringify(d.args) === JSON.stringify(c.args))) === i);
@@ -202,7 +214,7 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         const only = await pickTools(chat, send) ?? undefined;
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only), thingsBlock(found)].filter(Boolean).join('\n\n');
         const lastPlanText = String(await send(QUESTION_SYSTEM, prompt) ?? '');
-        const plan = rawPlan(lastPlanText);
+        const plan = hoist(rawPlan(lastPlanText));
         setRead(await resolveRead(found, plan, choose));
         present = plan.present;
         // A date the player wrote is read by code and wins over the plan's; the plan's comes next, then the cast and scene.
@@ -224,6 +236,17 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
             setStoryTime(time);
         if (plan.at && !scenePosition())
             setScenePosition(plan.at[0], plan.at[1]);
+        // A place named in the player's message, the cast and scenario or the scene places it when the plan gives no position.
+        if (!scenePosition()) {
+            const skip = new Set([...(plan.present ?? []), ...[...tracker.matchAll(/^([^:\n(]+?)\s*(?:\(|:)/gm)].map(m => m[1].trim())].map(x => x.toLowerCase()));
+            for (const t of [String(chat[chat.length - 1].mes ?? ''), tracker, ...chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES).reverse().map(m => String(m.mes ?? ''))]) {
+                const pl = placeIn(t, skip);
+                if (pl && pl.lat != null && pl.lon != null) {
+                    setScenePosition(pl.lat, pl.lon);
+                    break;
+                }
+            }
+        }
         const valid = validCalls(plan.calls), dropped = plan.calls.filter(c => !valid.includes(c));
         calls = dedupe(valid);
         const unread = !/\{\s*"calls"/.test(lastPlanText);
@@ -232,7 +255,7 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
             const problems = [unread ? 'It had no readable {"calls":[...]} JSON.' : '',
                 ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'no such tool'}.`),
                 noPlace ? 'It gave no "at": add [latitude, longitude] of the scene from the scene or scenario.' : ''].filter(Boolean);
-            const fix = rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`));
+            const fix = hoist(rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`)));
             if (fix.at && !scenePosition())
                 setScenePosition(fix.at[0], fix.at[1]);
             if (fix.time && storyTime() === null) {
@@ -258,7 +281,7 @@ export async function runQuestionPass(chat, send, tracker = '', choose) {
         // Refused calls: the tool's message goes back once; a corrected call's result replaces the refusal.
         const bad = results.map((r, i) => ({ r, i })).filter(x => REFUSED.test(x.r.result));
         if (bad.length) {
-            const fp = rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', bad.map(({ r, i }) => `${r.tool} ${JSON.stringify(calls[i].args)} → ${r.result}${/calendar date/.test(r.result) ? ' Add "time" with the date (TODAY for a present-day scene).' : ''}`).join('\n'))}`));
+            const fp = hoist(rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', bad.map(({ r, i }) => `${r.tool} ${JSON.stringify(calls[i].args)} → ${r.result}${/calendar date/.test(r.result) ? ' Add "time" with the date (TODAY for a present-day scene).' : ''}`).join('\n'))}`)));
             if (fp.at && !scenePosition())
                 setScenePosition(fp.at[0], fp.at[1]);
             if (fp.time && storyTime() === null) {

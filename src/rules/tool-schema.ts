@@ -44,6 +44,8 @@ function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: strin
     if (p.type === 'string') {
         // A one-item list where one value is wanted (who: ["Mary"]) is that value.
         if (Array.isArray(v) && v.length === 1 && (typeof v[0] === 'string' || typeof v[0] === 'number')) v = v[0];
+        // Several texts where one is wanted (action: ["steps out", "walks to the stop"]) are one text, in their order.
+        else if (Array.isArray(v) && v.length > 1 && v.every(x => typeof x === 'string')) v = v.join('; ');
         if (typeof v !== 'string' && typeof v !== 'number') return { error: `${name} must be text` };
         const s = String(v);
         // An enum filled from data that has not loaded yet checks nothing.
@@ -72,7 +74,13 @@ function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: strin
         return errs.length ? { error: errs.join('; ') } : { v: out };
     }
     // Models sometimes send an object as JSON text, or a name where an object with a "who" is expected.
-    if (typeof v === 'string') { const t = v.trim(); try { const o = JSON.parse(t); if (o && typeof o === 'object' && !Array.isArray(o)) v = o; } catch { /* not JSON */ } if (typeof v === 'string' && p.properties.who && t) v = { who: t }; }
+    // Models sometimes send an object as JSON text, or the object's one main text where the object is wanted (a name for
+    // {who}, an option's words for {option}): that text fills the first required text field.
+    if (typeof v === 'string') {
+        const t = v.trim(); try { const o = JSON.parse(t); if (o && typeof o === 'object' && !Array.isArray(o)) v = o; } catch { /* not JSON */ }
+        const main = p.properties.who ? 'who' : (p.required ?? []).find(q => p.properties[q]?.type === 'string');
+        if (typeof v === 'string' && main && t) v = { [main]: t };
+    }
     if (typeof v !== 'object' || v === null || Array.isArray(v)) return { error: `${name} must be an object` };
     const r = checkArgs(p.properties, p.required ?? [], v as Record<string, unknown>, `${name}.`);
     return r.errors.length ? { error: r.errors.join('; ') } : { v: r.args };
@@ -84,6 +92,14 @@ function coerce(name: string, p: Prop, v: unknown): { v?: unknown; error?: strin
  */
 export function checkArgs(props: Props, required: readonly string[], args: Record<string, unknown>, prefix = ''): { args: Record<string, unknown>; errors: string[] } {
     const out: Record<string, unknown> = {}, errors: string[] = [];
+    // An argument named a little off ("actions" for "action", "Who", "distance" for "distance_m") is read as the listed one
+    // when exactly one listed name matches and that one is not given.
+    const norm = (k: string) => k.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/(es|s)$/, '');
+    for (const k of Object.keys(args)) {
+        if (k in props) continue;
+        const hits = Object.keys(props).filter(q => norm(q) === norm(k) || norm(q) === `${norm(k)}m` || norm(q).replace(/(m|kg|c|pct|s)$/, '') === norm(k));
+        if (hits.length === 1 && args[hits[0]] === undefined) args = { ...args, [hits[0]]: args[k] };
+    }
     for (const k of required) if (args[k] === undefined || args[k] === null || args[k] === '') errors.push(`${prefix}${k} is required`);
     for (const [k, p] of Object.entries(props)) {
         if (args[k] === undefined || args[k] === null) continue;

@@ -33,7 +33,12 @@ function clockIn(s) {
     }
     return h > 23 || mi > 59 || se > 59 ? null : h * 60 + mi + se / 60;
 }
-/** The first calendar date written anywhere in a text, with the hour written after it (noon when none [ASSUMED]); null when none. */
+// A part of the day written near a date, as an hour [ASSUMED: the middle of each part as commonly meant]. A Lisbon night
+// scene read as noon made the narrator's dark sky contradict the clock.
+const DAY_PARTS = [[/\bmidnight\b/i, 0], [/\b(dawn|daybreak|sunrise)\b/i, 6 * 60], [/\bnoon|midday\b/i, 12 * 60],
+    [/\b(dusk|sunset|twilight)\b/i, 18 * 60 + 30], [/\bafternoon\b/i, 15 * 60], [/\bmorning\b/i, 9 * 60], [/\bevening\b/i, 19 * 60], [/\bnight\b/i, 22 * 60]];
+const dayPart = (s) => DAY_PARTS.find(([re]) => re.test(s))?.[1] ?? null;
+/** The first calendar date written anywhere in a text, with the hour written after it, else a part of the day written near it (morning, evening, night), else noon [ASSUMED]; null when none. */
 export function findStoryTime(text) {
     const s = String(text ?? '');
     let best = null;
@@ -47,7 +52,7 @@ export function findStoryTime(text) {
         const days = epochDays(y, mo, d);
         if (days < CALENDAR_FROM)
             continue;
-        const after = s.slice(m.index + m[0].length, m.index + m[0].length + 25).replace(/^T/, ' '), hm = clockIn(after);
+        const after = s.slice(m.index + m[0].length, m.index + m[0].length + 25).replace(/^T/, ' '), hm = clockIn(after) ?? dayPart(s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 60));
         if (!best || m.index < best.at)
             best = { at: m.index, t: days * DAY + (hm ?? 720) };
     }

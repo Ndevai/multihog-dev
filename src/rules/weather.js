@@ -189,3 +189,21 @@ export function simulatePlaceYear(key, days, rng) {
     const st = key.startsWith('wgen:') ? key.slice(5) : key;
     return STATIONS[st] ? simulateYear(st, days, rng) : null;
 }
+/** The first place with weather data named in a text (a capitalized name, longest first: "Rio de Janeiro", "Paris"), names in
+ *  `skip` (the characters) left out; null when none. */
+export function placeIn(text, skip = new Set()) {
+    const names = [...String(text ?? '').matchAll(/\b[A-Z][\p{L}'’-]+(?:\s+(?:(?:de|do|da|dos|das|del|di|la|le|of|upon|on|am|an der|sur)\s+)?[A-Z][\p{L}'’-]+)*/gu)];
+    for (const m of names) {
+        const words = m[0].split(/\s+/);
+        for (let n = words.length; n >= 1; n--)
+            for (let i = 0; i + n <= words.length; i++) {
+                const name = words.slice(i, i + n).join(' ');
+                if (skip.has(name.toLowerCase()) || /^(?:de|do|da|of|la|le)$/i.test(words[i]))
+                    continue;
+                const p = findPlace(name);
+                if (p && p.lat != null)
+                    return p;
+            }
+    }
+    return null;
+}
