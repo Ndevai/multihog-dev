@@ -29,6 +29,7 @@ import { airHook, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING,
 import { formatStoryTime } from './clock.js';
 import { diff, record, truncate, verify, type History } from './world-log.js';
 import { violations } from './invariants.js';
+import { resetUsed, fragileCandidates, withOverride } from './constants.js';
 import { heatingValue, heatFromFormation, loadChem, findCompound, describe as describeCompound, loadFuels, describeFuel, describeMixture } from './chem.js';
 import { TERRAIN, walkWatts, runWatts, metOf, walkSpeedKmh } from './work.js';
 import { ENSEMBLES, GARMENTS } from './thermal/ensembles.js';
@@ -369,6 +370,9 @@ World
 ${RULES_PRINCIPLES}
 </rule_engine>`;
 
+/** The first sentence of b that a does not contain (the changed outcome). */
+const firstDiff = (a: string, b: string) => { const sa = new Set(a.split(/(?<=[.;])\s+/).map(x => x.replace(/-?\d+(\.\d+)?/g, '#'))); return b.split(/(?<=[.;])\s+/).find(x => !sa.has(x.replace(/-?\d+(\.\d+)?/g, '#')))?.slice(0, 160) ?? b.slice(0, 160); };
+
 /** Minutes as "49 min 23 s" (whole minutes shown bare). */
 const mmss = (m: number) => { const s = Math.round(m * 60), mm = Math.floor(s / 60), ss = s % 60; return ss ? `${mm} min ${ss} s` : `${mm} min`; };
 
@@ -518,11 +522,26 @@ export function registerRulesTools(enabled: boolean): void {
             await loadRaws();
             const prior = decided(name, args);
             if (prior) return `Already decided this turn; this result stands. ${prior}`;
-            const before = structuredClone(store().state);
-            const out = plain(await action(args as ArgsOf<Ps, Req[number]>));
+            const before = structuredClone(store().state), callsBefore = store().calls ?? 0;
+            resetUsed();
+            let out: unknown = plain(await action(args as ArgsOf<Ps, Req[number]>));
             const s = store();
             const broken = violations(before, s.state, name, args as Record<string, unknown>);
             if (broken.length) { s.state = before; save(); return `${name} refused: the result would break a law of the world (${broken.join('; ')}). Nothing recorded; correct the call.`; }
+            // Sensitivity (constants.ts): rerun the call on the same state and draws with each judged constant it used at the ends
+            // of its range; when the outcome's words change (numbers aside), the result says which assumption it rests on.
+            const cands = fragileCandidates();
+            if (cands.length && !Object.values(before.people ?? {}).some(p => p.pulse)) {
+                const after = s.state, callsAfter = s.calls, draws = LAST_DRAWS, shape = (t: string) => t.split('\n')[0].replace(/-?\d+(\.\d+)?/g, '#'); // the result's first line: its outcome, not the status lines
+                const notes: string[] = [];
+                for (const c of cands.slice(0, 6)) for (const v of c.range!) {
+                    s.state = structuredClone(before); s.calls = callsBefore;
+                    const alt = plain(await withOverride(c.id, v, () => action(args as ArgsOf<Ps, Req[number]>)));
+                    if (typeof alt === 'string' && typeof out === 'string' && shape(alt) !== shape(out)) { const d = firstDiff(out.split('\n')[0], alt.split('\n')[0]); notes.push(`${c.id} = ${v} ${c.unit} instead of ${c.value} [${c.status.toUpperCase()}: ${c.src}] → ${d}`); break; }
+                }
+                s.state = after; s.calls = callsAfter; LAST_DRAWS = draws;
+                if (notes.length && typeof out === 'string') out += ` Fragile: the outcome changes within the range of ${notes.length} judged value${notes.length > 1 ? 's' : ''}: ${notes.join('; ')}.`;
+            }
             s.history ??= { base: before, log: [], n: 0 };
             record(s.history, { msg: SillyTavern.getContext().chat?.length ?? 0, tool: name, args, draws: [...LAST_DRAWS], ops: diff(before, s.state) });
             remember(name, args, out);

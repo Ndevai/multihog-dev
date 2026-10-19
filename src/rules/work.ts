@@ -1,6 +1,7 @@
 import { aerobicFactor } from './thermal/altitude.js';
 // Walking with a load (docs/df-body-engine.md §6.7). Terrain η: Soule & Goldman 1972 (J Appl Physiol 32:706).
 import type { Person, Gauss } from './types.js';
+import { def, k } from './constants.js';
 
 export const TERRAIN: Record<string, number> = { road: 1.0, 'dirt road': 1.1, 'light brush': 1.2, 'heavy brush': 1.5, swamp: 1.8, 'loose sand': 2.1,
     'snow 15 cm': 2.5, 'snow 25 cm': 3.3, 'snow 35 cm': 4.1 };
@@ -45,9 +46,11 @@ const GAIT = { male: [135.8, 143.3, 143.4, 143.3, 133.9, 126.2, 96.8], female: [
 // carries to other years, places outside downtowns and the age-sex gait above, whose samples are taken as the 31-country mean].
 const PACE_S: Record<string, number> = { 'Switzerland': 11.80, 'Ireland': 11.13, 'Germany': 12.01, 'Japan': 12.11, 'Italy': 12.75, 'United Kingdom of Great Britain and Northern Ireland': 12.00, 'Sweden': 12.92, 'Austria': 14.08, 'Netherlands (Kingdom of the)': 11.45, 'Hong Kong, China': 13.10, 'France': 12.34, 'Poland': 12.90, 'Costa Rica': 13.33, 'Taiwan': 13.58, 'Singapore': 14.75, 'United States of America': 12.03, 'Canada': 12.86, 'Republic of Korea': 13.76, 'Hungary': 13.75, 'Czechia': 13.80, 'Greece': 13.10, 'Kenya': 12.58, 'China': 14.26, 'Bulgaria': 15.57, 'Romania': 16.72, 'Jordan': 15.79, 'Syrian Arab Republic': 15.95, 'El Salvador': 14.04, 'Brazil': 16.76, 'Indonesia': 14.82, 'Mexico': 13.56 };
 const PACE_MEAN_S = Object.values(PACE_S).reduce((s, x) => s + x, 0) / Object.keys(PACE_S).length;
+def({ id: 'walkHours', value: 2.8, unit: 'h', status: 'fitted', src: "fitted to Tobler's hiking function, man of 35, 0–30 % uphill (RMS 0.39 km/h)", range: [2, 4], file: 'work.ts' });
 export const WALK_HOURS = 2.8;
 const tobler = (G: number) => 6 * Math.exp(-3.5 * Math.abs(G + 0.05));
-export function walkSpeedKmh(p: Person, gradePct = 0, terrain = 'dirt road', loadKg = 0, country: string | null = null, hours = WALK_HOURS): number {
+export function walkSpeedKmh(p: Person, gradePct = 0, terrain = 'dirt road', loadKg = 0, country: string | null = null, hoursIn?: number): number {
+    const hours = hoursIn ?? k('walkHours');
     const eta = TERRAIN[terrain];
     if (eta == null) throw new Error(`Unknown terrain "${terrain}". Known: ${Object.keys(TERRAIN).join(', ')}.`);
     const age = p.age ?? 35, sex = p.sex ?? 'male', G = gradePct / 100, Ls = (loadKg || 0) / p.mass;

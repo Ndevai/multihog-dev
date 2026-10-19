@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-10-18 (32), Claude Opus 5.5
+- Added, system level: (1) laws checked after every call (time forward, dead stay dead, physical bounds, items conserved, no distance longer than a detour); a breaking call is refused. (2) Event moments placed inside the minute (blood loss and carbon monoxide thresholds). (3) Walking takes the shortest route through recorded spots. (4) Constants registry with status and range; every call rerun at the range ends and marked "Fragile" when its outcome changes. (5) docs/constants.md generated from the registry.
+- Checked (harness): a detour violation refused; a CO faint at 64 min 48 s shown fragile on the wood CO yield; earlier scenarios unchanged.
+- Not done: a true event queue; map coordinates; moving older constants into the registry.
+
 ## 2026-10-18 (31), Claude Opus 5.5
 - Added: open doorways between rooms; gases flow through them by the doorway exchange formula (Brown & Solvason), conserving the gas.
 - Checked (harness): a charcoal brazier in the kitchen kills a sleeper in the next room within 2 h through an open door.

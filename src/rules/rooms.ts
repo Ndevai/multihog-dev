@@ -7,6 +7,20 @@ import type { Person, RuleState } from './types.js';
 import { equivalentAltitude } from './thermal/altitude.js';
 import { setAltitude, setEnvironment } from './body-engine.js';
 import type { Rng } from './types.js';
+import { def, k } from './constants.js';
+
+const FILE = 'rooms.ts';
+def({ id: 'flameOutO2', value: 15, unit: '% O2', status: 'assumed', src: 'limiting oxygen of flaming solid fuels', range: [13, 17], file: FILE });
+def({ id: 'coWood', value: 50, unit: 'g CO per kg', status: 'assumed', src: 'midpoint of 15–85 g/kg for non-charcoal solid fuels, IPCC EFDB India Annex 7', range: [15, 85], file: FILE });
+def({ id: 'coCharcoal', value: 276, unit: 'g CO per kg', status: 'sourced', src: 'IPCC EFDB India Annex 7 (stove tests)', file: FILE });
+def({ id: 'charcoalC', value: 100, unit: '% carbon', status: 'assumed', src: 'charcoal taken as pure carbon', range: [75, 100], file: FILE });
+def({ id: 'rer', value: 0.85, unit: 'CO2 out per O2 in', status: 'assumed', src: 'respiratory exchange ratio of a mixed diet; 0.7 on fat, 1.0 on carbohydrate', range: [0.7, 1.0], file: FILE });
+def({ id: 'layerView', value: 0.5, unit: 'share of view', status: 'assumed', src: 'hot layer overhead fills half the view of a person below it', range: [0.25, 0.75], file: FILE });
+def({ id: 'headStanding', value: 1.6, unit: 'm', status: 'assumed', src: 'head height standing', range: [1.4, 1.8], file: FILE });
+def({ id: 'doorC', value: 0.8, unit: '', status: 'fitted', src: 'Brown & Solvason 1962 Fig. 5, C between 0.6 and 1.0', range: [0.6, 1.0], file: FILE });
+def({ id: 'doorMinDT', value: 1, unit: 'K', status: 'assumed', src: 'drafts and body heat keep air moving through an open door', range: [0.5, 2], file: FILE });
+def({ id: 'achMedian', value: 0.45, unit: 'per hour', status: 'sourced', src: 'US EPA Exposure Factors Handbook 2011, Table 19-1', file: FILE });
+def({ id: 'ventFlow', value: 0.5, unit: 'kg/s per m^2.5', status: 'sourced', src: 'Kawagoe 1958, inflow 0.5 A√H', file: FILE });
 
 export interface Fire { fuel: string; kgh: number; C: number; H: number; O: number; coEF: number; note: string; lhv?: number }
 export interface Room { m3: number; ach: number; co: number; co2: number; o2: number; out: { co: number; co2: number }; air_c: number; fires: Fire[];
@@ -34,7 +48,7 @@ const hk = (L: { k: number; rho: number; c: number; d: number }, tS: number) => 
 export function heatKW(r: Room, fuelOnly = false): number {
     const q = r.fires.reduce((s, f) => s + f.kgh / 3600 * (f.lhv ?? 0) * 1000, 0);
     if (fuelOnly) return q;
-    if (r.o2 < O2_OUT_LIMIT) return 0;
+    if (r.o2 < O2_OUT_LIMIT()) return 0;
     return ventKgS(r) ? Math.min(q, 1500 * ventKgS(r) / 0.5) : q;
 }
 /** One minute of the fire's heat: hot-layer temperature and smoke-layer height. */
@@ -62,12 +76,12 @@ export function feelHeat(r: Room, p: Person): void {
     const q = p as Person & { fireHeat?: boolean };
     if (r.hot == null) { if (q.fireHeat) { p.env.tdb = p.env.tr = r.air_c; q.fireHeat = false; } return; }
     q.fireHeat = true;
-    const head = p.env.posture === 'lying' ? 0.3 : 1.6, T0 = r.base_c ?? r.air_c;
+    const head = p.env.posture === 'lying' ? 0.3 : k('headStanding'), T0 = r.base_c ?? r.air_c;
     const inLayer = r.layer != null && head >= r.layer;
     p.env.tdb = inLayer ? r.hot : T0;
     // Radiant: inside the layer all of it; below, half the view is the layer overhead, half the cooler floor and lower walls
     // (T_r⁴ = F T_layer⁴ + (1 − F) T0⁴, F = 0.5 [ASSUMED]).
-    const K = 273.15, F = inLayer ? 1 : 0.5;
+    const K = 273.15, F = inLayer ? 1 : k('layerView');
     p.env.tr = ((F * (r.hot + K) ** 4 + (1 - F) * (T0 + K) ** 4) ** 0.25) - K;
 }
 
@@ -75,7 +89,7 @@ export function feelHeat(r: Room, p: Person): void {
 // Table 19-1, from 2,844 tracer-gas measurements, Koontz & Rector 1995; Murray & Burmaster 1995 found the measurements well
 // fitted by lognormal distributions) → σ = ln(0.45 ÷ 0.18) ÷ 1.2816 = 0.715. Drawn once per room. [ASSUMED: holds for any
 // era and country; older houses were leakier, open windows far higher.]
-export const drawAch = (gauss: () => number) => 0.45 * Math.exp(0.715 * gauss());
+export const drawAch = (gauss: () => number) => k('achMedian') * Math.exp(0.715 * gauss());
 // Fire fuels, mass % of the burning fuel. Wood: C 50, H 6, O 44 (Speight, Synthetic Fuels Handbook, Table D.1, dry). Charcoal:
 // taken as pure carbon [ASSUMED]. Carbon monoxide per kg burnt in household stoves: charcoal 276 g (IPCC Emission Factor
 // Database meeting report, India, Annex 7: TERI / US EPA stove tests); other solid fuels 15–85 g, wood lower than dung and
@@ -89,26 +103,34 @@ export const FIRE_FUELS: Record<string, { C: number; H: number; O: number; coEF:
 };
 const MOLAR_L = 24.04; // litres per mole of gas at 20 °C, 1 atm
 export const OUT_O2 = 20.95;
+/** A fire's carbon share and CO yield through the constant registry, unless the story gave the CO yield. */
+export function resolveFire(f: Fire): Fire {
+    if (f.note.includes('as given')) return f;
+    if (f.fuel === 'charcoal') return { ...f, C: k('charcoalC'), coEF: k('coCharcoal') };
+    if (FIRE_FUELS[f.fuel]) return { ...f, coEF: k('coWood') };
+    return f;
+}
 
 // An opening with a fire: air drawn in ≈ 0.5 A_o √H_o kg/s (Kawagoe 1958, the ventilation factor of compartment fire
 // texts) [ASSUMED: also before flashover]; the room's air changes are at least that flow ÷ 1.2 kg/m³. The fire can release
 // at most what that air's oxygen burns: 0.23 kg O2 per kg air × 13.1 MJ per kg O2 (Huggett 1980) ≈ 1,500 kW per m^(5/2)
 // of A_o √H_o. In any room the flames go out when the oxygen falls below 15 % [ASSUMED: limiting oxygen of flaming
 // solid fuels].
-export const ventKgS = (r: Room) => r.vent && r.vent.m2 > 0 && r.fires.length ? 0.5 * r.vent.m2 * Math.sqrt(r.vent.h) : 0;
+export const ventKgS = (r: Room) => r.vent && r.vent.m2 > 0 && r.fires.length ? k('ventFlow') * r.vent.m2 * Math.sqrt(r.vent.h) : 0;
 export const effAch = (r: Room) => Math.max(r.ach, ventKgS(r) / 1.2 * 3600 / r.m3);
-export const O2_OUT_LIMIT = 15;
+export const O2_OUT_LIMIT = () => k('flameOutO2');
 /** One minute of air in a room, with the people in it (each breathing out CO2 by their oxygen use). */
 export function airMinute(r: Room, people: Person[]): void {
-    const burning = r.o2 >= O2_OUT_LIMIT, vl = ventKgS(r) ? Math.min(1, 1500 * ventKgS(r) / 0.5 / Math.max(1e-9, heatKW(r, true))) : 1;
+    const burning = r.o2 >= O2_OUT_LIMIT(), vl = ventKgS(r) ? Math.min(1, 1500 * ventKgS(r) / 0.5 / Math.max(1e-9, heatKW(r, true))) : 1;
     let co2 = 0, co = 0, o2 = 0; // litres of gas per minute added (o2 negative)
-    for (const f of burning ? r.fires : []) {
+    for (const f0 of burning ? r.fires : []) {
+        const f = resolveFire(f0);
         const g = f.kgh * 1000 / 60 * vl, molC = g * f.C / 100 / 12.011, molCO = Math.min(molC, g * f.coEF / 1000 / 28.01);
         const molO2 = (molC - molCO) + molCO / 2 + g * f.H / 100 / 1.008 / 4 - g * f.O / 100 / 15.999 / 2;
         co2 += (molC - molCO) * MOLAR_L; co += molCO * MOLAR_L; o2 -= Math.max(0, molO2) * MOLAR_L;
     }
     // Breathing: VO2 = METs × 3.5 mL/kg/min; CO2 out = 0.85 × VO2 (respiratory exchange ratio of a mixed diet [ASSUMED]).
-    for (const p of people) { if (p.dead) continue; const vo2 = (p.workMet ?? 1) * 3.5 * p.mass / 1000; o2 -= vo2; co2 += 0.85 * vo2; }
+    for (const p of people) { if (p.dead) continue; const vo2 = (p.workMet ?? 1) * 3.5 * p.mass / 1000; o2 -= vo2; co2 += k('rer') * vo2; }
     const lam = effAch(r) / 60, V = r.m3 * 1000; // litres
     const step = (c: number, out: number, addL: number, unit: number) => {
         const G = addL / V * unit; // concentration units per minute
@@ -136,8 +158,8 @@ export const roomOf = (st: RuleState, p: Person): Room | null => (p.at && st.roo
 // volume of air.
 export interface Opening { a: string; b: string; m2: number; h: number }
 export function exchangeM3s(ra: Room, rb: Room, o: Opening): number {
-    const Ta = (ra.hot ?? ra.air_c) + 273.15, Tb = (rb.hot ?? rb.air_c) + 273.15, dT = Math.max(1, Math.abs(Ta - Tb)), W = o.m2 / o.h;
-    return 0.8 / 3 * W * Math.sqrt(9.81 * dT / ((Ta + Tb) / 2)) * o.h ** 1.5;
+    const Ta = (ra.hot ?? ra.air_c) + 273.15, Tb = (rb.hot ?? rb.air_c) + 273.15, dT = Math.max(k('doorMinDT'), Math.abs(Ta - Tb)), W = o.m2 / o.h;
+    return k('doorC') / 3 * W * Math.sqrt(9.81 * dT / ((Ta + Tb) / 2)) * o.h ** 1.5;
 }
 export function exchangeMinute(rooms: Record<string, Room>, openings: Opening[]): void {
     for (const o of openings) {
