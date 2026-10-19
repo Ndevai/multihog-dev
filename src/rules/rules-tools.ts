@@ -1392,6 +1392,11 @@ export function registerRulesTools(enabled: boolean): void {
         request_size: { type: 'string', enum: GIVE_WAY_SIZES, description: 'For a stranger asking to go first: how long they need, against the person\'s own task' },
         reason: { type: 'string', enum: GIVE_WAY_REASONS, description: 'For a stranger asking to go first: the reason they give' },
     }, ['situation', 'who'], a => run((st, rng) => {
+        // A response needs the words: when this turn's message to them reached them as a voice only, they answer the voice.
+        if (/favour|statement|order|first|go first/.test(a.situation ?? '')) {
+            const lost = Object.entries(decisions()).find(([key, out]) => { const p = key.split('|'); return p[0] === 'communicate' && p[2] === norm(a.who) && (!a.speaker || p[1] === norm(a.speaker)) && /words are lost|voice is lost|scattered words/.test(out); });
+            if (lost) return `${a.who} answers the voice only: the words of the request were lost (${lost[1].replace(/\.$/, '')}). The request waits for a message that gets through.`;
+        }
         switch (a.situation) {
             case SOCIAL[0]: {
                 const l = who(st, a.who), s = who(st, a.speaker);

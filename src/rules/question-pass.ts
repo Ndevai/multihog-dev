@@ -9,6 +9,7 @@ import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setSto
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
+import { stepsFromWords } from './actions.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
@@ -250,17 +251,20 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         const valid = validCalls(plan.calls), dropped = plan.calls.filter(c => !valid.includes(c));
         calls = dedupe(valid);
         const unread = !/\{\s*"calls"/.test(lastPlanText);
+        // A motion the player's message names (step out, sit down, cross the room) needs its time: code reads the verb.
+        const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act') && REGISTRY.has('Act') && !/No motion recognized/.test(JSON.stringify(stepsFromWords(said, 'x', 1)));
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
-        if (unread || dropped.length || noPlace) {
+        if (unread || dropped.length || noPlace || motion) {
             const problems = [unread ? 'Write the plan as the JSON {"calls":[...]}.' : '',
                 ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool)!.required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'unknown tool'}.`),
-                noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : ''].filter(Boolean);
+                noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : '',
+                motion ? `The player's message moves their character ("${said.slice(0, 120)}"): add Act with action and distance_m from the scene.` : ''].filter(Boolean);
             const fix = hoist(rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`)));
             if (fix.at && !scenePosition()) setScenePosition(fix.at[0], fix.at[1]);
             if (fix.time && storyTime() === null) { time = parseStoryTime(fix.time); if (time !== null) setStoryTime(time); }
             // The answer replaces only what was asked: every call when the plan was unreadable, the dropped tools' calls otherwise
             // (asked only for "at", a model rewrote the whole plan and its Act ran twice).
-            const asked = new Set(dropped.map(c => c.tool));
+            const asked = new Set([...dropped.map(c => c.tool), ...motion ? ['Act'] : []]);
             calls = dedupe([...calls, ...validCalls(fix.calls).filter(c => unread || asked.has(c.tool))]).slice(0, MAX_CALLS);
             plan.then.push(...fix.then);
         }

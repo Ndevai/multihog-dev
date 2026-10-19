@@ -1483,5 +1483,5 @@ export function check(p: Person, task: Task, rng: Rng = Math.random): string {
     console.debug?.('[Rules engine]', task.task, `chance ${round(chance * 100, 2)} %`);
     // The cause is stated either way: an outcome without one invites the narrator to invent it.
     return ok ? `${task.task}: SUCCESS${limit ? `, despite ${limit}` : ''}.`
-        : `${task.task}: FAILURE, ${limit ? `because of ${limit}` : 'an ordinary failure: chance alone'}.`;
+        : `${task.task}: FAILURE, ${limit ? `because of ${limit}` : 'an ordinary failure: chance alone; the body as it was'}.`;
 }

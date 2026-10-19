@@ -26,7 +26,9 @@ export function violations(before: RuleState, after: RuleState, tool: string, ar
     for (const [n, r] of Object.entries(after.rooms ?? {})) {
         if (r.co < -1e-6 || r.co2 < -1e-6 || r.o2 < -1e-6 || r.o2 > 20.95 + 1e-6 || r.co > 1e6 || r.co2 > 1e6) out.push(`room ${n} has gas outside 0–100 % (CO ${r.co}, CO2 ${r.co2}, O2 ${r.o2})`);
     }
-    const moves = tool === 'Claim' || (tool === 'Transfer' && (!args.from || !args.to));
+    // An item enters the story when its giver had none of it on record (a baker the story has not listed selling a loaf).
+    const held = (st: RuleState, who: unknown, item: unknown) => (st.items?.[String(who)] ?? []).some(x => x.item.toLowerCase() === String(item).toLowerCase() && x.qty > 0);
+    const moves = tool === 'Claim' || (tool === 'Transfer' && (!args.from || !args.to || !held(before, args.from, args.item)));
     if (!moves) {
         const ta = totals(before), tb = totals(after);
         for (const k of new Set([...Object.keys(ta), ...Object.keys(tb)])) if (Math.abs((ta[k] ?? 0) - (tb[k] ?? 0)) > 1e-9) out.push(`${k}: ${ta[k] ?? 0} in the world became ${tb[k] ?? 0} without entering or leaving it`);

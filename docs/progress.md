@@ -352,3 +352,13 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Tones: tone_hz puts a tonal sound's energy in its own band (exact for a pure tone, close for a bell's strike note).
 - Listen and Communicate take ground, obstacle_m, wind, wind_ms (default: the recorded day's wind), source_height_m, and Listen tone_hz; the sun's height comes from the clock and the scene's latitude; a listener in a Room with the speaker (same room on the map, or no barrier) gets the room's reverberation.
 - Communicate's check for a foreign language followed the new result words ("foreign to it").
+
+## 2026-10-19 (22) Second play run: 6 faults in 8 turns (from 18)
+
+- The six: one turn with no Act (1888, plan gave Weather only); four background sounds or sights the narrator added (a dog barking down the road, a red bus in sight) flagged as Listen or Look; one scrape on a failed climb flagged as BodyWound. Two further faults the runner did not count: a bought loaf refused by the item law, and a guard who could not make out a question but "declined" to answer it.
+- A motion the player's message names (code reads the verb with `stepsFromWords`) and a plan without Act now go back in the repair round with that instruction; tested: the 1888 plan gets its Act (4 m, 2.5 s).
+- The checker counts a sound or sight as an event when it teaches a character a fact or moves them to act; the background sounds and sights of a place are description.
+- BodyCheck's ordinary failure now says "the body as it was", so a failed climb has no unbacked scrape to fill.
+- The item law: an item enters the story when its giver had none on record (a baker the story has not listed selling a loaf); invariants.ts.
+- SocialResponse to a favour, statement or order whose words this turn's Communicate lost: the person answers the voice only and the request waits for a message that gets through.
+- run-play counts results with "refused" as faults.
