@@ -282,3 +282,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - London 1867 log: the date was read (24 March 1867, 12:36) and Act, Weather and PlaceProfile ran. Two faults remained.
 - The repair round asked only for "at"; the model rewrote the whole plan and its second Act ran too (front door → street, then inside → street: 6.6 s for one step out). A repair now takes every call only when the plan was unreadable; otherwise only calls of the dropped or refused tools.
 - The rule check's rewrite (a swipe) ran the turn's calls on the clock the first draft had moved (12:36:07 → 12:36:13). GENERATION_STARTED of a normal turn fires before the player's message joins the chat, so the turn's snapshot sits one place earlier than the swipe looked. The swipe now takes the snapshot at the reply or, failing that, at the player's message. Tested: a rewrite gives the same 12:36:03.
+
+## 2026-10-19 (12) Weather runs first
+
+- Full 1867 log: the same Act walked Mary at 1.43 m/s before Weather ran and 1.62 m/s after. Walking pace scales by country (Levine & Norenzayan), and the country is set by Weather. The question pass now runs Weather calls before the others; tested: 1.62 m/s on the first draft and on a rewrite.

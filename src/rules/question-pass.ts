@@ -237,6 +237,9 @@ export async function runQuestionPass(chat: STMessage[], send: (system: string, 
         const pos = scenePosition(), now = storyTime();
         if (pos && now !== null && now / 1440 > 146097 && !calls.some(c => c.tool === 'Weather') && REGISTRY.has('Weather'))
             calls.push({ tool: 'Weather', args: { latitude: pos.lat, longitude: pos.lon } } as Call);
+        // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
+        // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
+        calls = [...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')];
         await runAll(calls);
         // Refused calls: the tool's message goes back once; a corrected call's result replaces the refusal.
         const bad = results.map((r, i) => ({ r, i })).filter(x => REFUSED.test(x.r.result));
