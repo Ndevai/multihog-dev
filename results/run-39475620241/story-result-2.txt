@@ -1,0 +1,131 @@
+z-ai/glm-5.3, reasoning low, 7 min, 2026-10-20T18:39:32.147Z, 15 calls asked, 0 replayed
+3 fault(s) in 4 of 4 turns
+#2.1 rule check: "with a damp wind off the fields" → Weather (contradicts)
+#2.2 rule check: "near enough what a building labourer made in three-quarters of an hour's work" → Price (contradicts)
+#2.3 rule check: "That'll be two pence three farthings for the pint, if you please, master." → Price (unbacked)
+
+=== #2.1: I sit down at a table near the fire.
+clock: Friday 3 November 1820, 19:00:01
+faults: 
+  rule check: "with a damp wind off the fields" → Weather (contradicts)
+--- calls
+1. Weather {"latitude":53.96,"longitude":-1.08}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 34 km), 3/11/1820: dry; high 9 °C, low 8 °C; now about 8 °C.
+2. Act {"who":"Tom","action":"sit down at a table near the fire."}
+   draws: none
+   → Tom sits down: 1.2 s (1.2 s in all). Span 1.2 s. Clock now Friday 3 November 1820, 19:00:01.
+--- reply
+The taproom of the coaching inn near York was warm and dim, lit by tallow candles and the broad hearth. Outside, the November evening was dry and cold, about eight degrees, with a damp wind off the fields. The room was half full: drovers, a commercial traveller, an old woman with a basket, and a potman moving between the benches.
+
+The night beyond the small paned windows was still and dry, though the cold had settled in for the evening, and any man stepping out would want his coat.
+
+Tom crossed the boards and sat down at a table near the fire. The heat came off the coals pleasantly, and the bench creaked under him as he settled, the smell of ale and woodsmoke thick about the place.
+--- open: The potman had seen him sit and was crossing the room toward his table, cloth in hand, perhaps to ask what he'd take.
+--- planner answers
+{"calls":{"PassTime":{"minutes":1,"resting":["Tom"]}},"then":[],"need":[],"at":[53.96,-1.08],"present":["Tom"]}
+
+=== #2.2: I call to the innkeeper for a pint of ale.
+clock: Friday 3 November 1820, 19:02:03
+faults: 
+  rule check: "near enough what a building labourer made in three-quarters of an hour's work" → Price (contradicts)
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 9 °C, low 8 °C; now about 8 °C.
+2. NewCharacter {"who":"the innkeeper","occupation":"innkeeper"}
+   draws: 0.1462, 0.2845, 0.0997, 0.5432
+   → the innkeeper: a 20-year-old man; occupation: innkeeper.
+3. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","noise":"conversation nearby (50 dB)","barrier":"none"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (loud voice at 1 m, conversation nearby (50 dB)). the innkeeper now knows: for a pint of ale. Said in 1.5 s; clock now Friday 3 November 1820, 19:00:03.
+4. Price {"item":"beer (litre)","question":"price of goods","city":"London","country":"England","year":1820}
+   draws: none
+   → 1 × beer (litre) in London, 1820: 1.21 g of silver (about 2¾ d); a building labourer earns that in 0.7 hours of a 10-hour day.
+5. Transfer {"item":"the pint of ale","from":"the innkeeper","to":"Tom","how":"given"}
+   draws: none
+   → the pint of ale given from the innkeeper to Tom; Tom now has it. Recorded.
+6. PassTime {"minutes":2,"active":["Tom","the potman"]}
+   draws: 0.8878, 0.7614, 0.8227, 0.8652, 0.8513, 0.8351
+   → 2 minutes passed.
+Tom (human): blood lost 0 L. work done today: 0 % of what can be kept up.
+the innkeeper (human): blood lost 0 L.
+--- reply
+The taproom stayed warm and dim, the fire crackling in the hearth beside Tom's table. The candles guttered a little in the draught from the door, and the talk of drovers and the commercial traveller hummed low about the room. Outside the November night kept dry and cold, the wind still off the fields.
+
+At the call, a young man came over from the bar, wiping his hands on his apron. He was the innkeeper, twenty years old by his smooth face, though he carried himself with the busy air of a man used to running the room on his own of an evening.
+
+'A pint of ale,' Tom called, and the innkeeper heard him plainly over the taproom noise, nodding as he turned back to the bar.
+
+A pint fetched about two pence three farthings in these parts, near enough what a building labourer made in three-quarters of an hour's work.
+
+The innkeeper drew the pint and brought it over, setting the foaming jug down on Tom's table. 'There you are,' he said, and stood waiting by the bench.
+
+A minute or two passed while the fire settled and the potman called an order to the bar.
+--- open: Whether Tom pays the innkeeper for the pint, and what the innkeeper says or does while he waits.
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"loud","noise":"conversation nearby (50 dB)","barrier":"none","message":"for a pint of ale"}},"Price":{"beer (litre)":{"question":"price of goods","city":"London","country":"England","year":1820}}},"then":[{"question":"Does the potman bring Tom his pint, and does it change hands?","tool":"Transfer"}],"need":[]}
+- - -
+{"calls":{"Transfer":{"the pint of ale":{"from":"the innkeeper","to":"Tom","how":"given"}},"PassTime":{"minutes":2,"active":["Tom","the potman"]}},"then":[{"question":"Does the potman reach Tom's table and serve him without incident?","tool":"Act"}],"need":["Act"]}
+
+=== #2.3: Two men at the next table are whispering. I keep still and listen.
+clock: Friday 3 November 1820, 19:02:08
+faults: 
+  rule check: "That'll be two pence three farthings for the pint, if you please, master." → Price (unbacked)
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 9 °C, low 8 °C; now about 8 °C.
+2. Listen {"listener":"Tom","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","barrier":"none","reveals":"what the two men at the next table are whispering about"}
+   draws: none
+   → Tom hears it (quiet conversation (50 dB at 1 m) at 2 m, conversation nearby (50 dB)). Tom now knows: what the two men at the next table are whispering about.
+3. Communicate {"speaker":"the first man","listener":"the second man","speaker_languages":["English"],"listener_languages":["English"],"message":"We take the north road past Tadcaster at midnight, and the mail coach carries the strongbox.","speaker_voice":"normal"}
+   draws: none
+   → the second man hears the first man and makes out every word (normal voice at 1 m, quiet room (25 dB)). the second man now knows: We take the north road past Tadcaster at midnight, and the mail coach carries the strongbox. Said in 4.9 s; clock now Friday 3 November 1820, 19:02:08.
+4. Choose {"who":"the innkeeper","options":[{"option":"wait patiently by the table and ask Tom for the money","share":"80% most"},{"option":"go back to the bar and let Tom pay when he will","share":"20% few"}]}
+   draws: 0.0662
+   → the innkeeper chooses: wait patiently by the table and ask Tom for the money.
+--- reply
+The taproom was warm and dim, the fire burning steady in the hearth at Tom's side. The candles threw long shadows across the boards, and the talk of drovers and the commercial traveller made a low hum about the room. Outside the November night stayed dry and cold, the wind off the fields rattling the shutters now and then.
+
+Tom kept still on his bench, his pint untouched before him, and let his ear drift to the next table. Two men sat close together there, heads bent, and though they whispered, their words came to him across the two yards between the tables, plain enough over the quiet of the room. They were talking of a job on the north road, and of the mail coach and what it carried.
+
+'We take the north road past Tadcaster at midnight,' the first man said in a low voice, leaning close to his companion, 'and the mail coach carries the strongbox.' The second man nodded slowly, taking in every word, and glanced toward the door. Neither of them looked Tom's way, their heads still close together over their mugs.
+
+The innkeeper, meanwhile, had not gone far. He stood waiting patiently by Tom's table, his hands folded in his apron, and at last he said, 'That'll be two pence three farthings for the pint, if you please, master.'
+--- open: Will Tom pay the innkeeper for the ale, and what will he do with what he has overheard?
+--- planner answers
+{"calls":{"Listen":{"Tom":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","barrier":"none","reveals":"what the two men at the next table are whispering about"}}},"then":[{"question":"What do the two men say to each other in their whisper, and does any of it reach Tom?","tool":"Communicate"},{"question":"While Tom sits listening, what does the innkeeper do about the unpaid pint?","tool":"Choose"}],"need":["Communicate","Choose"]}
+- - -
+{"calls":{"Communicate":{"the first man":{"listener":"the second man","speaker_languages":["English"],"listener_languages":["English"],"message":"We take the north road past Tadcaster at midnight, and the mail coach carries the strongbox.","speaker_voice":"normal"}},"Choose":{"the innkeeper":{"options":[{"option":"wait patiently by the table and ask Tom for the money","share":"80% most"},{"option":"go back to the bar and let Tom pay when he will","share":"20% few"}]}}},"then":[{"question":"Does the whisper's content reach Tom, or only the tone?","tool":"Communicate"}],"need":["NewCharacter"]}
+
+=== #2.4: I go to the innkeeper and tell him what I heard.
+clock: Friday 3 November 1820, 19:02:11
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 9 °C, low 8 °C; now about 8 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"normal","message":"what I heard"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (normal voice at 1 m, quiet room (25 dB)). the innkeeper now knows: what I heard. Said in 1.0 s; clock now Friday 3 November 1820, 19:02:09.
+3. Act {"who":"Tom","action":"stands up from the bench and steps over to the innkeeper","distance_m":2}
+   draws: none
+   → Tom stands up from sitting: 1.6 s; Tom walks 2 m from where Tom stood to innkeeper at 1.62 m/s: 1.2 s (2.8 s in all). Span 2.8 s. Clock now Friday 3 November 1820, 19:02:11.
+4. SocialResponse {"who":"the innkeeper","situation":"a statement that might be a lie","speaker":"Tom","is_lie":false,"statement":"Two men at the next table are planning to rob the mail coach on the north road past Tadcaster at midnight"}
+   draws: 0.7049, 0.6797, 0.2428, 0.5001, 0.7443, 0.7482, 0.0707
+   → the innkeeper judges it a lie, from Tom's manner alone: no proof either way.
+--- reply
+The taproom stayed warm and dim, the fire burning steady in the hearth. The candles guttered in the draught, and the low hum of talk filled the room. Outside the November night kept dry and cold, the wind still off the fields.
+
+Tom leaned toward the innkeeper and spoke quietly, telling him what he had heard: two men at the next table whispering of the north road past Tadcaster, of midnight, and of the mail coach and its strongbox. The innkeeper heard every word, close as he was, and his eyes went once toward the two men at the next table before coming back to Tom.
+
+Tom rose from his bench, the wood creaking, and stepped the two metres across the boards to where the innkeeper stood, arriving at his side in a moment.
+
+The innkeeper looked Tom up and down, and something in the young carter's manner did not sit well with him. He had seen men cry highwaymen before, usually to dodge a bill or make trouble for a neighbour, and he had no reason to credit this one over any other. 'Is that so,' he said flatly, folding his arms in his apron. 'And what would a carter be doing listening in on other men's talk, and telling me of it before he's paid for his pint?'
+--- open: Whether the innkeeper will do anything about the two men, or press Tom again for his two pence three farthings.
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"normal","message":"what I heard"}},"Act":{"Tom":{"action":"stands up from the bench and steps over to the innkeeper","distance_m":2}}},"then":[{"question":"How does the innkeeper respond to what Tom tells him about the two men's plan?","tool":"SocialResponse"}],"need":["SocialResponse"]}
+- - -
+{"calls":{ "SocialResponse": {"the innkeeper": {"situation":"a statement that might be a lie","speaker":"Tom","is_lie":false,"statement":"Two men at the next table are planning to rob the mail coach on the north road past Tadcaster at midnight"}}}}
+
