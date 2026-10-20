@@ -89,5 +89,7 @@ if (mi.join() !== '1.5,1.5,30,4,') { miss++; console.log(`MISS moneyIn: ${mi.joi
 const ps = {}; Po.give(ps, 'Tom', 'penny', 2);
 const paid = Po.transfer(ps, { item: 'a penny and a half', from: 'Tom', to: 'the innkeeper', how: 'given' });
 if (!/change halfpenny/.test(paid) || ps.items.Tom[0].item !== 'halfpenny') { miss++; console.log(`MISS change: ${paid}`); }
-console.log(`23 checks, ${miss} miss(es)`);
+// A slip on the level: serious injury at about 1 in 10 at 70, a quarter of that at 30.
+for (const [age, lo, hi] of [[30, 0.005, 0.05], [70, 0.06, 0.14]]) { let n = 0; for (let i = 0; i < 600; i++) { fresh(); ctx.chat[0].mes = `s${age}-${i}`; if (/serious injury, the/.test(String(await run('BodyFall', { who: 'Pyotr', height_m: 0, slip: true, age })))) n++; } if (!(n / 600 >= lo && n / 600 <= hi)) { miss++; console.log(`MISS slip at ${age}: ${n / 600}`); } }
+console.log(`25 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

@@ -2217,19 +2217,32 @@ export function registerRulesTools(enabled) {
         head_first: { type: 'boolean', description: 'Landed head first' },
         age: { type: 'number', description: 'Age in years, when known' },
         ground: { type: 'string', enum: GROUNDS, description: 'What the feet land on. Default packed earth.' },
-        stiff_legs: { type: 'boolean', description: 'Lands with straight legs (taken by surprise, a slip); default: knees bend' },
+        stiff_legs: { type: 'boolean', description: 'Lands with straight legs (taken by surprise); default: knees bend' },
+        slip: { type: 'boolean', description: 'A slip or trip on level ground (ice, a wet floor): the body goes down from its own height, not onto the feet; give height_m 0' },
     }, ['who', 'height_m'], a => run((st, rng) => {
         const { p, error } = whoAny(st, a.who, a.species);
         if (!p)
             return error;
         // A fall starts from where the character stands: after a failed climb they are at its foot (a climb that failed at
         // 0.6 m was followed by a 3 m drop "into the garden on the other side").
-        if (p.raised_m != null && (p.raised_m === 0 || Number(a.height_m) > p.raised_m + 0.5))
+        if (!a.slip && p.raised_m != null && (p.raised_m === 0 || Number(a.height_m) > p.raised_m + 0.5))
             return p.raised_m ? `${a.who} stands ${p.raised_m} m up: the drop is ${p.raised_m} m. Call BodyFall with height_m ${p.raised_m}.` : `${a.who} stands on the ground at the foot of the climb, on the side the climb started from.`;
+        // A fall on the level, from the body's own height: about 1 in 10 such falls at 65 or over ends in a serious injury (a
+        // fracture, a head injury or a serious bruise) (Tinetti 2003, NEJM 348:42, citing Nevitt 1991, Sattin 1992, Tinetti
+        // 1995). Fractures after a fall on the level were 3.35–4.75 times as frequent at 45 and over as under 45 (McNamee et al.
+        // 1997, Occup Environ Med 54:785), so under 45 the share is a quarter of that [ASSUMED: the ratio for serious injury],
+        // 45–64 half way [ASSUMED]. Most such fractures are of the wrist from a hand thrown out, and of the hip at 75 and over.
+        // A fall from half a metre or less is a fall on the level: the body goes down from its own height.
+        if (a.slip || Number(a.height_m) <= 0.5) {
+            const age = Number(a.age ?? p.age ?? 35), chance = age >= 65 ? 0.10 : age >= 45 ? 0.05 : 0.025;
+            const hurt = rng() < chance, part = age >= 75 ? 'hip' : 'wrist';
+            const side = rng() < 0.5 ? 'left' : 'right', c = creatureOf(p);
+            const body = hurt ? (part === 'hip' ? c?.parts.find(x => x.name === `${side} upper leg`) : c?.parts.find(x => x.name === `${side} hand`) ?? c?.parts.find(x => x.name === `${side} lower arm`)) : undefined;
+            if (body)
+                addWound(p, { part: body, type: 'fracture', fracture: 'transverse' }, rng);
+            return `${a.who} slips and goes down from standing onto the side and the hands: ${hurt ? `a serious injury, the ${side} ${part} broken (fracture recorded${body ? ` on the ${body.name}` : ''})` : 'bruised and shaken, nothing broken'} (a fall on the level at ${age}: ${Math.round(chance * 100)} % end in a serious injury). ${a.who} is on the ground.`;
+        }
         delete p.raised_m;
-        // Under half a metre the body steps down; a fall's force starts above that [ASSUMED threshold].
-        if (Number(a.height_m) < 0.5)
-            return `${a.who} steps down ${a.height_m} m and stays on the feet.`;
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first, age: a.age == null ? undefined : Number(a.age), ground: a.ground, stiff: !!a.stiff_legs }, rng);
     }));
     tool('BodyStatus', 'Read a character\'s body and network state.', {
