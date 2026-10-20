@@ -438,3 +438,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Code joins the beats into the prose shown. The rule check reads only the result-0 beats (a beat tied to a result is backed by construction); a reply with none is passed. The open questions join the next turn's picker and planner prompts ("OPEN FROM THE LAST REPLY"), so an outcome the narrator would have written is decided by the engine.
 - SillyTavern: on CHAT_COMPLETION_SETTINGS_READY the main reply's request carries the beats schema (response_format json_schema, SillyTavern's json_schema, and through custom_include_body for a Custom source) when the question pass decided the turn and the connection takes schemas; the narrator's brief gains the reply form; on MESSAGE_RECEIVED, first of the handlers, the JSON is read into prose and the beats are kept in the message's extra. Setting "Structured replies", on by default. While a reply streams, the JSON shows until it arrives.
 - run-story uses the same path; tested with a scripted model: beats joined into prose, the check reading only the scenery beat, the open question carried.
+
+## 2026-10-19 (33) Materials layer
+
+- See df-body-engine.md §6.23. src/rules/data/materials.ts (24 materials), src/rules/materials.ts (lookups, laws, landing, breaking), tools/check-materials.mjs (22 pass, 2 recalled values flagged suspect).
+- Walls in Listen and Communicate, room linings, room absorption and BodyFall now read the table; the Break tool decides planks, ropes and bars. The fall on the feet decides a heel-bone fracture from force against bone loads (the Lisbon story's invented scrapes and sore ankle now have a result to tell: "the bones hold, the legs and feet jarred" or a recorded fracture).
+- Brick walls now pass less sound: 409 kg/m² for one brick thickness instead of 200 assumed (about 6 dB more loss at every band); lining densities changed (brick 1900 from 2600).

@@ -3,6 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
+import { landing } from './materials.js';
 import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL, classOf, soundSpeed } from './acoustics.js';
 import { see, acuityOf } from './vision.js';
 import { grip, gripNorm } from './strength.js';
@@ -572,7 +573,18 @@ export function fall(p, height, opts = {}, rng = Math.random) {
         p.dead = 'fall';
         return `Fall ${height} m: dies.`;
     }
-    return `Fall ${height} m: survives; its injuries come from BodyWound.`;
+    if (opts.headFirst)
+        return `Fall ${height} m: survives; its injuries come from BodyWound.`;
+    // Feet first: the force through each leg, against the loads that break the heel bone and tibia (materials.ts landing).
+    const l = landing(p.mass, height, opts.soft ? 'grass' : opts.ground ?? 'packed earth', !!opts.stiff);
+    if (rng() < l.chance) {
+        const side = rng() < 0.5 ? 'left' : 'right', c = creatureOf(p);
+        const part = c?.parts.find(x => x.name === `${side} foot`) ?? c?.parts.find(x => x.name === `${side} lower leg`);
+        if (part)
+            addWound(p, { part, type: 'fracture', fracture: 'transverse' }, rng);
+        return `Fall ${height} m: lands on the feet, ${l.kNPerLeg} kN through each leg; the ${side} heel bone breaks (fracture recorded${part ? ` on the ${part.name}` : ''}).`;
+    }
+    return `Fall ${height} m: lands on the feet, ${l.kNPerLeg} kN through each leg; the bones hold, the legs and feet jarred.`;
 }
 /** part → whether it works: no severing, unjoined fracture or lost function on it or above it on its CON chain. */
 export function worksFn(p, c = creatureOf(p)) {

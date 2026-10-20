@@ -8,6 +8,7 @@ import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock, recalls } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './emotion.js';
 import { skyLight } from './sky.js';
+import { LININGS, MATERIALS, GROUNDS, MATERIAL_NAMES, material, ropeBreakKg, rodBreakKg, plankBreakKg } from './materials.js';
 import type { Way } from './acoustics.js';
 import { findPlace, simulatePlaceYear, hourTemp, placeCountry } from './weather.js';
 import { observedDay, cachedDay, reanalysisMissed } from './reanalysis.js';
@@ -67,7 +68,7 @@ export interface EngineStore {
         read?: { phrase: string; id: string; label: string; year: number | null }[] } | null;
 }
 
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Layout', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'Break', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Layout', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
 type ToolName = typeof TOOLS[number];
 const KEEP_SNAPSHOTS = 30;
 
@@ -440,7 +441,7 @@ function coinsOf(g: number, city: string, year: number): string {
 // absorption when both are in one. Absorption: walls, floor and ceiling of a square room times the lining's coefficient at
 // 500 Hz–1 kHz (brick 0.03, concrete 0.02, gypsum board 0.05, wood 0.10), furnishing 0.1 per m² of floor, 0.45 m² per person
 // [ASSUMED typical values from absorption tables].
-const ALPHA: Record<string, number> = { brick: 0.03, concrete: 0.02, 'gypsum board': 0.05, wood: 0.10 };
+const ALPHA: Record<string, number> = Object.fromEntries(Object.entries(LININGS).filter(([n]) => !n.startsWith('_')).map(([n, l]) => [n, MATERIALS[l.material]?.alpha500 ?? 0.03]));
 const GROUND: Record<string, number> = { 'paved, water or ice': 0, mixed: 0.5, 'grass, fields or soil': 1 };
 const WAY_PROPS = {
     ground: { type: 'string', enum: Object.keys(GROUND), description: 'Outdoors: the ground between them. Default mixed.' },
@@ -1863,6 +1864,24 @@ export function registerRulesTools(enabled: boolean): void {
         return `${cast(p, Math.max(1, Math.min(9, Math.round(a.complexity))))} ${status(a.who, p)}`;
     }));
 
+    tool('Break', 'Decide whether a thing gives way under a load before narrating it: a plank or beam someone stands or jumps on, a shelf, a rope someone hangs from, an iron bar or chain link pulled. Code compares the load with the material\'s strength for that shape.', {
+        material: { type: 'string', enum: MATERIAL_NAMES, description: 'What it is made of' },
+        shape: { type: 'string', enum: ['plank or beam', 'rope', 'rod or bar'], description: 'Its shape' },
+        width_cm: { type: 'number', description: 'Plank or beam: width, cm' },
+        thickness_cm: { type: 'number', description: 'Plank or beam: thickness (depth under the load), cm' },
+        span_m: { type: 'number', description: 'Plank or beam: distance between its supports, m (the load at the middle)' },
+        diameter_mm: { type: 'number', description: 'Rope, rod or bar: diameter, mm' },
+        load_kg: { type: 'number', description: 'The load, kg (a person\'s mass; twice it for a jump or a drop onto it [ASSUMED])' },
+    }, ['material', 'shape', 'load_kg'], a => {
+        const m = material(a.material); if (!m) return `Give material, one of: ${MATERIAL_NAMES.join(', ')}.`;
+        let cap: number, what: string;
+        if (a.shape === 'rope') { if (!a.diameter_mm) return 'Give diameter_mm for a rope.'; cap = ropeBreakKg(a.diameter_mm); what = `a ${a.diameter_mm} mm rope`; }
+        else if (a.shape === 'rod or bar') { if (!a.diameter_mm) return 'Give diameter_mm for a rod or bar.'; cap = rodBreakKg(m, a.diameter_mm); what = `a ${a.diameter_mm} mm ${a.material} rod`; }
+        else { if (!a.width_cm || !a.thickness_cm || !a.span_m) return 'Give width_cm, thickness_cm and span_m for a plank or beam.'; cap = plankBreakKg(m, a.width_cm / 100, a.thickness_cm / 100, a.span_m); what = `a ${a.width_cm} × ${a.thickness_cm} cm ${a.material} plank over ${a.span_m} m`; }
+        const load = Number(a.load_kg);
+        return load >= cap ? `${what} breaks under ${load} kg (it gives at about ${Math.round(cap)} kg).` : `${what} holds ${load} kg (it gives at about ${Math.round(cap)} kg).`;
+    });
+
     tool('BodyFall', 'Resolve a fall before narrating its outcome.', {
         who: str('Character name'),
         species,
@@ -1870,10 +1889,12 @@ export function registerRulesTools(enabled: boolean): void {
         soft: { type: 'boolean', description: 'Soft ground: water, snow, foliage' },
         head_first: { type: 'boolean', description: 'Landed head first' },
         age: { type: 'number', description: 'Age in years, when known' },
+        ground: { type: 'string', enum: GROUNDS, description: 'What the feet land on. Default packed earth.' },
+        stiff_legs: { type: 'boolean', description: 'Lands with straight legs (taken by surprise, a slip); default: knees bend' },
     }, ['who', 'height_m'], a => run((st, rng) => {
         const { p, error } = whoAny(st, a.who, a.species);
         if (!p) return error;
-        return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first, age: a.age == null ? undefined : Number(a.age) }, rng);
+        return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first, age: a.age == null ? undefined : Number(a.age), ground: a.ground, stiff: !!a.stiff_legs }, rng);
     }));
 
     tool('BodyStatus', 'Read a character\'s body and network state.', {

@@ -1172,3 +1172,15 @@ Foundations every tool shares:
 
 Closed lists as options: every argument whose values come from a fixed list is an enum, so a value outside it is refused and the options are shown: weapon (the 21 DF melee weapons), material of a weapon or ammunition (the 7 DF weapon metals, bone, wood), launcher, clothing ensemble (49) and garment (52), the body regions garments cover, skin touches or water reaches, and armour sub-locations. Free text stays where the values are open: names, the task, a fact, a message, the place (1736 cities, matched by name), species (DF creatures, matched by name), country and occupation (matched, with an error naming the problem). A list shown to the model holds at most 40 options in the question pass and 30 in an error message; the full list is in the tool schema.
 
+
+### 6.23 Materials
+
+One table of what things are made of (src/rules/data/materials.ts) under the parts that had numbers of their own. Per material: density, Young's modulus, strength and its kind (bending / tension / compression), compression strength, thermal conductivity, specific heat, measured speed of sound, sound absorption at 500 Hz, electrical resistivity (metals), with a source per field: the Wood Handbook (FPL-GTR-190, Table 5-3a, 12 % moisture; density = specific gravity × 1.12 × 1000 kg/m³) for six woods, Reilly & Burstein 1975 for cortical bone, recalled handbook values marked raw for the rest.
+
+Laws checked for every material (tools/check-materials.mjs): speed of sound in a rod √(E/ρ) within 20 % of the measured speed; Wiedemann–Franz for metals (k ≥ 0.7 L T / ρe); strain at failure, strength ÷ E, inside its family's band. Two recalled values fail and are marked suspect by the check: eastern white pine's speed of sound (3300 m/s against 4657 from its handbook E and density) and common brick's modulus (15 GPa against 3650 m/s measured).
+
+Fed from the table: wall surface masses for the sound mass law (door 28, lath and plaster 40, one-brick wall 409, 30 cm limestone 780 kg/m²); room linings for fire heat; lining absorption for room reverberation; landing loads for falls; the Break tool.
+
+Falls feet first: impact speed √(2 g h), stopped over the legs' give (legGiveM 0.25 m bent knees, 0.05 m straight [ASSUMED]) plus the ground's (stone 0 to snow 0.2 m), average force m g (h + d) / d split between the legs, against calcaneal and tibial fracture loads of 3.8–9 kN in impactor tests (McMaster et al. 2000; Kitagawa et al. 1998, as cited by Kallieris et al., ESV 17 paper 212), a lognormal with its median at the geometric middle (5.8 kN) and the range as ±1.5 σ [fitted]. A 62 kg person landing with bent knees on packed earth: 3 m 3.7 kN per leg, 5 % fracture; 6 m 7.1 kN, 74 %; straight legs on stone from 3 m, 18.6 kN, certain. A break records a fracture on that foot.
+
+Break: a plank or beam on two supports with the load at the middle breaks when 3 F L / (2 b h²) reaches its bending strength (simple beam theory), sawn timber at timberFactor 0.5 × clear wood [ASSUMED]; a rod or bar at tensile strength × cross-section; a fibre rope at 900 lbf × C² (C circumference, inches; the manila rule of thumb [RAW]).

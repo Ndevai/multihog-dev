@@ -1,3 +1,9 @@
+// Air in a room (docs/df-body-engine.md §6.22): a well-mixed box. Each minute every gas follows
+// dC/dt = G ÷ V − λ (C − C_outside), solved exactly over the minute (C_eq = C_outside + G ÷ (λ V); C ← C_eq + (C − C_eq) e^(−λ)),
+// λ = air changes per hour ÷ 60. Sources come from the atoms: a fire's fuel gives CO2 and takes O2 by its elements; people
+// breathe out CO2 from their oxygen use. Gases heavier than air (molar mass above 29 g/mol) collect low, lighter ones high;
+// the box holds the room average only.
+import { LININGS, liningOf } from './materials.js';
 import { equivalentAltitude } from './thermal/altitude.js';
 import { setAltitude, setEnvironment } from './body-engine.js';
 import { def, k } from './constants.js';
@@ -26,10 +32,9 @@ def({ id: 'ventFlow', value: 0.5, unit: 'kg/s per m^2.5', status: 'sourced', src
 // Lining k (kW/m·K), ρ (kg/m³), c (kJ/kg·K), thickness δ (m): concrete 0.0016, 2400, 0.75 (NUREG-1805 worksheet);
 // gypsum board 0.00017, 960, 1.1; brick 0.0008, 2600, 0.8; pine 0.00014, 640, 2.85 [RAW: recalled from NUREG-1805 Table 2-3,
 // not checked]; thickness concrete 0.15, brick 0.2, gypsum 0.016, pine 0.02 [ASSUMED].
-export const LINING = {
-    concrete: { k: 0.0016, rho: 2400, c: 0.75, d: 0.15 }, brick: { k: 0.0008, rho: 2600, c: 0.8, d: 0.2 },
-    'gypsum board': { k: 0.00017, rho: 960, c: 1.1, d: 0.016 }, wood: { k: 0.00014, rho: 640, c: 2.85, d: 0.02 },
-};
+// Linings from the materials table (materials.ts): conductivity, density and heat capacity of the material, the thickness
+// that heats up.
+export const LINING = Object.fromEntries(Object.keys(LININGS).filter(n => !n.startsWith('_')).map(n => [n, liningOf(n)]).filter(([, v]) => v));
 const hk = (L, tS) => { const tp = L.rho * L.c / L.k * (L.d / 2) ** 2; return tS < tp ? Math.sqrt(L.k * L.rho * L.c / Math.max(1, tS)) : L.k / L.d; };
 /** Heat release, kW: the fuel's, held to the opening's oxygen supply and to zero once the oxygen is below 15 %. */
 export function heatKW(r, fuelOnly = false) {

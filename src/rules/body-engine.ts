@@ -3,6 +3,7 @@ import { bodyWeapon, itemWeapon, momentum, penetrate, tissueOf, liveLayers, shot
 import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from './df/index.js';
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
+import { landing } from './materials.js';
 import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL, classOf, soundSpeed, type Way } from './acoustics.js';
 import { see, acuityOf } from './vision.js';
 import { grip, gripNorm } from './strength.js';
@@ -431,11 +432,20 @@ function fallBase(height: number, soft: boolean, headFirst: boolean): number {
     return FALL_ROWS[0][1] * (height - 6) / (FALL_ROWS[0][0] - 6);
 }
 
-export function fall(p: Person, height: number, opts: { soft?: boolean; headFirst?: boolean; age?: number } = {}, rng: Rng = Math.random): string {
+export function fall(p: Person, height: number, opts: { soft?: boolean; headFirst?: boolean; age?: number; ground?: string; stiff?: boolean } = {}, rng: Rng = Math.random): string {
     const chance = fallDeathChance(height, opts);
     console.debug?.('[Rules engine]', `fall ${height} m: death chance ${Math.round(chance * 1000) / 10} %`);
     if (chance > 0 && rng() < chance) { p.dead = 'fall'; return `Fall ${height} m: dies.`; }
-    return `Fall ${height} m: survives; its injuries come from BodyWound.`;
+    if (opts.headFirst) return `Fall ${height} m: survives; its injuries come from BodyWound.`;
+    // Feet first: the force through each leg, against the loads that break the heel bone and tibia (materials.ts landing).
+    const l = landing(p.mass, height, opts.soft ? 'grass' : opts.ground ?? 'packed earth', !!opts.stiff);
+    if (rng() < l.chance) {
+        const side = rng() < 0.5 ? 'left' : 'right', c = creatureOf(p);
+        const part = c?.parts.find(x => x.name === `${side} foot`) ?? c?.parts.find(x => x.name === `${side} lower leg`);
+        if (part) addWound(p, { part, type: 'fracture', fracture: 'transverse' }, rng);
+        return `Fall ${height} m: lands on the feet, ${l.kNPerLeg} kN through each leg; the ${side} heel bone breaks (fracture recorded${part ? ` on the ${part.name}` : ''}).`;
+    }
+    return `Fall ${height} m: lands on the feet, ${l.kNPerLeg} kN through each leg; the bones hold, the legs and feet jarred.`;
 }
 
 /** part → whether it works: no severing, unjoined fracture or lost function on it or above it on its CON chain. */

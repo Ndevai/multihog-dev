@@ -2,6 +2,7 @@
 // octave-band procedure, constants from Table 4 as packaged in the R package SII (Warnes & Shaver, CRAN): band centre, band
 // width (10 log Hz), importance, speech spectrum levels at 1 m by vocal effort, reference internal noise.
 import { def, k } from './constants.js';
+import { WALLS, surfaceMass } from './materials.js';
 const BANDS = [250, 500, 1000, 2000, 4000, 8000];
 const DELTA = [22.48, 25.48, 28.48, 31.48, 34.48, 37.48];
 const IMPORTANCE = [0.0617, 0.1671, 0.2373, 0.2648, 0.2142, 0.0549];
@@ -39,8 +40,9 @@ export const classOf = (table: Record<string, number>, label: string | undefined
     return Object.keys(table).find(k => head(k) === head(label));
 };
 // Walls and doors: field mass law, TL = 20 log10(m f) − 47 dB, m surface mass kg/m² (e.g. Long, Architectural Acoustics);
-// surface masses from material density × thickness [ASSUMED values].
-export const BARRIER: Record<string, number> = { none: 0, 'curtain or tent': 1, 'wooden door': 20, 'plaster wall': 25, 'brick wall': 200, 'stone wall': 500 };
+// surface mass = the wall's material density × its thickness (materials.ts): a wooden door 28, a lath-and-plaster partition
+// 40, a brick wall one brick thick 409, a 30 cm limestone wall 780 kg/m² (they were 20, 25, 200, 500 assumed).
+export const BARRIER: Record<string, number> = { none: 0, ...Object.fromEntries(Object.keys(WALLS).filter(w => !w.startsWith('_')).map(w => [w, surfaceMass(w)])) };
 const massLaw = (m: number, f: number) => m ? Math.max(0, 20 * Math.log10(m * f) - 47) : 0;
 
 /** Air between source and listener: temperature °C, relative humidity %, pressure kPa. */
