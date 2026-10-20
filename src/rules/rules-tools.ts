@@ -984,6 +984,11 @@ export function registerRulesTools(enabled: boolean): void {
     // Work time as a person says it: minutes under an hour, to the nearest five ("about 20 minutes of a 10-hour day"); a
     // narrator turning "0.3 hours" into words wrote "a quarter hour".
     const spokenWork = (hours: number) => hours < 1 ? `about ${Math.max(5, Math.round(hours * 12) * 5)} minutes of a 10-hour day` : `about ${Math.round(hours * 2) / 2} hours of a 10-hour day`;
+    // Preparation before contact (after Simulation Blackboard's review rule, "facts established before a dependent outcome"):
+    // what a look, a listen or a deduction can find is the fact itself, fixed before the check decides whether it is found.
+    // A reveals written as a question left the finding to the narrator ("Mara now knows: who is inside the lit room").
+    const asQuestion = (r: unknown) => typeof r === 'string' && /^\s*(?:who|what|whether|if|where|how|which|why|when|anything|anyone|someone)\b/i.test(r);
+    const REVEALS_FACT = 'reveals is the fact itself as the scene holds it, written before the check decides whether it is found ("a grey-haired man counting coins into an iron box at a desk"). State unchanged.';
     tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it. A good outside its list (pears, oysters) is priced with good and like, from the listed good it is most like.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
         item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods: a listed good' },
@@ -1402,8 +1407,9 @@ export function registerRulesTools(enabled: boolean): void {
         kind: { type: 'string', enum: PROBLEMS },
         seconds: { type: 'number', description: 'Time they have to work it out, s (a glance 2, a moment 10, a minute 60, a long look 240)' },
         share: { type: 'string', enum: SHARES, description: 'How this character compares with university students at such problems: the share of students they would do better than.' },
-        reveals: str('The fact working it out would teach, one short sentence (who the thief is, where the key is); learned only on success'),
+        reveals: str('The fact itself, as the scene holds it, set before the outcome ("the thief is the cook\'s boy", "the key hangs behind the clock"); learned only on success'),
     }, ['who', 'problem', 'kind', 'seconds', 'share'], a => run((st, rng) => {
+        if (asQuestion((a as { reveals?: unknown }).reveals)) return REVEALS_FACT;
         const w = whoAny(st, a.who);
         if (!w.p) return w.error;
         const base = solveShare(a.kind, a.seconds);
@@ -1437,8 +1443,9 @@ export function registerRulesTools(enabled: boolean): void {
         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
         tone_hz: { type: 'number', description: 'For a tonal sound (a bell, a whistle, a horn): its pitch, Hz (a church bell 300–600, a whistle 2000–3000)' },
         ...WAY_PROPS,
-        reveals: str('The fact hearing it would teach, one short sentence (a secret overheard, who is coming); learned only if heard'),
+        reveals: str('The fact itself, as the scene holds it, set before the outcome ("the two men plan to rob the York mail at the ford before dawn", "three riders are coming up the lane"); learned only if heard'),
     }, ['listener', 'distance_m', 'sound'], a => run(st => {
+        if (asQuestion(a.reveals)) return REVEALS_FACT;
         const l = who(st, a.listener, a.listener_species);
         if (!l.p) return l.error;
         const out = listen(a.listener, l.p, { way: wayFor(st, l.p, a, !a.barrier || a.barrier === 'none'), sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? 'none' });
@@ -1454,9 +1461,10 @@ export function registerRulesTools(enabled: boolean): void {
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Set for an overcast sky or artificial light; code takes daylight, twilight, moonlight and starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
-        reveals: str('The fact seeing it would teach, one short sentence (who it is, what they are doing); learned only if identified'),
+        reveals: str('The fact itself, as the scene holds it, set before the outcome ("a grey-haired man counting coins into an iron box at a desk"); learned only if identified'),
         target_who: str('When the target is a tracked character: their name (distance and walls then come from the map)'),
     }, ['viewer', 'size_m', 'distance_m'], a => run((st, rng) => {
+        if (asQuestion(a.reveals)) return REVEALS_FACT;
         const v = who(st, a.viewer, a.viewer_species);
         if (!v.p) return v.error;
         const tp = a.target_who ? st.people?.[a.target_who] : undefined, geo = tp ? between(st, v.p, tp) : null;

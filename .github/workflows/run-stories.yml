@@ -21,6 +21,8 @@ jobs:
     timeout-minutes: 150
     strategy:
       fail-fast: false
+      # Three jobs at a time: nine at once on one key ran into NVIDIA's rate limit (five stories stopped on 429).
+      max-parallel: 3
       matrix: { part: ['1', '2', '3', '4', '5', '6', '7', '8', '9'] }
     steps:
       - uses: actions/checkout@v4

@@ -71,5 +71,8 @@ if (!(pot?.item === 'apples (kg)' && Math.abs(pot.ratio - 0.4952) < 0.01 && len?
 fresh();
 expect('a misfortune stated against interest stands', String(await run('Claim', { who: 'Pyotr', claim: 'Pyotr slips on the ice and falls', kind: 'something happening to the character now', in_world: true, base_share: '20% few', share: '20% few', against_interest: true })), /holds \(stated against/);
 expect('a good outside the list beats a stray item', String(await run('Price', { question: 'price of goods', item: 'apples (kg)', good: 'oysters', like: 'meat (kg)', quantity: 1, city: 'London', year: 1888 })), /of oysters/);
-console.log(`16 checks, ${miss} miss(es)`);
+fresh();
+expect('reveals as a question is turned back', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'who is inside the lit room and what they are doing' })), /reveals is the fact itself/);
+expect('reveals as the fact runs', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'a grey-haired man counting coins at a desk' })), /Mara/);
+console.log(`18 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
