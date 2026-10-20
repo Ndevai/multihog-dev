@@ -35,7 +35,7 @@ Ask about the things this reply shows. An outcome that follows from another one 
 A player's message that states something new about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A new person who first acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one entry per person. The calls are grouped by tool, and within a tool keyed by the person or thing the call is about (the actor, the speaker, the listener, the viewer, the good priced, the item handed over): each person's motions this turn go in their one Act, in order; each good has one Price. A tool about no one in particular (Weather, PassTime) takes its arguments directly. Tools run in the order written, so put time passing after the actions it follows.
 When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": the scene's date and hour as YYYY-MM-DD HH:MM (or "Day 1 HH:MM" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. The first time the scene or scenario says where the scene is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
-First write QUESTIONS: one line per question. Then write the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":["follow-on question"],"need":["ToolName"]}. A plan with zero calls is {"calls":{}}.`;
+First write QUESTIONS: one line per question. Then write the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":[{"question":"follow-on question","tool":"the tool that answers it"}],"need":["ToolName"]}. A plan with zero calls is {"calls":{}}.`;
 
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
 // FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
@@ -137,7 +137,7 @@ export async function pickTools(chat: STMessage[], send: (system: string, user: 
 }
 
 type Call = { tool: string; args: Record<string, unknown> };
-type Plan = { calls: Call[]; then: string[]; time?: string; at?: [number, number]; read: Record<string, string>; unsure: Record<string, string[]>; present?: string[]; need: string[] };
+type Plan = { calls: Call[]; then: string[]; thenTools: string[]; time?: string; at?: [number, number]; read: Record<string, string>; unsure: Record<string, string[]>; present?: string[]; need: string[] };
 
 /** Every call in the model's text, unchecked: the last JSON object holding "calls" that parses. */
 export function rawCalls(text: unknown): Call[] {
@@ -162,7 +162,9 @@ export function rawPlan(text: unknown): Plan {
             if (!Array.isArray(o.calls)) continue;
             return {
                 calls: o.calls.filter((c: unknown): c is Call => !!c && typeof (c as Call).tool === 'string' && typeof (c as Call).args === 'object' && (c as Call).args !== null),
-                then: Array.isArray(o.then) ? o.then.filter((q: unknown): q is string => typeof q === 'string' && !!q.trim()) : [],
+                // A follow-on question is text, or {question, tool}: the tool that answers it is required next round.
+                then: Array.isArray(o.then) ? o.then.map((q: unknown) => typeof q === 'string' ? q : (q as { question?: unknown })?.question).filter((q: unknown): q is string => typeof q === 'string' && !!q.trim()) : [],
+                thenTools: Array.isArray(o.then) ? o.then.map((q: unknown) => (q as { tool?: unknown })?.tool).filter((x: unknown): x is string => typeof x === 'string' && REGISTRY.has(x)) : [],
                 time: typeof o.time === 'string' ? o.time : undefined,
                 need: Array.isArray(o.need) ? o.need.filter((x: unknown): x is string => typeof x === 'string' && REGISTRY.has(x)) : [],
                 present: Array.isArray(o.present) ? o.present.filter((x: unknown): x is string => typeof x === 'string' && !!x.trim()) : undefined,
@@ -172,7 +174,7 @@ export function rawPlan(text: unknown): Plan {
             };
         } catch { /* try an earlier object */ }
     }
-    return { calls: [], then: [], read: {}, unsure: {}, need: [] };
+    return { calls: [], then: [], thenTools: [], read: {}, unsure: {}, need: [] };
 }
 const strings = (o: unknown, ok: (v: unknown) => boolean) =>
     o && typeof o === 'object' && !Array.isArray(o) ? Object.fromEntries(Object.entries(o).filter(([, v]) => ok(v))) : {};
@@ -224,11 +226,11 @@ export type Send = (system: string, user: string, opts?: { schema?: Record<strin
 export let GUIDED = false;
 export const setGuided = (v: boolean) => { GUIDED = v; };
 // Under constrained decoding the answer is the JSON plan alone; the model's reasoning carries the questions.
-const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":["follow-on question"],"need":["ToolName"]}; a plan with zero calls is {"calls":{}}.');
+const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":[{"question":"follow-on question","tool":"the tool that answers it"}],"need":["ToolName"]}; a plan with zero calls is {"calls":{}}.');
 export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser): Promise<typeof READ> {
-    const planTools = { current: undefined as Set<string> | undefined };
+    const planTools = { current: undefined as Set<string> | undefined, people: [] as string[], require: [] as string[] };
     const send: Send = (system, user) => !GUIDED ? sendRaw(system, user)
-        : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current) })
+        : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current, { people: planTools.people, require: planTools.require }) })
         : system === PICK_SYSTEM ? sendRaw(system, user, { schema: pickSchema() }) : sendRaw(system, user);
     const ctx = SillyTavern.getContext();
     setRead([]);
@@ -266,6 +268,8 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         const player = playerName((ctx as { name1?: string }).name1, tracker);
         const framed = player ? framedCalls(said0, player) : { calls: [] as Call[], covered: new Set<string>() };
         framed.calls = framed.calls.filter(c => has(c.tool)); framed.covered = new Set([...framed.covered].filter(has));
+        // The people the story holds, as keys the plan writes them by (plan-schema.ts PERSON_KEY).
+        planTools.people = [...new Set([...Object.keys(s.state.people ?? {}), ...player ? [player] : [], ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]).filter(n => !/^(?:Scenario|Cast|Time|Place|Weather|Story|Body|Knows)$/i.test(n))])].slice(0, 24);
         const routed = routedTools(said0, has);
         const left = routed ? [...routed].filter(t => !framed.covered.has(t) && !ALWAYS.includes(t)) : null;
         const only = routed ? new Set([...left!, ...ALWAYS.filter(has)]) : await pickTools(chat, send) ?? undefined;
@@ -319,7 +323,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
             // (asked only for "at", a model rewrote the whole plan and its Act ran twice).
             const asked = new Set([...dropped.map(c => c.tool), ...motion ? ['Act'] : [], ...sceneOpen.map(d => d.tool)]);
             calls = dedupe(mergeCalls(calls, validCalls(fix.calls).filter(c => unread || asked.has(c.tool)))).slice(0, MAX_CALLS);
-            plan.then.push(...fix.then);
+            plan.then.push(...fix.then); plan.thenTools.push(...fix.thenTools);
         }
         // The day's weather is decided by code every turn the story has a calendar date and a place, whether or not the
         // question model asked: a narrator describes the sky unasked (a reply set in Rio, April 1822, had no Weather call).
@@ -374,6 +378,9 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
             // Tools asked for by name in "need", and Interpret when a result calls for it, get their arguments now.
             const extra = only ? [...new Set([...plan.need, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Interpret'] : []])].filter(n => !only.has(n)) : [];
             if (only) planTools.current = new Set([...only, ...extra]);
+            // The tools the open questions named are written this round (a question about the costermonger's apples named
+            // Choose and came back with zero calls).
+            planTools.require = [...new Set([...plan.thenTools, ...plan.need])];
             const added = extra.length ? `MORE TOOLS\n${toolCatalogue(new Set(extra)).split('\n\nOTHER TOOLS')[0]}\n\n` : '';
             const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n') || '(none)')
                 .replace('{then}', [...plan.then, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Which meaning does each listener take from the words a result names?'] : []].map(q => `- ${q}`).join('\n'));

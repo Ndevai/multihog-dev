@@ -39,24 +39,37 @@ export function callsFromKeyed(calls: Record<string, unknown>): { tool: string; 
     }
     return out;
 }
+/** The keys a person-keyed tool takes: a name as the story writes it ("Mara", "Will Doyle") or a role ("the innkeeper", "the
+ *  man by the fire"): capitalized words, or "the" and up to four lower-case words. The people the story already holds are
+ *  listed as fixed keys, so their names are written as stored. */
+export const PERSON_KEY = "^(?:[A-Z][A-Za-z'-]*(?: [A-Z][A-Za-z'-]*){0,2}|the(?: [a-z0-9'-]+){1,4})$";
+const PERSON_ARGS = new Set(['who', 'speaker', 'listener', 'viewer']);
 /** The plan: one entry per tool (of the named tools, all when none named), each holding one call per subject; follow-on
- *  questions, tools wanted next, time, place, people. */
-export function planSchema(only?: Set<string>): Schema {
+ *  questions, each with the tool that answers it; tools wanted next; time, place, people. In a follow-on round, `require`
+ *  names the tools the last round's questions asked for: the plan holds a call of each. */
+export function planSchema(only?: Set<string>, opts: { people?: string[]; require?: string[] } = {}): Schema {
     const tools = [...REGISTRY.values()].filter(t => !only || only.has(t.name));
     const argsOf = (t: (typeof tools)[number], drop: string | null): Schema => ({
         type: 'object', additionalProperties: false, required: t.required.filter(k => k !== drop),
         properties: Object.fromEntries(Object.entries(t.properties).filter(([k]) => k !== drop).map(([k, p]) => [k, propSchema(p as Prop)])),
     });
+    const require = new Set((opts.require ?? []).filter(n => tools.some(t => t.name === n)));
     const entry = (t: (typeof tools)[number]): Schema => {
         const key = subjectOf(t.name);
+        if (!key) return argsOf(t, null);
+        const args = argsOf(t, key), min = require.has(t.name) ? { minProperties: 1 } : {};
+        // A subject with a fixed list (Price's goods) takes those keys only.
+        const listed = (t.properties[key] as { enum?: string[] } | undefined)?.enum;
+        if (listed?.length) return { type: 'object', properties: Object.fromEntries(listed.map(v => [v, args])), additionalProperties: false, maxProperties: 6, ...min };
         // Bounded: under constrained decoding a model can repeat one call until the token limit cuts the JSON.
-        return key ? { type: 'object', additionalProperties: argsOf(t, key), maxProperties: 6 } : argsOf(t, null);
+        if (PERSON_ARGS.has(key)) return { type: 'object', properties: Object.fromEntries((opts.people ?? []).map(n => [n, args])), additionalProperties: args, propertyNames: opts.people?.length ? { anyOf: [{ enum: opts.people }, { pattern: PERSON_KEY }] } : { pattern: PERSON_KEY }, maxProperties: 6, ...min };
+        return { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
     };
     return {
         type: 'object', additionalProperties: false, required: ['calls'],
         properties: {
-            calls: { type: 'object', additionalProperties: false, properties: Object.fromEntries(tools.map(t => [t.name, entry(t)])) },
-            then: { type: 'array', items: { type: 'string' }, maxItems: 4 },
+            calls: { type: 'object', additionalProperties: false, properties: Object.fromEntries(tools.map(t => [t.name, entry(t)])), required: [...require] },
+            then: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['question', 'tool'], properties: { question: { type: 'string' }, tool: { type: 'string', enum: [...REGISTRY.keys()] } } }, maxItems: 4 },
             need: { type: 'array', items: { type: 'string', enum: [...REGISTRY.keys()] }, maxItems: 6 },
             time: { type: 'string', pattern: '^(\\d{4}-\\d{2}-\\d{2}|Day \\d+) \\d{2}:\\d{2}$' },
             at: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 },
