@@ -404,7 +404,8 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         }
         if ((plan.then.length || plan.need.length || results.some(r => /Call Interpret/.test(r.result))) && calls.length < MAX_CALLS) {
             // Tools asked for by name in "need", and Interpret when a result calls for it, get their arguments now.
-            const extra = only ? [...new Set([...plan.need, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Interpret'] : []])].filter(n => !only.has(n)) : [];
+            // A tool code settled this turn (framed.covered) is answered; a follow-on round takes the others.
+            const extra = only ? [...new Set([...plan.need, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Interpret'] : []])].filter(n => !only.has(n) && !framed.covered.has(n)) : [];
             if (only) planTools.current = new Set([...only, ...extra]);
             // The tools the open questions named are written this round (a question about the costermonger's apples named
             // Choose and came back with zero calls).
@@ -468,8 +469,11 @@ const labelled = (x: { tool: string }, args: Record<string, unknown> | undefined
 const repeatWeather = (tool: string) => tool === 'Weather' && !!(store().asked as { weatherRepeat?: boolean } | undefined)?.weatherRepeat;
 export function decidedInjection(): string {
     const args = askedArgs(), r = askedResults().map((x, i) => ({ ...x, args: args[i] })).filter(x => !isMiss(x.tool, x.result, x.args) && !repeatWeather(x.tool));
-    if (!r.length) return '';
-    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${labelled(x, x.args)}: ${storyResult(x.result)}`).join('\n')}\n[/DECIDED]`;
+    // The day's weather, told in an earlier reply, holds as an unnumbered line: it bounds what the reply says of the sky and
+    // needs no passage of its own (left out entirely, the reply made the mist stop).
+    const still = askedResults().find(x => repeatWeather(x.tool));
+    if (!r.length && !still) return '';
+    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${labelled(x, x.args)}: ${storyResult(x.result)}`).join('\n')}${still ? `\nStill so from earlier (the sky and air as the reply mentions them): ${storyResult(still.result)}` : ''}\n[/DECIDED]`;
 }
 /** This turn's [DECIDED] results, in their numbered order. */
 export function decidedResults(): { tool: string; result: string }[] {

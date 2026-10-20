@@ -657,3 +657,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Every "Clock now" in a result now carries the spoken time to the nearest five minutes ("18:17:53 (about twenty past six in the evening)"; clock.ts spokenTime). Price gives work time under an hour in minutes to the nearest five ("about 20 minutes of a 10-hour day"). The reply copies the words instead of converting the number.
 - frame.ts writes the Price call when the player buys, orders or asks for a measure of a listed good. Words name the good: ale, beer, porter, stout, cider → beer; bread, loaf → bread; apples; cheese; butter; meat; eggs; beans or peas; soap; candles; lamp oil. Measures: imperial pint 0.568 l, quart 1.137 l, gallon 4.546 l, pound 0.4536 kg, ounce 0.0283 kg, loaf 1.97 kg (the quartern loaf, 4 lb 5½ oz [ASSUMED for "a loaf"]), dozen 12. Price with no city takes the scene country's listed city. "a pint of ale" → beer (litre) 0.568; "a pound of apples" → apples (kg) 0.454.
 - `npm test`: 152 checks, 0 misses.
+
+## 2026-10-20 (64) The day's weather holds as an unnumbered line; settled tools stay settled
+
+- Run of 84d2f82 (results/run-39482036409): 9 faults (stories 1–3: 6, 1, 2). Code wrote both prices from the words (apples 0.454 kg; beer 0.568 l). Story 1's six had two causes:
+  - With the day's weather out of [DECIDED] after the first reply (entry 58), the narrator gave the sky its own course ("the mist has stopped altogether", twice flagged). The weather now holds in [DECIDED] as an unnumbered line, "Still so from earlier", which bounds what the reply says of the sky and asks no passage.
+  - A follow-on round priced candles that nobody bought ("need": Price), and the reply told them. A tool code settled this turn is no longer offered again in a follow-on round.
