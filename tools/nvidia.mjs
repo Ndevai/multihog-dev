@@ -47,29 +47,38 @@ export async function send(system, user, opts = {}, model = MODEL) {
     return out;
 }
 async function ask(system, user, opts, model) {
+    // Retries as Simulation Blackboard's retry.js decides them (src/rules/retry.ts): temporary errors only, the server's
+    // Retry-After or 60 s doubling to 240 s, a cooldown over 10 minutes handed back. An empty answer is asked again.
+    const { retryInfo, retryDelay } = await import('../src/rules/retry.js');
     let last = '';
-    for (let attempt = 1; attempt <= TRIES; attempt++) {
+    for (let attempt = 0; attempt < TRIES; attempt++) {
+        let r;
         try {
-            const r = await fetch(`${BASE}/chat/completions`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+            r = await fetch(`${BASE}/chat/completions`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0, max_tokens: 8192, stream: true,
                     reasoning_effort: EFFORT, chat_template_kwargs: { reasoning_effort: EFFORT }, ...guide(opts?.schema) }) });
-            // A 429 waits as long as the server's Retry-After says, else 60 s, 120 s, … (the first cloud run spent its 200 s of waits inside one limit window).
-            if (r.status === 429) { last = '429 rate limit (NVIDIA)'; const s = Number(r.headers.get('retry-after')) || 60 * attempt; console.log(`  rate limited, waiting ${s} s (try ${attempt} of ${TRIES})`); await new Promise(res => setTimeout(res, s * 1000)); continue; }
-            if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`);
-            let out = '', thought = 0, finish = '', buf = '';
-            const dec = new TextDecoder();
-            for await (const chunk of r.body) {
-                buf += dec.decode(chunk, { stream: true });
-                let i; while ((i = buf.indexOf('\n')) >= 0) {
-                    const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
-                    if (!line.startsWith('data:') || line === 'data: [DONE]') continue;
-                    try { const c = JSON.parse(line.slice(5)).choices?.[0]; out += c?.delta?.content ?? ''; thought += (c?.delta?.reasoning_content ?? c?.delta?.reasoning ?? '').length; finish = c?.finish_reason ?? finish; } catch { /* partial line */ }
-                }
+        } catch (e) { last = String(e.message ?? e); await new Promise(res => setTimeout(res, 5000 * (attempt + 1))); continue; }
+        if (!r.ok) {
+            const body = await r.text(), info = retryInfo(r.status, (() => { try { return JSON.parse(body); } catch { return body; } })(), r.headers.get('retry-after'));
+            last = `${r.status} ${body.slice(0, 200)}`;
+            const wait = retryDelay(info, attempt, TRIES - 1);
+            if (wait === null) break;
+            console.log(`  ${r.status}: waiting ${Math.round(wait / 1000)} s (try ${attempt + 1} of ${TRIES})`);
+            await new Promise(res => setTimeout(res, wait)); continue;
+        }
+        let out = '', thought = 0, finish = '', buf = '';
+        const dec = new TextDecoder();
+        for await (const chunk of r.body) {
+            buf += dec.decode(chunk, { stream: true });
+            let i; while ((i = buf.indexOf('\n')) >= 0) {
+                const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+                if (!line.startsWith('data:') || line === 'data: [DONE]') continue;
+                try { const c = JSON.parse(line.slice(5)).choices?.[0]; out += c?.delta?.content ?? ''; thought += (c?.delta?.reasoning_content ?? c?.delta?.reasoning ?? '').length; finish = c?.finish_reason ?? finish; } catch { /* partial line */ }
             }
-            if (out.trim()) return out;
-            last = `empty answer (finish ${finish || 'none'}, ${thought} characters of thinking)`;
-            console.log(`  ${last}; asking again (try ${attempt} of ${TRIES})`);
-        } catch (e) { last = String(e.message ?? e); if (attempt === TRIES) break; await new Promise(res => setTimeout(res, 5000 * attempt)); }
+        }
+        if (out.trim()) return out;
+        last = `empty answer (finish ${finish || 'none'}, ${thought} characters of thinking)`;
+        console.log(`  ${last}; asking again (try ${attempt + 1} of ${TRIES})`);
     }
     throw new Error(`the model did not answer after ${TRIES} tries: ${last}`);
 }

@@ -718,3 +718,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Run of fed5dcf (results/run-39490454881, the first counting shown replies): stories 1, 3 and 9 had no fault on the shown reply. Five stories stopped on NVIDIA's rate limit: nine parallel jobs and their rewrites on one key. The workflow now runs three jobs at a time.
 - Open: a thing the player's character gives that the story never recorded ("I offer him my silver thimble") is refused by Transfer; it needs a Claim first.
 - `npm test`: 166 checks, 0 misses.
+
+## 2026-10-20 (73) Provider retries from Simulation Blackboard
+
+- The user has the permission of Simulation Blackboard's author (st1ksi) to reuse its code. Its retry.js replaces tools/nvidia.mjs's retry loop (src/rules/retry.ts). Only temporary errors are retried (429, 500, 502, 503, 504, "overloaded"; never billing, a bad key or a context overflow). The wait is the server's Retry-After, else 60 s doubling to 240 s, and a cooldown over 10 minutes is handed back instead of waited out. Stand-in test: a 429 waits 60 s, then a 401 stops at once. The source is credited in docs/third-party.md.
