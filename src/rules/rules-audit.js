@@ -1,6 +1,7 @@
 // After each reply, a separate model pass lists rule-governed events that no tool result backs.
 // Code then redoes the reply once with the missing calls named; a second failure is shown to the user.
 import { setFlags } from './audit-flags.js';
+import { unbackedText } from './narration.js';
 import { turnKey } from './turn.js';
 import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
@@ -78,8 +79,15 @@ export async function onRulesAuditMessage(messageId, deps) {
         return null;
     const key = turnKey(ctx.chat);
     const reply = msg.mes;
+    // A structured reply: the beats tied to a result are backed by construction; the check reads the rest.
+    const nar = msg.extra?.rulesNarration?.[msg.swipe_id ?? 0];
+    const checked = nar ? unbackedText(nar) : reply;
+    if (nar && !checked.trim()) {
+        (msg.extra.rulesAudit ??= {})[msg.swipe_id ?? 0] = [];
+        return [];
+    }
     const st = ctx.chatMetadata.rulesEngine?.state ?? {}, now = st.clock ? st.clock.t + st.clock.add : null;
-    const raw = await deps.send(GUIDED ? AUDIT_GUIDED : AUDIT_SYSTEM, buildAuditPrompt(reply, turnResults(ctx), knowledgeBlock(st), now === null ? '' : formatStoryTime(now)), GUIDED ? { schema: auditSchema() } : undefined);
+    const raw = await deps.send(GUIDED ? AUDIT_GUIDED : AUDIT_SYSTEM, buildAuditPrompt(checked, turnResults(ctx), knowledgeBlock(st), now === null ? '' : formatStoryTime(now)), GUIDED ? { schema: auditSchema() } : undefined);
     if (!deps.ownsChat() || ctx.chat[messageId] !== msg || msg.mes !== reply)
         return null;
     const events = parseAudit(raw);

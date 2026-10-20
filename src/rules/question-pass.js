@@ -104,7 +104,8 @@ const pickSchema = () => ({ type: 'object', additionalProperties: false, require
 export async function pickTools(chat, send) {
     const index = [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(oneLine).join('\n');
     const recent = chat.filter(m => !m.is_system).slice(-PICK_MESSAGES).map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
-    const text = String(await send(PICK_SYSTEM, `TOOLS\n${index}\n\nSCENE (the last message is the player's)\n${recent}`) ?? '');
+    const open = OPEN.length ? `OPEN FROM THE LAST REPLY\n${OPEN.map(q => `- ${q}`).join('\n')}\n\n` : '';
+    const text = String(await send(PICK_SYSTEM, `TOOLS\n${index}\n\n${open}SCENE (the last message is the player's)\n${recent}`) ?? '');
     const m = [...text.matchAll(/\{\s*"tools"\s*:\s*\[[^\]]*\]\s*\}/g)].pop();
     if (!m)
         return null;
@@ -180,12 +181,16 @@ function validCalls(calls) {
         .slice(0, MAX_CALLS);
 }
 /** The scene for the question model: the story state (time, place, bodies), [KNOWS], recent messages, the player's last. */
+/** Questions the last reply left open (narration.ts), for this turn's plan; set when a reply is read. */
+let OPEN = [];
+export const setOpen = (q) => { OPEN = q.slice(0, 4); };
 export function questionPrompt(chat, knows, tracker = '', only) {
     const recent = chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES)
         .map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
     const state = tracker.trim() ? `STORY STATE\n${tracker.trim().slice(0, TRACKER_CHARS)}\n\n` : '';
     const now = /\[TIME\]/.test(tracker) ? '' : `TODAY\n${today()}\n\n`;
-    return `TOOLS\n${toolCatalogue(only)}\n\n${state}${now}${knows ? `${knows}\n\n` : ''}SCENE (the last message is the player's)\n${recent}`;
+    const open = OPEN.length ? `OPEN FROM THE LAST REPLY (the scene was moving toward these; decide each this reply shows)\n${OPEN.map(q => `- ${q}`).join('\n')}\n\n` : '';
+    return `TOOLS\n${toolCatalogue(only)}\n\n${state}${now}${knows ? `${knows}\n\n` : ''}${open}SCENE (the last message is the player's)\n${recent}`;
 }
 /** Constrained decoding for the plan (plan-schema.ts): set when the connection honours a JSON schema (tools/probe-guided.mjs). */
 export let GUIDED = false;
@@ -398,5 +403,9 @@ export function decidedInjection() {
     const r = askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]));
     if (!r.length)
         return '';
-    return `[DECIDED]\nOutcomes the rule engine decided for this reply. Narrate them as given; they stand.\n${r.map(x => `- ${x.tool}: ${x.result}`).join('\n')}\n[/DECIDED]`;
+    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n')}\n[/DECIDED]`;
+}
+/** This turn's [DECIDED] results, in their numbered order. */
+export function decidedResults() {
+    return askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]));
 }

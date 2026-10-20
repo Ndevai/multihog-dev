@@ -431,3 +431,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Act: "drops down into the garden and slips to the shadow of the hedge" with 8 m given was refused (no known verb). Words with a distance and no known verb now walk that distance to the place named; slip and edge added as walking verbs.
 - Price: the planner priced apples as an egg. Its description now says goods outside its list take their price from the story.
 - run-story and run-play count a refusal as a fault only when no later call of the same tool succeeded.
+
+## 2026-10-19 (32) Structured narration
+
+- The rule check read events back out of prose, the same lossy direction as the plan before constrained decoding. The narrator now writes the reply as beats under a schema (narration.ts): {"beats":[{"result": number of the [DECIDED] result it tells, or 0, "text"}],"open":[questions]}. [DECIDED] is numbered. Result-0 beats hold what decides nothing (the place, the weather as given, looks, talk that changes nothing); where the scene moves toward an outcome no result decides, the text stops before it and "open" names it.
+- Code joins the beats into the prose shown. The rule check reads only the result-0 beats (a beat tied to a result is backed by construction); a reply with none is passed. The open questions join the next turn's picker and planner prompts ("OPEN FROM THE LAST REPLY"), so an outcome the narrator would have written is decided by the engine.
+- SillyTavern: on CHAT_COMPLETION_SETTINGS_READY the main reply's request carries the beats schema (response_format json_schema, SillyTavern's json_schema, and through custom_include_body for a Custom source) when the question pass decided the turn and the connection takes schemas; the narrator's brief gains the reply form; on MESSAGE_RECEIVED, first of the handlers, the JSON is read into prose and the beats are kept in the message's extra. Setting "Structured replies", on by default. While a reply streams, the JSON shows until it arrives.
+- run-story uses the same path; tested with a scripted model: beats joined into prose, the check reading only the scenery beat, the open question carried.

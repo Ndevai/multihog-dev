@@ -3,7 +3,8 @@
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
 import { pulseSelfTest } from './rules/pulse.js';
 import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, } from './rules/rules-tools.js';
-import { runQuestionPass, decidedInjection, turnLog, setGuided } from './rules/question-pass.js';
+import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED } from './rules/question-pass.js';
+import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
@@ -23,7 +24,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
 const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
-const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, profile: '', maxTokens: 0, effort: 'low' };
+const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, profile: '', maxTokens: 0, effort: 'low' };
 const ctx = () => SillyTavern.getContext();
 const toastr = globalThis.toastr;
 function settings() {
@@ -231,7 +232,7 @@ globalThis.rulesEngineInterceptor = async (chat, _size, _abort, type) => {
             console.warn('[Rules engine] question pass skipped:', e);
         }
     }
-    const parts = [questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decidedInjection(), takeAuditNote() ?? ''];
+    const parts = [questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decidedInjection(), takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
     c.setExtensionPrompt(KEY, parts.filter(Boolean).join('\n\n'), IN_CHAT, DEPTH, false, SYSTEM);
 };
 // Two things fit the player's word equally: the player says which (a guess would change what the scene can hold).
@@ -281,6 +282,8 @@ async function buildSettings() {
     bind('rules_engine_enabled', 'enabled', () => registerRulesTools(settings().enabled));
     bind('rules_engine_question_pass', 'questionPass');
     bind('rules_engine_rule_check', 'ruleCheck');
+    if (document.getElementById('rules_engine_structured'))
+        bind('rules_engine_structured', 'structured');
     const profile = document.getElementById('rules_engine_profile');
     const profiles = ctx().extensionSettings.connectionManager?.profiles ?? [];
     for (const p of profiles)
@@ -319,9 +322,47 @@ async function buildSettings() {
 }
 /** This extension's folder under scripts/extensions/third-party, from the URL this module loaded from. */
 const folder = () => decodeURIComponent(new URL('.', import.meta.url).pathname.replace(/\/src\/$/, '').split('/').pop() || NAME);
+// Structured narration (narration.ts) on the main reply: when the question pass decided this turn and the connection takes
+// a schema, the reply's request carries the beats schema; the reply is read into prose when it arrives.
+const structuredNow = () => { const s = settings(); return s.enabled && s.structured && s.questionPass && GUIDED && questionPassRan(); };
+function addReplySchema(data) {
+    if (!structuredNow())
+        return;
+    const schema = narrationSchema(decidedResults().length), rf = { type: 'json_schema', json_schema: { name: 'reply', strict: true, schema } };
+    data.response_format = rf;
+    data.json_schema = { name: 'reply', strict: true, value: schema };
+    if (data.chat_completion_source === 'custom')
+        data.custom_include_body = `${String(data.custom_include_body ?? '').trim()}${data.custom_include_body ? '\n' : ''}response_format: ${JSON.stringify(rf)}`;
+}
+function readReply(id) {
+    const c = ctx();
+    const msg = c.chat?.[id];
+    if (!msg || msg.is_user || msg.is_system)
+        return;
+    const nar = readNarration(msg.mes);
+    if (!nar) {
+        setOpen([]);
+        return;
+    }
+    msg.mes = proseOf(nar);
+    msg.extra ??= {};
+    (msg.extra.rulesNarration ??= {})[msg.swipe_id ?? 0] = nar;
+    setOpen(nar.open ?? []);
+    try {
+        c.updateMessageBlock?.(id, msg);
+    }
+    catch { /* the block is drawn after this event */ }
+    c.saveChatDebounced?.();
+}
 function wireEvents() {
     const c = ctx(), on = c.eventSource.on.bind(c.eventSource), ev = c.eventTypes;
     const live = () => settings().enabled && !!ctx().chatMetadata;
+    // First of the reply's handlers: the rule check and the saved state read the prose.
+    on(ev.MESSAGE_RECEIVED, (id) => { if (live())
+        readReply(id); });
+    if (ev.CHAT_COMPLETION_SETTINGS_READY)
+        on(ev.CHAT_COMPLETION_SETTINGS_READY, (data) => { if (live())
+            addReplySchema(data); });
     on(ev.GENERATION_STARTED, (type) => { if (live())
         onRulesGenerationStarted(type); });
     on(ev.MESSAGE_RECEIVED, (id) => { if (live())

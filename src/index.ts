@@ -7,7 +7,8 @@ import {
     RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY,
     historyCheck,
 } from './rules/rules-tools.js';
-import { runQuestionPass, decidedInjection, turnLog, setGuided, type Chooser } from './rules/question-pass.js';
+import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, type Chooser } from './rules/question-pass.js';
+import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
 import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
 import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
@@ -29,8 +30,8 @@ const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
 
-interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; profile: string; maxTokens: number; effort: string }
-const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, profile: '', maxTokens: 0, effort: 'low' };
+interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; profile: string; maxTokens: number; effort: string }
+const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, profile: '', maxTokens: 0, effort: 'low' };
 
 interface Ctx {
     chat: STMessage[]; chatMetadata: Record<string, any>; extensionSettings: Record<string, any>;
@@ -222,7 +223,7 @@ function storyState(): string {
             if (read.length) toastr.info(read.map(r => `${r.phrase} → ${r.label}${r.year != null ? ` (${r.year})` : ''}`).join('; '), 'Read as');
         } catch (e) { console.warn('[Rules engine] question pass skipped:', e); }
     }
-    const parts = [questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decidedInjection(), takeAuditNote() ?? ''];
+    const parts = [questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decidedInjection(), takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
     c.setExtensionPrompt(KEY, parts.filter(Boolean).join('\n\n'), IN_CHAT, DEPTH, false, SYSTEM);
 };
 
@@ -266,7 +267,7 @@ async function buildSettings(): Promise<void> {
     const html = await ctx().renderExtensionTemplateAsync(`third-party/${folder()}`, 'settings');
     document.getElementById('extensions_settings2')?.insertAdjacentHTML('beforeend', html);
     const s = settings();
-    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck', after?: () => void) => {
+    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured', after?: () => void) => {
         const el = document.getElementById(id) as HTMLInputElement;
         el.checked = s[key];
         el.addEventListener('change', () => { settings()[key] = el.checked; ctx().saveSettingsDebounced(); after?.(); });
@@ -274,6 +275,7 @@ async function buildSettings(): Promise<void> {
     bind('rules_engine_enabled', 'enabled', () => registerRulesTools(settings().enabled));
     bind('rules_engine_question_pass', 'questionPass');
     bind('rules_engine_rule_check', 'ruleCheck');
+    if (document.getElementById('rules_engine_structured')) bind('rules_engine_structured', 'structured');
     const profile = document.getElementById('rules_engine_profile') as HTMLSelectElement;
     const profiles: { id: string; name: string }[] = ctx().extensionSettings.connectionManager?.profiles ?? [];
     for (const p of profiles) profile.add(new Option(p.name, p.id));
@@ -302,9 +304,36 @@ async function buildSettings(): Promise<void> {
 /** This extension's folder under scripts/extensions/third-party, from the URL this module loaded from. */
 const folder = () => decodeURIComponent(new URL('.', import.meta.url).pathname.replace(/\/src\/$/, '').split('/').pop() || NAME);
 
+// Structured narration (narration.ts) on the main reply: when the question pass decided this turn and the connection takes
+// a schema, the reply's request carries the beats schema; the reply is read into prose when it arrives.
+const structuredNow = () => { const s = settings(); return s.enabled && s.structured && s.questionPass && GUIDED && questionPassRan(); };
+function addReplySchema(data: Record<string, unknown>): void {
+    if (!structuredNow()) return;
+    const schema = narrationSchema(decidedResults().length), rf = { type: 'json_schema', json_schema: { name: 'reply', strict: true, schema } };
+    data.response_format = rf;
+    data.json_schema = { name: 'reply', strict: true, value: schema };
+    if (data.chat_completion_source === 'custom') data.custom_include_body = `${String(data.custom_include_body ?? '').trim()}${data.custom_include_body ? '\n' : ''}response_format: ${JSON.stringify(rf)}`;
+}
+function readReply(id: number): void {
+    const c = ctx() as Ctx & { saveChatDebounced?: () => void; updateMessageBlock?: (id: number, m: STMessage) => void };
+    const msg = c.chat?.[id];
+    if (!msg || msg.is_user || msg.is_system) return;
+    const nar = readNarration(msg.mes);
+    if (!nar) { setOpen([]); return; }
+    msg.mes = proseOf(nar);
+    msg.extra ??= {};
+    ((msg.extra.rulesNarration ??= {}) as Record<number, unknown>)[msg.swipe_id ?? 0] = nar;
+    setOpen(nar.open ?? []);
+    try { c.updateMessageBlock?.(id, msg); } catch { /* the block is drawn after this event */ }
+    c.saveChatDebounced?.();
+}
+
 function wireEvents(): void {
     const c = ctx(), on = c.eventSource.on.bind(c.eventSource), ev = c.eventTypes;
     const live = () => settings().enabled && !!ctx().chatMetadata;
+    // First of the reply's handlers: the rule check and the saved state read the prose.
+    on(ev.MESSAGE_RECEIVED, (id: number) => { if (live()) readReply(id); });
+    if (ev.CHAT_COMPLETION_SETTINGS_READY) on(ev.CHAT_COMPLETION_SETTINGS_READY, (data: Record<string, unknown>) => { if (live()) addReplySchema(data); });
     on(ev.GENERATION_STARTED, (type: string) => { if (live()) onRulesGenerationStarted(type); });
     on(ev.MESSAGE_RECEIVED, (id: number) => { if (live()) onRulesMessageReceived(id); });
     on(ev.MESSAGE_RECEIVED, async (id: number) => {

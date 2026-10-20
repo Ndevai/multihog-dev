@@ -8,6 +8,7 @@
             <label class="checkbox_label"><input type="checkbox" id="rules_engine_enabled" /><span>Rules engine: code decides outcomes through tool calls, the narrator writes them</span></label>
             <label class="checkbox_label"><input type="checkbox" id="rules_engine_question_pass" /><span>Question pass: before each reply, a model call names the outcomes in doubt and the engine decides them first</span></label>
             <label class="checkbox_label"><input type="checkbox" id="rules_engine_rule_check" /><span>Rule check: after each reply, a model call compares it with the engine's results and redoes it once when it bends one</span></label>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_structured" /><span>Structured replies: the narrator writes one passage per decided result plus scenery, and names what is left open for the next turn; the reply is shown as prose</span></label>
             <label for="rules_engine_profile"><small>Connection for the question pass and rule check</small></label>
             <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
             <label for="rules_engine_max_tokens"><small>Reply length for those calls, tokens (empty: the connection's own)</small></label>

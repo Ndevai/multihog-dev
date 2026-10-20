@@ -57,6 +57,7 @@ for (const [si, story] of chosen) {
     const cast = `[CAST]\n${story.cast}\nScenario: ${story.scenario}\n[/CAST]`;
     const timeBlock = () => { const t = T.storyTime(); return t === null ? '' : `[TIME]\n${C.formatStoryTime(t)}\n[/TIME]`; };
     let lastClock = null;
+    Q.setOpen([]);
     for (const [ti, turn] of story.turns.entries()) {
         sent.length = 0;
         const tag = `#${si + 1}.${ti + 1}`, f = [];
@@ -74,20 +75,28 @@ for (const [si, story] of chosen) {
         else if (lastClock !== null && now < lastClock) f.push(`clock ran back: ${C.formatStoryTime(lastClock)} → ${C.formatStoryTime(now)}`);
         else if (lastClock !== null && now === lastClock && results.some(r => (r.tool === 'Act' || r.tool === 'PassTime') && !REFUSED.test(r.result))) f.push('clock stood still after an action');
         // The narrator gets what SillyTavern gives it: the brief, the story state, [KNOWS], [DECIDED], and the chat so far.
-        let reply = '';
+        let reply = '', openNote = '';
         try {
             const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.RULES_BRIEF, timeBlock(), B.bodyBlock(B.trackedPeople()), T.possessionsInjection(), T.knowledgeInjection(), Q.decidedInjection()].filter(Boolean).join('\n\n');
             const history = ctx.chat.slice(0, -1).map(m => `${m.is_user ? 'PLAYER' : 'NARRATOR'}: ${m.mes}`).join('\n\n');
-            reply = await send(`${NARRATOR}\n\n${cast}\n\n${inj}`, `${history ? `${history}\n\n` : ''}PLAYER: ${turn.player}`);
+            // Structured narration (narration.ts): beats tied to the numbered results, scenery as result 0, open questions.
+            const N = await import('../src/rules/narration.js'), nDec = Q.decidedResults().length;
+            const raw = await send(`${NARRATOR}\n\n${cast}\n\n${inj}${Q.GUIDED ? `\n\n${N.NARRATION_RULE}` : ''}`, `${history ? `${history}\n\n` : ''}PLAYER: ${turn.player}`, Q.GUIDED ? { schema: N.narrationSchema(nDec) } : {});
+            const nar = N.readNarration(raw);
+            reply = nar ? N.proseOf(nar) : raw;
+            Q.setOpen(nar?.open ?? []);
+            if (nar) { openNote = nar.open?.length ? `open: ${nar.open.join(' | ')}` : ''; }
             const st = ctx.chatMetadata.rulesEngine?.state ?? {};
-            const events = A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(reply, results, (await import('../src/rules/knowledge.js')).knowledgeBlock(st), now === null ? '' : C.formatStoryTime(now)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];
+            // The check reads the beats that tell no result; the beats tied to a result are backed by construction.
+            const checked = nar ? (await import('../src/rules/narration.js')).unbackedText(nar) : reply;
+            const events = !checked.trim() ? [] : A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(checked, results, (await import('../src/rules/knowledge.js')).knowledgeBlock(st), now === null ? '' : C.formatStoryTime(now)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];
             for (const e of events) f.push(`rule check: "${e.quote.slice(0, 120)}" → ${e.tool} (${e.problem ?? 'unbacked'})`);
         } catch (e) { f.push(`narrator or check failed: ${e.message}`); }
         ctx.chat.push({ is_user: false, name: 'Narrator', mes: reply, swipe_id: 0 });
         T.onRulesMessageReceived(ctx.chat.length - 1);
         lastClock = now;
         faults.push(...f.map(x => `${tag} ${x}`));
-        log.push(`=== ${tag}: ${turn.player}\nclock: ${now === null ? 'none' : C.formatStoryTime(now)}\nfaults: ${f.length ? '\n  ' + f.join('\n  ') : 'none'}\n--- calls\n${calls}\n--- reply\n${reply}\n--- planner answers\n${sent.filter(s => /prepare one turn|choose which/.test(s.system)).map(s => s.out.slice(-1200)).join('\n- - -\n')}\n`);
+        log.push(`=== ${tag}: ${turn.player}\nclock: ${now === null ? 'none' : C.formatStoryTime(now)}\nfaults: ${f.length ? '\n  ' + f.join('\n  ') : 'none'}\n--- calls\n${calls}\n--- reply\n${reply}\n${openNote ? `--- ${openNote}\n` : ''}--- planner answers\n${sent.filter(s => /prepare one turn|choose which/.test(s.system)).map(s => s.out.slice(-1200)).join('\n- - -\n')}\n`);
         save();
         console.log(`story ${si + 1} turn ${ti + 1} done (${Math.round((Date.now() - t0) / 1000)} s): ${f.length} fault(s)`);
     }
