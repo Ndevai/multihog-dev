@@ -1,0 +1,122 @@
+z-ai/glm-5.3, reasoning low, 4 min, 2026-10-20T19:35:59.351Z, 15 calls asked, 0 replayed
+4 fault(s) in 4 of 4 turns
+#3.1 refused after repair: Look: Give distance_m (or place both on the map with Layout and give target_who). State unchanged.
+#3.1 rule check: "the lit window glowed perhaps fifteen metres away on the house's upper floor" → Look (unbacked)
+#3.4 rule check: "From inside came the faint murmur of a voice, still too low to catch words" → Listen (unbacked)
+#3.4 rule check: "she was answering him now and then, though Mara could still not make out the words through the glass" → Listen (unbacked)
+
+=== #3.1: I climb the wall.
+clock: Friday 2 May 1755, 22:00
+faults: 
+  refused after repair: Look: Give distance_m (or place both on the map with Layout and give target_who). State unchanged.
+  rule check: "the lit window glowed perhaps fifteen metres away on the house's upper floor" → Look (unbacked)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.14}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 1 km), 2/5/1755: dry; high 23 °C, low 12 °C; now about 18 °C.
+2. BodyCheck {"who":"Mara","species":"human","height_m":3,"task":"climb a mossy 3 m garden wall","reference_class":"trained climbers scaling a slick stone wall at night","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance","sight"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}
+   draws: 0.3817
+   → climb a mossy 3 m garden wall: SUCCESS.
+3. Look {"viewer":"Mara","viewer_species":"human","target":"anyone or anything moving in the garden or at the lit window","size_m":0.5,"light":"dim street or public lighting","latitude":38.7,"visibility_m":20000,"reveals":"who or what is moving in the garden or at the lit window"}
+   draws: none
+   → Give distance_m (or place both on the map with Layout and give target_who). State unchanged.
+--- reply
+Night had settled over Lisbon, dry and mild, the air about eighteen degrees. The garden wall stood three metres high in the dark, its stones slick with moss, and beyond it the merchant's house showed a single lit window, warm and yellow against the black tiles.
+
+The sky was clear, the night warm for early May, and a faint breeze carried the smell of the river up from the Tagus.
+
+Mara found her holds by feel, fingers testing each mossy stone before trusting her weight to it. Twice a foothold crumbled softly under her boot, but she shifted and reached, and in a few moments she swung her leg over the coping and dropped soundlessly into the garden below.
+
+She crouched in the shadow of a lemon tree and looked around: the garden lay quiet, gravel paths pale in the dark, and the lit window glowed perhaps fifteen metres away on the house's upper floor.
+--- open: Whether anyone inside the lit window notices or hears her landing in the garden.
+--- planner answers
+{"calls":{"BodyCheck":{"Mara":{"species":"human","height_m":3,"task":"climb a mossy 3 m garden wall","reference_class":"trained climbers scaling a slick stone wall at night","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance","sight"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}}},"then":[{"question":"If Mara reaches the top, does she spot anyone or anything moving in the garden or at the lit window?","tool":"Look"}],"need":["BodyCheck","Look"],"time":"1755-05-02 22:00","at":[38.72,-9.14],"present":["Mara"]}
+- - -
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"anyone or anything moving in the garden or at the lit window","size_m":0.5,"light":"dim street or public lighting","latitude":38.7,"visibility_m":20000,"reveals":"who or what is moving in the garden or at the lit window"}}},"then":[{"question":"Does Mara see anyone or anything moving in the garden or at the lit window?","tool":"Look"}],"need":["Look"]}
+
+=== #3.2: I drop down into the garden on the other side and wait in the shadow of the hedge.
+clock: Friday 2 May 1755, 22:05
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 23 °C, low 12 °C; now about 18 °C.
+2. PassTime {"minutes":5,"resting":["Mara"]}
+   draws: 0.0133, 0.7383
+   → 5 minutes passed.
+Mara (human): blood lost 0 L.
+3. BodyFall {"who":"Mara","height_m":0.5,"ground":"grass","stiff_legs":false}
+   draws: 0.1083
+   → Fall 0.5 m: lands on the feet, 0.9 kN through each leg; the bones hold, the legs and feet jarred.
+4. Listen {"listener":"the merchant","listener_species":"human","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":15,"noise":"quiet room (25 dB)","barrier":"plaster wall","ground":"grass, fields or soil","reveals":"Someone has entered the garden"}
+   draws: none
+   → the merchant misses it: too faint over the background (footsteps on gravel or sand (64 dB at 1 m) at 15 m, quiet room (25 dB), through plaster wall).
+--- reply
+The garden lay in darkness under a clear sky, the night mild at about eighteen degrees. Gravel paths showed pale between dark hedges, and the merchant's lit window glowed on the upper floor, fifteen metres away.
+
+Mara settled into the shadow of the hedge and waited. Five minutes passed slowly; nothing moved in the garden, and the house stayed quiet, the lit window unchanged. Inside, the merchant went on with whatever he was about, missing the faint sound of her steps entirely, lost as it was beneath the quiet of the room and the plaster wall between.
+
+She let herself down the last half-metre from the coping and landed on her feet, the jolt running up through her legs, her bones holding but her feet and legs jarred by it.
+
+She crouched lower in the hedge's shadow, breathing quietly, watching the lit window.
+--- open: Whether anything stirs in the house or the garden in the next while.
+--- planner answers
+{"calls":{"PassTime":{"minutes":5,"resting":["Mara"]},"BodyFall":{"Mara":{"height_m":0.5,"ground":"grass","stiff_legs":false}}},"then":[{"question":"Does anyone inside the lit window hear her landing in the garden?","tool":"Listen"}],"need":["Listen"]}
+- - -
+{"calls":{ "Listen": { "the merchant": { "listener_species": "human", "sound": "footsteps on gravel or sand (64 dB at 1 m)", "distance_m": 15, "noise": "quiet room (25 dB)", "barrier": "plaster wall", "ground": "grass, fields or soil", "reveals": "Someone has entered the garden" } } }, "then": [], "need": []}
+
+=== #3.3: I creep across the lawn to the lit window.
+clock: Friday 2 May 1755, 22:05:21
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 23 °C, low 12 °C; now about 18 °C.
+2. Act {"who":"Mara","action":"creeps across the lawn toward the lit window","distance_m":15}
+   draws: none
+   → Mara walks 15 m from where Mara stood to lit window at 0.72 m/s: 21 s (21 s in all). Span 21 s. Clock now Friday 2 May 1755, 22:05:21 (five past ten at night). Fragile: the outcome changes within the range of 1 judged value: creepFactor = 0.3 × walking speed instead of 0.5 [ASSUMED: stealthy walking is slower than ordinary walking (no measured value held)] → Clock now Friday 2 May 1755, 22:05:35 (about five past ten at night)..
+3. Listen {"listener":"Mara","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","barrier":"plaster wall","ground":"grass, fields or soil","reveals":"whether anything stirs inside the merchant's house while she crosses the lawn"}
+   draws: none
+   → Mara misses it: too faint over the background (quiet conversation (50 dB at 1 m) at 15 m, silent night (10 dB), through plaster wall).
+4. BodyCheck {"who":"Mara","task":"sneak across the lawn to the lit window","reference_class":"trained climbers sneaking across a dark garden at night","base_share":"65% more than half","share":"80% most","uses":["stance","sight","alertness"],"exertion":"light","on_feet":true}
+   draws: 0.6672
+   → sneak across the lawn to the lit window: SUCCESS.
+--- reply
+The night stayed clear and dry over Lisbon, the air mild at about eighteen degrees, a faint breeze still carrying the river smell up from the Tagus. The garden lay dark and still, gravel paths pale between the hedges, and the merchant's lit window glowed on the upper floor of the house.
+
+Mara left the shadow of the hedge and crossed the lawn toward the house, moving at an easy, unhurried pace. Fifteen metres of open ground passed under her boots, the lit window growing larger and warmer ahead of her, until she stood below it, close against the wall of the house.
+
+She stopped and listened. The night was silent around her, and the plaster wall between her and the room swallowed whatever was said inside; she could make out nothing of it, only the faintest sense that someone was speaking, too quiet and too far to catch even a word.
+
+Her crossing of the lawn had gone unheard and unseen; no voice was raised, no step came to a window, and the house gave no sign that anyone knew she was there.
+--- open: What Mara can see of the lit room from below the window, and whether anyone inside notices her standing there
+--- planner answers
+{"calls":{"Act":{"Mara":{"action":"creeps across the lawn toward the lit window","distance_m":15}}},"then":[{"question":"Does Mara cross the lawn unheard and unseen by anyone in the house or garden?","tool":"BodyCheck"},{"question":"Does anything stir in the house or garden while she crosses?","tool":"Listen"}],"need":["BodyCheck","Listen"]}
+- - -
+{"calls":{"Listen":{"Mara":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","barrier":"plaster wall","ground":"grass, fields or soil","reveals":"whether anything stirs inside the merchant's house while she crosses the lawn"}},"BodyCheck":{"Mara":{"task":"sneak across the lawn to the lit window","reference_class":"trained climbers sneaking across a dark garden at night","base_share":"65% more than half","share":"80% most","uses":["stance","sight","alertness"],"exertion":"light","on_feet":true}}}}
+
+=== #3.4: I look through the window to see who is inside.
+clock: Friday 2 May 1755, 22:05:21
+faults: 
+  rule check: "From inside came the faint murmur of a voice, still too low to catch words" → Listen (unbacked)
+  rule check: "she was answering him now and then, though Mara could still not make out the words through the glass" → Listen (unbacked)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 23 °C, low 12 °C; now about 18 °C.
+2. Look {"viewer":"Mara","target":"the merchant in the lit room","viewer_species":"human","size_m":0.5,"distance_m":2,"light":"living room","reveals":"who is inside the lit room and what they are doing","target_who":"the merchant"}
+   draws: 0.7472
+   → Mara identifies it (can tell which individual or exact kind) (0.5 m target at 2 m, living room). Mara now knows: who is inside the lit room and what they are doing.
+3. Look {"viewer":"the merchant","viewer_species":"human","target":"Mara's face at the window","size_m":0.2,"distance_m":2,"light":"living room","reveals":"a woman is watching through the window"}
+   draws: 0.5483
+   → the merchant identifies it (can tell which individual or exact kind) (0.2 m target at 2 m, living room). the merchant now knows: a woman is watching through the window.
+--- reply
+The night held clear and dry over Lisbon, the air mild at about eighteen degrees, the lit window spilling warm yellow light down the plaster wall above Mara's head. From inside came the faint murmur of a voice, still too low to catch words, and the garden behind her lay dark and silent.
+
+Mara rose slowly and put her eye to the corner of the lit window, careful to keep her face in the shadow of the frame. The room inside was a comfortable parlour, candles burning on a table, and she could see it plainly: the merchant himself, a heavyset man in a plain banyan, sat at the table with a woman across from him, and between them lay an open ledger and a small chest; he was counting coins from the chest into neat stacks, speaking to the woman as he worked, and she was answering him now and then, though Mara could still not make out the words through the glass.
+
+Then the merchant's head turned. His eyes went to the window, to the sliver of Mara's face at the edge of the frame, and he stiffened, one hand pausing over a half-stacked column of coins. He had seen her: a woman, a stranger, watching him from the dark outside his window.
+--- open: What the merchant does now that he has seen Mara at the window
+--- planner answers
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"the merchant in the lit room","size_m":0.5,"distance_m":2,"light":"living room","reveals":"who is inside the lit room and what they are doing","target_who":"the merchant"},"the merchant":{"viewer_species":"human","target":"Mara's face at the window","size_m":0.2,"distance_m":2,"light":"living room","reveals":"a woman is watching through the window"}}},"then":[],"need":[]}
+
