@@ -209,3 +209,24 @@ export function placeIn(text: string, skip: Set<string> = new Set()): Place | nu
     }
     return null;
 }
+
+/** A wet day's rain over the day, in 16 boxes of 1.5 h (00:00–01:30, …): a microcanonical random cascade (Olsson 1998,
+ *  Hydrol Earth Syst Sci 2:19–30), halving the day four times. Each split sends all of a box's rain to its first half
+ *  (P 0.25), all to its second (0.25), or divides it by a uniform weight (0.5) [ASSUMED: Olsson's probabilities vary
+ *  0.1–0.4 by rain volume and position; the middle is taken]. The total is kept exactly. */
+export function rainBoxes(mm: number, rng: () => number): number[] {
+    let boxes = [mm];
+    for (let level = 0; level < 4; level++) boxes = boxes.flatMap(v => {
+        if (v <= 0) return [0, 0];
+        const u = rng(), w = u < 0.25 ? 1 : u < 0.5 ? 0 : rng();
+        return [v * w, v * (1 - w)];
+    });
+    return boxes;
+}
+const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+/** The spells of rain over the day ("06:00–09:00") and the rain in the box holding the minute of day `now`. */
+export function rainNow(boxes: number[], now: number): { spells: string[]; nowMm: number } {
+    const spells: string[] = [];
+    for (let i = 0; i < boxes.length; i++) if (boxes[i] >= 0.05 && !(i > 0 && boxes[i - 1] >= 0.05)) { let j = i; while (j + 1 < boxes.length && boxes[j + 1] >= 0.05) j++; spells.push(`${hhmm(i * 90)}–${j === 15 ? '24:00' : hhmm((j + 1) * 90)}`); }
+    return { spells, nowMm: boxes[Math.min(15, Math.floor(now / 90))] };
+}

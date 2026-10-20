@@ -71,7 +71,7 @@ export function moneyIn(text: string): number | null {
     return found ? total : null;
 }
 /** Pays an amount from the coins someone holds, the fewest coins that cover it, and takes the change back in the largest
- *  coins (the receiver, a trader, is taken to hold change [ASSUMED]). */
+ *  coins the receiver holds. */
 function pay(st: RuleState, from: string, to: string | undefined, pence: number, how: string): string | null {
     const purse = holding(st, from).map(x => ({ x, c: coinOf(x.item) })).filter(y => y.c);
     const coins = purse.flatMap(({ x, c }) => Array.from({ length: x.qty }, () => ({ held: x, d: c![1], name: c![2] }))).sort((p, q) => q.d - p.d);
@@ -82,6 +82,15 @@ function pay(st: RuleState, from: string, to: string | undefined, pence: number,
     for (const c of coins) { if (sum + 1e-9 >= pence) break; used.push(c); sum += c.d; }
     used = used.sort((p, q) => q.d - p.d);
     for (const c of [...used].reverse()) if (sum - c.d + 1e-9 >= pence) { used.splice(used.indexOf(c), 1); sum -= c.d; }
+    // Change comes from the receiver's own coins when their belongings are on record; an unrecorded trader is taken to hold
+    // change [ASSUMED]. Change they cannot make leaves the payment undone: the story decides what follows (the payer waits,
+    // pays exact, or the trader keeps the rest), as a choice or a social response.
+    const owed = Math.round((sum - pence) * 4) / 4;
+    if (owed > 0 && to && st.accounted?.includes(to)) {
+        const till = holding(st, to).flatMap(x => { const c = coinOf(x.item); return c ? Array.from({ length: x.qty }, () => c[1]) : []; }).sort((p, q) => q - p);
+        let left = owed; for (const d of till) if (left + 1e-9 >= d) left = Math.round((left - d) * 4) / 4;
+        if (left > 1e-9) return `${to} has no coins on record to give ${owed} d change for ${used.map(c => c.name).join(', ')}. State unchanged.`;
+    }
     for (const c of used) { c.held.qty -= 1; if (c.held.qty <= 0) holding(st, from).splice(holding(st, from).indexOf(c.held), 1); if (to) give(st, to, c.name); }
     let change = Math.round((sum - pence) * 4) / 4;
     const back: string[] = [];

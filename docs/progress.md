@@ -793,3 +793,18 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Plan: a new `named_as` field gives, for each person new to the story, the kind the words naming them fix (src/rules/kinds.ts NAMED_AS). The keys are the closed person set. The NewCharacter that code adds for a new person takes it, so "the landlady" that code draws is a woman.
 - placeIn: the English lead words (in, near, at…) that guarded GeoNames lookups are removed. Every capitalised name is looked up, except the people the plan lists as present and the cast's names. The model's "at" [lat, lon] stays the first source.
 - Still word-based: scene-people's role nouns, which offer the plan its closed person keys. They only suggest keys; the model's "present" and named_as carry the meaning.
+
+## 2026-10-20 (85) Running, rain by the hour, change from the till, inn beds
+- Act `pace` (walk, creep, run, sprint), chosen by meaning, also per step.
+  - A run goes at 0.45 × the runner's own top speed [ASSUMED runFactor]. Top speed comes from body-engine topSpeedKmh (flying 20 m sprint by sex and age).
+  - A sprint holds top speed for 100 m [ASSUMED sprintHold_m], then runs.
+  - Ned, 30, takes 70 s to walk 100 m and 30 s to run it (3.32 m/s).
+- Weather: a wet day's total is spread over 16 boxes of 1.5 h by a microcanonical random cascade (Olsson 1998, HESS 2:19–30).
+  - Split probabilities are 0.25 / 0.25 / 0.5 with a uniform weight [ASSUMED: Olsson's middle values].
+  - The result names the spells ("06:00–09:00") and whether rain falls now. The hours are fixed by place and date.
+- Change: a receiver whose belongings are on record gives change only from the coins they hold. Otherwise the payment is refused and the story decides what follows. An unrecorded trader still holds change [ASSUMED].
+- Price: "inn bed and supper (night)" at 14 d on the 1851 scale.
+  - Source: Household Words IX (1854) p. 610, "twelvepence or sixteenpence a-piece, though they sleep there", quoting an earlier account [ASSUMED date].
+  - The bed/room/lodging word regex is removed: the planner picks lodging-house or inn by meaning.
+- Blackboard's handover check at both ends is met by construction: Transfer writes both ledger entries in code (possessions.ts give/take). The narration side is the rule check's.
+- Open: age by occupation. The source is the 1841 occupation abstract (Vision of Britain GB1841OCC, under 20 / 20 and over by trade); the fetch needs the user's approval of the URL.

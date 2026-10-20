@@ -91,6 +91,20 @@ if (mi.join() !== '1.5,1.5,30,4,') { miss++; console.log(`MISS moneyIn: ${mi.joi
 const ps = {}; Po.give(ps, 'Tom', 'penny', 2);
 const paid = Po.transfer(ps, { item: 'a penny and a half', from: 'Tom', to: 'the innkeeper', how: 'given' });
 if (!/change halfpenny/.test(paid) || ps.items.Tom[0].item !== 'halfpenny') { miss++; console.log(`MISS change: ${paid}`); }
+// Change from a receiver on record with no coins is refused; an unrecorded trader gives it.
+{ const q = {}; Po.give(q, 'Tom', 'penny', 2); q.accounted = ['the ferryman'];
+  expect('no change from an empty till on record', Po.transfer(q, { item: 'a penny and a half', from: 'Tom', to: 'the ferryman', how: 'given' }), /no coins on record to give/); }
+// Rain over the day: the cascade keeps the day's total, and the hour decides whether it falls now.
+{ const Wx = await import('../src/rules/weather.js'); let seed = 7; const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const b = Wx.rainBoxes(8, rng); expect('cascade keeps the total', String(Math.round(b.reduce((s, x) => s + x, 0) * 1000) / 1000), /^8$/);
+  const n = Wx.rainNow(b, 600); expect('rain spells listed', n.spells.join(','), /\d\d:\d\d–\d\d:\d\d/); }
+// A run is faster than a walk over the same 100 m.
+{ fresh(); await run('NewCharacter', { who: 'Ned', sex: 'male', age: 30 });
+  const walk = String(await run('Act', { level: 'on the level, stairs or a change of posture', who: 'Ned', action: 'walks to the gate', distance_m: 100 }));
+  fresh(); await run('NewCharacter', { who: 'Ned', sex: 'male', age: 30 });
+  const runs = String(await run('Act', { level: 'on the level, stairs or a change of posture', pace: 'run', who: 'Ned', action: 'walks to the gate', distance_m: 100 }));
+  const sec = t => Number(/(\d+(?:\.\d+)?) s\b/.exec(t)?.[1] ?? NaN);
+  if (!(sec(runs) < sec(walk))) { miss++; console.log(`MISS run faster than walk:\n  ${walk}\n  ${runs}`); } }
 // A slip on the level: serious injury at about 1 in 10 at 70, a quarter of that at 30.
 for (const [age, lo, hi] of [[30, 0.005, 0.05], [70, 0.06, 0.14]]) { let n = 0; for (let i = 0; i < 600; i++) { fresh(); ctx.chat[0].mes = `s${age}-${i}`; if (/serious injury, the/.test(String(await run('BodyFall', { who: 'Pyotr', height_m: 0, slip: true, age })))) n++; } if (!(n / 600 >= lo && n / 600 <= hi)) { miss++; console.log(`MISS slip at ${age}: ${n / 600}`); } }
 fresh();
@@ -103,5 +117,5 @@ fresh(); expect('named_as sets the sex', String(await run('NewCharacter', { who:
 fresh(); expect('named_as sets the sex (woman)', String(await run('NewCharacter', { who: 'Madame Roux', named_as: 'a woman' })), /\b(?:woman|girl)\b/);
 fresh(); expect('several people are refused', String(await run('NewCharacter', { who: 'os homens junto ao fogo', named_as: 'several people' })), /draws one person/);
 fresh(); expect('a climb in Act goes to BodyCheck', String(await run('Act', { who: 'Mara', action: 'escala o muro', level: 'a climb, jump or drop' })), /BodyCheck/);
-console.log(`34 checks, ${miss} miss(es)`);
+console.log(`39 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

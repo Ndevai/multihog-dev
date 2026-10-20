@@ -8,6 +8,7 @@
 import { def, k as kc } from './constants.js';
 import { walkSpeedKmh } from './work.js';
 import { walkFromMap } from './map.js';
+import { topSpeedKmh } from './body-engine.js';
 export const TMU_S = 0.036;
 // MTM-1 body motions, TMU: bend, stoop or kneel on one knee 29.0; arise 31.9; kneel on both knees 69.4; arise 76.7; sit
 // 34.7; stand from sitting 43.4; turn body 45–90° (case I) 18.6; sidestep under 30 cm 17.0; walk 15.0 per pace. Hand: reach
@@ -129,9 +130,12 @@ export function act(st, who, p, steps, country) {
             }
             if (known == null && !via && !fromMap)
                 st.links[k] = d;
-            const v = walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2) * (s.pace === 'creep' ? kc('creepFactor') : 1);
-            t = d / v;
-            what = `walks ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : fromMap ? ' (from the map)' : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
+            // A run or a sprint goes at a share of the runner's own top speed (body-engine topSpeedKmh: flying 20 m sprint
+            // times by sex and age); a sprint holds top speed for its first sprintHold_m, then runs.
+            const top = s.pace === 'run' || s.pace === 'sprint' ? topSpeedKmh(p) / 3.6 * crowdFactor(s.crowd_per_m2) : 0;
+            const v = top ? (s.pace === 'sprint' ? top : top * kc('runFactor')) : walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2) * (s.pace === 'creep' ? kc('creepFactor') : 1);
+            t = s.pace === 'sprint' && d > kc('sprintHold_m') ? kc('sprintHold_m') / top + (d - kc('sprintHold_m')) / (top * kc('runFactor')) : d / v;
+            what = `${s.pace === 'run' ? 'runs' : s.pace === 'sprint' ? 'sprints' : s.pace === 'creep' ? 'creeps' : 'walks'} ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : fromMap ? ' (from the map)' : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
             p.at = s.to;
         }
         else if (s.do === 'stairs_up' || s.do === 'stairs_down') {
@@ -210,6 +214,8 @@ export function actTogether(st, actors, country) {
     return { seconds, text: `${lines.join('. ')}. Timeline: ${tl.join('; ')}` };
 }
 def({ id: 'creepFactor', value: 0.5, unit: '× walking speed', status: 'assumed', src: 'stealthy walking is slower than ordinary walking (no measured value held)', range: [0.3, 0.7], file: 'actions.ts' });
+def({ id: 'runFactor', value: 0.45, unit: '× own top speed', status: 'assumed', src: 'a steady run at about 45 % of sprint speed: 11 km/h for a man of 24.8 km/h top speed (no measured share held)', range: [0.35, 0.6], file: 'actions.ts' });
+def({ id: 'sprintHold_m', value: 100, unit: 'm', status: 'assumed', src: 'untrained adults hold top speed for about 100 m before slowing (no measured value held)', range: [60, 200], file: 'actions.ts' });
 // An action written in plain words, as steps: each recognized verb in its order in the text gives the motion it names.
 // Walking verbs need a distance (the one thing words cannot give); the spot walked to is the phrase after onto / into / to /
 // out of, else "outside".

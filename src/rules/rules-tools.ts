@@ -10,7 +10,7 @@ import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './em
 import { skyLight } from './sky.js';
 import { LININGS, MATERIALS, GROUNDS, MATERIAL_NAMES, material, ropeBreakKg, rodBreakKg, plankBreakKg } from './materials.js';
 import type { Way } from './acoustics.js';
-import { findPlace, simulatePlaceYear, hourTemp, placeCountry } from './weather.js';
+import { findPlace, simulatePlaceYear, hourTemp, placeCountry, rainBoxes, rainNow } from './weather.js';
 import { observedDay, cachedDay, reanalysisMissed } from './reanalysis.js';
 import { NORMALS } from './data/wmo-normals.js';
 import type { Place } from './weather.js';
@@ -1193,7 +1193,11 @@ export function registerRulesTools(enabled: boolean): void {
         const { d, date } = w, r = (x: number) => Math.round(x);
         const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
         const o = w.observed, snowy = o ? o.snowCm > 0 : (d.tmaxC + d.tminC) / 2 <= 1.0;
-        const sky = !d.wet ? 'dry' : snowy ? `snow, ${o ? `${Math.round(o.snowCm * 10) / 10} cm` : `${amount} of water`} over the day` : `rain, ${amount} over the day`;
+        // When in the day it falls: the day's total spread over the hours by a rain cascade (weather.ts rainBoxes), fixed for
+        // the place and date so every turn of the day reads the same hours.
+        const wet = d.wet ? rainNow(rainBoxes(d.rainMm, seededRng(`${store().salt}:rain:${place.key}:${date.toDateString()}`)), Math.floor((storyNow(st)! % 1440))) : null;
+        const when = wet ? ` (${wet.spells.join(', ')}); ${wet.nowMm >= 0.05 ? `falling now, ${Math.round(wet.nowMm * 10) / 10} mm this hour and a half` : 'none falling now'}` : '';
+        const sky = !d.wet ? 'dry' : snowy ? `snow, ${o ? `${Math.round(o.snowCm * 10) / 10} cm` : `${amount} of water`} over the day${when}` : `rain, ${amount} over the day${when}`;
         const c = coordsOf(place.key), missed = !o && c && reanalysisMissed(c[0], c[1], date.getFullYear());
         const extra = missed ? ' (generated: the 20th Century Reanalysis was unreachable; is enableCorsProxy on in SillyTavern\'s config.yaml?)' : !o ? '' : o.source === 'ERA5' ? `; wind ${Math.round(o.windMs)} m/s, humidity ${r(o.humidity)} % (the recorded weather of that day, ERA5)` : ' (that day\'s weather as reconstructed from pressure records, 20th Century Reanalysis)';
         return `${place.label}, ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}: ${sky}; high ${r(d.tmaxC)} °C, low ${r(d.tminC)} °C; now about ${r(w.tempC)} °C${extra}.`;
@@ -1797,6 +1801,7 @@ export function registerRulesTools(enabled: boolean): void {
 
     const ACT_EXAMPLE = 'Example: {"who":"Mary","steps":[{"do":"be_at","to":"Mary\'s house: hall"},{"do":"walk_to","to":"street outside Mary\'s house","distance_m":4}]} or {"who":"Mary","action":"steps out onto the street","distance_m":4}.';
     const STEP_ITEM = { type: 'object', properties: {
+            pace: { type: 'string', enum: ['walk', 'creep', 'run', 'sprint'], description: 'With walk_to: the pace. Default walk.' },
             do: { type: 'string', enum: ['be_at', 'walk_to', 'stairs_up', 'stairs_down', 'sit', 'stand', 'bend', 'kneel', 'arise', 'kneel_both', 'arise_both', 'turn', 'sidestep', 'reach', 'grasp', 'release', 'look'] },
             to: str('Spot, named with its place: "John\'s house: living room", "John\'s house: front door", "Rue de Rivoli"'),
             distance_m: { type: 'number', description: 'Walking distance to the spot, m, from the scene\'s layout; needed only the first time' },
@@ -1815,6 +1820,7 @@ export function registerRulesTools(enabled: boolean): void {
         action: { type: 'string', pattern: MOTION_START, description: 'For one actor, the action in plain words, beginning with its motion or posture verb (an alternative to steps) ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m' },
         distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
         level: { type: 'string', enum: ['on the level, stairs or a change of posture', 'a climb, jump or drop'], description: 'By meaning: whether the action climbs, jumps or drops' },
+        pace: { type: 'string', enum: ['walk', 'creep', 'run', 'sprint'], description: 'By meaning: the pace of the walking in the action. Default walk.' },
     }, ['level'], a => run((st, rng) => {
         // Act times walking and posture; a climb is BodyCheck's (with height_m) and a drop BodyFall's.
         if (a.level === 'a climb, jump or drop') return `Act times walking and posture. A climb is decided by BodyCheck with height_m, and a drop by BodyFall from the height the climber stands at. State unchanged.`;
@@ -1823,6 +1829,7 @@ export function registerRulesTools(enabled: boolean): void {
             if ('error' in r) return `${r.error} ${ACT_EXAMPLE} State unchanged.`;
             a = { ...a, steps: r.steps as unknown as typeof a.steps };
         }
+        if (a.pace && Array.isArray(a.steps)) a = { ...a, steps: (a.steps as unknown as Step[]).map(s => s.do === 'walk_to' && !s.pace ? { ...s, pace: a.pace } : s) as unknown as typeof a.steps };
         // An actor listed without steps takes the call's own steps (a model may name the actors and give the steps once).
         // An actor listed without steps takes the call's own steps, or its action in words.
         const words = Array.isArray(a.action) ? (a.action as unknown[]).join(', then ') : a.action ? String(a.action) : '';

@@ -53,6 +53,10 @@ export function poundSilver(pounds: number, year: number): number | null {
 {
     const penny = (POUND.find(x => x[0] === 1851)?.[1] ?? 0) / 240, cpi = CPI_Y.London?.find(x => x[0] === 1851)?.[1];
     if (penny && cpi) GOODS['lodging (night)'] = 2 * penny / cpi;
+    // A bed at an inn, with supper: coach passengers "spend not above twelvepence or sixteenpence a-piece, though they sleep
+    // there" (Household Words IX, 1854, p. 610, quoting an earlier traveller's account); the middle, 14 d, on the 1851 scale
+    // [ASSUMED: the account's date is unstated and its prices are taken as 1851's].
+    if (penny && cpi) GOODS['inn bed and supper (night)'] = 14 * penny / cpi;
 }
 export const GOODS_LIST = Object.keys(GOODS);
 export const TRADES = ['building labourer', 'building craftsman'];
@@ -131,8 +135,6 @@ export function referencePrice(good: string, like?: string): { item: string; rat
     const g = good.toLowerCase().replace(/\b(?:a|an|the|some|pounds?|pints?|lbs?|of|fresh|ripe)\b/g, ' ').replace(/\s+/g, ' ').trim();
     const listed = GOODS_LIST.find(x => x.split(' (')[0] === g || x.split(' (')[0] === g.replace(/s$/, '') || `${x.split(' (')[0]}s` === g);
     if (listed) return { item: listed, ratio: 1, source: 'listed' };
-    // A bed, a room or lodging for the night is the night's lodging.
-    if (/\b(?:bed|room|lodging|lodgings|night'?s? (?:stay|rest))\b/.test(g) && GOODS['lodging (night)'] != null) return { item: 'lodging (night)', ratio: 1, source: 'listed' };
     const forms = [g, `${g}s`, `${g}es`, g.replace(/s$/, ''), g.replace(/es$/, ''), g.replace(/ies$/, 'y'), `${g.replace(/y$/, 'ie')}s`];
     // Fruit and fresh vegetables: priced against apples, the one produce good with a historical series.
     const produce: Record<string, number> = { ...USDA_VEG, ...USDA_FRUIT }, key = forms.find(k => produce[k] != null);
