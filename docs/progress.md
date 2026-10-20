@@ -448,3 +448,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-19 (34) Test runs on GitHub instead of the phone
 
 - Android stopped Termux mid-run again (under a minute after switching apps). .github/workflows/run-stories.yml runs tools/run-story.mjs (or run-play.mjs) on GitHub's machines when a commit on rules-standalone has [run stories] (or [run play]) in its message, or from the Actions tab, and pushes the result files to the branch play-results under results/<run time>/ with the commit they tested. The NVIDIA key is the repository secret NVIDIA_API_KEY, set once in GitHub; it is passed only to the runner. Results are read from that branch, so runs need nothing from the phone.
+
+## 2026-10-20 (35) Saved answers: reruns ask only what changed
+
+- The first GitHub run met NVIDIA's rate limit (429) on turn 1 and tested nothing. Model calls are the bottleneck: one story turn makes 4–6 calls, a full run about 60, and the free key allows a limited number per window. tools/nvidia.mjs now keeps every answer in answers-cache.jsonl, keyed by a SHA-256 of model, effort, system prompt, user prompt and schema (temperature 0, so the same request gets the same answer). A rerun after a fix asks the model only the calls whose prompts the fix changed (a fix in turn 3 replays turns 1–2 at once) and replays the rest. The workflow loads the file from play-results/cache/ before a run and saves it back after; the result header gives "N calls asked, M replayed". EVAL_CACHE=off asks every call again.
+- A 429 waits for the server's Retry-After, else 60 s × the try number.

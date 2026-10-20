@@ -7,7 +7,7 @@
 // Writes story-result-<story numbers>.txt after every turn (the faults first, then each turn with its calls, reply and planner answers),
 // so a run Android stops keeps what it finished; run the remaining story numbers to go on.
 import fs from 'node:fs';
-const { send, MODEL, EFFORT } = await import('./nvidia.mjs');
+const { send, MODEL, EFFORT, cacheCount } = await import('./nvidia.mjs');
 const { ctx } = await import('./st-harness.mjs');
 const Q = await import('../src/rules/question-pass.js');
 const G = (await import('./nvidia.mjs')).GUIDED; Q.setGuided(!!G && G !== 'off');
@@ -51,7 +51,7 @@ const t0 = Date.now();
 // Each run writes its own file, named by its stories, so running the stories one after another keeps every result.
 const OUT = `story-result-${chosen.map(([i]) => i + 1).join('-')}.txt`;
 const total = chosen.reduce((x, [, s]) => x + s.turns.length, 0);
-const save = () => fs.writeFileSync(new URL(`../${OUT}`, import.meta.url), `${MODEL}, reasoning ${EFFORT}, ${Math.round((Date.now() - t0) / 60000)} min, ${new Date().toISOString()}\n${faults.length} fault(s) in ${log.length} of ${total} turns\n${faults.join('\n')}\n\n${log.join('\n')}\n`);
+const save = () => fs.writeFileSync(new URL(`../${OUT}`, import.meta.url), `${MODEL}, reasoning ${EFFORT}, ${Math.round((Date.now() - t0) / 60000)} min, ${new Date().toISOString()}, ${cacheCount.asked} calls asked, ${cacheCount.hit} replayed\n${faults.length} fault(s) in ${log.length} of ${total} turns\n${faults.join('\n')}\n\n${log.join('\n')}\n`);
 let stopped = false;
 for (const [si, story] of chosen) {
     if (stopped) break;

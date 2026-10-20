@@ -2,6 +2,7 @@
 // from SillyTavern's secrets file (any saved key starting with "nvapi-"); it is sent only to the API.
 import fs from 'node:fs';
 import os from 'node:os';
+import crypto from 'node:crypto';
 export const BASE = process.env.EVAL_BASE_URL ?? 'https://integrate.api.nvidia.com/v1';
 export const MODEL = process.env.EVAL_MODEL ?? 'z-ai/glm-5.3';
 export function findKey() {
@@ -30,7 +31,22 @@ const guide = schema => !schema || !GUIDED || GUIDED === 'off' ? {} : GUIDED ===
 // or the whole budget spent thinking) is asked again, and after the last try the call throws with what happened, so a run
 // shows "the model did not answer" instead of turns that silently ran nothing.
 export const TRIES = Number(process.env.EVAL_TRIES ?? 5);
+// Answers are kept in a file, keyed by everything the request sends (temperature 0, so the same request gets the same
+// answer): a rerun after a fix asks the model only the calls whose prompt the fix changed, and replays the rest at once.
+// EVAL_CACHE=off asks every call again.
+export const CACHE = process.env.EVAL_CACHE ?? new URL('../answers-cache.jsonl', import.meta.url).pathname;
+const cache = new Map(), use = CACHE !== 'off';
+if (use && fs.existsSync(CACHE)) for (const line of fs.readFileSync(CACHE, 'utf8').split('\n')) { try { const { h, out } = JSON.parse(line); cache.set(h, out); } catch { /* blank or cut line */ } }
+export const cacheCount = { hit: 0, asked: 0 };
 export async function send(system, user, opts = {}, model = MODEL) {
+    const h = crypto.createHash('sha256').update(JSON.stringify([model, EFFORT, system, user, opts?.schema ?? null])).digest('hex');
+    if (use && cache.has(h)) { cacheCount.hit++; return cache.get(h); }
+    cacheCount.asked++;
+    const out = await ask(system, user, opts, model);
+    if (use) { cache.set(h, out); fs.appendFileSync(CACHE, JSON.stringify({ h, out }) + '\n'); }
+    return out;
+}
+async function ask(system, user, opts, model) {
     let last = '';
     for (let attempt = 1; attempt <= TRIES; attempt++) {
         try {
