@@ -1,0 +1,26 @@
+z-ai/glm-5.3, reasoning low, 3 min, 2026-10-20T12:07:14.451Z, 3 calls asked, 0 replayed
+6 fault(s) in 1 of 12 turns
+#1.1 question pass threw: the model did not answer after 5 tries: empty answer (finish none, 0 characters of thinking)
+#1.1 no tool ran
+#1.1 missing Act
+#1.1 missing Weather
+#1.1 no story clock
+#1.1 rule check: "The evening was warm and close" → Weather (unbacked)
+
+=== #1.1: I step out of my house onto the street.
+clock: none
+faults: 
+  question pass threw: the model did not answer after 5 tries: empty answer (finish none, 0 characters of thinking)
+  no tool ran
+  missing Act
+  missing Weather
+  no story clock
+  rule check: "The evening was warm and close" → Weather (unbacked)
+--- calls
+No question pass this turn.
+--- reply
+Mary pushed open the door of her lodgings and stepped out onto the Whitechapel street. The evening was warm and close, the sky still holding a grey-yellow light over the rooftops. The pavement was busy with Saturday trade winding down: costers calling last prices, a woman hauling a barrow, children darting between legs and skirts. Somewhere off toward Commercial Street a barrel organ ground out a tune.
+--- open: What does Mary do on the street?
+--- planner answers
+
+
