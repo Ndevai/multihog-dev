@@ -75,5 +75,10 @@ const s5 = P.planSchema(new Set(['BodyCheck', 'Look']), { people: ['Mara', 'the 
 check('first round: a climb is the player\'s', Object.keys(s5.properties.calls.properties.BodyCheck.properties).join() === 'Mara' && 'the merchant' in s5.properties.calls.properties.Look.properties, null);
 const s6 = P.planSchema(new Set(['BodyCheck', 'Look']), { people: ['Mara', 'the merchant'], require: ['BodyCheck', 'Look'], used: new Map([['BodyCheck', new Set(['Mara', 'the merchant'])]]) });
 check('a tool with every key used is not required', !s6.properties.calls.required.includes('BodyCheck') && s6.properties.calls.required.includes('Look'), s6.properties.calls.required);
-console.log(`54 checks, ${miss} miss(es)`);
+const s7 = P.planSchema(new Set(['Price']), {});
+check('Price takes an other good with good and like', s7.properties.calls.properties.Price.properties['other good'].required.join() === 'question,good,like', s7.properties.calls.properties.Price.properties['other good'].required);
+const k7 = P.callsFromKeyed({ Price: { 'other good': { question: 'price of goods', good: 'vodka', like: 'wine (litre)', quantity: 0.2 } } });
+check('other good read back with no item', k7[0].args.good === 'vodka' && !('item' in k7[0].args), k7);
+check('places are no people', !SP.scenePeople(['Saint Petersburg, Nevsky Prospect, 2 February 1861.'], ['Pyotr']).some(n => /Petersburg|Prospect/.test(n)), null);
+console.log(`57 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

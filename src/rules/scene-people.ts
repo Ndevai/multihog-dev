@@ -3,6 +3,7 @@
 // fire"). The plan schema lists exactly these as the keys and person values a call can take, so a plan names people and
 // nothing else (a window, a tool's name and a sentence were each taken for a person when keys were free text).
 import { OCCUPATIONS } from './data/census-ew-1881.js';
+import { GEONAMES } from './data/geonames.js';
 
 const PERSON_NOUNS = ['man', 'woman', 'boy', 'girl', 'child', 'lad', 'lass', 'stranger', 'figure', 'person', 'owner', 'occupant', 'guard', 'soldier', 'servant',
     'maid', 'landlord', 'landlady', 'barman', 'barmaid', 'potboy', 'watchman', 'constable', 'policeman', 'sailor', 'priest', 'vicar', 'doctor', 'merchant',
@@ -43,6 +44,9 @@ export function scenePeople(texts: string[], known: string[] = [], max = 24): st
             // A possessive names its owner ("Tom's table" → Tom).
             const n = m[1].trim().replace(/'s$/, ''), before = text.slice(0, m.index).trimEnd();
             const initial = !before || /[.!?:"“]$/.test(before);
+            // A place's name is no person ("Saint Petersburg, Nevsky Prospect": the city and its street climbed out of a sledge).
+            const folded = n.toLowerCase();
+            if (GEONAMES[folded] || /^(?:saint|st|san|santa|sao|new|port|fort|mount|lake|cape|rua|via|rue|calle|piazza|place|nevsky|prospect)\b/i.test(n) || /(?:street|road|lane|prospect|square|bridge|quay|wharf|market|hill|gate|abbey|church|cathedral|palace|castle|hall|house|inn|tavern)$/i.test(n)) continue;
             if (n.split(' ').some(w => STOP.has(w)) || (initial && !n.includes(' '))) continue;
             out.push(n);
         }

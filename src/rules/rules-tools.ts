@@ -1037,6 +1037,7 @@ export function registerRulesTools(enabled: boolean): void {
         // A good outside the list: priced from the listed good it is most like, the same way each time it is asked (kept in
         // the story: the first answer stands).
         let ref: { item: string; ratio: number; source: string } | null = null;
+        if (a.good && referencePrice(String(a.good))?.source !== 'listed') a = { ...a, item: undefined };
         if (!a.item && a.good) {
             const kept = (st as { goodsRef?: Record<string, { item: string; ratio: number; source: string }> }).goodsRef ??= {};
             const k = String(a.good).toLowerCase().trim();
@@ -1262,7 +1263,11 @@ export function registerRulesTools(enabled: boolean): void {
         share: { type: 'string', enum: SHARES, description: 'Your estimate for this claim given everything the story has established so far.' },
         path: { type: 'array', maxItems: 6, items: { type: 'object', properties: { step: str('One event the claim needs, in the order it would happen'), reference_class: str('The cases this step belongs to, given the steps before it'), base_share: { type: 'string', enum: SHARES }, share: { type: 'string', enum: SHARES } }, required: ['step', 'reference_class', 'base_share', 'share'] },
             description: 'For a claim whose base share is "almost no one": the events it needs, in order, each given the ones before (arrive in the country, reach the place, stay there). Required then.' },
+        against_interest: { type: 'boolean', description: 'The claim harms the claimer (a slip, a fall, a fever, a loss): true' },
     }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
+        // A player's statement against their own character's interest (a slip, a fever, a loss) stands: it gains them nothing a
+        // draw would guard against. The tools that decide its effects (BodyFall, Sickness) still decide those.
+        if (a.against_interest && a.in_world !== false && (a.kind === 'something happening to the character now' || a.kind === 'something that happened before')) return `${a.claim}: holds (stated against the character's own interest). Recorded.`;
         if (a.kind === 'something the character has') account(st, a.who);
         // A thing not yet invented at the story's date, or never made in this world, cannot be had (world-log.ts).
         const y = storyYear(st);

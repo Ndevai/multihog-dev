@@ -703,3 +703,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   2. zero results contradicted;
   3. at most one unbacked event per twelve turns.
   The narrator is a language model and will draft some invention; the system's job is that the check catches it and the rewrite removes it before the player reads it. Faults the check itself misses are found by reading the turns, as each run so far has been read.
+
+## 2026-10-20 (71) Nine stories, first drafts: 35 faults in 36 turns; three causes closed
+
+- Run of dadbb7f (results/run-39489757985; first drafts, before entry 70's rewrite): 35 faults in 36 turns. Stories 1–3: 4. Stories 4–9: 31 (story 8: 14, story 6: 7, story 4: 5, story 7: 0). The new stories exposed:
+  - Place names as people: "Saint Petersburg" climbed down from the sledge (BodyCheck) and "Prospect" (Nevsky Prospect) slipped on the ice (BodyFall). Capitalized words in the scenario became person keys. scenePeople now drops a name GeoNames lists as a place, a name led by a place word (Saint, San, New, Port, Rua, Rue…), and a name ending in a place noun (Street, Prospect, Square, Bridge, Inn…).
+  - Goods outside the list could not be keyed. Price's keys were the listed goods only, so vodka and a bed for the night were keyed under apples and priced as apples (the item beat the good). Price's keys now include "other good", which requires good and like, and a good outside the list wins over a stray item.
+  - The player's own misfortunes were drawn as claims: "I slip on the ice and fall" and "I wake with a fever" came back false. Claim takes against_interest. A misfortune of the claimer's own, happening now or before, holds without a draw (a statement against one's interest gains nothing a draw guards against). The tools that decide its effects still decide them.
+- `npm test`: 164 checks, 0 misses.

@@ -37,7 +37,7 @@ export function callsFromKeyed(calls) {
             if (!args || typeof args !== 'object' || Array.isArray(args))
                 continue;
             const questions = tool === 'Price' ? REGISTRY.get('Price')?.properties.question?.enum ?? [] : [];
-            out.push({ tool, args: tool === 'Price' && questions.includes(subject) ? { question: subject, ...args } : { [key]: subject, ...args } });
+            out.push({ tool, args: tool === 'Price' && subject === 'other good' ? { ...args } : tool === 'Price' && questions.includes(subject) ? { question: subject, ...args } : { [key]: subject, ...args } });
         }
     }
     return out;
@@ -76,8 +76,9 @@ export function planSchema(only, opts = {}) {
             require.delete(t.name);
         // A subject with a fixed list (Price's goods) takes those keys only.
         const listed = t.properties[key]?.enum;
+        // Price also takes "other good": a good outside the list, with good and like (vodka was keyed under apples for want of it).
         if (listed?.length)
-            return { type: 'object', properties: Object.fromEntries(listed.filter(v => !used.has(v)).map(v => [v, args])), additionalProperties: false, maxProperties: 6, ...min };
+            return { type: 'object', properties: { ...Object.fromEntries(listed.filter(v => !used.has(v)).map(v => [v, args])), ...t.name === 'Price' ? { 'other good': { ...args, required: [...args.required, 'good', 'like'] } } : {} }, additionalProperties: false, maxProperties: 6, ...min };
         // Bounded: under constrained decoding a model can repeat one call until the token limit cuts the JSON.
         // The scene's people (scene-people.ts) are the keys a person-keyed tool takes; NewCharacter also takes a new one. The
         // endpoint refuses propertyNames (tools/probe-schema.mjs: HTTP 400), so the closed set is written as fixed properties.

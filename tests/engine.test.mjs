@@ -68,5 +68,8 @@ if (!(york && Math.abs(york.lat - 53.96) < 0.05 && /United Kingdom/.test(york.co
 if (W.placeIn("Mary (the player's character) walks home.", new Set()) !== null) { miss++; console.log('MISS Mary is no place'); }
 const pot = Pr.referencePrice('potatoes'), len = Pr.referencePrice('lentils');
 if (!(pot?.item === 'apples (kg)' && Math.abs(pot.ratio - 0.4952) < 0.01 && len?.item === 'beans or peas (litre)')) { miss++; console.log(`MISS vegetables: ${JSON.stringify([pot, len])}`); }
-console.log(`14 checks, ${miss} miss(es)`);
+fresh();
+expect('a misfortune stated against interest stands', String(await run('Claim', { who: 'Pyotr', claim: 'Pyotr slips on the ice and falls', kind: 'something happening to the character now', in_world: true, base_share: '20% few', share: '20% few', against_interest: true })), /holds \(stated against/);
+expect('a good outside the list beats a stray item', String(await run('Price', { question: 'price of goods', item: 'apples (kg)', good: 'oysters', like: 'meat (kg)', quantity: 1, city: 'London', year: 1888 })), /of oysters/);
+console.log(`16 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
