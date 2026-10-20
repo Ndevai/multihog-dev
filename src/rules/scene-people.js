@@ -40,7 +40,8 @@ export function scenePeople(texts, known = [], max = 24) {
         // Names: capitalized words inside a sentence, not after a word that leads a place ("in London", "on Wentworth Street").
         // At a sentence's start only a full name counts ("Josiah Crake laughed"); one capitalized word there is any word.
         for (const m of text.matchAll(/(?<!\b(?:in|on|at|to|from|near|of|by|into|toward|towards)\s)\b([A-Z][a-z'-]+(?: [A-Z][a-z'-]+)?)\b/g)) {
-            const n = m[1].trim(), before = text.slice(0, m.index).trimEnd();
+            // A possessive names its owner ("Tom's table" → Tom).
+            const n = m[1].trim().replace(/'s$/, ''), before = text.slice(0, m.index).trimEnd();
             const initial = !before || /[.!?:"“]$/.test(before);
             if (n.split(' ').some(w => STOP.has(w)) || (initial && !n.includes(' ')))
                 continue;

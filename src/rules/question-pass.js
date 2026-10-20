@@ -11,7 +11,7 @@ import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
 import { planSchema, callsFromKeyed, PERSON_KEY, subjectOf } from './plan-schema.js';
 import { routedTools, movesIn, ALWAYS } from './router.js';
-import { framedCalls, playerName, mergeCalls } from './frame.js';
+import { framedCalls, playerName, mergeCalls, sameSubject } from './frame.js';
 import { scenePeople } from './scene-people.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
@@ -336,7 +336,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && movesIn(said);
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
         // A scene tool code drafted (Communicate) that the plan left out still needs the scene's numbers.
-        const sceneOpen = drafts.filter(d => !valid.some(c => c.tool === d.tool));
+        const sceneOpen = drafts.filter(d => !valid.some(c => sameSubject(d, c)));
         if (unread || dropped.length || noPlace || motion || sceneOpen.length) {
             const problems = [unread ? 'Write the plan as the JSON {"calls":{...}}.' : '',
                 ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${!REGISTRY.has(c.tool) ? 'unknown tool' : badPeople(c).length ? `${badPeople(c).join(', ')} takes a person's name or role, as in "Mara" or "the innkeeper"` : `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}`}.`),

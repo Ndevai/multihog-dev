@@ -103,6 +103,8 @@ export function framedCalls(text, player) {
 }
 /** The planner's calls with code's words filled in: a planner call of a scene tool by the same person takes code's arguments
  *  it left out and replaces code's call; code's call stands when the planner gave none (and runs only once complete). */
+/** Whether a planner call is by the same person as code's draft of that scene tool. */
+export const sameSubject = (c, p) => c.tool === p.tool && SCENE_TOOLS.has(c.tool) && (p.args[SCENE_TOOLS.get(c.tool)] ?? c.args[SCENE_TOOLS.get(c.tool)]) === c.args[SCENE_TOOLS.get(c.tool)];
 export function mergeCalls(code, planned) {
     const same = (c, p) => c.tool === p.tool && SCENE_TOOLS.has(c.tool) && (p.args[SCENE_TOOLS.get(c.tool)] ?? c.args[SCENE_TOOLS.get(c.tool)]) === c.args[SCENE_TOOLS.get(c.tool)];
     const out = planned.map(p => { const c = code.find(x => same(x, p)); return c ? { tool: p.tool, args: { ...c.args, ...p.args } } : p; });

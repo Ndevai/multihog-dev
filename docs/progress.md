@@ -594,3 +594,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Requiring Communicate's message (entry 52) made the model fill it with "placeholder" and "(the first man's whispered remark…)". Words the reply does not quote are the tool's own case (it answers with the tone carried), so message is optional again.
 - Still open from this run: the payment for the apples. Price has no apples, so the model rolled a price and wrote "That'll be X pence". This needs a price source for fruit.
 - `npm test`: 138 checks, 0 misses.
+
+## 2026-10-20 (54) Run of 5b1c294: 3 faults; possessives and the drafted speech
+
+- Run of 5b1c294 (results/2026-10-20T17-09): 41 calls, 3 faults reported, the fewest yet. Actions came back whole ("steps out of her house onto the street"), every person kept one draw, and Mara's drop ran from the top of a climbed wall. Read from the turns:
+  - "Tom's" became a speaker key: the name reader kept the possessive ("Tom's mug"). A possessive now names its owner.
+  - Tom's drafted Communicate ("what I heard", 1 m, quiet room) stood beside the planner's own, written under "Tom's", and the repair round counted that as covered because it checked the tool only. Drafts are now matched to planner calls by tool and person (sameSubject), as mergeCalls does.
+  - Open: apples (no source found: London agricultural price series cover grain, potatoes, hay, butter and meat; Solar & Klovland 2011).
+- `npm test`: 139 checks, 0 misses. First run of the three parallel story jobs follows.

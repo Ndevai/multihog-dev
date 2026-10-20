@@ -64,5 +64,6 @@ check('Act action pattern takes motions', mre.test('creeps across the lawn') && 
 const full = s => new RegExp(`^(?:${actArgs.pattern})$`).test(s);
 check('the pattern takes the whole action as the grammar matches it', full('steps out of her house onto the street') && full('creeps across the lawn, keeping low') && full('sits'), null);
 check('Act action pattern leaves out watching and dropping', !mre.test('watches from the lit window') && !mre.test('drops down into the garden') && !mre.test('climbs the wall'), null);
-console.log(`49 checks, ${miss} miss(es)`);
+check("a possessive names its owner", SP.scenePeople(["The innkeeper looked at Tom's mug."], []).every(n => !/'s$/.test(n)), SP.scenePeople(["The innkeeper looked at Tom's mug."], []));
+console.log(`50 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
