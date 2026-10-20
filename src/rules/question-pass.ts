@@ -293,7 +293,11 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
             + (drafts.length ? `\n\nCODE READ FROM THE PLAYER'S WORDS (call these with the scene's numbers added: distance_m, noise, barrier)\n${drafts.map(c => `- ${c.tool} ${JSON.stringify(c.args)}`).join('\n')}` : '');
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only) + already, thingsBlock(found)].filter(Boolean).join('\n\n');
         const skipPlanner = !!routed && left!.length === 0 && framed.calls.length > 0;
+        // A scene tool code drafted is written by the plan: its schema requires a call of it (the planner left Mary's words
+        // to the costermonger at their defaults, 1 m in a quiet room, on a busy street).
+        planTools.require = [...new Set(drafts.map(d => d.tool))];
         const lastPlanText = skipPlanner ? '{"calls":{}}' : String(await send(QUESTION_SYSTEM, prompt) ?? '');
+        planTools.require = [];
         const plan = hoist(rawPlan(lastPlanText));
         plan.calls = plan.calls.filter(c => !framed.covered.has(c.tool));
         setRead(await resolveRead(found, plan, choose));
@@ -330,7 +334,9 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
                 noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : '',
                 motion ? `The player's message moves their character ("${said.slice(0, 120)}"): add Act with action and distance_m from the scene.` : '',
                 ...sceneOpen.map(d => `${d.tool} ${JSON.stringify(d.args)}: call it with ${[...REGISTRY.get(d.tool)!.required.filter(k => d.args[k] === undefined), 'noise', 'barrier'].join(', ')} from the scene${d.tool === 'Communicate' ? ', and effort when the scene sets how loud the words are' : ''}.`)].filter(Boolean);
+            planTools.require = [...new Set(sceneOpen.map(d => d.tool))];
             const fix = hoist(rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`)));
+            planTools.require = [];
             if (fix.at && !scenePosition()) setScenePosition(fix.at[0], fix.at[1]);
             if (fix.time && storyTime() === null) { time = parseStoryTime(fix.time); if (time !== null) setStoryTime(time); }
             // The answer replaces only what was asked: every call when the plan was unreadable, the dropped tools' calls otherwise

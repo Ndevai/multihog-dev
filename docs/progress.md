@@ -602,3 +602,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Tom's drafted Communicate ("what I heard", 1 m, quiet room) stood beside the planner's own, written under "Tom's", and the repair round counted that as covered because it checked the tool only. Drafts are now matched to planner calls by tool and person (sameSubject), as mergeCalls does.
   - Open: apples (no source found: London agricultural price series cover grain, potatoes, hay, butter and meat; Solar & Klovland 2011).
 - `npm test`: 139 checks, 0 misses. First run of the three parallel story jobs follows.
+
+## 2026-10-20 (55) Drafted scene calls required in the plan's schema
+
+- Story 1 of run 9015910 (results/run-39463869624, parallel jobs; 3 min, 5 of 12 calls replayed): 1 fault (apples' price). Mary's words to the costermonger kept the tool's defaults (1 m, quiet room) on a busy street: the planner wrote no Communicate for her, and nothing made it write one. The first plan's schema now requires a call of each scene tool code drafted (minProperties 1 under that tool), and so does the repair round's schema for the drafts still open.
