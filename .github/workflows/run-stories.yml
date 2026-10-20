@@ -15,7 +15,7 @@ permissions:
 concurrency: { group: stories, cancel-in-progress: false }
 jobs:
   run:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run stories]') || contains(github.event.head_commit.message, '[run play]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run stories]') || contains(github.event.head_commit.message, '[run play]') || contains(github.event.head_commit.message, '[run probe]')
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
@@ -27,7 +27,7 @@ jobs:
       - name: Play
         env:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY || secrets.KEY }}
-          RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || 'run-story') }}
+          RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || contains(github.event.head_commit.message, '[run probe]') && 'probe-schema' || 'run-story') }}
           ARGS: ${{ inputs.args || '' }}
         run: node tools/$RUNNER.mjs $ARGS 2>&1 | grep -v '^\[Rules engine\]' | tail -60
       - name: Save results to play-results
@@ -38,7 +38,7 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           RUN=$(date -u +%Y-%m-%dT%H-%M)
-          mkdir -p /tmp/out && cd "$GITHUB_WORKSPACE" && cp story-result-*.txt play-result.txt /tmp/out/ 2>/dev/null || true
+          mkdir -p /tmp/out && cd "$GITHUB_WORKSPACE" && cp story-result-*.txt play-result.txt probe-result.txt /tmp/out/ 2>/dev/null || true
           ls /tmp/out | grep -q . || exit 0
           cd /tmp
           if git clone -q --depth 1 --branch play-results "https://x-access-token:${GH_TOKEN}@github.com/${REPO}" res; then cd res; else
