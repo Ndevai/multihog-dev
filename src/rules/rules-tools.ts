@@ -27,6 +27,7 @@ import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, statu
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, MOTION_START, type Step } from './actions.js';
 import { GIVEN_NAMES } from './data/given-names.js';
+import { TITLE } from './frame.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING, type Room } from './rooms.js';
 import { formatStoryTime, spokenTime } from './clock.js';
@@ -1641,7 +1642,11 @@ export function registerRulesTools(enabled: boolean): void {
         if (young && !a.sex) a = { ...a, sex: /girl|maid|lass/.test(young) ? 'female' : 'male' };
         // A given name sets the sex by the share of girls among the births it was given to (SSA 1880–2008; data/given-names.ts):
         // a draw against that share, so "Josiah Crake" is a man and "Leslie" a woman 54 % of the time.
-        const given = /^([A-Z][a-z]+)\b/.exec(String(a.who))?.[1]?.toLowerCase(), share = given ? GIVEN_NAMES[given] : undefined;
+        // A title sets the sex outright (Mr, Monsieur, Herr, Senhor, Don, Sir, Lord, Father, Brother: a man; Mrs, Miss, Madame,
+        // Frau, Senhora, Dona, Lady, Sister, Mother: a woman).
+        const title = /^(Mr|Mister|Master|Monsieur|M|Herr|Senhor|Señor|Signor|Don|Sir|Lord|Father|Brother|Mrs|Ms|Miss|Mistress|Madam|Madame|Mme|Mademoiselle|Frau|Fräulein|Senhora|Señora|Signora|Dona|Doña|Lady|Sister|Mother)\.?\s/.exec(String(a.who))?.[1];
+        if (!a.sex && title) a = { ...a, sex: /^(Mr|Mister|Master|Monsieur|M|Herr|Senhor|Señor|Signor|Don|Sir|Lord|Father|Brother)$/.test(title) ? 'male' : 'female', min_age: Math.max(16, Number(a.min_age) || 0) };
+        const given = /^([A-Z][a-z]+)\b/.exec(String(a.who).replace(new RegExp(String.raw`^${TITLE}\s+`), ''))?.[1]?.toLowerCase(), share = given ? GIVEN_NAMES[given] : undefined;
         if (!a.sex && share != null) a = { ...a, sex: rng() < share ? 'female' : 'male' };
         // A role noun that names a woman: maid- words, -ess (hostess, seamstress), wife, widow, landlady, mistress.
         if (!a.sex && /\b(?:maid\w*|\w+ess|\w*wife|widow|landlady|lady|mistress|nun|matron)\b/i.test(`${a.who} ${a.occupation ?? ''}`) && !/\b(?:process|business|address|access)\b/i.test(`${a.who} ${a.occupation ?? ''}`)) a = { ...a, sex: 'female' };

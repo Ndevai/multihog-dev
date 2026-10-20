@@ -10,7 +10,9 @@ import { referencePrice } from './prices.js';
 export type Call = { tool: string; args: Record<string, unknown> };
 const PRONOUN = /^(?:him|her|them|it)$/i;
 // A person named after a verb or preposition: "the innkeeper", "Will", "the old man".
-const PERSON = String.raw`((?:the |an? )?(?:[a-z]+ ){0,2}?[a-z]+|[A-Z][a-z]+)`;
+// A title belongs to the name it leads ("Mr. Abbott", "Monsieur Dufour", "Senhor Abreu"); its full stop ends no sentence.
+export const TITLE = String.raw`(?:Mr|Mrs|Ms|Miss|Dr|Mister|Master|Mistress|Madam|Madame|Mme|Mademoiselle|Monsieur|M|Herr|Frau|Fräulein|Senhor|Senhora|Señor|Señora|Signor|Signora|Don|Dona|Doña|Sir|Lady|Lord|Captain|Father|Sister|Brother|Mother)\.?`;
+const PERSON = String.raw`((?:the |an? )?(?:[a-z]+ ){0,2}?[a-z]+|(?:${TITLE} )?[A-Z][a-z]+(?: [A-Z][a-z]+)?)`;
 const ROLE = /^(?:the |an? )?(?:old |young |little |tall |fat |thin )?[a-z]+$/i;
 
 /** The last person the message names before position i (for "him" / "her"): a phrase after a word that takes a person
@@ -22,7 +24,9 @@ function lastNamed(text: string, before: number): string | null {
         const p = m[1].replace(STOP, '');
         if (!/\b(?:street|market|house|home|table|fire|door|window|wall|garden|lawn|hedge|room|way|corner|side|be|go|see|get|stop|me|you|him|her|them)$/.test(p)) found.push({ at: m.index!, p: p.startsWith('the ') ? p : `the ${p}` });
     }
-    for (const m of head.matchAll(/(?<![.!?]\s|^)\b([A-Z][a-z]+)\b/g)) if (!/^(?:I|The|A|An|My)$/.test(m[1])) found.push({ at: m.index!, p: m[1] });
+    for (const m of head.matchAll(new RegExp(String.raw`\b(${TITLE}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)`, 'g'))) found.push({ at: m.index!, p: m[1].replace(/\s+/g, ' ') });
+    const bare = head.replace(new RegExp(String.raw`\b${TITLE}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?`, 'g'), x => ' '.repeat(x.length));
+    for (const m of bare.matchAll(/(?<![.!?]\s|^)\b([A-Z][a-z]+)\b/g)) if (!/^(?:I|The|A|An|My)$/.test(m[1])) found.push({ at: m.index!, p: m[1] });
     return found.sort((x, y) => x.at - y.at).pop()?.p ?? null;
 }
 const clean = (p: string) => p.replace(/^(?:an? )/i, 'the ').trim();
@@ -30,14 +34,14 @@ const clean = (p: string) => p.replace(/^(?:an? )/i, 'the ').trim();
 /** Communicate: speaker the player, listener the person spoken to, the words said, how loud the verb says. */
 function speech(text: string, player: string): Call | null {
     const quoted = text.match(/["“]([^"”]{2,})["”]/)?.[1];
-    const verb = text.match(/\b(whisper|murmur|mutter|say|said|tell|told|ask|asked|call|called|shout|shouted|yell|yelled|scream|screamed|bellow|bellowed|cry|cried|greet|greeted|reply|replied|answer|answered|talk|talked|speak|spoke|chat|chatted)s?\b/i);
+    const verb = text.match(/\b(whisper|murmur|mutter|say|said|tell|told|ask|asked|call|called|shout|shouted|yell|yelled|scream|screamed|bellow|bellowed|cry|cried|greet|greeted|reply|replied|answer|answered|talk|talked|speak|spoke|chat|chatted|beg|begged|plead|pleaded|implore|implored|urge|urged|promise|promised|thank|thanked|warn|warned|order|ordered|command|commanded)s?\b/i);
     if (!verb && !quoted) return null;
     const at = verb?.index ?? 0, rest = text.slice(at + (verb?.[0].length ?? 0));
     let listener = rest.match(new RegExp(String.raw`^\s+(?:out\s+)?(?:to|at|with)\s+${PERSON}`, 'i'))?.[1]
-        ?? (/^(?:tell|told|ask|asked|greet|greeted|answer|answered)/i.test(verb?.[1] ?? '') ? rest.match(new RegExp(String.raw`^\s+${PERSON}`))?.[1] : undefined)
+        ?? (/^(?:tell|told|ask|asked|greet|greeted|answer|answered|beg|begged|implore|implored|urge|urged|promise|promised|thank|thanked|warn|warned|order|ordered|command|commanded)/i.test(verb?.[1] ?? '') ? rest.match(new RegExp(String.raw`^\s+${PERSON}`))?.[1] : undefined)
         ?? text.match(new RegExp(String.raw`\b(?:to|at)\s+${PERSON}\s*[.!?]?\s*$`))?.[1];
     if (listener && PRONOUN.test(listener.split(' ').pop()!)) listener = lastNamed(text, at) ?? undefined;
-    if (!listener || !(ROLE.test(listener) || /^[A-Z][a-z]+$/.test(listener))) return null;
+    if (!listener || !(ROLE.test(listener) || new RegExp(String.raw`^(?:${TITLE} )?[A-Z][a-z]+(?: [A-Z][a-z]+)?$`).test(listener))) return null;
     listener = listener.split(/ (?:for|about|what|that|to|and)\b/)[0];
     const v = (verb?.[1] ?? '').toLowerCase();
     const effort = /^(whisper|murmur|mutter)/.test(v) ? 'whisper' : /^(shout|yell|scream|bellow)/.test(v) ? 'shout' : /^(call|cr)/.test(v) ? 'loud' : 'normal';

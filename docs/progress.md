@@ -753,3 +753,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - BodyTreat with no wound named returned "No wound NaN". It now takes the one open wound when there is one, lists the open wounds when there are several, and answers "the body holds no wound on record to treat" when there are none.
   - "Jack's knuckles are bleeding" was judged false. A claim whose words state harm to the claimer (bleeding, hurt, broken, a sprain, a fever, a cough, a fall, a slip, a loss) is taken as against their interest and holds (entry 71).
 - `npm test`: 178 checks, 0 misses.
+
+## 2026-10-20 (80) A title belongs to its name
+
+- Story 9 (Boston 1846): "Mr. Abbott" became a person called "Mr", drawn as a girl of 0, because the full stop after the title ended the name. A title and the name it leads are now one person in the scene's people, in code-written calls and in the person keys (frame.ts TITLE: Mr, Mrs, Miss, Dr, Monsieur, Madame, Herr, Frau, Senhor, Senhora, Señor, Signor, Don, Dona, Sir, Lady, Lord, Captain, Father, Sister, Brother, Mother…). A title sets the sex, and an age of 16 or more [ASSUMED]. Speech verbs that address a person (beg, plead, implore, urge, promise, thank, warn, order, command) now name their listener ("I beg Monsieur Dufour…" → listener Monsieur Dufour).
+- `npm test`: 184 checks, 0 misses.

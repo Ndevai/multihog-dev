@@ -26,6 +26,8 @@ const CASES = [
     ['I eat the bread.', 'Ann', [], ['Price']],
     ['I buy a pound of pears.', 'Ann', [['Price', { good: 'pears', quantity: 0.454 }]], []],
     ['I punch the sailor in the jaw.', 'Jack', [['BodyStrike', { attacker: 'Jack', who: 'the sailor', attack: 'punch', part: 'head' }]], []],
+    ["I hold Mr. Abbott's hand and tell him not to be afraid.", 'Ellen', [['Communicate', { listener: 'Mr. Abbott', message: 'not to be afraid' }]], []],
+    ['I beg Monsieur Dufour to give me one more week to pay.', 'Clara', [['Communicate', { listener: 'Monsieur Dufour' }]], []],
     ['I stand up and walk 5 m to the door.', 'Ann', [['Act', { distance_m: 5 }]], []],
     ['Two men at the next table are whispering. I keep still and listen.', 'Tom', [['Listen', { listener: 'Tom' }]], []],
     ['I go to the innkeeper and tell him what I heard.', 'Tom', [], ['Listen']],

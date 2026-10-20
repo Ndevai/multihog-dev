@@ -49,7 +49,7 @@ export function callsFromKeyed(calls) {
 /** A person as a call names them: a name as the story writes it ("Mara", "Will Doyle") or a role ("the innkeeper", "the man by
  *  the fire"): capitalized words, or "the" and up to four lower-case words. The people the story already holds are listed as
  *  fixed keys in the schema, so their names are written as stored. */
-export const PERSON_KEY = "^(?:[A-Z][A-Za-z'-]*(?: [A-Z][A-Za-z'-]*){0,2}|the(?: [a-z0-9'-]+){1,4})$";
+export const PERSON_KEY = "^(?:[A-Z][A-Za-z'-]*\\.?(?: [A-Z][A-Za-z'-]*){0,2}|the(?: [a-z0-9'-]+){1,4})$";
 const PERSON_ARGS = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker']);
 const PERSON_VALUE = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker', 'pursuer', 'fleeing', 'target_who', 'requester_name']);
 /** The plan: one entry per tool (of the named tools, all when none named), each holding one call per subject; follow-on

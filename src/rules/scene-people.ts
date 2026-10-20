@@ -4,6 +4,7 @@
 // nothing else (a window, a tool's name and a sentence were each taken for a person when keys were free text).
 import { OCCUPATIONS } from './data/census-ew-1881.js';
 import { GEONAMES } from './data/geonames.js';
+import { TITLE } from './frame.js';
 
 const PERSON_NOUNS = ['man', 'woman', 'boy', 'girl', 'child', 'lad', 'lass', 'stranger', 'figure', 'person', 'owner', 'occupant', 'guard', 'soldier', 'servant',
     'maid', 'landlord', 'landlady', 'barman', 'barmaid', 'potboy', 'watchman', 'constable', 'policeman', 'sailor', 'priest', 'vicar', 'doctor', 'merchant',
@@ -40,9 +41,12 @@ export function scenePeople(texts: string[], known: string[] = [], max = 24): st
         }
         // Names: capitalized words inside a sentence, not after a word that leads a place ("in London", "on Wentworth Street").
         // At a sentence's start only a full name counts ("Josiah Crake laughed"); one capitalized word there is any word.
-        for (const m of text.matchAll(/(?<!\b(?:in|on|at|to|from|near|of|by|into|toward|towards)\s)\b([A-Z][a-z'-]+(?: [A-Z][a-z'-]+)?)\b/g)) {
+        // A title and the name it leads are one person ("Mr. Abbott", "Senhor Abreu"); its full stop ends no sentence.
+        for (const m of text.matchAll(new RegExp(String.raw`\b(${TITLE}\s+[A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+)?)`, 'g'))) out.push(m[1].replace(/\s+/g, ' ').replace(/'s$/, ''));
+        const untitled = text.replace(new RegExp(String.raw`\b${TITLE}\s+[A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+)?`, 'g'), m => m.replace(/[A-Za-z.'-]/g, ' '));
+        for (const m of untitled.matchAll(/(?<!\b(?:in|on|at|to|from|near|of|by|into|toward|towards)\s)\b([A-Z][a-z'-]+(?: [A-Z][a-z'-]+)?)\b/g)) {
             // A possessive names its owner ("Tom's table" → Tom).
-            const n = m[1].trim().replace(/'s$/, ''), before = text.slice(0, m.index).trimEnd();
+            const n = m[1].trim().replace(/'s$/, ''), before = untitled.slice(0, m.index).trimEnd();
             const initial = !before || /[.!?:"“]$/.test(before);
             // A place's name is no person ("Saint Petersburg, Nevsky Prospect": the city and its street climbed out of a sledge).
             const folded = n.toLowerCase();

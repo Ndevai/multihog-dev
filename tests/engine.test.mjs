@@ -97,5 +97,7 @@ expect('getting up after a slip is timed', String(await run('Act', { who: 'Pyotr
 fresh();
 expect('harm in the words stands', String(await run('Claim', { who: 'Jack', claim: "Jack's knuckles are bleeding from the punch", kind: 'something happening to the character now', in_world: true, base_share: '50% half', share: '5% almost no one' })), /holds \(stated against/);
 expect('treating no wound', String(await run('BodyTreat', { who: 'Jack', treatment: 'stop_bleeding', training: 'untrained' })), /holds no wound on record/);
-console.log(`28 checks, ${miss} miss(es)`);
+fresh(); expect('a title sets the sex', String(await run('NewCharacter', { who: 'Mr. Abbott' })), /\b(?:man|boy)\b/);
+fresh(); expect('a title sets the sex (woman)', String(await run('NewCharacter', { who: 'Madame Roux' })), /\b(?:woman|girl)\b/);
+console.log(`30 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
