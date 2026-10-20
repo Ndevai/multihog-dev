@@ -679,3 +679,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - frame.ts writes the Price for a measure of a good outside the list when the reference table holds it ("a pound of pears" → good pears, 0.454). The planner gives like for the rest.
 - Open: vegetables (USDA ERS all-vegetables CSV, 44 products; the fetch was refused this session).
 - `npm test`: 156 checks, 0 misses.
+
+## 2026-10-20 (67) Towns placed by GeoNames
+
+- Run of 3ee2f29 (results/run-39485197751): 7 faults (story 1: none; 2: 6; 3: 1). Story 2's six had one cause. "A coaching inn near York" found no place, because York is outside the WMO weather-city list. So no Weather ran and no country was set, the code-written Price had no city and refused, and the narrator made rain rattle the windows twice. placeIn now falls back to GeoNames cities15000 (every place of 15,000 people or more, geonames.org, CC BY 4.0; 32,726 names; data/geonames.ts, built by tools/build-geonames.mjs). A name after a word that leads a place (in, near, at, outside, from, to, into, of, by) takes the largest place of that name, and its weather and country come from the nearest WMO city. "near York" → 53.96 N, 1.08 W, Leeds' climate 34 km off, United Kingdom. A person's name with no place word stays a name (Mary is also a city in Turkmenistan).
+- `npm test`: 158 checks, 0 misses.

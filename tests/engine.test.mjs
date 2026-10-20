@@ -61,5 +61,10 @@ fresh();
 const o1 = String(await run('Price', { question: 'price of goods', good: 'oysters', like: 'meat (kg)', quantity: 1, city: 'London', year: 1888 }));
 const o2 = String(await run('Price', { question: 'price of goods', good: 'oysters', like: 'cheese (kg)', quantity: 2, city: 'London', year: 1888 }));
 if (!/meat/.test(o2)) { miss++; console.log(`MISS oysters kept: ${o2}`); }
-console.log(`11 checks, ${miss} miss(es)`);
+// A town outside the weather-city list is placed by GeoNames after a place word; a person's name is no place.
+const W = await import('../src/rules/weather.js');
+const york = W.placeIn('A coaching inn near York, 3 November 1820, evening.', new Set());
+if (!(york && Math.abs(york.lat - 53.96) < 0.05 && /United Kingdom/.test(york.country))) { miss++; console.log(`MISS York: ${JSON.stringify(york)}`); }
+if (W.placeIn("Mary (the player's character) walks home.", new Set()) !== null) { miss++; console.log('MISS Mary is no place'); }
+console.log(`13 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
