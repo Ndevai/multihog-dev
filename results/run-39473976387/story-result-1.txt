@@ -1,0 +1,100 @@
+z-ai/glm-5.3, reasoning low, 6 min, 2026-10-20T18:27:42.677Z, 10 calls asked, 2 replayed
+0 fault(s) in 4 of 4 turns
+
+
+=== #1.1: I step out of my house onto the street.
+clock: Saturday 18 August 1888, 18:15:02
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Act {"who":"Mary","action":"steps out of her house onto the street","distance_m":3}
+   draws: none
+   → Mary walks 3 m from where Mary stood to street at 1.62 m/s: 1.9 s (1.9 s in all). Span 1.9 s. Clock now Saturday 18 August 1888, 18:15:02.
+--- reply
+A narrow street in Whitechapel on a grey Saturday evening, the air cool at about fifteen degrees. A thin rain has been falling on and off through the day, and the cobbles glistened under the gas lamps as dusk settled in. The smells of the river, coal smoke, and the day's refuse hung about the doorways.
+
+The rain had kept the street damp all afternoon, a light drizzle that left a fine wetness on Mary's shawl as she stepped out. It was not cold enough for a coat, but the chill crept through the thin fabric just the same.
+
+Mary pushed the door shut behind her and walked the few paces from her step out onto the street proper, her boots finding the wet cobbles. The pavement was busy with the Saturday evening crowd: costers calling the last of their wares, women hurrying home with parcels, a publican's boy sweeping water from a doorstep.
+--- open: What Mary does out on the street, and what the evening crowd around her makes of her presence.
+--- planner answers
+{"calls":{"Act":{"Mary":{"action":"steps out of her house onto the street","distance_m":3}}},"then":[],"need":[]}
+
+=== #1.2: I walk the three hundred yards to the market on Wentworth Street.
+clock: Saturday 18 August 1888, 18:17:52
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Act {"who":"Mary","action":"walk the three hundred yards to the market on Wentworth Street.","distance_m":274.3}
+   draws: 0.2239, 0.6762, 0.3635, 0.6072
+   → Mary walks 274.3 m from street to market on Wentworth Street at 1.62 m/s: 2.8 min (2.8 min in all). Span 2.8 min. Clock now Saturday 18 August 1888, 18:17:52.
+--- reply
+The streets between Mary's door and Wentworth Street were at their Saturday evening busiest, the light failing and the drizzle thickening into a fine mist under the gas lamps. Shopkeepers were shuttering their windows, and the smell of fried fish and wet wool hung over the pavements. Wentworth Street market itself was in its last half-hour of trade, stalls lit by flaring naphtha lamps, costers crying off their final货
+
+Mary made her way east through the press of people, past the shuttered fronts and the barrows pulled in against the walls, and came out into Wentworth Street where the market stalls still burned along the kerb. The walk had taken her near three minutes at a steady pace, and by the time she reached the stalls the lamps were being trimmed for the last trade of the evening. Costers called their prices over the heads of the stragglers, and a woman at a greens stall was already throwing sacking over what remained of her stock.
+--- open: What does Mary do at the market, and do the stallholders have anything left worth buying at this hour?
+--- planner answers
+
+
+=== #1.3: I ask the costermonger for a pound of apples and pay him.
+clock: Saturday 18 August 1888, 18:17:53
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. NewCharacter {"who":"the costermonger","occupation":"costermonger"}
+   draws: 0.0088, 0.3941, 0.0479, 0.9999
+   → the costermonger: a 25-year-old man; occupation: Costermonger, Huckster, Street Seller; born in abroad or at sea.
+3. Communicate {"speaker":"Mary","listener":"the costermonger","means":"speech","effort":"normal","message":"for a pound of apples"}
+   draws: none
+   → the costermonger hears Mary and makes out every word (normal voice at 1 m, quiet room (25 dB)). the costermonger now knows: for a pound of apples. Said in 1.5 s; clock now Saturday 18 August 1888, 18:17:53.
+4. Transfer {"item":"a pound of apples","from":"the costermonger","to":"Mary","how":"bought"}
+   draws: none
+   → a pound of apples bought from the costermonger to Mary; Mary now has it. Recorded.
+5. Price {"item":"bread (kg)","question":"price of goods","city":"London","year":1888}
+   draws: none
+   → 1 × bread (kg) in London, 1888: 2.05 g of silver (about 4¾ d); a building labourer earns that in 0.5 hours of a 10-hour day.
+--- reply
+Wentworth Street market in its last half-hour, the naphtha lamps flaring along the kerb and the drizzle settled into a fine mist. The stalls were being stripped down around Mary, costers crying their final prices to the thinning crowd. It was a quarter past six in the evening, Saturday the eighteenth of August, 1888.
+
+The stall Mary came to was kept by a young man of about twenty-five, a costermonger with the look of one born abroad or at sea, his barrow half emptied of the day's fruit under the hissing lamp.
+
+Mary asked him for a pound of apples, her voice plain and close between them, and he caught every word of it over the noise of the market.
+
+He weighed out the pound and handed the apples over to her, and Mary had them in her hands, the fruit cool and firm from the damp air.
+
+The price of things being what they were in London that year, a loaf of bread went for about fourpence three-farthings the kilogram, what a building labourer earned in half an hour of his ten-hour day; a pound of apples from a coster's barrow was a modest enough matter beside it.
+--- open: The costermonger waited for Mary to count out her payment for the apples.
+--- planner answers
+{"calls":{"Communicate":{"Mary":{"listener":"the costermonger","means":"speech","effort":"normal","message":"for a pound of apples"}},"Transfer":{"a pound of apples":{"from":"the costermonger","to":"Mary","how":"bought"}}},"then":[{"question":"Does the costermonger still have apples left to sell at this last half-hour of trade?","tool":"RollTheDice"},{"question":"What does a pound of apples cost Mary in pence?","tool":"RollTheDice"},{"question":"What coins does Mary hand over for the apples, once the price is known?","tool":"Transfer"}],"need":["RollTheDice","Transfer"],"time":"1888-08-18 18:17","present":["Mary","the costermonger"]}
+- - -
+{"calls":{"RollTheDice":{"the costermonger":{"kind":"table","formula":"","for":"apples left","table":"1-4 None left | 5-15 A few apples left | 16-20 Plenty left"}},"Price":{"bread (kg)":{"question":"price of goods","city":"London","year":1888}},"Transfer":{"a pound of apples":{"from":"the costermonger","to":"Mary","how":"bought"}}},"then":[{"question":"What coins does Mary hand over for the apples, once the price is known?","tool":"RollTheDice"}],"need":["RollTheDice"]}
+
+=== #1.4: I walk home and give Will one of the apples.
+clock: Saturday 18 August 1888, 18:20:59
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Transfer {"item":"apples","quantity":1,"from":"Mary","to":"Will","how":"given"}
+   draws: none
+   → apples given from Mary to Will; Will now has it. Recorded.
+3. Act {"who":"Mary","action":"walks home from the market on Wentworth Street, three hundred yards, and gives Will an apple","distance_m":300}
+   draws: 0.3653, 0.4758
+   → Mary walks 300 m from market on Wentworth Street to home at 1.62 m/s: 3.2 min (3.2 min in all). Span 3.2 min. Clock now Saturday 18 August 1888, 18:20:59.
+--- reply
+The way home lay back through the Saturday evening streets, the drizzle finer now but the cobbles still shining under the gas lamps as the last light went out of the sky. Wentworth Street's lamps burned low behind Mary as she left the market to its final trade, and the walk back through the thinning crowd took her a little over three minutes.
+
+At home, Will was waiting in the front room, and Mary held out an apple to him from the pound she had bought. He took it, turning the fruit over in his hand, and it was his now.
+
+Mary had come the three hundred metres home at an easy pace, her shawl damp at the shoulders, and by the time she reached her own step the church clocks about Whitechapel were striking the hour and a quarter past six had gone; it was twenty minutes past six in the evening.
+--- open: what Will says or does with his apple
+--- planner answers
+{"calls":{"Act":{"Mary":{"action":"walks home from the market on Wentworth Street, three hundred yards, and gives Will an apple","distance_m":300}}},"then":[],"need":[]}
+
