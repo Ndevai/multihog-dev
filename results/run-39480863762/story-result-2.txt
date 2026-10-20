@@ -1,0 +1,142 @@
+z-ai/glm-5.3, reasoning low, 6 min, 2026-10-20T19:14:38.108Z, 15 calls asked, 0 replayed
+2 fault(s) in 4 of 4 turns
+#2.2 rule check: "apples in London that autumn went for about two and three-quarter pence a pound" → Price (contradicts)
+#2.3 rule check: "their table stood but an arm's length off" → Listen (contradicts)
+
+=== #2.1: I sit down at a table near the fire.
+clock: Friday 3 November 1820, 19:00:01
+faults: none
+--- calls
+1. Weather {"latitude":53.96,"longitude":-1.08}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 34 km), 3/11/1820: dry; high 2 °C, low -2 °C; now about 1 °C.
+2. Act {"who":"Tom","action":"sit down at a table near the fire."}
+   draws: none
+   → Tom sits down: 1.2 s (1.2 s in all). Span 1.2 s. Clock now Friday 3 November 1820, 19:00:01.
+--- reply
+The taproom of the coaching inn near York glowed with tallow and firelight on a cold, dry November evening, the frost already hardening on the road outside. The fire on the hearth threw a good heat into the half-full room, where carters and travellers talked low over their ale. It was just past seven o'clock.
+
+The cold of the evening pressed at the windows; the day had been dry and bitter, barely rising above freezing, and now the thermometer stood near one degree.
+
+Tom crossed the boards to a table near the fire and sat down, the warmth of the coals reaching his back through the chill of his coat.
+--- open: What the taproom's other folk make of the newcomer by the fire, and whether anyone comes to take his order.
+--- planner answers
+{"calls":{"RecordFact":{"the coaching inn near York":{"kind":"knowledge","importance":1}}},"then":[],"need":[],"at":[53.96,-1.08],"present":["Tom"] 	}
+
+=== #2.2: I call to the innkeeper for a pint of ale.
+clock: Friday 3 November 1820, 19:00:03
+faults: 
+  rule check: "apples in London that autumn went for about two and three-quarter pence a pound" → Price (contradicts)
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 2 °C, low -2 °C; now about 1 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (loud voice at 1 m, quiet room (25 dB)). the innkeeper now knows: for a pint of ale. Said in 1.5 s; clock now Friday 3 November 1820, 19:00:03.
+3. NewCharacter {"who":"the innkeeper","occupation":"innkeeper"}
+   draws: 0.836, 0.736, 0.9261, 0.6219
+   → the innkeeper: a 49-year-old woman; occupation: innkeeper.
+4. Price {"item":"apples (kg)","question":"price of goods","city":"Leipzig","country":"Germany","year":1820}
+   draws: none
+   → 1 × apples (kg) in London, 1820: 1.21 g of silver (about 2¾ d); a building labourer earns that in 0.7 hours of a 10-hour day.
+5. Transfer {"item":"the pint of ale","quantity":1,"from":"the innkeeper","how":"sold"}
+   draws: none
+   → the pint of ale sold from the innkeeper; it is gone from the story. Recorded.
+6. SocialResponse {"who":"the innkeeper","situation":"a small favour asked by a stranger","request":"bring a pint of ale to the table","requester":"ordinary clothes"}
+   draws: 0.5138
+   → the innkeeper declines (bring a pint of ale to the table).
+--- reply
+The taproom of the coaching inn near York glowed with tallow and firelight on a cold, dry November evening, the frost already hardening on the road outside. The fire on the hearth threw a good heat into the half-full room, where carters and travellers talked low over their ale. It was just past seven o'clock, and Tom sat at a table near the fire, the warmth of the coals reaching his back through the chill of his coat
+
+Tom called out for a pint of ale. The room was quiet enough that his voice carried plainly, and the innkeeper, a stout woman of about forty-nine who was wiping down the bar, heard every word of it.
+
+She had kept this inn for the better part of twenty years, and she looked over at Tom with the practised eye of a woman who knew every sort of customer that came in off the York road.
+
+In her time she had seen prices rise and fall like the weather; apples in London that autumn went for about two and three-quarter pence a pound, a fair slice of a labouring man's hour, and she priced her ale with the same shrewdness.
+
+She drew a pint from the cask and set it on the bar, ready to sell.
+
+But when Tom called for it to be brought to his table, she shook her head and called back that he could come up to the bar and fetch it himself, for she was not serving at the tables this evening.
+--- open: Whether Tom gets up to pay for and fetch the pint at the bar, and what he says or does about the innkeeper's refusal to bring it over.
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","speaker_voice":"normal"}},"NewCharacter":{"the innkeeper":{"occupation":"innkeeper"}}},"then":[{"question":"Does the innkeeper bring Tom his pint of ale?","tool":"SocialResponse"}],"need":["SocialResponse"]}
+- - -
+{"calls":{"Price":{"apples (kg)":{"question":"price of goods","city":"Leipzig","country":"Germany","year":1820}},"Transfer":{"the pint of ale":{"quantity":1,"from":"the innkeeper","how":"sold"}},"SocialResponse":{"the innkeeper":{"situation":"a small favour asked by a stranger","request":"bring a pint of ale to the table","requester":"ordinary clothes"}}},"then":[{"question":"Does the innkeeper bring Tom his pint of ale?","tool":"SocialResponse"}],"need":["Price","SocialResponse"]}
+
+=== #2.3: Two men at the next table are whispering. I keep still and listen.
+clock: Friday 3 November 1820, 19:00:06
+faults: 
+  rule check: "their table stood but an arm's length off" → Listen (contradicts)
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 2 °C, low -2 °C; now about 1 °C.
+2. Listen {"listener":"Tom","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","barrier":"none","reveals":"what the two men are whispering about"}
+   draws: none
+   → Tom hears it (quiet conversation (50 dB at 1 m) at 2 m, conversation nearby (50 dB)). Tom now knows: what the two men are whispering about.
+3. NewCharacter {"who":"the first man","min_age":18}
+   draws: 0.0498, 0.2948, 0.7539
+   → the first man: a 18-year-old man; occupation: first man.
+4. NewCharacter {"who":"the second man","min_age":18}
+   draws: 0.6415, 0.3594, 0.3045
+   → the second man: a 41-year-old man; occupation: second man.
+5. Communicate {"speaker":"the first man","listener":"the second man","means":"speech","effort":"whisper","message":"(the content of the men's whispered exchange, for Tom to overhear)","speaker_voice":"normal"}
+   draws: none
+   → the second man hears the first man and makes out most words; a few are lost (whisper at 1 m, quiet room (25 dB)). the second man now knows: (the content of the men's whispered exchange, for Tom to overhear). Said in 3.4 s; clock now Friday 3 November 1820, 19:00:06.
+--- reply
+The taproom of the coaching inn near York glowed with tallow and firelight on a cold, dry November evening, the frost hardening on the road outside. The fire threw its heat across the half-full room, where carters and travellers talked low over their ale. It was seven o'clock, and Tom sat at a table near the fire, his pint not yet fetched from the bar.
+
+Tom kept still at his table and let his ears work. The two men at the next table were leaning close over their pots, and though they whispered, the room was quiet and their table stood but an arm's length off, so that most of what passed between them reached him plainly.
+
+The nearer of the two was a young fellow of about eighteen, thin and raw-boned, with a cap pulled low over his ears and the look of a man trying to seem older than he was.
+
+The other was some twenty years his senior, a broad, weathered man of about forty-one, thick through the shoulders, with grey at his temples and a pot of ale mostly gone before him.
+
+The young man bent closer to his companion and whispered, low and quick, so that the older man caught most of it, though a word or two was lost in the murmur of the room. Tom heard it too: the young man was telling of a cart and a keg hidden in the old quarry lane, and of a buyer who would come through York on the Sunday night, if the older man would only stand watch at the turning while the goods were moved. The older man's face changed as he listened, and he glanced once toward the door.
+--- open: what the older man answers to the young man's whispered proposal, and whether either of them notices Tom listening
+--- planner answers
+{"calls":{"Listen":{"Tom":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","barrier":"none","reveals":"what the two men are whispering about"}},"NewCharacter":{"the first man":{"min_age":18},"the second man":{"min_age":18}}},"then":[{"question":"If Tom hears them, what are the two men whispering about?","tool":"Communicate"}],"need":[]}
+- - -
+{"calls":{"Communicate":{"the first man":{"listener":"the second man","means":"speech","effort":"whisper","message":"(the content of the men's whispered exchange, for Tom to overhear)","speaker_voice":"normal"}}},"then":[{"question":"What are the two men whispering about, once Tom hears it?","tool":"RecordFact"}],"need":["RecordFact"]}
+
+=== #2.4: I go to the innkeeper and tell him what I heard.
+clock: Friday 3 November 1820, 19:00:23
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 2 °C, low -2 °C; now about 1 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"normal","message":"Those two men by the fire are planning to move a cart and a keg from the old quarry lane on Sunday night, with a buyer coming through York.","speaker_languages":["English"],"speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (normal voice at 1 m, quiet room (25 dB)). the innkeeper now knows: Those two men by the fire are planning to move a cart and a keg from the old quarry lane on Sunday night, with a buyer coming through York. Said in 8.9 s; clock now Friday 3 November 1820, 19:00:15.
+3. Act {"who":"Tom","action":"stands up and crosses the taproom to the bar","distance_m":5}
+   draws: none
+   → Tom stands up from sitting: 1.6 s; Tom walks 5 m from where Tom stood to bar at 1.62 m/s: 3.1 s (4.7 s in all). Span 4.7 s. Clock now Friday 3 November 1820, 19:00:20.
+4. Communicate {"speaker":"the first man","listener":"the second man","means":"speech","effort":"whisper","message":"his answer to the young man's proposal about the cart and keg","speaker_voice":"normal"}
+   draws: none
+   → the second man hears the first man and makes out most words; a few are lost (whisper at 1 m, quiet room (25 dB)). the second man now knows: his answer to the young man's proposal about the cart and keg. In Modern English, whispered, a word can also be taken as: "cart" = kaat (cut = kât if whispered, guard = gaad if whispered, court = kòòt if whispered); "and" = änd (ant = änt if whispered, end (of space) = ènd if whispered, end (of time) = ènd if whispered). Call Interpret for each one whose reading changes what the second man does. Said in 3.7 s; clock now Friday 3 November 1820, 19:00:23.
+5. Listen {"listener":"Tom","sound":"quiet conversation (50 dB at 1 m)","distance_m":5,"noise":"quiet room (25 dB)","reveals":"what the older man answers to the whispered proposal"}
+   draws: none
+   → Tom hears it (quiet conversation (50 dB at 1 m) at 5 m, quiet room (25 dB)). Tom now knows: what the older man answers to the whispered proposal.
+6. Look {"viewer":"the first man","target":"Tom showing an interest in their table","size_m":0.5,"distance_m":5,"light":"living room","reveals":"that Tom was listening to their whispered talk"}
+   draws: 0.3223
+   → the first man identifies it (can tell which individual or exact kind) (0.5 m target at 5 m, living room). the first man now knows: that Tom was listening to their whispered talk.
+--- reply
+The taproom of the coaching inn near York glowed with tallow and firelight on a cold, dry November evening, the frost hardening on the road outside. The fire threw its heat across the half-full room, where carters and travellers talked low over their ale. It was just past seven o'clock, and Tom sat at his table near the fire with the two whispering men at the next table, his pint still waiting on the bar.
+
+Tom rose from his seat and made his way to the bar, where the innkeeper stood. He leaned in and, in a low voice, told her what he had overheard: that the two men by the fire were planning to move a cart and a keg from the old quarry lane on Sunday night, with a buyer coming through York. The room was quiet, and at that distance she made out every word of it. Her hand stopped on the bar-top, and she looked past him toward the fire, weighing what she had been told.
+
+Tom had crossed the boards from his table to the bar in a few strides, and now stood before her with his errand done.
+
+Behind him, the older man bent to his young companion and whispered his answer, low and quick, so that the younger man caught most of it, though a word or two was lost in the murmur of the room.
+
+Tom, still at the bar, heard it too: the older man was agreeing to stand watch at the turning on the Sunday night, and telling the young man to have the cart ready and say nothing to a soul till it was done.
+
+Then the older man's eyes came up and found Tom standing at the bar, and his gaze went from Tom's face to the table where Tom had been sitting, an arm's length from their own. He had seen well enough that Tom had been sitting close, and his face hardened as he watched him.
+--- open: What the older man does now that he knows Tom was listening, and what the innkeeper says or does with what Tom told her
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","speaker_languages":["English"],"message":"Those two men by the fire are planning to move a cart and a keg from the old quarry lane on Sunday night, with a buyer coming through York.","speaker_voice":"normal"}},"Act":{"Tom":{"action":"stands up and crosses the taproom to the bar","distance_m":5}}},"then":[{"question":"Does the older man answer the young man's whispered proposal, and does Tom catch any of it from the bar?","tool":"Communicate"},{"question":"Do the two men notice Tom listening or taking an interest in them?","tool":"Look"}],"need":["Communicate","Act","Look"]}
+- - -
+{"calls":{"Communicate":{"the first man":{"listener":"the second man","means":"speech","effort":"whisper","message":"his answer to the young man's proposal about the cart and keg","speaker_voice":"normal"}},"Listen":{"Tom":{"sound":"quiet conversation (50 dB at 1 m)","distance_m":5,"noise":"quiet room (25 dB)","reveals":"what the older man answers to the whispered proposal"}},"Look":{"the first man":{"target":"Tom showing an interest in their table","size_m":0.5,"distance_m":5,"light":"living room","reveals":"that Tom was listening to their whispered talk"}}}}
+
