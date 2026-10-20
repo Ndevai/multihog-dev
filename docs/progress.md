@@ -808,3 +808,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - The bed/room/lodging word regex is removed: the planner picks lodging-house or inn by meaning.
 - Blackboard's handover check at both ends is met by construction: Transfer writes both ledger entries in code (possessions.ts give/take). The narration side is the rule check's.
 - Open: age by occupation. The source is the 1841 occupation abstract (Vision of Britain GB1841OCC, under 20 / 20 and over by trade); the fetch needs the user's approval of the URL.
+
+## 2026-10-20 (86) Bugs found before first use
+- placeIn: the change in entry 84 matched every capitalised word, so "14 March" placed a scene in March and "Victoria" in Canada. The lead-word guard (in, near, at…) is back. A setting line that opens with its place ("Boston, Massachusetts General Hospital, …") is read too. A weather city must match the whole name: "the Green Man inn" was Green Bay, Wisconsin, and "George" was George Town.
+- index.ts: any error on a call carrying a schema (a 429, a dropped connection) turned structured output off for the rest of the session. Only a refusal of the schema itself (400, 422, a schema or response_format error) does that now.
+- send.ts: a model call in SillyTavern had no retry, so a 429 skipped the question pass for that turn. sendModel now retries a 429 or 5xx up to 2 times, waiting at most 20 s (Blackboard's retry rules, capped while a player waits).

@@ -42,6 +42,10 @@ const send = async (system, user, o = {}) => {
         return await sendModel(system, user, { ...base, schema: o.schema });
     }
     catch (e) {
+        // Only a refusal of the schema itself turns it off; a rate limit or a dropped connection is that turn's failure alone
+        // (a 429 had turned structured output off for the rest of the session).
+        if (!/\b(?:400|422)\b|schema|response_format|guided|unsupported/i.test(String(e?.message ?? e)))
+            throw e;
         console.warn('[Rules engine] schema refused; plans read from text from now on:', e);
         setGuided(false);
         return sendModel(system, user, base);

@@ -1,3 +1,4 @@
+import { retryInfo, retryDelay } from './rules/retry.js';
 // One model call for the engine's own passes (question pass, rule check, /rules-eval): a system and a user message in,
 // the reply text out. Through a Connection Manager profile when one is chosen, else through SillyTavern's own connection.
 // Chat Completion requests stream, so a gateway that closes silent connections (NVIDIA, OpenRouter: about 60 s) keeps
@@ -52,7 +53,7 @@ const effortYaml = (effort: string | undefined, body = '') => !effort || /chat_t
 const formatBody = (schema?: Record<string, unknown>) => schema ? { response_format: { type: 'json_schema', json_schema: { name: 'plan', strict: true, schema } } } : {};
 const formatYaml = (schema: Record<string, unknown> | undefined, body = '') => !schema ? body : `${body ? `${body.trim()}\n` : ''}response_format: ${JSON.stringify(formatBody(schema).response_format)}`;
 
-export async function sendModel(system: string, user: string, opts: { profile?: string; maxTokens?: number; effort?: string; schema?: Record<string, unknown> } = {}): Promise<string> {
+async function sendOnce(system: string, user: string, opts: { profile?: string; maxTokens?: number; effort?: string; schema?: Record<string, unknown> } = {}): Promise<string> {
     const ctx = SillyTavern.getContext() as unknown as SendCtx;
     const messages = [{ role: 'system', content: system }, { role: 'user', content: user }];
     const maxTokens = opts.maxTokens && opts.maxTokens > 0 ? opts.maxTokens : undefined;
@@ -74,4 +75,20 @@ export async function sendModel(system: string, user: string, opts: { profile?: 
     }
     if (!ctx.generateRaw) throw new Error('No model connection available for the rules engine.');
     return ctx.generateRaw({ systemPrompt: system, prompt: user, trimNames: false, responseLength: maxTokens });
+}
+
+/** One model call, retried as Simulation Blackboard's retry.js decides (src/rules/retry.ts): a rate limit or a server error
+ *  waits (the server's Retry-After, at most 20 s while a player waits) and asks again, up to 2 times; anything else fails at once. */
+export async function sendModel(system: string, user: string, opts: { profile?: string; maxTokens?: number; effort?: string; schema?: Record<string, unknown> } = {}): Promise<string> {
+    for (let attempt = 0; ; attempt++) {
+        try { return await sendOnce(system, user, opts); }
+        catch (e) {
+            const msg = String((e as Error)?.message ?? e), status = Number(/\b(429|50[0234])\b/.exec(msg)?.[1] ?? (e as { status?: number })?.status ?? 0);
+            // A player is waiting on the reply: at most 2 retries, 20 s apart at most [ASSUMED: a wait a player sits through].
+            const d = status ? retryDelay(retryInfo(status, msg, null), attempt, 2) : null, wait = d === null ? null : Math.min(d, 20000);
+            if (wait === null) throw e;
+            console.warn(`[Rules engine] ${status}: waiting ${Math.round(wait / 1000)} s before asking again`);
+            await new Promise(r => setTimeout(r, wait));
+        }
+    }
 }
