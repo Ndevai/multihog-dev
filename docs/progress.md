@@ -767,3 +767,16 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - The other entries are [ASSUMED] and say so in their row: door 762 mm (2 ft 6 in), sash window, horse, dog, cat, sheet of paper, knife, key, cart, boat, lamp and cup.
 - size_m is no longer required. When the table holds nothing and the plan gives no size, Look asks for one and leaves the state unchanged.
 - Tests: tests/size.test.mjs (11 checks); engine.test.mjs checks that a penny at 30 m is seen as 0.0308 m when the plan said 0.5.
+
+## 2026-10-20 (82) Meaning is chosen by the model from closed kinds; code holds the numbers
+- Principle: code reads no meaning from words. Word lists grow without end (synonyms, borrowings such as Portuguese inteiro / íntegro, luar / lunar, other languages), so they always lag behind what a story says. Instead, the model maps meaning to a closed kind, and code holds each kind's number and source. Price already works this way ("other good" + like).
+- Look: the sizes.ts word regexes are replaced by `kind`, an enum of 21 kinds (a person, a head or face, a hand, five British coins, another coin, door, window, and so on, plus "something else (give size_m)"). A person's parts take the recorded sex and height of target_who; with neither, they take the mean of the ANSUR II men's and women's medians [ASSUMED]. A test sees "uma moeda no chão" as kind penny: 0.0308 m.
+- Still to convert from word lists to model-chosen kinds, in order:
+  1. frame.ts GOOD_WORDS (Price drafts);
+  2. BLOW (BodyStrike drafts);
+  3. scene-people PERSON_NOUNS / TRADES / ANIMALS and the female role nouns (NewCharacter sex);
+  4. KIN;
+  5. Claim's harm words;
+  6. Act's climb words;
+  7. weather place words.
+  VerbNet routing stays: its classes are meaning classes.

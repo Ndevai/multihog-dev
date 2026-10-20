@@ -23,7 +23,7 @@ import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, statu
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, MOTION_START } from './actions.js';
 import { GIVEN_NAMES } from './data/given-names.js';
-import { sizeOf } from './sizes.js';
+import { sizeOf, SIZE_KINDS } from './sizes.js';
 import { TITLE } from './frame.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
@@ -1587,20 +1587,19 @@ export function registerRulesTools(enabled) {
         viewer: str('Character who might see it'),
         viewer_species: str('Viewer\'s DF creature when the engine has no record of them yet.'),
         target: str('What might be seen, a few words'),
-        size_m: { type: 'number', description: 'Smallest visible dimension of the target, m. Code decides it for people, faces, hands, coins, doors, windows, animals and carts (sizes.ts); give it only for anything else' },
+        kind: { type: 'string', enum: SIZE_KINDS, description: 'What the target is, by meaning: the nearest kind in the list. Code takes its size from it.' },
+        size_m: { type: 'number', description: 'For kind "something else": the smallest visible dimension of the target, m' },
         distance_m: { type: 'number', description: 'Distance, m; Layout gives it when viewer and target_who are both placed' },
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Set for an overcast sky or artificial light; code takes daylight, twilight, moonlight and starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
         reveals: str('The fact itself, as the scene holds it, set before the outcome ("a grey-haired man counting coins into an iron box at a desk"); learned only if identified'),
         target_who: str('When the target is a tracked character: their name (distance and walls then come from the map)'),
-    }, ['viewer', 'distance_m'], a => run((st, rng) => {
+    }, ['viewer', 'kind', 'distance_m'], a => run((st, rng) => {
         if (asQuestion(a.reveals))
             return REVEALS_FACT;
-        // The size of what is seen comes from the size table when it names it (a person, a face, a coin, a door), and from
-        // a person the story holds when target_who names one; the plan's figure stands only where the table holds nothing.
         const whoSeen = a.target_who ? st.people?.[String(a.target_who)] : undefined;
-        const sized = sizeOf(String(a.target ?? a.target_who ?? ''), whoSeen ?? null);
+        const sized = sizeOf(String(a.kind ?? ''), whoSeen ?? null);
         if (sized)
             a = { ...a, size_m: sized.m };
         if (!(Number(a.size_m) > 0))

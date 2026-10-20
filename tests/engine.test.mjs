@@ -72,10 +72,10 @@ fresh();
 expect('a misfortune stated against interest stands', String(await run('Claim', { who: 'Pyotr', claim: 'Pyotr slips on the ice and falls', kind: 'something happening to the character now', in_world: true, base_share: '20% few', share: '20% few', against_interest: true })), /holds \(stated against/);
 expect('a good outside the list beats a stray item', String(await run('Price', { question: 'price of goods', item: 'apples (kg)', good: 'oysters', like: 'meat (kg)', quantity: 1, city: 'London', year: 1888 })), /of oysters/);
 fresh();
-expect('reveals as a question is turned back', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'who is inside the lit room and what they are doing' })), /reveals is the fact itself/);
-expect('reveals as the fact runs', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'a grey-haired man counting coins at a desk' })), /Mara/);
-{ const r = String(await run('Look', { viewer: 'Mara', target: 'a penny on the floor', size_m: 0.5, distance_m: 30, light: 'living room' })); expect('a penny is sized by code, not the plan', r, /0\.0308 m target/); }
-expect('Look with no size and nothing in the table asks for it', String(await run('Look', { viewer: 'Mara', target: 'a strange glow', distance_m: 5, light: 'living room' })), /Give size_m/);
+expect('reveals as a question is turned back', String(await run('Look', { viewer: 'Mara', kind: 'a person', distance_m: 2, light: 'living room', reveals: 'who is inside the lit room and what they are doing' })), /reveals is the fact itself/);
+expect('reveals as the fact runs', String(await run('Look', { viewer: 'Mara', kind: 'a person', distance_m: 2, light: 'living room', reveals: 'a grey-haired man counting coins at a desk' })), /Mara/);
+{ const r = String(await run('Look', { viewer: 'Mara', target: 'uma moeda no chão', kind: 'a penny (British, 1860–1970)', size_m: 0.5, distance_m: 30, light: 'living room' })); expect('a penny is sized by code, not the plan', r, /0\.0308 m target/); }
+expect('Look with no size and nothing in the table asks for it', String(await run('Look', { viewer: 'Mara', target: 'a strange glow', kind: 'something else (give size_m)', distance_m: 5, light: 'living room' })), /Give size_m/);
 // A thing claimed, then handed over: the claim records it when it holds, and the hand-over runs on the record.
 const Po = await import('../src/rules/possessions.js');
 fresh();
