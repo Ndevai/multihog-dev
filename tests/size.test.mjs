@@ -1,0 +1,14 @@
+import { sizeOf } from '../src/rules/sizes.js';
+let miss = 0; const ok = (c, m) => { if (!c) { miss++; console.log('MISS', m); } };
+ok(sizeOf('the man at the door')?.m === 0.509, 'man ANSUR bideltoid');
+ok(sizeOf('a woman in grey')?.m === 0.45, 'woman ANSUR bideltoid');
+ok(sizeOf('her face')?.m === 0.154 || sizeOf('her face')?.m === 0.147, 'face head breadth');
+ok(sizeOf('the face', { sex: 'female' })?.m === 0.147, 'female face');
+ok(sizeOf('Tom', { sex: 'male', heightCm: 160 })?.m === Math.round(0.509 * 160 / 175.5 * 1000) / 1000, 'scaled by height');
+ok(sizeOf('a penny on the table')?.m === 0.0308, 'penny');
+ok(sizeOf('the halfpenny')?.m === 0.0255, 'halfpenny not penny');
+ok(sizeOf('the back door')?.m === 0.762, 'door');
+ok(sizeOf('a gloved hand')?.m === 0.088, 'hand');
+ok(sizeOf('the cart')?.m === 1.5, 'cart');
+ok(sizeOf('a strange glow') === null, 'unknown left to plan');
+console.log(`size: ${11 - miss} of 11`); process.exit(miss ? 1 : 0);

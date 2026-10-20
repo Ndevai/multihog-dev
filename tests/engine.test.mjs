@@ -74,6 +74,8 @@ expect('a good outside the list beats a stray item', String(await run('Price', {
 fresh();
 expect('reveals as a question is turned back', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'who is inside the lit room and what they are doing' })), /reveals is the fact itself/);
 expect('reveals as the fact runs', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'a grey-haired man counting coins at a desk' })), /Mara/);
+{ const r = String(await run('Look', { viewer: 'Mara', target: 'a penny on the floor', size_m: 0.5, distance_m: 30, light: 'living room' })); expect('a penny is sized by code, not the plan', r, /0\.0308 m target/); }
+expect('Look with no size and nothing in the table asks for it', String(await run('Look', { viewer: 'Mara', target: 'a strange glow', distance_m: 5, light: 'living room' })), /Give size_m/);
 // A thing claimed, then handed over: the claim records it when it holds, and the hand-over runs on the record.
 const Po = await import('../src/rules/possessions.js');
 fresh();
@@ -99,5 +101,5 @@ expect('harm in the words stands', String(await run('Claim', { who: 'Jack', clai
 expect('treating no wound', String(await run('BodyTreat', { who: 'Jack', treatment: 'stop_bleeding', training: 'untrained' })), /holds no wound on record/);
 fresh(); expect('a title sets the sex', String(await run('NewCharacter', { who: 'Mr. Abbott' })), /\b(?:man|boy)\b/);
 fresh(); expect('a title sets the sex (woman)', String(await run('NewCharacter', { who: 'Madame Roux' })), /\b(?:woman|girl)\b/);
-console.log(`30 checks, ${miss} miss(es)`);
+console.log(`32 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

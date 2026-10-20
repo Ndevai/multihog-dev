@@ -27,6 +27,7 @@ import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, statu
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, MOTION_START, type Step } from './actions.js';
 import { GIVEN_NAMES } from './data/given-names.js';
+import { sizeOf } from './sizes.js';
 import { TITLE } from './frame.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING, type Room } from './rooms.js';
@@ -1106,7 +1107,7 @@ export function registerRulesTools(enabled: boolean): void {
         if (r.notes.length) console.debug('[Rules engine]', a.who, r.notes.join('; '));
         const { p, error } = who(st, a.who, a.species);
         if (!p) return error;
-        p.mass = Math.round(r.massKg); p.sex = a.sex; p.age ??= year - a.birth_year; p.bmiZ = r.bmiZ;
+        p.mass = Math.round(r.massKg); p.sex = a.sex; p.age ??= year - a.birth_year; p.bmiZ = r.bmiZ; p.heightCm = Math.round(r.heightCm);
         const col = pigment(country, rng), looks = [col.eyes && `${col.eyes} eyes`, col.hair && `${col.hair} hair`].filter(Boolean).join(', ');
         return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg${looks ? `, ${looks}` : ''}.`;
     }));
@@ -1460,15 +1461,21 @@ export function registerRulesTools(enabled: boolean): void {
         viewer: str('Character who might see it'),
         viewer_species: str('Viewer\'s DF creature when the engine has no record of them yet.'),
         target: str('What might be seen, a few words'),
-        size_m: { type: 'number', description: 'Smallest visible dimension of the target, m (standing person 0.5, horse 0.6, wagon or car 1.5)' },
+        size_m: { type: 'number', description: 'Smallest visible dimension of the target, m. Code decides it for people, faces, hands, coins, doors, windows, animals and carts (sizes.ts); give it only for anything else' },
         distance_m: { type: 'number', description: 'Distance, m; Layout gives it when viewer and target_who are both placed' },
         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Set for an overcast sky or artificial light; code takes daylight, twilight, moonlight and starlight from the date, hour and latitude.' },
         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
         reveals: str('The fact itself, as the scene holds it, set before the outcome ("a grey-haired man counting coins into an iron box at a desk"); learned only if identified'),
         target_who: str('When the target is a tracked character: their name (distance and walls then come from the map)'),
-    }, ['viewer', 'size_m', 'distance_m'], a => run((st, rng) => {
+    }, ['viewer', 'distance_m'], a => run((st, rng) => {
         if (asQuestion(a.reveals)) return REVEALS_FACT;
+        // The size of what is seen comes from the size table when it names it (a person, a face, a coin, a door), and from
+        // a person the story holds when target_who names one; the plan's figure stands only where the table holds nothing.
+        const whoSeen = a.target_who ? (st.people?.[String(a.target_who)] as { sex?: string; heightCm?: number } | undefined) : undefined;
+        const sized = sizeOf(String(a.target ?? a.target_who ?? ''), whoSeen ?? null);
+        if (sized) a = { ...a, size_m: sized.m };
+        if (!(Number(a.size_m) > 0)) return `Give size_m: the smallest dimension of ${a.target ?? 'what is seen'}, m. State unchanged.`;
         const v = who(st, a.viewer, a.viewer_species);
         if (!v.p) return v.error;
         const tp = a.target_who ? st.people?.[a.target_who] : undefined, geo = tp ? between(st, v.p, tp) : null;

@@ -759,3 +759,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Story 9 (Boston 1846): "Mr. Abbott" became a person called "Mr", drawn as a girl of 0, because the full stop after the title ended the name. A title and the name it leads are now one person in the scene's people, in code-written calls and in the person keys (frame.ts TITLE: Mr, Mrs, Miss, Dr, Monsieur, Madame, Herr, Frau, Senhor, Senhora, Señor, Signor, Don, Dona, Sir, Lady, Lord, Captain, Father, Sister, Brother, Mother…). A title sets the sex, and an age of 16 or more [ASSUMED]. Speech verbs that address a person (beg, plead, implore, urge, promise, thank, warn, order, command) now name their listener ("I beg Monsieur Dufour…" → listener Monsieur Dufour).
 - `npm test`: 184 checks, 0 misses.
 - A person the story has not seated or laid down stands: "the baker stands at the counter" had timed "stands up from sitting", 1.6 s [ASSUMED default posture].
+
+## 2026-10-20 (81) Code decides how large a seen thing is
+- Look's size_m was the model's guess, and almost always 0.5 m: a glove, a face and a window were all given a person's size. Now src/rules/sizes.ts decides it from the target, and the plan's figure stands only where the table has nothing.
+- People: ANSUR II (Gordon et al. 2014) median breadths, men / women: bideltoid 509 / 450 mm, head 154 / 147, hand 88 / 78. A person BodySize has drawn is scaled by their height (now stored as Person.heightCm) [ASSUMED: breadth in proportion to stature]. target_who uses the recorded person's sex and height.
+- Coins come from Royal Mint diameters: penny 30.81 mm, halfpenny 25.48, farthing 20.19, shilling 23.6, sovereign 22.05.
+- The other entries are [ASSUMED] and say so in their row: door 762 mm (2 ft 6 in), sash window, horse, dog, cat, sheet of paper, knife, key, cart, boat, lamp and cup.
+- size_m is no longer required. When the table holds nothing and the plan gives no size, Look asks for one and leaves the state unchanged.
+- Tests: tests/size.test.mjs (11 checks); engine.test.mjs checks that a penny at 30 m is seen as 0.0308 m when the plan said 0.5.
