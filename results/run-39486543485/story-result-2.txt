@@ -1,0 +1,158 @@
+z-ai/glm-5.3, reasoning low, 8 min, 2026-10-20T19:57:49.180Z, 15 calls asked, 0 replayed
+0 fault(s) in 4 of 4 turns
+
+
+=== #2.1: I sit down at a table near the fire.
+clock: Friday 3 November 1820, 19:00:01
+faults: none
+--- calls
+1. Weather {"latitude":53.96,"longitude":-1.08}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 34 km), 3/11/1820: rain, 1.2 mm over the day; high 14 °C, low -1 °C; now about 12 °C.
+2. Act {"who":"Tom","action":"sit down at a table near the fire."}
+   draws: none
+   → Tom sits down: 1.2 s (1.2 s in all). Span 1.2 s. Clock now Friday 3 November 1820, 19:00:01 (seven o'clock in the evening).
+--- reply
+The taproom of the coaching inn glowed with tallow lamps and the light of a good fire, though the evening outside was raw and damp, a thin rain having fallen on the roads most of the day. The room was about half full: drovers and a commercial traveller or two, the smell of wet wool and spilled ale thick in the warm air. It was seven o'clock in the evening, and the light was failing fast beyond the small, fogged panes
+
+Rain had come down softly on the road from Leeds all day, and the November chill had settled into everything; now, at evening, the air was cool and damp, the fire in the taproom grate burning welcome against it.
+
+Tom crossed the boards to a table near the fire and sat down, the bench creaking under him. From there he could feel the heat on his boots and see the whole taproom: the half-dozen tables, the landlord's boy wiping down the bar, and the drover at the next table who glanced over at the newcomer.
+--- open: What the drover at the next table does, and whether anyone comes to take Tom's order.
+--- planner answers
+{"calls":{"RecordFact":{"scene location":{"common_knowledge":true}}},"then":[],"need":[],"at":[53.96,-1.08],"present":["Tom"]}
+
+=== #2.2: I call to the innkeeper for a pint of ale.
+clock: Friday 3 November 1820, 19:00:03
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: rain, 1.2 mm over the day; high 14 °C, low -1 °C; now about 12 °C.
+2. NewCharacter {"who":"the innkeeper","occupation":"innkeeper"}
+   draws: 0.0759, 0.3461, 0.2269, 0.3319
+   → the innkeeper: a 26-year-old man; occupation: innkeeper.
+3. Price {"question":"price of goods","item":"beer (litre)","quantity":0.568}
+   draws: none
+   → 0.568 × beer (litre) in London, 1820: 0.69 g of silver (about 1½ d); a building labourer earns that in about 25 minutes of a 10-hour day.
+4. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (loud voice at 1 m, quiet room (25 dB)). the innkeeper now knows: for a pint of ale. Said in 1.5 s; clock now Friday 3 November 1820, 19:00:03 (seven o'clock in the evening).
+5. Choose {"who":"the drover","options":[{"option":"go back to his drink and ignore the newcomer","share":"65% more than half"},{"option":"nod a greeting to Tom and offer a word about the weather or the roads","share":"35% fewer than half"}]}
+   draws: 0.1087
+   → the drover chooses: go back to his drink and ignore the newcomer.
+6. Transfer {"item":"pint of ale","from":"the innkeeper","to":"Tom","how":"sold"}
+   draws: none
+   → pint of ale sold from the innkeeper to Tom; Tom now has it. Recorded.
+--- reply
+The taproom was warm and half-lit, tallow lamps and the fire holding back the November dark outside, where a thin rain had wetted the roads all day and the air now hung cool and damp. It was seven o'clock in the evening. The room smelled of wet wool, pipe smoke, and spilled ale, and the talk of drovers and a commercial traveller ran low over the crackle of the fire.
+
+Behind the bar stood the innkeeper, a young man of six-and-twenty, sleeves rolled and a cloth over his shoulder, keeping an eye on the room and the boy wiping down the counter.
+
+A pint of ale here stood at about a penny ha'penny, the going rate for beer in these parts, and no great sum for a working man.
+
+Tom called out his order from his table near the fire, his voice carrying plainly across the quiet room, and the innkeeper caught every word of it.
+
+The drover at the next table glanced over at the newcomer once, then thought better of it and turned back to his own pot, giving Tom no further mind.
+
+The innkeeper drew a pint from the cask and brought it over, setting the foaming jug down on Tom's table; the ale was his now, cool and bitter-smelling in the firelight.
+--- open: whether anyone else in the taproom takes notice of Tom now that he has been served
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","speaker_voice":"normal"}}},"then":[{"question":"What does the drover at the next table do now that Tom has called out?","tool":"Choose"}],"need":["Choose"]}
+- - -
+{"calls":{"Choose":{"the drover":{"options":[{"option":"go back to his drink and ignore the newcomer","share":"65% more than half"},{"option":"nod a greeting to Tom and offer a word about the weather or the roads","share":"35% fewer than half"}]}},"Transfer":{"pint of ale":{"from":"the innkeeper","to":"Tom","how":"sold"}}},"then":[],"need":[]}
+
+=== #2.3: Two men at the next table are whispering. I keep still and listen.
+clock: Friday 3 November 1820, 19:02:05
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: rain, 1.2 mm over the day; high 14 °C, low -1 °C; now about 12 °C.
+2. Communicate {"speaker":"the first man","listener":"the second man","distance_m":1,"effort":"whisper","message":"(what the first man whispers to the second)","speaker_voice":"normal"}
+   draws: none
+   → the second man hears the first man and makes out most words; a few are lost (whisper at 1 m, quiet room (25 dB)). the second man now knows: (what the first man whispers to the second). Said in 2.4 s; clock now Friday 3 November 1820, 19:00:05 (seven o'clock in the evening).
+3. Listen {"listener":"Tom","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","reveals":"what the two men at the next table are whispering about"}
+   draws: none
+   → Tom hears it (quiet conversation (50 dB at 1 m) at 2 m, conversation nearby (50 dB)). Tom now knows: what the two men at the next table are whispering about.
+4. NewCharacter {"who":"the first man","min_age":18}
+   draws: 0.6613, 0.8586, 0.02
+   → the first man: a 44-year-old man; occupation: first man.
+5. NewCharacter {"who":"the second man","min_age":18}
+   draws: 0.0198, 0.7772, 0.9116
+   → the second man: a 18-year-old man; occupation: second man.
+6. PassTime {"minutes":2,"resting":["Tom"]}
+   draws: 0.859, 0.4489, 0.0914, 0.6634, 0.6442, 0.9488, 0.8923, 0.5967
+   → 2 minutes passed.
+Tom (human): blood lost 0 L.
+the innkeeper (human): blood lost 0 L.
+the first man (human): blood lost 0 L.
+the second man (human): blood lost 0 L.
+7. Look {"viewer":"the drover","viewer_species":"human","target":"Tom sitting still, listening","size_m":0.5,"distance_m":2,"light":"living room","reveals":"Tom is listening in on the two men's whispering"}
+   draws: 0.1007
+   → the drover identifies it (can tell which individual or exact kind) (0.5 m target at 2 m, living room). the drover now knows: Tom is listening in on the two men's whispering.
+--- reply
+The taproom stayed warm and half-lit, the fire crackling in the grate against the raw November evening outside, where a thin rain had wetted the roads all day and the air hung cool and damp. It was seven o'clock in the evening, and the low talk of drovers and a commercial traveller murmured over the hiss of the tallow lamps. The room smelled of wet wool, pipe smoke, and ale.
+
+At the next table, two men had put their heads together: the elder a weathered man of about four-and-forty, the other a mere lad of eighteen. The elder leaned close and whispered to his companion, his words low and hurried; the younger man caught most of what was said, though a word or two was lost under the crackle of the fire.
+
+Tom kept still at his own table, his pint untouched before him, and let his ears do the work. Sitting so near, he made out the whispering plainly enough, and what the two men were saying came to him whole, though he gave no sign of it.
+
+The elder of the two was a hard-looking man of some four-and-forty years, thick through the shoulders, with a face weathered by the roads.
+
+The younger was a lad of eighteen, thin and restless, glancing now and again toward the door as the older man spoke.
+
+A few minutes passed in this way, the fire burning down, the talk in the room rising and falling, and Tom's ale slowly losing its head.
+
+The drover at the next table, who had marked the newcomer before, looked over again, and this time his eye went from Tom's still face to the two whispering men and back again. He could see plain enough what Tom was about: the carter sat listening in on the pair's private talk.
+--- open: What will the drover do, now that he has seen Tom listening in on the two men's whispering?
+--- planner answers
+{"calls":{"Communicate":{"the first man":{"listener":"the second man","distance_m":1,"effort":"whisper","message":"(what the first man whispers to the second)","speaker_voice":"normal"}},"Listen":{"Tom":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","reveals":"what the two men at the next table are whispering about"}},"NewCharacter":{"the first man":{"min_age":18},"the second man":{"min_age":18}},"PassTime":{"minutes":2,"resting":["Tom"]}},"then":[{"question":"Does anyone else in the taproom take notice of Tom as he sits listening?","tool":"Look"}],"need":["Look"]}
+- - -
+{"calls":{ "Look": { "the drover": { "viewer_species":"human", "target":"Tom sitting still, listening", "size_m":0.5, "distance_m":2, "light":"living room", "reveals":"Tom is listening in on the two men's whispering" } } }}
+
+=== #2.4: I go to the innkeeper and tell him what I heard.
+clock: Friday 3 November 1820, 19:02:11
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: rain, 1.2 mm over the day; high 14 °C, low -1 °C; now about 12 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"normal","message":"what I heard","speaker_languages":["English"],"listener_languages":["English"],"speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (normal voice at 1 m, quiet room (25 dB)). the innkeeper now knows: what I heard. Said in 1.0 s; clock now Friday 3 November 1820, 19:02:06 (about seven o'clock in the evening).
+3. Act {"who":"Tom","action":"crosses the taproom to the bar and stands before the innkeeper","distance_m":5}
+   draws: none
+   → Tom stands up from sitting: 1.6 s; Tom walks 5 m from where Tom stood to bar at 1.62 m/s: 3.1 s; Tom is already standing (4.7 s in all). Span 4.7 s. Clock now Friday 3 November 1820, 19:02:11 (about seven o'clock in the evening).
+4. Choose {"who":"the drover","options":[{"option":"keeps his seat and says nothing, minding his own business","share":"80% most"},{"option":"warns the two whispering men that Tom overheard them","share":"20% few"},{"option":"confronts Tom at the bar about eavesdropping","share":"5% almost no one"}]}
+   draws: 0.0629
+   → the drover chooses: keeps his seat and says nothing, minding his own business.
+5. Look {"viewer":"the first man","viewer_species":"human","target":"Tom leaving his table and going to the bar","size_m":0.5,"distance_m":3,"light":"living room","reveals":"Tom has left his table and is speaking to the innkeeper"}
+   draws: 0.9245
+   → the first man identifies it (can tell which individual or exact kind) (0.5 m target at 3 m, living room). the first man now knows: Tom has left his table and is speaking to the innkeeper.
+6. Look {"viewer":"the second man","viewer_species":"human","target":"Tom leaving his table and going to the bar","size_m":0.5,"distance_m":3,"light":"living room","reveals":"Tom has left his table and is speaking to the innkeeper"}
+   draws: 0.6454
+   → the second man identifies it (can tell which individual or exact kind) (0.5 m target at 3 m, living room). the second man now knows: Tom has left his table and is speaking to the innkeeper.
+7. SocialResponse {"who":"the innkeeper","situation":"a statement that might be a lie","speaker":"Tom","is_lie":false,"statement":"the two men at the next table are whispering about something suspicious"}
+   draws: 0.8567, 0.5507, 0.5392, 0.9486, 0.5009, 0.6848, 0.7168
+   → the innkeeper believes it, from Tom's manner alone: no proof either way.
+--- reply
+The taproom was warm and half-lit, the fire burning low in the grate against the raw November evening, where a thin rain had wetted the roads all day and the air hung cool and damp. It was about seven o'clock. The low talk of drovers and a commercial traveller murmured over the hiss of the tallow lamps, and the room smelled of wet wool, pipe smoke, and ale.
+
+Tom rose from his bench and crossed the boards to the bar, and there he spoke to the innkeeper, telling him in a low, steady voice what he had overheard at the next table. The taproom was quiet enough that the innkeeper, leaning close, caught every word of it.
+
+Tom had left his table by the fire and now stood at the bar, a yard from the innkeeper, his pint still sitting abandoned on the table behind him.
+
+The drover at the next table watched Tom go, marked him speaking to the landlord, and then looked away, keeping his seat and saying nothing, minding his own business and his own pot.
+
+At their table, the elder man of four-and-forty looked up and marked Tom plainly: the carter had left his seat and was standing at the bar, talking to the innkeeper.
+
+The young lad of eighteen saw it too, his restless eye catching Tom at the bar, and he nudged his companion's elbow as if to say their neighbour had moved off.
+
+The innkeeper listened to Tom's account, and something in the carter's manner — the plain way he told it, without flourish or hurry — carried conviction. He believed what Tom said, though he had no proof of it either way, and his face took on a thoughtful, troubled look as he glanced once toward the two men at the table by the fire.
+--- open: What the innkeeper says or does next about the two men
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","speaker_languages":["English"],"listener_languages":["English"],"message":"what I heard","speaker_voice":"normal"}},"Act":{"Tom":{"action":"crosses the taproom to the bar and stands before the innkeeper","distance_m":5}}},"then":[{"question":"What does the drover do, now that he has seen Tom listening in and now going to the innkeeper?","tool":"Choose"},{"question":"Do the two whispering men notice Tom leaving his table for the bar?","tool":"Look"},{"question":"How does the innkeeper respond to what Tom tells him?","tool":"SocialResponse"}],"need":["Choose","SocialResponse"]}
+- - -
+{"calls":{"Choose":{"the drover":{"options":[{"option":"keeps his seat and says nothing, minding his own business","share":"80% most"},{"option":"warns the two whispering men that Tom overheard them","share":"20% few"},{"option":"confronts Tom at the bar about eavesdropping","share":"5% almost no one"}]}},"Look":{"the first man":{"viewer_species":"human","target":"Tom leaving his table and going to the bar","size_m":0.5,"distance_m":3,"light":"living room","reveals":"Tom has left his table and is speaking to the innkeeper"},"the second man":{"viewer_species":"human","target":"Tom leaving his table and going to the bar","size_m":0.5,"distance_m":3,"light":"living room","reveals":"Tom has left his table and is speaking to the innkeeper"}},"SocialResponse":{"the innkeeper":{"situation":"a statement that might be a lie","speaker":"Tom","is_lie":false,"statement":"the two men at the next table are whispering about something suspicious"}}}}
+
