@@ -10,7 +10,8 @@ import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
 import { planSchema } from './plan-schema.js';
-import { routedTools, movesIn } from './router.js';
+import { routedTools, movesIn, ALWAYS } from './router.js';
+import { framedCalls, playerName, mergeCalls } from './frame.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import { loadColex } from './colex.js';
@@ -239,12 +240,26 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
     else {
         await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
         const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
-        // Code reads the tools from the player's verbs (router.ts); the model picks only when no verb class matches.
-        const only = routedTools(String(chat[chat.length - 1].mes ?? ''), n => REGISTRY.has(n) && !SKIP.has(n)) ?? await pickTools(chat, send) ?? undefined;
+        // Code reads the tools from the player's verbs (router.ts) and writes every call whose arguments the words give
+        // (frame.ts); the planner is asked only for the tools left open, and skipped when none are. The model picks the
+        // tools only when no verb maps to one.
+        const said0 = String(chat[chat.length - 1].mes ?? ''), has = (n) => REGISTRY.has(n) && !SKIP.has(n);
+        const player = playerName(ctx.name1, tracker);
+        const framed = player ? framedCalls(said0, player) : { calls: [], covered: new Set() };
+        framed.calls = framed.calls.filter(c => has(c.tool));
+        framed.covered = new Set(framed.calls.map(c => c.tool));
+        const routed = routedTools(said0, has);
+        const left = routed ? [...routed].filter(t => !framed.covered.has(t) && !ALWAYS.includes(t)) : null;
+        const only = routed ? new Set([...left, ...ALWAYS.filter(has)]) : await pickTools(chat, send) ?? undefined;
         planTools.current = only;
-        const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only), thingsBlock(found)].filter(Boolean).join('\n\n');
-        const lastPlanText = String(await send(QUESTION_SYSTEM, prompt) ?? '');
+        const settled = framed.calls.filter(c => framed.covered.has(c.tool)), drafts = framed.calls.filter(c => !framed.covered.has(c.tool));
+        const already = (settled.length ? `\n\nCODE HAS ALREADY CALLED (from the player's words; these results come back with yours)\n${settled.map(c => `- ${c.tool} ${JSON.stringify(c.args)}`).join('\n')}` : '')
+            + (drafts.length ? `\n\nCODE READ FROM THE PLAYER'S WORDS (call these with the scene's numbers added: distance_m, noise, barrier)\n${drafts.map(c => `- ${c.tool} ${JSON.stringify(c.args)}`).join('\n')}` : '');
+        const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only) + already, thingsBlock(found)].filter(Boolean).join('\n\n');
+        const skipPlanner = !!routed && left.length === 0 && framed.calls.length > 0;
+        const lastPlanText = skipPlanner ? '{"calls":[]}' : String(await send(QUESTION_SYSTEM, prompt) ?? '');
         const plan = hoist(rawPlan(lastPlanText));
+        plan.calls = plan.calls.filter(c => !framed.covered.has(c.tool));
         setRead(await resolveRead(found, plan, choose));
         present = plan.present;
         // A date the player wrote is read by code and wins over the plan's; the plan's comes next, then the cast and scene.
@@ -278,7 +293,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             }
         }
         const valid = validCalls(plan.calls), dropped = plan.calls.filter(c => !valid.includes(c));
-        calls = dedupe(valid);
+        calls = dedupe(mergeCalls(framed.calls, valid));
         const unread = !/\{\s*"calls"/.test(lastPlanText);
         // A motion the player's message names (step out, sit down, cross the room) needs its time: code reads the verb.
         const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && movesIn(said);

@@ -53,7 +53,7 @@ const VERB_TOOL = {
     kick: ['BodyStrike', 'Break'], smash: ['Break'], shatter: ['Break'],
     hand: ['Transfer'], take: ['Transfer'], pocket: ['Transfer'], lend: ['Transfer'], borrow: ['Transfer'],
 };
-const ALWAYS = ['RecordFact', 'PassTime', 'NewCharacter'];
+export const ALWAYS = ['RecordFact', 'PassTime', 'NewCharacter'];
 // Irregular past and participle forms back to the verb (the ones VerbNet's members need most).
 const IRREGULAR = Object.fromEntries([
     ['say', 'said'], ['tell', 'told'], ['speak', 'spoke spoken'], ['see', 'saw seen'], ['hear', 'heard'], ['take', 'took taken'],

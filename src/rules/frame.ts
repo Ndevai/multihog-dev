@@ -1,0 +1,97 @@
+// Tool calls written by code from the player's message (docs/progress.md entry 40): where the words give every argument a
+// tool requires, code writes the call and the planner model is asked only for the tools left open. The verb, the person
+// spoken to, the words said, the distance walked, the time waited and the thing handed over are read here; what only the
+// scene gives (how far, how loud the room, how hard a climb) stays with the planner.
+import { distanceIn, stepsFromWords } from './actions.js';
+import { movesIn } from './router.js';
+import { VERBNET } from './data/verbnet.js';
+
+export type Call = { tool: string; args: Record<string, unknown> };
+const PRONOUN = /^(?:him|her|them|it)$/i;
+// A person named after a verb or preposition: "the innkeeper", "Will", "the old man".
+const PERSON = String.raw`((?:the |an? )?(?:[a-z]+ ){0,2}?[a-z]+|[A-Z][a-z]+)`;
+const ROLE = /^(?:the |an? )?(?:old |young |little |tall |fat |thin )?[a-z]+$/i;
+
+/** The last person the message names before position i (for "him" / "her"): a phrase after a word that takes a person
+ *  (to, at, with, tell, ask, give…), or a capitalized name inside a sentence. */
+const STOP = /\s+(?:and|for|what|that|to|then|with|about|is|are|was|were|if|who|on|in|at|by|near)\b.*$/;
+function lastNamed(text: string, before: number): string | null {
+    const head = text.slice(0, before), found: { at: number; p: string }[] = [];
+    for (const m of head.matchAll(/\b(?:to|at|with|from|ask|asks|asked|tell|tells|told|greet|greets|greeted|give|gives|gave)\s+((?:the\s+)?[a-z]+(?:\s+[a-z]+)?)/g)) {
+        const p = m[1].replace(STOP, '');
+        if (!/\b(?:street|market|house|home|table|fire|door|window|wall|garden|lawn|hedge|room|way|corner|side|be|go|see|get|stop|me|you|him|her|them)$/.test(p)) found.push({ at: m.index!, p: p.startsWith('the ') ? p : `the ${p}` });
+    }
+    for (const m of head.matchAll(/(?<![.!?]\s|^)\b([A-Z][a-z]+)\b/g)) if (!/^(?:I|The|A|An|My)$/.test(m[1])) found.push({ at: m.index!, p: m[1] });
+    return found.sort((x, y) => x.at - y.at).pop()?.p ?? null;
+}
+const clean = (p: string) => p.replace(/^(?:an? )/i, 'the ').trim();
+
+/** Communicate: speaker the player, listener the person spoken to, the words said, how loud the verb says. */
+function speech(text: string, player: string): Call | null {
+    const quoted = text.match(/["“]([^"”]{2,})["”]/)?.[1];
+    const verb = text.match(/\b(whisper|murmur|mutter|say|said|tell|told|ask|asked|call|called|shout|shouted|yell|yelled|scream|screamed|bellow|bellowed|cry|cried|greet|greeted|reply|replied|answer|answered|talk|talked|speak|spoke|chat|chatted)s?\b/i);
+    if (!verb && !quoted) return null;
+    const at = verb?.index ?? 0, rest = text.slice(at + (verb?.[0].length ?? 0));
+    let listener = rest.match(new RegExp(String.raw`^\s+(?:out\s+)?(?:to|at|with)\s+${PERSON}`, 'i'))?.[1]
+        ?? (/^(?:tell|told|ask|asked|greet|greeted|answer|answered)/i.test(verb?.[1] ?? '') ? rest.match(new RegExp(String.raw`^\s+${PERSON}`))?.[1] : undefined)
+        ?? text.match(new RegExp(String.raw`\b(?:to|at)\s+${PERSON}\s*[.!?]?\s*$`))?.[1];
+    if (listener && PRONOUN.test(listener.split(' ').pop()!)) listener = lastNamed(text, at) ?? undefined;
+    if (!listener || !(ROLE.test(listener) || /^[A-Z][a-z]+$/.test(listener))) return null;
+    listener = listener.split(/ (?:for|about|what|that|to|and)\b/)[0];
+    const v = (verb?.[1] ?? '').toLowerCase();
+    const effort = /^(whisper|murmur|mutter)/.test(v) ? 'whisper' : /^(shout|yell|scream|bellow)/.test(v) ? 'shout' : /^(call|cr)/.test(v) ? 'loud' : 'normal';
+    const message = quoted ?? rest.replace(new RegExp(String.raw`^\s+(?:out\s+)?(?:to|at|with)?\s*(?:${listener.replace(/^the /, '(?:the )?')}|him|her|them)\b`, 'i'), '').replace(/^[\s,]+|[.!?]+$/g, '').trim();
+    // The words end where the next action begins ("ask the costermonger for apples and pay him").
+    const said = message.replace(/,?\s+(?:and|then)\s+(?:then\s+)?([a-z]+)\b.*$/, (all, w: string) => VERBNET[w] || VERBNET[w.replace(/e?s$/, '')] ? '' : all);
+    return { tool: 'Communicate', args: { speaker: player, listener: /^[A-Z]/.test(listener) ? listener : clean(listener), means: 'speech', effort, ...said ? { message: said } : {} } };
+}
+
+/** Act: the player's motion in their own words, with the distance the words give. A walk the words give no distance for
+ *  is left to the planner, which reads it from the scene. */
+function motion(text: string, player: string): Call | null {
+    if (!movesIn(text)) return null;
+    const action = text.replace(/["“][^"”]*["”]/g, '').replace(/^\s*I\s+/, '').trim(), d = distanceIn(text);
+    return 'steps' in stepsFromWords(action, player, d ?? undefined) ? { tool: 'Act', args: { who: player, action, ...d ? { distance_m: d } : {} } } : null;
+}
+
+/** PassTime: a wait the words time ("wait an hour", "sleep for eight hours", "rest twenty minutes"). */
+const UNITS: Record<string, number> = { minute: 1, minutes: 1, hour: 60, hours: 60, day: 1440, days: 1440 };
+const COUNT: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'half an': 0.5, 'a quarter of an': 0.25 };
+function waiting(text: string, player: string): Call | null {
+    const m = text.match(/\b(wait|waits|waited|sleep|sleeps|slept|rest|rests|rested|stay|stays|stayed|linger|lingers|lingered)\b(?:\s+(?:here|there|still|quietly))?\s+(?:for\s+)?(\d+(?:\.\d+)?|half an|a quarter of an|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty)\s+(minutes?|hours?|days?)\b/i);
+    if (!m) return null;
+    const n = /\d/.test(m[2]) ? Number(m[2]) : COUNT[m[2].toLowerCase()];
+    const minutes = Math.round(n * UNITS[m[3].toLowerCase()]);
+    const sleeping = /^sle|^slept/i.test(m[1]);
+    return minutes > 0 ? { tool: 'PassTime', args: { minutes, [sleeping ? 'sleeping' : 'resting']: [player] } } : null;
+}
+
+/** Transfer: "give Will one of the apples", "hand her the letter". */
+const NUMBER: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, some: 1, the: 1 };
+function handing(text: string, player: string): Call | null {
+    const m = text.match(/\b(?:give|gives|gave|hand|hands|handed|pass|passes|passed)\s+([A-Z][a-z]+|him|her|them|the [a-z]+)\s+(a|an|one|two|three|four|five|six|some|the)\s+(?:of\s+(?:the|my)\s+)?([a-z]+(?: [a-z]+)?)\b/);
+    if (!m) return null;
+    let to = m[1];
+    if (PRONOUN.test(to)) { const p = lastNamed(text, m.index ?? 0); if (!p) return null; to = p; }
+    return { tool: 'Transfer', args: { item: m[3].replace(/ (?:and|to|then)$/, ''), quantity: NUMBER[m[2]] ?? 1, from: player, to, how: 'given' } };
+}
+
+/** Tools whose outcome turns on numbers only the scene gives (how far the listener stands, how loud the room): code writes
+ *  the words' part and the planner still answers for them; its call is completed from code's. */
+export const SCENE_TOOLS = new Set(['Communicate']);
+/** The calls code can write from this message, and the routed tools they settle (the planner skips those). */
+export function framedCalls(text: string, player: string): { calls: Call[]; covered: Set<string> } {
+    const calls = [motion(text, player), speech(text, player), waiting(text, player), handing(text, player)].filter((c): c is Call => !!c);
+    return { calls, covered: new Set(calls.map(c => c.tool).filter(t => !SCENE_TOOLS.has(t))) };
+}
+/** The planner's calls with code's words filled in: a planner call of a scene tool takes code's arguments it left out, and
+ *  replaces code's call; code's call stands when the planner gave none. */
+export function mergeCalls(code: Call[], planned: Call[]): Call[] {
+    const out = planned.map(p => { const c = code.find(x => x.tool === p.tool && SCENE_TOOLS.has(x.tool)); return c ? { tool: p.tool, args: { ...c.args, ...p.args } } : p; });
+    return [...code.filter(c => !(SCENE_TOOLS.has(c.tool) && planned.some(p => p.tool === c.tool))), ...out];
+}
+/** The player's character: SillyTavern's persona name, else the cast line marked "(the player's character)". */
+export function playerName(name1: unknown, cast: string): string | null {
+    const fromCast = cast.match(/^\s*([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*\(the player's character\)/m)?.[1];
+    return fromCast ?? (typeof name1 === 'string' && name1.trim() && name1 !== 'User' ? name1.trim() : null);
+}

@@ -54,7 +54,7 @@ const VERB_TOOL: Record<string, string[]> = {
     kick: ['BodyStrike', 'Break'], smash: ['Break'], shatter: ['Break'],
     hand: ['Transfer'], take: ['Transfer'], pocket: ['Transfer'], lend: ['Transfer'], borrow: ['Transfer'],
 };
-const ALWAYS = ['RecordFact', 'PassTime', 'NewCharacter'];
+export const ALWAYS = ['RecordFact', 'PassTime', 'NewCharacter'];
 
 // Irregular past and participle forms back to the verb (the ones VerbNet's members need most).
 const IRREGULAR: Record<string, string> = Object.fromEntries(([
