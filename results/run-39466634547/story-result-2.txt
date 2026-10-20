@@ -1,0 +1,140 @@
+z-ai/glm-5.3, reasoning low, 5 min, 2026-10-20T17:44:16.863Z, 14 calls asked, 3 replayed
+1 fault(s) in 4 of 4 turns
+#2.2 rule check: "She seemed inclined to stop and pass the time of day with a carter who had lately come in from the road." → SocialResponse (contradicts)
+
+=== #2.1: I sit down at a table near the fire.
+clock: Friday 3 November 1820, 19:00:01
+faults: none
+--- calls
+1. Act {"who":"Tom","action":"sit down at a table near the fire."}
+   draws: none
+   → Tom sits down: 1.2 s (1.2 s in all). Span 1.2 s. Clock now Friday 3 November 1820, 19:00:01.
+--- reply
+The taproom of the coaching inn smelled of tallow, spilled ale, and wet wool, and a low fire crackled in the grate against the November chill. Tom crossed the boards, which creaked under his boots, and lowered himself onto a bench at a table near the hearth. The warmth of the flames reached his back as he settled, the bench scraping against the flagstones. Around him perhaps a dozen travellers and locals talked in low voices over their pots, and a maid moved between the tables with a tray.
+--- open: What the maid or any of the other drinkers near the fire might say or do now that Tom has taken his seat
+--- planner answers
+{"calls":{"NewCharacter":{"taproom patrons and innkeeper":{}}},"then":[],"need":[]}
+
+=== #2.2: I call to the innkeeper for a pint of ale.
+clock: Friday 3 November 1820, 19:05:04
+faults: 
+  rule check: "She seemed inclined to stop and pass the time of day with a carter who had lately come in from the road." → SocialResponse (contradicts)
+--- calls
+1. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"loud","message":"Bring me a pint of ale, if you please.","noise":"loud room (75 dB)"}
+   draws: none
+   → the innkeeper hears Tom and makes out some words; the gist only (loud voice at 1 m, loud room (75 dB)). the innkeeper now knows: Bring me a pint of ale, if you please. Said in 2.8 s; clock now Friday 3 November 1820, 19:00:04.
+2. NewCharacter {"who":"the innkeeper","occupation":"innkeeper"}
+   draws: 0.1588, 0.2175, 0.6077, 0.1644
+   → the innkeeper: a 23-year-old man; occupation: Innkeeper, Hotel Keeper, Publican; born in this county.
+3. PassTime {"minutes":5,"resting":["Tom"]}
+   draws: 0.8978, 0.0772, 0.7391, 0.4704
+   → 5 minutes passed.
+Tom (human): blood lost 0 L.
+the innkeeper (human): blood lost 0 L.
+4. Price {"item":"beer (litre)","question":"price of goods","quantity":0.57,"city":"London","country":"England","year":1820}
+   draws: none
+   → 0.57 × beer (litre) in London, 1820: 0.69 g of silver (about 1½ d); a building labourer earns that in 0.4 hours of a 10-hour day.
+5. Transfer {"item":"pint of ale","from":"the innkeeper","to":"Tom","how":"sold"}
+   draws: none
+   → pint of ale sold from the innkeeper to Tom; Tom now has it. Recorded.
+6. SocialResponse {"who":"the maid","situation":"a brief first meeting","sex":"female"}
+   draws: 0.1876
+   → the maid is interested and would meet again.
+--- reply
+Tom leaned back on the bench and raised his voice above the din of the taproom. "Bring me a pint of ale, if you please!" he called toward the bar, where a young man was drawing corks behind the counter.
+
+The taproom was loud with talk and the clatter of pots, and the innkeeper had to pick the words out of the general noise, but he caught the gist of the order well enough and gave Tom a nod across the room.
+
+The innkeeper was a young man of about three-and-twenty, born in the county, with the broad hands and easy manner of one who had kept this house long enough to know every face that passed through the door.
+
+A few minutes passed while the fire settled and the talk around the tables rose and fell. Then the innkeeper came over himself, wiping his hands on his apron, a brimming pint in one hand.
+
+"That'll be a penny ha'penny, friend," he said as he set it down — the going rate for a pint of ale in these parts, no more than a labourer might earn in half an hour of his day.
+
+Tom counted out the coppers and the tankard passed across the table into his hand, the ale cool and fresh within it. The bargain was struck and the innkeeper, satisfied, returned to his place behind the bar.
+
+The maid, passing near Tom's table with her tray, slowed her step and glanced at him with a look that lingered a moment longer than her rounds required. She seemed inclined to stop and pass the time of day with a carter who had lately come in from the road.
+--- open: Will the maid stop at Tom's table and speak to him?
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"loud","noise":"loud room (75 dB)","message":"Bring me a pint of ale, if you please."}},"NewCharacter":{"the innkeeper":{"occupation":"innkeeper"}},"PassTime":{"minutes":5,"resting":["Tom"]}},"then":[{"question":"Does the innkeeper (or the maid) hear the call and bring Tom his pint of ale?","tool":"SocialResponse"}],"need":["SocialResponse","Price"]}
+- - -
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"raised","message":"for a pint of ale","speaker_voice":"normal"}}},"then":[{"question":"Does the innkeeper hear and bring the ale, and what does the maid or any drinker near the fire say or do now that Tom has called out?","tool":"SocialResponse"}],"need":["SocialResponse"]}
+- - -
+{"calls":{"Price":{"beer (litre)":{"question":"price of goods","quantity":0.57,"city":"London","country":"England","year":1820}},"Transfer":{"pint of ale":{"from":"the innkeeper","to":"Tom","how":"sold"}},"SocialResponse":{"the maid":{"situation":"a brief first meeting","sex":"female"}}},"then":[{"question":"What does the maid or any drinker near the fire say or do now that Tom has been served?","tool":"Choose"}],"need":["Choose"]}
+
+=== #2.3: Two men at the next table are whispering. I keep still and listen.
+clock: Friday 3 November 1820, 19:05:04
+faults: none
+--- calls
+1. Weather {"latitude":53.96,"longitude":-1.08}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 34 km), 3/11/1820: dry; high 2 °C, low 0 °C; now about 2 °C.
+2. Listen {"listener":"Tom","sound":"quiet conversation (50 dB at 1 m)","spl_db":30,"distance_m":1.5,"noise":"loud room (75 dB)","reveals":"what the two men at the next table are whispering about"}
+   draws: none
+   → Tom misses it: too faint over the background (quiet conversation (50 dB at 1 m) at 1.5 m, loud room (75 dB)).
+3. Choose {"who":"the maid","options":[{"option":"stop at Tom's table and pass the time of day with him","share":"65% more than half"},{"option":"carry on with her rounds without stopping","share":"35% fewer than half"}]}
+   draws: 0.9054
+   → the maid chooses: carry on with her rounds without stopping.
+4. RecordFact {"fact":"the maid slowed her step and glanced at Tom","known_by":["Tom"],"how":"saw it"}
+   draws: none
+   → Fact 2 recorded: the maid slowed her step and glanced at Tom. Known by Tom.
+5. Listen {"listener":"the maid","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":1.5,"noise":"loud room (75 dB)"}
+   draws: none
+   → the maid misses it: too faint over the background (quiet conversation (50 dB at 1 m) at 1.5 m, loud room (75 dB)).
+6. NewCharacter {"who":"the maid","sex":"female","occupation":"maid"}
+   draws: 0.0417, 0.7985, 0.9596
+   → the maid: a 18-year-old woman; occupation: maid.
+--- reply
+Outside, the November night had closed in cold and dry, the frost already beginning to settle on the yard stones, the temperature hovering just above freezing.
+
+Tom kept still on his bench, his tankard cradled in his hands, and turned his ear toward the next table, where two men in greatcoats sat close together, their heads bent low. But the taproom was loud around him — the clatter of pots, the rumble of a dozen conversations, the hiss of the fire — and the whispering never rose above it. He caught the murmur of voices, nothing more; whatever passed between the two men stayed between them.
+
+The maid was a young woman of about eighteen, her sleeves rolled from the heat of the kitchen, her cap slightly askew from an evening's work.
+
+She passed Tom's table once more on her rounds, and though her eye fell on him again, she did not stop. She went on to the next table, gathered an empty pot onto her tray, and made her way toward the kitchen door, her business carrying her elsewhere.
+--- open: Whether the two men at the next table say anything that rises above the noise of the room, and whether the maid comes near Tom's table again on her rounds.
+--- planner answers
+{"calls":{"Listen":{"Tom":{"sound":"quiet conversation (50 dB at 1 m)","spl_db":30,"distance_m":1.5,"noise":"loud room (75 dB)","reveals":"what the two men at the next table are whispering about"}}},"then":[{"question":"Will the maid stop at Tom's table and speak to him?","tool":"Choose"},{"question":"If the maid stops and speaks, what are her sex, age and occupation?","tool":"NewCharacter"}],"need":["Listen","Choose","NewCharacter"]}
+- - -
+{"calls":{"Listen":{"Tom":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":1.5,"noise":"loud room (75 dB)","reveals":"what the two men at the next table are whispering about"}},"NewCharacter":{"the maid":{"sex":"female","occupation":"maid"}}},"then":[{"question":"Will the maid stop at Tom's table and speak to him?","tool":"Choose"}],"need":["Choose"],"at":[53.96,-1.08]}
+- - -
+{"calls":{"Choose":{"the maid":{"options":[{"option":"stop at Tom's table and pass the time of day with him","share":"65% more than half"},{"option":"carry on with her rounds without stopping","share":"35% fewer than half"}]}},"RecordFact":{"the maid slowed her step and glanced at Tom":{"known_by":["Tom"],"how":"saw it"}},"Listen":{"the maid":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":1.5,"noise":"loud room (75 dB)"}},"NewCharacter":{"the maid":{"sex":"female","occupation":"maid"}}},"then":[{"question":"If the maid stops and speaks, what are her sex, age and occupation?","tool":"NewCharacter"}],"need":["Choose","RecordFact","Listen","NewCharacter"]}
+
+=== #2.4: I go to the innkeeper and tell him what I heard.
+clock: Friday 3 November 1820, 19:05:14
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 2 °C, low 0 °C; now about 2 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"normal","message":"Two men at the next table were whispering together; I could not make out what they said.","speaker_languages":["English"],"speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (normal voice at 1 m, quiet room (25 dB)). the innkeeper now knows: Two men at the next table were whispering together; I could not make out what they said. Said in 5.2 s; clock now Friday 3 November 1820, 19:05:09.
+3. Act {"who":"Tom","action":"stands up from the bench and crosses the taproom to the bar","distance_m":6}
+   draws: none
+   → Tom stands up from sitting: 1.6 s; Tom walks 6 m from where Tom stood to bar at 1.62 m/s: 3.7 s (5.3 s in all). Span 5.3 s. Clock now Friday 3 November 1820, 19:05:14.
+4. Communicate {"speaker":"the innkeeper","listener":"the maid","speaker_languages":[],"listener_languages":[]}
+   draws: none
+   → the maid hears the innkeeper and makes out every word (normal voice at 1 m, quiet room (25 dB)).
+5. Listen {"listener":"the innkeeper","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":3,"noise":"loud room (75 dB)","barrier":"none","reveals":"Tom is telling the innkeeper about their whispering"}
+   draws: none
+   → the innkeeper misses it: too faint over the background (quiet conversation (50 dB at 1 m) at 3 m, loud room (75 dB)).
+6. SocialResponse {"who":"the innkeeper","situation":"a statement that might be a lie","speaker":"Tom","statement":"Two men at the next table were whispering together; I could not make out what they said.","evidence":"none"}
+   draws: 0.7334, 0.631, 0.3201, 0.9671, 0.3923, 0.7389, 0.2217
+   → the innkeeper judges it a lie, from Tom's manner alone: no proof either way.
+--- reply
+Tom pushed himself up from the bench and crossed the taproom to the bar, the boards creaking under his boots, his tankard left behind on the table. The innkeeper looked up from his casks as the carter leaned on the counter.
+
+"Two men at the next table were whispering together," Tom said, keeping his voice low. "I could not make out what they said." The taproom had quieted somewhat as the evening wore on, and the innkeeper caught every word plainly, nodding as Tom spoke.
+
+The innkeeper glanced down the room and murmured to the maid nearby, passing on what Tom had told him; she heard him well enough over the noise and paused with her tray, her eyes going to the two men in greatcoats.
+
+The innkeeper himself fell quiet then, straining his ears toward the next table. But the general din of the room — the talk, the clatter, the fire — swallowed whatever the two men might be saying, and he could make out nothing at all.
+
+He turned back to Tom with a narrowing of the eyes. There was nothing to be seen or heard from the two men to bear the tale out, and something in the carter's manner — the way he leaned in, the eagerness of it — did not sit right with him. "Whispering, were they," he said, flat and cool, wiping a hand along his apron. "Folk talk low in a taproom every night of the week. I'll thank you not to go putting notions about my customers." He said it quietly enough, but the doubt was plain in his face: he judged the carter was making something out of nothing, or worse.
+--- open: How Tom answers the innkeeper's cool reception, and whether the two men at the table have noticed the attention.
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","speaker_languages":["English"],"message":"Two men at the next table were whispering together; I could not make out what they said.","speaker_voice":"normal"}},"Act":{"Tom":{"action":"stands up from the bench and crosses the taproom to the bar","distance_m":6}}},"then":[{"question":"Does the innkeeper make anything of Tom's report, and how does he respond to it?","tool":"SocialResponse"},{"question":"Do the two men at the next table hear Tom telling the innkeeper about their whispering?","tool":"Listen"}],"need":["SocialResponse","Listen"]}
+- - -
+{"calls":{ "Communicate":{"the innkeeper":{"listener":"the maid","speaker_languages":[],"listener_languages":[]}},"Listen":{"the innkeeper":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":3,"noise":"loud room (75 dB)","barrier":"none","reveals":"Tom is telling the innkeeper about their whispering"}},"SocialResponse":{"the innkeeper":{"situation":"a statement that might be a lie","speaker":"Tom","statement":"Two men at the next table were whispering together; I could not make out what they said.","evidence":"none"}}},"then":[]}
+
