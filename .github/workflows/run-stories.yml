@@ -1,6 +1,6 @@
 # Plays the test stories (tools/run-story.mjs) and first turns (tools/run-play.mjs) on GitHub's machines instead of the
-# phone, and saves the results to the branch play-results, results/run-<run id>/. The three stories run as three parallel
-# jobs, each saving its own file as soon as it ends, so the first results arrive after one story's time instead of three. Runs when a commit on rules-standalone
+# phone, and saves the results to the branch play-results, results/run-<run id>/. The stories run as parallel
+# jobs, one per story,, each saving its own file as soon as it ends, so the first results arrive after one story's time instead of three. Runs when a commit on rules-standalone
 # says [run stories] (or [run play]) in its message, or by hand from the Actions tab. Needs the repository secret
 # NVIDIA_API_KEY (Settings → Secrets and variables → Actions); the key stays in GitHub and is passed only to the runner.
 name: Run stories
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 150
     strategy:
       fail-fast: false
-      matrix: { part: ['1', '2', '3'] }
+      matrix: { part: ['1', '2', '3', '4', '5', '6', '7', '8', '9'] }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,7 +31,7 @@ jobs:
       - name: Play
         env:
           # A second key (secret KEY2, another account's) takes story 2, so two accounts' rate limits run side by side.
-          NVIDIA_API_KEY: ${{ (matrix.part == '2' && secrets.KEY2) || secrets.NVIDIA_API_KEY || secrets.KEY }}
+          NVIDIA_API_KEY: ${{ ((matrix.part == '2' || matrix.part == '5' || matrix.part == '8') && secrets.KEY2) || secrets.NVIDIA_API_KEY || secrets.KEY }}
           RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || contains(github.event.head_commit.message, '[run probe]') && 'probe-schema' || contains(github.event.head_commit.message, '[run rate]') && 'probe-rate' || 'run-story') }}
           ARGS: ${{ inputs.args || '' }}
           PART: ${{ matrix.part }}

@@ -60,7 +60,7 @@ function motion(text, player) {
 const UNITS = { minute: 1, minutes: 1, hour: 60, hours: 60, day: 1440, days: 1440 };
 const COUNT = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'half an': 0.5, 'a quarter of an': 0.25 };
 function waiting(text, player) {
-    const m = text.match(/\b(wait|waits|waited|sleep|sleeps|slept|rest|rests|rested|stay|stays|stayed|linger|lingers|lingered)\b(?:\s+(?:here|there|still|quietly))?\s+(?:for\s+)?(\d+(?:\.\d+)?|half an|a quarter of an|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty)\s+(minutes?|hours?|days?)\b/i);
+    const m = text.match(/\b(wait|waits|waited|sleep|sleeps|slept|rest|rests|rested|stay|stays|stayed|linger|lingers|lingered)\b(?:\s+(?!for\b)[a-z']+){0,5}?\s+(?:for\s+)?(\d+(?:\.\d+)?|half an|a quarter of an|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty)\s+(minutes?|hours?|days?)\b/i);
     if (!m)
         return null;
     const n = /\d/.test(m[2]) ? Number(m[2]) : COUNT[m[2].toLowerCase()];

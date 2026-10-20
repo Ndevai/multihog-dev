@@ -689,3 +689,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - The user downloaded USDA ERS's all-vegetables CSV (2023, 93 rows), which the session could not fetch. data/usda-produce.ts now holds 31 vegetables, each in its whole fresh form where the table gives several (cabbage green, carrots raw whole, tomatoes large round…; olives canned), and 8 dried pulses. Fresh vegetables are priced against apples like the fruit (potatoes 0.50 ×, onions 0.57 ×, cabbage 0.44 ×, tomatoes 1.15 ×). Dried pulses are priced against the listed beans or peas, sold by the litre, at 0.8 kg a litre [ASSUMED] and the pulse's ratio to the mean dried bean (lentils 1.03 ×). London 1888, a pound: potatoes about ¾ d, lentils about 2 d.
 - `npm test`: 159 checks, 0 misses.
+
+## 2026-10-20 (69) Six more stories, for the tools stories 1–3 leave untouched
+
+- Every fault count today comes from the same three stories, and the fixes answer what those stories exposed. tools/run-story.mjs now holds stories 4–9: a fight and a chase on the Liverpool docks (1866), a plea and a pledge to a Paris landlord with bread bought and eaten (1832), a journeyman's 12-mile walk, a bed, sleep and a fever (Saxony 1845), a maid's broken dish and an hour's wait (Lisbon 1755), a coachman's fall on the ice and a vodka (Saint Petersburg 1861), and a nurse at the first public ether operation (Boston, 16 October 1846). The workflow runs nine parallel jobs, one per story; stories 2, 5 and 8 use KEY2 when it exists.
+- Found by the stand-in run: "I wait in the kitchen for an hour" wrote no PassTime, because words between the verb and the duration broke the pattern. Up to five words may now come between them.

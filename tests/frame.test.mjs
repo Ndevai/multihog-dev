@@ -16,6 +16,7 @@ const CASES = [
     ['I shout at the soldiers to stop.', 'Ann', [['Communicate', { listener: 'the soldiers', effort: 'shout' }]], []],
     ['I wait an hour.', 'Ann', [['PassTime', { minutes: 60, resting: ['Ann'] }]], []],
     ['I sleep for eight hours.', 'Ann', [['PassTime', { minutes: 480, sleeping: ['Ann'] }]], []],
+    ['I wait in the kitchen for an hour.', 'Ines', [['PassTime', { minutes: 60, resting: ['Ines'] }]], []],
     ['I hand her the letter.', 'Ann', [], ['Transfer']],
     ['I tell the captain that the ship is leaking and hand him the log.', 'Ann', [['Communicate', { listener: 'the captain' }], ['Transfer', { to: 'the captain', item: 'log' }]], []],
     ['I kneel beside the body.', 'Ann', [['Act', { who: 'Ann' }]], []],

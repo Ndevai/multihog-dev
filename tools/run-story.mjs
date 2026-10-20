@@ -39,6 +39,50 @@ const STORIES = [
             { player: 'I creep across the lawn to the lit window.', want: ['Act'] },
             { player: 'I look through the window to see who is inside.', want: ['Look'] },
         ] },
+    // Stories 4–9 use the tools stories 1–3 leave untouched: blows, a chase, persuasion, eating and drinking, sleep, sickness,
+    // a long walk, a wound treated, a choice by another person.
+    { cast: "Jack (the player's character): a 30-year-old dock labourer.", scenario: 'Liverpool docks, 14 March 1866, late afternoon, drizzle. A sailor has been shoving Jack at the warehouse door.',
+        turns: [
+            { player: 'I punch the sailor in the jaw.', want: ['BodyStrike'] },
+            { player: 'He runs off along the quay. I chase him.', want: ['Chase'] },
+            { player: 'I shout to the watchman to stop him.', want: ['Communicate'] },
+            { player: 'I bandage my bleeding knuckles with my handkerchief.', want: ['BodyTreat'] },
+        ] },
+    { cast: "Clara (the player's character): a 35-year-old seamstress.", scenario: 'Paris, rue Saint-Denis, 9 June 1832, noon. Her landlord, Monsieur Dufour, wants the rent she owes.',
+        turns: [
+            { player: 'I beg Monsieur Dufour to give me one more week to pay.', want: ['Communicate', 'SocialResponse'] },
+            { player: 'I offer him my silver thimble as a pledge.', want: ['SocialResponse', 'Transfer'] },
+            { player: 'I go to the baker on the corner and buy a loaf of bread.', want: ['Act', 'Price', 'Transfer'] },
+            { player: 'I eat half the loaf and drink a cup of water.', want: ['BodyIntake'] },
+        ] },
+    { cast: "Hans (the player's character): a 22-year-old journeyman carpenter on his travels.", scenario: 'On the road from Leipzig toward Halle, 21 October 1845, morning, cold and clear.',
+        turns: [
+            { player: 'I walk the twelve miles to the next village.', want: ['Act'] },
+            { player: 'I ask the innkeeper there for a bed for the night.', want: ['Communicate', 'Price'] },
+            { player: 'I sleep for eight hours.', want: ['PassTime'] },
+            { player: 'In the morning I wake with a fever and a cough.', want: ['Claim'] },
+        ] },
+    { cast: "Ines (the player's character): a 19-year-old maid in a merchant's house; Senhor Abreu, the merchant, is in his study.", scenario: 'Lisbon, Rua dos Fanqueiros, 30 October 1755, evening. Ines has broken a porcelain dish.',
+        turns: [
+            { player: 'I pick up the pieces of the dish.', want: ['Act'] },
+            { player: 'I go to the study and tell Senhor Abreu what happened.', want: ['Act', 'Communicate'] },
+            { player: 'I promise to pay for it from my wages.', want: ['Communicate', 'SocialResponse'] },
+            { player: 'I wait in the kitchen for an hour.', want: ['PassTime'] },
+        ] },
+    { cast: "Pyotr (the player's character): a 40-year-old coachman.", scenario: 'Saint Petersburg, Nevsky Prospect, 2 February 1861, night, deep snow.',
+        turns: [
+            { player: 'I climb down from the box of the sledge.', want: ['Act'] },
+            { player: 'I slip on the ice and fall.', want: ['BodyFall'] },
+            { player: 'I get up and look for my lost glove in the snow.', want: ['Act', 'Look'] },
+            { player: 'I drink a glass of vodka at the tavern to warm up.', want: ['Act', 'BodyIntake'] },
+        ] },
+    { cast: "Ellen (the player's character): a 27-year-old nurse.", scenario: 'Boston, Massachusetts General Hospital, 16 October 1846, morning. A patient, Mr. Abbott, is to have a tumour cut from his neck.',
+        turns: [
+            { player: 'I hold Mr. Abbott\'s hand and tell him not to be afraid.', want: ['Communicate'] },
+            { player: 'I watch the surgeon begin.', want: ['Look'] },
+            { player: 'I listen to whether Mr. Abbott cries out.', want: ['Listen'] },
+            { player: 'I walk to the window and open it for air.', want: ['Act'] },
+        ] },
 ];
 const NARRATOR = "You narrate the world in a story with the player's character. Narrate in third person, past tense, 2–3 paragraphs of 3–5 sentences, plain register. The player's character does what the player writes.";
 const REFUSED = /refused|fix and call again|State unchanged\.?\s*$|needs a calendar date|^Give /;
