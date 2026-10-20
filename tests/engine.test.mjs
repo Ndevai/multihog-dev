@@ -29,7 +29,7 @@ await run('Weather', { latitude: 53.96, longitude: -1.08, time: '1820-11-03 19:0
 T.setStoryTime?.(Date.UTC(1820, 10, 3, 19) / 60000);
 const st = ctx.chatMetadata.rulesEngine?.state;
 if (st) st.setting = { ...(st.setting ?? {}), country: 'United Kingdom of Great Britain and Northern Ireland' };
-expect('price city follows the scene', String(await run('Price', { question: 'price of goods', item: 'beer (litre)', quantity: 0.57, city: 'Leipzig', year: 1820 })), /in London, 1820/);
+expect('price city follows the scene', String(await run('Price', { question: 'price of goods', item: 'beer (litre)', quantity: 0.57, city: 'Leipzig', year: 1820 })), /at London prices, 1820/);
 // The ale's price asked in five cities is asked once.
 const Q = await import('../src/rules/question-pass.js');
 const asks = ['Leipzig', 'London', 'Paris'].map(city => ({ tool: 'Price', args: { question: 'price of goods', item: 'beer (litre)', quantity: 0.568, city, year: 1820 } }));

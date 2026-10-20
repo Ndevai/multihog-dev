@@ -10,7 +10,7 @@ import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './em
 import { skyLight } from './sky.js';
 import { LININGS, MATERIALS, GROUNDS, MATERIAL_NAMES, material, ropeBreakKg, rodBreakKg, plankBreakKg } from './materials.js';
 import type { Way } from './acoustics.js';
-import { findPlace, simulatePlaceYear, hourTemp, placeCountry, rainBoxes, rainNow } from './weather.js';
+import { findPlace, simulatePlaceYear, hourTemp, placeCountry, rainBoxes, rainNow, fold } from './weather.js';
 import { observedDay, cachedDay, reanalysisMissed } from './reanalysis.js';
 import { NORMALS } from './data/wmo-normals.js';
 import type { Place } from './weather.js';
@@ -1033,6 +1033,9 @@ export function registerRulesTools(enabled: boolean): void {
             return `Daily wage of a labourer in ${w.country}, ${year}: buys ${Math.round(w.ratio * 100)} % of what a British labourer's buys${g}.`;
         }
         // No city given: the scene country's listed city.
+        // A city the price series holds stands for the country's prices; the scene keeps its own town (a York inn priced "at
+        // London prices", not "in London", which moved the scene).
+        const inScene = !!a.city && !!st.setting?.label && fold(String(st.setting.label)).startsWith(fold(String(a.city)));
         if (!a.city && st.setting?.country && cityOfCountry(st.setting.country)) a = { ...a, city: cityOfCountry(st.setting.country)! };
         if (!CITIES.includes(a.city ?? "")) return 'Give city, or country for a daily wage elsewhere (1820–2008).';
         // A city in another country than the scene's, where the scene's country has a listed city, gives way to that one (a York
@@ -1056,7 +1059,8 @@ export function registerRulesTools(enabled: boolean): void {
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         // Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length].
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? `${Math.round(r.labourDays)} days` : r.labourDays >= 0.1 ? `${Math.round(r.labourDays * 10) / 10} days` : spokenWork(r.labourDays * 10)}`;
-        return `${r.what} in ${a.city}, ${year}: ${g} g of silver${coinsOf(r.silver, a.city!, year)}${days}${r.note ? ` (${r.note})` : ''}.`;
+        const at = inScene || (st.setting?.label && fold(String(st.setting.label)).startsWith(fold(String(a.city)))) ? `in ${a.city}` : `at ${a.city} prices`;
+        return `${r.what} ${at}, ${year}: ${g} g of silver${coinsOf(r.silver, a.city!, year)}${days}${r.note ? ` (${r.note})` : ''}.`;
     }));
 
     tool('PlaceProfile', 'Decide how large, how urban, how violent and how deadly for infants a country or city is in a year, before narrating a crowd, a town\'s size, a murder rate or a child\'s survival. Returns population, urban share, murders per 100,000, infant deaths per 1,000 births and the nearest listed city.', {

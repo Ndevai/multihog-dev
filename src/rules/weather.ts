@@ -150,7 +150,7 @@ export function simulateNormalsYear(n: Normals, days: number, rng: Rng): Weather
 
 /** A place weather can be generated for: one of the 28 WGEN stations, or a WMO city. */
 export interface Place { key: string; label: string; lat: number | null; lon?: number | null; country: string | null }
-const fold = (s: unknown) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+export const fold = (s: unknown) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
 const toRad = Math.PI / 180;
 export const distKm = (a: number, b: number, c: number, d: number) => 6371 * Math.acos(Math.min(1, Math.sin(a * toRad) * Math.sin(c * toRad) + Math.cos(a * toRad) * Math.cos(c * toRad) * Math.cos((d - b) * toRad)));
 
@@ -171,7 +171,12 @@ export function findPlace(text: string | undefined, lat?: number, lon?: number):
     let best = 0, bestD = Infinity;
     NORMALS.forEach((n, i) => { const d = distKm(lat, lon, n[2], n[3]); if (d < bestD) { bestD = d; best = i; } });
     const n = NORMALS[best];
-    return { key: `wmo:${best}`, label: `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2], lon: n[3], country: n[1] };
+    // The town the position is in, named from GeoNames (the nearest place of 15,000 people within 25 km): a York scene is
+    // labelled York with Leeds's weather, so the narrator sets it in York.
+    let town = '', townD = 25;
+    if (bestD > 5) for (const [name, g] of Object.entries(GEONAMES)) { const d = distKm(lat, lon, g[0], g[1]); if (d < townD) { townD = d; town = name; } }
+    const townName = town.replace(/\b\p{L}/gu, c => c.toUpperCase());
+    return { key: `wmo:${best}`, label: town ? `${townName}, ${n[1]} (weather of ${n[0]}, ${Math.round(bestD)} km)` : `${n[0]}, ${n[1]} (nearest WMO city, ${Math.round(bestD)} km)`, lat: n[2], lon: n[3], country: n[1] };
 }
 
 /** Days 1..`days` of one year at a place key from findPlace (a bare WGEN station name is accepted too). */
