@@ -363,8 +363,11 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
             const castText = tracker.toLowerCase();
             const named = new Set(calls.filter(c => c.tool === 'NewCharacter').map(c => String(c.args.who ?? '').toLowerCase()));
             const fresh: Call[] = [];
-            for (const c of calls) for (const k of PERSON) {
+            // A hand-over's from and to are people when the plan names them as people (named_as or present); else places.
+            const isPerson = (v: string) => !!plan.named_as?.[v] || (plan.present ?? []).some(x => x.toLowerCase() === v.toLowerCase());
+            for (const c of calls) for (const k of [...PERSON, ...c.tool === 'Transfer' ? ['from', 'to'] : []]) {
                 const v = c.args[k]; if (typeof v !== 'string' || !v.trim()) continue;
+                if ((k === 'from' || k === 'to') && !isPerson(v)) continue;
                 const n = v.trim(), low = n.toLowerCase();
                 // A person is named in a few words ("the young man by the fire"); a phrase over 8 words or with a verb in -ing describes an event.
                 if (n.split(/\s+/).length > 8 || /\b\w+ing (?:up|down|out|in|to|the|a|an|at|from|toward|towards|and|his|her|their)\b/.test(low)) continue;
@@ -382,6 +385,10 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
         // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
         calls = dedupe([...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')]);
+        // A wait the player names after other actions ("I punch him, pay and wait ten minutes") runs after them: ten minutes
+        // had passed before the punch. A message that opens with the wait keeps it first.
+        { const w = /\b(?:wait|waits|waited|rest|rests|sleep|sleeps)\b/i.exec(said);
+          if (w && w.index > 12) calls = [...calls.filter(c => c.tool !== 'PassTime' || Array.isArray(c.args.walking)), ...calls.filter(c => c.tool === 'PassTime' && !Array.isArray(c.args.walking))]; }
         // A thing the player's character hands over that their recorded belongings leave out ("I offer him my silver
         // thimble") is first claimed: Claim decides whether they have it, then the hand-over runs on what it decided. The
         // share is an ordinary personal item's [ASSUMED: more than half of people in such a scene carry one].

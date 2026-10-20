@@ -164,7 +164,11 @@ export function findPlace(text: string | undefined, lat?: number, lon?: number):
         const st = STATION_NAMES.find(s => fold(s.split(',')[0]) === city);
         if (st && (!country || fold(st).includes(country) || country === 'usa' || country.startsWith('united states'))) return { key: `wgen:${st}`, label: `${st} (WGEN station)`, lat: null, country: 'United States of America' };
         const named = NORMALS.map((n, i) => [n, i] as const).filter(([n]) => fold(n[0]) === city || fold(n[0]).startsWith(`${city} `));
-        const pick = named.find(([n]) => country && fold(n[1]).includes(country)) ?? (country ? undefined : named[0]);
+        // With no country named, the city nearest the largest place of that name (GeoNames): Liverpool is England's, not
+        // the Liverpool in New South Wales listed first.
+        const big = GEONAMES[city];
+        const nearest = big && named.length > 1 ? [...named].sort((p, q) => distKm(big[0], big[1], p[0][2], p[0][3]) - distKm(big[0], big[1], q[0][2], q[0][3]))[0] : named[0];
+        const pick = named.find(([n]) => country && fold(n[1]).includes(country)) ?? (country ? undefined : nearest);
         if (pick) return { key: `wmo:${pick[1]}`, label: `${pick[0][0]}, ${pick[0][1]}`, lat: pick[0][2], lon: pick[0][3], country: pick[0][1] };
     }
     if (lat == null || lon == null || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;

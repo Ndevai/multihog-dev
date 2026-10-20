@@ -816,3 +816,6 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Weather label: a position away from a WMO city was labelled with that city ("Leeds … 34 km" for York), and the narrator could set the scene in Leeds. It is now labelled with the town GeoNames puts there (the nearest place of 15,000 people within 25 km), followed by "weather of Leeds, 34 km".
 - Price: a scene outside the price series' city said "in London, 1850" for a York inn. It now says "at London prices" unless the scene is in that city.
 - Checked and correct: York 14 March 1850 at 18:40 local time is the end of civil twilight (sun −6.5°), so "night" holds.
+- Liverpool was placed in New South Wales: the WMO list names it first, and with no country given the first was taken. With no country, the city nearest the largest GeoNames place of that name is taken.
+- "I punch the sailor, drop a penny for the barmaid and wait ten minutes" passed the ten minutes before the punch. A wait named after other actions now runs last; a message that opens with the wait keeps it first.
+- The barmaid a Transfer paid was never drawn: Transfer's from and to were outside the person arguments. They count when the plan lists the name in named_as or present (otherwise they are places).
