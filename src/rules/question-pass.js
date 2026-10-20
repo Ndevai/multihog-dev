@@ -539,4 +539,4 @@ export function decidedResults() {
 }
 /** A result as the story reads it: the sensitivity note ("Fragile: … → the right heel bone breaks") is for the log, and a
  *  narrator that read one told the other outcome as fact. */
-export const storyResult = (r) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '');
+export const storyResult = (r) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '').replace(/^([a-z])|(\.\s+)(the|a|an)\b/g, (m, a, p, w) => a ? a.toUpperCase() : `${p}${w[0].toUpperCase()}${w.slice(1)}`).replace(/\b(a) (?=[aeiou8]\d*-year|\d*1[18]-year)/gi, '$1n ');

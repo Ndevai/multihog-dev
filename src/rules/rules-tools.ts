@@ -263,6 +263,8 @@ function recordedFact(st: RuleState, text: string) {
 
 // Body parts and kin are possessed without being owned or handed over (inalienable possession: Nichols 1988, the classes
 // languages most often mark apart), and a tracked person is a character, not an item.
+/** "a 24", "an 80", "an 18", "an 11": the article as the number is said. */
+const aYears = (n: unknown) => `${/^8/.test(String(n)) || n === 11 || n === 18 ? 'an' : 'a'} ${n}`;
 const ITEM_IS = ['a thing (a severed or preserved body part counts)', 'a person or animal', 'a part of a living body'];
 function inalienable(st: RuleState, item: string, is?: string): string {
     const t = item.trim().toLowerCase().replace(/^(?:my|his|her|their|our|your|a|an|the) /, '');
@@ -1631,13 +1633,13 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who'], a => run((st, rng) => {
         // A person already drawn keeps what was drawn (an innkeeper drawn at 56 was drawn again at 68 two turns later).
         { const known = st.people?.[String(a.who)] as { age?: number; sex?: string } | undefined;
-          if (known?.age != null && typeof a.age !== 'number') return `${a.who}: a ${known.age}-year-old ${known.age < 18 ? (known.sex === 'female' ? 'girl' : 'boy') : known.sex === 'female' ? 'woman' : 'man'}, as drawn when first met.`; }
+          if (known?.age != null && typeof a.age !== 'number') return `${a.who}: ${aYears(known.age)}-year-old ${known.age < 18 ? (known.sex === 'female' ? 'girl' : 'boy') : known.sex === 'female' ? 'woman' : 'man'}, as drawn when first met.`; }
         // A person the story describes (the cast's "her brother Will, 12") keeps the stated age and sex; nothing is drawn.
         if (typeof a.age === 'number' && a.age >= 0) {
             const { p } = who(st, a.who), age = Math.round(a.age), sex = a.sex ?? null;
             if (p) Object.assign(p, { age, ...sex ? { sex } : {} });
             const noun = !sex ? (age < 18 ? 'child' : 'adult') : age < 18 ? (sex === 'female' ? 'girl' : 'boy') : sex === 'female' ? 'woman' : 'man';
-            return `${a.who}: a ${age}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (as the story states).`;
+            return `${a.who}: ${aYears(age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (as the story states).`;
         }
         // Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex
         // come from the country's stable population (population.ts); occupation and birthplace are left to the story.
@@ -1666,7 +1668,7 @@ export function registerRulesTools(enabled: boolean): void {
                 const { p } = who(st, a.who);
                 if (p) Object.assign(p, { age: r.age, sex: r.sex });
                 const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
-                return `${a.who}: a ${r.age}-year-old ${noun}; occupation: ${a.occupation} (age and sex drawn from the 1881 census of England and Wales among its ${r.occupation}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
+                return `${a.who}: ${aYears(r.age)}-year-old ${noun}; occupation: ${a.occupation} (age and sex drawn from the 1881 census of England and Wales among its ${r.occupation}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
             }
         }
         let local = english ? null : strangerAgeSex(c, y, rng, { sex: a.sex ?? null, minAge: Number(a.min_age) || 0 });
@@ -1683,7 +1685,7 @@ export function registerRulesTools(enabled: boolean): void {
             const job = a.occupation ? `; occupation: ${a.occupation}` : local.age < 15 ? '; a child' : !work ? '' : !work.works ? '; outside paid work' : work.group ? `; works, among ${work.group} (the narrator names the job)` : '; works';
             const hh = strangerHousehold(c, y, local.age, rng);
             const home = hh ? hh.size === 1 ? '; lives alone' : `; lives in a household of ${hh.size} (${hh.type})` : '';
-            return `${a.who}: a ${local.age}-year-old ${noun}${job}${home} (age and sex as drawn from ${local.country}'s population in ${y}${work ? `; work from ILO figures for ${work.country}, ${work.year}` : ''}${hh ? `; household from ${hh.source} ${hh.year}` : ''}; birthplace as the story sets it).`;
+            return `${a.who}: ${aYears(local.age)}-year-old ${noun}${job}${home} (age and sex as drawn from ${local.country}'s population in ${y}${work ? `; work from ILO figures for ${work.country}, ${work.year}` : ''}${hh ? `; household from ${hh.source} ${hh.year}` : ''}; birthplace as the story sets it).`;
         }
         // A country the population tables do not reach (Brazil 1822) takes age and sex from the 1881 census of England and
         // Wales, the nearest table held, with occupation and birthplace as the story sets them: the English census's jobs
@@ -1696,8 +1698,8 @@ export function registerRulesTools(enabled: boolean): void {
         const { p } = who(st, a.who);
         if (p) Object.assign(p, { age: r.age, sex: r.sex });
         const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
-        if (!english) return `${a.who}: a ${r.age}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (age and sex drawn from the 1881 census of England and Wales${a.occupation ? ', among its people of that occupation' : ''}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
-        return `${a.who}: a ${r.age}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child' : 'occupation unlisted in the census'}; born in ${r.born}.`;
+        if (!english) return `${a.who}: ${aYears(r.age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (age and sex drawn from the 1881 census of England and Wales${a.occupation ? ', among its people of that occupation' : ''}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
+        return `${a.who}: ${aYears(r.age)}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child' : 'occupation unlisted in the census'}; born in ${r.born}.`;
     }));
 
     tool('BodyCheck', 'Resolve a physical or skilled action whose outcome is in doubt, before narrating it: climbing, jumping, swimming, lifting or forcing something, balancing, sneaking, picking a lock, riding, a craft or a trade task (the other tools cover blows, falls, holds, chases, hearing, seeing, messages and people\'s responses). The body state in [BODY] is applied in code.', {
