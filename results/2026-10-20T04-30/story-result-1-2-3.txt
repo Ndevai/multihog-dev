@@ -1,0 +1,412 @@
+z-ai/glm-5.3, reasoning low, 16 min, 2026-10-20T04:30:11.211Z, 43 calls asked, 0 replayed
+11 fault(s) in 12 of 12 turns
+#1.3 person drawn for a phrase: "Already decided this turn; this result stands. the costermonger"
+#2.2 person drawn for a phrase: "the men by the fire"
+#2.2 rule check: "one of the travellers who had been sizing Tom up since he sat down" → Look (unbacked)
+#2.2 rule check: "what a labouring man earned in a quarter hour of his day" → Price (contradicts)
+#2.3 person drawn for a phrase: "the young man by the fire"
+#2.3 missing Listen
+#2.4 person drawn for a phrase: "the young man by the fire"
+#2.4 rule check: "pausing to gather an empty mug" → Transfer (unbacked)
+#3.1 rule check: "the lit window now close enough to show a figure moving behind its glass" → Look (unbacked)
+#3.4 person drawn for a phrase: "the figure behind the lit window"
+#3.4 rule check: "He made no sound that reached her" → Listen (unbacked)
+
+=== #1.1: I step out of my house onto the street.
+clock: Saturday 18 August 1888, 18:15:03
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Act {"who":"Mary","action":"steps out of her house onto the street","distance_m":5}
+   draws: none
+   → Mary walks 5 m from where Mary stood to street at 1.62 m/s: 3.1 s (3.1 s in all). Span 3.1 s. Clock now Saturday 18 August 1888, 18:15:03.
+--- reply
+The evening had settled over Whitechapel in a thin grey drizzle, the kind that dampened without ever properly raining. The cobbles glistened under the gas lamps being lit one by one along the street, and the air carried the usual Saturday smells of coal smoke, fried fish, and the river. From somewhere down the road came the cry of a hawker selling his last wares before the shops shut for the night.
+
+Mary stepped out of her house and crossed the few feet to the street proper, the wet chill finding her at once. It was a quarter past six by the church clock, and the pavement was still busy enough with folk hurrying home to their suppers.
+--- open: What does Mary do out on the street?
+--- planner answers
+{"calls":[{"tool":"Act","args":{"who":"Mary","action":"steps out of her house onto the street","distance_m":5}}],"then":[],"need":[]}
+
+=== #1.2: I walk the three hundred yards to the market on Wentworth Street.
+clock: Saturday 18 August 1888, 18:17:53
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Act {"who":"Mary","action":"walk the three hundred yards to the market on Wentworth Street.","distance_m":274.3}
+   draws: 0.3716, 0.7352, 0.8533, 0.0876
+   → Mary walks 274.3 m from street to market on Wentworth Street at 1.62 m/s: 2.8 min (2.8 min in all). Span 2.8 min. Clock now Saturday 18 August 1888, 18:17:53.
+--- reply
+The drizzle had kept up all day, light but persistent, and the evening air was cool for August, near fifteen degrees and falling toward a colder night. Mary pulled her shawl closer as she went.
+
+She walked the three hundred yards down to Wentworth Street at an easy pace, taking a little under three minutes among the Saturday-evening crowds. The market was thinning now, the stalls half packed away, but a few costers still cried their goods, and the gutters ran with rain and cabbage leaves. She arrived at the market's edge as the church clock behind her showed seventeen minutes past six.
+--- open: What does Mary do at the market, and does any stallholder or passer-by take notice of her?
+--- planner answers
+
+
+=== #1.3: I ask the costermonger for a pound of apples and pay him.
+clock: Saturday 18 August 1888, 18:17:54
+faults: 
+  person drawn for a phrase: "Already decided this turn; this result stands. the costermonger"
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Communicate {"speaker":"Mary","listener":"the costermonger","means":"speech","effort":"normal","message":"for a pound of apples"}
+   draws: none
+   → the costermonger hears Mary and makes out every word (normal voice at 1 m, quiet room (25 dB)). the costermonger now knows: for a pound of apples. Said in 1.5 s; clock now Saturday 18 August 1888, 18:17:54.
+3. NewCharacter {"who":"the costermonger","occupation":"costermonger","min_age":18}
+   draws: 0.6052, 0.3834, 0.8529, 0.8025
+   → the costermonger: a 29-year-old man; occupation: Costermonger, Huckster, Street Seller; born in a neighbouring county.
+4. Transfer {"item":"pound of apples","quantity":1,"from":"the costermonger","to":"Mary","how":"sold"}
+   draws: none
+   → pound of apples sold from the costermonger to Mary; Mary now has it. Recorded.
+5. NewCharacter {"who":"the costermonger","occupation":"costermonger"}
+   draws: none
+   → Already decided this turn; this result stands. the costermonger: a 29-year-old man; occupation: Costermonger, Huckster, Street Seller; born in a neighbouring county.
+6. Transfer {"item":"pound of apples","quantity":1,"from":"the costermonger","to":"Mary","how":"sold"}
+   draws: none
+   → Already decided this turn; this result stands. pound of apples sold from the costermonger to Mary; Mary now has it. Recorded.
+7. Price {"question":"price of goods","item":"bread (kg)","quantity":1,"city":"London","year":1888}
+   draws: none
+   → 1 × bread (kg) in London, 1888: 2.05 g of silver (about 4¾ d); a building labourer earns that in 0.5 hours of a 10-hour day.
+--- reply
+The market on Wentworth Street was nearly done for the day. Under a canvas awning dark with the day's drizzle, a costermonger stood over the last of his barrow, a broad-shouldered man of about twenty-nine with the flat cap and corduroy of his trade, calling his wares in the worn-out voice of a man who had been crying them since morning.
+
+Mary stepped up to the barrow and asked him for a pound of apples, her voice plain and clear at that short distance, and the man heard every word of it.
+
+He gave her a quick look over, the look a coster gives any woman on his patch after dark, but her request was ordinary enough and he nodded.
+
+He weighed out a pound of apples from the last of his stock with a practiced hand, tipped them into a twist of paper, and took her coppers. The apples passed from his barrow into Mary's hands, and the small transaction was done.
+
+"Thank ye, missus," he said, counting the coins into his apron pocket. "Cheaper nor bread, them, and better nor what a labourer earns in half an hour, and no mistake." He began throwing the sacking over what remained of his barrow, plainly meaning to be home before full dark.
+--- open: What does Mary do with her apples, and does she linger at the market or head back toward home?
+--- planner answers
+{"calls":[{"tool":"NewCharacter","args":{"who":"the costermonger","occupation":"costermonger","min_age":18}},{"tool":"Transfer","args":{"item":"pound of apples","quantity":1,"from":"the costermonger","to":"Mary","how":"sold"}}],"then":["What price does the costermonger ask for the pound of apples, and does he take any particular notice of Mary?"],"need":["Price"]}
+- - -
+{"calls":[{"tool":"NewCharacter","args":{"who":"the costermonger","occupation":"costermonger"}},{"tool":"Transfer","args":{"item":"pound of apples","quantity":1,"from":"the costermonger","to":"Mary","how":"sold"}},{"tool":"Price","args":{"question":"price of goods","item":"bread (kg)","quantity":1,"city":"London","year":1888}}],"then":["What price does the costermonger ask for the pound of apples, and does he take any particular notice of Mary?"] ,"need":["Appraise"] ,"time":"1888-08-18 18:17","present":["Mary","the costermonger"] }
+
+=== #1.4: I walk home and give Will one of the apples.
+clock: Saturday 18 August 1888, 18:21
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Transfer {"item":"apples","quantity":1,"from":"Mary","to":"Will","how":"given"}
+   draws: none
+   → apples given from Mary to Will; Will now has it. Recorded.
+3. Act {"who":"Mary","action":"walks home from the market on Wentworth Street, three hundred yards","distance_m":300}
+   draws: 0.8053, 0.6805
+   → Mary walks 300 m from market on Wentworth Street to home at 1.62 m/s: 3.2 min (3.2 min in all). Span 3.2 min. Clock now Saturday 18 August 1888, 18:21.
+--- reply
+The drizzle had all but stopped, leaving only a damp grey haze hanging in the streets, and the air had the cool edge of an evening that would drop colder before morning. The gas lamps burned yellow along the pavements, and the last of the Saturday traders were hauling their barrows home through the wet.
+
+Mary left the market and walked the three hundred yards back through Whitechapel at an easy pace, the paper twist of apples held under her shawl to keep off the damp. The streets were quieter now, folk mostly indoors over their suppers, and she reached her own door a little after twenty-one minutes past six.
+
+Inside, she found Will and handed him the apples from the paper twist, which he took with a boy's ready grin, choosing the biggest of the lot before she had even set the rest down.
+--- open: What Will says or does with his apples, and what Mary does now that she is home.
+--- planner answers
+{"calls":[{"tool":"Act","args":{"who":"Mary","action":"walks home from the market on Wentworth Street, three hundred yards","distance_m":300}}],"then":[],"need":[]}
+
+=== #2.1: I sit down at a table near the fire.
+clock: Friday 3 November 1820, 19:00:01
+faults: none
+--- calls
+1. Weather {"latitude":53.96,"longitude":-1.08}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 34 km), 3/11/1820: dry; high 6 °C, low 1 °C; now about 5 °C.
+2. Act {"who":"Tom","action":"sit down at a table near the fire."}
+   draws: none
+   → Tom sits down: 1.2 s (1.2 s in all). Span 1.2 s. Clock now Friday 3 November 1820, 19:00:01.
+--- reply
+The taproom of the coaching inn smelled of tallow, spilled ale, and wet wool, for the evening outside was cold and dry, the day's warmth long gone from the air. A good fire burned in the hearth, and around it the half-full room murmured with talk of roads and prices.
+
+Tom found a table near the fire and sat down, the bench creaking under him. The heat of the flames reached his face, and he could feel the chill of the November road loosening from his hands.
+
+A maid moved between the tables with a jug, and one or two of the men by the fire glanced his way, sizing up the newcomer with the idle curiosity of travellers.
+--- open: Whether the maid comes to Tom's table to take his order, and what the men by the fire make of him.
+--- planner answers
+{"calls":[{"tool":"PassTime","args":{   "minutes":1,"resting":["Tom"]}},{"tool":"RecordFact","args":{"fact":"Tom sat down at a table near the fire in the coaching inn's taproom.","known_by":["Tom"],"how":"saw it","cause":"Tom","importance":1}}],"then":[],"need":[] , "at":[53.96,-1.08],"present":["Tom"] }
+
+=== #2.2: I call to the innkeeper for a pint of ale.
+clock: Friday 3 November 1820, 19:03:03
+faults: 
+  person drawn for a phrase: "the men by the fire"
+  rule check: "one of the travellers who had been sizing Tom up since he sat down" → Look (unbacked)
+  rule check: "what a labouring man earned in a quarter hour of his day" → Price (contradicts)
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 6 °C, low 1 °C; now about 5 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (loud voice at 1 m, quiet room (25 dB)). the innkeeper now knows: for a pint of ale. Said in 1.5 s; clock now Friday 3 November 1820, 19:00:03.
+3. NewCharacter {"who":"the innkeeper"}
+   draws: 0.0079, 0.8786, 0.3967, 0.1443
+   → the innkeeper: a 56-year-old man; occupation: innkeeper.
+4. NewCharacter {"who":"the maid","occupation":"servant"}
+   draws: 0.1623, 0.7207, 0.8183
+   → the maid: a 23-year-old woman; occupation: servant.
+5. NewCharacter {"who":"the men by the fire"}
+   draws: 0.2324, 0.8615, 0.1188, 0.1368, 0.1888
+   → the men by the fire: a 24-year-old man.
+6. Price {"question":"price of goods","item":"beer (litre)","quantity":0.57,"city":"London","country":"England","year":1820}
+   draws: none
+   → 0.57 × beer (litre) in London, 1820: 0.69 g of silver (about 1½ d); a building labourer earns that in 0.4 hours of a 10-hour day.
+7. Transfer {"item":"pint of ale","from":"the innkeeper","to":"Tom","how":"sold"}
+   draws: none
+   → pint of ale sold from the innkeeper to Tom; Tom now has it. Recorded.
+8. Transfer {"item":"penny","from":"Tom","to":"the innkeeper","how":"sold"}
+   draws: none
+   → penny sold from Tom to the innkeeper; the innkeeper now has it. Recorded.
+9. PassTime {"minutes":3,"resting":["Tom"]}
+   draws: 0.3124, 0.0045, 0.9051, 0.9438, 0.7397, 0.2804, 0.2711, 0.4316
+   → 3 minutes passed.
+Tom (human): blood lost 0 L.
+the innkeeper (human): blood lost 0 L.
+the maid (human): blood lost 0 L.
+the men by the fire (human): blood lost 0 L.
+--- reply
+The evening outside was cold and dry, the day's high of six degrees long fallen away, and the wind that came through the door with each arrival had a bite to it that made the fire all the more welcome.
+
+Tom raised his voice across the taproom and called to the innkeeper for a pint of ale. The man heard him plainly enough over the quiet murmur of the room.
+
+The innkeeper was a stout fellow of six-and-fifty, red-faced from the hearth and his own labours, wiping his hands on his apron as he came out from behind the bar.
+
+The maid, a quick-moving young woman of three-and-twenty, paused in her rounds with her jug to see what the master would want.
+
+By the fire sat a young man of about four-and-twenty, one of the travellers who had been sizing Tom up since he sat down.
+
+A pint of ale was cheap enough in these parts, about a penny and a half of silver, what a labouring man earned in a quarter hour of his day.
+
+The innkeeper drew the pint from the tap and carried it over himself, setting the foaming mug down on Tom's table.
+
+Tom fished a penny from his pocket and handed it over, and the innkeeper took it with a nod, the coin disappearing into his apron.
+
+A few minutes passed in the warmth, the talk of the room going on around him, the ale dark and bitter in the mug before him.
+--- open: The young man by the fire had been watching the exchange; he now shifted on his bench as if minded to speak to Tom.
+--- planner answers
+{"calls":[{"tool":"NewCharacter","args":{"who":"the innkeeper"}},{"tool":"NewCharacter","args":{"who":"the maid","occupation":"servant"}},{"tool":"NewCharacter","args":{"who":"the men by the fire"}},{"tool":"Price","args":{"question":"price of goods","item":"beer (litre)","quantity":0.57,"city":"London","country":"England","year":1820}},{"tool":"Transfer","args":{"item":"pint of ale","from":"the innkeeper","to":"Tom","how":"sold"}},{"tool":"Transfer","args":{"item":"penny","from":"Tom","to":"the innkeeper","how":"sold"}},{"tool":"PassTime","args":{"minutes":3,"resting":["Tom"]}}],"then":["How do the men by the fire react to the newcomer calling his order out loud?"],"need":["Appraise","SocialResponse"]}
+
+=== #2.3: Two men at the next table are whispering. I keep still and listen.
+clock: Friday 3 November 1820, 19:03:11
+faults: 
+  person drawn for a phrase: "the young man by the fire"
+  missing Listen
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 6 °C, low 1 °C; now about 5 °C.
+2. Communicate {"speaker":"the whispering men","listener":"Tom","means":"speech","effort":"whisper","message":"The wagon from Selby comes by the back lane tonight; keep the lantern dark till you hear the whip.","speaker_voice":"normal"}
+   draws: none
+   → Tom hears the whispering men and makes out most words; a few are lost (whisper at 1 m, quiet room (25 dB)). Tom now knows: The wagon from Selby comes by the back lane tonight; keep the lantern dark till you hear the whip. In Modern English, whispered, a word can also be taken as: "dark" = daak (duck = dâk if whispered, dog = dog if whispered). Call Interpret for each one whose reading changes what Tom does. Said in 5.8 s; clock now Friday 3 November 1820, 19:03:09.
+3. RecordFact {"fact":"The two men at the next table are waiting for a wagon from Selby coming by the back lane tonight, and will keep their lantern dark until they hear a whip","known_by":["Tom"],"how":"heard, smelled or felt it","secret":true,"importance":6}
+   draws: none
+   → Fact 3 recorded: The two men at the next table are waiting for a wagon from Selby coming by the back lane tonight, and will keep their lantern dark until they hear a whip. Known by Tom.
+4. Communicate {"speaker":"the young man by the fire","listener":"Tom","means":"speech","effort":"raised","noise":"quiet room (25 dB)","message":"You look a carter, friend — come far tonight?"}
+   draws: none
+   → Tom hears the young man by the fire and makes out every word (raised voice at 1 m, quiet room (25 dB)). Tom now knows: You look a carter, friend — come far tonight. Said in 2.8 s; clock now Friday 3 November 1820, 19:03:11.
+5. NewCharacter {"who":"the young man by the fire","min_age":18}
+   draws: 0.1796, 0.0181, 0.1271, 0.427, 0.4104
+   → the young man by the fire: a 20-year-old man.
+--- reply
+The cold of the November evening pressed at the windows, dry and sharp, the day's high of six degrees long since gone, and the fire crackled welcome against it. Tom sat with his pint, and at the next table two men had put their heads together, their voices dropped low.
+
+Tom kept still and let his ears do the work. The taproom was quiet enough, and at that distance he caught most of what passed between them: something of a wagon from Selby coming by the back lane tonight, and a caution to keep the lantern dark until they heard the whip. A word or two was lost in the murmur, but the shape of it was plain.
+
+So the two men at the next table were waiting for a wagon from Selby, and meant to keep their lantern dark until they heard a whip. Tom kept his face easy and his eyes on his ale, saying nothing of what he had heard.
+
+Across the hearth, a young man of about twenty who had been sitting among the men by the fire turned his gaze on Tom, looking him over with the frank interest of a fellow traveller.
+
+The young man raised his voice just enough to carry over the crackle of the fire. "You look a carter, friend," he called, "come far tonight?"
+--- open: How will Tom answer the young man by the fire?
+--- planner answers
+{"calls":[{"tool":"Communicate","args":{"speaker":"the whispering men","listener":"Tom","means":"speech","effort":"whisper","message":"The wagon from Selby comes by the back lane tonight; keep the lantern dark till you hear the whip.","speaker_voice":"normal"}}],"then":["If Tom hears the words, what do they reveal about the men's business?"],"need":[]}
+- - -
+{"calls":[{"tool":"RecordFact","args":{"fact":"The two men at the next table are waiting for a wagon from Selby coming by the back lane tonight, and will keep their lantern dark until they hear a whip","known_by":["Tom"],"how":"heard, smelled or felt it","secret":true,"importance":6}},{"tool":"Communicate","args":{"speaker":"the young man by the fire","listener":"Tom","means":"speech","effort":"raised","noise":"quiet room (25 dB)","message":"You look a carter, friend — come far tonight?"}},{"tool":"NewCharacter","args":{"who":"the young man by the fire","min_age":18}}],"then":["Does the young man by the fire speak to Tom, and if so what does he say?","If Tom keeps listening, do the whispering men say anything more before the young man interrupts?"],"need":["Choose","Interpret"]}
+
+=== #2.4: I go to the innkeeper and tell him what I heard.
+clock: Friday 3 November 1820, 19:03:18
+faults: 
+  person drawn for a phrase: "the young man by the fire"
+  rule check: "pausing to gather an empty mug" → Transfer (unbacked)
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 6 °C, low 1 °C; now about 5 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"normal","message":"what I heard"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (normal voice at 1 m, quiet room (25 dB)). the innkeeper now knows: what I heard. Said in 1.0 s; clock now Friday 3 November 1820, 19:03:12.
+3. Act {"who":"Tom","action":"crosses the taproom to the bar where the innkeeper stands","distance_m":6}
+   draws: none
+   → Tom stands up from sitting: 1.6 s; Tom walks 6 m from where Tom stood to bar where the innkeeper stands at 1.62 m/s: 3.7 s; Tom is already standing (5.3 s in all). Span 5.3 s. Clock now Friday 3 November 1820, 19:03:18.
+4. Listen {"listener":"the whispering men","sound":"quiet conversation (50 dB at 1 m)","distance_m":4,"noise":"conversation nearby (50 dB)","barrier":"none","reveals":"Tom is telling the innkeeper about the wagon from Selby and the dark lantern"}
+   draws: none
+   → the whispering men hears it (quiet conversation (50 dB at 1 m) at 4 m, conversation nearby (50 dB)). the whispering men now knows: Tom is telling the innkeeper about the wagon from Selby and the dark lantern.
+5. RecordFact {"fact":"Tom told the innkeeper that two men in the taproom are waiting for a wagon from Selby coming by the back lane tonight and will keep their lantern dark until they hear a whip","known_by":["Tom","the innkeeper"],"how":"told by someone","told_by":"Tom","secret":true,"importance":6}
+   draws: none
+   → Fact 7 recorded: Tom told the innkeeper that two men in the taproom are waiting for a wagon from Selby coming by the back lane tonight and will keep their lantern dark until they hear a whip. Known by Tom, the innkeeper.
+6. RecordFact {"fact":"The two men at the next table are waiting for a wagon from Selby coming by the back lane tonight, and will keep their lantern dark until they hear a whip","known_by":["Tom","the whispering men","the innkeeper"],"how":"told by someone","told_by":"Tom","secret":true,"importance":6}
+   draws: none
+   → Fact 3 recorded: The two men at the next table are waiting for a wagon from Selby coming by the back lane tonight, and will keep their lantern dark until they hear a whip. Known by Tom, the whispering men, the innkeeper.
+7. NewCharacter {"who":"the innkeeper","sex":"male","occupation":"innkeeper","min_age":30}
+   draws: 0.8945, 0.7011, 0.7516
+   → the innkeeper: a 68-year-old man; occupation: innkeeper.
+8. NewCharacter {"who":"the maid","sex":"female","occupation":"servant","min_age":16}
+   draws: 0.9723, 0.5937, 0.6303
+   → the maid: a 72-year-old woman; occupation: servant.
+9. NewCharacter {"who":"the young man by the fire","sex":"male","min_age":18}
+   draws: 0.275, 0.6625, 0.5242, 0.896, 0.7253
+   → the young man by the fire: a 23-year-old man.
+10. NewCharacter {"who":"the whispering men"}
+   draws: 0.482, 0.191, 0.9566
+   → the whispering men: a 30-year-old man; occupation: whispering men.
+--- reply
+The evening outside stayed cold and dry, the day's high of six degrees long fallen away to a sharp chill, and the fire kept the taproom warm against it. Tom set down his mug and rose from the bench.
+
+He stood up from the table and crossed the six or so paces of the taproom floor to the bar, where the innkeeper stood wiping the counter. The walk took him past the whispering men's table, and he kept his eyes forward.
+
+The innkeeper was an old man of eight-and-sixty, grey at the temples and stooped about the shoulders, but his hands still moved surely behind the bar.
+
+The maid, an old woman of two-and-seventy, moved slow between the tables with her jug, pausing to gather an empty mug.
+
+By the fire the young man, three-and-twenty if he was a day, watched Tom's crossing of the room with open curiosity.
+
+The whispering men — the elder of them a man of thirty — kept their heads together at their table, though their talk had dropped to nothing.
+
+Tom leaned on the bar and spoke to the innkeeper in a low, ordinary voice, close enough that the old man caught every word: two men at the next table were waiting for a wagon from Selby, coming by the back lane tonight, and meant to keep their lantern dark until they heard a whip.
+
+Four paces away, the whispering men heard it too. The murmur of the room was thin, and Tom's words carried to their table plainly enough. The elder man's head came up from his companion's ear, and his eyes went to Tom's back at the bar.
+
+So it stood: Tom had told the innkeeper that two men in the taproom were waiting for a wagon from Selby by the back lane tonight, and would keep their lantern dark until they heard a whip.
+
+And the thing itself was now known in three quarters of the room's quiet air: the two men at the next table were waiting for that wagon from Selby, and meant to sit in the dark until the whip sounded.
+--- open: How will the innkeeper answer Tom, and what will the whispering men do now that they have heard him?
+--- planner answers
+ark lantern"}},{"tool":"RecordFact","args":{"fact":"Tom told the innkeeper that two men in the taproom are waiting for a wagon from Selby coming by the back lane tonight and will keep their lantern dark until they hear a whip","known_by":["Tom","the innkeeper"],"how":"told by someone","told_by":"Tom","secret":true,"importance":6}},{"tool":"RecordFact","args":{"fact":"The two men at the next table are waiting for a wagon from Selby coming by the back lane tonight, and will keep their lantern dark until they hear a whip","known_by":["Tom","the whispering men","the innkeeper"],"how":"told by someone","told_by":"Tom","secret":true,"importance":6}},{"tool":"NewCharacter","args":{"who":"the innkeeper","sex":"male","occupation":"innkeeper","min_age":30}},{"tool":"NewCharacter","args":{"who":"the maid","sex":"female","occupation":"servant","min_age":16}},{"tool":"NewCharacter","args":{"who":"the young man by the fire","sex":"male","min_age":18}},{"tool":"NewCharacter","args":{"who":"the whispering men"}}
+],"then":["How does the innkeeper respond to what Tom tells him?","Do the whispering men hear Tom telling the innkeeper, and what do they do about it?"],"need":["SocialResponse","Choose"]}
+
+=== #3.1: I climb the wall.
+clock: Friday 2 May 1755, 22:00
+faults: 
+  rule check: "the lit window now close enough to show a figure moving behind its glass" → Look (unbacked)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.14}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 1 km), 2/5/1755: dry; high 27 °C, low 10 °C; now about 20 °C.
+2. BodyCheck {"who":"Mara","species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling a slick three-metre stone wall","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}
+   draws: 0.3568
+   → climb a moss-slick three-metre garden wall: SUCCESS.
+--- reply
+The night was warm for the season, dry, the kind of Lisbon evening where the stone kept the day's heat well past dark. Mara stood at the foot of the garden wall, three metres of old masonry slick with moss where an unseen fountain or leak had kept it damp for years. Beyond the wall's crown, a cypress and the pale face of a merchant's house showed in the moonlight, and one window on the upper floor still burned with candlelight.
+
+She chose her holds the way her training had taught her, testing each stone before trusting it, fingers finding the seams where mortar had crumbled and moss grew thin. Twice a foothold softened under her boot and she shifted her weight without hurry, breathing slow. Then her hand closed over the cold lip of the wall's cap and she pulled herself up, crouching on the crown with the garden spread below her: gravel paths, orange trees in tubs, the lit window now close enough to show a figure moving behind its glass.
+--- open: What the figure behind the lit window does, and whether it or anyone in the garden notices Mara crouched on the wall.
+--- planner answers
+{"calls":[{"tool":"BodyCheck","args":{"who":"Mara","species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling a slick three-metre stone wall","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}},{"tool":"Act","args":{"who":"Mara","action":"climbs the garden wall","distance_m":0}}],"then":[],"need":[],"time":"1755-05-02 22:00","present":["Mara"]}
+- - -
+{"calls":[{"tool":"BodyCheck","args":{"who":"Mara","species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling a slick stone wall at night","base_share":"35% fewer than half","share":"50% half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}}],"then":["If Mara fails: how far does she fall and is she hurt? (BodyFall from the height where her grip went)"],"need":["BodyFall"],"at":[38.72,-9.14],"present":["Mara"]}
+- - -
+{"calls":[{"tool":"BodyCheck","args":{"who":"Mara","species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling a wet mossy stone wall","base_share":"35% fewer than half","share":"50% half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}}],"then":["If she fails, from what height does she fall and is she hurt?"],"need":["BodyFall"],"at":[38.7223,-9.1393],"present":["Mara"]}
+- - -
+{"calls":[],"then":["Does Mara, from atop the wall, see anyone or anything in the garden or at the lit window? (Look)"],"need":["Look"]}
+
+=== #3.2: I drop down into the garden on the other side and wait in the shadow of the hedge.
+clock: Friday 2 May 1755, 22:00:03
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 27 °C, low 10 °C; now about 20 °C.
+2. BodyFall {"who":"Mara","species":"human","height_m":3,"ground":"packed earth","stiff_legs":false}
+   draws: 0.7448
+   → Fall 3 m: lands on the feet, 4.2 kN through each leg; the bones hold, the legs and feet jarred. Fragile: the outcome changes within the range of 1 judged value: legGiveM = 0.1 m of body travel, knees bending on landing instead of 0.25 [ASSUMED: a bent-knee landing lowers the hips about a quarter metre] → the left heel bone breaks (fracture recorded on the left foot)..
+3. Act {"who":"Mara","action":"drops from the wall and moves into the shadow of the hedge","distance_m":4}
+   draws: none
+   → Mara walks 4 m from where Mara stood to shadow of the hedge at 1.43 m/s: 2.8 s (2.8 s in all). Span 2.8 s. Clock now Friday 2 May 1755, 22:00:03.
+4. BodyCheck {"who":"Mara","species":"human","task":"drop 3 m from the wall and land quietly in the garden","reference_class":"trained climbers dropping from a wall into a quiet garden","base_share":"20% few","share":"65% more than half","uses":["stance","alertness"],"exertion":"light","on_feet":true}
+   draws: 0.9762
+   → drop 3 m from the wall and land quietly in the garden: FAILURE, an ordinary failure: chance alone; the body as it was.
+--- reply
+Mara let herself down from the crown as far as her arms would reach, then let go. The drop was three metres, and she hit the ground on her feet, knees bending to take the shock. The jolt ran up through her shins and ankles like a hammer struck flat, hard enough to make her teeth click shut; the bones held, but her legs sang with it, and worse, her boots met the gravel path with a crunch and a scatter of stones that sounded enormous in the still garden.
+
+She moved at once, quick and light despite the ache in her feet, four long strides across the open ground to the black shadow of the hedge, and folded herself into it. The cypress stood nearby, the lit window above, the gravel path pale in the moonlight where she had crossed it.
+--- open: Whether anyone in the house heard the crunch of her landing — the figure behind the lit window, a servant, a dog — remains to be seen.
+--- planner answers
+{"calls":[{"tool":"BodyFall","args":{"who":"Mara","species":"human","height_m":3,"ground":"packed earth","stiff_legs":false}},{"tool":"Act","args":{"who":"Mara","action":"drops from the wall and moves into the shadow of the hedge","distance_m":4}},{"tool":"BodyFall","args":{"who":"Mara","species":"human","height_m":3,"ground":"packed earth","stiff_legs":false}},{"tool":"BodyFall","args":{"who":"Mara","species":"human","height_m":3,"ground":"packed earth","stiff_legs":false}}],"then":["Does Mara land quietly enough that the figure behind the lit window and anyone in the garden fails to notice her?","What does the figure behind the lit window do next?"],"need":["BodyCheck","Look","Choose"],"time":"1755-05-02 22:00","present":["Mara"]}
+- - -
+{"calls":[{"tool":"BodyCheck","args":{"who":"Mara","species":"human","task":"drop 3 m from the wall and land quietly in the garden","reference_class":"trained climbers dropping from a wall into a quiet garden","base_share":"20% few","share":"65% more than half","uses":["stance","alertness"],"exertion":"light","on_feet":true}}],"then":["Does the figure behind the lit window hear Mara's landing? (Listen, viewer the figure, if the BodyCheck says the landing was not quiet)","Does the figure behind the lit window see Mara crouched in the shadow of the hedge? (Look, viewer the figure, target Mara, moonlit garden)","What does the figure behind the lit window do next? (Choose, who the figure, options: keep moving about the room / come to the window and look into the garden / put out the candle and leave the room)"],"need":["Listen","Look","Choose"]}
+
+=== #3.3: I creep across the lawn to the lit window.
+clock: Friday 2 May 1755, 22:00:20
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 27 °C, low 10 °C; now about 20 °C.
+2. Act {"who":"Mara","action":"creeps across the lawn from the hedge shadow toward the lit window","distance_m":12}
+   draws: none
+   → Mara walks 12 m from shadow of the hedge to lit window at 0.72 m/s: 17 s (17 s in all). Span 17 s. Clock now Friday 2 May 1755, 22:00:20.
+3. RecordFact {"fact":"Mara dropped over the merchant's garden wall into the garden and hid in the hedge's shadow","known_by":["Mara"],"how":"saw it","secret":true,"importance":6}
+   draws: none
+   → Fact 1 recorded: Mara dropped over the merchant's garden wall into the garden and hid in the hedge's shadow. Known by Mara.
+4. RecordFact {"fact":"A figure is moving behind the lit upper window of the merchant's house","known_by":["Mara"],"how":"saw it","secret":false,"importance":4}
+   draws: none
+   → Fact 2 recorded: A figure is moving behind the lit upper window of the merchant's house. Known by Mara.
+5. RecordFact {"fact":"Mara's landing crunched loudly on the gravel path","known_by":["Mara"],"how":"heard, smelled or felt it","secret":false,"importance":3}
+   draws: none
+   → Fact 3 recorded: Mara's landing crunched loudly on the gravel path. Known by Mara.
+--- reply
+The garden held its warmth around her, the dry night air carrying the smell of orange blossom and damp stone. Mara eased out of the hedge's shadow and crossed the lawn toward the house, keeping low, placing each boot on the grass rather than the gravel where she could. The lit window drew her on, a square of yellow candlelight above the garden's dark shapes.
+
+Twelve metres took her a slow, careful while; she arrived beneath the window without another stone scattering underfoot, and stopped in the deeper dark at the base of the wall, close enough now to hear the garden's small night sounds and the distant clatter of a cart on some far street.
+
+Above her, behind the lit glass, the figure was still moving, a shape passing back and forth across the candlelight, its outline thrown briefly against the curtain each time it crossed.
+--- open: What the figure behind the window does next, and whether anyone inside heard her crossing the garden.
+--- planner answers
+{"calls":[{"tool":"Act","args":{"who":"Mara","action":"creeps across the lawn from the hedge shadow toward the lit window","distance_m":12}},{"tool":"RecordFact","args":{"fact":"Mara dropped over the merchant's garden wall into the garden and hid in the hedge's shadow","known_by":["Mara"],"how":"saw it","secret":true,"importance":6}},{"tool":"RecordFact","args":{"fact":"A figure is moving behind the lit upper window of the merchant's house","known_by":["Mara"],"how":"saw it","secret":false,"importance":4}},{"tool":"RecordFact","args":{"fact":"Mara's landing crunched loudly on the gravel path","known_by":["Mara"],"how":"heard, smelled or felt it","secret":false,"importance":3}}],"then":["Does Mara creep across the lawn unheard and unseen? (BodyCheck)","Does the figure behind the lit window hear the crunch of her landing? (Listen)","Does anyone else in the house — a servant or a dog — hear the crunch? (Listen)"],"need":["BodyCheck","Listen"]}
+- - -
+{"calls":[]}
+
+=== #3.4: I look through the window to see who is inside.
+clock: Friday 2 May 1755, 22:00:20
+faults: 
+  person drawn for a phrase: "the figure behind the lit window"
+  rule check: "He made no sound that reached her" → Listen (unbacked)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 27 °C, low 10 °C; now about 20 °C.
+2. Look {"viewer":"Mara","target":"the figure moving behind the lit upper window","size_m":0.5,"distance_m":4,"light":"living room","reveals":"who the figure behind the lit window is and what they are doing"}
+   draws: 0.2104
+   → Mara identifies it (can tell which individual or exact kind) (0.5 m target at 4 m, living room). Mara now knows: who the figure behind the lit window is and what they are doing.
+3. NewCharacter {"who":"the figure behind the lit window"}
+   draws: 0.1236, 0.4284, 0.2058, 0.7687, 0.0125, 0.1413
+   → the figure behind the lit window: a 16-year-old boy.
+4. Look {"viewer":"the figure behind the lit window","target":"Mara at the base of the wall below the window","size_m":0.5,"distance_m":4,"light":"living room","reveals":"that someone is outside in the garden below the window"}
+   draws: 0.7912
+   → the figure behind the lit window identifies it (can tell which individual or exact kind) (0.5 m target at 4 m, living room). the figure behind the lit window now knows: that someone is outside in the garden below the window.
+5. Listen {"listener":"the figure behind the lit window","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":7,"noise":"quiet room (25 dB)","barrier":"stone wall","ground":"mixed","source_height_m":1.5,"reveals":"that someone crossed the garden below the window just now"}
+   draws: none
+   → the figure behind the lit window misses it: too faint over the background (footsteps on gravel or sand (64 dB at 1 m) at 7 m, quiet room (25 dB), through stone wall).
+--- reply
+The night stayed dry and warm, the last of the day's heat still breathing out of the garden walls.
+
+Mara rose carefully and put her eyes to the corner of the lit window, angling for a view past the curtain's edge. Inside, the candlelight showed her plainly what she had come to see: a boy of sixteen or so, in a plain coat, pacing the room with a book in one hand, mouthing the words to himself as he walked. She could see his face clearly at this distance, young and frowning with concentration, a student at his evening reading.
+
+He was the only soul in the room, and nothing about him suggested a guard or a master of the house; just a boy, perhaps the merchant's son, bent on his lessons.
+
+Then the boy's pacing brought him toward the window, and his gaze dropped to the glass. He stopped mid-step, the book lowering in his hand. His eyes found the dark shape at the base of the wall below him, and Mara saw his face change, the frown of study giving way to a startled, fixed stare straight down at where she stood.
+
+He made no sound that reached her, and he had heard nothing of her crossing; whatever small noises her boots had made on the gravel had been swallowed by the garden and the stone between them. But he was looking at her now, certain of it, the book hanging forgotten at his side.
+--- open: What the boy does next — whether he calls out, hides, or opens the window — and what Mara does before he can.
+--- planner answers
+{"calls":[{"tool":"Look","args":{"viewer":"Mara","target":"the figure moving behind the lit upper window","size_m":0.5,"distance_m":4,"light":"living room","reveals":"who the figure behind the lit window is and what they are doing"}},{"tool":"NewCharacter","args":{"who":"the figure behind the lit window"}},{"tool":"Look","args":{"viewer":"the figure behind the lit window","target":"Mara at the base of the wall below the window","size_m":0.5,"distance_m":4,"light":"living room","reveals":"that someone is outside in the garden below the window"}}],"then":["Did anyone inside hear Mara's crunching landing and crossing of the garden? (Listen for the figure and anyone else in the house)"],"need":["Listen"]}
+- - -
+{"calls":[{"tool":"Listen","args":{"listener":"the figure behind the lit window","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":7,"noise":"quiet room (25 dB)","barrier":"stone wall","ground":"mixed","source_height_m":1.5,"reveals":"that someone crossed the garden below the window just now"}}],"then":["Does the boy react to what he heard, and does anyone else in the house stir?"],"need":[]}
+
