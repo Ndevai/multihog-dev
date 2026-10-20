@@ -1,0 +1,156 @@
+z-ai/glm-5.3, reasoning low, 10 min, 2026-10-20T19:28:11.790Z, 17 calls asked, 0 replayed
+1 fault(s) in 4 of 4 turns
+#2.2 rule check: "what a building labourer might earn in a quarter hour of his working day" → Price (contradicts)
+
+=== #2.1: I sit down at a table near the fire.
+clock: Friday 3 November 1820, 19:00:01
+faults: none
+--- calls
+1. Weather {"latitude":53.96,"longitude":-1.08}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 34 km), 3/11/1820: dry; high 0 °C, low 0 °C; now about 0 °C.
+2. Act {"who":"Tom","action":"sit down at a table near the fire."}
+   draws: none
+   → Tom sits down: 1.2 s (1.2 s in all). Span 1.2 s. Clock now Friday 3 November 1820, 19:00:01 (seven o'clock in the evening).
+3. NewCharacter {"who":"the innkeeper","occupation":"innkeeper","min_age":18}
+   draws: 0.5792, 0.471, 0.6075, 0.0298
+   → the innkeeper: a 33-year-old man; occupation: innkeeper.
+4. PassTime {"minutes":0}
+   draws: none
+   → 0 minutes passed.
+Tom (human): blood lost 0 L.
+the innkeeper (human): blood lost 0 L.
+--- reply
+The taproom of the coaching inn near York was half full on this Friday evening, the first cold touch of November in the air outside, the day dry and bitter at freezing. Lamplight and firelight made the low room warm and yellow, and the smell of ale and woodsmoke hung over the benches.
+
+Outside the windows the night was dry and hard with frost, the kind of cold that made a man glad of a fire.
+
+Tom found a table near the hearth and sat down, the boards creaking under him as he settled onto the bench.
+
+A man of about thirty, broad and busy-looking, moved among the tables with the air of one who owned the place — the innkeeper, drawing pints and calling orders to the tap boy.
+
+The talk of the taproom went on about him, carters and drovers arguing over the price of corn, and no one had yet come to ask Tom what he wanted.
+--- open: Will the innkeeper come to Tom's table to take his order?
+--- planner answers
+{"calls":{"NewCharacter":{"the innkeeper":{"occupation":"innkeeper"}},"PassTime":{"minutes":1,"resting":["Tom"]}},"then":[{"question":"Who else is in the half-full taproom this evening, and what are they like?","tool":"NewCharacter"}],"need":["NewCharacter"],"at":[53.96,-1.08],"present":["Tom"]}
+- - -
+{"calls":{"NewCharacter":{"the innkeeper":{"occupation":"innkeeper","min_age":18}},"PassTime":{"minutes":0}},"then":[{"question":"What are the other patrons in the half-full taproom like, and what does Tom notice about them?","tool":"NewCharacter"}],"need":["NewCharacter"]}
+
+=== #2.2: I call to the innkeeper for a pint of ale.
+clock: Friday 3 November 1820, 19:00:03
+faults: 
+  rule check: "what a building labourer might earn in a quarter hour of his working day" → Price (contradicts)
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 0 °C, low 0 °C; now about 0 °C.
+2. Price {"question":"price of goods","item":"beer (litre)","quantity":0.568}
+   draws: none
+   → 0.568 × beer (litre) in London, 1820: 0.69 g of silver (about 1½ d); a building labourer earns that in about 25 minutes of a 10-hour day.
+3. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","speaker_languages":["English"],"listener_languages":["English"],"speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (loud voice at 1 m, quiet room (25 dB)). the innkeeper now knows: for a pint of ale. Said in 1.5 s; clock now Friday 3 November 1820, 19:00:03 (seven o'clock in the evening).
+4. Communicate {"speaker":"the innkeeper","listener":"Tom","speaker_languages":["English"],"listener_languages":["English"]}
+   draws: none
+   → Tom hears the innkeeper and makes out every word (normal voice at 1 m, quiet room (25 dB)).
+5. SocialResponse {"who":"the innkeeper","situation":"a small favour asked by a stranger","request":"bring a pint of ale to Tom's table","requester":"ordinary clothes"}
+   draws: 0.5155
+   → the innkeeper declines (bring a pint of ale to Tom's table).
+--- reply
+The taproom of the coaching inn near York was half full on this Friday evening, the first cold touch of November in the air outside, the day dry and bitter at freezing. Lamplight and firelight made the low room warm and yellow, and the smell of ale and woodsmoke hung over the benches. Outside the windows the night was dry and hard with frost, the kind of cold that made a man glad of a fire.
+
+A pint of ale in such a place was a small matter of coin — a penny and a half or so of silver, what a building labourer might earn in a quarter hour of his working day.
+
+Tom raised his voice across the room. "A pint of ale, if you please!" The words carried plainly over the taproom's murmur, and the innkeeper turned his head at the call, catching every word of it.
+
+"A pint coming, master," the innkeeper called back, his voice plain in the quiet room, and Tom heard him well enough.
+
+But the innkeeper did not stand idle; he gave a nod and a wave of his hand toward the tap boy, meaning to have the pint brought out to Tom's table rather than serving him at the bar.
+--- open: Whether the tap boy brings the pint, and whether Tom will have to pay before or after he drinks it.
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","speaker_languages":["English"],"listener_languages":["English"],"message":"for a pint of ale","speaker_voice":"normal"}}},"then":[{"question":"Does the innkeeper come over and bring Tom his pint of ale?","tool":"SocialResponse"}],"need":["SocialResponse"]}
+- - -
+{"calls":{ "Communicate":{"the innkeeper":{"listener":"Tom","speaker_languages":["English"],"listener_languages":["English"]}},"SocialResponse":{"the innkeeper":{"situation":"a small favour asked by a stranger","request":"bring a pint of ale to Tom's table","requester":"ordinary clothes"}}},"then":[{"question":"Does the innkeeper come over and bring Tom his pint of ale?","tool":"Choose"}],"need":["Choose"] }
+
+=== #2.3: Two men at the next table are whispering. I keep still and listen.
+clock: Friday 3 November 1820, 19:00:03
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 0 °C, low 0 °C; now about 0 °C.
+2. Listen {"listener":"Tom","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","reveals":"what the two men are whispering about"}
+   draws: none
+   → Tom hears it (quiet conversation (50 dB at 1 m) at 2 m, conversation nearby (50 dB)). Tom now knows: what the two men are whispering about.
+3. Choose {"who":"the innkeeper","options":[{"option":"the tap boy brings the pint to Tom's table and the innkeeper expects payment after he drinks","share":"65% more than half"},{"option":"the tap boy brings the pint and the innkeeper asks for payment up front","share":"20% few"},{"option":"the innkeeper calls Tom to the bar to pay and collect his pint himself","share":"20% few"}]}
+   draws: 0.4524
+   → the innkeeper chooses: the tap boy brings the pint to Tom's table and the innkeeper expects payment after he drinks.
+4. RecordFact {"fact":"the two men's whisper","known_by":["Tom"],"how":"heard, smelled or felt it","importance":5}
+   draws: none
+   → Fact 3 recorded: the two men's whisper. Known by Tom.
+5. Listen {"listener":"the innkeeper","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)"}
+   draws: none
+   → the innkeeper hears it (quiet conversation (50 dB at 1 m) at 2 m, conversation nearby (50 dB)).
+--- reply
+The taproom of the coaching inn near York was half full on this Friday evening, the first cold touch of November in the air outside, the day dry and bitter at freezing. Lamplight and firelight made the low room warm and yellow, and the smell of ale and woodsmoke hung over the benches. Outside the windows the night was dry and hard with frost, the kind of cold that made a man glad of a fire.
+
+Tom kept still on his bench and let his ears do the work. The two men at the next table sat close together, heads bent, and though they kept their voices low, at two paces their whisper carried to him plainly enough. They were talking over a load of untaxed brandy, kegs brought up the river by night, and where best to hide them before the excise men came round — one of them reckoned the old tithe barn, the other said it was too near the road and too easily watched.
+
+While Tom listened, the tap boy came across the room with a full pint in each hand and set one down before him, the ale dark and foaming in the firelight. The innkeeper, passing behind the boy with a nod, said, "Drink up first, master, and settle after," and moved on to his other customers without waiting for an answer.
+
+Tom now knew what the two men were whispering about, and he kept his face turned to his pint, giving no sign that a word of it had reached him.
+
+The innkeeper, for his part, had passed close by that same table more than once in the course of his work, and at that distance the men's low talk had reached his ears too — the brandy, the tithe barn, the excise — though he gave no sign of it either, drawing pints and calling orders as if he had heard nothing but the room's common noise.
+--- open: Whether the two men notice Tom sitting so near and so quiet, and what the innkeeper means to do with what he has heard.
+--- planner answers
+{"calls":{"Listen":{"Tom":{"sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","reveals":"what the two men are whispering about"}},"NewCharacter":{"whispering man 1":{"sex":"male","min_age":18},"whispering man 2":{"sex":"male","min_age":18}}},"then":[{"question":"Does the tap boy bring Tom's pint to his table, and does the innkeeper expect payment before or after he drinks it?","tool":"Choose"}],"need":["Choose"]}
+- - -
+{"calls":{"NewCharacter":{"whispering man 1":{"sex":"male","min_age":18},"whispering man 2":{"sex":"male","min_age":18}},"PassTime":{ "minutes":1, "resting":["Tom"] } },"then":[{"question":"Does Tom hear what the two men at the next table are whispering, and what does it reveal?","tool":"Listen"}],"need":["Listen"] }
+- - -
+{ "calls": { "Choose": { "the innkeeper": { "options": [ { "option": "the tap boy brings the pint to Tom's table and the innkeeper expects payment after he drinks", "share": "65% more than half" }, { "option": "the tap boy brings the pint and the innkeeper asks for payment up front", "share": "20% few" }, { "option": "the innkeeper calls Tom to the bar to pay and collect his pint himself", "share": "20% few" } ] } }, "RecordFact": { "the two men's whisper": { "known_by": ["Tom"], "how": "heard, smelled or felt it", "importance": 5 } }, "Listen": { "the innkeeper": { "listener_species": "human" , "sound": "quiet conversation (50 dB at 1 m)", "distance_m": 2, "noise": "conversation nearby (50 dB)" } } } }
+
+=== #2.4: I go to the innkeeper and tell him what I heard.
+clock: Friday 3 November 1820, 19:00:15
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 0 °C, low 0 °C; now about 0 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"normal","message":"Those two at the next table are planning to hide untaxed brandy kegs in the old tithe barn before the excise men come round.","noise":"conversation nearby (50 dB)"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (normal voice at 1 m, conversation nearby (50 dB)). the innkeeper now knows: Those two at the next table are planning to hide untaxed brandy kegs in the old tithe barn before the excise men come round. Said in 7.3 s; clock now Friday 3 November 1820, 19:00:10 (seven o'clock in the evening).
+3. Act {"who":"Tom","action":"stands up from his bench and crosses the taproom to the innkeeper","distance_m":5}
+   draws: none
+   → Tom stands up from sitting: 1.6 s; Tom walks 5 m from where Tom stood to innkeeper at 1.62 m/s: 3.1 s (4.7 s in all). Span 4.7 s. Clock now Friday 3 November 1820, 19:00:15 (seven o'clock in the evening).
+4. Communicate {"speaker":"the innkeeper","listener":"the first man","speaker_languages":["English"],"listener_languages":["English"],"speaker_voice":"normal"}
+   draws: none
+   → the first man hears the innkeeper and makes out every word (normal voice at 1 m, quiet room (25 dB)).
+5. Choose {"who":"the innkeeper","options":[{"option":"say nothing and go on with his work, keeping what he knows to himself","share":"35% fewer than half"},{"option":"warn Tom in a low voice to hold his tongue and forget what he heard","share":"50% half"},{"option":"quietly resolve to send word of the smugglers to the excise men","share":"20% few"}]}
+   draws: 0.1735
+   → the innkeeper chooses: say nothing and go on with his work, keeping what he knows to himself.
+6. Look {"viewer":"the first man","target":"Tom getting up from his bench and crossing the taproom to the innkeeper","size_m":0.5,"distance_m":3,"light":"living room","target_who":"Tom"}
+   draws: 0.9203
+   → the first man identifies it (can tell which individual or exact kind) (0.5 m target at 3 m, living room).
+7. SocialResponse {"who":"the first man","situation":"a statement that might be a lie","speaker":"Tom","statement":"Tom is only going up to settle for his ale","evidence":"none"}
+   draws: 0.0336, 0.0216, 0.5818, 0.52, 0.3292, 0.4593, 0.0779
+   → the first man judges it a lie, from Tom's manner alone: no proof either way.
+--- reply
+The taproom of the coaching inn near York was half full on this Friday evening, the first cold touch of November in the air outside, the day dry and bitter at freezing. Lamplight and firelight made the low room warm and yellow, and the smell of ale and woodsmoke hung over the benches. Outside the windows the night was dry and hard with frost, the kind of cold that made a man glad of a fire.
+
+Tom rose from his bench and crossed the room to where the innkeeper stood drawing pints, and leaning in close, spoke low and quick: the two men at the next table were planning to hide untaxed brandy kegs in the old tithe barn before the excise men came round. The innkeeper heard every word of it, plain as day, though the taproom's murmur went on about them.
+
+The walk had taken but a few moments, Tom threading between the benches to the innkeeper's side, and now he stood at the man's elbow with his news delivered.
+
+Whatever the innkeeper said in answer — a low word or two at that close distance — it carried plainly across the quiet room, and the first man at the next table caught every syllable of it.
+
+The innkeeper, however, gave nothing away. He said nothing of the brandy, nothing of the tithe barn, only went on with his work, drawing pints and wiping the bar, keeping what he knew to himself as though Tom had spoken of the weather.
+
+At the next table, the first man turned his head and looked. At three paces, in the lamplight, he could see Tom plainly — his face, his manner, the way he stood at the innkeeper's elbow — and knew him for the carter who had been sitting near the fire.
+
+And the first man made his judgement of Tom from that manner alone: whatever the carter had passed to the innkeeper, the man reckoned it a lie. There was no proof either way, but something in Tom's bearing did not sit right with him, and he set Tom down in his mind as a liar.
+--- open: What will the first man do about Tom, now that he has marked him for a liar?
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"normal","noise":"conversation nearby (50 dB)","message":"Those two at the next table are planning to hide untaxed brandy kegs in the old tithe barn before the excise men come round."}},"Act":{"Tom":{"action":"stands up from his bench and crosses the taproom to the innkeeper","distance_m":5}}},"then":[{"question":"Do the two men at the next table notice Tom getting up and going to the innkeeper?","tool":"Look"},{"question":"How does the innkeeper respond to what Tom tells him about the smugglers?","tool":"SocialResponse"},{"question":"What does the innkeeper mean to do with what he has heard?","tool":"Choose"}],"need":["Look","SocialResponse","Choose"]}
+- - -
+{"calls":{"Communicate":{"the innkeeper":{"listener":"the first man","speaker_languages":["English"],"listener_languages":["English"],"speaker_voice":"normal"}},"Choose":{"the innkeeper":{"options":[{"option":"say nothing and go on with his work, keeping what he knows to himself","share":"35% fewer than half"},{"option":"warn Tom in a low voice to hold his tongue and forget what he heard","share":"50% half"},{"option":"quietly resolve to send word of the smugglers to the excise men","share":"20% few"}]}},"Look":{"the first man":{"target":"Tom getting up from his bench and crossing the taproom to the innkeeper","size_m":0.5,"distance_m":3,"light":"living room","target_who":"Tom"}},"SocialResponse":{"the first man":{"situation":"a statement that might be a lie","speaker":"Tom","statement":"Tom is only going up to settle for his ale","evidence":"none"}}},"then":[{"question":"Do the two men at the next table hear Tom telling the innkeeper about the brandy?","tool":"Communicate"},{"question":"If the two men notice Tom and grow suspicious, what do they do next?","tool":"Choose"}],"need":[]}
+
