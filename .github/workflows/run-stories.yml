@@ -1,0 +1,46 @@
+# Plays the test stories (tools/run-story.mjs) and first turns (tools/run-play.mjs) on GitHub's machines instead of the
+# phone, and saves the results to the branch play-results, results/<run time>/. Runs when a commit on rules-standalone
+# says [run stories] (or [run play]) in its message, or by hand from the Actions tab. Needs the repository secret
+# NVIDIA_API_KEY (Settings → Secrets and variables → Actions); the key stays in GitHub and is passed only to the runner.
+name: Run stories
+on:
+  push:
+    branches: [rules-standalone]
+  workflow_dispatch:
+    inputs:
+      runner: { description: 'run-story or run-play', default: 'run-story' }
+      args: { description: 'Story numbers (run-story) or turn count (run-play)', default: '1 2 3' }
+permissions:
+  contents: write
+concurrency: { group: stories, cancel-in-progress: false }
+jobs:
+  run:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run stories]') || contains(github.event.head_commit.message, '[run play]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Play
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || 'run-story') }}
+          ARGS: ${{ inputs.args || '' }}
+        run: node tools/$RUNNER.mjs $ARGS 2>&1 | grep -v '^\[Rules engine\]' | tail -60
+      - name: Save results to play-results
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          RUN=$(date -u +%Y-%m-%dT%H-%M)
+          mkdir -p /tmp/out && cp story-result-*.txt play-result.txt /tmp/out/ 2>/dev/null || true
+          ls /tmp/out | grep -q . || exit 0
+          cd /tmp
+          if git clone -q --depth 1 --branch play-results "https://x-access-token:${GH_TOKEN}@github.com/${REPO}" res; then cd res; else
+            mkdir res && cd res && git init -q && git checkout -q -b play-results && git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}"; fi
+          mkdir -p "results/$RUN" && cp /tmp/out/* "results/$RUN/" && echo "$SHA" > "results/$RUN/commit.txt"
+          git config user.name github-actions && git config user.email actions@users.noreply.github.com
+          git add results && git commit -q -m "Results $RUN for $SHA" && git push -q origin play-results

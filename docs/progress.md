@@ -444,3 +444,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - See df-body-engine.md §6.23. src/rules/data/materials.ts (24 materials), src/rules/materials.ts (lookups, laws, landing, breaking), tools/check-materials.mjs (22 pass, 2 recalled values flagged suspect).
 - Walls in Listen and Communicate, room linings, room absorption and BodyFall now read the table; the Break tool decides planks, ropes and bars. The fall on the feet decides a heel-bone fracture from force against bone loads (the Lisbon story's invented scrapes and sore ankle now have a result to tell: "the bones hold, the legs and feet jarred" or a recorded fracture).
 - Brick walls now pass less sound: 409 kg/m² for one brick thickness instead of 200 assumed (about 6 dB more loss at every band); lining densities changed (brick 1900 from 2600).
+
+## 2026-10-19 (34) Test runs on GitHub instead of the phone
+
+- Android stopped Termux mid-run again (under a minute after switching apps). .github/workflows/run-stories.yml runs tools/run-story.mjs (or run-play.mjs) on GitHub's machines when a commit on rules-standalone has [run stories] (or [run play]) in its message, or from the Actions tab, and pushes the result files to the branch play-results under results/<run time>/ with the commit they tested. The NVIDIA key is the repository secret NVIDIA_API_KEY, set once in GitHub; it is passed only to the runner. Results are read from that branch, so runs need nothing from the phone.
