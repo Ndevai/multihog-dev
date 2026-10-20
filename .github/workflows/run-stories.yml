@@ -24,7 +24,7 @@ jobs:
         with: { node-version: 22 }
       - name: Play
         env:
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY || secrets.KEY }}
           RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || 'run-story') }}
           ARGS: ${{ inputs.args || '' }}
         run: node tools/$RUNNER.mjs $ARGS 2>&1 | grep -v '^\[Rules engine\]' | tail -60
