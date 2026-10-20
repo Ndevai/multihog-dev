@@ -645,3 +645,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Run of 0ebda44 (results/run-39473976387): 2 faults in 12 turns (stories 1 and 2: none). Both came from one call: the follow-on round's schema required a call of each tool in "need", BodyCheck among them. Mara's climb had already used her key (entry 51), so the one key left to write under was the merchant's, and the merchant climbed the wall. Requiring is now reserved for the tools the open questions name ({question, tool}); "need" only offers tools. A tool with no key left is never required.
 - `npm test`: 146 checks, 0 misses.
+
+## 2026-10-20 (62) Apples priced from Mayhew's street price
+
+- Price had no apples, so the apple story could never price them: the model rolled dice or wrote "X pence". Source found by web search: Mayhew 1851, London Labour and the London Poor vol. 1, "Street Sellers of Fruit and Vegetables": "The average price of apples, as sold by the costermonger, is 4s. a bushel", 288 apples to the bushel ("six a penny"). A bushel of apples weighs 48 lb (USDA Agricultural Handbook 697). Scaled to the imperial bushel that is 49.5 lb, 22.5 kg [ASSUMED same packing], so Mayhew's apple weighs 78 g. 48 d in silver at the 1851 mint price per 22.5 kg, divided by London's price index for 1851, gives apples a base on the scale of the other goods. So any year and city follows its price index as every good does (prices.ts). London 1851: 0.97 d a pound; 1888: 1.44 d; 1820: 1.26 d. Agricultural price series (Clark 2004; Solar & Klovland 2011) hold no fruit. "apples (kg)" is now a Price item and a Price key in the plan schema.
+- `npm test`: 147 checks, 0 misses.

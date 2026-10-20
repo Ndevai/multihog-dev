@@ -48,5 +48,9 @@ for (let i = 0; i < 40; i++) {
     expect('small drop after a failed climb', String(await run('BodyFall', { who: 'Mara', height_m: 0.5 })), /foot of the climb/);
     break;
 }
-console.log(`7 checks, ${miss} miss(es)`);
+// Apples, from Mayhew's 1851 costermonger price (4s a bushel): about a penny a pound in London that year.
+const Pr = await import('../src/rules/prices.js');
+const ap = Pr.price('price of goods', 'apples (kg)', undefined, 0.4536, 'London', 1851), dPerLb = ap.silver / Pr.poundSilver(1 / 240, 1851);
+if (!(Math.abs(dPerLb - 0.97) < 0.02)) { miss++; console.log(`MISS apples 1851: ${dPerLb} d per lb`); }
+console.log(`8 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

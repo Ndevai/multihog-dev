@@ -38,6 +38,18 @@ export function poundSilver(pounds, year) {
     const g = annual(POUND, year);
     return g ? pounds * g.v : null;
 }
+// Apples, from a street price. Mayhew 1851 (London Labour and the London Poor, vol. 1, "Street Sellers of Fruit and
+// Vegetables"): "The average price of apples, as sold by the costermonger, is 4s. a bushel", 288 apples to the bushel ("six a
+// penny"). A bushel of apples weighs 48 lb (USDA Agricultural Handbook 697, Weights, Measures and Conversion Factors for
+// Agricultural Commodities); the imperial bushel (36.37 l) holds 36.37 ÷ 35.24 of the US one, so 49.5 lb, 22.5 kg [ASSUMED
+// same packing], which makes Mayhew's apple 78 g. 48 d in silver at the 1851 mint price ÷ 22.5 kg, divided by London's
+// price index that year, puts apples on the scale of the other goods, so other years and cities follow their index as
+// every good does.
+{
+    const penny = (POUND.find(x => x[0] === 1851)?.[1] ?? 0) / 240, cpi = CPI_Y.London?.find(x => x[0] === 1851)?.[1];
+    if (penny && cpi)
+        GOODS['apples (kg)'] = 48 * penny / (49.5 * 0.45359237) / cpi;
+}
 export const GOODS_LIST = Object.keys(GOODS);
 export const TRADES = ['building labourer', 'building craftsman'];
 // Table 3 basket per person per year (quantities × Strasbourg prices; Allen's total 414.899 g of silver).
