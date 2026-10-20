@@ -758,3 +758,4 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Story 9 (Boston 1846): "Mr. Abbott" became a person called "Mr", drawn as a girl of 0, because the full stop after the title ended the name. A title and the name it leads are now one person in the scene's people, in code-written calls and in the person keys (frame.ts TITLE: Mr, Mrs, Miss, Dr, Monsieur, Madame, Herr, Frau, Senhor, Senhora, Señor, Signor, Don, Dona, Sir, Lady, Lord, Captain, Father, Sister, Brother, Mother…). A title sets the sex, and an age of 16 or more [ASSUMED]. Speech verbs that address a person (beg, plead, implore, urge, promise, thank, warn, order, command) now name their listener ("I beg Monsieur Dufour…" → listener Monsieur Dufour).
 - `npm test`: 184 checks, 0 misses.
+- A person the story has not seated or laid down stands: "the baker stands at the counter" had timed "stands up from sitting", 1.6 s [ASSUMED default posture].

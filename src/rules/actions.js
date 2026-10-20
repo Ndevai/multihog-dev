@@ -161,8 +161,9 @@ export function act(st, who, p, steps, country) {
             t = reachTmu(cm) * TMU_S;
             what = `reaches ${cm} cm`;
         }
-        else if ((s.do === 'sit' && p.posture === 'sitting') || ((s.do === 'stand' || s.do === 'arise') && p.posture === 'standing')) {
-            lines.push(`${who} is already ${p.posture}`);
+        else if ((s.do === 'sit' && p.posture === 'sitting') || ((s.do === 'stand' || s.do === 'arise') && (p.posture === 'standing' || p.posture == null))) {
+            // A person the story has not seated or laid down stands [ASSUMED: the baker at his counter "stood up from sitting"].
+            lines.push(`${who} is already ${p.posture ?? 'standing'}`);
             continue;
         }
         else if ((s.do === 'stand' || s.do === 'arise') && p.posture === 'lying') {
