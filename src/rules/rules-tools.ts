@@ -877,7 +877,7 @@ export function registerRulesTools(enabled: boolean): void {
         listener_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the listener knows, when the story states them; kept for later calls.' },
         message: str('What the message says, one short sentence. When it reaches the listener, the listener comes to know it.'),
         speaker_voice: { type: 'string', enum: ['normal', 'whisper only (no vocal-fold vibration)'], description: 'When the story makes the speaker voiceless (larynx removed, vocal folds paralysed); kept for later calls.' },
-    }, ['speaker', 'listener', 'message'], a => run((st, rng) => {
+    }, ['speaker', 'listener'], a => run((st, rng) => {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (!s.p || !l.p) return s.error || l.error;
         // A language is the stage spoken in the story's year; one not spoken then is refused (languages.ts).

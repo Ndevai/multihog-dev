@@ -61,6 +61,8 @@ check('a later round leaves out a key already run', !('Mara' in s4.properties.ca
 const actArgs = P.planSchema(new Set(['Act']), { people: ['Mara'] }).properties.calls.properties.Act.properties.Mara.properties.action;
 const mre = new RegExp(actArgs.pattern);
 check('Act action pattern takes motions', mre.test('creeps across the lawn') && mre.test('sits down') && mre.test('stands up and crosses the room'), actArgs);
+const full = s => new RegExp(`^(?:${actArgs.pattern})$`).test(s);
+check('the pattern takes the whole action as the grammar matches it', full('steps out of her house onto the street') && full('creeps across the lawn, keeping low') && full('sits'), null);
 check('Act action pattern leaves out watching and dropping', !mre.test('watches from the lit window') && !mre.test('drops down into the garden') && !mre.test('climbs the wall'), null);
-console.log(`48 checks, ${miss} miss(es)`);
+console.log(`49 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

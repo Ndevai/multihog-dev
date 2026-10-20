@@ -587,3 +587,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Communicate ran with no words (the two whispering men "speaking" to each other with no message). message is now required.
   - BodyFall took 0 m. Under 0.5 m the result is a step down that keeps the feet [ASSUMED threshold].
 - `npm test`: 137 checks, 0 misses.
+
+## 2026-10-20 (53) The motion pattern covers the whole action; Communicate's words optional again
+
+- Run of 9e52b8e (results/2026-10-20T16-48): the endpoint took the pattern. Its grammar matches a pattern against the whole string, so `^(verb)( |,|$)` let the model write only the verb: "steps", "walks ", "stands,", "creeps,". The destinations were lost ("to outside, near where Mary stood"). MOTION_START now ends with the rest of the action, `([ ,][^"]*)?$`.
+- Requiring Communicate's message (entry 52) made the model fill it with "placeholder" and "(the first man's whispered remark…)". Words the reply does not quote are the tool's own case (it answers with the tone carried), so message is optional again.
+- Still open from this run: the payment for the apples. Price has no apples, so the model rolled a price and wrote "That'll be X pence". This needs a price source for fruit.
+- `npm test`: 138 checks, 0 misses.

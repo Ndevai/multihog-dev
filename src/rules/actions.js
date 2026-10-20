@@ -229,8 +229,10 @@ const WORD_STEPS = [
 ];
 /** The words an Act's action can begin with, as a pattern: a motion or posture verb the action reader times (WORD_STEPS),
  *  each form it lists. The plan schema gives Act's action this pattern, so an action is a motion by its shape. */
-// Plain groups and no \\b: the endpoint's grammar engine takes the pattern features the time pattern uses.
-export const MOTION_START = `^(${[...new Set([...WORD_STEPS.flatMap(([re]) => re.source.replace(/\\b/g, '').replace(/[()]/g, '').split('|').map(w => w.replace(/\(s\|ed\|ing\)\?|s\|ed\|ing|\?/g, '').trim()).filter(w => /^[a-z ]{3,}$/.test(w) && w !== 'ing')), 'kneel', 'kneeling', 'kneeled'])].join('|')})( |,|$)`;
+// Plain groups and no \\b: the endpoint's grammar engine takes the pattern features the time pattern uses. The grammar
+// matches the whole string, so the pattern ends with the rest of the action (a pattern that stopped after the verb cut
+// "steps out onto the street" to "steps").
+export const MOTION_START = `^(${[...new Set([...WORD_STEPS.flatMap(([re]) => re.source.replace(/\\b/g, '').replace(/[()]/g, '').split('|').map(w => w.replace(/\(s\|ed\|ing\)\?|s\|ed\|ing|\?/g, '').trim()).filter(w => /^[a-z ]{3,}$/.test(w) && w !== 'ing')), 'kneel', 'kneeling', 'kneeled'])].join('|')})([ ,][^"]*)?$`;
 // A distance written in the words: "300 yards", "three hundred yards", "half a mile", "2 km", "fifty feet". Units: metre
 // 1, yard 0.9144, foot 0.3048, mile 1609.344, kilometre 1000 (international yard and pound, 1959).
 const UNIT = [[/^(?:m|metres?|meters?)$/, 1], [/^(?:yds?|yards?)$/, 0.9144], [/^(?:ft|feet|foot)$/, 0.3048], [/^(?:mi|miles?)$/, 1609.344], [/^(?:km|kilometres?|kilometers?)$/, 1000]];
