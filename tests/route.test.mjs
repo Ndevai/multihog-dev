@@ -13,7 +13,7 @@ const CASES = [
     ['I call to the innkeeper for a pint of ale.', ['Communicate', 'Price'], ['Act']],
     ['Two men at the next table are whispering. I keep still and listen.', ['Listen'], ['Act']],
     ['I go to the innkeeper and tell him what I heard.', ['Act', 'Communicate'], []],
-    ['I climb the wall.', ['BodyCheck'], ['Communicate']],
+    ['I climb the wall.', ['BodyCheck'], ['Communicate', 'Act']],
     ['I drop down into the garden on the other side and wait in the shadow of the hedge.', ['BodyFall', 'PassTime'], ['Communicate']],
     ['I creep across the lawn to the lit window.', ['Act'], ['Communicate']],
     ['I look through the window to see who is inside.', ['Look'], ['Communicate']],

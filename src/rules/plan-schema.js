@@ -65,18 +65,21 @@ export function planSchema(only, opts = {}) {
         if (!key)
             return argsOf(t, null);
         const args = argsOf(t, key), min = require.has(t.name) ? { minProperties: 1 } : {};
+        const used = opts.used?.get(t.name) ?? new Set();
         // A subject with a fixed list (Price's goods) takes those keys only.
         const listed = t.properties[key]?.enum;
         if (listed?.length)
-            return { type: 'object', properties: Object.fromEntries(listed.map(v => [v, args])), additionalProperties: false, maxProperties: 6, ...min };
+            return { type: 'object', properties: Object.fromEntries(listed.filter(v => !used.has(v)).map(v => [v, args])), additionalProperties: false, maxProperties: 6, ...min };
         // Bounded: under constrained decoding a model can repeat one call until the token limit cuts the JSON.
         // The scene's people (scene-people.ts) are the keys a person-keyed tool takes; NewCharacter also takes a new one. The
         // endpoint refuses propertyNames (tools/probe-schema.mjs: HTTP 400), so the closed set is written as fixed properties.
         // Under each person's key, the other person a call names (the listener, the attacker, the one chased) is one of the
         // others: a speaker's listener list leaves the speaker out.
+        // A later round of the same turn (repair, follow-on) holds the keys its earlier rounds left: one call per tool and
+        // person in the whole turn (a repair added a second BodyFall for Mara after the first had run).
         if (PERSON_ARGS.has(key))
             return people.length
-                ? { type: 'object', properties: Object.fromEntries(people.map(n => [n, argsOf(t, key, n)])), additionalProperties: t.name === 'NewCharacter' ? args : false, maxProperties: 6, ...min }
+                ? { type: 'object', properties: Object.fromEntries(people.filter(n => !used.has(n)).map(n => [n, argsOf(t, key, n)])), additionalProperties: t.name === 'NewCharacter' ? args : false, maxProperties: 6, ...min }
                 : { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
         return { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
     };

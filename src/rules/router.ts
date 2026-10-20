@@ -37,17 +37,17 @@ const CLASS_TOOL: Record<string, string[]> = {
     hold: ['HoldOn'], cling: ['HoldOn'], break: ['Break'], destroy: ['Break'], split: ['Break'], remedy: ['BodyTreat'],
     weather: ['Weather'],
 };
-/** Tools that turn on a property VerbNet's classes leave open: hearing (peer-30.3 holds listen with look), a price (get-13.5.1
+/** A named verb's full tool list (it replaces its VerbNet classes' tools). These are the tools that turn on a property VerbNet's classes leave open: hearing (peer-30.3 holds listen with look), a price (get-13.5.1
  *  holds buy with take), effort, a fall, flight, care of a wound [ASSUMED lists]. */
 const VERB_TOOL: Record<string, string[]> = {
     hear: ['Listen'], listen: ['Listen'], overhear: ['Listen'], eavesdrop: ['Listen'],
-    buy: ['Price'], purchase: ['Price'], sell: ['Price'], rent: ['Price'], lease: ['Price'], haggle: ['Price', 'SocialResponse'], bargain: ['Price', 'SocialResponse'],
-    ask: ['SocialResponse'], request: ['SocialResponse'], persuade: ['SocialResponse'], convince: ['SocialResponse'], offer: ['SocialResponse'],
-    demand: ['SocialResponse'], threaten: ['SocialResponse'], flirt: ['SocialResponse'], bribe: ['SocialResponse'], invite: ['SocialResponse'],
+    buy: ['Price', 'Transfer'], purchase: ['Price', 'Transfer'], sell: ['Price', 'Transfer'], rent: ['Price', 'Transfer'], lease: ['Price', 'Transfer'], haggle: ['Price', 'SocialResponse', 'Communicate'], bargain: ['Price', 'SocialResponse', 'Communicate'],
+    ask: ['Communicate', 'SocialResponse'], request: ['Communicate', 'SocialResponse'], persuade: ['Communicate', 'SocialResponse'], convince: ['Communicate', 'SocialResponse'], offer: ['Communicate', 'SocialResponse'],
+    demand: ['Communicate', 'SocialResponse'], threaten: ['Communicate', 'SocialResponse'], flirt: ['Communicate', 'SocialResponse'], bribe: ['Communicate', 'SocialResponse', 'Transfer'], invite: ['Communicate', 'SocialResponse'],
     climb: ['BodyCheck'], jump: ['BodyCheck'], leap: ['BodyCheck'], vault: ['BodyCheck'], scale: ['BodyCheck'], swim: ['BodyCheck'], lift: ['BodyCheck'],
     heave: ['BodyCheck'], force: ['BodyCheck'], pry: ['BodyCheck'], squeeze: ['BodyCheck'], throw: ['BodyCheck'], balance: ['BodyCheck'], push: ['BodyCheck'],
     fall: ['BodyFall'], drop: ['BodyFall'], tumble: ['BodyFall'], trip: ['BodyFall'], stumble: ['BodyFall'], slip: ['BodyFall'],
-    flee: ['Chase'], pursue: ['Chase'], run_after: ['Chase'], go_after: ['Chase'], chase_after: ['Chase'],
+    flee: ['Chase', 'Act'], pursue: ['Chase', 'Act'], run_after: ['Chase', 'Act'], go_after: ['Chase', 'Act'], chase_after: ['Chase', 'Act'],
     bandage: ['BodyTreat'], treat: ['BodyTreat'], stitch: ['BodyTreat'], splint: ['BodyTreat'], tend: ['BodyTreat'], nurse: ['BodyTreat'],
     wait: ['PassTime'], sleep: ['PassTime'], rest: ['PassTime'], stay: ['PassTime'],
     drink: ['BodyIntake'], sip: ['BodyIntake'], swallow: ['BodyIntake'],
@@ -102,7 +102,9 @@ export function routeTurn(text: string, names: string[] = []): Route {
         if (!verbSpot) continue;
         for (const v of lemmas(w)) {
             const classes = [...VERBNET[`${v}_${words[i + 1] ?? ''}`] ?? [], ...VERBNET[v] ?? []];
-            const tools = [...VERB_TOOL[`${v}_${words[i + 1] ?? ''}`] ?? [], ...VERB_TOOL[v] ?? [], ...classes.flatMap(c => CLASS_TOOL[TOP(c)] ?? [])];
+            // A named verb's tools replace its classes' (VerbNet files climb under motion; a climb is BodyCheck's, not Act's).
+            const named = VERB_TOOL[`${v}_${words[i + 1] ?? ''}`] ?? VERB_TOOL[v];
+            const tools = named ?? classes.flatMap(c => CLASS_TOOL[TOP(c)] ?? []);
             for (const t of tools) why[t] ??= w;
             if (classes.length || VERB_TOOL[v]) break;
         }

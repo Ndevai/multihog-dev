@@ -9,7 +9,7 @@ import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setSto
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
-import { planSchema, callsFromKeyed, PERSON_KEY } from './plan-schema.js';
+import { planSchema, callsFromKeyed, PERSON_KEY, subjectOf } from './plan-schema.js';
 import { routedTools, movesIn, ALWAYS } from './router.js';
 import { framedCalls, playerName, mergeCalls } from './frame.js';
 import { scenePeople } from './scene-people.js';
@@ -239,14 +239,17 @@ const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]
 export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser): Promise<typeof READ> {
     const planTools = { current: undefined as Set<string> | undefined, people: [] as string[], require: [] as string[] };
     const send: Send = (system, user) => !GUIDED ? sendRaw(system, user)
-        : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current, { people: planTools.people, require: planTools.require }) })
+        : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current, { people: planTools.people, require: planTools.require, used: usedKeys() }) })
         : system === PICK_SYSTEM ? sendRaw(system, user, { schema: pickSchema() }) : sendRaw(system, user);
     const ctx = SillyTavern.getContext();
     setRead([]);
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size) return [];
     const s = store(), turn = turnKey(ctx.chat);
     const results: { tool: string; result: string; draws?: number[] }[] = [];
-    const runAll = async (list: Call[]) => { for (const c of list) { clearDraws(); const result = String(await REGISTRY.get(c.tool)!.exec(c.args as Args)); results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) }); } };
+    // The tool and subject of each call that has run this turn and stands (a refused call leaves its key open).
+    const used = new Map<string, Set<string>>(), usedKeys = () => used;
+    const markUsed = (c: Call, result: string) => { const k = subjectOf(c.tool); if (!k || REFUSED.test(result)) return; (used.get(c.tool) ?? used.set(c.tool, new Set()).get(c.tool)!).add(String(c.args[k] ?? c.args.question ?? '')); };
+    const runAll = async (list: Call[]) => { for (const c of list) { clearDraws(); const result = String(await REGISTRY.get(c.tool)!.exec(c.args as Args)); results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) }); markUsed(c, result); } };
     let calls: Call[], time: number | null = null, present: string[] | undefined;
     if (s.asked?.turn === turn) {
         calls = s.asked.calls; time = s.asked.time ?? null; present = s.asked.present;

@@ -55,5 +55,7 @@ check('the house is no person', !sp2.includes('the house') && !sp2.includes("the
 check('a speaker\'s listeners leave the speaker out', !s3.properties.calls.properties.Communicate.properties.Tom.properties.listener.enum.includes('Tom'), null);
 ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'x' }];
 check('a maidservant is a woman', /woman|girl/.test(String(await T.REGISTRY.get('NewCharacter').exec({ who: 'the maidservant', occupation: 'maidservant' }))), null);
-console.log(`45 checks, ${miss} miss(es)`);
+const s4 = P.planSchema(new Set(['BodyFall', 'Look']), { people: ['Mara', 'the man'], used: new Map([['BodyFall', new Set(['Mara'])]]) });
+check('a later round leaves out a key already run', !('Mara' in s4.properties.calls.properties.BodyFall.properties) && 'Mara' in s4.properties.calls.properties.Look.properties, Object.keys(s4.properties.calls.properties.BodyFall.properties));
+console.log(`46 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

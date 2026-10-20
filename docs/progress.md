@@ -572,3 +572,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - The innkeeper spoke to himself. Under each person's key, the other person a call names (listener, attacker, the one chased) is one of the other people: the speaker is outside his own listener list.
   - "the maidservant" was drawn as a man of 44. The census reads maidservant, cook and nursemaid as domestic indoor servants, and a role noun that names a woman (maid-, -ess, -wife, widow, landlady, mistress) fixes the sex.
 - `npm test`: 134 checks, 0 misses.
+
+## 2026-10-20 (51) One call per tool and person across the whole turn; a named verb's tools replace its classes'
+
+- Run of ce37bd2 (results/2026-10-20T15-35, 68 min with rate-limit waits): 42 calls, 5 faults reported. The house, the self-speaking innkeeper and the maidservant were gone. Two causes remained:
+  - "I climb the wall" offered Act: VerbNet files climb under motion (escape-51.1), and its class's tool was added beside BodyCheck. The model wrote "Act: climbs the wall and pauses at its top" next to the BodyCheck, and Act passed it on. A verb named in VERB_TOOL now takes that list in place of its classes' tools, and each named verb's list is complete (ask → Communicate and SocialResponse; buy → Price and Transfer; flee → Chase and Act).
+  - Mara's drop ran twice: once in the plan, and again when the repair round for the passed-on Act wrote BodyFall a second time. Listen ran twice the same way in a follow-on round. The keyed plan held one call per person within a round only. Each later round's schema now leaves out the keys already run and standing this turn (planSchema opts.used, kept by the pass as calls run), so a second BodyFall for Mara has no key to be written under.
+- `npm test`: 135 checks, 0 misses.
