@@ -83,5 +83,11 @@ if (!(Po.unrecorded(st1(), 'Clara', 'silver thimble') && !Po.unrecorded(st1(), '
 // A given name sets the sex: Josiah is a man in every draw, Mary a woman.
 for (let i = 0; i < 5; i++) { fresh(); expect('Josiah is a man', String(await run('NewCharacter', { who: `Josiah Crake` })), /\b(?:man|boy)\b/); }
 fresh(); expect('Mary is a woman', String(await run('NewCharacter', { who: 'Mary Kelly' })), /\b(?:woman|girl)\b/);
-console.log(`21 checks, ${miss} miss(es)`);
+// Money in words, paid in coin with change.
+const mi = ['a penny and a half', 'three halfpence', 'two shillings and sixpence', 'fourpence', 'a pound of apples'].map(Po.moneyIn);
+if (mi.join() !== '1.5,1.5,30,4,') { miss++; console.log(`MISS moneyIn: ${mi.join()}`); }
+const ps = {}; Po.give(ps, 'Tom', 'penny', 2);
+const paid = Po.transfer(ps, { item: 'a penny and a half', from: 'Tom', to: 'the innkeeper', how: 'given' });
+if (!/change halfpenny/.test(paid) || ps.items.Tom[0].item !== 'halfpenny') { miss++; console.log(`MISS change: ${paid}`); }
+console.log(`23 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

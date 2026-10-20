@@ -726,3 +726,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-20 (74) A thing the player hands over is claimed first
 
 - "I offer him my silver thimble" was refused by Transfer: Clara's belongings were on record (an earlier Claim had opened her account) and held no thimble. Code now puts a Claim before such a hand-over ("Clara has silver thimble", something the character has, at the share of an ordinary personal item, more than half [ASSUMED]). Claim decides whether she has it and records it when it holds; the Transfer then runs on that record (possessions.ts unrecorded).
+
+## 2026-10-20 (75) Given names set sex; money paid in coin with change
+
+- NewCharacter: a person named by a given name, with no stated sex, takes it by a draw against the share of girls among the US births given that name, 1880–2008 (SSA top 1,000 names by sex and year, hadley/data-baby-names; data/given-names.ts, 4,531 names; tools/build-names.mjs). Josiah Crake is a man, Mary Kelly a woman, Leslie a woman 54 % of the time. Names outside the table (Pyotr, Ines) keep the population draw.
+- possessions.ts: a sum of English money in words is paid in coin when the payer holds coin ("a penny and a half", "three halfpence", "twopence", "fourpence", "1s 6d", "two shillings and sixpence"; not "a pound of"). The coinage is that of 1816–1971 (farthing, halfpenny, penny, threepence, sixpence, shilling, florin, half-crown, crown, sovereign). The fewest coins that cover the sum are paid, and the change comes back in the largest coins, the receiver taken to hold change [ASSUMED]. Two pennies for a penny and a half: halfpenny back.
+- `npm test`: 172 checks, 0 misses.
