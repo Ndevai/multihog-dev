@@ -1583,7 +1583,7 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who'], a => run((st, rng) => {
         // A person already drawn keeps what was drawn (an innkeeper drawn at 56 was drawn again at 68 two turns later).
         { const known = st.people?.[String(a.who)] as { age?: number; sex?: string } | undefined;
-          if (known?.age != null && typeof a.age !== 'number') return `${a.who}: already in the story, a ${known.age}-year-old ${known.age < 18 ? (known.sex === 'female' ? 'girl' : 'boy') : known.sex === 'female' ? 'woman' : 'man'}; nothing drawn.`; }
+          if (known?.age != null && typeof a.age !== 'number') return `${a.who}: a ${known.age}-year-old ${known.age < 18 ? (known.sex === 'female' ? 'girl' : 'boy') : known.sex === 'female' ? 'woman' : 'man'}, as drawn when first met.`; }
         // A person the story describes (the cast's "her brother Will, 12") keeps the stated age and sex; nothing is drawn.
         if (typeof a.age === 'number' && a.age >= 0) {
             const { p } = who(st, a.who), age = Math.round(a.age), sex = a.sex ?? null;
@@ -1931,7 +1931,7 @@ export function registerRulesTools(enabled: boolean): void {
         if (!p) return error;
         // A fall starts from where the character stands: after a failed climb they are at its foot (a climb that failed at
         // 0.6 m was followed by a 3 m drop "into the garden on the other side").
-        if (p.raised_m != null && Number(a.height_m) > p.raised_m + 0.5) return p.raised_m ? `${a.who} stands ${p.raised_m} m up: the drop is ${p.raised_m} m. Call BodyFall with height_m ${p.raised_m}.` : `${a.who} is on the ground at the foot of the climb, on the side it started from: the climb failed, so there is no drop to make and nothing beyond it is reached.`;
+        if (p.raised_m != null && Number(a.height_m) > p.raised_m + 0.5) return p.raised_m ? `${a.who} stands ${p.raised_m} m up: the drop is ${p.raised_m} m. Call BodyFall with height_m ${p.raised_m}.` : `${a.who} stands on the ground at the foot of the climb, on the side the climb started from.`;
         delete p.raised_m;
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first, age: a.age == null ? undefined : Number(a.age), ground: a.ground, stiff: !!a.stiff_legs }, rng);
     }));

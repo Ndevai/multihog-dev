@@ -9,7 +9,7 @@ import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setSto
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
-import { planSchema } from './plan-schema.js';
+import { planSchema, callsFromKeyed } from './plan-schema.js';
 import { routedTools, movesIn, ALWAYS } from './router.js';
 import { framedCalls, playerName, mergeCalls } from './frame.js';
 import { worldHasMagic } from './world.js';
@@ -33,9 +33,9 @@ export const QUESTION_SYSTEM = `You prepare one turn of a roleplay for its narra
 Read the scene and the player's message. Find each thing the next reply will state that code decides. Two kinds: outcomes in doubt (an action that may fail, a blow that may land, whether a sound is heard or a sight seen, whether a message is understood, how a person responds), and facts code fixes even when nothing is in doubt (the time an action or a wait takes, the day's weather, an item changing hands, a new person's age and sex, a fact the scene establishes or a character learns).
 Ask about the things this reply shows. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
 A player's message that states something new about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A new person who first acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
-For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one call per person. One call per question; calls run in the order given, so put time passing after the actions it follows.
+For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one entry per person. The calls are grouped by tool, and within a tool keyed by the person or thing the call is about (the actor, the speaker, the listener, the viewer, the good priced, the item handed over): each person's motions this turn go in their one Act, in order; each good has one Price. A tool about no one in particular (Weather, PassTime) takes its arguments directly. Tools run in the order written, so put time passing after the actions it follows.
 When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": the scene's date and hour as YYYY-MM-DD HH:MM (or "Day 1 HH:MM" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. The first time the scene or scenario says where the scene is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them.
-First write QUESTIONS: one line per question. Then write the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}. A plan with zero calls is {"calls":[]}.`;
+First write QUESTIONS: one line per question. Then write the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":["follow-on question"],"need":["ToolName"]}. A plan with zero calls is {"calls":{}}.`;
 
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
 // FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
@@ -45,7 +45,7 @@ export const FOLLOW_ON = `RESULTS SO FAR
 FOLLOW-ON QUESTIONS
 {then}
 
-Write a call for each follow-on question these results leave open. Same format: QUESTIONS, then the JSON {"calls":[...]}.`;
+Write a call for each follow-on question these results leave open. Same format: QUESTIONS, then the JSON {"calls":{...}}.`;
 
 // A call the tool refused (an argument missing or malformed) goes back once with the tool's own message, and so does a plan
 // that cannot be read or leaves out the scene's position: the planner corrects its own call, as a tool error is fed back
@@ -53,7 +53,7 @@ Write a call for each follow-on question these results leave open. Same format: 
 export const REPAIR = `YOUR LAST ANSWER
 {problems}
 
-Write the corrected calls only, same format: QUESTIONS, then the JSON {"calls":[...]} (with "at" and "time" when asked for above). A value that depends on another call's result (a fall's height after a failed climb) goes in "then" as a question; you will get that result first.`;
+Write the corrected calls only, same format: QUESTIONS, then the JSON {"calls":{...}} (with "at" and "time" when asked for above). A value that depends on another call's result (a fall's height after a failed climb) goes in "then" as a question; you will get that result first.`;
 /** A plan that puts the story time or the scene's position inside a call's arguments ("time" on Weather or Act) gives them
  *  as the plan's own. */
 function hoist(plan: Plan): Plan {
@@ -157,6 +157,8 @@ export function rawPlan(text: unknown): Plan {
         if (end < 0) continue;
         try {
             const o = JSON.parse(s.slice(at, end + 1));
+            // The keyed form (plan-schema.ts) is read as the list the rest of the pass takes; the list form still reads.
+            if (o.calls && typeof o.calls === 'object' && !Array.isArray(o.calls)) o.calls = callsFromKeyed(o.calls);
             if (!Array.isArray(o.calls)) continue;
             return {
                 calls: o.calls.filter((c: unknown): c is Call => !!c && typeof (c as Call).tool === 'string' && typeof (c as Call).args === 'object' && (c as Call).args !== null),
@@ -222,7 +224,7 @@ export type Send = (system: string, user: string, opts?: { schema?: Record<strin
 export let GUIDED = false;
 export const setGuided = (v: boolean) => { GUIDED = v; };
 // Under constrained decoding the answer is the JSON plan alone; the model's reasoning carries the questions.
-const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":[{"tool":"ToolName","args":{...}}],"then":["follow-on question"],"need":["ToolName"]}; a plan with zero calls is {"calls":[]}.');
+const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":["follow-on question"],"need":["ToolName"]}; a plan with zero calls is {"calls":{}}.');
 export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser): Promise<typeof READ> {
     const planTools = { current: undefined as Set<string> | undefined };
     const send: Send = (system, user) => !GUIDED ? sendRaw(system, user)
@@ -273,7 +275,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
             + (drafts.length ? `\n\nCODE READ FROM THE PLAYER'S WORDS (call these with the scene's numbers added: distance_m, noise, barrier)\n${drafts.map(c => `- ${c.tool} ${JSON.stringify(c.args)}`).join('\n')}` : '');
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only) + already, thingsBlock(found)].filter(Boolean).join('\n\n');
         const skipPlanner = !!routed && left!.length === 0 && framed.calls.length > 0;
-        const lastPlanText = skipPlanner ? '{"calls":[]}' : String(await send(QUESTION_SYSTEM, prompt) ?? '');
+        const lastPlanText = skipPlanner ? '{"calls":{}}' : String(await send(QUESTION_SYSTEM, prompt) ?? '');
         const plan = hoist(rawPlan(lastPlanText));
         plan.calls = plan.calls.filter(c => !framed.covered.has(c.tool));
         setRead(await resolveRead(found, plan, choose));
@@ -305,7 +307,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         // A scene tool code drafted (Communicate) that the plan left out still needs the scene's numbers.
         const sceneOpen = drafts.filter(d => !valid.some(c => c.tool === d.tool));
         if (unread || dropped.length || noPlace || motion || sceneOpen.length) {
-            const problems = [unread ? 'Write the plan as the JSON {"calls":[...]}.' : '',
+            const problems = [unread ? 'Write the plan as the JSON {"calls":{...}}.' : '',
                 ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool)!.required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'unknown tool'}.`),
                 noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : '',
                 motion ? `The player's message moves their character ("${said.slice(0, 120)}"): add Act with action and distance_m from the scene.` : '',

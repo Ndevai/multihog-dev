@@ -78,7 +78,7 @@ for (const [si, story] of chosen) {
             const who = String(drawnArgs[i]?.who ?? r.result.split(':')[0]), age = Number(r.result.match(/a (\d+)-year-old/)?.[1]), stated = Q.castPerson(who, cast);
             if (/\b\w+ing\b/.test(who.replace(/\b(?:whispering|king|darling|sibling)\b/g, '')) || who.split(/\s+/).length > 8) f.push(`person drawn for a phrase: "${who}"`);
             if (/\b(?:men|women|children|people|boys|girls)\b/i.test(who) && !/refused|several people|each gets/.test(r.result)) f.push(`a group drawn as one person: "${who}"`);
-            if (people.has(who) && !/already in the story/.test(r.result)) f.push(`${who} drawn again: ${r.result.slice(0, 80)}`);
+            if (people.has(who) && !/as drawn when first met/.test(r.result)) f.push(`${who} drawn again: ${r.result.slice(0, 80)}`);
             people.add(who);
             if (stated.age != null && age !== stated.age) f.push(`${who} drawn at ${age}; the cast says ${stated.age}`);
         }

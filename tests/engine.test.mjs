@@ -12,7 +12,7 @@ for (let i = 0; i < 40; i++) {
     fresh();
     const c = String(await run('BodyCheck', { ...CLIMB, share: '5% almost no one' }));
     if (!/FAILURE/.test(c)) continue;
-    expect('drop after a failed climb', String(await run('BodyFall', { who: 'Mara', height_m: 3 })), /on the ground at the foot of the climb/);
+    expect('drop after a failed climb', String(await run('BodyFall', { who: 'Mara', height_m: 3 })), /stands on the ground at the foot of the climb, on the side the climb started from/);
     break;
 }
 // A climb that succeeds puts the climber on top: the 3 m drop runs.

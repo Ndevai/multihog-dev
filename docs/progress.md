@@ -535,3 +535,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Engine data: an innkeeper of 16, drawn from the census's innkeepers. The census table gives occupations without ages, so age is drawn apart from the trade [ASSUMED]. Open: age by occupation.
   - Narrator: "a quarter past six by the church clock" when the clock read 18:21. The check caught it.
 - `npm test`: 89 checks, 0 misses.
+
+## 2026-10-20 (46) The plan keyed by tool and subject
+
+- The faults of runs 1–5 that came from the plan's shape (the ale priced in five cities, one creep split into three Acts, a person drawn twice, the costermonger's Communicate written twice) share one cause: the plan was a list, and a list holds any call any number of times. Each fix so far filtered one repeat after it was written. The plan is now an object keyed by tool, and within a tool by the subject the call is about: {"calls":{"Act":{"Mara":{…}},"Price":{"beer (litre)":{…}},"Weather":{…}}}. A JSON object holds each key once, so under constrained decoding a second Act for Mara or a second price of the same good cannot be written. The subject is the tool's first argument among who, speaker, listener, viewer, item, room, fact (plan-schema.ts subjectOf); Price is keyed by the good, or by the question ("daily wage"); a tool about no one in particular (Weather, PassTime) takes its arguments directly. callsFromKeyed turns the keyed plan back into the list the pass runs, in the order written; the list form still reads (unguided connections). The prompt says each person's motions this turn go in their one Act, in order.
+- Result texts now state what holds: a person met again is "a 25-year-old man, as drawn when first met"; a drop after a failed climb gives "stands on the ground at the foot of the climb, on the side the climb started from".
+- tests/plan.test.mjs (9 checks). `npm test`: 98 checks, 0 misses. The stand-in run reads keyed plans and runs their calls.
