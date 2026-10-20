@@ -722,3 +722,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-20 (73) Provider retries from Simulation Blackboard
 
 - The user has the permission of Simulation Blackboard's author (st1ksi) to reuse its code. Its retry.js replaces tools/nvidia.mjs's retry loop (src/rules/retry.ts). Only temporary errors are retried (429, 500, 502, 503, 504, "overloaded"; never billing, a bad key or a context overflow). The wait is the server's Retry-After, else 60 s doubling to 240 s, and a cooldown over 10 minutes is handed back instead of waited out. Stand-in test: a 429 waits 60 s, then a 401 stops at once. The source is credited in docs/third-party.md.
+
+## 2026-10-20 (74) A thing the player hands over is claimed first
+
+- "I offer him my silver thimble" was refused by Transfer: Clara's belongings were on record (an earlier Claim had opened her account) and held no thimble. Code now puts a Claim before such a hand-over ("Clara has silver thimble", something the character has, at the share of an ordinary personal item, more than half [ASSUMED]). Claim decides whether she has it and records it when it holds; the Transfer then runs on that record (possessions.ts unrecorded).

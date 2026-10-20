@@ -13,6 +13,7 @@ import { planSchema, callsFromKeyed, PERSON_KEY, subjectOf } from './plan-schema
 import { routedTools, movesIn, ALWAYS } from './router.js';
 import { framedCalls, playerName, mergeCalls, sameSubject } from './frame.js';
 import { scenePeople } from './scene-people.js';
+import { unrecorded } from './possessions.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
@@ -380,6 +381,11 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
         // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
         calls = dedupe([...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')]);
+        // A thing the player's character hands over that their recorded belongings leave out ("I offer him my silver
+        // thimble") is first claimed: Claim decides whether they have it, then the hand-over runs on what it decided. The
+        // share is an ordinary personal item's [ASSUMED: more than half of people in such a scene carry one].
+        if (player && REGISTRY.has('Claim')) for (const c of [...calls]) if (c.tool === 'Transfer' && c.args.from === player && typeof c.args.item === 'string' && unrecorded(s.state, player, c.args.item) && !calls.some(d => d.tool === 'Claim' && String(d.args.item ?? '') === c.args.item))
+            calls.splice(calls.indexOf(c), 0, { tool: 'Claim', args: { who: player, claim: `${player} has ${c.args.item}`, kind: 'something the character has', item: c.args.item, in_world: true, base_share: '65% more than half', share: '65% more than half' } });
         // A climb comes before a drop by the same person: the drop starts from the height the climb reached (a keyed plan
         // lists BodyFall before BodyCheck when written in that order, and the 2nd try ran after the drop it made possible).
         for (const climb of calls.filter(c => c.tool === 'BodyCheck' && c.args.height_m)) {

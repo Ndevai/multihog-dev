@@ -19,6 +19,11 @@ function holding(st: RuleState, who: string): Held[] {
     return (st.items[who] ??= []);
 }
 
+/** Whether who's belongings are on record and leave out item: a hand-over of it needs a Claim first. */
+export function unrecorded(st: RuleState, who: string, item: string): boolean {
+    return !!st.accounted?.includes(who) && !holding(st, who).some(x => same(x.item, item));
+}
+
 /** Marks who's belongings as accounted: from now on they give only what is on record. */
 export function account(st: RuleState, who: string): void {
     st.accounted ??= [];

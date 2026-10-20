@@ -74,5 +74,11 @@ expect('a good outside the list beats a stray item', String(await run('Price', {
 fresh();
 expect('reveals as a question is turned back', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'who is inside the lit room and what they are doing' })), /reveals is the fact itself/);
 expect('reveals as the fact runs', String(await run('Look', { viewer: 'Mara', size_m: 0.5, distance_m: 2, light: 'living room', reveals: 'a grey-haired man counting coins at a desk' })), /Mara/);
-console.log(`18 checks, ${miss} miss(es)`);
+// A thing claimed, then handed over: the claim records it when it holds, and the hand-over runs on the record.
+const Po = await import('../src/rules/possessions.js');
+fresh();
+const st1 = () => ctx.chatMetadata.rulesEngine.state;
+await run('Claim', { who: 'Clara', claim: 'Clara has a purse', kind: 'something the character has', item: 'purse', in_world: true, base_share: '95% nearly everyone', share: '95% nearly everyone' });
+if (!(Po.unrecorded(st1(), 'Clara', 'silver thimble') && !Po.unrecorded(st1(), 'Bob', 'silver thimble'))) { miss++; console.log('MISS unrecorded'); }
+console.log(`19 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
