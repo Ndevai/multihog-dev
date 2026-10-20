@@ -737,3 +737,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - BodyFall treated every fall as a drop onto the feet ("Fall 0.5 m: lands on the feet, 2.8 kN through each leg"), so Pyotr's slip on the ice was told as a jump. A fall flagged slip, or from 0.5 m or less, is now a fall on the level from the body's own height: down onto the side and the hands. At 65 or over about 1 in 10 such falls ends in a serious injury (Tinetti 2003, NEJM 348:42, citing Nevitt 1991, Sattin 1992, Tinetti 1995). Fractures after a fall on the level were 3.35–4.75 times as frequent at 45 and over as under 45 (McNamee et al. 1997, Occup Environ Med 54:785), so under 45 the share is a quarter [ASSUMED: the ratio holds for serious injury] and 45–64 half way [ASSUMED]. A serious injury is a broken wrist, or the hip at 75 and over, recorded as a fracture. Drawn: 1.8 % at 30, 4.3 % at 50, 8.5 % at 70. A drop after a failed climb is still answered by where the climber stands.
 - `npm test`: 174 checks, 0 misses.
+
+## 2026-10-20 (77) A fall leaves the body on the ground; getting up is timed
+
+- After the slip, Pyotr's posture was still standing, so "I get up and look for my glove" took 0 s and the clock stood still (fault 8.3). A slip now leaves the body lying (Person.posture 'lying'). Standing from lying is onto both knees (69.4 TMU, kneel on both knees, as its reverse) then up from both knees (76.7 TMU): 146.1 TMU, 5.3 s [ASSUMED composite; MTM-1 has no motion from lying]. A walk begun from lying stands first.

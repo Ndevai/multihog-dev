@@ -1988,6 +1988,7 @@ export function registerRulesTools(enabled: boolean): void {
             const side = rng() < 0.5 ? 'left' : 'right', c = creatureOf(p);
             const body = hurt ? (part === 'hip' ? c?.parts.find(x => x.name === `${side} upper leg`) : c?.parts.find(x => x.name === `${side} hand`) ?? c?.parts.find(x => x.name === `${side} lower arm`)) : undefined;
             if (body) addWound(p, { part: body, type: 'fracture', fracture: 'transverse' }, rng);
+            p.posture = 'lying';
             return `${a.who} slips and goes down from standing onto the side and the hands: ${hurt ? `a serious injury, the ${side} ${part} broken (fracture recorded${body ? ` on the ${body.name}` : ''})` : 'bruised and shaken, nothing broken'} (a fall on the level at ${age}: ${Math.round(chance * 100)} % end in a serious injury). ${a.who} is on the ground.`;
         }
         delete p.raised_m;

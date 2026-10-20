@@ -21,6 +21,9 @@ export const MTM: Record<string, { tmu: number; does: string }> = {
     arise: { tmu: 31.9, does: 'straightens up from a bend, stoop or one-knee kneel' },
     kneel_both: { tmu: 69.4, does: 'kneels on both knees' }, arise_both: { tmu: 76.7, does: 'gets up from both knees' },
     turn: { tmu: 18.6, does: 'turns the body 45–90°' }, sidestep: { tmu: 17.0, does: 'sidesteps' },
+    // From lying on the ground: onto both knees (kneel on both knees, 69.4, as its reverse motion) then up from both knees
+    // (76.7): 146.1 TMU, 5.3 s [ASSUMED composite; MTM-1 has no motion from lying].
+    rise_ground: { tmu: 69.4 + 76.7, does: 'gets up from the ground' },
     grasp: { tmu: 2.0, does: 'grasps' }, release: { tmu: 2.0, does: 'lets go' }, look: { tmu: 7.3, does: 'focuses the eyes' },
 };
 export const reachTmu = (cm: number) => cm <= 10 ? 6.1 : cm <= 80 ? 6.1 + (cm - 10) * (18.2 - 6.1) / 70 : 18.2 + (cm - 80) * 0.24;
@@ -76,7 +79,7 @@ export function act(st: State, who: string, p: Person, steps: Step[], country: s
             if (!p.at) return { error: `${who}'s spot is still open: start with {"do":"be_at","to":"<spot>"}, or give distance_m.` };
             if (p.at === s.to) { lines.push(`${who} is already at ${s.to}`); continue; }
             // A seated person rises before walking.
-            if (p.posture === 'sitting' && MTM.stand) { const up = MTM.stand.tmu * TMU_S; total += up; lines.push(`${who} ${MTM.stand.does}: ${honest(up)}`); marks.push([total, `${who} stands`]); }
+            if ((p.posture === 'sitting' || p.posture === 'lying') && MTM.stand) { const m = p.posture === 'lying' ? MTM.rise_ground : MTM.stand, up = m.tmu * TMU_S; total += up; lines.push(`${who} ${m.does}: ${honest(up)}`); marks.push([total, `${who} stands`]); }
             p.posture = 'standing';
             st.links ??= {};
             const k = key(p.at, s.to), known = st.links[k], via = known == null && s.distance_m == null ? shortest(st.links, p.at, s.to) : null;
@@ -110,6 +113,8 @@ export function act(st: State, who: string, p: Person, steps: Step[], country: s
             const cm = s.cm ?? 40; t = reachTmu(cm) * TMU_S; what = `reaches ${cm} cm`;
         } else if ((s.do === 'sit' && p.posture === 'sitting') || ((s.do === 'stand' || s.do === 'arise') && p.posture === 'standing')) {
             lines.push(`${who} is already ${p.posture}`); continue;
+        } else if ((s.do === 'stand' || s.do === 'arise') && p.posture === 'lying') {
+            t = MTM.rise_ground.tmu * TMU_S; what = MTM.rise_ground.does; p.posture = 'standing';
         } else if (MTM[s.do]) {
             t = MTM[s.do].tmu * TMU_S; what = MTM[s.do].does;
             if (s.do === 'sit') p.posture = 'sitting'; else if (s.do === 'stand' || s.do === 'arise') p.posture = 'standing';

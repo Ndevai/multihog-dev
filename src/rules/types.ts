@@ -70,7 +70,7 @@ export interface Person {
     /** Named spot the character is at (actions.ts), e.g. "John's house: living room". */
     at?: string;
     /** Sitting or standing, as the last Act left them (actions.ts). */
-    posture?: 'sitting' | 'standing';
+    posture?: 'sitting' | 'standing' | 'lying';
     /** Height above the ground the character stands at, m, when a climb set it: the top of a wall climbed, 0 at its foot after a
      *  failed climb. Cleared by a walk or a fall (rules-tools.ts BodyCheck, BodyFall, Act). */
     raised_m?: number;
