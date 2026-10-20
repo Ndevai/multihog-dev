@@ -2,6 +2,7 @@
 // Allen 2001 and the GPIH files.
 import { PERIODS, GOODS, CPI, CRAFTSMAN, LABOURER } from './data/allen-prices.js';
 import { MOATSOS } from './data/moatsos.js';
+import { USDA_FRUIT } from './data/usda-produce.js';
 import { LABOURER as LAB_Y, CRAFTSMAN as CRAFT_Y, CPI as CPI_Y, ASIAWAGE, ASIABASKET, POUND, WORLDWAGE, WORLDBASKET, WORLDSKILLED, WAGE2, SKILLED2, PENCE, PENCESKILLED } from './data/gpih.js';
 
 // Places with wages only (and a bare-bones basket where the source gives one): the four Asian cities, Latin America, India by
@@ -114,4 +115,18 @@ export function price(question: string, item: string | undefined, trade = 'build
     }
     const silver = unit * qty;
     return { silver, what, labourDays: lab ? silver / lab.v : null, note: note ?? (CPI_Y[city] && question !== 'daily wage' ? null : at !== PERIODS[k] ? `figures for ${at}–${at + 49}` : null) };
+}
+
+/** A good outside the price list, priced from a listed one (docs/progress.md entry 66): the listed good it is most like, times
+ *  the two goods' ratio in a modern reference table where both appear (USDA ERS retail prices, 2023: pears are 1.03 × apples)
+ *  [ASSUMED: the ratio held in the story's time and place], else the listed good's own price (ratio 1) [ASSUMED]. A
+ *  placeholder that is the same every time it is asked, until a historical series for the good is found. */
+export function referencePrice(good: string, like?: string): { item: string; ratio: number; source: string } | null {
+    const g = good.toLowerCase().replace(/\b(?:a|an|the|some|pounds?|pints?|lbs?|of|fresh|ripe)\b/g, ' ').replace(/\s+/g, ' ').trim();
+    const listed = GOODS_LIST.find(x => x.split(' (')[0] === g || x.split(' (')[0] === g.replace(/s$/, '') || `${x.split(' (')[0]}s` === g);
+    if (listed) return { item: listed, ratio: 1, source: 'listed' };
+    const key = [g, `${g}s`, g.replace(/s$/, ''), g.replace(/ies$/, 'y'), `${g.replace(/y$/, 'ie')}s`].find(k => USDA_FRUIT[k] != null);
+    if (key && GOODS['apples (kg)'] != null) return { item: 'apples (kg)', ratio: USDA_FRUIT[key] / USDA_FRUIT.apples, source: `${key} at ${Math.round(USDA_FRUIT[key] / USDA_FRUIT.apples * 100) / 100} × apples, from US retail prices 2023 (USDA ERS) [ASSUMED: that ratio then]` };
+    if (like && GOODS[like] != null) return { item: like, ratio: 1, source: `at the price of ${like.split(' (')[0]}, the listed good it is most like [ASSUMED]` };
+    return null;
 }

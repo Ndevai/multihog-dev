@@ -23,6 +23,7 @@ const CASES = [
     ['I ask the costermonger for a pound of apples and pay him.', 'Mary', [['Price', { item: 'apples (kg)', quantity: 0.454 }]], []],
     ['I buy two loaves of bread.', 'Ann', [['Price', { item: 'bread (kg)', quantity: 3.94 }]], []],
     ['I eat the bread.', 'Ann', [], ['Price']],
+    ['I buy a pound of pears.', 'Ann', [['Price', { good: 'pears', quantity: 0.454 }]], []],
     ['I stand up and walk 5 m to the door.', 'Ann', [['Act', { distance_m: 5 }]], []],
     ['Two men at the next table are whispering. I keep still and listen.', 'Tom', [['Listen', { listener: 'Tom' }]], []],
     ['I go to the innkeeper and tell him what I heard.', 'Tom', [], ['Listen']],

@@ -54,5 +54,12 @@ const ap = Pr.price('price of goods', 'apples (kg)', undefined, 0.4536, 'London'
 if (!(Math.abs(dPerLb - 0.97) < 0.02)) { miss++; console.log(`MISS apples 1851: ${dPerLb} d per lb`); }
 const C = await import('../src/rules/clock.js');
 if (C.spokenTime(18 * 60 + 17.88) !== 'about twenty past six in the evening' || C.spokenTime(18 * 60 + 15) !== 'a quarter past six in the evening') { miss++; console.log(`MISS spokenTime: ${C.spokenTime(18 * 60 + 17.88)}`); }
-console.log(`9 checks, ${miss} miss(es)`);
+// A good outside the list: from its reference ratio, and the same each time it is asked.
+const rp = Pr.referencePrice('pears');
+if (!(rp && rp.item === 'apples (kg)' && Math.abs(rp.ratio - 1.03) < 0.01)) { miss++; console.log(`MISS pears: ${JSON.stringify(rp)}`); }
+fresh();
+const o1 = String(await run('Price', { question: 'price of goods', good: 'oysters', like: 'meat (kg)', quantity: 1, city: 'London', year: 1888 }));
+const o2 = String(await run('Price', { question: 'price of goods', good: 'oysters', like: 'cheese (kg)', quantity: 2, city: 'London', year: 1888 }));
+if (!/meat/.test(o2)) { miss++; console.log(`MISS oysters kept: ${o2}`); }
+console.log(`11 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

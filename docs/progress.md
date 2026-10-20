@@ -668,3 +668,14 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Run of a3c75a7 (results/run-39484164921): 6 faults (story 1: none; 2: 2; 3: 4). Look refused "Give distance_m" after repair: the tool needs a distance (or a map) but listed only viewer and size_m as required, so the schema let the plan leave it out. distance_m is now required, and the plan's schema asks for it. The report flagged "the serving girl" as a phrase for its -ing word. An event now reads as a verb in -ing followed by what it does ("getting up and going to the bar"), in the report and in the auto-NewCharacter skip.
 - Open: paying "a penny and a half" from two pennies refuses (Transfer counts whole coins; making change is not modelled).
+
+## 2026-10-20 (66) Goods outside the list priced from the good they are most like
+
+- A good the price list lacks used to get no price, so the model invented one each time, different from turn to turn. Price now takes good (the story's word) and like (the listed good it is most like), and prices it in three steps (prices.ts referencePrice):
+  1. A listed good named in other words ("apple", "eggs") → that good.
+  2. A good in the reference table → the listed anchor's price × the two goods' ratio there. The table holds US average retail prices of 33 fruits, 2023 (USDA ERS Fruit and Vegetable Prices, all-fruits CSV; data/usda-produce.ts), anchored on apples, the one fruit with a historical series. Pears: 1.03 × apples; bananas 0.33; raspberries 4.28 [ASSUMED: the ratio held in the story's time and place].
+  3. Anything else → the like good's own price [ASSUMED].
+- The first answer for a good is kept in the story (goodsRef) and returned each time it is asked: oysters priced like meat stay at meat's price when a later call names cheese. The result names its basis ("pears at 1.03 × apples, from US retail prices 2023 (USDA ERS) [ASSUMED: that ratio then]"). A historical series for a good, once found, replaces the placeholder by entering the list.
+- frame.ts writes the Price for a measure of a good outside the list when the reference table holds it ("a pound of pears" → good pears, 0.454). The planner gives like for the rest.
+- Open: vegetables (USDA ERS all-vegetables CSV, 44 products; the fetch was refused this session).
+- `npm test`: 156 checks, 0 misses.

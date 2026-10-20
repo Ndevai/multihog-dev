@@ -5,6 +5,7 @@
 import { distanceIn, stepsFromWords } from './actions.js';
 import { movesIn } from './router.js';
 import { VERBNET } from './data/verbnet.js';
+import { referencePrice } from './prices.js';
 const PRONOUN = /^(?:him|her|them|it)$/i;
 // A person named after a verb or preposition: "the innkeeper", "Will", "the old man".
 const PERSON = String.raw `((?:the |an? )?(?:[a-z]+ ){0,2}?[a-z]+|[A-Z][a-z]+)`;
@@ -95,6 +96,14 @@ function pricing(text) {
     if (!/\b(?:buy|buys|bought|pay|pays|paid|purchase|order|orders|ordered|ask|asks|asked|call|calls|called)\b/.test(t))
         return null;
     const good = GOOD_WORDS.find(([re]) => re.test(t));
+    // A measure of a good outside the list ("a pound of pears") is priced from the good it is most like (prices.ts
+    // referencePrice); code writes it when the reference table holds the good, the planner (with like) otherwise.
+    const other = !good && t.match(/\b(?:pints?|quarts?|gallons?|pounds?|lbs?|ounces?|dozen) of ([a-z]+)\b/)?.[1];
+    if (other) {
+        const ref = referencePrice(other);
+        const unit = MEASURE.find(([re]) => re.test(t))?.[1] ?? 1;
+        return ref ? { tool: 'Price', args: { question: 'price of goods', good: other, quantity: Math.round(unit * 1000) / 1000 } } : null;
+    }
     if (!good)
         return null;
     const count = Number(t.match(/\b(\d+(?:\.\d+)?)\s+(?:pints?|quarts?|gallons?|pounds?|lbs?|ounces?|loaves|dozen|eggs?)\b/)?.[1] ?? { two: 2, three: 3, four: 4, half: 0.5 }[t.match(/\b(two|three|four|half)\s+(?:a\s+)?(?:pints?|quarts?|gallons?|pounds?|loaves|dozen)\b/)?.[1] ?? ''] ?? 1);

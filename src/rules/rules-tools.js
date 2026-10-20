@@ -11,7 +11,7 @@ import { LININGS, MATERIALS, GROUNDS, MATERIAL_NAMES, material, ropeBreakKg, rod
 import { findPlace, simulatePlaceYear, hourTemp, placeCountry } from './weather.js';
 import { observedDay, cachedDay, reanalysisMissed } from './reanalysis.js';
 import { NORMALS } from './data/wmo-normals.js';
-import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET_ONLY, basketWage } from './prices.js';
+import { price, poundSilver, PRICE_QUESTIONS, GOODS_LIST, TRADES, CITIES, BASKET_ONLY, basketWage, referencePrice } from './prices.js';
 import { drawName } from './names.js';
 import { bodySize, BUILDS, bmiZOf } from './body-size.js';
 import { WATER_SOURCES, drinkWater } from './waterborne.js';
@@ -1053,9 +1053,11 @@ export function registerRulesTools(enabled) {
     // Work time as a person says it: minutes under an hour, to the nearest five ("about 20 minutes of a 10-hour day"); a
     // narrator turning "0.3 hours" into words wrote "a quarter hour".
     const spokenWork = (hours) => hours < 1 ? `about ${Math.max(5, Math.round(hours * 12) * 5)} minutes of a 10-hour day` : `about ${Math.round(hours * 2) / 2} hours of a 10-hour day`;
-    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it. Goods outside its list (fish, tea) have their price from the story; Price gives the listed goods only.', {
+    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it. A good outside its list (pears, oysters) is priced with good and like, from the listed good it is most like.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
-        item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
+        item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods: a listed good' },
+        good: str('For goods outside the list: the good in the story\'s words ("pears", "oysters"); give like with it'),
+        like: { type: 'string', enum: GOODS_LIST, description: 'With good: the listed good it is most like (pears: apples; porter: beer)' },
         quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
         trade: { type: 'string', enum: TRADES, description: 'For a daily wage. Default building labourer.' },
         city: { type: 'string', enum: CITIES, description: 'The city, or the nearest listed one in the same country' },
@@ -1109,9 +1111,21 @@ export function registerRulesTools(enabled) {
         const home = st.setting?.country ? cityOfCountry(st.setting.country) : null;
         if (home && cityCountry(a.city) && cityCountry(a.city) !== cityCountry(home))
             a = { ...a, city: home };
-        const r = price(a.question, a.item, a.trade, Number(a.quantity) || 1, a.city, year);
-        if ('error' in r)
-            return r.error;
+        // A good outside the list: priced from the listed good it is most like, the same way each time it is asked (kept in
+        // the story: the first answer stands).
+        let ref = null;
+        if (!a.item && a.good) {
+            const kept = st.goodsRef ??= {};
+            const k = String(a.good).toLowerCase().trim();
+            ref = kept[k] ?? referencePrice(String(a.good), a.like);
+            if (!ref)
+                return `Give like (the listed good ${a.good} is most like): ${GOODS_LIST.join(', ')}.`;
+            kept[k] = ref;
+        }
+        const r0 = price(a.question, ref?.item ?? a.item, a.trade, Number(a.quantity) || 1, a.city, year);
+        if ('error' in r0)
+            return r0.error;
+        const r = ref && ref.source !== 'listed' ? { ...r0, silver: r0.silver * ref.ratio, labourDays: r0.labourDays == null ? null : r0.labourDays * ref.ratio, what: `${Number(a.quantity) || 1} ${ref.item.match(/\((\w+)/)?.[1] === 'each' ? '×' : ref.item.match(/\((\w+)/)?.[1] ?? '×'} of ${a.good}`, note: [r0.note, ref.source].filter(Boolean).join('; ') } : r0;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         // Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length].
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? `${Math.round(r.labourDays)} days` : r.labourDays >= 0.1 ? `${Math.round(r.labourDays * 10) / 10} days` : spokenWork(r.labourDays * 10)}`;
