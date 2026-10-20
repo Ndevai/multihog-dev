@@ -456,7 +456,13 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             calls = [...calls, ...more];
         }
     }
-    s.asked = { turn, calls, results, time, read: READ, present };
+    // The day's weather is told once: a turn whose Weather result gives the same day's weather as the turn before keeps it
+    // in the results for the check and out of [DECIDED] (a reply per result made every reply open on the same rain).
+    const day = (r) => r.replace(/;?\s*now about [^;(]*/, '').replace(/\s*\(.*$/, '').trim();
+    const w = results.find(r => r.tool === 'Weather'), told = s.weatherTold;
+    const prev = told?.turn === turn ? told.prev : told?.key ?? null, key = w ? day(w.result) : prev;
+    s.weatherTold = { turn, prev, key };
+    s.asked = { turn, calls, results, time, read: READ, present, weatherRepeat: !!w && key === prev };
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
     console.debug('[Rules engine] question pass', calls, results, READ);
     return READ;
@@ -486,15 +492,16 @@ export function askedResults() {
 /** A perception that did not happen: the narrator's silence about it says as much (Grice, Quantity), and naming the missed
  *  sound or sight would put it in the reply. Kept in the turn's results for the rule check. */
 export const isMiss = (tool, result, args) => !args?.reveals && (tool === 'Listen' || tool === 'Look') && /misses it/.test(result);
+const repeatWeather = (tool) => tool === 'Weather' && !!store().asked?.weatherRepeat;
 export function decidedInjection() {
-    const r = askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]));
+    const r = askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]) && !repeatWeather(x.tool));
     if (!r.length)
         return '';
     return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n')}\n[/DECIDED]`;
 }
 /** This turn's [DECIDED] results, in their numbered order. */
 export function decidedResults() {
-    return askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i])).map(x => ({ ...x, result: storyResult(x.result) }));
+    return askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]) && !repeatWeather(x.tool)).map(x => ({ ...x, result: storyResult(x.result) }));
 }
 /** A result as the story reads it: the sensitivity note ("Fragile: … → the right heel bone breaks") is for the log, and a
  *  narrator that read one told the other outcome as fact. */

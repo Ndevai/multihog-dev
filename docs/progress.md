@@ -626,3 +626,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - The reply now gets the treatment the plan got (narration.ts): {"scene": the setting, at most 420 characters; "results": one passage per numbered result, each required, each written once; "open": the questions the scene moves toward}. The only free passage is the setting, a few sentences long. An event has a place only under the result that decides it, or as an open question the next turn's planner decides. readNarration reads it back as beats (0 for the scene, then each result's number), so proseOf, the check and SillyTavern's reply handling are unchanged.
 - NVIDIA rate-limit increase: forum requests from June 2026 (40 → 200 requests per minute) show no staff answer four months on, and a moderator wrote that "there is no official way … to receive a rate limit increase on that same tier". No request drafted.
 - `npm test`: 144 checks, 0 misses.
+
+## 2026-10-20 (58) The bounded reply: 3 faults in 12 turns; the day's weather told once
+
+- Run of 2e832a8 (results/run-39467128451, the scene-and-results reply): 3 faults in 12 turns, the fewest of the day (story 2: none). The narrator's unbacked events, two thirds of the faults before, fell to 2 rule-check flags (both a duration worded past its result). The other fault was Act passing on a drop.
+- The reply's required passage per result made every reply open on the same rain: Weather runs every turn, and its passage was required each time. A turn whose Weather gives the same day's weather as the turn before (the result without its "now about … °C") keeps the result for the check and leaves it out of [DECIDED]. Stand-in run: Weather in [DECIDED] on turn 1 only.
