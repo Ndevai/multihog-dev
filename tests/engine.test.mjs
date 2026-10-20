@@ -69,7 +69,7 @@ if (W.placeIn("Mary (the player's character) walks home.", new Set()) !== null) 
 const pot = Pr.referencePrice('potatoes'), len = Pr.referencePrice('lentils');
 if (!(pot?.item === 'apples (kg)' && Math.abs(pot.ratio - 0.4952) < 0.01 && len?.item === 'beans or peas (litre)')) { miss++; console.log(`MISS vegetables: ${JSON.stringify([pot, len])}`); }
 fresh();
-expect('a misfortune stated against interest stands', String(await run('Claim', { who: 'Pyotr', claim: 'Pyotr slips on the ice and falls', kind: 'something happening to the character now', in_world: true, base_share: '20% few', share: '20% few', against_interest: true })), /holds \(stated against/);
+expect('a misfortune stated against interest stands', String(await run('Claim', { against_interest: false, who: 'Pyotr', claim: 'Pyotr slips on the ice and falls', kind: 'something happening to the character now', in_world: true, base_share: '20% few', share: '20% few', against_interest: true })), /holds \(stated against/);
 expect('a good outside the list beats a stray item', String(await run('Price', { question: 'price of goods', item: 'apples (kg)', good: 'oysters', like: 'meat (kg)', quantity: 1, city: 'London', year: 1888 })), /of oysters/);
 fresh();
 expect('reveals as a question is turned back', String(await run('Look', { viewer: 'Mara', kind: 'a person', distance_m: 2, light: 'living room', reveals: 'who is inside the lit room and what they are doing' })), /reveals is the fact itself/);
@@ -80,7 +80,7 @@ expect('Look with no size and nothing in the table asks for it', String(await ru
 const Po = await import('../src/rules/possessions.js');
 fresh();
 const st1 = () => ctx.chatMetadata.rulesEngine.state;
-await run('Claim', { who: 'Clara', claim: 'Clara has a purse', kind: 'something the character has', item: 'purse', in_world: true, base_share: '95% nearly everyone', share: '95% nearly everyone' });
+await run('Claim', { against_interest: false, who: 'Clara', claim: 'Clara has a purse', kind: 'something the character has', item: 'purse', in_world: true, base_share: '95% nearly everyone', share: '95% nearly everyone' });
 if (!(Po.unrecorded(st1(), 'Clara', 'silver thimble') && !Po.unrecorded(st1(), 'Bob', 'silver thimble'))) { miss++; console.log('MISS unrecorded'); }
 // A given name sets the sex: Josiah is a man in every draw, Mary a woman.
 for (let i = 0; i < 5; i++) { fresh(); expect('Josiah is a man', String(await run('NewCharacter', { who: `Josiah Crake` })), /\b(?:man|boy)\b/); }
@@ -95,11 +95,13 @@ if (!/change halfpenny/.test(paid) || ps.items.Tom[0].item !== 'halfpenny') { mi
 for (const [age, lo, hi] of [[30, 0.005, 0.05], [70, 0.06, 0.14]]) { let n = 0; for (let i = 0; i < 600; i++) { fresh(); ctx.chat[0].mes = `s${age}-${i}`; if (/serious injury, the/.test(String(await run('BodyFall', { who: 'Pyotr', height_m: 0, slip: true, age })))) n++; } if (!(n / 600 >= lo && n / 600 <= hi)) { miss++; console.log(`MISS slip at ${age}: ${n / 600}`); } }
 fresh();
 await run('BodyFall', { who: 'Pyotr', height_m: 0, slip: true, age: 40 });
-expect('getting up after a slip is timed', String(await run('Act', { who: 'Pyotr', action: 'gets up and looks for the glove' })), /gets up from the ground: 5\.3 s/);
+expect('getting up after a slip is timed', String(await run('Act', { level: 'on the level, stairs or a change of posture', who: 'Pyotr', action: 'gets up and looks for the glove' })), /gets up from the ground: 5\.3 s/);
 fresh();
-expect('harm in the words stands', String(await run('Claim', { who: 'Jack', claim: "Jack's knuckles are bleeding from the punch", kind: 'something happening to the character now', in_world: true, base_share: '50% half', share: '5% almost no one' })), /holds \(stated against/);
+expect('harm chosen by meaning stands', String(await run('Claim', { against_interest: true, who: 'Jack', claim: "Jack's knuckles are bleeding from the punch", kind: 'something happening to the character now', in_world: true, base_share: '50% half', share: '5% almost no one' })), /holds \(stated against/);
 expect('treating no wound', String(await run('BodyTreat', { who: 'Jack', treatment: 'stop_bleeding', training: 'untrained' })), /holds no wound on record/);
-fresh(); expect('a title sets the sex', String(await run('NewCharacter', { who: 'Mr. Abbott' })), /\b(?:man|boy)\b/);
-fresh(); expect('a title sets the sex (woman)', String(await run('NewCharacter', { who: 'Madame Roux' })), /\b(?:woman|girl)\b/);
-console.log(`32 checks, ${miss} miss(es)`);
+fresh(); expect('named_as sets the sex', String(await run('NewCharacter', { who: 'Mr. Abbott', named_as: 'a man' })), /\b(?:man|boy)\b/);
+fresh(); expect('named_as sets the sex (woman)', String(await run('NewCharacter', { who: 'Madame Roux', named_as: 'a woman' })), /\b(?:woman|girl)\b/);
+fresh(); expect('several people are refused', String(await run('NewCharacter', { who: 'os homens junto ao fogo', named_as: 'several people' })), /draws one person/);
+fresh(); expect('a climb in Act goes to BodyCheck', String(await run('Act', { who: 'Mara', action: 'escala o muro', level: 'a climb, jump or drop' })), /BodyCheck/);
+console.log(`34 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

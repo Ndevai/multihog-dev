@@ -411,7 +411,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         if (player && REGISTRY.has('Claim'))
             for (const c of [...calls])
                 if (c.tool === 'Transfer' && c.args.from === player && typeof c.args.item === 'string' && unrecorded(s.state, player, c.args.item) && !calls.some(d => d.tool === 'Claim' && String(d.args.item ?? '') === c.args.item))
-                    calls.splice(calls.indexOf(c), 0, { tool: 'Claim', args: { who: player, claim: `${player} has ${c.args.item}`, kind: 'something the character has', item: c.args.item, in_world: true, base_share: '65% more than half', share: '65% more than half' } });
+                    calls.splice(calls.indexOf(c), 0, { tool: 'Claim', args: { who: player, claim: `${player} has ${c.args.item}`, kind: 'something the character has', against_interest: false, item: c.args.item, in_world: true, base_share: '65% more than half', share: '65% more than half' } });
         // A climb comes before a drop by the same person: the drop starts from the height the climb reached (a keyed plan
         // lists BodyFall before BodyCheck when written in that order, and the 2nd try ran after the drop it made possible).
         for (const climb of calls.filter(c => c.tool === 'BodyCheck' && c.args.height_m)) {

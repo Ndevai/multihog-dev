@@ -780,3 +780,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   6. Act's climb words;
   7. weather place words.
   VerbNet routing stays: its classes are meaning classes.
+
+## 2026-10-20 (83) Five more word lists replaced by kinds chosen by meaning
+- Price and BodyStrike drafts: GOOD_WORDS, MEASURE, BLOW and the struck-part map are removed. The planner picks the good, quantity, blow and part from the tools' own enums. The strike draft keeps only attacker and who.
+- NewCharacter: the man/woman/boy/girl words, titles, female role nouns and group words are replaced by `named_as`: a man, a woman, a boy, a girl, a child, a person whose sex isn't named, or several people. The model reads this in any language ("Senhora Lopes", "la patronne", "os homens junto ao fogo"). Given names still draw the sex from the SSA share of girls.
+- Claim: the harm-word regex is removed. `against_interest` is required and judged by meaning.
+- Act: the climb-word regex is removed. `level` is required: "on the level, stairs or a change of posture", or "a climb, jump or drop".
+- Transfer: KIN, SEVERED and the body-part names are replaced by `item_is`: a thing, a person or animal, or a part of a living body.
+- Still word-based: scene-people's role nouns, which find people in the text, and weather's place words.

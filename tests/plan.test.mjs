@@ -47,8 +47,8 @@ check('NewCharacter takes a new key', typeof s3.properties.calls.properties.NewC
 check('listener is one of the people', s3.properties.calls.properties.Communicate.properties.Tom.properties.listener.enum.includes('the innkeeper'), null);
 // Act times walking and posture; a climb in its words goes to BodyCheck.
 const { ctx } = await import('../tools/st-harness.mjs'); ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'x' }];
-check('Act passes a climb on', /decided by BodyCheck/.test(String(await T.REGISTRY.get('Act').exec({ who: 'Mara', action: 'climbs the wall and drops down into the garden', distance_m: 3 }))), null);
-check('Act walks', /walks/.test(String(await T.REGISTRY.get('Act').exec({ who: 'Mara', action: 'slips along the wall into the shadow of the hedge', distance_m: 5 }))), null);
+check('Act passes a climb on', /decided by BodyCheck/.test(String(await T.REGISTRY.get('Act').exec({ level: 'a climb, jump or drop', who: 'Mara', action: 'climbs the wall and drops down into the garden', distance_m: 3 }))), null);
+check('Act walks', /walks/.test(String(await T.REGISTRY.get('Act').exec({ level: 'on the level, stairs or a change of posture', who: 'Mara', action: 'slips along the wall into the shadow of the hedge', distance_m: 5 }))), null);
 const sp2 = SP.scenePeople(["A dog strained at its chain by the merchant's house; the house was dark. The seamstress slept."], ['Mara']);
 check('a dog is "the dog"', sp2.includes('the dog'), sp2);
 check('the house is no person', !sp2.includes('the house') && !sp2.includes("the merchant's house"), sp2);

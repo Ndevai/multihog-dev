@@ -262,15 +262,11 @@ function recordedFact(st: RuleState, text: string) {
 
 // Body parts and kin are possessed without being owned or handed over (inalienable possession: Nichols 1988, the classes
 // languages most often mark apart), and a tracked person is a character, not an item.
-const KIN = /^(?:my |his |her |their |our |your )?(?:mother|father|son|daughter|brother|sister|wife|husband|child|children|parent|uncle|aunt|cousin|nephew|niece|grandmother|grandfather|grandchild)s?$/i;
-const SEVERED = /\b(severed|cut off|amputated|preserved|skull|bones? of)\b/i;
-let PART_NAMES: Set<string> | null = null;
-function inalienable(st: RuleState, item: string): string {
+const ITEM_IS = ['a thing (a severed or preserved body part counts)', 'a person or animal', 'a part of a living body'];
+function inalienable(st: RuleState, item: string, is?: string): string {
     const t = item.trim().toLowerCase().replace(/^(?:my|his|her|their|our|your|a|an|the) /, '');
-    if (KIN.test(t) || Object.keys(st.people ?? {}).some(n => n.toLowerCase() === t)) return `"${item}" is a person; their moves come from the story and the people tools`;
-    PART_NAMES ??= new Set((creature('HUMAN')?.parts ?? []).map(p => p.name.toLowerCase().replace(/^(left|right) /, '')));
-    const bare = t.replace(/^(left|right) /, '');
-    if (!SEVERED.test(t) && (PART_NAMES.has(bare) || PART_NAMES.has(bare.replace(/s$/, '')))) return `"${item}" is a body part; it goes with the body (BodyWound, BodyStrike, BodyTreat)`;
+    if (is === ITEM_IS[1] || Object.keys(st.people ?? {}).some(n => n.toLowerCase() === t)) return `"${item}" is a person; their moves come from the story and the people tools`;
+    if (is === ITEM_IS[2]) return `"${item}" is a body part; it goes with the body (BodyWound, BodyStrike, BodyTreat)`;
     return '';
 }
 
@@ -1271,12 +1267,10 @@ export function registerRulesTools(enabled: boolean): void {
         share: { type: 'string', enum: SHARES, description: 'Your estimate for this claim given everything the story has established so far.' },
         path: { type: 'array', maxItems: 6, items: { type: 'object', properties: { step: str('One event the claim needs, in the order it would happen'), reference_class: str('The cases this step belongs to, given the steps before it'), base_share: { type: 'string', enum: SHARES }, share: { type: 'string', enum: SHARES } }, required: ['step', 'reference_class', 'base_share', 'share'] },
             description: 'For a claim whose base share is "almost no one": the events it needs, in order, each given the ones before (arrive in the country, reach the place, stay there). Required then.' },
-        against_interest: { type: 'boolean', description: 'The claim harms the claimer (a slip, a fall, a fever, a loss): true' },
-    }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
+        against_interest: { type: 'boolean', description: 'By meaning: the claim harms the claimer (a slip, a fall, a fever, a loss, a wound)' },
+    }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share', 'against_interest'], a => run((st, rng) => {
         // A player's statement against their own character's interest (a slip, a fever, a loss) stands: it gains them nothing a
         // draw would guard against. The tools that decide its effects (BodyFall, Sickness) still decide those.
-        // Harm to the claimer stated in the claim's words (bleeding, hurt, a fever, a fall, a loss) is against their interest.
-        if (!a.against_interest && /\b(?:bleed\w*|hurt\w*|injur\w*|wound\w*|broken|break\w*|sprain\w*|bruis\w*|fever\w*|cough\w*|sick\w*|ill\b|ache\w*|faint\w*|cramp\w*|slip\w*|fall\w*|fell\b|trip\w*|lose\w*|lost\b)/i.test(String(a.claim))) a = { ...a, against_interest: true };
         if (a.against_interest && a.in_world !== false && (a.kind === 'something happening to the character now' || a.kind === 'something that happened before')) return `${a.claim}: holds (stated against the character's own interest). Recorded.`;
         if (a.kind === 'something the character has') account(st, a.who);
         // A thing not yet invented at the story's date, or never made in this world, cannot be had (world-log.ts).
@@ -1397,8 +1391,9 @@ export function registerRulesTools(enabled: boolean): void {
         from: str('Who had it. Default: the world (found, made, bought from someone untracked)'),
         to: str('Who or where has it now: a person, or a place when it is left there ("the west hall window"), so it can be found later. Default: out of the story (used up, sold away)'),
         how: { type: 'string', enum: HOW },
+        item_is: { type: 'string', enum: ITEM_IS, description: 'What the item is, by meaning' },
     }, ['item', 'how'], a => run(st => {
-        const own = inalienable(st, a.item);
+        const own = inalienable(st, a.item, a.item_is);
         if (own) return `State unchanged: ${own}.`;
         const late = cannotExist(a.item, storyYear(st), CURRENT_BOOK, 'thing');
         return late ? `State unchanged: ${late}.` : transfer(st, a);
@@ -1620,6 +1615,7 @@ export function registerRulesTools(enabled: boolean): void {
     tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character new to the story (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
+        named_as: { type: 'string', enum: ['a man', 'a woman', 'a boy', 'a girl', 'a child', 'a person, sex not named', 'several people'], description: 'By meaning: what the words naming them fix, in any language (the landlady, Senhora Lopes, la patronne: a woman; the lad: a boy; the men by the fire: several people)' },
         occupation: str('Only when the story already fixes it, in a word or two (innkeeper, carter, blacksmith, servant)'),
         min_age: { type: 'number', description: 'Only when the story already fixes it (e.g. 18 for someone serving drinks)' },
         age: { type: 'number', description: 'Only when the story states it ("her brother Will, 12")' },
@@ -1641,21 +1637,13 @@ export function registerRulesTools(enabled: boolean): void {
         // A role noun as the name ("the costermonger") is the occupation when none is given: a costermonger was drawn as a child.
         // A crowd is a place's people (PlaceProfile), one person at a time here; "man" and "woman" in the name fix sex and adulthood.
         // A group named as one ("the whispering men", "the men by the fire") is several people: each gets their own call.
-        if (/\b(crowd|passers-by|passersby|people|folk|street|everyone|townsfolk|villagers|men|women|children|boys|girls|couple|pair|both|twins)\b/i.test(String(a.who))) return `NewCharacter draws one person; the people of a place come from PlaceProfile, and each one who acts gets their own NewCharacter. State unchanged.`;
-        const adult = /\b(man|men|fellow|gentleman|woman|lady)\b/i.exec(String(a.who))?.[1]?.toLowerCase();
-        if (adult) a = { ...a, sex: a.sex ?? (/woman|lady/.test(adult) ? 'female' : 'male'), min_age: Math.max(18, Number(a.min_age) || 0) };
-        const young = /\b(girl|boy|maid|lad|lass)\b/i.exec(String(a.who))?.[1]?.toLowerCase();
-        if (young && !a.sex) a = { ...a, sex: /girl|maid|lass/.test(young) ? 'female' : 'male' };
+        if (a.named_as === 'several people') return `NewCharacter draws one person; the people of a place come from PlaceProfile, and each one who acts gets their own NewCharacter. State unchanged.`;
+        const named = ({ 'a man': ['male', 18], 'a woman': ['female', 18], 'a boy': ['male', 0], 'a girl': ['female', 0] } as Record<string, ['male' | 'female', number]>)[String(a.named_as)];
+        if (named) a = { ...a, sex: a.sex ?? named[0], min_age: Math.max(named[1], Number(a.min_age) || 0) };
         // A given name sets the sex by the share of girls among the births it was given to (SSA 1880–2008; data/given-names.ts):
         // a draw against that share, so "Josiah Crake" is a man and "Leslie" a woman 54 % of the time.
-        // A title sets the sex outright (Mr, Monsieur, Herr, Senhor, Don, Sir, Lord, Father, Brother: a man; Mrs, Miss, Madame,
-        // Frau, Senhora, Dona, Lady, Sister, Mother: a woman).
-        const title = /^(Mr|Mister|Master|Monsieur|M|Herr|Senhor|Señor|Signor|Don|Sir|Lord|Father|Brother|Mrs|Ms|Miss|Mistress|Madam|Madame|Mme|Mademoiselle|Frau|Fräulein|Senhora|Señora|Signora|Dona|Doña|Lady|Sister|Mother)\.?\s/.exec(String(a.who))?.[1];
-        if (!a.sex && title) a = { ...a, sex: /^(Mr|Mister|Master|Monsieur|M|Herr|Senhor|Señor|Signor|Don|Sir|Lord|Father|Brother)$/.test(title) ? 'male' : 'female', min_age: Math.max(16, Number(a.min_age) || 0) };
         const given = /^([A-Z][a-z]+)\b/.exec(String(a.who).replace(new RegExp(String.raw`^${TITLE}\s+`), ''))?.[1]?.toLowerCase(), share = given ? GIVEN_NAMES[given] : undefined;
         if (!a.sex && share != null) a = { ...a, sex: rng() < share ? 'female' : 'male' };
-        // A role noun that names a woman: maid- words, -ess (hostess, seamstress), wife, widow, landlady, mistress.
-        if (!a.sex && /\b(?:maid\w*|\w+ess|\w*wife|widow|landlady|lady|mistress|nun|matron)\b/i.test(`${a.who} ${a.occupation ?? ''}`) && !/\b(?:process|business|address|access)\b/i.test(`${a.who} ${a.occupation ?? ''}`)) a = { ...a, sex: 'female' };
         if (!a.occupation) { const role = /^(?:the |an? )?([a-z][a-z-]*(?: [a-z][a-z-]*)?)$/.exec(String(a.who).trim())?.[1]; if (role && !/^(person|man|woman|boy|girl|child|stranger|figure|someone|somebody|other|men|women)\b/.test(role)) a = { ...a, occupation: role }; }
         const c = st.setting?.country, y = storyYear(st);
         const english = !c || (/united kingdom|england|wales/i.test(c) && (y === null || Math.abs(y - 1881) <= 40));
@@ -1825,10 +1813,10 @@ export function registerRulesTools(enabled: boolean): void {
         steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
         action: { type: 'string', pattern: MOTION_START, description: 'For one actor, the action in plain words, beginning with its motion or posture verb (an alternative to steps) ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m' },
         distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
-    }, [], a => run((st, rng) => {
+        level: { type: 'string', enum: ['on the level, stairs or a change of posture', 'a climb, jump or drop'], description: 'By meaning: whether the action climbs, jumps or drops' },
+    }, ['level'], a => run((st, rng) => {
         // Act times walking and posture; a climb is BodyCheck's (with height_m) and a drop BodyFall's.
-        const said = [a.action, ...((a.actors as { action?: string }[] | undefined) ?? []).map(x => x.action)].filter(Boolean).join(' ');
-        if (/\b(?:climb|climbs|climbed|climbing|clambers?|scales?|scaled|scaling|vaults?|vaulted|jumps? (?:down|off|over|from)|leaps? (?:down|off|over|from)|drops? (?:down|from|over|into)|dropped (?:down|from|over|into)|falls?|fell)\b/i.test(String(said))) return `Act times walking and posture. A climb is decided by BodyCheck with height_m, and a drop by BodyFall from the height the climber stands at. State unchanged.`;
+        if (a.level === 'a climb, jump or drop') return `Act times walking and posture. A climb is decided by BodyCheck with height_m, and a drop by BodyFall from the height the climber stands at. State unchanged.`;
         if (a.who && !a.steps && !a.actors && a.action) {
             const r = stepsFromWords(Array.isArray(a.action) ? (a.action as unknown[]).join(', then ') : String(a.action), String(a.who), a.distance_m as number | undefined);
             if ('error' in r) return `${r.error} ${ACT_EXAMPLE} State unchanged.`;
