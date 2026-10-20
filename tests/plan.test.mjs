@@ -57,5 +57,10 @@ ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'x' }];
 check('a maidservant is a woman', /woman|girl/.test(String(await T.REGISTRY.get('NewCharacter').exec({ who: 'the maidservant', occupation: 'maidservant' }))), null);
 const s4 = P.planSchema(new Set(['BodyFall', 'Look']), { people: ['Mara', 'the man'], used: new Map([['BodyFall', new Set(['Mara'])]]) });
 check('a later round leaves out a key already run', !('Mara' in s4.properties.calls.properties.BodyFall.properties) && 'Mara' in s4.properties.calls.properties.Look.properties, Object.keys(s4.properties.calls.properties.BodyFall.properties));
-console.log(`46 checks, ${miss} miss(es)`);
+// Act's action begins with a motion or posture verb, by the schema's pattern.
+const actArgs = P.planSchema(new Set(['Act']), { people: ['Mara'] }).properties.calls.properties.Act.properties.Mara.properties.action;
+const mre = new RegExp(actArgs.pattern);
+check('Act action pattern takes motions', mre.test('creeps across the lawn') && mre.test('sits down') && mre.test('stands up and crosses the room'), actArgs);
+check('Act action pattern leaves out watching and dropping', !mre.test('watches from the lit window') && !mre.test('drops down into the garden') && !mre.test('climbs the wall'), null);
+console.log(`48 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

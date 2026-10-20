@@ -2,7 +2,7 @@ import { REGISTRY } from './rules-tools.js';
 /** One argument's schema; long lists of options stay as text (the tool answers with the nearest options). */
 export function propSchema(p, enumMax = 200) {
     if (p.type === 'string')
-        return p.enum && p.enum.length && p.enum.length <= enumMax ? { type: 'string', enum: [...p.enum] } : { type: 'string' };
+        return p.enum && p.enum.length && p.enum.length <= enumMax ? { type: 'string', enum: [...p.enum] } : p.pattern ? { type: 'string', pattern: p.pattern } : { type: 'string' };
     if (p.type === 'number')
         return { type: 'number' };
     if (p.type === 'boolean')

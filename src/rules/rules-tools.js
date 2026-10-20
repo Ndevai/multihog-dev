@@ -21,7 +21,7 @@ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPID
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
-import { actTogether, honest, stepsFromWords } from './actions.js';
+import { actTogether, honest, stepsFromWords, MOTION_START } from './actions.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
 import { formatStoryTime } from './clock.js';
@@ -923,7 +923,7 @@ export function registerRulesTools(enabled) {
         listener_languages: { type: 'array', items: { type: 'string' }, description: 'Languages the listener knows, when the story states them; kept for later calls.' },
         message: str('What the message says, one short sentence. When it reaches the listener, the listener comes to know it.'),
         speaker_voice: { type: 'string', enum: ['normal', 'whisper only (no vocal-fold vibration)'], description: 'When the story makes the speaker voiceless (larynx removed, vocal folds paralysed); kept for later calls.' },
-    }, ['speaker', 'listener'], a => run((st, rng) => {
+    }, ['speaker', 'listener', 'message'], a => run((st, rng) => {
         const s = who(st, a.speaker, a.speaker_species), l = who(st, a.listener, a.listener_species);
         if (!s.p || !l.p)
             return s.error || l.error;
@@ -1944,9 +1944,9 @@ export function registerRulesTools(enabled) {
         }, required: ['do'] };
     tool('Act', 'Time characters\' physical actions before narrating them, and move the story clock by exactly that time. Give who, action (the action in plain words: "steps out onto the street", "sits down at a table") and distance_m for any walking; for several characters at the same time, actors, each with who, action and distance_m. steps is the exact form: walking between spots, sitting, standing, bending, kneeling, turning, reaching, grasping. Narrate the times it gives. Record where a character is with be_at; a walking distance is kept once given.', {
         who: str('Character acting (one actor)'),
-        actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), action: str('The action in plain words'), distance_m: { type: 'number', description: 'Walking distance, m' }, steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
+        actors: { type: 'array', description: 'Several characters acting at the same time, each with their steps', items: { type: 'object', properties: { who: str('Character'), action: { type: 'string', pattern: MOTION_START, description: 'The action in plain words, beginning with its motion or posture verb' }, distance_m: { type: 'number', description: 'Walking distance, m' }, steps: { type: 'array', items: STEP_ITEM } }, required: ['who'] } },
         steps: { type: 'array', description: 'Actions in order (one actor)', items: STEP_ITEM },
-        action: str('For one actor, the action in plain words (an alternative to steps) ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m'),
+        action: { type: 'string', pattern: MOTION_START, description: 'For one actor, the action in plain words, beginning with its motion or posture verb (an alternative to steps) ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m' },
         distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
     }, [], a => run((st, rng) => {
         // Act times walking and posture; a climb is BodyCheck's (with height_m) and a drop BodyFall's.
@@ -2176,6 +2176,9 @@ export function registerRulesTools(enabled) {
         const { p, error } = whoAny(st, a.who, a.species);
         if (!p)
             return error;
+        // Under half a metre the body steps down; a fall's force starts above that [ASSUMED threshold].
+        if (Number(a.height_m) < 0.5)
+            return `${a.who} steps down ${a.height_m} m and stays on the feet.`;
         // A fall starts from where the character stands: after a failed climb they are at its foot (a climb that failed at
         // 0.6 m was followed by a 3 m drop "into the garden on the other side").
         if (p.raised_m != null && Number(a.height_m) > p.raised_m + 0.5)

@@ -579,3 +579,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - "I climb the wall" offered Act: VerbNet files climb under motion (escape-51.1), and its class's tool was added beside BodyCheck. The model wrote "Act: climbs the wall and pauses at its top" next to the BodyCheck, and Act passed it on. A verb named in VERB_TOOL now takes that list in place of its classes' tools, and each named verb's list is complete (ask → Communicate and SocialResponse; buy → Price and Transfer; flee → Chase and Act).
   - Mara's drop ran twice: once in the plan, and again when the repair round for the passed-on Act wrote BodyFall a second time. Listen ran twice the same way in a follow-on round. The keyed plan held one call per person within a round only. Each later round's schema now leaves out the keys already run and standing this turn (planSchema opts.used, kept by the pass as calls run), so a second BodyFall for Mara has no key to be written under.
 - `npm test`: 135 checks, 0 misses.
+
+## 2026-10-20 (52) Act's action is a motion by its shape; Communicate carries words; a fall starts at half a metre
+
+- Run of 15d67f8 (results/2026-10-20T16-05): 40 calls, 8 faults reported. No call was repeated within a turn. Three interfaces still took what they cannot use:
+  - Act's action was free text: "watches from the lit window" (the merchant) and "drops down into the garden and moves to the shadow of the hedge" were written as Acts and passed on. The drop then went unrun, and a 0 m BodyFall came a turn later. The plan schema now gives Act's action a pattern: it begins with a motion or posture verb the action reader times (MOTION_START, built from WORD_STEPS; plain groups, no \b, the pattern features the endpoint already takes in the time pattern). A watch or a drop has no Act form; a drop is written as BodyFall, and the climber's height (entry 43) decides it.
+  - Communicate ran with no words (the two whispering men "speaking" to each other with no message). message is now required.
+  - BodyFall took 0 m. Under 0.5 m the result is a step down that keeps the feet [ASSUMED threshold].
+- `npm test`: 137 checks, 0 misses.

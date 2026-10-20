@@ -2,8 +2,8 @@
 // the schema the model sees (one source for both).
 
 export type Prop =
-    | { type: 'string'; enum?: readonly string[]; description?: string }
-    | { type: 'number'; description?: string }
+    | { type: 'string'; enum?: readonly string[]; pattern?: string; description?: string }
+    | { type: 'number'; minimum?: number; description?: string }
     | { type: 'boolean'; description?: string }
     | { type: 'array'; items: Prop; description?: string }
     | { type: 'object'; properties: Record<string, Prop>; required?: readonly string[]; description?: string };

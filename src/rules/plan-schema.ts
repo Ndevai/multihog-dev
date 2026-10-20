@@ -8,7 +8,7 @@ import { REGISTRY } from './rules-tools.js';
 type Schema = Record<string, unknown>;
 /** One argument's schema; long lists of options stay as text (the tool answers with the nearest options). */
 export function propSchema(p: Prop, enumMax = 200): Schema {
-    if (p.type === 'string') return p.enum && p.enum.length && p.enum.length <= enumMax ? { type: 'string', enum: [...p.enum] } : { type: 'string' };
+    if (p.type === 'string') return p.enum && p.enum.length && p.enum.length <= enumMax ? { type: 'string', enum: [...p.enum] } : p.pattern ? { type: 'string', pattern: p.pattern } : { type: 'string' };
     if (p.type === 'number') return { type: 'number' };
     if (p.type === 'boolean') return { type: 'boolean' };
     if (p.type === 'array') return { type: 'array', items: propSchema(p.items, enumMax), maxItems: 12 };
