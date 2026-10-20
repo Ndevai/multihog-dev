@@ -30,5 +30,9 @@ T.setStoryTime?.(Date.UTC(1820, 10, 3, 19) / 60000);
 const st = ctx.chatMetadata.rulesEngine?.state;
 if (st) st.setting = { ...(st.setting ?? {}), country: 'United Kingdom of Great Britain and Northern Ireland' };
 expect('price city follows the scene', String(await run('Price', { question: 'price of goods', item: 'beer (litre)', quantity: 0.57, city: 'Leipzig', year: 1820 })), /in London, 1820/);
-console.log(`3 checks, ${miss} miss(es)`);
+// The ale's price asked in five cities is asked once.
+const Q = await import('../src/rules/question-pass.js');
+const asks = ['Leipzig', 'London', 'Paris'].map(city => ({ tool: 'Price', args: { question: 'price of goods', item: 'beer (litre)', quantity: 0.568, city, year: 1820 } }));
+if (Q.dedupe(asks).length !== 1) { miss++; console.log(`MISS Price asked once: ${Q.dedupe(asks).length}`); }
+console.log(`4 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

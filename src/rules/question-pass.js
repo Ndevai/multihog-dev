@@ -65,7 +65,7 @@ const REFUSED = /fix and call again|State unchanged\.?\s*$|needs a calendar date
 // Calls that ask the same question once: Weather once a turn; Price once per item, quantity and year whatever the city (the scene's
 // country decides it: one turn asked the ale's price in five cities).
 const sameAsk = (c) => c.tool === 'Weather' ? 'Weather' : c.tool === 'Price' ? `Price ${JSON.stringify({ ...c.args, city: undefined, country: undefined })}` : `${c.tool} ${JSON.stringify(c.args)}`;
-const dedupe = (list) => list.filter((c, i) => list.findIndex(d => sameAsk(d) === sameAsk(c)) === i);
+export const dedupe = (list) => list.filter((c, i) => list.findIndex(d => sameAsk(d) === sameAsk(c)) === i);
 const pad2 = (n) => String(n).padStart(2, '0');
 /** What the cast states about a person: an age written beside the name ("Will, 12", "Will (12)", "Will, a 12-year-old") and a
  *  sex from a kin or person word beside it (brother, sister, wife, man…). */
@@ -371,7 +371,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         calls = calls.filter(c => { const t = REGISTRY.get(c.tool); return !t || t.required.every(k => c.args[k] !== undefined && c.args[k] !== ''); });
         // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
         // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
-        calls = [...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')];
+        calls = dedupe([...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')]);
         await runAll(calls);
         // Refused calls: the tool's message goes back once; a corrected call's result replaces the refusal.
         const bad = results.map((r, i) => ({ r, i })).filter(x => REFUSED.test(x.r.result));
@@ -405,7 +405,8 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             const added = extra.length ? `MORE TOOLS\n${toolCatalogue(new Set(extra)).split('\n\nOTHER TOOLS')[0]}\n\n` : '';
             const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n') || '(none)')
                 .replace('{then}', [...plan.then, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Which meaning does each listener take from the words a result names?'] : []].map(q => `- ${q}`).join('\n'));
-            const more = validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${added}${follow}`))).slice(0, MAX_CALLS - calls.length);
+            // A follow-on call that asks again what a call already asked (the ale's price in four more cities) is left out.
+            const more = dedupe(validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${added}${follow}`))).filter(c => !calls.some(d => sameAsk(d) === sameAsk(c)))).slice(0, MAX_CALLS - calls.length);
             await runAll(more);
             calls = [...calls, ...more];
         }

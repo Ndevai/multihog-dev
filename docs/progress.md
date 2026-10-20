@@ -525,3 +525,13 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Planner, 2.2: Price asked for the ale in five cities (Leipzig, London, Paris, Amsterdam, Vienna). All were answered in London, the scene's country. Price is now asked once per item, quantity and year, whatever the city.
 - Narrator: three perceptions told with no result (flagged by the check).
 - `npm test`: 88 checks, 0 misses.
+
+## 2026-10-20 (45) Fifth real run: 2 faults; repeated prices left out in every round
+
+- Run of 91dc117 (results/2026-10-20T07-39, 83 min with NVIDIA's rate-limit waits): 41 model calls, 2 faults reported in 12 turns. "I keep still and listen" ran Listen this time (Tom hears the whisper at 2 m), and the plot he overheard reached the innkeeper. Faults by step, including those read from the turns:
+  - Code: the ale's price was again asked in five cities. The once-per-item rule ran only on the first plan, and the repeats came through a later round. Now the final call list and each follow-on round leave out a call that asks again what one already asked (tests/engine.test.mjs).
+  - Planner: the costermonger "chooses: has no apples left and sends her away", and a Transfer in the same plan sold her the apples. The choice's result came after the call that depended on it. Open: a call whose outcome depends on another result belongs in "then".
+  - Planner: three Acts for one creep across the lawn (10 m, then 12 m, then kneeling), so the clock moved for both walks. Open.
+  - Engine data: an innkeeper of 16, drawn from the census's innkeepers. The census table gives occupations without ages, so age is drawn apart from the trade [ASSUMED]. Open: age by occupation.
+  - Narrator: "a quarter past six by the church clock" when the clock read 18:21. The check caught it.
+- `npm test`: 89 checks, 0 misses.
