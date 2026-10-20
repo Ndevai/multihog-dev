@@ -1704,7 +1704,16 @@ export function registerRulesTools(enabled) {
         sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
         occupation: str('Only when the story already fixes it, in a word or two (innkeeper, carter, blacksmith, servant)'),
         min_age: { type: 'number', description: 'Only when the story already fixes it (e.g. 18 for someone serving drinks)' },
+        age: { type: 'number', description: 'Only when the story states it ("her brother Will, 12")' },
     }, ['who'], a => run((st, rng) => {
+        // A person the story describes (the cast's "her brother Will, 12") keeps the stated age and sex; nothing is drawn.
+        if (typeof a.age === 'number' && a.age >= 0) {
+            const { p } = who(st, a.who), age = Math.round(a.age), sex = a.sex ?? null;
+            if (p)
+                Object.assign(p, { age, ...sex ? { sex } : {} });
+            const noun = !sex ? (age < 18 ? 'child' : 'adult') : age < 18 ? (sex === 'female' ? 'girl' : 'boy') : sex === 'female' ? 'woman' : 'man';
+            return `${a.who}: a ${age}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (as the story states).`;
+        }
         // Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex
         // come from the country's stable population (population.ts); occupation and birthplace are left to the story.
         // An "occupation" that describes the person instead of naming a trade ("man standing at the lit window") is dropped.

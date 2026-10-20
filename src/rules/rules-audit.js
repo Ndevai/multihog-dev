@@ -1,7 +1,7 @@
 // After each reply, a separate model pass lists rule-governed events that no tool result backs.
 // Code then redoes the reply once with the missing calls named; a second failure is shown to the user.
 import { setFlags } from './audit-flags.js';
-import { unbackedText } from './narration.js';
+import { checkedText } from './narration.js';
 import { turnKey } from './turn.js';
 import { formatStoryTime } from './clock.js';
 import { knowledgeBlock } from './knowledge.js';
@@ -20,7 +20,7 @@ export const auditSchema = () => ({ type: 'object', additionalProperties: false,
                 } } } } });
 export function buildAuditPrompt(reply, results, knows = '', clock = '') {
     const lines = results.length
-        ? results.map((r, i) => `${i + 1}. ${r.tool}: ${r.result}`).join('\n')
+        ? results.map((r, i) => `${i + 1}. ${r.tool}: ${r.result.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '')}`).join('\n')
         : '(this turn ran zero tools)';
     return `${clock ? `STORY CLOCK (from the engine; each clock time in the reply matches it, and each duration comes from a result; any other one is an Act event)\n${clock}\n\n` : ''}ENGINE RESULTS\n${lines}\n\n${knows ? `KNOWS\n${knows.replace(/^\[\/?KNOWS\]\n?/gm, '').trim()}\n\n` : ''}REPLY\n${reply}`;
 }
@@ -79,9 +79,9 @@ export async function onRulesAuditMessage(messageId, deps) {
         return null;
     const key = turnKey(ctx.chat);
     const reply = msg.mes;
-    // A structured reply: the beats tied to a result are backed by construction; the check reads the rest.
+    // A structured reply: the check reads every beat.
     const nar = msg.extra?.rulesNarration?.[msg.swipe_id ?? 0];
-    const checked = nar ? unbackedText(nar) : reply;
+    const checked = nar ? checkedText(nar) : reply;
     if (nar && !checked.trim()) {
         (msg.extra.rulesAudit ??= {})[msg.swipe_id ?? 0] = [];
         return [];

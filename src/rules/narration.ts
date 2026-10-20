@@ -38,5 +38,6 @@ export function readNarration(text: unknown): Narration | null {
 }
 /** The prose shown: the beats' texts in order, one paragraph each. */
 export const proseOf = (n: Narration) => n.beats.map(b => b.text.trim()).filter(Boolean).join('\n\n');
-/** The text the rule check reads: the beats that tell no result. */
-export const unbackedText = (n: Narration) => n.beats.filter(b => b.result === 0).map(b => b.text.trim()).join('\n\n');
+/** The text the rule check reads: every beat. A beat tied to a result can still tell more than it (a story run tied a broken
+ *  heel to a fall whose result said the bones held), so tying a beat to a result is no proof it matches. */
+export const checkedText = proseOf;

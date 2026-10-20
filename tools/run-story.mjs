@@ -70,6 +70,12 @@ for (const [si, story] of chosen) {
         const results = Q.askedResults(), calls = Q.turnLog();
         for (const [i, r] of results.entries()) if (REFUSED.test(r.result) && !results.slice(i + 1).some(q => q.tool === r.tool && !REFUSED.test(q.result))) f.push(`refused after repair: ${r.tool}: ${r.result.slice(0, 200)}`);
         if (!results.length) f.push('no tool ran');
+        // A person drawn for a phrase that names an event, or drawn against what the cast states about them.
+        for (const r of results.filter(r => r.tool === 'NewCharacter')) {
+            const who = r.result.split(':')[0], age = Number(r.result.match(/a (\d+)-year-old/)?.[1]), stated = Q.castPerson(who, cast);
+            if (who.split(/\s+/).length > 4) f.push(`person drawn for a phrase: "${who}"`);
+            if (stated.age != null && age !== stated.age) f.push(`${who} drawn at ${age}; the cast says ${stated.age}`);
+        }
         // A walk timed by PassTime with walkers counts as the turn's Act.
         for (const tool of turn.want) if (!results.some(r => r.tool === tool || (tool === 'Act' && r.tool === 'PassTime' && /walked/.test(r.result)))) f.push(`missing ${tool}`);
         const now = T.storyTime();
@@ -89,8 +95,8 @@ for (const [si, story] of chosen) {
             Q.setOpen(nar?.open ?? []);
             if (nar) { openNote = nar.open?.length ? `open: ${nar.open.join(' | ')}` : ''; }
             const st = ctx.chatMetadata.rulesEngine?.state ?? {};
-            // The check reads the beats that tell no result; the beats tied to a result are backed by construction.
-            const checked = nar ? (await import('../src/rules/narration.js')).unbackedText(nar) : reply;
+            // The check reads every beat (narration.ts checkedText).
+            const checked = nar ? N.checkedText(nar) : reply;
             const events = !checked.trim() ? [] : A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(checked, results, (await import('../src/rules/knowledge.js')).knowledgeBlock(st), now === null ? '' : C.formatStoryTime(now)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];
             for (const e of events) f.push(`rule check: "${e.quote.slice(0, 120)}" → ${e.tool} (${e.problem ?? 'unbacked'})`);
         } catch (e) { f.push(`narrator or check failed: ${e.message}`); }

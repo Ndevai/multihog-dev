@@ -64,6 +64,17 @@ const REFUSED = /fix and call again|State unchanged\.?\s*$|needs a calendar date
 // The same call twice, or Weather twice (one day has one weather), runs once.
 const dedupe = (list) => list.filter((c, i) => list.findIndex(d => d.tool === c.tool && (c.tool === 'Weather' || JSON.stringify(d.args) === JSON.stringify(c.args))) === i);
 const pad2 = (n) => String(n).padStart(2, '0');
+/** What the cast states about a person: an age written beside the name ("Will, 12", "Will (12)", "Will, a 12-year-old") and a
+ *  sex from a kin or person word beside it (brother, sister, wife, man…). */
+export function castPerson(name, cast) {
+    const n = name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const m = new RegExp(`(?:\\b(\\w+)\\s+)?\\b${n}\\b[,:]?\\s*(?:\\(|,\\s*)?(?:an?\\s+)?(\\d{1,3})\\b(?:-year-old)?(?:\\s+(\\w+))?`, 'i').exec(cast);
+    if (!m)
+        return {};
+    const kin = `${m[1] ?? ''} ${m[3] ?? ''}`.toLowerCase();
+    const sex = /\b(brother|son|father|husband|uncle|nephew|grandson|grandfather|man|boy)\b/.test(kin) ? 'male' : /\b(sister|daughter|mother|wife|aunt|niece|granddaughter|grandmother|woman|girl)\b/.test(kin) ? 'female' : undefined;
+    return { age: Number(m[2]), ...sex ? { sex } : {} };
+}
 /** The real date and hour, for a present-day scene that gives none. */
 const today = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 /** One line per argument: name, * when required, type or allowed values, description. */
@@ -230,7 +241,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             const tools = new Set(flags.map(f => f.tool));
             planTools.current = tools;
             const prompt = questionPrompt(chat, knowledgeBlock(s.state), tracker, tools);
-            const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n') || '(none)')
+            const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n') || '(none)')
                 .replace('{then}', flags.map(f => `- The reply needs: "${f.quote}" (${f.tool})`).join('\n'));
             const more = dedupe(validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${follow}`))).filter(c => tools.has(c.tool))).slice(0, MAX_CALLS - calls.length);
             await runAll(more);
@@ -298,11 +309,14 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         // A motion the player's message names (step out, sit down, cross the room) needs its time: code reads the verb.
         const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && movesIn(said);
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
-        if (unread || dropped.length || noPlace || motion) {
+        // A scene tool code drafted (Communicate) that the plan left out still needs the scene's numbers.
+        const sceneOpen = drafts.filter(d => !valid.some(c => c.tool === d.tool));
+        if (unread || dropped.length || noPlace || motion || sceneOpen.length) {
             const problems = [unread ? 'Write the plan as the JSON {"calls":[...]}.' : '',
                 ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'unknown tool'}.`),
                 noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : '',
-                motion ? `The player's message moves their character ("${said.slice(0, 120)}"): add Act with action and distance_m from the scene.` : ''].filter(Boolean);
+                motion ? `The player's message moves their character ("${said.slice(0, 120)}"): add Act with action and distance_m from the scene.` : '',
+                ...sceneOpen.map(d => `${d.tool} ${JSON.stringify(d.args)}: call it with distance_m, noise and barrier from the scene, and effort when the scene sets how loud the words are.`)].filter(Boolean);
             const fix = hoist(rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`)));
             if (fix.at && !scenePosition())
                 setScenePosition(fix.at[0], fix.at[1]);
@@ -313,8 +327,8 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             }
             // The answer replaces only what was asked: every call when the plan was unreadable, the dropped tools' calls otherwise
             // (asked only for "at", a model rewrote the whole plan and its Act ran twice).
-            const asked = new Set([...dropped.map(c => c.tool), ...motion ? ['Act'] : []]);
-            calls = dedupe([...calls, ...validCalls(fix.calls).filter(c => unread || asked.has(c.tool))]).slice(0, MAX_CALLS);
+            const asked = new Set([...dropped.map(c => c.tool), ...motion ? ['Act'] : [], ...sceneOpen.map(d => d.tool)]);
+            calls = dedupe(mergeCalls(calls, validCalls(fix.calls).filter(c => unread || asked.has(c.tool)))).slice(0, MAX_CALLS);
             plan.then.push(...fix.then);
         }
         // The day's weather is decided by code every turn the story has a calendar date and a place, whether or not the
@@ -325,7 +339,8 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         // Every person a call names who is new to the story and outside the cast gets NewCharacter first, drawn by code: a role
         // noun is their occupation ("the innkeeper" → innkeeper). An innkeeper the plan used without one was a blank body.
         if (REGISTRY.has('NewCharacter')) {
-            const PERSON = ['who', 'speaker', 'listener', 'viewer', 'pursuer', 'fleeing', 'other', 'attacker', 'target', 'requester_name'];
+            // "target" is left out: Look's target is a thing seen ("Tom getting up and going to the bar" became a 7-year-old boy).
+            const PERSON = ['who', 'speaker', 'listener', 'viewer', 'pursuer', 'fleeing', 'other', 'attacker', 'requester_name'];
             const known = new Set([...Object.keys(s.state.people ?? {}), String(ctx.name1 ?? '')].map(x => x.toLowerCase()));
             const castText = tracker.toLowerCase();
             const named = new Set(calls.filter(c => c.tool === 'NewCharacter').map(c => String(c.args.who ?? '').toLowerCase()));
@@ -336,6 +351,9 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
                     if (typeof v !== 'string' || !v.trim())
                         continue;
                     const n = v.trim(), low = n.toLowerCase();
+                    // A person is named in a few words; a longer phrase or one with a verb in -ing describes an event.
+                    if (n.split(/\s+/).length > 4 || /\b\w+ing\b/.test(low.replace(/\b(?:king|darling|sibling|viking|offspring|ring|sling|string)\b/g, '')))
+                        continue;
                     if (known.has(low) || named.has(low) || castText.includes(`${low} (`) || castText.includes(`${low}:`) || (present ?? []).some(x => x.toLowerCase() === low && castText.includes(low)))
                         continue;
                     const role = /^(?:the |an? )?([a-z][a-z -]*)$/.exec(n)?.[1];
@@ -343,6 +361,8 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
                     fresh.push({ tool: 'NewCharacter', args: role ? { who: n, occupation: role } : { who: n } });
                 }
             calls = [...fresh, ...calls];
+            // A person the cast describes takes the cast's age and sex (Will, "her brother Will, 12", came out a blacksmith of 19).
+            calls = calls.map(c => c.tool !== 'NewCharacter' || typeof c.args.who !== 'string' ? c : { ...c, args: { ...c.args, ...castPerson(c.args.who, tracker) } });
         }
         // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
         // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
@@ -378,7 +398,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             if (only)
                 planTools.current = new Set([...only, ...extra]);
             const added = extra.length ? `MORE TOOLS\n${toolCatalogue(new Set(extra)).split('\n\nOTHER TOOLS')[0]}\n\n` : '';
-            const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n') || '(none)')
+            const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n') || '(none)')
                 .replace('{then}', [...plan.then, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Which meaning does each listener take from the words a result names?'] : []].map(q => `- ${q}`).join('\n'));
             const more = validCalls(rawCalls(await send(QUESTION_SYSTEM, `${prompt}\n\n${added}${follow}`))).slice(0, MAX_CALLS - calls.length);
             await runAll(more);
@@ -419,9 +439,12 @@ export function decidedInjection() {
     const r = askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]));
     if (!r.length)
         return '';
-    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${x.tool}: ${x.result}`).join('\n')}\n[/DECIDED]`;
+    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n')}\n[/DECIDED]`;
 }
 /** This turn's [DECIDED] results, in their numbered order. */
 export function decidedResults() {
-    return askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]));
+    return askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i])).map(x => ({ ...x, result: storyResult(x.result) }));
 }
+/** A result as the story reads it: the sensitivity note ("Fragile: … → the right heel bone breaks") is for the log, and a
+ *  narrator that read one told the other outcome as fact. */
+export const storyResult = (r) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '');
