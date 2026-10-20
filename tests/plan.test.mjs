@@ -65,5 +65,11 @@ const full = s => new RegExp(`^(?:${actArgs.pattern})$`).test(s);
 check('the pattern takes the whole action as the grammar matches it', full('steps out of her house onto the street') && full('creeps across the lawn, keeping low') && full('sits'), null);
 check('Act action pattern leaves out watching and dropping', !mre.test('watches from the lit window') && !mre.test('drops down into the garden') && !mre.test('climbs the wall'), null);
 check("a possessive names its owner", SP.scenePeople(["The innkeeper looked at Tom's mug."], []).every(n => !/'s$/.test(n)), SP.scenePeople(["The innkeeper looked at Tom's mug."], []));
-console.log(`50 checks, ${miss} miss(es)`);
+// The reply: a bounded scene, one required passage per result, read back as beats in result order.
+const N = await import('../src/rules/narration.js');
+const ns = N.narrationSchema(2);
+check('reply schema: scene bounded, each result required', ns.properties.scene.maxLength === N.SCENE_CHARS && ns.properties.results.required.join() === '1,2' && ns.properties.results.additionalProperties === false, ns);
+const nr = N.readNarration('{"scene":"Rain on the cobbles.","results":{"2":"She paid him.","1":"She walked over."},"open":["Does he thank her?"]}');
+check('reply read as beats', nr.beats.map(b => b.result).join() === '0,1,2' && nr.open[0] === 'Does he thank her?', nr);
+console.log(`52 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

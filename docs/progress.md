@@ -614,3 +614,15 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - SocialResponse asked for a sex the story already held (the drawn maid). It now reads the person's sex from the story first.
 - A drop after a failed climb: any height from the ground now gives "stands on the ground at the foot of the climb"; 0.5 m had passed as a step down. A climb runs before a drop by the same person whatever order the keyed plan lists them in.
 - `npm test`: 142 checks, 0 misses.
+
+## 2026-10-20 (57) What today's twelve runs show, and the reply bounded the same way
+
+- Today's twelve real runs, by cause (results on play-results; the faults the report gave, and those found by reading each turn):
+  1. Free text where a decision belongs, in the plan. The ale priced in five cities; one creep split into three Acts; descriptions as people ("Tom to the innkeeper", "the window", "BodyCheck"); "climbs the wall" as a walk; Listen with no sound. Fixed by closing each interface: the keyed plan (one call per tool and subject, entry 46), keys from the scene's people and the price list (47–50), one call per key across the turn's rounds (51), patterns and required arguments (49, 52–53).
+  2. A default standing where the scene sets a number: every code-written Communicate at 1 m in a quiet room. Fixed by drafts that the plan's schema requires the planner to complete (54–55).
+  3. Engine bugs a run exposed: the sensitivity note read as fact (41), the settled-tools set (42), vision odds overflowing to NaN (56).
+  4. Data the engine lacks: the price of apples.
+  5. The narrator telling events no result decides: unbacked Listen, Look, Transfer, BodyFall, PassTime; knowledge a character lacks. After 1–3 were closed, this is two thirds of what remains (about 45 of the 70 fault lines reported today). Its cause is the same as 1's: the reply's schema let any number of free beats be written, and an event fits in any of them.
+- The reply now gets the treatment the plan got (narration.ts): {"scene": the setting, at most 420 characters; "results": one passage per numbered result, each required, each written once; "open": the questions the scene moves toward}. The only free passage is the setting, a few sentences long. An event has a place only under the result that decides it, or as an open question the next turn's planner decides. readNarration reads it back as beats (0 for the scene, then each result's number), so proseOf, the check and SillyTavern's reply handling are unchanged.
+- NVIDIA rate-limit increase: forum requests from June 2026 (40 → 200 requests per minute) show no staff answer four months on, and a moderator wrote that "there is no official way … to receive a rate limit increase on that same tier". No request drafted.
+- `npm test`: 144 checks, 0 misses.

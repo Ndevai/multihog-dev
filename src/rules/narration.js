@@ -1,18 +1,24 @@
-/** The reply's schema for `n` decided results. */
+/** The reply's schema for `n` decided results: the setting in one bounded passage, then one passage per result, each
+ *  required and each written once, then the open questions. Across today's twelve runs, two thirds of the faults left were
+ *  events the narrator wrote with no result behind them (a sound heard, a coin paid, a fall), and every one sat in prose the
+ *  schema left unbounded. Here the only free passage is the setting, held to a few sentences; an event has a place to be
+ *  written only under the result that decides it, or as an open question. */
+export const SCENE_CHARS = 420;
 export const narrationSchema = (n) => ({
-    type: 'object', additionalProperties: false, required: ['beats', 'open'],
+    type: 'object', additionalProperties: false, required: ['scene', 'results', 'open'],
     properties: {
-        beats: { type: 'array', minItems: 1, maxItems: 14, items: { type: 'object', additionalProperties: false, required: ['result', 'text'], properties: { result: { type: 'integer', minimum: 0, maximum: Math.max(0, n) }, text: { type: 'string' } } } },
+        scene: { type: 'string', maxLength: SCENE_CHARS },
+        results: { type: 'object', additionalProperties: false, required: Array.from({ length: n }, (_, i) => String(i + 1)), properties: Object.fromEntries(Array.from({ length: n }, (_, i) => [String(i + 1), { type: 'string' }])) },
         open: { type: 'array', maxItems: 4, items: { type: 'string' } },
     },
 });
 /** The narrator's instruction for the structured reply. */
 export const NARRATION_RULE = `<reply_form>
-Write the reply as the JSON {"beats":[{"result":1,"text":"…"}],"open":["…"]}.
-- Each result in [DECIDED] gets a beat with its number; the beat's text tells that outcome in the story's words, in the order it happens.
-- A beat with result 0 holds what decides nothing: the place, the weather as [DECIDED] gives it, how people look, what they say that changes nothing.
-- The reply's events are the results. Where the scene moves toward something no result decides (a person's reaction, a sound someone may hear, a door that may open), the text stops before it and "open" names it as a question for the next turn.
-- The beats' texts, joined in order, read as the whole reply: full paragraphs, third person, past tense.
+Write the reply as the JSON {"scene":"…","results":{"1":"…","2":"…"},"open":["…"]}.
+- "scene": the place, the light and the weather as [DECIDED] gives them, in two or three sentences.
+- "results": for each numbered result in [DECIDED], the passage that tells that outcome in the story's words; the passages run in the order the events happen. People's looks and words that change nothing go in the passage they belong to.
+- The reply's events are the results. Where the scene moves toward something no result decides (a person's reaction, a sound someone may hear, a payment, a door that may open), the passage ends before it and "open" names it as a question for the next turn; the next turn decides it.
+- The scene and the passages, joined in order, read as the whole reply: full paragraphs, third person, past tense.
 </reply_form>`;
 /** The narration read from the model's JSON, or null when the text is plain prose. */
 export function readNarration(text) {
@@ -21,6 +27,12 @@ export function readNarration(text) {
         return null;
     try {
         const o = JSON.parse(s.slice(at, end + 1));
+        // The scene-and-results form: the scene is beat 0, each result's passage the beat with its number.
+        if (!Array.isArray(o.beats) && o.results && typeof o.results === 'object')
+            o.beats = [
+                ...typeof o.scene === 'string' && o.scene.trim() ? [{ result: 0, text: o.scene }] : [],
+                ...Object.entries(o.results).filter(([k, v]) => /^\d+$/.test(k) && typeof v === 'string').sort((x, y) => Number(x[0]) - Number(y[0])).map(([k, v]) => ({ result: Number(k), text: v }))
+            ];
         if (!Array.isArray(o.beats))
             return null;
         const beats = o.beats.filter((b) => !!b && typeof b.text === 'string' && Number.isInteger(b.result));
