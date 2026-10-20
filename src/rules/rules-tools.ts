@@ -1492,8 +1492,10 @@ export function registerRulesTools(enabled: boolean): void {
             }
             case SOCIAL[3]: return `${a.who} ${rng() < asRequester(SMALL_REQUEST_YES, a.requester) ? 'agrees' : 'declines'}${a.request ? ` (${a.request})` : ''}.`;
             case SOCIAL[4]: {
-                if (!a.sex) return 'Give sex for a first meeting.';
-                const pr = interestChance(a.sex, !!a.many_options);
+                // The person's sex as the story holds it (a drawn maid is a woman); the argument fills it when the story holds none.
+                const sex = (st.people?.[String(a.who)] as { sex?: string } | undefined)?.sex ?? a.sex;
+                if (!sex) return 'Give sex for a first meeting.';
+                const pr = interestChance(sex as typeof a.sex & string, !!a.many_options);
                 return `${a.who} ${rng() < pr ? 'is interested and would meet again' : 'leaves it at this meeting'}${a.many_options ? ' (one of many suitors met at once)' : ''}.`;
             }
             case SOCIAL[5]: {
@@ -1934,12 +1936,12 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who', 'height_m'], a => run((st, rng) => {
         const { p, error } = whoAny(st, a.who, a.species);
         if (!p) return error;
-        // Under half a metre the body steps down; a fall's force starts above that [ASSUMED threshold].
-        if (Number(a.height_m) < 0.5) return `${a.who} steps down ${a.height_m} m and stays on the feet.`;
         // A fall starts from where the character stands: after a failed climb they are at its foot (a climb that failed at
         // 0.6 m was followed by a 3 m drop "into the garden on the other side").
-        if (p.raised_m != null && Number(a.height_m) > p.raised_m + 0.5) return p.raised_m ? `${a.who} stands ${p.raised_m} m up: the drop is ${p.raised_m} m. Call BodyFall with height_m ${p.raised_m}.` : `${a.who} stands on the ground at the foot of the climb, on the side the climb started from.`;
+        if (p.raised_m != null && (p.raised_m === 0 || Number(a.height_m) > p.raised_m + 0.5)) return p.raised_m ? `${a.who} stands ${p.raised_m} m up: the drop is ${p.raised_m} m. Call BodyFall with height_m ${p.raised_m}.` : `${a.who} stands on the ground at the foot of the climb, on the side the climb started from.`;
         delete p.raised_m;
+        // Under half a metre the body steps down; a fall's force starts above that [ASSUMED threshold].
+        if (Number(a.height_m) < 0.5) return `${a.who} steps down ${a.height_m} m and stays on the feet.`;
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first, age: a.age == null ? undefined : Number(a.age), ground: a.ground, stiff: !!a.stiff_legs }, rng);
     }));
 

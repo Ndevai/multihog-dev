@@ -402,6 +402,15 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
         // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
         calls = dedupe([...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')]);
+        // A climb comes before a drop by the same person: the drop starts from the height the climb reached (a keyed plan
+        // lists BodyFall before BodyCheck when written in that order, and the 2nd try ran after the drop it made possible).
+        for (const climb of calls.filter(c => c.tool === 'BodyCheck' && c.args.height_m)) {
+            const drop = calls.findIndex(c => c.tool === 'BodyFall' && c.args.who === climb.args.who);
+            if (drop >= 0 && drop < calls.indexOf(climb)) {
+                calls.splice(calls.indexOf(climb), 1);
+                calls.splice(drop, 0, climb);
+            }
+        }
         await runAll(calls);
         // Refused calls: the tool's message goes back once; a corrected call's result replaces the refusal.
         const bad = results.map((r, i) => ({ r, i })).filter(x => REFUSED.test(x.r.result));

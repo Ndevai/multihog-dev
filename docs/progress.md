@@ -606,3 +606,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-20 (55) Drafted scene calls required in the plan's schema
 
 - Story 1 of run 9015910 (results/run-39463869624, parallel jobs; 3 min, 5 of 12 calls replayed): 1 fault (apples' price). Mary's words to the costermonger kept the tool's defaults (1 m, quiet room) on a busy street: the planner wrote no Communicate for her, and nothing made it write one. The first plan's schema now requires a call of each scene tool code drafted (minProperties 1 under that tool), and so does the repair round's schema for the drafts still open.
+
+## 2026-10-20 (56) Parallel run: 5 faults in 16 minutes; vision overflow fixed
+
+- Run 9015910 as three parallel jobs (results/run-39463869624): all 12 turns in 16 min (40–70 min serial), 5 faults (story 1: 1, story 2: 1, story 3: 3).
+- Engine bug, vision: the target transfer function computed x^E ÷ (1 + x^E). For a large or near target x^E overflowed to Infinity, the odds became NaN, and every look at it "missed" (Mara missed a 1.5 m window at 1 m). It is now 1 ÷ (1 + x^−E), the same value, finite everywhere (tests/engine.test.mjs: a near target is seen, a far one at night mostly is not).
+- SocialResponse asked for a sex the story already held (the drawn maid). It now reads the person's sex from the story first.
+- A drop after a failed climb: any height from the ground now gives "stands on the ground at the foot of the climb"; 0.5 m had passed as a step down. A climb runs before a drop by the same person whatever order the keyed plan lists them in.
+- `npm test`: 142 checks, 0 misses.

@@ -13,7 +13,10 @@ export const acuity = (lux) => 17.25 * Math.atan(1.4 * Math.log10(Math.max(1e-7,
 // 6.4 (Johnson 1958). Probability: target transfer probability function P = x^E ÷ (1 + x^E), x = N ÷ N50, E = 2.7 + 0.7 x
 // (as used in the US Army NVESD models).
 const N50 = { detect: 1, recognize: 4, identify: 6.4 };
-const ttpf = (x) => { const e = 2.7 + 0.7 * x, p = x ** e; return p / (1 + p); };
+// Written as 1 ÷ (1 + x^−E): the same value, and finite for a large or near target, where x^E overflows to Infinity and
+// Infinity ÷ Infinity gave NaN (a 1.5 m window at 1 m was "missed").
+const ttpf = (x) => { if (!(x > 0))
+    return 0; const e = 2.7 + 0.7 * x; return 1 / (1 + x ** -e); };
 /**
  * { detect, recognize, identify } probabilities for a target of smallest dimension `size` m at `distance` m in `light`
  * (preset or lux), with meteorological visibility `visibility` m (beyond it, contrast is under the 2 % threshold, Koschmieder:

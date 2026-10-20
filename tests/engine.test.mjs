@@ -34,5 +34,19 @@ expect('price city follows the scene', String(await run('Price', { question: 'pr
 const Q = await import('../src/rules/question-pass.js');
 const asks = ['Leipzig', 'London', 'Paris'].map(city => ({ tool: 'Price', args: { question: 'price of goods', item: 'beer (litre)', quantity: 0.568, city, year: 1820 } }));
 if (Q.dedupe(asks).length !== 1) { miss++; console.log(`MISS Price asked once: ${Q.dedupe(asks).length}`); }
-console.log(`4 checks, ${miss} miss(es)`);
+// Vision: a large or near target is seen (the odds once overflowed to NaN and every near look missed).
+const V = await import('../src/rules/vision.js');
+const near = V.see({ size: 1.5, distance: 1, light: 'living room' });
+if (!(near.identify > 0.99 && near.detect > 0.99)) { miss++; console.log(`MISS near target seen: ${JSON.stringify(near)}`); }
+const far = V.see({ size: 0.5, distance: 2000, light: 'full moon' });
+if (!(far.detect >= 0 && far.detect < 0.5)) { miss++; console.log(`MISS far target at night: ${JSON.stringify(far)}`); }
+// A drop of any height from the ground after a failed climb gives where the climber stands.
+for (let i = 0; i < 40; i++) {
+    fresh();
+    const c = String(await run('BodyCheck', { ...CLIMB, share: '5% almost no one' }));
+    if (!/FAILURE/.test(c)) continue;
+    expect('small drop after a failed climb', String(await run('BodyFall', { who: 'Mara', height_m: 0.5 })), /foot of the climb/);
+    break;
+}
+console.log(`7 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
