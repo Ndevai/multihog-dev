@@ -5,7 +5,8 @@ import os from 'node:os';
 export const BASE = process.env.EVAL_BASE_URL ?? 'https://integrate.api.nvidia.com/v1';
 export const MODEL = process.env.EVAL_MODEL ?? 'z-ai/glm-5.3';
 export function findKey() {
-    if (process.env.NVIDIA_API_KEY) return process.env.NVIDIA_API_KEY;
+    // The key is read out of whatever the variable holds (a secret saved with its name in front of the key still works).
+    if (process.env.NVIDIA_API_KEY) return process.env.NVIDIA_API_KEY.match(/nvapi-[A-Za-z0-9_\-]+/)?.[0] ?? process.env.NVIDIA_API_KEY.trim();
     for (const f of [`${os.homedir()}/SillyTavern/data/default-user/secrets.json`, `${os.homedir()}/SillyTavern/secrets.json`]) {
         if (!fs.existsSync(f)) continue;
         const m = fs.readFileSync(f, 'utf8').match(/nvapi-[A-Za-z0-9_\-]+/);
