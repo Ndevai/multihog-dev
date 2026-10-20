@@ -8,8 +8,14 @@ const PERSON_NOUNS = ['man', 'woman', 'boy', 'girl', 'child', 'lad', 'lass', 'st
     'maid', 'landlord', 'landlady', 'barman', 'barmaid', 'potboy', 'watchman', 'constable', 'policeman', 'sailor', 'priest', 'vicar', 'doctor', 'merchant',
     'master', 'mistress', 'gentleman', 'lady', 'drover', 'traveller', 'traveler', 'customer', 'clerk', 'porter', 'beggar', 'thief', 'driver', 'coachman'];
 // Trade words from the census's occupation names ("Innkeeper, Hotel Keeper, Publican" → innkeeper, publican).
-const TRADES = new Set(OCCUPATIONS.flatMap(o => o.name.toLowerCase().split(/[^a-z]+/)).filter(w => w.length > 4 && !/^(other|others|and|with|their|those|engaged|persons|person|general|dealer|dealers|makers|maker|workers|worker|manufacture|service|domestic|labourer|labourers|branch|branches|undefined|making)$/.test(w)));
-const ROLE_WORDS = new Set([...PERSON_NOUNS, ...TRADES]);
+// A trade word names a person when it is an agent noun: English forms those with -er, -or, -ist, -man, -ian, -ant, -ess,
+// -ster, -wright, -smith (Marchand 1969, The Categories and Types of Present-Day English Word-Formation). Singular forms only;
+// a place or a thing in a trade's name ("Lodging House Keeper" → house) is no person.
+const AGENT = /(?:er|or|ist|man|ian|ant|ess|ster|wright|smith)$/;
+const TRADES = new Set(OCCUPATIONS.flatMap(o => o.name.toLowerCase().split(/[^a-z]+/)).filter(w => w.length > 4 && AGENT.test(w) && !/(?:ers|ors)$/.test(w) && !/^(other|manufacturer|maker|dealer|worker|labourer|member|officer|order|power|paper|water|silver|leather|rubber|copper|timber|letter|matter|winter|summer|chamber|number|master|upper|lower|outer|inner|under|after|whether|either|neither|corner|border|manor|interior|exterior)$/.test(w)));
+// Animals a scene can hold, which act, hear and see as people do in the tools.
+const ANIMALS = ['dog', 'hound', 'horse', 'mare', 'cat', 'mule', 'donkey', 'ox', 'bull', 'cow', 'goat', 'pig', 'wolf', 'bear', 'rat'];
+const ROLE_WORDS = new Set([...PERSON_NOUNS, ...TRADES, ...ANIMALS, 'priest', 'clerk', 'surgeon', 'midwife', 'groom', 'cook', 'nurse', 'page', 'wife', 'husband', 'widow', 'maidservant']);
 const STOP = new Set(['I', 'The', 'A', 'An', 'He', 'She', 'They', 'We', 'It', 'His', 'Her', 'Their', 'My', 'Our', 'This', 'That', 'There', 'Then', 'When', 'But', 'And',
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
     'September', 'October', 'November', 'December', 'Scenario', 'Cast', 'Street', 'Road', 'Lane', 'Square']);
@@ -21,7 +27,8 @@ export function scenePeople(texts: string[], known: string[] = [], max = 24): st
     const out: string[] = [...known];
     for (const text of texts) {
         // Roles: "the" and up to two words before a person noun or trade ("the old innkeeper").
-        for (const m of text.matchAll(/\b[Tt]he ([a-z]+)(?: ([a-z]+))?(?: ([a-z]+))?/g)) {
+        // "a dog", "an old maid" name the same role as "the dog": the plan refers to it with "the".
+        for (const m of text.matchAll(/\b(?:[Tt]he|[Aa]n?) ([a-z]+)(?: ([a-z]+))?(?: ([a-z]+))?/g)) {
             const w = [m[1], m[2], m[3]].filter(Boolean), at = w.findIndex(x => ROLE_WORDS.has(x));
             if (at >= 0) out.push(`the ${w.slice(0, at + 1).join(' ')}`);
         }

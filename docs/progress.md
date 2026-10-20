@@ -564,3 +564,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Listen ran with no sound ("Unknown sound undefined"). sound is now required. The repair round names a draft's missing required arguments.
   - Act took "climbs the wall and drops down into the garden" as a 3 m walk. A climb in the story then went with no BodyCheck and a drop with no BodyFall. Act's words with a climb, a jump down or a fall now return: "A climb is decided by BodyCheck with height_m, and a drop by BodyFall from the height the climber stands at."
 - `npm test`: 130 checks, 0 misses.
+
+## 2026-10-20 (50) People as agent nouns; a call's other person is one of the others
+
+- Run of 91f4678 (results/2026-10-20T14-25): 41 calls, 3 faults reported. Read from the turns:
+  - "the house" was a listener, the dog's key. Its trade words held "house" (from "Lodging House Keeper"), and the dog the model wanted to name was nowhere in the list. Trade words now count only as agent nouns, by the suffixes English forms them with (-er, -or, -ist, -man, -ian, -ant, -ess, -ster, -wright, -smith; Marchand 1969), singular. Animals that act, hear and see are role words (dog, horse, cat…). "a dog" names the role "the dog" as "the dog" does.
+  - The innkeeper spoke to himself. Under each person's key, the other person a call names (listener, attacker, the one chased) is one of the other people: the speaker is outside his own listener list.
+  - "the maidservant" was drawn as a man of 44. The census reads maidservant, cook and nursemaid as domestic indoor servants, and a role noun that names a woman (maid-, -ess, -wife, widow, landlady, mistress) fixes the sex.
+- `npm test`: 134 checks, 0 misses.

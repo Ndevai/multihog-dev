@@ -49,5 +49,11 @@ check('listener is one of the people', s3.properties.calls.properties.Communicat
 const { ctx } = await import('../tools/st-harness.mjs'); ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'x' }];
 check('Act passes a climb on', /decided by BodyCheck/.test(String(await T.REGISTRY.get('Act').exec({ who: 'Mara', action: 'climbs the wall and drops down into the garden', distance_m: 3 }))), null);
 check('Act walks', /walks/.test(String(await T.REGISTRY.get('Act').exec({ who: 'Mara', action: 'slips along the wall into the shadow of the hedge', distance_m: 5 }))), null);
-console.log(`41 checks, ${miss} miss(es)`);
+const sp2 = SP.scenePeople(["A dog strained at its chain by the merchant's house; the house was dark. The seamstress slept."], ['Mara']);
+check('a dog is "the dog"', sp2.includes('the dog'), sp2);
+check('the house is no person', !sp2.includes('the house') && !sp2.includes("the merchant's house"), sp2);
+check('a speaker\'s listeners leave the speaker out', !s3.properties.calls.properties.Communicate.properties.Tom.properties.listener.enum.includes('Tom'), null);
+ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'x' }];
+check('a maidservant is a woman', /woman|girl/.test(String(await T.REGISTRY.get('NewCharacter').exec({ who: 'the maidservant', occupation: 'maidservant' }))), null);
+console.log(`45 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

@@ -16,7 +16,7 @@ const occupied = (sex) => OCCUPATIONS.reduce((s, o) => s + (sex === 'female' ? o
     / AGES.filter(a => a[0] >= OCC_MIN_AGE).reduce((s, a) => s + a[col(sex)], 0);
 // Everyday names for trades the census lists under another word (its "Innkeeper, Hotel Keeper, Publican" is the landlord).
 const SAME_TRADE = { landlord: 'innkeeper', landlady: 'innkeeper', publican: 'innkeeper', 'tavern keeper': 'innkeeper', barman: 'innkeeper',
-    barmaid: 'innkeeper', tapster: 'innkeeper', maid: 'domestic indoor servant', housemaid: 'domestic indoor servant', 'serving girl': 'inn, hotel servant', 'serving maid': 'inn, hotel servant', potboy: 'inn, hotel servant', servant: 'domestic indoor servant', watchman: 'watchman', porter: 'porter', constable: 'police', policeman: 'police',
+    barmaid: 'innkeeper', tapster: 'innkeeper', maid: 'domestic indoor servant', housemaid: 'domestic indoor servant', 'serving girl': 'inn, hotel servant', 'serving maid': 'inn, hotel servant', potboy: 'inn, hotel servant', servant: 'domestic indoor servant', maidservant: 'domestic indoor servant', 'serving woman': 'domestic indoor servant', cook: 'domestic indoor servant', nursemaid: 'domestic indoor servant', watchman: 'watchman', porter: 'porter', constable: 'police', policeman: 'police',
     coster: 'costermonger', 'street seller': 'costermonger', cabman: 'cab', cabby: 'cab', sailor: 'seaman', soldier: 'army' };
 export const findOccupation = (text) => {
     const raw = norm(text).replace(/^(the|a|an) /, ''), t = SAME_TRADE[raw] ?? raw;

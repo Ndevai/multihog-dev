@@ -1603,6 +1603,8 @@ export function registerRulesTools(enabled: boolean): void {
         if (adult) a = { ...a, sex: a.sex ?? (/woman|lady/.test(adult) ? 'female' : 'male'), min_age: Math.max(18, Number(a.min_age) || 0) };
         const young = /\b(girl|boy|maid|lad|lass)\b/i.exec(String(a.who))?.[1]?.toLowerCase();
         if (young && !a.sex) a = { ...a, sex: /girl|maid|lass/.test(young) ? 'female' : 'male' };
+        // A role noun that names a woman: maid- words, -ess (hostess, seamstress), wife, widow, landlady, mistress.
+        if (!a.sex && /\b(?:maid\w*|\w+ess|\w*wife|widow|landlady|lady|mistress|nun|matron)\b/i.test(`${a.who} ${a.occupation ?? ''}`) && !/\b(?:process|business|address|access)\b/i.test(`${a.who} ${a.occupation ?? ''}`)) a = { ...a, sex: 'female' };
         if (!a.occupation) { const role = /^(?:the |an? )?([a-z][a-z-]*(?: [a-z][a-z-]*)?)$/.exec(String(a.who).trim())?.[1]; if (role && !/^(person|man|woman|boy|girl|child|stranger|figure|someone|somebody|other|men|women)\b/.test(role)) a = { ...a, occupation: role }; }
         const c = st.setting?.country, y = storyYear(st);
         const english = !c || (/united kingdom|england|wales/i.test(c) && (y === null || Math.abs(y - 1881) <= 40));

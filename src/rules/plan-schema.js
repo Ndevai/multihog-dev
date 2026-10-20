@@ -55,9 +55,9 @@ export function planSchema(only, opts = {}) {
     const tools = [...REGISTRY.values()].filter(t => !only || only.has(t.name));
     const people = opts.people ?? [];
     // A person argument inside a call (the listener, the target) takes one of the scene's people.
-    const argsOf = (t, drop) => ({
+    const argsOf = (t, drop, self) => ({
         type: 'object', additionalProperties: false, required: t.required.filter(k => k !== drop),
-        properties: Object.fromEntries(Object.entries(t.properties).filter(([k]) => k !== drop).map(([k, p]) => [k, people.length && PERSON_VALUE.has(k) && p.type === 'string' ? { type: 'string', enum: people } : propSchema(p)])),
+        properties: Object.fromEntries(Object.entries(t.properties).filter(([k]) => k !== drop).map(([k, p]) => [k, people.length && PERSON_VALUE.has(k) && p.type === 'string' ? { type: 'string', enum: people.filter(n => n !== self) } : propSchema(p)])),
     });
     const require = new Set((opts.require ?? []).filter(n => tools.some(t => t.name === n)));
     const entry = (t) => {
@@ -72,9 +72,11 @@ export function planSchema(only, opts = {}) {
         // Bounded: under constrained decoding a model can repeat one call until the token limit cuts the JSON.
         // The scene's people (scene-people.ts) are the keys a person-keyed tool takes; NewCharacter also takes a new one. The
         // endpoint refuses propertyNames (tools/probe-schema.mjs: HTTP 400), so the closed set is written as fixed properties.
+        // Under each person's key, the other person a call names (the listener, the attacker, the one chased) is one of the
+        // others: a speaker's listener list leaves the speaker out.
         if (PERSON_ARGS.has(key))
             return people.length
-                ? { type: 'object', properties: Object.fromEntries(people.map(n => [n, args])), additionalProperties: t.name === 'NewCharacter' ? args : false, maxProperties: 6, ...min }
+                ? { type: 'object', properties: Object.fromEntries(people.map(n => [n, argsOf(t, key, n)])), additionalProperties: t.name === 'NewCharacter' ? args : false, maxProperties: 6, ...min }
                 : { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
         return { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
     };
