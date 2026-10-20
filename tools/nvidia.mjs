@@ -37,7 +37,8 @@ export async function send(system, user, opts = {}, model = MODEL) {
             const r = await fetch(`${BASE}/chat/completions`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0, max_tokens: 8192, stream: true,
                     reasoning_effort: EFFORT, chat_template_kwargs: { reasoning_effort: EFFORT }, ...guide(opts?.schema) }) });
-            if (r.status === 429) { last = '429 rate limit (NVIDIA)'; console.log(`  rate limited, waiting ${20 * attempt} s (try ${attempt} of ${TRIES})`); await new Promise(res => setTimeout(res, 20000 * attempt)); continue; }
+            // A 429 waits as long as the server's Retry-After says, else 60 s, 120 s, … (the first cloud run spent its 200 s of waits inside one limit window).
+            if (r.status === 429) { last = '429 rate limit (NVIDIA)'; const s = Number(r.headers.get('retry-after')) || 60 * attempt; console.log(`  rate limited, waiting ${s} s (try ${attempt} of ${TRIES})`); await new Promise(res => setTimeout(res, s * 1000)); continue; }
             if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`);
             let out = '', thought = 0, finish = '', buf = '';
             const dec = new TextDecoder();
