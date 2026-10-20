@@ -741,3 +741,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-20 (77) A fall leaves the body on the ground; getting up is timed
 
 - After the slip, Pyotr's posture was still standing, so "I get up and look for my glove" took 0 s and the clock stood still (fault 8.3). A slip now leaves the body lying (Person.posture 'lying'). Standing from lying is onto both knees (69.4 TMU, kneel on both knees, as its reverse) then up from both knees (76.7 TMU): 146.1 TMU, 5.3 s [ASSUMED composite; MTM-1 has no motion from lying]. A walk begun from lying stands first.
+
+## 2026-10-20 (78) A night's lodging in the price list
+
+- Story 6's "bed for the night" was priced as apples. Price now lists "lodging (night)": Mayhew names London's low lodging-houses "the penny, two-penny, and three-penny" houses (victorianlondon.org, Mayhew), and the middle tier, 2 d a night in 1851 [ASSUMED middle], goes on the goods' scale, so other places and years follow their price index. A bed, a room or lodging for the night in a good's words is this item. London 1888: about 3 d; Leipzig 1845: 0.58 g of silver. An inn's bed for a traveller likely cost more than a lodging-house's; no series for inn beds was found.
