@@ -136,28 +136,40 @@ for (const [si, story] of chosen) {
         else if (lastClock !== null && now < lastClock) f.push(`clock ran back: ${C.formatStoryTime(lastClock)} → ${C.formatStoryTime(now)}`);
         else if (lastClock !== null && now === lastClock && results.some(r => (r.tool === 'Act' || r.tool === 'PassTime') && !REFUSED.test(r.result))) f.push('clock stood still after an action');
         // The narrator gets what SillyTavern gives it: the brief, the story state, [KNOWS], [DECIDED], and the chat so far.
-        let reply = '', openNote = '';
-        try {
-            const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.RULES_BRIEF, timeBlock(), B.bodyBlock(B.trackedPeople()), T.possessionsInjection(), T.knowledgeInjection(), Q.decidedInjection()].filter(Boolean).join('\n\n');
+        const N = await import('../src/rules/narration.js'), Kn = await import('../src/rules/knowledge.js'), F = await import('../src/rules/audit-flags.js');
+        const narrate = async (note = '') => {
+            const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.RULES_BRIEF, timeBlock(), B.bodyBlock(B.trackedPeople()), T.possessionsInjection(), T.knowledgeInjection(), Q.decidedInjection(), note].filter(Boolean).join('\n\n');
             const history = ctx.chat.slice(0, -1).map(m => `${m.is_user ? 'PLAYER' : 'NARRATOR'}: ${m.mes}`).join('\n\n');
-            // Structured narration (narration.ts): beats tied to the numbered results, scenery as result 0, open questions.
-            const N = await import('../src/rules/narration.js'), nDec = Q.decidedResults().length;
-            const raw = await send(`${NARRATOR}\n\n${cast}\n\n${inj}${Q.GUIDED ? `\n\n${N.NARRATION_RULE}` : ''}`, `${history ? `${history}\n\n` : ''}PLAYER: ${turn.player}`, Q.GUIDED ? { schema: N.narrationSchema(nDec) } : {});
-            const nar = N.readNarration(raw);
-            reply = nar ? N.proseOf(nar) : raw;
-            Q.setOpen(nar?.open ?? []);
-            if (nar) { openNote = nar.open?.length ? `open: ${nar.open.join(' | ')}` : ''; }
-            const st = ctx.chatMetadata.rulesEngine?.state ?? {};
-            // The check reads every beat (narration.ts checkedText).
-            const checked = nar ? N.checkedText(nar) : reply;
-            const events = !checked.trim() ? [] : A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(checked, results, (await import('../src/rules/knowledge.js')).knowledgeBlock(st), now === null ? '' : C.formatStoryTime(now)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];
-            for (const e of events) f.push(`rule check: "${e.quote.slice(0, 120)}" → ${e.tool} (${e.problem ?? 'unbacked'})`);
+            const raw = await send(`${NARRATOR}\n\n${cast}\n\n${inj}${Q.GUIDED ? `\n\n${N.NARRATION_RULE}` : ''}`, `${history ? `${history}\n\n` : ''}PLAYER: ${turn.player}`, Q.GUIDED ? { schema: N.narrationSchema(Q.decidedResults().length) } : {});
+            const nar = N.readNarration(raw), text = nar ? N.proseOf(nar) : raw;
+            const st = ctx.chatMetadata.rulesEngine?.state ?? {}, checked = nar ? N.checkedText(nar) : text, t = T.storyTime();
+            const events = !checked.trim() ? [] : A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(checked, Q.askedResults(), Kn.knowledgeBlock(st), t === null ? '' : C.formatStoryTime(t)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];
+            return { text, nar, events };
+        };
+        let reply = '', openNote = '', draftNote = '';
+        try {
+            let r = await narrate();
+            // A flagged draft is rewritten once, as SillyTavern does (rules-audit.ts: the flags, the turn's calls rerun from its
+            // snapshot, the flagged tools asked, the correction note): the reply counted is the one the player is shown.
+            if (r.events.length) {
+                draftNote = `--- draft flagged (rewritten)\n${r.events.map(e => `  "${e.quote.slice(0, 120)}" → ${e.tool} (${e.problem ?? 'unbacked'})`).join('\n')}\n--- draft\n${r.text}\n`;
+                ctx.chat.push({ is_user: false, name: 'Narrator', mes: r.text, swipe_id: 0 });
+                T.onRulesGenerationStarted('swipe');
+                ctx.chat.pop();
+                F.setFlags(r.events.filter(e => e.tool !== 'KNOWS'));
+                try { await Q.runQuestionPass(ctx.chat, logSend, state); } catch (e) { f.push(`rewrite question pass threw: ${e.message}`); }
+                r = await narrate(A.correctionNote(r.events, true));
+            }
+            reply = r.text;
+            Q.setOpen(r.nar?.open ?? []);
+            if (r.nar) openNote = r.nar.open?.length ? `open: ${r.nar.open.join(' | ')}` : '';
+            for (const e of r.events) f.push(`rule check: "${e.quote.slice(0, 120)}" → ${e.tool} (${e.problem ?? 'unbacked'})`);
         } catch (e) { f.push(`narrator or check failed: ${e.message}`); }
         ctx.chat.push({ is_user: false, name: 'Narrator', mes: reply, swipe_id: 0 });
         T.onRulesMessageReceived(ctx.chat.length - 1);
         lastClock = now;
         faults.push(...f.map(x => `${tag} ${x}`));
-        log.push(`=== ${tag}: ${turn.player}\nclock: ${now === null ? 'none' : C.formatStoryTime(now)}\nfaults: ${f.length ? '\n  ' + f.join('\n  ') : 'none'}\n--- calls\n${calls}\n--- reply\n${reply}\n${openNote ? `--- ${openNote}\n` : ''}--- planner answers\n${sent.filter(s => /prepare one turn|choose which/.test(s.system)).map(s => s.out.slice(-1200)).join('\n- - -\n')}\n`);
+        log.push(`=== ${tag}: ${turn.player}\nclock: ${now === null ? 'none' : C.formatStoryTime(now)}\nfaults: ${f.length ? '\n  ' + f.join('\n  ') : 'none'}\n--- calls\n${Q.turnLog()}\n${draftNote}--- reply\n${reply}\n${openNote ? `--- ${openNote}\n` : ''}--- planner answers\n${sent.filter(s => /prepare one turn|choose which/.test(s.system)).map(s => s.out.slice(-1200)).join('\n- - -\n')}\n`);
         save();
         // The model stopped answering (rate limit, outage): the rest of the run would test nothing.
         if (f.some(x => /did not answer/.test(x))) { console.log(`\nStopped: ${f.find(x => /did not answer/.test(x))}`); stopped = true; break; }

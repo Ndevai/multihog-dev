@@ -694,3 +694,12 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Every fault count today comes from the same three stories, and the fixes answer what those stories exposed. tools/run-story.mjs now holds stories 4–9: a fight and a chase on the Liverpool docks (1866), a plea and a pledge to a Paris landlord with bread bought and eaten (1832), a journeyman's 12-mile walk, a bed, sleep and a fever (Saxony 1845), a maid's broken dish and an hour's wait (Lisbon 1755), a coachman's fall on the ice and a vodka (Saint Petersburg 1861), and a nurse at the first public ether operation (Boston, 16 October 1846). The workflow runs nine parallel jobs, one per story; stories 2, 5 and 8 use KEY2 when it exists.
 - Found by the stand-in run: "I wait in the kitchen for an hour" wrote no PassTime, because words between the verb and the duration broke the pattern. Up to five words may now come between them.
+
+## 2026-10-20 (70) The test counts the reply the player is shown; the standard it is held to
+
+- Every run until now counted the narrator's first draft. In SillyTavern a draft the rule check flags is rewritten once before the player sees it (rules-audit.ts: the flags are set, the turn's calls rerun from its snapshot with the flagged tools asked, then a correction note and a second check). tools/run-story.mjs now does the same: a flagged draft is logged as "draft flagged (rewritten)" with its text, and the faults counted are the second check's, on the reply the player is shown. Stand-in run: four drafts flagged, four rewrites with the note, none flagged after.
+- The standard (acceptance): across all nine stories (36 turns), in two consecutive runs, on the reply shown:
+  1. zero engine or interface faults (refusals after repair, a person drawn for a phrase or twice, the clock running back or standing still, a tool missing where the player's words need it);
+  2. zero results contradicted;
+  3. at most one unbacked event per twelve turns.
+  The narrator is a language model and will draft some invention; the system's job is that the check catches it and the rewrite removes it before the player reads it. Faults the check itself misses are found by reading the turns, as each run so far has been read.
