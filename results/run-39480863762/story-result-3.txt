@@ -1,0 +1,143 @@
+z-ai/glm-5.3, reasoning low, 10 min, 2026-10-20T19:18:15.737Z, 16 calls asked, 0 replayed
+3 fault(s) in 4 of 4 turns
+#3.3 rule check: "it took her a long quarter-minute to cover the distance" → Act (contradicts)
+#3.4 rule check: "She was a nursemaid, or someone of that station" → WorkOut (unbacked)
+#3.4 rule check: "His voice carried up to the lit window, and inside the room above, the young woman's footsteps stopped." → Listen (unbacked)
+
+=== #3.1: I climb the wall.
+clock: Friday 2 May 1755, 22:01
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.14}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 1 km), 2/5/1755: dry; high 26 °C, low 15 °C; now about 21 °C.
+2. BodyCheck {"who":"Mara","species":"human","height_m":3,"task":"climb a mossy three-metre garden wall","reference_class":"trained climbers scaling a slick mossy wall at night","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance","sight","alertness"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}
+   draws: 0.0384
+   → climb a mossy three-metre garden wall: SUCCESS.
+3. Look {"viewer":"Mara","viewer_species":"human","target":"movement or person in the garden or at the lit window","size_m":0.5,"distance_m":10,"light":"dim street or public lighting","latitude":38.7,"visibility_m":20000,"reveals":"who or what is in the garden or behind the lit window"}
+   draws: 0.1202
+   → Mara identifies it (can tell which individual or exact kind) (0.5 m target at 10 m, dim street or public lighting). Mara now knows: who or what is in the garden or behind the lit window.
+4. PassTime {"minutes":1,"active":["Mara"]}
+   draws: 0.0028, 0.1263, 0.6388, 0.3899
+   → 1 minutes passed.
+Mara (human): blood lost 0 L. work done today: 0 % of what can be kept up.
+--- reply
+The night was warm and dry, a mild Lisbon spring evening, the air about twenty-one degrees. The street beyond the merchant's garden wall was quiet, lit only faintly by a distant lamp. The wall stood three metres high, its old stones slick with moss, and beyond it the dark mass of the house showed one lit window on the upper floor.
+
+The sky was clear and the stones dry despite the moss, the last of the day's warmth still in the air.
+
+Mara found her holds by feel, fingers pressing into the joints between the stones, the moss cold and slippery under her palms. She moved the way years of climbing had taught her, weight over her feet, testing each stone before trusting it. A loose flake shifted under her boot and she let it be, reaching higher instead, and then her hand caught the coping at the top. She swung a leg over and crouched there, breathing easily.
+
+From the top of the wall she could see into the garden: a gravel path, orange trees in tubs, and a man sitting on a bench below the lit window, a lantern at his feet. He was the merchant himself, the one whose house this was, an older man in a dark coat, and he was not alone. Behind the lit window on the upper floor a woman moved past the candlelight, carrying something, a child perhaps, wrapped in a blanket. Mara now knew who was in the garden and behind the window.
+
+It had taken her only a minute to climb, and the garden lay quiet beneath her, the man on the bench unaware of her so far.
+--- open: Does the man on the bench notice Mara crouched on the wall?
+--- planner answers
+{"calls":{"BodyCheck":{"Mara":{"species":"human","height_m":3,"task":"climb a mossy three-metre garden wall","reference_class":"trained climbers scaling a slick mossy wall at night","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance","sight","alertness"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}}},"then":[{"question":"If Mara reaches the top, does she see or hear anything in the garden or the lit window beyond?","tool":"Look"}],"need":["Look"],"time":"1755-05-02 22:00","at":[38.72,-9.14],"present":["Mara"]}
+- - -
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"movement or person in the garden or at the lit window","size_m":0.5,"distance_m":10,"light":"dim street or public lighting","latitude":38.7,"visibility_m":20000,"reveals":"who or what is in the garden or behind the lit window"}},"PassTime":{"minutes":1,"active":["Mara"]}},"then":[{"question":"Does Mara hear any sound from the garden or the house (voices, footsteps, a dog)?","tool":"Listen"}],"need":["Listen"]}
+
+=== #3.2: I drop down into the garden on the other side and wait in the shadow of the hedge.
+clock: Friday 2 May 1755, 22:01:03
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 26 °C, low 15 °C; now about 21 °C.
+2. BodyFall {"who":"Mara","height_m":3,"ground":"grass","stiff_legs":false}
+   draws: 0.0573, 0.2276, 0.0925
+   → Fall 3 m: lands on the feet, 3.8 kN through each leg; the left heel bone breaks (fracture recorded on the left foot). Fragile: the outcome changes within the range of 2 judged values: legGiveM = 0.4 m of body travel, knees bending on landing instead of 0.25 [ASSUMED: a bent-knee landing lowers the hips about a quarter metre] → the bones hold, the legs and feet jarred.; legFractureKN = 9 kN axial, median instead of 5.848076606885378 [FITTED: geometric middle of 3.8–9 kN calcaneal fracture loads (McMaster 2000; Kitagawa 1998)] → the bones hold, the legs and feet jarred..
+3. Listen {"listener":"the merchant","listener_species":"human","sound":"loud pounding (100 dB at 1 m)","distance_m":8,"noise":"silent night (10 dB)","ground":"mixed","reveals":"someone has dropped into his garden"}
+   draws: none
+   → the merchant hears it (loud pounding (100 dB at 1 m) at 8 m, silent night (10 dB)). the merchant now knows: someone has dropped into his garden.
+4. Act {"who":"Mara","action":"leaves the wall top, drops three metres to the garden, then crouches and moves to the shadow of the hedge","distance_m":5}
+   draws: none
+   → Mara walks 5 m from where Mara stood to garden at 1.43 m/s: 3.5 s (3.5 s in all). Span 3.5 s. Clock now Friday 2 May 1755, 22:01:03.
+--- reply
+The garden lay in near-darkness, the lantern on the bench throwing a small circle of light that made the rest seem blacker. The gravel path ran pale between the tubs of orange trees, and the hedge threw a solid shadow away from it. The night stayed warm and still, the sky clear above the rooftops.
+
+Mara dropped from the coping, three metres down into the garden. She landed on her feet, but the impact drove hard up through her legs, and a sharp crack of pain burst through her left heel as the bone gave way. She went down onto the gravel, breath hissing through her teeth, the left foot useless beneath her, a hot throbbing where the break was.
+
+The sound of her landing was loud in the silent night, a hard double thump on the gravel. On the bench the merchant lifted his head at once; he had heard it plainly, and he knew now that someone had dropped into his garden. He rose from the bench, his hand going to the lantern at his feet.
+
+Mara dragged herself up and moved for the hedge, five metres across the open gravel. Every step was a hobble, the left foot swinging uselessly, the pain grinding up her leg, and it took her only a few seconds to cover the distance before she folded into the shadow of the hedge.
+--- open: The merchant is on his feet with the lantern; whether he comes toward the hedge or calls out, and whether Mara stays hidden in the shadow, is not yet decided.
+--- planner answers
+{"calls":{"BodyFall":{"Mara":{"height_m":3,"ground":"grass","stiff_legs":false}}},"then":[{"question":"Does the merchant on the bench hear Mara's landing and react?","tool":"Listen"},{"question":"Does Mara reach the hedge shadow unseen?","tool":"Act"}],"need":["Listen","Act"]}
+- - -
+{"calls":{"Listen":{"the merchant":{"listener_species":"human","sound":"loud pounding (100 dB at 1 m)","distance_m":8,"noise":"silent night (10 dB)","ground":"mixed","reveals":"someone has dropped into his garden"}},"Act":{"Mara":{"action":"leaves the wall top, drops three metres to the garden, then crouches and moves to the shadow of the hedge","distance_m":5}}},"then":[{"question":"With her broken left heel, can Mara move quietly and reach the hedge shadow before the merchant turns to look?","tool":"BodyCheck"},{"question":"If the merchant hears her, does he get up from the bench to investigate?","tool":"Choose"}],"need":["BodyCheck","Choose"]}
+
+=== #3.3: I creep across the lawn to the lit window.
+clock: Friday 2 May 1755, 22:01:17
+faults: 
+  rule check: "it took her a long quarter-minute to cover the distance" → Act (contradicts)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 26 °C, low 15 °C; now about 21 °C.
+2. Act {"who":"Mara","action":"creeps from the hedge shadow across the lawn toward the lit window","distance_m":10}
+   draws: none
+   → Mara walks 10 m from garden to lit window at 0.72 m/s: 14 s (14 s in all). Span 14 s. Clock now Friday 2 May 1755, 22:01:17.
+3. Choose {"who":"the merchant","options":[{"option":"comes toward the hedge with the lantern to search the garden","share":"65% more than half"},{"option":"calls out to whoever is there from the bench, lantern in hand","share":"35% fewer than half"}]}
+   draws: 0.1029
+   → the merchant chooses: comes toward the hedge with the lantern to search the garden.
+4. Look {"viewer":"the merchant","viewer_species":"human","target":"Mara moving across the lawn","size_m":0.5,"distance_m":10,"light":"dim street or public lighting","target_who":"Mara"}
+   draws: 0.3728
+   → the merchant identifies it (can tell which individual or exact kind) (0.5 m target at 10 m, dim street or public lighting).
+5. BodyCheck {"who":"Mara","task":"sneak across the lawn with a broken left foot, staying hidden","reference_class":"trained climbers sneaking over open ground at night","base_share":"35% fewer than half","share":"20% few","uses":["stance","alertness"],"exertion":"light","on_feet":true}
+   draws: 0.7997
+   → sneak across the lawn with a broken left foot, staying hidden: FAILURE, because of reduced stance.
+--- reply
+The garden stayed dark and warm, the sky clear, the lantern's small circle of light the only brightness. The lawn lay between the hedge and the house, soft grass silvered faintly by the distant street lamp, and the lit window above threw a pale rectangle onto the gravel path. Somewhere in the house a clock ticked, and the night was otherwise still.
+
+Mara came out of the hedge's shadow and started across the lawn toward the lit window, ten metres of open grass. She moved slowly, favouring the broken left foot, each step a careful placement of weight, and it took her a long quarter-minute to cover the distance, the window's light growing as she drew near the house wall.
+
+Behind her, the merchant took up his lantern and came around the bench, walking toward the hedge to search the garden. The light swung with his steps, throwing the shadows of the orange-tree tubs long across the lawn, and his footsteps crunched on the gravel where she had landed.
+
+As his light swept the grass, it found her. At ten metres, in the dim wash of the lantern, he could see her plainly: a young woman, dark-haired, hobbling low across his lawn, one foot dragging. He stopped, and his face hardened as he made out exactly who and what she was.
+
+Mara had tried to keep low and quiet, but the broken foot betrayed her. Her stance was too unsteady to move silently; her weight shifted wrong with every step, the grass whispering under her dragging boot, and she could not hold a clean, hidden line. The merchant's lantern found her and stayed on her, and she knew she was seen.
+--- open: The merchant has seen her. What does he do now — call out, raise the alarm, or come at her with the lantern?
+--- planner answers
+{"calls":{"Act":{"Mara":{"action":"creeps from the hedge shadow across the lawn toward the lit window","distance_m":10}}},"then":[{"question":"Can Mara move quietly and stay hidden crossing the lawn with her broken left foot?","tool":"BodyCheck"},{"question":"Does the merchant come toward the hedge with the lantern or call out instead?","tool":"Choose"},{"question":"Does the merchant see Mara moving on the lawn?","tool":"Look"}],"need":["BodyCheck","Choose","Look"]}
+- - -
+{"calls":{"Choose":{"the merchant":{"options":[{"option":"comes toward the hedge with the lantern to search the garden","share":"65% more than half"},{"option":"calls out to whoever is there from the bench, lantern in hand","share":"35% fewer than half"}]}},"Look":{"the merchant":{"viewer_species":"human","target":"Mara moving across the lawn","size_m":0.5,"distance_m":10,"light":"dim street or public lighting","target_who":"Mara"}},"BodyCheck":{"Mara":{"task":"sneak across the lawn with a broken left foot, staying hidden","reference_class":"trained climbers sneaking over open ground at night","base_share":"35% fewer than half","share":"20% few","uses":["stance","alertness"],"exertion":"light","on_feet":true}}},"then":[{"question":"If the merchant comes toward the hedge, does he find Mara where she lies on the lawn?","tool":"Look"}],"need":[]}
+
+=== #3.4: I look through the window to see who is inside.
+clock: Friday 2 May 1755, 22:02:17
+faults: 
+  rule check: "She was a nursemaid, or someone of that station" → WorkOut (unbacked)
+  rule check: "His voice carried up to the lit window, and inside the room above, the young woman's footsteps stopped." → Listen (unbacked)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 26 °C, low 15 °C; now about 21 °C.
+2. Look {"viewer":"Mara","target":"the woman and child behind the lit upper window","viewer_species":"human","size_m":0.5,"distance_m":5,"light":"living room","reveals":"who is inside the upper room"}
+   draws: 0.35
+   → Mara identifies it (can tell which individual or exact kind) (0.5 m target at 5 m, living room). Mara now knows: who is inside the upper room.
+3. NewCharacter {"who":"the woman","sex":"female","min_age":16}
+   draws: 0.2105, 0.0187, 0.9328, 0.0007
+   → the woman: a 20-year-old woman.
+4. PassTime {"minutes":1,"active":["Mara","the merchant"]}
+   draws: 0.5123, 0.2235, 0.953, 0.4083, 0.6357, 0.0836
+   → 1 minutes passed.
+Mara (human): blood lost 0 L. wound 1 left foot fracture, joins in 84 days. out of action: left foot. abilities: stance 50%. work done today: 0 % of what can be kept up. at lit window.
+the merchant (human): blood lost 0 L. work done today: 0 % of what can be kept up.
+the woman (human): blood lost 0 L.
+5. Choose {"who":"the merchant","options":[{"option":"call out to her, demanding to know who she is","share":"65% more than half"},{"option":"raise the alarm, shouting for household or neighbours","share":"20% few"},{"option":"come at her with the lantern raised","share":"35% fewer than half"}]}
+   draws: 0.2426
+   → the merchant chooses: call out to her, demanding to know who she is.
+--- reply
+The house wall rose dark above her, the lit window on the upper floor throwing its pale light down onto the gravel at the base. The night stayed warm and still, the sky clear, and the merchant's lantern burned steady now, no longer sweeping, fixed on her where she stood. Somewhere inside the house the clock went on ticking.
+
+Mara leaned back against the wall and looked up into the lit window, five metres above her, the candlelight bright within. A woman crossed the room again, and this time Mara saw her plainly: a young woman of about twenty, dark-haired, in a plain house dress, carrying a wrapped bundle against her shoulder, rocking it gently as she walked. She was a nursemaid, or someone of that station, and Mara could tell it was her, this one woman and no other, who kept the room behind the lit window.
+
+A minute passed while Mara stood at the wall below the window, the young woman inside moving back and past the candle, unaware of anyone below.
+
+Then the merchant's voice broke the quiet of the garden. He came a few steps nearer across the lawn, the lantern held high, and called out to her, his words sharp and demanding in the night air: "You there! Who are you? What are you doing in my garden? Answer me!" His voice carried up to the lit window, and inside the room above, the young woman's footsteps stopped.
+--- open: How Mara answers the merchant's demand, and whether the woman above looks out of the window at the noise.
+--- planner answers
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"the woman and child behind the lit upper window","size_m":0.5,"distance_m":5,"light":"living room","reveals":"who is inside the upper room"}},"NewCharacter":{"the woman":{"sex":"female","min_age":16}},"PassTime":{"minutes":1,"active":["Mara","the merchant"]}},"then":[{"question":"The merchant has seen her — does he call out, raise the alarm, or come at her with the lantern?","tool":"Choose"}],"need":["Choose"]}
+- - -
+{"calls":{"Choose":{"the merchant":{"options":[{"option":"call out to her, demanding to know who she is","share":"65% more than half"},{"option":"raise the alarm, shouting for household or neighbours","share":"20% few"},{"option":"come at her with the lantern raised","share":"35% fewer than half"}]}}}}
+
