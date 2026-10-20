@@ -247,8 +247,11 @@ export function treat(p, id, treatment, rng = Math.random, { training = 'untrain
         }
         return 'Antivenom given: the venom course stops.';
     }
-    if (!w)
-        return `No wound ${id}.`;
+    // The wound treated: the one named, else the only open wound; a body with none holds no wound to treat.
+    if (!w) {
+        const open = p.wounds.filter(x => !x.healed);
+        return open.length ? `Give wound, one of: ${open.map(x => `${x.id} (${x.type}, ${x.part})`).join('; ')}. State unchanged.` : 'The body holds no wound on record to treat; the treatment changes nothing.';
+    }
     // Arterial bleeding on a limb takes a tourniquet (Combat Application Tourniquet), success by training (Bordonaro et al. 2025,
     // Adv Simul 10:57, systematic review of 10 trials): no training 16.3–20.4 % in three studies → 18.35 %; with a just-in-time
     // instruction card 44.14 % (Goolsby et al. 2015, inside the review's 21.9–69.8 % for point-of-care aids); formal bleeding-

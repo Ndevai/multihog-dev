@@ -110,10 +110,25 @@ function pricing(text) {
     const unit = MEASURE.find(([re]) => re.test(t))?.[1] ?? 1;
     return { tool: 'Price', args: { question: 'price of goods', item: good[1], quantity: Math.round(count * unit * 1000) / 1000 } };
 }
+/** BodyStrike: the player's blow at a person the words name ("I punch the sailor in the jaw"): attacker the player, who
+ *  the one struck, attack the verb's, part the words'. How far and how they stand stay with the scene. */
+const BLOW = [[/\bpunch(?:es|ed)?\b/, 'punch'], [/\bkick(?:s|ed)?\b/, 'kick'], [/\bslap(?:s|ped)?\b/, 'punch'], [/\bstab(?:s|bed)?\b/, 'stab'], [/\bbite(?:s)?\b|\bbit\b/, 'bite'], [/\bhit(?:s)?\b|\bstrike(?:s)?\b|\bstruck\b/, 'punch'], [/\bheadbutt(?:s|ed)?\b/, 'headbutt']];
+function striking(text, player) {
+    const t = text.toLowerCase(), blow = BLOW.find(([re]) => re.test(t));
+    if (!blow)
+        return null;
+    const m = text.match(new RegExp(String.raw `\b(?:punch(?:es|ed)?|kick(?:s|ed)?|slap(?:s|ped)?|stab(?:s|bed)?|bite(?:s)?|bit|hit(?:s)?|strike(?:s)?|struck|headbutt(?:s|ed)?)\s+${PERSON}`, 'i'))?.[1];
+    if (!m || PRONOUN.test(m))
+        return null;
+    const who = m.split(/ (?:in|on|with|across|and)\b/)[0];
+    const part = t.match(/\b(?:in|on|across) the (jaw|face|head|nose|stomach|belly|chest|throat|eye|ribs|groin|arm|leg|back|neck)\b/)?.[1];
+    const PART = { jaw: 'head', face: 'head', nose: 'head', eye: 'right eye', stomach: 'lower body', belly: 'lower body', ribs: 'upper body', chest: 'upper body', groin: 'lower body', arm: 'right upper arm', leg: 'right upper leg', back: 'upper body', neck: 'neck', throat: 'throat', head: 'head' };
+    return { tool: 'BodyStrike', args: { attacker: player, who: /^[A-Z]/.test(who) ? who : clean(who), attack: blow[1], ...part ? { part: PART[part] } : {} } };
+}
 /** Tools whose outcome turns on numbers only the scene gives (how far, how loud the room, how large the thing seen): code
  *  writes the words' part and the planner still answers for them; its call by the same person is completed from code's.
  *  The value is the argument naming that person. */
-export const SCENE_TOOLS = new Map([['Communicate', 'speaker'], ['Listen', 'listener'], ['Look', 'viewer']]);
+export const SCENE_TOOLS = new Map([['Communicate', 'speaker'], ['Listen', 'listener'], ['Look', 'viewer'], ['BodyStrike', 'attacker']]);
 /** Listen and Look: the player's character listening or looking, at what the words name. */
 function perceiving(text, player) {
     const out = [];
@@ -126,7 +141,7 @@ function perceiving(text, player) {
 }
 /** The calls code can write from this message, and the routed tools they settle (the planner skips those). */
 export function framedCalls(text, player) {
-    const calls = [motion(text, player), speech(text, player), waiting(text, player), handing(text, player), pricing(text), ...perceiving(text, player)].filter((c) => !!c);
+    const calls = [motion(text, player), speech(text, player), waiting(text, player), handing(text, player), pricing(text), striking(text, player), ...perceiving(text, player)].filter((c) => !!c);
     return { calls, covered: new Set(calls.map(c => c.tool).filter(t => !SCENE_TOOLS.has(t))) };
 }
 /** The planner's calls with code's words filled in: a planner call of a scene tool by the same person takes code's arguments

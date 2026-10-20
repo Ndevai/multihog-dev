@@ -80,5 +80,6 @@ check('Price takes an other good with good and like', s7.properties.calls.proper
 const k7 = P.callsFromKeyed({ Price: { 'other good': { question: 'price of goods', good: 'vodka', like: 'wine (litre)', quantity: 0.2 } } });
 check('other good read back with no item', k7[0].args.good === 'vodka' && !('item' in k7[0].args), k7);
 check('places are no people', !SP.scenePeople(['Saint Petersburg, Nevsky Prospect, 2 February 1861.'], ['Pyotr']).some(n => /Petersburg|Prospect/.test(n)), null);
-console.log(`57 checks, ${miss} miss(es)`);
+check('a blow keyed by who strikes it', P.subjectOf('BodyStrike') === 'attacker' && P.callsFromKeyed({ BodyStrike: { Jack: { who: 'the sailor', attack: 'punch' } } })[0].args.attacker === 'Jack', null);
+console.log(`58 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

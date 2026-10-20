@@ -745,3 +745,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-20 (78) A night's lodging in the price list
 
 - Story 6's "bed for the night" was priced as apples. Price now lists "lodging (night)": Mayhew names London's low lodging-houses "the penny, two-penny, and three-penny" houses (victorianlondon.org, Mayhew), and the middle tier, 2 d a night in 1851 [ASSUMED middle], goes on the goods' scale, so other places and years follow their price index. A bed, a room or lodging for the night in a good's words is this item. London 1888: about 3 d; Leipzig 1845: 0.58 g of silver. An inn's bed for a traveller likely cost more than a lodging-house's; no series for inn beds was found.
+
+## 2026-10-20 (79) A blow keyed by who strikes it; wounds and harm claims
+
+- Story 4 (Liverpool docks), read from run dadbb7f:
+  - "I punch the sailor in the jaw" ran as the sailor striking Jack. BodyStrike's subject was who (the one struck), so the keyed plan put Jack's blow under Jack as its target. BodyStrike is now keyed by attacker, the one acting (plan-schema.ts subjectOf), is among the first round's actor tools, and code writes the player's blow from the words: attacker the player, who the one named, attack from the verb (punch, kick, stab, bite, headbutt), part from "in the jaw", "in the ribs" and the like. It is a scene tool: distance and stance come from the scene.
+  - BodyTreat with no wound named returned "No wound NaN". It now takes the one open wound when there is one, lists the open wounds when there are several, and answers "the body holds no wound on record to treat" when there are none.
+  - "Jack's knuckles are bleeding" was judged false. A claim whose words state harm to the claimer (bleeding, hurt, broken, a sprain, a fever, a cough, a fall, a slip, a loss) is taken as against their interest and holds (entry 71).
+- `npm test`: 178 checks, 0 misses.

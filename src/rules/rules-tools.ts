@@ -685,7 +685,7 @@ export function registerRulesTools(enabled: boolean): void {
     }));
 
     tool('BodyStrike', 'Resolve an attack before narrating it: whether it lands, which tissue layers it cuts or smashes, and the wounds it records. Narrate a miss as a miss.', {
-        who: str('Character hit'),
+        who: str('The one struck'),
         species,
         part: str('Body part aimed at, by name (head, throat, upper body, right upper arm, left eye…). For an unaimed blow leave it empty: code draws the location.'),
         attack: str('The attack: a natural attack of the attacker (punch, kick, bite, scratch, gore…) or, with a weapon, the weapon\'s attack (slash, stab, bash, hack…). Empty for a shot.'),
@@ -1273,6 +1273,8 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who', 'claim', 'kind', 'in_world', 'base_share', 'share'], a => run((st, rng) => {
         // A player's statement against their own character's interest (a slip, a fever, a loss) stands: it gains them nothing a
         // draw would guard against. The tools that decide its effects (BodyFall, Sickness) still decide those.
+        // Harm to the claimer stated in the claim's words (bleeding, hurt, a fever, a fall, a loss) is against their interest.
+        if (!a.against_interest && /\b(?:bleed\w*|hurt\w*|injur\w*|wound\w*|broken|break\w*|sprain\w*|bruis\w*|fever\w*|cough\w*|sick\w*|ill\b|ache\w*|faint\w*|cramp\w*|slip\w*|fall\w*|fell\b|trip\w*|lose\w*|lost\b)/i.test(String(a.claim))) a = { ...a, against_interest: true };
         if (a.against_interest && a.in_world !== false && (a.kind === 'something happening to the character now' || a.kind === 'something that happened before')) return `${a.claim}: holds (stated against the character's own interest). Recorded.`;
         if (a.kind === 'something the character has') account(st, a.who);
         // A thing not yet invented at the story's date, or never made in this world, cannot be had (world-log.ts).
@@ -1727,7 +1729,9 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who', 'treatment'], a => run((st, rng) => {
         const { p, error } = whoAny(st, a.who);
         if (!p) return error;
-        return `${treat(p, Number(a.wound), a.treatment, rng, { training: a.training ?? 'untrained' })} ${status(a.who, p)}`;
+        // No wound named and one open wound: that wound.
+        const open = p.wounds.filter(x => !x.healed), id = a.wound != null && Number.isFinite(Number(a.wound)) ? Number(a.wound) : open.length === 1 ? open[0].id : NaN;
+        return `${treat(p, id, a.treatment, rng, { training: a.training ?? 'untrained' })} ${status(a.who, p)}`;
     }));
 
     tool('BodyContact', 'Skin touches something hot (a stove, a pot handle, spilled hot water or oil) for a stated time. Code decides any burn.', {

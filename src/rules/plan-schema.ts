@@ -20,6 +20,9 @@ export function propSchema(p: Prop, enumMax = 200): Schema {
 const SUBJECT_KEYS = ['who', 'speaker', 'listener', 'viewer', 'item', 'room', 'fact'];
 export function subjectOf(tool: string): string | null {
     if (tool === 'Price') return 'item';
+    // A blow is keyed by who strikes it, the one acting; its who is the one struck (a plan keyed by the struck wrote Jack's
+    // punch as the sailor's).
+    if (tool === 'BodyStrike') return 'attacker';
     const t = REGISTRY.get(tool);
     return t ? SUBJECT_KEYS.find(k => k in t.properties) ?? null : null;
 }
@@ -43,7 +46,7 @@ export function callsFromKeyed(calls: Record<string, unknown>): { tool: string; 
  *  the fire"): capitalized words, or "the" and up to four lower-case words. The people the story already holds are listed as
  *  fixed keys in the schema, so their names are written as stored. */
 export const PERSON_KEY = "^(?:[A-Z][A-Za-z'-]*(?: [A-Z][A-Za-z'-]*){0,2}|the(?: [a-z0-9'-]+){1,4})$";
-const PERSON_ARGS = new Set(['who', 'speaker', 'listener', 'viewer']);
+const PERSON_ARGS = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker']);
 const PERSON_VALUE = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker', 'pursuer', 'fleeing', 'target_who', 'requester_name']);
 /** The plan: one entry per tool (of the named tools, all when none named), each holding one call per subject; follow-on
  *  questions, each with the tool that answers it; tools wanted next; time, place, people. In a follow-on round, `require`
@@ -51,7 +54,7 @@ const PERSON_VALUE = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker'
 /** Tools for a body's own effort and motion. In a turn's first round their keys are the people the player's message moves
  *  (the player's character and anyone the message names); another person's climb or walk follows from their choice, in a
  *  later round. A first round copied Mara's climb under "the merchant", and the reply had to tell him climbing a wall. */
-export const ACTOR_TOOLS = new Set(['Act', 'BodyCheck', 'BodyFall', 'HoldOn', 'Chase', 'BodyIntake', 'WorkOut']);
+export const ACTOR_TOOLS = new Set(['Act', 'BodyCheck', 'BodyFall', 'HoldOn', 'Chase', 'BodyIntake', 'WorkOut', 'BodyStrike']);
 export function planSchema(only?: Set<string>, opts: { people?: string[]; actors?: string[]; require?: string[]; used?: Map<string, Set<string>> } = {}): Schema {
     const tools = [...REGISTRY.values()].filter(t => !only || only.has(t.name));
     const people = opts.people ?? [];
