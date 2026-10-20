@@ -71,5 +71,7 @@ const ns = N.narrationSchema(2);
 check('reply schema: scene bounded, each result required', ns.properties.scene.maxLength === N.SCENE_CHARS && ns.properties.results.required.join() === '1,2' && ns.properties.results.additionalProperties === false, ns);
 const nr = N.readNarration('{"scene":"Rain on the cobbles.","results":{"2":"She paid him.","1":"She walked over."},"open":["Does he thank her?"]}');
 check('reply read as beats', nr.beats.map(b => b.result).join() === '0,1,2' && nr.open[0] === 'Does he thank her?', nr);
-console.log(`52 checks, ${miss} miss(es)`);
+const s5 = P.planSchema(new Set(['BodyCheck', 'Look']), { people: ['Mara', 'the merchant'], actors: ['Mara'] });
+check('first round: a climb is the player\'s', Object.keys(s5.properties.calls.properties.BodyCheck.properties).join() === 'Mara' && 'the merchant' in s5.properties.calls.properties.Look.properties, null);
+console.log(`53 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

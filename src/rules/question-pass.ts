@@ -237,9 +237,9 @@ export const setGuided = (v: boolean) => { GUIDED = v; };
 // Under constrained decoding the answer is the JSON plan alone; the model's reasoning carries the questions.
 const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":[{"question":"follow-on question","tool":"the tool that answers it"}],"need":["ToolName"]}; a plan with zero calls is {"calls":{}}.');
 export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser): Promise<typeof READ> {
-    const planTools = { current: undefined as Set<string> | undefined, people: [] as string[], require: [] as string[] };
+    const planTools = { current: undefined as Set<string> | undefined, people: [] as string[], actors: [] as string[], require: [] as string[] };
     const send: Send = (system, user) => !GUIDED ? sendRaw(system, user)
-        : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current, { people: planTools.people, require: planTools.require, used: usedKeys() }) })
+        : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current, { people: planTools.people, actors: planTools.actors, require: planTools.require, used: usedKeys() }) })
         : system === PICK_SYSTEM ? sendRaw(system, user, { schema: pickSchema() }) : sendRaw(system, user);
     const ctx = SillyTavern.getContext();
     setRead([]);
@@ -284,6 +284,8 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         const sceneTexts = [said0, tracker.match(/\[CAST\][\s\S]*?\[\/CAST\]/)?.[0] ?? '', ...chat.filter(m => !m.is_system).slice(-3, -1).map(m => String(m.mes ?? ''))];
         planTools.people = scenePeople(sceneTexts, [...player ? [player] : [], ...Object.keys(s.state.people ?? {}), ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]).filter(n => !/^(?:Scenario|Cast|Time|Place|Weather|Story|Body|Knows)$/i.test(n))]);
         KNOWN_PEOPLE = new Set(planTools.people);
+        // The first round's actors: the player's character and the people the player's message names.
+        planTools.actors = [...new Set([...player ? [player] : [], ...planTools.people.filter(n => n !== player && new RegExp(`\\b${n.replace(/^the /, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(said0))])];
         const routed = routedTools(said0, has);
         const left = routed ? [...routed].filter(t => !framed.covered.has(t) && !ALWAYS.includes(t)) : null;
         const only = routed ? new Set([...left!, ...ALWAYS.filter(has)]) : await pickTools(chat, send) ?? undefined;
@@ -407,6 +409,8 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
             // The tools the open questions named are written this round (a question about the costermonger's apples named
             // Choose and came back with zero calls).
             planTools.require = [...new Set([...plan.thenTools, ...plan.need])];
+            // A later round follows the first round's results: anyone in the scene may act in it.
+            planTools.actors = [];
             // People drawn this turn (NewCharacter) are keys for the follow-on round.
             planTools.people = [...new Set([...planTools.people, ...Object.keys(store().state.people ?? {})])].slice(0, 32);
             KNOWN_PEOPLE = new Set(planTools.people);

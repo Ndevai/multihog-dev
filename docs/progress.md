@@ -635,3 +635,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 ## 2026-10-20 (59) Each decided result names who it is about
 
 - Run of d2e573f (results/run-39470783222): 2 faults in 12 turns (story 2: none). The weather opened only the first reply. One fault: the plan held a 3 m BodyFall for "the merchant", whose result text names no one ("Fall 3 m: lands on the feet"). Required to tell every result, the narrator gave it to Mara as a second fall. [DECIDED] now lists each result with its tool and subject ("5. BodyFall (the merchant): …"). Stand-in run: "1. Act (Tom): Tom sits down", "2. Communicate (Tom): …".
+
+## 2026-10-20 (60) A first round's body actions are the player's
+
+- Run of 808609e (results/run-39472546019): 7 faults; story 3 had 5. Its first plan copied Mara's climb under a second key, "the merchant" (climb mossy wall: SUCCESS). Required to tell that result, the narrator made "another figure" land behind her, and the next turn drew that figure as a girl of 16 who fled: four unbacked Look and Listen lines followed from one copied call. The cause is the key set: every person in the scene could be the subject of a climb in the first round. Body-action tools (Act, BodyCheck, BodyFall, HoldOn, Chase, BodyIntake, WorkOut; plan-schema.ts ACTOR_TOOLS) now take as first-round keys only the player's character and the people the player's message names. Other people's actions follow their choices, in a later round, where anyone in the scene may act. Stories 1 and 2: 1 fault each (the apples' price; rain against the window on a day whose rain was 0.2 mm, told in a scene beat).
+- `npm test`: 145 checks, 0 misses.

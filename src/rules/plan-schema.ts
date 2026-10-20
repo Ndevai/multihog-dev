@@ -48,7 +48,11 @@ const PERSON_VALUE = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker'
 /** The plan: one entry per tool (of the named tools, all when none named), each holding one call per subject; follow-on
  *  questions, each with the tool that answers it; tools wanted next; time, place, people. In a follow-on round, `require`
  *  names the tools the last round's questions asked for: the plan holds a call of each. */
-export function planSchema(only?: Set<string>, opts: { people?: string[]; require?: string[]; used?: Map<string, Set<string>> } = {}): Schema {
+/** Tools for a body's own effort and motion. In a turn's first round their keys are the people the player's message moves
+ *  (the player's character and anyone the message names); another person's climb or walk follows from their choice, in a
+ *  later round. A first round copied Mara's climb under "the merchant", and the reply had to tell him climbing a wall. */
+export const ACTOR_TOOLS = new Set(['Act', 'BodyCheck', 'BodyFall', 'HoldOn', 'Chase', 'BodyIntake', 'WorkOut']);
+export function planSchema(only?: Set<string>, opts: { people?: string[]; actors?: string[]; require?: string[]; used?: Map<string, Set<string>> } = {}): Schema {
     const tools = [...REGISTRY.values()].filter(t => !only || only.has(t.name));
     const people = opts.people ?? [];
     // A person argument inside a call (the listener, the target) takes one of the scene's people.
@@ -72,8 +76,9 @@ export function planSchema(only?: Set<string>, opts: { people?: string[]; requir
         // others: a speaker's listener list leaves the speaker out.
         // A later round of the same turn (repair, follow-on) holds the keys its earlier rounds left: one call per tool and
         // person in the whole turn (a repair added a second BodyFall for Mara after the first had run).
-        if (PERSON_ARGS.has(key)) return people.length
-            ? { type: 'object', properties: Object.fromEntries(people.filter(n => !used.has(n)).map(n => [n, argsOf(t, key, n)])), additionalProperties: t.name === 'NewCharacter' ? args : false, maxProperties: 6, ...min }
+        const keys = ACTOR_TOOLS.has(t.name) && opts.actors?.length ? opts.actors : people;
+        if (PERSON_ARGS.has(key)) return keys.length
+            ? { type: 'object', properties: Object.fromEntries(keys.filter(n => !used.has(n)).map(n => [n, argsOf(t, key, n)])), additionalProperties: t.name === 'NewCharacter' ? args : false, maxProperties: 6, ...min }
             : { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
         return { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
     };
