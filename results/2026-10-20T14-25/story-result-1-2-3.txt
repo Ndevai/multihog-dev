@@ -1,0 +1,360 @@
+z-ai/glm-5.3, reasoning low, 36 min, 2026-10-20T14:25:04.431Z, 41 calls asked, 4 replayed
+3 fault(s) in 12 of 12 turns
+#1.3 missing Price
+#2.1 rule check: "the evening had turned damp and mild outside" → Weather (contradicts)
+#3.3 rule check: "her dark clothing and low, unhurried movement keeping her beneath its notice as anything more than a shifting of the nig" → Listen (contradicts)
+
+=== #1.1: I step out of my house onto the street.
+clock: Saturday 18 August 1888, 18:15:02
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Act {"who":"Mary","action":"steps out of her house onto the street","distance_m":3}
+   draws: none
+   → Mary walks 3 m from where Mary stood to street at 1.62 m/s: 1.9 s (1.9 s in all). Span 1.9 s. Clock now Saturday 18 August 1888, 18:15:02.
+--- reply
+A thin rain was falling over Whitechapel as Mary stepped out of her house, the kind that dampened rather than soaked, glistening on the cobbles in the last of the evening light. It had been a cool day for August, barely reaching fifteen degrees, and now, a quarter past six on Saturday evening, the air had a raw edge to it. The street carried its usual Saturday smells of coal smoke and fried fish, and somewhere a coster was crying his wares.
+
+Mary crossed the three steps from her doorway to the street proper, her boots finding the wet stone. The road stretched away in both directions, busy with the end of the market trade, women with shawls over their heads hurrying past, a brewer's dray standing at the corner. Behind her, the door of the house stood shut, with Will inside.
+--- open: What does Mary do now that she is out on the street?
+--- planner answers
+{"calls":{"Act":{"Mary":{"action":"steps out of her house onto the street","distance_m":3}}},"then":[{"question":"What is the weather on the street this evening?","tool":"Weather"}],"need":["Weather"]}
+- - -
+{"calls":{ "Weather": {"place": "London", "latitude": 51.5, "longitude": -0.12} }}
+
+=== #1.2: I walk the three hundred yards to the market on Wentworth Street.
+clock: Saturday 18 August 1888, 18:17:52
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Act {"who":"Mary","action":"walk the three hundred yards to the market on Wentworth Street.","distance_m":274.3}
+   draws: 0.5667, 0.4442, 0.2664, 0.3516
+   → Mary walks 274.3 m from street to market on Wentworth Street at 1.62 m/s: 2.8 min (2.8 min in all). Span 2.8 min. Clock now Saturday 18 August 1888, 18:17:52.
+--- reply
+The rain kept up its thin drizzle as Mary set off along the street, her shawl drawn close against the raw evening air. The pavements were slick underfoot, and the gutters ran with dirty water, but the walk was short and she made good time, past the shuttered fronts of shops and a knot of children playing under a doorway out of the wet. In under three minutes the noise of the market reached her over the sound of cart wheels on the cobbles.
+
+Wentworth Street opened out before her, the market still busy this last while before the stalls packed up for the night. Costers shouted the last of their stock cheap, barrows of wilting cabbages and bruised apples, and the smell of fried fish and coffee stalls hung over everything. Women picked through the remains of the day's produce, haggling in voices that carried above the general din, and a policeman stood at the corner watching the crowd with his hands behind his back.
+--- open: What does Mary do at the market?
+--- planner answers
+
+
+=== #1.3: I ask the costermonger for a pound of apples and pay him.
+clock: Saturday 18 August 1888, 18:17:53
+faults: 
+  missing Price
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. NewCharacter {"who":"the costermonger","occupation":"costermonger"}
+   draws: 0.8168, 0.759, 0.1141, 0.9992
+   → the costermonger: a 45-year-old woman; occupation: Costermonger, Huckster, Street Seller; born in abroad or at sea.
+3. Communicate {"speaker":"Mary","listener":"the costermonger","means":"speech","effort":"normal","message":"for a pound of apples","noise":"busy street (68 dB)","speaker_voice":"normal"}
+   draws: none
+   → the costermonger hears Mary and makes out most words; a few are lost (normal voice at 1 m, busy street (68 dB)). the costermonger now knows: for a pound of apples. Said in 1.5 s; clock now Saturday 18 August 1888, 18:17:53.
+4. RollTheDice {"who":"the costermonger","kind":"amount","formula":"1d4+2","for":"pence for a pound of apples","table":""}
+   draws: 0.3472
+   → the costermonger rolls 1d4+2 for pence for a pound of apples: 4. Use this amount as rolled.
+5. Transfer {"item":"the apples","quantity":1,"from":"the costermonger","to":"Mary","how":"sold"}
+   draws: none
+   → the apples sold from the costermonger to Mary; Mary now has it. Recorded.
+6. SocialResponse {"who":"the costermonger","situation":"a brief first meeting","sex":"female"}
+   draws: 0.5627
+   → the costermonger leaves it at this meeting.
+--- reply
+Mary made her way to a barrow at the street's edge, where a woman of about forty-five stood over the last of her stock, a hard-faced creature in a shawl and apron, calling her wares in a voice worn rough by years of street crying. The barrow held little now: some bruised plums, a few pounds of apples, the remains of the Saturday trade. The din of the market was all around them, costers shouting and barrows rattling over the cobbles.
+
+Mary asked for a pound of apples, raising her voice a little against the noise of the street. The woman caught most of it through the din and nodded, reaching for her scale.
+
+"Fourpence the pound," the coster said, weighing out the apples with a practised hand and tipping them into a twist of paper.
+
+Mary counted out the four pence and took the parcel, the apples solid and cool in her hands through the paper. The woman pocketed the coins and turned back to her barrow without further ceremony, having other custom to mind before the light went.
+
+She gave Mary no more thought, already calling her prices again to the thinning crowd.
+--- open: The market was packing up around Mary, and the rain still fell thin and steady; what she did next was hers to choose.
+--- planner answers
+{"calls":{"Communicate":{"Mary":{"listener":"the costermonger","means":"speech","effort":"normal","noise":"busy street (68 dB)","message":"for a pound of apples","speaker_voice":"normal"}}},"then":[{"question":"What does a pound of apples cost at the end of the market day?","tool":"RollTheDice"},{"question":"Does the costermonger sell her the apples, and how does he respond?","tool":"SocialResponse"}],"need":["RollTheDice","SocialResponse","Transfer"]}
+- - -
+{"calls":{"RollTheDice":{"the costermonger":{"kind":"amount","formula":"1d4+2","for":"pence for a pound of apples","table":""}},"Transfer":{"the apples":{"quantity":1,"from":"the costermonger","to":"Mary","how":"sold"}},"SocialResponse":{"the costermonger":{"situation":"a brief first meeting","sex":"female"}}},"then":[{"question":"How much does Mary pay the costermonger for the apples?","tool":"Transfer"}],"need":["RollTheDice"]}
+
+=== #1.4: I walk home and give Will one of the apples.
+clock: Saturday 18 August 1888, 18:20:59
+faults: none
+--- calls
+1. Weather {"latitude":51.5,"longitude":-0.13}
+   draws: none
+   → London, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 18/8/1888: rain, 0.5 mm over the day; high 15 °C, low 9 °C; now about 15 °C (that day's weather as reconstructed from pressure records, 20th Century Reanalysis).
+2. Transfer {"item":"apples","quantity":1,"from":"Mary","to":"Will","how":"given"}
+   draws: none
+   → apples given from Mary to Will; Will now has it. Recorded.
+3. Act {"who":"Mary","action":"walks home from the market on Wentworth Street","distance_m":300}
+   draws: 0.6908, 0.4672
+   → Mary walks 300 m from market on Wentworth Street to home at 1.62 m/s: 3.2 min (3.2 min in all). Span 3.2 min. Clock now Saturday 18 August 1888, 18:20:59.
+--- reply
+The rain had eased to little more than a mist as Mary left the market behind her, the wet cobbles shining under the gas lamps being lit along the street. It had been a cool day, the temperature holding near fifteen degrees, and the evening air had a damp chill that crept through a shawl. The walk home took her a little over three minutes, back along the familiar stretch of street, past the corner where the brewer's dray had stood, until she reached her own doorstep.
+
+She covered the three hundred metres at a steady pace, the parcel of apples tucked under her arm to keep it out of the drizzle, and came up to her door as the church bells somewhere off marked the hour hand closing on half past six. The street was quieter now, the market trade dying away behind her, women with their Saturday purchases hurrying home to their suppers.
+
+Inside, Will was where she had left him, and Mary untwisted the paper and handed him the apples, keeping the rest for the household. He took them eagerly enough, an apple already in his hand before she had finished setting the parcel down.
+--- open: Will's reaction to the apples, and what he might say or ask now that Mary is home.
+--- planner answers
+{"calls":{"Act":{"Mary":{"action":"walks home from the market on Wentworth Street","distance_m":300}}},"then":[],"need":[]}
+
+=== #2.1: I sit down at a table near the fire.
+clock: Friday 3 November 1820, 19:00:01
+faults: 
+  rule check: "the evening had turned damp and mild outside" → Weather (contradicts)
+--- calls
+1. Weather {"latitude":53.96,"longitude":-1.08}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 34 km), 3/11/1820: dry; high 15 °C, low 13 °C; now about 15 °C.
+2. Act {"who":"Tom","action":"sit down at a table near the fire."}
+   draws: none
+   → Tom sits down: 1.2 s (1.2 s in all). Span 1.2 s. Clock now Friday 3 November 1820, 19:00:01.
+--- reply
+The taproom of the coaching inn smelled of tallow, spilled ale, and wet wool, for the evening had turned damp and mild outside, the air soft at about fifteen degrees after a dry day. The fire on the hearth threw a ruddy light over the benches and the long tables, and the room was half full: a pair of drovers arguing quietly over a jug, a pedlar picking at cold mutton, and a maidservant moving between the tables with a tray of pewter mugs.
+
+Tom crossed the boards, which creaked under his boots, and lowered himself onto a stool at a table near the fire. The warmth of it reached his face at once, and the day's work on the roads seemed to settle heavily in his shoulders as he sat.
+--- open: What the maidservant or the other drinkers might make of the newcomer at the fire-side table, and whether anyone would come to take his order, remained to be seen.
+--- planner answers
+{"calls":{"NewCharacter":{"the innkeeper":{"occupation":"innkeeper"}}},"then":[],"need":[],"at":[53.96,-1.08],"present":["Tom"]}
+
+=== #2.2: I call to the innkeeper for a pint of ale.
+clock: Friday 3 November 1820, 19:03:03
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 15 °C, low 13 °C; now about 15 °C.
+2. NewCharacter {"who":"the innkeeper","occupation":"innkeeper"}
+   draws: 0.3577, 0.0965, 0.7578, 0.2699
+   → the innkeeper: a 18-year-old man; occupation: innkeeper.
+3. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (loud voice at 1 m, quiet room (25 dB)). the innkeeper now knows: for a pint of ale. Said in 1.5 s; clock now Friday 3 November 1820, 19:00:03.
+4. Price {"item":"beer (litre)","question":"price of goods","city":"Leipzig","country":"England","year":1820}
+   draws: none
+   → 1 × beer (litre) in London, 1820: 1.21 g of silver (about 2¾ d); a building labourer earns that in 0.7 hours of a 10-hour day.
+5. Transfer {"item":"pint of ale","from":"the innkeeper","to":"Tom","how":"sold"}
+   draws: none
+   → pint of ale sold from the innkeeper to Tom; Tom now has it. Recorded.
+6. SocialResponse {"who":"the innkeeper","situation":"a small favour asked by a stranger","request":"bring a pint of ale to the fire-side table","requester":"ordinary clothes"}
+   draws: 0.7179
+   → the innkeeper declines (bring a pint of ale to the fire-side table).
+7. NewCharacter {"who":"the maidservant","occupation":"maidservant"}
+   draws: 0.0317, 0.7103, 0.8198, 0.3606, 0.474, 0.8011
+   → the maidservant: a 44-year-old man; occupation: maidservant.
+8. PassTime {"minutes":3,"active":["Tom","the innkeeper"]}
+   draws: 0.0397, 0.0416, 0.9638, 0.558, 0.0881, 0.2306, 0.7225, 0.2752, 0.4469, 0.2666
+   → 3 minutes passed.
+Tom (human): blood lost 0 L. work done today: 1 % of what can be kept up.
+the innkeeper (human): blood lost 0 L. work done today: 1 % of what can be kept up.
+the maidservant (human): blood lost 0 L.
+--- reply
+The evening outside stayed mild and dry, the air soft at about fifteen degrees, and the taproom held that damp warmth of a coaching inn near York on a Friday night in November of 1820.
+
+Behind the bar stood the innkeeper, a young man of eighteen who kept the place, wiping his hands on his apron as he worked.
+
+Tom called out for a pint of ale, and the innkeeper heard every word across the quiet room, nodding to show he had it.
+
+A pint came to about two pence three farthings in silver, a fair price for these parts, what a building labourer might earn in less than an hour's work.
+
+The innkeeper drew the ale and passed it over, and Tom's silver crossed the bar in return; the pint was his now, cool and foaming in the pewter.
+
+When Tom asked that the pint be brought over to his fire-side table, the innkeeper shook his head and would not, keeping his place behind the bar, so Tom had to carry it himself.
+
+The maidservant, a weathered man of forty-four, moved past with his tray of mugs, glancing at Tom as he went about his work.
+
+A few minutes passed in this way, the fire crackling, the drovers' argument rising and falling, and Tom settled on his stool with the pint in his hand.
+--- open: What does Tom do now that he has his pint at the fire-side table?
+--- planner answers
+{"calls":{"Communicate":{"Tom":{"listener":"the innkeeper","means":"speech","effort":"loud","message":"for a pint of ale","speaker_voice":"normal"}},"Price":{"beer (litre)":{"question":"price of goods","city":"Leipzig","country":"England","year":1820}}},"then":[{"question":"Does the innkeeper hear the call and come over to take Tom's order?","tool":"SocialResponse"},{"question":"If the innkeeper first acts or speaks in this reply, what are their sex, age and occupation?","tool":"NewCharacter"}],"need":["SocialResponse","NewCharacter"] ,"time":"1820-11-03 19:00","present":["Tom","the innkeeper","the maidservant"] }
+- - -
+{"calls":{"Transfer":{"pint of ale":{"from":"the innkeeper","to":"Tom","how":"sold"}},"SocialResponse":{ "the innkeeper":{"situation":"a small favour asked by a stranger","request":"bring a pint of ale to the fire-side table","requester":"ordinary clothes"}},"NewCharacter":{ "the maidservant":{"occupation":"maidservant"}},"PassTime":{"minutes":3,"active":["Tom","the innkeeper"]}},"then":[],"need":[] }
+
+=== #2.3: Two men at the next table are whispering. I keep still and listen.
+clock: Friday 3 November 1820, 19:05:03
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 15 °C, low 13 °C; now about 14 °C.
+2. PassTime {"minutes":2,"resting":["Tom"]}
+   draws: none
+   → 2 minutes passed.
+Tom (human): blood lost 0 L. work done today: 1 % of what can be kept up.
+the innkeeper (human): blood lost 0 L. work done today: 0 % of what can be kept up.
+the maidservant (human): blood lost 0 L.
+3. Listen {"listener":"Tom","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","reveals":"what the two men at the next table are whispering about"}
+   draws: none
+   → Tom hears it (quiet conversation (50 dB at 1 m) at 2 m, conversation nearby (50 dB)). Tom now knows: what the two men at the next table are whispering about.
+--- reply
+The evening outside stayed mild and dry, the air soft at about fourteen degrees, and the fire burned steady on the hearth, so that the taproom was warm and drowsy with the smell of ale and tallow.
+
+Tom kept still on his stool, his pint untouched before him, and let two minutes pass without a movement that might give him away.
+
+The two men at the next table sat with their heads close together, and though they kept their voices low, the bench Tom had chosen was near enough — barely two yards — and the drovers' argument covered their words from the rest of the room. Tom caught enough of it, word by word. They spoke of a carrier's wagon due on the York road on Sunday night, carrying a strong box from a wool factor in Leeds, and of a stretch of dark road between Tadcaster and the city where the hedges were thick and no house stood within a mile. One of them, the elder, with a scarred knuckle he kept tapping on the table, said the driver was to be handled gently, only frightened, unless he proved stubborn; the younger one laughed low at that, and said the times were hard enough without hanging for a box of coin. They spoke of a third man, one who knew the road and the hours, though they did not name him, and agreed to meet again on the Sabbath at a public house in Tadcaster before taking their places by the road.
+--- open: Whether the two men notice Tom sitting so near, or go on whispering unaware
+--- planner answers
+{"calls":{"NewCharacter":{"whispering man 1":{},"whispering man 2":{}},"PassTime":{"minutes":2,"resting":["Tom"]}},"then":[{"question":"Does Tom hear what the two men at the next table are whispering, and what does it reveal?","tool":"Listen"}],"need":["Listen"]}
+- - -
+{"calls":{"NewCharacter":{"whispering man 1":{"sex":"male"},"whispering man 2":{"sex":"male"}},"PassTime":{"minutes":2,"resting":["Tom"]}},"then":[{"question":"Does Tom hear what the two men at the next table are whispering?","tool":"Listen"}],"need":["Listen"]}
+- - -
+{"calls":{"Listen":{"Tom":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":2,"noise":"conversation nearby (50 dB)","reveals":"what the two men at the next table are whispering about"}}}}
+
+=== #2.4: I go to the innkeeper and tell him what I heard.
+clock: Friday 3 November 1820, 19:05:09
+faults: none
+--- calls
+1. Weather {"latitude":53.8,"longitude":-1.53}
+   draws: none
+   → Leeds, United Kingdom of Great Britain and Northern Ireland (nearest WMO city, 0 km), 3/11/1820: dry; high 15 °C, low 13 °C; now about 14 °C.
+2. Communicate {"speaker":"Tom","listener":"the innkeeper","means":"speech","effort":"normal","message":"what I heard"}
+   draws: none
+   → the innkeeper hears Tom and makes out every word (normal voice at 1 m, quiet room (25 dB)). the innkeeper now knows: what I heard. Said in 1.0 s; clock now Friday 3 November 1820, 19:05:04.
+3. Act {"who":"Tom","action":"crosses the taproom from his fire-side table to the bar","distance_m":6}
+   draws: none
+   → Tom stands up from sitting: 1.6 s; Tom walks 6 m from where Tom stood to bar at 1.62 m/s: 3.7 s (5.3 s in all). Span 5.3 s. Clock now Friday 3 November 1820, 19:05:09.
+4. Communicate {"speaker":"the innkeeper","listener":"the innkeeper","speaker_voice":"normal"}
+   draws: none
+   → the innkeeper hears the innkeeper and makes out every word (normal voice at 1 m, quiet room (25 dB)).
+5. RecordFact {"fact":"the two men's plot","known_by":["the innkeeper"],"how":"told by someone","told_by":"Tom","secret":true,"importance":8}
+   draws: none
+   → Fact 4 recorded: the two men's plot. Known by the innkeeper.
+6. Listen {"listener":"the innkeeper","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":1,"noise":"conversation nearby (50 dB)","barrier":"none"}
+   draws: none
+   → the innkeeper hears it (quiet conversation (50 dB at 1 m) at 1 m, conversation nearby (50 dB)).
+7. Look {"viewer":"the innkeeper","viewer_species":"human","target":"Tom walking to the bar","size_m":0.5,"distance_m":6,"light":"living room"}
+   draws: 0.8969
+   → the innkeeper identifies it (can tell which individual or exact kind) (0.5 m target at 6 m, living room).
+--- reply
+The mild evening held outside, dry and soft at about fourteen degrees, and the taproom went on about its business — the drovers still at their jug, the maidservant collecting empties — while Tom made up his mind about what he had heard.
+
+He rose from his stool and crossed the room to the bar, some six yards of creaking boards, taking a few seconds in the quiet warmth, his pint left behind on the table by the fire.
+
+He leaned close to the innkeeper and told him in a low, steady voice what he had heard at the next table: the carrier's wagon on the York road Sunday night, the strong box from the Leeds wool factor, the dark stretch between Tadcaster and the city, the driver to be frightened and no more, and the meeting at a public house in Tadcaster on the Sabbath. The innkeeper heard every word of it, plain and whole, though Tom kept his voice down so it carried no further than the bar.
+
+The innkeeper answered him quietly, every word clear between them at that distance.
+
+He kept what Tom told him close, a thing to hold and weigh, saying nothing of it aloud beyond a slow nod and a glance past Tom toward the two men at their bench.
+
+From where he stood he could hear them himself — the low murmur of their talk, though not the words of it at this distance.
+
+And he could see them plainly enough to know them again: the elder with the scarred knuckle, the younger leaning in close, two faces he could put a name to if they ever came back to his bar.
+--- open: What the innkeeper says or does next about the two men and their plot
+--- planner answers
+{"calls":{"Act":{"Tom":{"action":"crosses the taproom from his fire-side table to the bar","distance_m":6}}},"then":[{"question":"Does the innkeeper hear and take in Tom's account of the two men's plot?","tool":"Communicate"},{"question":"Do the two men at the fire-side table notice Tom getting up and going to the bar?","tool":"Look"}],"need":["Communicate","Look","RecordFact"]}
+- - -
+{"calls":{"Act":{"Tom":{"action":"rises from his stool and crosses the taproom to the bar","distance_m":5}}},"then":[{"question":"Does the innkeeper take in what Tom tells him about the two men's plot?","tool":"Communicate"},{"question":"Do the two men at the next table hear Tom's words to the innkeeper?","tool":"Listen"}],"need":["Communicate","Listen"]}
+- - -
+{ "calls": { "Communicate": { "the innkeeper": { "listener": "the innkeeper", "speaker_voice": "normal" } }, "Interpret": {} , "RecordFact": { "the two men's plot": { "known_by": ["the innkeeper"], "how": "told by someone", "told_by": "Tom", "secret": true, "importance": 8 } } , "Listen": { "the innkeeper": { "listener_species": "human", "sound": "quiet conversation (50 dB at 1 m)", "distance_m": 1, "noise": "conversation nearby (50 dB)", "barrier": "none" } } , "Look": { "the innkeeper": { "viewer_species": "human", "target": "Tom walking to the bar", "size_m": 0.5, "distance_m": 6, "light": "living room" } } } , "then": [ { "question": "Do the two men at the next table hear Tom's words to the innkeeper?", "tool": "Communicate" } , { "question": "Do the two men notice Tom getting up and going to the bar?", "tool": "Look" } ] , "need": [] }
+
+=== #3.1: I climb the wall.
+clock: Friday 2 May 1755, 22:00
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.14}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 1 km), 2/5/1755: dry; high 20 °C, low 13 °C; now about 17 °C.
+2. BodyCheck {"who":"Mara","species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling wet mossy stone walls","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false}
+   draws: 0.4092
+   → climb a moss-slick three-metre garden wall: SUCCESS.
+--- reply
+The night in Lisbon was dry and mild, the last of the day's warmth still in the stones. Mara stood at the foot of the garden wall, three metres of moss-slick masonry, and above it the pale rectangle of the merchant's house with one lit window glowed faintly against the dark.
+
+She set her fingers into the gaps between the stones, testing each hold before trusting it. The moss was wet and treacherous under her palms, but her training held: she found the seams where the mortar had crumbled, wedged her boot toes into the joints, and moved up the wall in slow, deliberate reaches. A loose stone shifted under her left hand and she froze, letting it settle, then pulled herself over the coping at the top and dropped softly into the garden on the other side.
+--- open: The garden lies between Mara and the lit window of the merchant's house — what does she see or hear as she crouches at the foot of the wall?
+--- planner answers
+{"calls":{"BodyCheck":{"Mara":{"species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling wet mossy stone walls","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false}}},"then":[],"need":[],"time":"1755-05-02 22:00","at":[38.72,-9.14],"present":["Mara"]}
+
+=== #3.2: I drop down into the garden on the other side and wait in the shadow of the hedge.
+clock: Friday 2 May 1755, 22:00
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 20 °C, low 13 °C; now about 17 °C.
+2. BodyFall {"who":"Mara","height_m":3,"ground":"grass","stiff_legs":false}
+   draws: 0.6975
+   → Fall 3 m: lands on the feet, 3.8 kN through each leg; the bones hold, the legs and feet jarred. Fragile: the outcome changes within the range of 1 judged value: legGiveM = 0.1 m of body travel, knees bending on landing instead of 0.25 [ASSUMED: a bent-knee landing lowers the hips about a quarter metre] → the left heel bone breaks (fracture recorded on the left foot)..
+3. Listen {"listener":"Mara","listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","barrier":"none","ground":"grass, fields or soil","reveals":"anyone moving or talking in the garden or the lit room of the merchant's house"}
+   draws: none
+   → Mara hears it (quiet conversation (50 dB at 1 m) at 15 m, silent night (10 dB)). Mara now knows: anyone moving or talking in the garden or the lit room of the merchant's house.
+4. Look {"viewer":"Mara","viewer_species":"human","target":"a person or movement in the garden or at the lit window","size_m":0.5,"distance_m":15,"light":"living room","latitude":38.7,"visibility_m":20000,"reveals":"who or what is in the garden or behind the lit window of the merchant's house"}
+   draws: 0.0976
+   → Mara identifies it (can tell which individual or exact kind) (0.5 m target at 15 m, living room). Mara now knows: who or what is in the garden or behind the lit window of the merchant's house.
+--- reply
+Mara let herself down from the coping and dropped the last stretch into the garden. She landed on her feet, the impact jolting hard up through her ankles and knees, but her bones took it and she stayed upright, legs and feet jarred but sound. She crouched at once in the shadow of the hedge, catching her breath, still as the night air around her.
+
+She kept still and listened. The night was silent enough that sounds carried far, and from the house, perhaps fifteen paces off, she could make out the low murmur of quiet conversation behind the lit window — voices, though not yet words — and nothing else stirring in the garden.
+
+Her eyes, given a moment to adjust, sorted the garden and the lit room beyond. Behind the window she could see two figures clearly: a heavyset man in a dark coat, pacing as he spoke, and a thinner man seated at a table, both lit yellow by the lamp. In the garden itself, nearer than she expected, a large dog lay chained by a kennel against the far wall, its head up, ears turning toward the sound of her landing.
+--- open: whether the chained dog rises and barks at the noise of her landing, and whether the two men in the lit room notice anything
+--- planner answers
+{"calls":{"BodyFall":{"Mara":{"height_m":3,"ground":"grass","stiff_legs":false}}},"then":[{"question":"As Mara waits in the hedge's shadow, does she see anyone or anything in the garden or at the lit window?","tool":"Look"},{"question":"Does Mara hear any sound in the garden or from the merchant's house while she waits?","tool":"Listen"}],"need":["Look","Listen"]}
+- - -
+{"calls":{"Listen":{"Mara":{"listener_species":"human","sound":"quiet conversation (50 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","barrier":"none","ground":"grass, fields or soil","reveals":"anyone moving or talking in the garden or the lit room of the merchant's house"}},"Look":{"Mara":{"viewer_species":"human","target":"a person or movement in the garden or at the lit window","size_m":0.5,"distance_m":15,"light":"living room","latitude":38.7,"visibility_m":20000,"reveals":"who or what is in the garden or behind the lit window of the merchant's house"}}},"then":[],"need":[]}
+
+=== #3.3: I creep across the lawn to the lit window.
+clock: Friday 2 May 1755, 22:00:17
+faults: 
+  rule check: "her dark clothing and low, unhurried movement keeping her beneath its notice as anything more than a shifting of the nig" → Listen (contradicts)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 20 °C, low 13 °C; now about 17 °C.
+2. Act {"who":"Mara","action":"creeps across the lawn toward the lit window","distance_m":12}
+   draws: none
+   → Mara walks 12 m from where Mara stood to lit window at 0.72 m/s: 17 s (17 s in all). Span 17 s. Clock now Friday 2 May 1755, 22:00:17.
+3. Listen {"listener":"the house","listener_species":"dog","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"an intruder is crossing the garden lawn"}
+   draws: none
+   → the house hears it (footsteps on gravel or sand (64 dB at 1 m) at 15 m, silent night (10 dB)). the house now knows: an intruder is crossing the garden lawn.
+4. BodyCheck {"who":"Mara","task":"sneak across the lawn to the lit window","reference_class":"trained climbers sneaking across a soft lawn at night","base_share":"35% fewer than half","share":"65% more than half","uses":["alertness","sight"],"exertion":"light","on_feet":true}
+   draws: 0.0943
+   → sneak across the lawn to the lit window: SUCCESS.
+--- reply
+The night stayed dry and mild, the day's warmth lingering in the air at about seventeen degrees.
+
+Mara left the shadow of the hedge and moved across the lawn toward the lit window, twelve metres of open grass covered at a careful, steady pace, some seventeen seconds of it, each step placed rather than taken.
+
+Her feet pressed into the gravel-scattered turf with a faint crunch that seemed loud to her in the silent night, and by the kennel against the far wall the dog's head came up sharply, nostrils working, ears swivelling to fix on her as it gathered that something was crossing the lawn.
+
+She reached the wall beneath the lit window without the dog so much as a growl, her dark clothing and low, unhurried movement keeping her beneath its notice as anything more than a shifting of the night.
+--- open: whether the dog stirs, barks, or pulls at its chain; whether the two men in the lit room notice anything at the window
+--- planner answers
+{"calls":{"Act":{"Mara":{"action":"creeps across the lawn toward the lit window","distance_m":12}}},"then":[{"question":"Does Mara cross the lawn unnoticed by the chained dog?","tool":"BodyCheck"},{"question":"If she is noticed, does the dog rise and bark, and do the two men in the lit room notice anything?","tool":"Listen"}],"need":["BodyCheck","Listen"]}
+- - -
+{"calls":{"Listen":{"the house":{"listener_species":"dog","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"an intruder is crossing the garden lawn"}},"BodyCheck":{"Mara":{"task":"sneak across the lawn to the lit window","reference_class":"trained climbers sneaking across a soft lawn at night","base_share":"35% fewer than half","share":"65% more than half","uses":["alertness","sight"],"exertion":"light","on_feet":true}}},"then":[{"question":"If the dog notices Mara, does it rise and bark?","tool":"Choose"},{"question":"If the dog barks, do the two men in the lit room hear it and notice anything?","tool":"Listen"}],"need":["BodyCheck","Choose"]}
+
+=== #3.4: I look through the window to see who is inside.
+clock: Friday 2 May 1755, 22:00:17
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 20 °C, low 13 °C; now about 17 °C.
+2. Look {"viewer":"Mara","target":"the lit window and the two men inside","viewer_species":"human","size_m":0.5,"distance_m":2,"light":"living room","reveals":"who the two men in the lit room are and what they are doing"}
+   draws: 0.6955
+   → Mara identifies it (can tell which individual or exact kind) (0.5 m target at 2 m, living room). Mara now knows: who the two men in the lit room are and what they are doing.
+3. Choose {"who":"the house","options":[{"option":"stirs and pulls at its chain, but does not bark","share":"35% fewer than half"},{"option":"barks at the scent and sound from the lawn","share":"20% few"},{"option":"settles back down, unbothered","share":"50% half"}]}
+   draws: 0.603
+   → the house chooses: settles back down, unbothered.
+4. Listen {"listener":"the house","listener_species":"dog","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":12,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"an intruder crossed the lawn toward the window"}
+   draws: none
+   → the house hears it (footsteps on gravel or sand (64 dB at 1 m) at 12 m, silent night (10 dB)). the house now knows: an intruder crossed the lawn toward the window.
+--- reply
+As Mara came to a stop beneath the window, the crunch of her steps over the lawn still hung in the silent night. By the kennel, the dog's ears tracked her path across the grass; it had heard her plainly, every footfall, and knew something had crossed the lawn toward the window.
+
+Mara rose slowly and peered over the sill into the lit room. She knew them at once: the heavyset man was João Almeida, the merchant whose house this was, still pacing, and the thin man seated at the table was his clerk, Duarte, ledger open before him. Almeida was dictating figures while Duarte wrote, the two of them bent over the day's accounts, too busy with their sums to glance at the darkened garden.
+
+At the kennel, the dog considered the sounds it had caught, found nothing in them worth rising for, and settled back down with a sigh, chin on its paws.
+--- open: Whether Almeida or Duarte notice the shadow at the window; whether the dog stirs again if Mara moves.
+--- planner answers
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"the lit window and the two men inside","size_m":0.5,"distance_m":2,"light":"living room","reveals":"who the two men in the lit room are and what they are doing"}}},"then":[{"question":"Do the two men in the lit room hear anything of Mara at the window?","tool":"Listen"},{"question":"Does the dog stir, bark, or pull at its chain now that Mara has stopped beneath the window?","tool":"Choose"}],"need":["Listen","Choose"]}
+- - -
+{"calls":{"Choose":{"the house":{"options":[{"option":"stirs and pulls at its chain, but does not bark","share":"35% fewer than half"},{"option":"barks at the scent and sound from the lawn","share":"20% few"},{"option":"settles back down, unbothered","share":"50% half"}]}},"Listen":{"the house":{"listener_species":"dog","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":12,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"an intruder crossed the lawn toward the window"}}},"then":[{"question":"Do the two men in the lit room hear anything of Mara at the window?","tool":"Listen"}]}
+
