@@ -1563,6 +1563,9 @@ export function registerRulesTools(enabled: boolean): void {
         min_age: { type: 'number', description: 'Only when the story already fixes it (e.g. 18 for someone serving drinks)' },
         age: { type: 'number', description: 'Only when the story states it ("her brother Will, 12")' },
     }, ['who'], a => run((st, rng) => {
+        // A person already drawn keeps what was drawn (an innkeeper drawn at 56 was drawn again at 68 two turns later).
+        { const known = st.people?.[String(a.who)] as { age?: number; sex?: string } | undefined;
+          if (known?.age != null && typeof a.age !== 'number') return `${a.who}: already in the story, a ${known.age}-year-old ${known.age < 18 ? (known.sex === 'female' ? 'girl' : 'boy') : known.sex === 'female' ? 'woman' : 'man'}; nothing drawn.`; }
         // A person the story describes (the cast's "her brother Will, 12") keeps the stated age and sex; nothing is drawn.
         if (typeof a.age === 'number' && a.age >= 0) {
             const { p } = who(st, a.who), age = Math.round(a.age), sex = a.sex ?? null;
@@ -1576,7 +1579,8 @@ export function registerRulesTools(enabled: boolean): void {
         if (a.occupation && (String(a.occupation).trim().split(/\s+/).length > 3 || /^(?:the |a |an )?(person|man|woman|boy|girl|figure|someone|stranger)\b/i.test(String(a.occupation)))) a = { ...a, occupation: undefined };
         // A role noun as the name ("the costermonger") is the occupation when none is given: a costermonger was drawn as a child.
         // A crowd is a place's people (PlaceProfile), one person at a time here; "man" and "woman" in the name fix sex and adulthood.
-        if (/\b(crowd|passers-by|passersby|people|folk|street|everyone|townsfolk|villagers)\b/i.test(String(a.who))) return `NewCharacter draws one person; the people of a place come from PlaceProfile, and each one who acts gets their own NewCharacter. State unchanged.`;
+        // A group named as one ("the whispering men", "the men by the fire") is several people: each gets their own call.
+        if (/\b(crowd|passers-by|passersby|people|folk|street|everyone|townsfolk|villagers|men|women|children|boys|girls|couple|pair|both|twins)\b/i.test(String(a.who))) return `NewCharacter draws one person; the people of a place come from PlaceProfile, and each one who acts gets their own NewCharacter. State unchanged.`;
         const adult = /\b(man|men|fellow|gentleman|woman|lady)\b/i.exec(String(a.who))?.[1]?.toLowerCase();
         if (adult) a = { ...a, sex: a.sex ?? (/woman|lady/.test(adult) ? 'female' : 'male'), min_age: Math.max(18, Number(a.min_age) || 0) };
         const young = /\b(girl|boy|maid|lad|lass)\b/i.exec(String(a.who))?.[1]?.toLowerCase();

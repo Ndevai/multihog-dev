@@ -499,3 +499,12 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   3. Will, "her brother Will, 12" in the cast, was drawn as a blacksmith of 19. NewCharacter takes "age" when the story states it; castPerson reads an age beside a name in the cast and a sex from a kin word (brother, sister, wife…). The report flags a drawn age that differs from the cast's.
   4. The code-written Communicate kept its defaults (1 m, quiet room) when the planner gave none, in a half-full taproom. A drafted scene tool the plan leaves out now goes to the repair round for distance_m, noise, barrier and effort.
 - Still open: a named stranger's sex from their first name ("Josiah Crake" drawn a girl of 1). Source to use: a given-name table with sex counts (US Social Security names from 1880, public domain). Apples outside the Price list. The climb's side of the wall.
+
+## 2026-10-20 (42) Second real run: the faults behind its 11
+
+- Run of 5d51054 (results/2026-10-20T04-30): 43 model calls, 11 faults reported in 12 turns. By the step that made each:
+  - Code, the drafted Communicate: a line in question-pass.ts rebuilt the settled-tools set from every code-written call, scene tools included, so Communicate counted as settled and never reached the repair round. All three code-written Communicates kept 1 m and a quiet room, in a half-full taproom. Fixed (the set keeps code's own list). The stand-in run now shows the repair asking for distance_m, noise and barrier.
+  - Engine, NewCharacter: a person already drawn was drawn again when the planner asked a second time (the innkeeper at 56, then at 68; the maid at 23, then at 72). A known person now keeps what was drawn. A group named as one ("the whispering men", "the men by the fire") is refused, so each person gets their own call.
+  - Report: "person drawn for a phrase" fired on real labels ("the young man by the fire", 6 words) and on a reused result's "Already decided" prefix. Now it reads the call's own "who" and flags a verb in -ing or over 8 words; it also flags a group drawn as one person and a person drawn twice. The auto-NewCharacter skip uses the same 8-word line. Words the player's character hears through Communicate (the whisper overheard at 2.3) count as Listen.
+  - Narrator: 5 lines no result backs (a traveller sizing Tom up, a mug gathered, a figure seen early, a sound unheard). The check caught all 5; SillyTavern's rewrite round handles these.
+  - Planner: Price looked up bread for apples (apples are outside the price list; still open).

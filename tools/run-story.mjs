@@ -59,6 +59,7 @@ for (const [si, story] of chosen) {
     const cast = `[CAST]\n${story.cast}\nScenario: ${story.scenario}\n[/CAST]`;
     const timeBlock = () => { const t = T.storyTime(); return t === null ? '' : `[TIME]\n${C.formatStoryTime(t)}\n[/TIME]`; };
     let lastClock = null;
+    const people = new Set();
     Q.setOpen([]);
     for (const [ti, turn] of story.turns.entries()) {
         sent.length = 0;
@@ -71,13 +72,20 @@ for (const [si, story] of chosen) {
         for (const [i, r] of results.entries()) if (REFUSED.test(r.result) && !results.slice(i + 1).some(q => q.tool === r.tool && !REFUSED.test(q.result))) f.push(`refused after repair: ${r.tool}: ${r.result.slice(0, 200)}`);
         if (!results.length) f.push('no tool ran');
         // A person drawn for a phrase that names an event, or drawn against what the cast states about them.
-        for (const r of results.filter(r => r.tool === 'NewCharacter')) {
-            const who = r.result.split(':')[0], age = Number(r.result.match(/a (\d+)-year-old/)?.[1]), stated = Q.castPerson(who, cast);
-            if (who.split(/\s+/).length > 4) f.push(`person drawn for a phrase: "${who}"`);
+        const drawnArgs = Q.askedArgs();
+        for (const [i, r] of results.entries()) {
+            if (r.tool !== 'NewCharacter' || /^Already decided/.test(r.result)) continue;
+            const who = String(drawnArgs[i]?.who ?? r.result.split(':')[0]), age = Number(r.result.match(/a (\d+)-year-old/)?.[1]), stated = Q.castPerson(who, cast);
+            if (/\b\w+ing\b/.test(who.replace(/\b(?:whispering|king|darling|sibling)\b/g, '')) || who.split(/\s+/).length > 8) f.push(`person drawn for a phrase: "${who}"`);
+            if (/\b(?:men|women|children|people|boys|girls)\b/i.test(who) && !/refused|several people|each gets/.test(r.result)) f.push(`a group drawn as one person: "${who}"`);
+            if (people.has(who) && !/already in the story/.test(r.result)) f.push(`${who} drawn again: ${r.result.slice(0, 80)}`);
+            people.add(who);
             if (stated.age != null && age !== stated.age) f.push(`${who} drawn at ${age}; the cast says ${stated.age}`);
         }
         // A walk timed by PassTime with walkers counts as the turn's Act.
-        for (const tool of turn.want) if (!results.some(r => r.tool === tool || (tool === 'Act' && r.tool === 'PassTime' && /walked/.test(r.result)))) f.push(`missing ${tool}`);
+        // A walk timed by PassTime counts as Act; words the player's character hears through Communicate count as Listen.
+        const player = story.cast.match(/^(\w+) \(the player's character\)/)?.[1];
+        for (const tool of turn.want) if (!results.some((r, i) => r.tool === tool || (tool === 'Act' && r.tool === 'PassTime' && /walked/.test(r.result)) || (tool === 'Listen' && r.tool === 'Communicate' && Q.askedArgs()[i]?.listener === player))) f.push(`missing ${tool}`);
         const now = T.storyTime();
         if (now === null) f.push('no story clock');
         else if (lastClock !== null && now < lastClock) f.push(`clock ran back: ${C.formatStoryTime(lastClock)} → ${C.formatStoryTime(now)}`);

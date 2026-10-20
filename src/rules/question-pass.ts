@@ -260,7 +260,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         const said0 = String(chat[chat.length - 1].mes ?? ''), has = (n: string) => REGISTRY.has(n) && !SKIP.has(n);
         const player = playerName((ctx as { name1?: string }).name1, tracker);
         const framed = player ? framedCalls(said0, player) : { calls: [] as Call[], covered: new Set<string>() };
-        framed.calls = framed.calls.filter(c => has(c.tool)); framed.covered = new Set(framed.calls.map(c => c.tool));
+        framed.calls = framed.calls.filter(c => has(c.tool)); framed.covered = new Set([...framed.covered].filter(has));
         const routed = routedTools(said0, has);
         const left = routed ? [...routed].filter(t => !framed.covered.has(t) && !ALWAYS.includes(t)) : null;
         const only = routed ? new Set([...left!, ...ALWAYS.filter(has)]) : await pickTools(chat, send) ?? undefined;
@@ -333,8 +333,8 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
             for (const c of calls) for (const k of PERSON) {
                 const v = c.args[k]; if (typeof v !== 'string' || !v.trim()) continue;
                 const n = v.trim(), low = n.toLowerCase();
-                // A person is named in a few words; a longer phrase or one with a verb in -ing describes an event.
-                if (n.split(/\s+/).length > 4 || /\b\w+ing\b/.test(low.replace(/\b(?:king|darling|sibling|viking|offspring|ring|sling|string)\b/g, ''))) continue;
+                // A person is named in a few words ("the young man by the fire"); a phrase over 8 words or with a verb in -ing describes an event.
+                if (n.split(/\s+/).length > 8 || /\b\w+ing\b/.test(low.replace(/\b(?:king|darling|sibling|viking|offspring|ring|sling|string)\b/g, ''))) continue;
                 if (known.has(low) || named.has(low) || castText.includes(`${low} (`) || castText.includes(`${low}:`) || (present ?? []).some(x => x.toLowerCase() === low && castText.includes(low))) continue;
                 const role = /^(?:the |an? )?([a-z][a-z -]*)$/.exec(n)?.[1];
                 named.add(low);
