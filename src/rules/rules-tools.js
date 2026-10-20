@@ -24,7 +24,7 @@ import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, MOTION_START } from './actions.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
-import { formatStoryTime } from './clock.js';
+import { formatStoryTime, spokenTime } from './clock.js';
 import { diff, record, truncate, verify } from './world-log.js';
 import { violations } from './invariants.js';
 import { mapOf, area, roomAt, straight } from './map.js';
@@ -405,7 +405,7 @@ function passSeconds(st, seconds, names, rng) {
         if (ev.events.length)
             tail = ` Meanwhile: ${ev.events.join('; ')}.`;
     }
-    return ` Clock now ${formatStoryTime(storyNow(st))}.` + tail;
+    return ` Clock now ${formatStoryTime(storyNow(st))} (${spokenTime(storyNow(st))}).` + tail;
 }
 // Speaking takes time: English conversation runs at about 196 words a minute over the whole conversation time (Yuan,
 // Liberman & Cieri 2006, Switchboard; 214 in CallHome, 193 in Fisher).
@@ -1050,6 +1050,9 @@ export function registerRulesTools(enabled) {
     ];
     const cityOfCountry = (c) => CITY_OF.find(([re]) => re.test(c))?.[1] ?? null;
     const cityCountry = (city) => CITY_OF.find(([, , list]) => list.includes(city))?.[1] ?? null;
+    // Work time as a person says it: minutes under an hour, to the nearest five ("about 20 minutes of a 10-hour day"); a
+    // narrator turning "0.3 hours" into words wrote "a quarter hour".
+    const spokenWork = (hours) => hours < 1 ? `about ${Math.max(5, Math.round(hours * 12) * 5)} minutes of a 10-hour day` : `about ${Math.round(hours * 2) / 2} hours of a 10-hour day`;
     tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it. Goods outside its list (fish, tea) have their price from the story; Price gives the listed goods only.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
         item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
@@ -1096,6 +1099,9 @@ export function registerRulesTools(enabled) {
             const g = lon && !('error' in lon) ? `; in London that buys what ${Math.round(lon.silver * w.ratio * 10) / 10} g of silver buys` : '';
             return `Daily wage of a labourer in ${w.country}, ${year}: buys ${Math.round(w.ratio * 100)} % of what a British labourer's buys${g}.`;
         }
+        // No city given: the scene country's listed city.
+        if (!a.city && st.setting?.country && cityOfCountry(st.setting.country))
+            a = { ...a, city: cityOfCountry(st.setting.country) };
         if (!CITIES.includes(a.city ?? ""))
             return 'Give city, or country for a daily wage elsewhere (1820–2008).';
         // A city in another country than the scene's, where the scene's country has a listed city, gives way to that one (a York
@@ -1108,7 +1114,7 @@ export function registerRulesTools(enabled) {
             return r.error;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         // Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length].
-        const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? `${Math.round(r.labourDays)} days` : r.labourDays >= 0.1 ? `${Math.round(r.labourDays * 10) / 10} days` : `${Math.max(0.1, Math.round(r.labourDays * 100) / 10)} hours of a 10-hour day`}`;
+        const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? `${Math.round(r.labourDays)} days` : r.labourDays >= 0.1 ? `${Math.round(r.labourDays * 10) / 10} days` : spokenWork(r.labourDays * 10)}`;
         return `${r.what} in ${a.city}, ${year}: ${g} g of silver${coinsOf(r.silver, a.city, year)}${days}${r.note ? ` (${r.note})` : ''}.`;
     }));
     tool('PlaceProfile', 'Decide how large, how urban, how violent and how deadly for infants a country or city is in a year, before narrating a crowd, a town\'s size, a murder rate or a child\'s survival. Returns population, urban share, murders per 100,000, infant deaths per 1,000 births and the nearest listed city.', {

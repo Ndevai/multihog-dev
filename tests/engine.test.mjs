@@ -52,5 +52,7 @@ for (let i = 0; i < 40; i++) {
 const Pr = await import('../src/rules/prices.js');
 const ap = Pr.price('price of goods', 'apples (kg)', undefined, 0.4536, 'London', 1851), dPerLb = ap.silver / Pr.poundSilver(1 / 240, 1851);
 if (!(Math.abs(dPerLb - 0.97) < 0.02)) { miss++; console.log(`MISS apples 1851: ${dPerLb} d per lb`); }
-console.log(`8 checks, ${miss} miss(es)`);
+const C = await import('../src/rules/clock.js');
+if (C.spokenTime(18 * 60 + 17.88) !== 'about twenty past six in the evening' || C.spokenTime(18 * 60 + 15) !== 'a quarter past six in the evening') { miss++; console.log(`MISS spokenTime: ${C.spokenTime(18 * 60 + 17.88)}`); }
+console.log(`9 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

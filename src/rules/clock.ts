@@ -97,3 +97,18 @@ export function formatStoryTime(t: number): string {
     const label = d.toLocaleDateString('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     return `${label.replace(/,/g, '')}, ${clock}`;
 }
+
+/** The clock as a person in the story says it, to the nearest five minutes: "about twenty past six in the evening". A result
+ *  gives this beside the exact time, so the reply reads the hour as the result gives it (a narrator rounding 18:18 its own
+ *  way wrote "a quarter past six"). */
+export function spokenTime(t: number): string {
+    const s = Math.round(t * 60) % 86400, exact = s / 60, m5 = Math.round(exact / 5) * 5, h24 = Math.floor(m5 / 60) % 24, m = m5 % 60;
+    const NUM = ['twelve', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven'];
+    const hourWord = (h: number) => NUM[h % 12];
+    const MIN: Record<number, string> = { 5: 'five', 10: 'ten', 15: 'a quarter', 20: 'twenty', 25: 'twenty-five', 30: 'half' };
+    const said = m === 0 ? `${hourWord(h24)} o'clock` : m <= 30 ? `${MIN[m]} past ${hourWord(h24)}` : `${MIN[60 - m]} to ${hourWord(h24 + 1)}`;
+    const hNext = m > 30 ? (h24 + 1) % 24 : h24;
+    const part = hNext < 5 || hNext >= 22 ? 'at night' : hNext < 12 ? 'in the morning' : hNext < 17 ? 'in the afternoon' : 'in the evening';
+    const noon = m === 0 && (hNext === 12 || hNext === 0) ? (hNext === 12 ? 'noon' : 'midnight') : null;
+    return `${Math.abs(exact - m5) >= 0.5 ? 'about ' : ''}${noon ?? `${said} ${part}`}`;
+}

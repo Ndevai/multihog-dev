@@ -76,6 +76,24 @@ function handing(text: string, player: string): Call | null {
     return { tool: 'Transfer', args: { item: m[3].replace(/ (?:and|to|then)$/, ''), quantity: NUMBER[m[2]] ?? 1, from: player, to, how: 'given' } };
 }
 
+/** Price: a measure of a listed good the player asks for or buys ("a pint of ale" → beer, 0.568 l; "a pound of apples" →
+ *  apples, 0.454 kg). Measures: imperial pint 0.568 l, quart 1.137 l, gallon 4.546 l, pound 0.4536 kg, ounce 0.0283 kg;
+ *  the quartern loaf 4 lb 5½ oz, 1.97 kg (the London assize loaf) [ASSUMED for "a loaf"]; a dozen eggs 12. City and year come
+ *  from the scene. */
+const GOOD_WORDS: [RegExp, string][] = [[/\b(?:ale|beer|porter|stout|cider)\b/, 'beer (litre)'], [/\bwine\b/, 'wine (litre)'], [/\b(?:bread|loaf|loaves)\b/, 'bread (kg)'],
+    [/\bapples?\b/, 'apples (kg)'], [/\bcheese\b/, 'cheese (kg)'], [/\bbutter\b/, 'butter (kg)'], [/\b(?:meat|beef|mutton|pork|bacon)\b/, 'meat (kg)'],
+    [/\beggs?\b/, 'egg (each)'], [/\b(?:beans|peas)\b/, 'beans or peas (litre)'], [/\bsoap\b/, 'soap (kg)'], [/\bcandles?\b/, 'candles (kg)'], [/\blamp oil\b/, 'lamp oil (litre)']];
+const MEASURE: [RegExp, number][] = [[/\bpints?\b/, 0.568], [/\bquarts?\b/, 1.137], [/\bgallons?\b/, 4.546], [/\bpounds?\b|\blbs?\b/, 0.4536], [/\bounces?\b|\boz\b/, 0.0283], [/\bloaf|loaves\b/, 1.97], [/\bdozen\b/, 12]];
+function pricing(text: string): Call | null {
+    const t = text.toLowerCase();
+    if (!/\b(?:buy|buys|bought|pay|pays|paid|purchase|order|orders|ordered|ask|asks|asked|call|calls|called)\b/.test(t)) return null;
+    const good = GOOD_WORDS.find(([re]) => re.test(t));
+    if (!good) return null;
+    const count = Number(t.match(/\b(\d+(?:\.\d+)?)\s+(?:pints?|quarts?|gallons?|pounds?|lbs?|ounces?|loaves|dozen|eggs?)\b/)?.[1] ?? ({ two: 2, three: 3, four: 4, half: 0.5 } as Record<string, number>)[t.match(/\b(two|three|four|half)\s+(?:a\s+)?(?:pints?|quarts?|gallons?|pounds?|loaves|dozen)\b/)?.[1] ?? ''] ?? 1);
+    const unit = MEASURE.find(([re]) => re.test(t))?.[1] ?? 1;
+    return { tool: 'Price', args: { question: 'price of goods', item: good[1], quantity: Math.round(count * unit * 1000) / 1000 } };
+}
+
 /** Tools whose outcome turns on numbers only the scene gives (how far, how loud the room, how large the thing seen): code
  *  writes the words' part and the planner still answers for them; its call by the same person is completed from code's.
  *  The value is the argument naming that person. */
@@ -90,7 +108,7 @@ function perceiving(text: string, player: string): Call[] {
 }
 /** The calls code can write from this message, and the routed tools they settle (the planner skips those). */
 export function framedCalls(text: string, player: string): { calls: Call[]; covered: Set<string> } {
-    const calls = [motion(text, player), speech(text, player), waiting(text, player), handing(text, player), ...perceiving(text, player)].filter((c): c is Call => !!c);
+    const calls = [motion(text, player), speech(text, player), waiting(text, player), handing(text, player), pricing(text), ...perceiving(text, player)].filter((c): c is Call => !!c);
     return { calls, covered: new Set(calls.map(c => c.tool).filter(t => !SCENE_TOOLS.has(t))) };
 }
 /** The planner's calls with code's words filled in: a planner call of a scene tool by the same person takes code's arguments
