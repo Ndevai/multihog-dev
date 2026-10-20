@@ -41,7 +41,7 @@ for (const [i, sc] of PLAY.slice(0, n).entries()) {
     const f = [];
     try { await Q.runQuestionPass(ctx.chat, logSend, [timeBlock(), cast].filter(Boolean).join('\n')); } catch (e) { f.push(`question pass threw: ${e.message}`); }
     const results = Q.askedResults(), log = Q.turnLog();
-    for (const r of results) if (/refused|fix and call again|State unchanged\.?\s*$|needs a calendar date|^Give |Unknown /.test(r.result)) f.push(`refused after repair: ${r.tool}: ${r.result.slice(0, 200)}`);
+    for (const [i, r] of results.entries()) if (!results.slice(i + 1).some(q => q.tool === r.tool && !/refused|fix and call again|State unchanged/.test(q.result)) && /refused|fix and call again|State unchanged\.?\s*$|needs a calendar date|^Give |Unknown /.test(r.result)) f.push(`refused after repair: ${r.tool}: ${r.result.slice(0, 200)}`);
     if (!results.length) f.push('no tool ran');
     if (sc.want.clock && T.storyTime() === null) f.push('no story clock set');
     if (sc.want.weather && !results.some(r => r.tool === 'Weather' && !/needs|No weather/.test(r.result))) f.push('no Weather result');

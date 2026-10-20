@@ -212,7 +212,7 @@ const WORD_STEPS = [
     [/\b(turn|turns|turned)\b/, () => [{ do: 'turn' }]],
     [/\b(pick|picks|picked) up\b|\b(grab|grabs|grabbed|grasp|grasps)\b/, () => [{ do: 'reach' }, { do: 'grasp' }]],
     [/\b(reach|reaches|reached)\b/, () => [{ do: 'reach' }]],
-    [/\b(go|goes|going|went|walk|walks|walking|walked|step|steps|stepping|stepped|cross|crosses|crossing|crossed|leave|leaves|leaving|enter|enters|entering|entered|exit|exits|exiting|exited|head|heads|heading|headed|come|comes|coming|came|move|moves|moving|moved|carry|carries|carrying|carried|bring|brings|bringing|brought|fetch|fetches|fetching|fetched|run|runs|running|ran|hurry|hurries|hurried|stroll|strolls|strolled|stride|strides|strode|wander|wanders|wandered|dash|dashes|dashed|return|returns|returned|creep|creeps|creeping|crept|sneak|sneaks|sneaking|sneaked|snuck|tiptoe|tiptoes|tiptoed|crawl|crawls|crawled|steal|steals|stole)\b/, (who, rest, d) => {
+    [/\b(go|goes|going|went|walk|walks|walking|walked|step|steps|stepping|stepped|cross|crosses|crossing|crossed|leave|leaves|leaving|enter|enters|entering|entered|exit|exits|exiting|exited|head|heads|heading|headed|come|comes|coming|came|move|moves|moving|moved|carry|carries|carrying|carried|bring|brings|bringing|brought|fetch|fetches|fetching|fetched|run|runs|running|ran|hurry|hurries|hurried|stroll|strolls|strolled|stride|strides|strode|wander|wanders|wandered|dash|dashes|dashed|return|returns|returned|creep|creeps|creeping|crept|sneak|sneaks|sneaking|sneaked|snuck|tiptoe|tiptoes|tiptoed|crawl|crawls|crawled|steal|steals|stole|slip|slips|slipped|edge|edges|edged)\b/, (who, rest, d) => {
             if (d == null || !(d > 0))
                 return 'Walking needs distance_m (the distance from the scene).';
             const end = '(?:[,.;]| and | then |$)';
@@ -258,6 +258,12 @@ export function stepsFromWords(text, who, distance) {
         if (typeof r === 'string')
             return { error: r };
         found.push({ at: m.index, steps: r });
+    }
+    // A distance given with words whose verb is unknown ("drops down into the garden and slips to the hedge", 8 m) is a move of
+    // that distance to the place named.
+    if (!found.length && distance != null && distance > 0) {
+        const to = text.match(/\b(?:onto|into|to|towards?)\s+(?:the\s+)?(.+?)(?:[,.;]| and | then |$)/i)?.[1]?.trim();
+        return { steps: [{ do: 'walk_to', to: to || `a spot ${Math.round(distance)} m from where ${who} stood`, distance_m: distance }] };
     }
     if (!found.length)
         return { error: `No motion recognized in "${text}": give steps.` };

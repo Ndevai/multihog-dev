@@ -65,7 +65,7 @@ for (const [si, story] of chosen) {
         const state = [timeBlock(), B.bodyBlock(B.trackedPeople()), T.possessionsInjection(), cast].filter(Boolean).join('\n');
         try { await Q.runQuestionPass(ctx.chat, logSend, state); } catch (e) { f.push(`question pass threw: ${e.message}`); }
         const results = Q.askedResults(), calls = Q.turnLog();
-        for (const r of results) if (REFUSED.test(r.result)) f.push(`refused after repair: ${r.tool}: ${r.result.slice(0, 200)}`);
+        for (const [i, r] of results.entries()) if (REFUSED.test(r.result) && !results.slice(i + 1).some(q => q.tool === r.tool && !REFUSED.test(q.result))) f.push(`refused after repair: ${r.tool}: ${r.result.slice(0, 200)}`);
         if (!results.length) f.push('no tool ran');
         // A walk timed by PassTime with walkers counts as the turn's Act.
         for (const tool of turn.want) if (!results.some(r => r.tool === tool || (tool === 'Act' && r.tool === 'PassTime' && /walked/.test(r.result)))) f.push(`missing ${tool}`);

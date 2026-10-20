@@ -423,3 +423,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Speaking takes time: a Communicate message moves the clock by its words at 196 words a minute (Yuan, Liberman & Cieri 2006, Switchboard, words over whole conversation time); the York inn turns had stood at 19:00:01 through three exchanges. Act's clock step is now `passSeconds`, shared.
 - The narrator copied the BodyCheck marker onto every result in every run, whatever the brief said; the marker is dropped: every result is told in the story's own words, as the people there see and hear it.
 - Open, seen in the Lisbon story: the climb does not move Mara to the top or the other side, so later turns crept across a lawn she had not reached; a fall's injuries are left to BodyWound, so the narrator supplies scrapes and a sore ankle (the tissue-mechanics injury layer); apples are outside the price series.
+
+## 2026-10-19 (31) Third story run: 19 faults; most are the narrator writing what no call decided
+
+- Of 19 faults, 13 are rule-check flags on narration: people's reactions after the one follow-on round (a chair scraping, footsteps to the window), a robbery plot filled in after a Listen whose "reveals" named no fact, a landlord's knowledge of two strangers. Code faults fixed:
+- NewCharacter: a landlord in York 1820 was drawn a girl of 17 (outside the census's ±40 years the general population was used, with ILO work shares). A trade the census lists now draws sex and age from that trade's people wherever and whenever the story is, the story's word kept as the occupation. An "occupation" that describes the person ("man standing at the lit window") is dropped.
+- Act: "drops down into the garden and slips to the shadow of the hedge" with 8 m given was refused (no known verb). Words with a distance and no known verb now walk that distance to the place named; slip and edge added as walking verbs.
+- Price: the planner priced apples as an egg. Its description now says goods outside its list take their price from the story.
+- run-story and run-play count a refusal as a fault only when no later call of the same tool succeeded.

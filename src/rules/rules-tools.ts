@@ -3,7 +3,7 @@ import { judgeStatement, EVIDENCE, helpChance, OBEY, obeyShare, REFUSE_SPLIT, PU
 import type { SocialTraits } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
-import { drawPerson } from './census.js';
+import { findOccupation, drawPerson } from './census.js';
 import { REGIONS } from './strength.js';
 import { learn, knowledgeBlock, recalls } from './knowledge.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS } from './emotion.js';
@@ -966,7 +966,7 @@ export function registerRulesTools(enabled: boolean): void {
         return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
 
-    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it.', {
+    tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it. Goods outside its list (apples, fish, tea) have their price from the story; Price gives the listed goods only.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
         item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
         quantity: { type: 'number', description: 'Units of the item (kg, litres, eggs, metres) or days of work. Default 1.' },
@@ -1563,6 +1563,8 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who'], a => run((st, rng) => {
         // Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex
         // come from the country's stable population (population.ts); occupation and birthplace are left to the story.
+        // An "occupation" that describes the person instead of naming a trade ("man standing at the lit window") is dropped.
+        if (a.occupation && (String(a.occupation).trim().split(/\s+/).length > 3 || /^(?:the |a |an )?(person|man|woman|boy|girl|figure|someone|stranger)\b/i.test(String(a.occupation)))) a = { ...a, occupation: undefined };
         // A role noun as the name ("the costermonger") is the occupation when none is given: a costermonger was drawn as a child.
         // A crowd is a place's people (PlaceProfile), one person at a time here; "man" and "woman" in the name fix sex and adulthood.
         if (/\b(crowd|passers-by|passersby|people|folk|street|everyone|townsfolk|villagers)\b/i.test(String(a.who))) return `NewCharacter draws one person; the people of a place come from PlaceProfile, and each one who acts gets their own NewCharacter. State unchanged.`;
@@ -1575,6 +1577,17 @@ export function registerRulesTools(enabled: boolean): void {
         const english = !c || (/united kingdom|england|wales/i.test(c) && (y === null || Math.abs(y - 1881) <= 40));
         // A stated occupation means a person at work: age and sex are drawn from the people who work there and then, each draw
         // kept with the ILO share of its sex and age in work (rejection sampling); 50 tries, then the last draw.
+        // A trade the census lists draws sex and age from its people, wherever the story is (a landlord came out a girl of 17
+        // from the general population with ILO work shares); the country's tables serve the rest.
+        if (!english && a.occupation && findOccupation(String(a.occupation))) {
+            const r = drawPerson({ sex: a.sex ?? null, occupation: a.occupation, minAge: Number(a.min_age) || 0 }, rng);
+            if (!('error' in r)) {
+                const { p } = who(st, a.who);
+                if (p) Object.assign(p, { age: r.age, sex: r.sex });
+                const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+                return `${a.who}: a ${r.age}-year-old ${noun}; occupation: ${a.occupation} (age and sex drawn from the 1881 census of England and Wales among its ${r.occupation}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
+            }
+        }
         let local = english ? null : strangerAgeSex(c, y, rng, { sex: a.sex ?? null, minAge: Number(a.min_age) || 0 });
         if (local && a.occupation) for (let i = 0; i < 50 && local; i++) {
             const w = strangerWork(c, local.sex, local.age, y, rng);
