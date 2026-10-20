@@ -5,7 +5,8 @@
   "license": "GPL-3.0",
   "scripts": {
     "build": "tsc -p .",
-    "typecheck": "tsc -p . --noEmit"
+    "typecheck": "tsc -p . --noEmit",
+    "test": "tsc -p . && node tests/route.test.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0"

@@ -471,3 +471,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Rooms per dwelling: the published housing tables of the censuses, 1891 onward for Britain.
   - The United States 1850–1940: IPUMS USA is a separate application and its terms page names no institutional requirement. The user can apply if US stories matter.
 - None of this blocks the current work (entry 36: the planner); the census layer stays frozen with the other layers.
+
+## 2026-10-20 (38) Code picks the tools; a test that runs without the model
+
+- src/rules/router.ts: 15 verb classes (speech, request, listening, looking, buying, handing over, effort, falling, blows, eating and drinking, waiting, chasing, holding on, treating, breaking), each tied to the tool its outcome needs; quoted words are speech; a motion the action reader recognizes is Act. When any class matches, those tools plus RecordFact, PassTime and NewCharacter go to the planner and the model's tool picker is skipped: one model call fewer per turn. No match: the picker as before. The planner can still add a tool through "need".
+- Bug found by the test: the check for a motion with no Act called stepsFromWords with a stand-in distance of 1 m, and its rule for an unknown verb with a distance turned every message into a 1 m walk. So every turn whose plan had no Act ("I call to the innkeeper", "I keep still and listen") spent a repair call asking for one. The check now reads motion without a distance (movesIn).
+- tests/route.test.mjs: 35 player lines with the tools each needs and the ones it must leave out (the 12 story turns and 23 more of the same classes), 5 written distances, 1 walk. 41 checks, 0 misses. `npm test`; .github/workflows/test.yml runs it on every push, without the key.

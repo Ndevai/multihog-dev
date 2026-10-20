@@ -9,8 +9,8 @@ import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setSto
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
-import { stepsFromWords } from './actions.js';
 import { planSchema } from './plan-schema.js';
+import { routedTools, movesIn } from './router.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import type { Prop } from './tool-schema.js';
@@ -243,7 +243,8 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
     else {
         await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
         const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
-        const only = await pickTools(chat, send) ?? undefined;
+        // Code reads the tools from the player's verbs (router.ts); the model picks only when no verb class matches.
+        const only = routedTools(String(chat[chat.length - 1].mes ?? ''), n => REGISTRY.has(n) && !SKIP.has(n)) ?? await pickTools(chat, send) ?? undefined;
         planTools.current = only;
         const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only), thingsBlock(found)].filter(Boolean).join('\n\n');
         const lastPlanText = String(await send(QUESTION_SYSTEM, prompt) ?? '');
@@ -272,7 +273,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker 
         calls = dedupe(valid);
         const unread = !/\{\s*"calls"/.test(lastPlanText);
         // A motion the player's message names (step out, sit down, cross the room) needs its time: code reads the verb.
-        const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && !/No motion recognized/.test(JSON.stringify(stepsFromWords(said, 'x', 1)));
+        const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && movesIn(said);
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
         if (unread || dropped.length || noPlace || motion) {
             const problems = [unread ? 'Write the plan as the JSON {"calls":[...]}.' : '',
