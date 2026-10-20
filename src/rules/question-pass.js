@@ -9,7 +9,7 @@ import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setSto
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
-import { planSchema, callsFromKeyed } from './plan-schema.js';
+import { planSchema, callsFromKeyed, PERSON_KEY } from './plan-schema.js';
 import { routedTools, movesIn, ALWAYS } from './router.js';
 import { framedCalls, playerName, mergeCalls } from './frame.js';
 import { worldHasMagic } from './world.js';
@@ -197,8 +197,16 @@ export function parseCalls(text) {
     return validCalls(rawCalls(text));
 }
 function validCalls(calls) {
-    return calls.filter(c => { const t = REGISTRY.get(c.tool); return !!t && !SKIP.has(c.tool) && t.required.every(k => c.args[k] !== undefined && c.args[k] !== ''); })
+    return calls.filter(c => { const t = REGISTRY.get(c.tool); return !!t && !SKIP.has(c.tool) && t.required.every(k => c.args[k] !== undefined && c.args[k] !== '') && !badPeople(c).length; })
         .slice(0, MAX_CALLS);
+}
+// A person enters a call by a name or a role (plan-schema.ts PERSON_KEY), or as the story already holds them.
+const PERSON_ARG_KEYS = ['who', 'speaker', 'listener', 'viewer', 'attacker', 'pursuer', 'fleeing', 'target_who', 'requester_name'];
+let KNOWN_PEOPLE = new Set();
+const personRe = new RegExp(PERSON_KEY);
+/** The person arguments of a call that name no one: a description where a name or role belongs. */
+export function badPeople(c) {
+    return PERSON_ARG_KEYS.filter(k => typeof c.args[k] === 'string' && !KNOWN_PEOPLE.has(c.args[k]) && !personRe.test(c.args[k]));
 }
 /** The scene for the question model: the story state (time, place, bodies), [KNOWS], recent messages, the player's last. */
 /** Questions the last reply left open (narration.ts), for this turn's plan; set when a reply is read. */
@@ -269,6 +277,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         framed.covered = new Set([...framed.covered].filter(has));
         // The people the story holds, as keys the plan writes them by (plan-schema.ts PERSON_KEY).
         planTools.people = [...new Set([...Object.keys(s.state.people ?? {}), ...player ? [player] : [], ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]).filter(n => !/^(?:Scenario|Cast|Time|Place|Weather|Story|Body|Knows)$/i.test(n))])].slice(0, 24);
+        KNOWN_PEOPLE = new Set(planTools.people);
         const routed = routedTools(said0, has);
         const left = routed ? [...routed].filter(t => !framed.covered.has(t) && !ALWAYS.includes(t)) : null;
         const only = routed ? new Set([...left, ...ALWAYS.filter(has)]) : await pickTools(chat, send) ?? undefined;
@@ -323,7 +332,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         const sceneOpen = drafts.filter(d => !valid.some(c => c.tool === d.tool));
         if (unread || dropped.length || noPlace || motion || sceneOpen.length) {
             const problems = [unread ? 'Write the plan as the JSON {"calls":{...}}.' : '',
-                ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${REGISTRY.has(c.tool) ? `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}` : 'unknown tool'}.`),
+                ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${!REGISTRY.has(c.tool) ? 'unknown tool' : badPeople(c).length ? `${badPeople(c).join(', ')} takes a person's name or role, as in "Mara" or "the innkeeper"` : `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}`}.`),
                 noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : '',
                 motion ? `The player's message moves their character ("${said.slice(0, 120)}"): add Act with action and distance_m from the scene.` : '',
                 ...sceneOpen.map(d => `${d.tool} ${JSON.stringify(d.args)}: call it with distance_m, noise and barrier from the scene, and effort when the scene sets how loud the words are.`)].filter(Boolean);

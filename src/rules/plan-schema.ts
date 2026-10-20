@@ -39,9 +39,9 @@ export function callsFromKeyed(calls: Record<string, unknown>): { tool: string; 
     }
     return out;
 }
-/** The keys a person-keyed tool takes: a name as the story writes it ("Mara", "Will Doyle") or a role ("the innkeeper", "the
- *  man by the fire"): capitalized words, or "the" and up to four lower-case words. The people the story already holds are
- *  listed as fixed keys, so their names are written as stored. */
+/** A person as a call names them: a name as the story writes it ("Mara", "Will Doyle") or a role ("the innkeeper", "the man by
+ *  the fire"): capitalized words, or "the" and up to four lower-case words. The people the story already holds are listed as
+ *  fixed keys in the schema, so their names are written as stored. */
 export const PERSON_KEY = "^(?:[A-Z][A-Za-z'-]*(?: [A-Z][A-Za-z'-]*){0,2}|the(?: [a-z0-9'-]+){1,4})$";
 const PERSON_ARGS = new Set(['who', 'speaker', 'listener', 'viewer']);
 /** The plan: one entry per tool (of the named tools, all when none named), each holding one call per subject; follow-on
@@ -62,7 +62,9 @@ export function planSchema(only?: Set<string>, opts: { people?: string[]; requir
         const listed = (t.properties[key] as { enum?: string[] } | undefined)?.enum;
         if (listed?.length) return { type: 'object', properties: Object.fromEntries(listed.map(v => [v, args])), additionalProperties: false, maxProperties: 6, ...min };
         // Bounded: under constrained decoding a model can repeat one call until the token limit cuts the JSON.
-        if (PERSON_ARGS.has(key)) return { type: 'object', properties: Object.fromEntries((opts.people ?? []).map(n => [n, args])), additionalProperties: args, propertyNames: opts.people?.length ? { anyOf: [{ enum: opts.people }, { pattern: PERSON_KEY }] } : { pattern: PERSON_KEY }, maxProperties: 6, ...min };
+        // The endpoint refuses propertyNames (tools/probe-schema.mjs: HTTP 400), so a new person's key is free text here and
+        // its shape is checked where the call enters the engine (question-pass.ts validCalls, PERSON_KEY).
+        if (PERSON_ARGS.has(key)) return { type: 'object', properties: Object.fromEntries((opts.people ?? []).map(n => [n, args])), additionalProperties: args, maxProperties: 6, ...min };
         return { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
     };
     return {

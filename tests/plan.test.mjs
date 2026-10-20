@@ -25,10 +25,15 @@ const re = new RegExp(P.PERSON_KEY);
 for (const k of ['Mara', 'Will Doyle', 'the innkeeper', 'the person inside the house', 'the whispering man 1']) check(`key accepted: ${k}`, re.test(k), k);
 for (const k of ['Tom to the innkeeper', 'Mara sees who is inside', 'who:Mara', 'innkeeper']) check(`key refused: ${k}`, !re.test(k), k);
 const s2 = P.planSchema(new Set(['Look', 'Choose', 'Price']), { people: ['Mara', 'whispering man 1'], require: ['Choose'] });
-check('known people are fixed keys', 'Mara' in s2.properties.calls.properties.Look.properties && s2.properties.calls.properties.Look.propertyNames.anyOf[0].enum.includes('whispering man 1'), s2.properties.calls.properties.Look.propertyNames);
+check('known people are fixed keys', 'Mara' in s2.properties.calls.properties.Look.properties && 'whispering man 1' in s2.properties.calls.properties.Look.properties, Object.keys(s2.properties.calls.properties.Look.properties));
+// The endpoint refuses propertyNames (tools/probe-schema.mjs): no schema the plan sends uses it.
+check('no propertyNames', !JSON.stringify(P.planSchema(undefined, { people: ['Mara'] })).includes('propertyNames'), null);
+// A description in a person's place is held back at the engine's door with what to write instead.
+check('description held back', Q.badPeople({ tool: 'Look', args: { viewer: 'Mara sees who is inside' } }).join() === 'viewer', null);
+check('role passes', Q.badPeople({ tool: 'Communicate', args: { speaker: 'the innkeeper', listener: 'Tom' } }).length === 0, null);
 check('required tool', s2.properties.calls.required.includes('Choose') && s2.properties.calls.properties.Choose.minProperties === 1, s2.properties.calls.required);
 check('Price keys are the listed goods', 'beer (litre)' in s2.properties.calls.properties.Price.properties && s2.properties.calls.properties.Price.additionalProperties === false, Object.keys(s2.properties.calls.properties.Price.properties).slice(0, 3));
 const p2 = Q.rawPlan('{"calls":{},"then":[{"question":"Does he have apples left?","tool":"Choose"}]}');
 check('then with its tool', p2.then[0] === 'Does he have apples left?' && p2.thenTools[0] === 'Choose', p2);
-console.log(`22 checks, ${miss} miss(es)`);
+console.log(`25 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

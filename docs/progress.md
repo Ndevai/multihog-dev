@@ -550,3 +550,9 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - A subject with a fixed list takes those keys only: Price's keys are its listed goods.
   - "then" entries are {question, tool}. The follow-on round's schema requires a call of each tool the open questions and "need" named.
 - tests/plan.test.mjs: 22 checks (names and roles accepted; "Tom to the innkeeper", "Mara sees who is inside", "who:Mara" and a bare noun refused; fixed keys; required tools; Price's goods). `npm test`: 111 checks, 0 misses.
+
+## 2026-10-20 (48) The endpoint refuses propertyNames; person names checked at the engine's door
+
+- The run of e4b65c7 stopped on turn 1: five empty answers. tools/probe-schema.mjs (run on GitHub with "[run probe]", results in probe-result.txt) sent one schema feature per request. HTTP 400 for propertyNames (pattern, enum or anyOf), and for the plan schema while it held propertyNames. Accepted: keyed objects with an additionalProperties schema, fixed properties with additionalProperties false, minProperties. (Three accepted cases answered with no content: the probe's 3,000-token limit went to thinking.)
+- The plan schema drops propertyNames. The story's people stay as fixed keys; a new person's key is free text in the schema. Its shape is checked where a call enters the engine: validCalls holds back a call whose person argument (who, speaker, listener, viewer, attacker, pursuer, fleeing, target_who) is neither a person the story holds nor a name or role (PERSON_KEY). The repair round gets "viewer takes a person's name or role, as in \"Mara\" or \"the innkeeper\"". A description such as "Mara sees who is inside" never reaches who(), so it never becomes a body.
+- `npm test`: 114 checks, 0 misses.
