@@ -1,5 +1,6 @@
 # Plays the test stories (tools/run-story.mjs) and first turns (tools/run-play.mjs) on GitHub's machines instead of the
-# phone, and saves the results to the branch play-results, results/<run time>/. Runs when a commit on rules-standalone
+# phone, and saves the results to the branch play-results, results/run-<run id>/. The three stories run as three parallel
+# jobs, each saving its own file as soon as it ends, so the first results arrive after one story's time instead of three. Runs when a commit on rules-standalone
 # says [run stories] (or [run play]) in its message, or by hand from the Actions tab. Needs the repository secret
 # NVIDIA_API_KEY (Settings → Secrets and variables → Actions); the key stays in GitHub and is passed only to the runner.
 name: Run stories
@@ -18,6 +19,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run stories]') || contains(github.event.head_commit.message, '[run play]') || contains(github.event.head_commit.message, '[run probe]')
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix: { part: ['1', '2', '3'] }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,7 +33,11 @@ jobs:
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY || secrets.KEY }}
           RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || contains(github.event.head_commit.message, '[run probe]') && 'probe-schema' || 'run-story') }}
           ARGS: ${{ inputs.args || '' }}
-        run: node tools/$RUNNER.mjs $ARGS 2>&1 | grep -v '^\[Rules engine\]' | tail -60
+          PART: ${{ matrix.part }}
+        # Each job plays one story; the other runners (first turns, the schema probe) run once, in part 1.
+        run: |
+          if [ "$RUNNER" = "run-story" ] && [ -z "$ARGS" ]; then ARGS="$PART"; elif [ "$PART" != "1" ]; then exit 0; fi
+          node tools/$RUNNER.mjs $ARGS 2>&1 | grep -v '^\[Rules engine\]' | tail -60
       - name: Save results to play-results
         if: always()
         env:
@@ -37,13 +45,19 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
-          RUN=$(date -u +%Y-%m-%dT%H-%M)
+          RUN="run-${{ github.run_id }}"
           mkdir -p /tmp/out && cd "$GITHUB_WORKSPACE" && cp story-result-*.txt play-result.txt probe-result.txt /tmp/out/ 2>/dev/null || true
           ls /tmp/out | grep -q . || exit 0
           cd /tmp
           if git clone -q --depth 1 --branch play-results "https://x-access-token:${GH_TOKEN}@github.com/${REPO}" res; then cd res; else
             mkdir res && cd res && git init -q && git checkout -q -b play-results && git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}"; fi
-          mkdir -p "results/$RUN" cache && cp /tmp/out/* "results/$RUN/" && echo "$SHA" > "results/$RUN/commit.txt"
-          cp "$GITHUB_WORKSPACE/answers-cache.jsonl" cache/ 2>/dev/null || true
           git config user.name github-actions && git config user.email actions@users.noreply.github.com
-          git add results cache && git commit -q -m "Results $RUN for $SHA" && git push -q origin play-results
+          # Three jobs push to one branch: each rebases on the others' results and tries again; saved answers are merged line by line.
+          for try in 1 2 3 4 5 6; do
+            mkdir -p "results/$RUN" cache && cp /tmp/out/* "results/$RUN/" && echo "$SHA" > "results/$RUN/commit.txt"
+            cat cache/answers-cache.jsonl "$GITHUB_WORKSPACE/answers-cache.jsonl" 2>/dev/null | awk '!seen[$0]++' > /tmp/cache.jsonl && mv /tmp/cache.jsonl cache/answers-cache.jsonl
+            git add results cache && git commit -q -m "Results $RUN part ${{ matrix.part }} for $SHA" || true
+            git push -q origin play-results && break
+            git fetch -q origin play-results && git reset -q --hard origin/play-results
+            sleep $((try * 5))
+          done
