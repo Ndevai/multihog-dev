@@ -30,7 +30,8 @@ jobs:
         run: git fetch -q --depth 1 origin play-results && git show origin/play-results:cache/answers-cache.jsonl > answers-cache.jsonl || true
       - name: Play
         env:
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY || secrets.KEY }}
+          # A second key (secret KEY2, another account's) takes story 2, so two accounts' rate limits run side by side.
+          NVIDIA_API_KEY: ${{ (matrix.part == '2' && secrets.KEY2) || secrets.NVIDIA_API_KEY || secrets.KEY }}
           RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || contains(github.event.head_commit.message, '[run probe]') && 'probe-schema' || 'run-story') }}
           ARGS: ${{ inputs.args || '' }}
           PART: ${{ matrix.part }}
