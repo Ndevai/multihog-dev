@@ -16,7 +16,7 @@ permissions:
 concurrency: { group: stories, cancel-in-progress: false }
 jobs:
   run:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run stories]') || contains(github.event.head_commit.message, '[run play]') || contains(github.event.head_commit.message, '[run probe]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run stories]') || contains(github.event.head_commit.message, '[run play]') || contains(github.event.head_commit.message, '[run probe]') || contains(github.event.head_commit.message, '[run rate]')
     runs-on: ubuntu-latest
     timeout-minutes: 150
     strategy:
@@ -32,9 +32,11 @@ jobs:
         env:
           # A second key (secret KEY2, another account's) takes story 2, so two accounts' rate limits run side by side.
           NVIDIA_API_KEY: ${{ (matrix.part == '2' && secrets.KEY2) || secrets.NVIDIA_API_KEY || secrets.KEY }}
-          RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || contains(github.event.head_commit.message, '[run probe]') && 'probe-schema' || 'run-story') }}
+          RUNNER: ${{ inputs.runner || (contains(github.event.head_commit.message, '[run play]') && 'run-play' || contains(github.event.head_commit.message, '[run probe]') && 'probe-schema' || contains(github.event.head_commit.message, '[run rate]') && 'probe-rate' || 'run-story') }}
           ARGS: ${{ inputs.args || '' }}
           PART: ${{ matrix.part }}
+          NVIDIA_KEY_A: ${{ secrets.NVIDIA_API_KEY || secrets.KEY }}
+          NVIDIA_KEY_B: ${{ secrets.KEY2 }}
         # Each job plays one story; the other runners (first turns, the schema probe) run once, in part 1.
         run: |
           if [ "$RUNNER" = "run-story" ] && [ -z "$ARGS" ]; then ARGS="$PART"; elif [ "$PART" != "1" ]; then exit 0; fi
