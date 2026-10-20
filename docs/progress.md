@@ -631,3 +631,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Run of 2e832a8 (results/run-39467128451, the scene-and-results reply): 3 faults in 12 turns, the fewest of the day (story 2: none). The narrator's unbacked events, two thirds of the faults before, fell to 2 rule-check flags (both a duration worded past its result). The other fault was Act passing on a drop.
 - The reply's required passage per result made every reply open on the same rain: Weather runs every turn, and its passage was required each time. A turn whose Weather gives the same day's weather as the turn before (the result without its "now about … °C") keeps the result for the check and leaves it out of [DECIDED]. Stand-in run: Weather in [DECIDED] on turn 1 only.
+
+## 2026-10-20 (59) Each decided result names who it is about
+
+- Run of d2e573f (results/run-39470783222): 2 faults in 12 turns (story 2: none). The weather opened only the first reply. One fault: the plan held a 3 m BodyFall for "the merchant", whose result text names no one ("Fall 3 m: lands on the feet"). Required to tell every result, the narrator gave it to Mara as a second fall. [DECIDED] now lists each result with its tool and subject ("5. BodyFall (the merchant): …"). Stand-in run: "1. Act (Tom): Tom sits down", "2. Communicate (Tom): …".

@@ -492,12 +492,15 @@ export function askedResults() {
 /** A perception that did not happen: the narrator's silence about it says as much (Grice, Quantity), and naming the missed
  *  sound or sight would put it in the reply. Kept in the turn's results for the rule check. */
 export const isMiss = (tool, result, args) => !args?.reveals && (tool === 'Listen' || tool === 'Look') && /misses it/.test(result);
+/** A result as [DECIDED] lists it: the tool and the person or thing it is about ("BodyFall (the merchant)"), so a result whose
+ *  text names no one ("Fall 3 m: lands on the feet") is told of the right person; a merchant's fall was told as Mara's. */
+const labelled = (x, args) => { const k = subjectOf(x.tool), v = k && args?.[k]; return typeof v === 'string' && v ? `${x.tool} (${v})` : x.tool; };
 const repeatWeather = (tool) => tool === 'Weather' && !!store().asked?.weatherRepeat;
 export function decidedInjection() {
-    const r = askedResults().filter((x, i) => !isMiss(x.tool, x.result, askedArgs()[i]) && !repeatWeather(x.tool));
+    const args = askedArgs(), r = askedResults().map((x, i) => ({ ...x, args: args[i] })).filter(x => !isMiss(x.tool, x.result, x.args) && !repeatWeather(x.tool));
     if (!r.length)
         return '';
-    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n')}\n[/DECIDED]`;
+    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${labelled(x, x.args)}: ${storyResult(x.result)}`).join('\n')}\n[/DECIDED]`;
 }
 /** This turn's [DECIDED] results, in their numbered order. */
 export function decidedResults() {
