@@ -663,3 +663,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Run of 84d2f82 (results/run-39482036409): 9 faults (stories 1–3: 6, 1, 2). Code wrote both prices from the words (apples 0.454 kg; beer 0.568 l). Story 1's six had two causes:
   - With the day's weather out of [DECIDED] after the first reply (entry 58), the narrator gave the sky its own course ("the mist has stopped altogether", twice flagged). The weather now holds in [DECIDED] as an unnumbered line, "Still so from earlier", which bounds what the reply says of the sky and asks no passage.
   - A follow-on round priced candles that nobody bought ("need": Price), and the reply told them. A tool code settled this turn is no longer offered again in a follow-on round.
+
+## 2026-10-20 (65) Look requires its distance; an event phrase reads as a verb with what it does
+
+- Run of a3c75a7 (results/run-39484164921): 6 faults (story 1: none; 2: 2; 3: 4). Look refused "Give distance_m" after repair: the tool needs a distance (or a map) but listed only viewer and size_m as required, so the schema let the plan leave it out. distance_m is now required, and the plan's schema asks for it. The report flagged "the serving girl" as a phrase for its -ing word. An event now reads as a verb in -ing followed by what it does ("getting up and going to the bar"), in the report and in the auto-NewCharacter skip.
+- Open: paying "a penny and a half" from two pennies refuses (Transfer counts whole coins; making change is not modelled).

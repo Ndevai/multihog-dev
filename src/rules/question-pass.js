@@ -387,7 +387,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
                         continue;
                     const n = v.trim(), low = n.toLowerCase();
                     // A person is named in a few words ("the young man by the fire"); a phrase over 8 words or with a verb in -ing describes an event.
-                    if (n.split(/\s+/).length > 8 || /\b\w+ing\b/.test(low.replace(/\b(?:king|darling|sibling|viking|offspring|ring|sling|string)\b/g, '')))
+                    if (n.split(/\s+/).length > 8 || /\b\w+ing (?:up|down|out|in|to|the|a|an|at|from|toward|towards|and|his|her|their)\b/.test(low))
                         continue;
                     if (known.has(low) || named.has(low) || castText.includes(`${low} (`) || castText.includes(`${low}:`) || (present ?? []).some(x => x.toLowerCase() === low && castText.includes(low)))
                         continue;

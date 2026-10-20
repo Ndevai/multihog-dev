@@ -1557,7 +1557,7 @@ export function registerRulesTools(enabled) {
         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
         reveals: str('The fact seeing it would teach, one short sentence (who it is, what they are doing); learned only if identified'),
         target_who: str('When the target is a tracked character: their name (distance and walls then come from the map)'),
-    }, ['viewer', 'size_m'], a => run((st, rng) => {
+    }, ['viewer', 'size_m', 'distance_m'], a => run((st, rng) => {
         const v = who(st, a.viewer, a.viewer_species);
         if (!v.p)
             return v.error;

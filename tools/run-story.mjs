@@ -76,7 +76,8 @@ for (const [si, story] of chosen) {
         for (const [i, r] of results.entries()) {
             if (r.tool !== 'NewCharacter' || /^Already decided/.test(r.result)) continue;
             const who = String(drawnArgs[i]?.who ?? r.result.split(':')[0]), age = Number(r.result.match(/a (\d+)-year-old/)?.[1]), stated = Q.castPerson(who, cast);
-            if (/\b\w+ing\b/.test(who.replace(/\b(?:whispering|king|darling|sibling)\b/g, '')) || who.split(/\s+/).length > 8) f.push(`person drawn for a phrase: "${who}"`);
+            // An event reads as a verb in -ing with what it does ("getting up and going to the bar"); "the serving girl" is a person.
+            if (/\b\w+ing (?:up|down|out|in|to|the|a|an|at|from|toward|towards|and|his|her|their)\b/.test(who.toLowerCase()) || who.split(/\s+/).length > 8) f.push(`person drawn for a phrase: "${who}"`);
             if (/\b(?:men|women|children|people|boys|girls)\b/i.test(who) && !/refused|several people|each gets/.test(r.result)) f.push(`a group drawn as one person: "${who}"`);
             if (people.has(who) && !/as drawn when first met/.test(r.result)) f.push(`${who} drawn again: ${r.result.slice(0, 80)}`);
             people.add(who);
