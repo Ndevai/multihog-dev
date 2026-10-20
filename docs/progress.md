@@ -788,3 +788,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - Act: the climb-word regex is removed. `level` is required: "on the level, stairs or a change of posture", or "a climb, jump or drop".
 - Transfer: KIN, SEVERED and the body-part names are replaced by `item_is`: a thing, a person or animal, or a part of a living body.
 - Still word-based: scene-people's role nouns, which find people in the text, and weather's place words.
+
+## 2026-10-20 (84) People named by meaning in the plan; places without English lead words
+- Plan: a new `named_as` field gives, for each person new to the story, the kind the words naming them fix (src/rules/kinds.ts NAMED_AS). The keys are the closed person set. The NewCharacter that code adds for a new person takes it, so "the landlady" that code draws is a woman.
+- placeIn: the English lead words (in, near, at…) that guarded GeoNames lookups are removed. Every capitalised name is looked up, except the people the plan lists as present and the cast's names. The model's "at" [lat, lon] stays the first source.
+- Still word-based: scene-people's role nouns, which offer the plan its closed person keys. They only suggest keys; the model's "present" and named_as carry the meaning.

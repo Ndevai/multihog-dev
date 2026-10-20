@@ -148,8 +148,6 @@ export function simulateNormalsYear(n, days, rng) {
     }
     return out;
 }
-/** A place weather can be generated for: one of the 28 WGEN stations, or a WMO city. */
-import { GEONAMES } from './data/geonames.js';
 const fold = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
 const toRad = Math.PI / 180;
 export const distKm = (a, b, c, d) => 6371 * Math.acos(Math.min(1, Math.sin(a * toRad) * Math.sin(c * toRad) + Math.cos(a * toRad) * Math.cos(c * toRad) * Math.cos((d - b) * toRad)));
@@ -193,6 +191,7 @@ export function simulatePlaceYear(key, days, rng) {
 }
 /** The first place with weather data named in a text (a capitalized name, longest first: "Rio de Janeiro", "Paris"), names in
  *  `skip` (the characters) left out; null when none. */
+import { GEONAMES } from './data/geonames.js';
 export function placeIn(text, skip = new Set()) {
     const names = [...String(text ?? '').matchAll(/\b[A-Z][\p{L}'’-]+(?:\s+(?:(?:de|do|da|dos|das|del|di|la|le|of|upon|on|am|an der|sur)\s+)?[A-Z][\p{L}'’-]+)*/gu)];
     for (const m of names) {
@@ -207,17 +206,17 @@ export function placeIn(text, skip = new Set()) {
                     return p;
             }
     }
-    // A town outside the weather-city list ("near York"): GeoNames, the largest place of that name, when the text puts it
-    // after a word that leads a place (in, near, at, outside…), so a person's name ("Mary", a city in Turkmenistan) stays a
-    // name. Its weather and country come from the nearest WMO city.
-    for (const m of String(text ?? '').matchAll(/\b(?:in|near|at|outside|from|to|into|of|by)\s+([A-Z][\p{L}'’-]+(?:\s+[A-Z][\p{L}'’-]+)?)/gu)) {
-        if (skip.has(m[1].toLowerCase()))
+    // A town outside the weather-city list ("near York"): GeoNames, the largest place of that name; the characters'
+    // names (skip) are left out. Its weather and country come from the nearest WMO city.
+    for (const m of names) {
+        const n = m[0];
+        if (skip.has(n.toLowerCase()) || [...skip].some(k => k.split(/\s+/).includes(n.toLowerCase())))
             continue;
-        const g = GEONAMES[fold(m[1])] ?? GEONAMES[fold(m[1].split(/\s+/)[0])];
+        const g = GEONAMES[fold(n)] ?? GEONAMES[fold(n.split(/\s+/)[0])];
         if (g) {
             const near = findPlace(undefined, g[0], g[1]);
             if (near)
-                return { ...near, label: `${m[1]} (${near.label})`, lat: g[0], lon: g[1] };
+                return { ...near, label: `${n} (${near.label})`, lat: g[0], lon: g[1] };
         }
     }
     return null;

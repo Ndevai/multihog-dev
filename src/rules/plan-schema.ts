@@ -1,3 +1,4 @@
+import { NAMED_AS } from './kinds.js';
 // The plan as a JSON schema built from the tools' own argument schemas, for constrained decoding: the server lets the model
 // write only tokens that keep the output valid against the schema (Willard & Louf 2023, Outlines; Dong et al. 2024,
 // XGrammar), so a call has the arguments its tool takes in the shapes it takes them, instead of code reading them back out of
@@ -98,6 +99,7 @@ export function planSchema(only?: Set<string>, opts: { people?: string[]; actors
             time: { type: 'string', pattern: '^(\\d{4}-\\d{2}-\\d{2}|Day \\d+) \\d{2}:\\d{2}$' },
             at: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 },
             present: { type: 'array', items: { type: 'string' }, maxItems: 12 },
+            named_as: people.length ? { type: 'object', additionalProperties: false, properties: Object.fromEntries(people.map(n => [n, { type: 'string', enum: NAMED_AS }])), maxProperties: 12 } : { type: 'object', additionalProperties: { type: 'string', enum: NAMED_AS }, maxProperties: 12 },
         },
     };
 }

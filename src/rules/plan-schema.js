@@ -1,3 +1,4 @@
+import { NAMED_AS } from './kinds.js';
 import { REGISTRY } from './rules-tools.js';
 /** One argument's schema; long lists of options stay as text (the tool answers with the nearest options). */
 export function propSchema(p, enumMax = 200) {
@@ -106,6 +107,7 @@ export function planSchema(only, opts = {}) {
             time: { type: 'string', pattern: '^(\\d{4}-\\d{2}-\\d{2}|Day \\d+) \\d{2}:\\d{2}$' },
             at: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 },
             present: { type: 'array', items: { type: 'string' }, maxItems: 12 },
+            named_as: people.length ? { type: 'object', additionalProperties: false, properties: Object.fromEntries(people.map(n => [n, { type: 'string', enum: NAMED_AS }])), maxProperties: 12 } : { type: 'object', additionalProperties: { type: 'string', enum: NAMED_AS }, maxProperties: 12 },
         },
     };
 }

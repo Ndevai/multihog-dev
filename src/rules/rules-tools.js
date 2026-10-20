@@ -24,6 +24,7 @@ import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, MOTION_START } from './actions.js';
 import { GIVEN_NAMES } from './data/given-names.js';
 import { sizeOf, SIZE_KINDS } from './sizes.js';
+import { NAMED_AS } from './kinds.js';
 import { TITLE } from './frame.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
@@ -1769,7 +1770,7 @@ export function registerRulesTools(enabled) {
     tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character new to the story (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
-        named_as: { type: 'string', enum: ['a man', 'a woman', 'a boy', 'a girl', 'a child', 'a person, sex not named', 'several people'], description: 'By meaning: what the words naming them fix, in any language (the landlady, Senhora Lopes, la patronne: a woman; the lad: a boy; the men by the fire: several people)' },
+        named_as: { type: 'string', enum: NAMED_AS, description: 'By meaning: what the words naming them fix, in any language (the landlady, Senhora Lopes, la patronne: a woman; the lad: a boy; the men by the fire: several people)' },
         occupation: str('Only when the story already fixes it, in a word or two (innkeeper, carter, blacksmith, servant)'),
         min_age: { type: 'number', description: 'Only when the story already fixes it (e.g. 18 for someone serving drinks)' },
         age: { type: 'number', description: 'Only when the story states it ("her brother Will, 12")' },
