@@ -7,7 +7,7 @@ const CASES = [
     // The test stories (tools/run-story.mjs).
     ['I step out of my house onto the street.', ['Act'], ['Communicate', 'BodyStrike']],
     ['I walk the three hundred yards to the market on Wentworth Street.', ['Act'], ['Communicate']],
-    ['I ask the costermonger for a pound of apples and pay him.', ['Price', 'Transfer', 'Communicate'], ['Act']],
+    ['I ask the costermonger for a pound of apples and pay him.', ['Price', 'Transfer', 'Communicate'], ['Act', 'BodyStrike']],
     ['I walk home and give Will one of the apples.', ['Act', 'Transfer'], []],
     ['I sit down at a table near the fire.', ['Act'], ['Communicate']],
     ['I call to the innkeeper for a pint of ale.', ['Communicate', 'Price'], ['Act']],
@@ -41,6 +41,27 @@ const CASES = [
     ['I stand up and cross the room.', ['Act'], []],
     ['I kneel beside the body.', ['Act'], []],
     ['I pick up the lantern.', ['Act'], []],
+    // Verbs outside the hand list that VerbNet's classes carry.
+    ['I bellow at the crowd to get back.', ['Communicate'], []],
+    ['I chat with the barmaid.', ['Communicate'], []],
+    ['I interrogate the prisoner.', ['Communicate'], []],
+    ['I murmur a prayer.', ['Communicate'], []],
+    ['I smack him across the face.', ['BodyStrike'], []],
+    ['I swat at the wasp.', ['BodyStrike'], []],
+    ['I peek around the corner.', ['Look'], []],
+    ['I rummage through the drawer.', ['Look'], []],
+    ['I gobble down the stew.', ['BodyIntake'], []],
+    ['I devour the pie.', ['BodyIntake'], []],
+    ['I snooze in the chair.', ['PassTime'], []],
+    ['I linger at the door.', ['PassTime'], []],
+    ['I steal his purse.', ['Transfer'], []],
+    ['I lend him a shilling.', ['Transfer'], []],
+    ['I smash the bottle.', ['Break'], []],
+    ['I cling to the ledge.', ['HoldOn'], []],
+    ['I urge him to hurry.', ['Communicate', 'SocialResponse'], []],
+    // Nouns that are also verbs in VerbNet stay nouns where no verb can stand.
+    ['I sit by the fire with a pound of tea.', ['Act'], ['BodyStrike']],
+    ['The hand on my shoulder is cold.', [], ['Transfer']],
 ];
 // [text, metres the action reader must find]
 const DISTANCES = [['three hundred yards', 274.3], ['half a mile', 804.7], ['50 m', 50], ['fifty feet', 15.2], ['2 km', 2000]];
