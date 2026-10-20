@@ -62,7 +62,10 @@ function hoist(plan) {
 }
 const REFUSED = /fix and call again|State unchanged\.?\s*$|needs a calendar date/;
 // The same call twice, or Weather twice (one day has one weather), runs once.
-const dedupe = (list) => list.filter((c, i) => list.findIndex(d => d.tool === c.tool && (c.tool === 'Weather' || JSON.stringify(d.args) === JSON.stringify(c.args))) === i);
+// Calls that ask the same question once: Weather once a turn; Price once per item, quantity and year whatever the city (the scene's
+// country decides it: one turn asked the ale's price in five cities).
+const sameAsk = (c) => c.tool === 'Weather' ? 'Weather' : c.tool === 'Price' ? `Price ${JSON.stringify({ ...c.args, city: undefined, country: undefined })}` : `${c.tool} ${JSON.stringify(c.args)}`;
+const dedupe = (list) => list.filter((c, i) => list.findIndex(d => sameAsk(d) === sameAsk(c)) === i);
 const pad2 = (n) => String(n).padStart(2, '0');
 /** What the cast states about a person: an age written beside the name ("Will, 12", "Will (12)", "Will, a 12-year-old") and a
  *  sex from a kin or person word beside it (brother, sister, wife, man…). */
@@ -364,6 +367,8 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             // A person the cast describes takes the cast's age and sex (Will, "her brother Will, 12", came out a blacksmith of 19).
             calls = calls.map(c => c.tool !== 'NewCharacter' || typeof c.args.who !== 'string' ? c : { ...c, args: { ...c.args, ...castPerson(c.args.who, tracker) } });
         }
+        // A drafted scene call that never got its scene numbers (Listen with no distance) stays unrun: a call runs complete.
+        calls = calls.filter(c => { const t = REGISTRY.get(c.tool); return !t || t.required.every(k => c.args[k] !== undefined && c.args[k] !== ''); });
         // Weather fixes the setting's country, which other results read (walking pace by country: an Act before Weather walked
         // Mary at 1.43 m/s, the same Act after it at 1.62), so it runs first.
         calls = [...calls.filter(c => c.tool === 'Weather'), ...calls.filter(c => c.tool !== 'Weather')];

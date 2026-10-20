@@ -76,19 +76,29 @@ function handing(text: string, player: string): Call | null {
     return { tool: 'Transfer', args: { item: m[3].replace(/ (?:and|to|then)$/, ''), quantity: NUMBER[m[2]] ?? 1, from: player, to, how: 'given' } };
 }
 
-/** Tools whose outcome turns on numbers only the scene gives (how far the listener stands, how loud the room): code writes
- *  the words' part and the planner still answers for them; its call is completed from code's. */
-export const SCENE_TOOLS = new Set(['Communicate']);
+/** Tools whose outcome turns on numbers only the scene gives (how far, how loud the room, how large the thing seen): code
+ *  writes the words' part and the planner still answers for them; its call by the same person is completed from code's.
+ *  The value is the argument naming that person. */
+export const SCENE_TOOLS = new Map([['Communicate', 'speaker'], ['Listen', 'listener'], ['Look', 'viewer']]);
+/** Listen and Look: the player's character listening or looking, at what the words name. */
+function perceiving(text: string, player: string): Call[] {
+    const out: Call[] = [];
+    if (/\b(?:listen|listens|listened|listening|overhear|overhears|overheard|eavesdrop|eavesdrops|eavesdropped|hear|hears|heard)\b/i.test(text) && !/\btell\b.*\bwhat I heard\b/i.test(text)) out.push({ tool: 'Listen', args: { listener: player } });
+    const look = text.match(/\b(?:look|looks|looked|peer|peers|peered|peek|peeks|peeked|watch|watches|watched|glance|glances|glanced|search|searches|searched)\b\s*(?:(?:through|at|into|in|around|over|for|toward|towards|out of)\s+)?((?:the |a |an |my |his |her )?[a-z]+(?: [a-z]+)?)?/i);
+    if (look) out.push({ tool: 'Look', args: { viewer: player, ...look[1] ? { target: look[1].replace(/\s+(?:to|and|for|then)$/, '') } : {} } });
+    return out;
+}
 /** The calls code can write from this message, and the routed tools they settle (the planner skips those). */
 export function framedCalls(text: string, player: string): { calls: Call[]; covered: Set<string> } {
-    const calls = [motion(text, player), speech(text, player), waiting(text, player), handing(text, player)].filter((c): c is Call => !!c);
+    const calls = [motion(text, player), speech(text, player), waiting(text, player), handing(text, player), ...perceiving(text, player)].filter((c): c is Call => !!c);
     return { calls, covered: new Set(calls.map(c => c.tool).filter(t => !SCENE_TOOLS.has(t))) };
 }
-/** The planner's calls with code's words filled in: a planner call of a scene tool takes code's arguments it left out, and
- *  replaces code's call; code's call stands when the planner gave none. */
+/** The planner's calls with code's words filled in: a planner call of a scene tool by the same person takes code's arguments
+ *  it left out and replaces code's call; code's call stands when the planner gave none (and runs only once complete). */
 export function mergeCalls(code: Call[], planned: Call[]): Call[] {
-    const out = planned.map(p => { const c = code.find(x => x.tool === p.tool && SCENE_TOOLS.has(x.tool)); return c ? { tool: p.tool, args: { ...c.args, ...p.args } } : p; });
-    return [...code.filter(c => !(SCENE_TOOLS.has(c.tool) && planned.some(p => p.tool === c.tool))), ...out];
+    const same = (c: Call, p: Call) => c.tool === p.tool && SCENE_TOOLS.has(c.tool) && (p.args[SCENE_TOOLS.get(c.tool)!] ?? c.args[SCENE_TOOLS.get(c.tool)!]) === c.args[SCENE_TOOLS.get(c.tool)!];
+    const out = planned.map(p => { const c = code.find(x => same(x, p)); return c ? { tool: p.tool, args: { ...c.args, ...p.args } } : p; });
+    return [...code.filter(c => !planned.some(p => same(c, p))), ...out];
 }
 /** The player's character: SillyTavern's persona name, else the cast line marked "(the player's character)". */
 export function playerName(name1: unknown, cast: string): string | null {

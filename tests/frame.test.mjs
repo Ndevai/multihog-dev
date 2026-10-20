@@ -20,6 +20,10 @@ const CASES = [
     ['I tell the captain that the ship is leaking and hand him the log.', 'Ann', [['Communicate', { listener: 'the captain' }], ['Transfer', { to: 'the captain', item: 'log' }]], []],
     ['I kneel beside the body.', 'Ann', [['Act', { who: 'Ann' }]], []],
     ['I stand up and walk 5 m to the door.', 'Ann', [['Act', { distance_m: 5 }]], []],
+    ['Two men at the next table are whispering. I keep still and listen.', 'Tom', [['Listen', { listener: 'Tom' }]], []],
+    ['I go to the innkeeper and tell him what I heard.', 'Tom', [], ['Listen']],
+    ['I look through the window to see who is inside.', 'Mara', [['Look', { viewer: 'Mara', target: 'the window' }]], []],
+    ['I eavesdrop on the soldiers.', 'Ann', [['Listen', { listener: 'Ann' }]], []],
 ];
 let miss = 0;
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -36,6 +40,9 @@ for (const [text, player, want, open] of CASES) {
 // The planner's Communicate adds the scene's distance to code's words; code's Act stands.
 const merged = mergeCalls([{ tool: 'Act', args: { who: 'Tom', action: 'sit down' } }, { tool: 'Communicate', args: { speaker: 'Tom', listener: 'the innkeeper', effort: 'loud', message: 'a pint' } }], [{ tool: 'Communicate', args: { speaker: 'Tom', listener: 'the innkeeper', distance_m: 6, noise: 'loud room (75 dB)' } }]);
 if (merged.length !== 2 || merged[1].args.distance_m !== 6 || merged[1].args.effort !== 'loud' || merged[1].args.message !== 'a pint' || merged[0].tool !== 'Act') { miss++; console.log(`MISS mergeCalls: ${JSON.stringify(merged)}`); }
+// A planner Look by another viewer leaves the player's own Look draft standing.
+const m2 = mergeCalls([{ tool: 'Look', args: { viewer: 'Mara', target: 'the window' } }], [{ tool: 'Look', args: { viewer: 'the occupant', target: 'Mara', size_m: 0.5 } }, { tool: 'Look', args: { viewer: 'Mara', size_m: 0.5, distance_m: 2 } }]);
+if (m2.length !== 2 || !m2.some(c => c.args.viewer === 'Mara' && c.args.target === 'the window' && c.args.size_m === 0.5) || !m2.some(c => c.args.viewer === 'the occupant')) { miss++; console.log(`MISS mergeCalls by viewer: ${JSON.stringify(m2)}`); }
 if (playerName('User', "[CAST]\nMary (the player's character): a 20-year-old woman") !== 'Mary') { miss++; console.log('MISS playerName from cast'); }
-console.log(`${CASES.length + 2} checks, ${miss} miss(es)`);
+console.log(`${CASES.length + 3} checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

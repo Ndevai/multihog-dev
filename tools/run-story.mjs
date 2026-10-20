@@ -85,7 +85,7 @@ for (const [si, story] of chosen) {
         // A walk timed by PassTime with walkers counts as the turn's Act.
         // A walk timed by PassTime counts as Act; words the player's character hears through Communicate count as Listen.
         const player = story.cast.match(/^(\w+) \(the player's character\)/)?.[1];
-        for (const tool of turn.want) if (!results.some((r, i) => r.tool === tool || (tool === 'Act' && r.tool === 'PassTime' && /walked/.test(r.result)) || (tool === 'Listen' && r.tool === 'Communicate' && Q.askedArgs()[i]?.listener === player))) f.push(`missing ${tool}`);
+        for (const tool of turn.want) if (!results.some((r, i) => r.tool === tool || (tool === 'Act' && r.tool === 'PassTime' && /walked/.test(r.result)) || (tool === 'Listen' && r.tool === 'Communicate' && Q.askedArgs()[i]?.listener === player && /whisper/i.test(String(Q.askedArgs()[i]?.speaker ?? '') + String(Q.askedArgs()[i]?.effort ?? ''))))) f.push(`missing ${tool}`);
         const now = T.storyTime();
         if (now === null) f.push('no story clock');
         else if (lastClock !== null && now < lastClock) f.push(`clock ran back: ${C.formatStoryTime(lastClock)} → ${C.formatStoryTime(now)}`);

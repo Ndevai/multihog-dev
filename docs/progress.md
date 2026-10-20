@@ -517,3 +517,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - Planner: apples priced by no call (1.3 "missing Price"; apples are outside the price list, still open). Communicate's distance stayed 1 m: the repair now asks for it, and the model gave the noise but not the distance.
   - Narrator: a price said aloud that no result gave (tuppence), and two facts a character could not know. The check caught all three.
 - tests/engine.test.mjs: a drop after a failed climb, a drop after a climb that succeeded, the York price in London. `npm test`: 86 checks, 0 misses.
+
+## 2026-10-20 (44) Fourth real run: 4 faults; Listen and Look drafted by code
+
+- Run of 7063e39 (results/2026-10-20T05-55): 42 model calls, 4 faults reported in 12 turns. The climb succeeded this time, so the drop ran from the top as it should. Reading the turns found two more faults:
+  - Planner, 2.3: no Listen ran for "I keep still and listen". The report missed it because it counted the innkeeper's words to Tom as listening. The narrator then told muffled whispers with nothing behind them (flagged). Now code drafts Listen (listener: the player) for listen, overhear, eavesdrop and hear, and Look (viewer: the player, target from the words) for look, peer, peek, watch, glance and search. Like Communicate, these are scene tools: the planner's call by the same person takes code's words, and a draft left out goes to the repair round for distance, sound and size. A draft still missing a required number stays unrun. A planner call by another person (the occupant looking at Mara) leaves the player's draft standing. The report counts Communicate as listening only for whispered words.
+  - Planner, 2.2: Price asked for the ale in five cities (Leipzig, London, Paris, Amsterdam, Vienna). All were answered in London, the scene's country. Price is now asked once per item, quantity and year, whatever the city.
+- Narrator: three perceptions told with no result (flagged by the check).
+- `npm test`: 88 checks, 0 misses.
