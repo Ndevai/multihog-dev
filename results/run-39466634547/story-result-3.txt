@@ -1,0 +1,115 @@
+z-ai/glm-5.3, reasoning low, 5 min, 2026-10-20T17:44:48.809Z, 17 calls asked, 0 replayed
+2 fault(s) in 4 of 4 turns
+#3.2 rule check: "lowered herself down the far side, dropping the last metre into the soft, rain-soaked earth of the garden" → BodyFall (contradicts)
+#3.3 rule check: "a quarter of a minute's careful walking" → PassTime (unbacked)
+
+=== #3.1: I climb the wall.
+clock: Friday 2 May 1755, 22:00
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.14}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 1 km), 2/5/1755: rain, 5.6 mm over the day; high 18 °C, low 6 °C; now about 13 °C.
+2. BodyCheck {"who":"Mara","species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling a slick three-metre stone wall","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false}
+   draws: 0.8936, 0.4057, 0.3648
+   → climb a moss-slick three-metre garden wall: FAILURE, an ordinary failure: chance alone. Mara loses the grip at 1.2 m. Fall 1.2 m: lands on the feet, 1.9 kN through each leg; the bones hold, the legs and feet jarred.
+--- reply
+Night had settled over Lisbon, and a thin rain had been falling most of the day, leaving the garden wall dark and glistening. The stones were furred with moss, slick under the drizzle, and the air was cool, near thirteen degrees. Beyond the wall, the merchant's house showed a single lit window, a smear of warm yellow in the dark.
+
+Mara set her hands to the stones and began to climb. She got perhaps a metre and a bit up before her fingers searched for a hold and found only wet moss where a crack should have been. Her grip went out from under her and she dropped, landing hard on both feet in the wet earth at the wall's base. The jolt ran up through her legs and feet, aching, but her bones held and she stayed on her feet, breathing hard in the dark.
+--- open: Whether the noise of her fall draws anyone's attention from the house or the street.
+--- planner answers
+{"calls":{"BodyCheck":{"Mara":{"species":"human","height_m":3,"task":"climb a moss-slick three-metre garden wall","reference_class":"trained climbers scaling a slick three-metre stone wall","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false}}},"then":[],"need":[],"time":"1755-05-02 22:00","present":["Mara"]}
+- - -
+{"calls":{"BodyCheck":{"Mara":{"species":"human","height_m":3,"task":"climb a mossy 3 m garden wall","reference_class":"trained climbers scaling a slick stone wall at night","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance","sight"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false}}},"then":[{"question":"If Mara fails the climb, does she fall and how far?","tool":"BodyFall"}],"need":["BodyFall"],"at":[38.72,-9.14],"present":["Mara"]}
+- - -
+{"calls":{}}
+
+=== #3.2: I drop down into the garden on the other side and wait in the shadow of the hedge.
+clock: Friday 2 May 1755, 22:00
+faults: 
+  rule check: "lowered herself down the far side, dropping the last metre into the soft, rain-soaked earth of the garden" → BodyFall (contradicts)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: rain, 5.6 mm over the day; high 18 °C, low 6 °C; now about 13 °C.
+2. BodyFall {"who":"Mara","height_m":3,"ground":"earth","stiff_legs":false}
+   draws: none
+   → Mara stands on the ground at the foot of the climb, on the side the climb started from.
+3. Listen {"listener":"the merchant","listener_species":"human","sound":"loud pounding (100 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","barrier":"wooden door","ground":"grass, fields or soil","reveals":"Someone is moving at the garden wall outside."}
+   draws: none
+   → the merchant hears it (loud pounding (100 dB at 1 m) at 15 m, silent night (10 dB), through wooden door). the merchant now knows: Someone is moving at the garden wall outside.
+4. BodyCheck {"who":"Mara","task":"climb slick mossy garden wall, 2nd try","reference_class":"trained climbers scaling a wet mossy 3 m wall","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance","alertness"],"exertion":"heavy","on_feet":true,"timed":false,"fine":false,"override":false}
+   draws: 0.2989
+   → climb slick mossy garden wall, 2nd try: SUCCESS.
+--- reply
+Inside the house, the merchant sat by his lamp. Through the wooden door came a sound that did not belong to the night: a heavy pounding, dull and rhythmic, as of someone striking or scrambling at the garden wall. He set down his cup and went still, listening. Someone was moving out there.
+
+Mara spat on her palms and went at the wall again. This time her fingers found the seams between the stones, and she moved slowly, testing each hold before trusting it, the moss parting under her fingertips to give her the bare stone beneath. The rain-slick chill bit at her hands, but hold by hold she drew herself up until her chest came level with the coping. She swung a leg over, careful to make no sound against the wet stone, and lowered herself down the far side, dropping the last metre into the soft, rain-soaked earth of the garden.
+
+She crouched at once in the deep shadow of the hedge, folding herself small among its wet branches. The garden lay dark around her, the smell of wet soil and boxwood thick in the cool air. Ahead, the merchant's house stood quiet, its single lit window throwing a pale rectangle of light across the gravel path.
+--- open: Whether the merchant comes out to look, or sends someone, or the house stays still and the night quiet, while Mara waits hidden in the hedge.
+--- planner answers
+{"calls":{"BodyFall":{"Mara":{"height_m":3,"ground":"earth","stiff_legs":false}}},"then":[{"question":"Does Mara manage to climb the slick, mossy three-metre wall to its top?","tool":"BodyCheck"},{"question":"Does anyone in the merchant's house hear the noise of her climb and drop?","tool":"Listen"},{"question":"Does anyone on the street hear the noise?","tool":"Listen"}],"need":["BodyCheck","Listen"]}
+- - -
+{"calls":{"Listen":{"the merchant":{"listener_species":"human","sound":"loud pounding (100 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","barrier":"wooden door","ground":"grass, fields or soil","reveals":"Someone is moving at the garden wall outside."}},"BodyCheck":{"Mara":{"task":"climb slick mossy garden wall, 2nd try","reference_class":"trained climbers scaling a wet mossy 3 m wall","base_share":"35% fewer than half","share":"65% more than half","uses":["grasp","stance","alertness"],"exertion":"heavy","on_feet":true,"timed":false,"fine":false,"override":false}}},"then":[{"question":"Does anyone on the street hear the noise of her climb and drop?","tool":"Listen"},{"question":"If the climb fails, how badly is Mara hurt by the fall?","tool":"BodyFall"}],"need":["Listen","BodyFall"]}
+
+=== #3.3: I creep across the lawn to the lit window.
+clock: Friday 2 May 1755, 22:00:14
+faults: 
+  rule check: "a quarter of a minute's careful walking" → PassTime (unbacked)
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: rain, 5.6 mm over the day; high 18 °C, low 6 °C; now about 13 °C.
+2. Act {"who":"Mara","action":"creeps across the lawn toward the lit window","distance_m":10}
+   draws: none
+   → Mara walks 10 m from where Mara stood to lit window at 0.72 m/s: 14 s (14 s in all). Span 14 s. Clock now Friday 2 May 1755, 22:00:14.
+3. Choose {"who":"the merchant","options":[{"option":"takes a lamp and comes out to look in the garden","share":"35% fewer than half"},{"option":"sends a servant or calls out from the door","share":"20% few"},{"option":"stays inside, listening, and does nothing more","share":"50% half"}]}
+   draws: 0.5855
+   → the merchant chooses: stays inside, listening, and does nothing more.
+4. BodyCheck {"who":"Mara","task":"sneak across the lawn to the lit window","reference_class":"trained infiltrators crossing an open garden at night","base_share":"35% fewer than half","share":"65% more than half","uses":["stance","sight","hearing","alertness"],"exertion":"light","on_feet":true}
+   draws: 0.7404
+   → sneak across the lawn to the lit window: FAILURE, an ordinary failure: chance alone; the body as it was.
+--- reply
+The rain had eased to a fine drizzle, but everything in the garden still glisted with it, and the gravel path ahead lay dark and wet between the beds. Mara rose from the hedge's shadow and began to cross the lawn toward the lit window, keeping low, her feet searching out the soft grass at the edge of the path.
+
+Ten metres of open ground lay between the hedge and the window, and she covered it steadily, a quarter of a minute's careful walking, the lit rectangle growing larger before her until its pale glow fell across her hands.
+
+But the lawn was soaked and uneven, and in the dark her heel came down on a patch of wet grass that slid under her like ice. She lurched, arms flailing, and caught herself only by dropping to one knee, her palm slapping flat into the mud with a soft, wet smack. She froze where she was, kneeling at the edge of the window's light, mud on her hand and the knee of her breeches, her heart knocking loud in her ears.
+
+Inside the house, the merchant had not moved from his chair by the lamp. He sat with his cup halfway to his lips, still listening to the night, deciding it was nothing, or nothing he would go out into the rain to meet. The lamplight held steady behind the glass, and the house stayed quiet.
+--- open: Whether the merchant heard the sound of Mara's slip through the window or the door, and whether anything in the house stirs because of it
+--- planner answers
+{"calls":{"Act":{"Mara":{"action":"creeps across the lawn toward the lit window","distance_m":10}}},"then":[{"question":"Does Mara cross the lawn unseen and unheard, or does the merchant catch some sign of her?","tool":"BodyCheck"},{"question":"Does the merchant come out to look, send someone, or does the house stay still and the night quiet?","tool":"Choose"}],"need":["BodyCheck","Choose"]}
+- - -
+{"calls":{"Choose":{"the merchant":{"options":[{"option":"takes a lamp and comes out to look in the garden","share":"35% fewer than half"},{"option":"sends a servant or calls out from the door","share":"20% few"},{"option":"stays inside, listening, and does nothing more","share":"50% half"}]}},"BodyCheck":{"Mara":{"task":"sneak across the lawn to the lit window","reference_class":"trained infiltrators crossing an open garden at night","base_share":"35% fewer than half","share":"65% more than half","uses":["stance","sight","hearing","alertness"],"exertion":"light","on_feet":true}}},"then":[{"question":"Does the merchant hear or see any sign of Mara crossing the lawn?","tool":"Listen"}],"need":["BodyCheck","Choose","Listen"]}
+
+=== #3.4: I look through the window to see who is inside.
+clock: Friday 2 May 1755, 22:00:14
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: rain, 5.6 mm over the day; high 18 °C, low 6 °C; now about 13 °C.
+2. Look {"viewer":"Mara","target":"the lit window and whoever is inside","viewer_species":"human","size_m":0.5,"distance_m":2,"light":"living room","reveals":"who is inside the room and what they are doing"}
+   draws: 0.9014
+   → Mara identifies it (can tell which individual or exact kind) (0.5 m target at 2 m, living room). Mara now knows: who is inside the room and what they are doing.
+3. NewCharacter {"who":"the merchant","occupation":"merchant"}
+   draws: 0.683, 0.3084, 0.6408, 0.6108
+   → the merchant: a 28-year-old man; occupation: merchant.
+4. Listen {"listener":"the merchant","listener_species":"human","sound":"footsteps on gravel or sand (64 dB at 1 m)","spl_db":70,"distance_m":2,"noise":"quiet room (25 dB)","barrier":"wooden door","ground":"grass, fields or soil","reveals":"Someone is crouched outside the window"}
+   draws: none
+   → the merchant hears it (footsteps on gravel or sand (64 dB at 1 m) at 2 m, quiet room (25 dB), through wooden door). the merchant now knows: Someone is crouched outside the window.
+--- reply
+Mara stayed on her knee a moment longer, then wiped her muddy palm on her thigh and rose into a low crouch. The last few steps to the window she took on the balls of her feet, easing herself along the wall until she stood beside the lit glass, her back to the cold stone. She leaned her head out just enough to angle one eye past the frame and into the room.
+
+Inside, a young man of about her own age sat alone at a table, a merchant by his dress, a ledger open before him and a lamp burning at his elbow. He was counting coins from a small wooden box, stacking them in little towers with a clerk's neatness, pausing now and then to sip from a cup at his hand. He had the look of someone finishing the day's accounts, unhurried, entirely taken up with his work.
+
+Then his hand stopped over a coin. Through the wooden door that opened onto the garden he caught it: a soft press of footsteps on the wet gravel, close, no more than a couple of paces off, and then nothing. Someone was crouched outside the window. He sat very still, a half-stacked column of coin between his fingers, his eyes fixed on the door.
+--- open: The merchant has heard her. Does he rise, call out, or sit still — and does Mara hear him move?
+--- planner answers
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"the lit window and whoever is inside","size_m":0.5,"distance_m":2,"light":"living room","reveals":"who is inside the room and what they are doing"}},"NewCharacter":{"the merchant":{"occupation":"merchant"}}},"then":[{"question":"Does the merchant hear Mara's palm slap the mud outside his window?","tool":"Listen"}],"need":["Listen"]}
+- - -
+{"calls":{ "Listen":{"the merchant":{"listener_species":"human","sound":"footsteps on gravel or sand (64 dB at 1 m)","spl_db":70,"distance_m":2,"noise":"quiet room (25 dB)","barrier":"wooden door","ground":"grass, fields or soil","reveals":"Someone is crouched outside the window"}}}}
+
