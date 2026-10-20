@@ -71,6 +71,9 @@ export interface Person {
     at?: string;
     /** Sitting or standing, as the last Act left them (actions.ts). */
     posture?: 'sitting' | 'standing';
+    /** Height above the ground the character stands at, m, when a climb set it: the top of a wall climbed, 0 at its foot after a
+     *  failed climb. Cleared by a walk or a fall (rules-tools.ts BodyCheck, BodyFall, Act). */
+    raised_m?: number;
     /** The room whose air this person last breathed (rooms.ts). */
     airFrom?: string | null;
     species: string; mass: number; lost: number; red: number; wounds: Wound[]; nextId: number;

@@ -967,6 +967,20 @@ export function registerRulesTools(enabled: boolean): void {
         return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
 
+    // The country of each listed city, and the city that stands for a country (its first listed city, or its capital) [stated
+    // geography; the stand-in city is ASSUMED to speak for the whole country].
+    const CITY_OF: [RegExp, string, string[]][] = [
+        [/united kingdom|england|great britain|britain|scotland|wales/i, 'London', ['London', 'England']],
+        [/netherlands|holland/i, 'Amsterdam', ['Amsterdam']], [/belgium|flanders/i, 'Antwerp', ['Antwerp']],
+        [/italy/i, 'Florence', ['Florence', 'Naples', 'Milan']], [/spain/i, 'Madrid', ['Valencia', 'Madrid', 'Barcelona', 'Seville']],
+        [/france/i, 'Paris', ['Paris', 'Strasbourg']], [/germany|prussia|bavaria|saxony/i, 'Leipzig', ['Augsburg', 'Leipzig', 'Munich', 'Hamburg', 'Frankfurt', 'Gottingen', 'Nurnberg', 'Quedlinburg', 'Rostock', 'Wurzburg']],
+        [/austria/i, 'Vienna', ['Vienna', 'LowerAustria', 'UpperAustria', 'Salzburg', 'Styria', 'Tyrol', 'Carinthia', 'Carniola']],
+        [/poland/i, 'Warsaw', ['Gdansk', 'Krakow', 'Warsaw', 'Lwow', 'Cracow', 'Lublin', 'Poznan']], [/portugal/i, 'Lisbon', ['Lisbon', 'Porto', 'Coimbra', 'Evora']],
+        [/sweden/i, 'Stockholm', ['Stockholm']], [/russia/i, 'Moscow', ['Moscow', 'Saint Petersburg']], [/turkey|ottoman/i, 'Istanbul', ['Istanbul']],
+        [/egypt/i, 'Cairo', ['Cairo']], [/japan/i, 'Kyoto', ['Kyoto', 'Japan', 'Edo']], [/china/i, 'Beijing', ['Beijing', 'Suzhou', 'Canton']],
+    ];
+    const cityOfCountry = (c: string) => CITY_OF.find(([re]) => re.test(c))?.[1] ?? null;
+    const cityCountry = (city: string) => CITY_OF.find(([, , list]) => list.includes(city))?.[1] ?? null;
     tool('Price', 'Decide what goods cost, what a day of work pays, what a year of necessities costs, or what English money is worth, in a European city 1264–1913, an Asian city (Beijing, Suzhou, Canton, Kyoto) about 1730–1925, or for wages in Istanbul 1489–1914, Cairo 1400–1800, Moscow 1701–1874, Japan 1610–1867, India by region 1595–1928, Korea 1782–1879, Latin America (Argentina, Bolivia, Chile, Mexico, Peru) 1524–1820 and nine British African colonies 1880–1965, in 1953–2008 the hourly pay of a named trade (welder, nurse, bus driver) in 100+ countries, and in about 60 more markets worldwide 1209–2008 the baskets a day\'s wage buys, before narrating a sale, a wage or a bill. Returns grams of silver and the days a building labourer works to earn it. Goods outside its list (apples, fish, tea) have their price from the story; Price gives the listed goods only.', {
         question: { type: 'string', enum: PRICE_QUESTIONS },
         item: { type: 'string', enum: GOODS_LIST, description: 'For the price of goods' },
@@ -1009,6 +1023,10 @@ export function registerRulesTools(enabled: boolean): void {
             return `Daily wage of a labourer in ${w.country}, ${year}: buys ${Math.round(w.ratio * 100)} % of what a British labourer's buys${g}.`;
         }
         if (!CITIES.includes(a.city ?? "")) return 'Give city, or country for a daily wage elsewhere (1820–2008).';
+        // A city in another country than the scene's, where the scene's country has a listed city, gives way to that one (a York
+        // inn in 1820 was priced in Leipzig).
+        const home = st.setting?.country ? cityOfCountry(st.setting.country) : null;
+        if (home && cityCountry(a.city!) && cityCountry(a.city!) !== cityCountry(home)) a = { ...a, city: home };
         const r = price(a.question, a.item, a.trade, Number(a.quantity) || 1, a.city!, year);
         if ('error' in r) return r.error;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
@@ -1651,7 +1669,10 @@ export function registerRulesTools(enabled: boolean): void {
         if (!w.p) return w.error;
         const out = check(w.p, { ...a, share: combined(a) }, rng);
         // A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it.
+        // A climb sets where the climber stands: on top after a success, at the foot after a failure.
+        if (a.height_m && /SUCCESS/.test(out)) w.p.raised_m = Number(a.height_m);
         if (a.height_m && /FAILURE/.test(out)) {
+            w.p.raised_m = 0;
             const h = Math.round(rng() * Number(a.height_m) * 10) / 10;
             return `${out.replace('; the body as it was', '')} ${h < 0.5 ? `${a.who} slips back before leaving the ground.` : `${a.who} loses the grip at ${h} m. ${fall(w.p, h, {}, rng)}`}`;
         }
@@ -1772,6 +1793,8 @@ export function registerRulesTools(enabled: boolean): void {
         const r = actTogether(st, actors, p => (p.weather ? placeCountry(p.weather) : null) ?? st.setting?.country ?? null);
         if ('error' in r) return `${r.error} State unchanged.`;
         const names = new Set(actors.map(x => x.who));
+        // A walk leaves the height a climb set.
+        for (const x of actors) if (x.steps.some(s => s.do === 'walk_to')) delete x.p.raised_m;
         let tail = '';
         tail = passSeconds(st, r.seconds, names, rng);
         return `${r.text}. Span ${honest(r.seconds)}.${tail}`;
@@ -1906,6 +1929,10 @@ export function registerRulesTools(enabled: boolean): void {
     }, ['who', 'height_m'], a => run((st, rng) => {
         const { p, error } = whoAny(st, a.who, a.species);
         if (!p) return error;
+        // A fall starts from where the character stands: after a failed climb they are at its foot (a climb that failed at
+        // 0.6 m was followed by a 3 m drop "into the garden on the other side").
+        if (p.raised_m != null && Number(a.height_m) > p.raised_m + 0.5) return p.raised_m ? `${a.who} stands ${p.raised_m} m up: the drop is ${p.raised_m} m. Call BodyFall with height_m ${p.raised_m}.` : `${a.who} is on the ground at the foot of the climb, on the side it started from: the climb failed, so there is no drop to make and nothing beyond it is reached.`;
+        delete p.raised_m;
         return fall(p, Number(a.height_m), { soft: !!a.soft, headFirst: !!a.head_first, age: a.age == null ? undefined : Number(a.age), ground: a.ground, stiff: !!a.stiff_legs }, rng);
     }));
 

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p .",
     "typecheck": "tsc -p . --noEmit",
-    "test": "tsc -p . && node tests/route.test.mjs && node tests/frame.test.mjs"
+    "test": "tsc -p . && node tests/route.test.mjs && node tests/frame.test.mjs && node tests/engine.test.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0"
