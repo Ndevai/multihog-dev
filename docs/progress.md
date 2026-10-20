@@ -684,3 +684,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Run of 3ee2f29 (results/run-39485197751): 7 faults (story 1: none; 2: 6; 3: 1). Story 2's six had one cause. "A coaching inn near York" found no place, because York is outside the WMO weather-city list. So no Weather ran and no country was set, the code-written Price had no city and refused, and the narrator made rain rattle the windows twice. placeIn now falls back to GeoNames cities15000 (every place of 15,000 people or more, geonames.org, CC BY 4.0; 32,726 names; data/geonames.ts, built by tools/build-geonames.mjs). A name after a word that leads a place (in, near, at, outside, from, to, into, of, by) takes the largest place of that name, and its weather and country come from the nearest WMO city. "near York" → 53.96 N, 1.08 W, Leeds' climate 34 km off, United Kingdom. A person's name with no place word stays a name (Mary is also a city in Turkmenistan).
 - `npm test`: 158 checks, 0 misses.
+
+## 2026-10-20 (68) Vegetables and pulses in the reference table
+
+- The user downloaded USDA ERS's all-vegetables CSV (2023, 93 rows), which the session could not fetch. data/usda-produce.ts now holds 31 vegetables, each in its whole fresh form where the table gives several (cabbage green, carrots raw whole, tomatoes large round…; olives canned), and 8 dried pulses. Fresh vegetables are priced against apples like the fruit (potatoes 0.50 ×, onions 0.57 ×, cabbage 0.44 ×, tomatoes 1.15 ×). Dried pulses are priced against the listed beans or peas, sold by the litre, at 0.8 kg a litre [ASSUMED] and the pulse's ratio to the mean dried bean (lentils 1.03 ×). London 1888, a pound: potatoes about ¾ d, lentils about 2 d.
+- `npm test`: 159 checks, 0 misses.

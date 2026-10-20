@@ -2,7 +2,7 @@
 // Allen 2001 and the GPIH files.
 import { PERIODS, GOODS, CPI, CRAFTSMAN, LABOURER } from './data/allen-prices.js';
 import { MOATSOS } from './data/moatsos.js';
-import { USDA_FRUIT } from './data/usda-produce.js';
+import { USDA_FRUIT, USDA_VEG, USDA_PULSES } from './data/usda-produce.js';
 import { LABOURER as LAB_Y, CRAFTSMAN as CRAFT_Y, CPI as CPI_Y, ASIAWAGE, ASIABASKET, POUND, WORLDWAGE, WORLDBASKET, WORLDSKILLED, WAGE2, SKILLED2, PENCE, PENCESKILLED } from './data/gpih.js';
 
 // Places with wages only (and a bare-bones basket where the source gives one): the four Asian cities, Latin America, India by
@@ -125,8 +125,14 @@ export function referencePrice(good: string, like?: string): { item: string; rat
     const g = good.toLowerCase().replace(/\b(?:a|an|the|some|pounds?|pints?|lbs?|of|fresh|ripe)\b/g, ' ').replace(/\s+/g, ' ').trim();
     const listed = GOODS_LIST.find(x => x.split(' (')[0] === g || x.split(' (')[0] === g.replace(/s$/, '') || `${x.split(' (')[0]}s` === g);
     if (listed) return { item: listed, ratio: 1, source: 'listed' };
-    const key = [g, `${g}s`, g.replace(/s$/, ''), g.replace(/ies$/, 'y'), `${g.replace(/y$/, 'ie')}s`].find(k => USDA_FRUIT[k] != null);
-    if (key && GOODS['apples (kg)'] != null) return { item: 'apples (kg)', ratio: USDA_FRUIT[key] / USDA_FRUIT.apples, source: `${key} at ${Math.round(USDA_FRUIT[key] / USDA_FRUIT.apples * 100) / 100} × apples, from US retail prices 2023 (USDA ERS) [ASSUMED: that ratio then]` };
+    const forms = [g, `${g}s`, `${g}es`, g.replace(/s$/, ''), g.replace(/es$/, ''), g.replace(/ies$/, 'y'), `${g.replace(/y$/, 'ie')}s`];
+    // Fruit and fresh vegetables: priced against apples, the one produce good with a historical series.
+    const produce: Record<string, number> = { ...USDA_VEG, ...USDA_FRUIT }, key = forms.find(k => produce[k] != null);
+    if (key && GOODS['apples (kg)'] != null) return { item: 'apples (kg)', ratio: produce[key] / USDA_FRUIT.apples, source: `${key} at ${Math.round(produce[key] / USDA_FRUIT.apples * 100) / 100} × apples, from US retail prices 2023 (USDA ERS) [ASSUMED: that ratio then]` };
+    // Dried pulses: against the listed beans or peas, which is sold by the litre; a litre of dried pulses weighs 0.8 kg
+    // [ASSUMED], so a kilogram is 1.25 litres' price times the pulse's ratio to the mean dried bean.
+    const pulse = forms.find(k => USDA_PULSES[k] != null);
+    if (pulse && GOODS['beans or peas (litre)'] != null) return { item: 'beans or peas (litre)', ratio: USDA_PULSES[pulse] / USDA_PULSES.beans / 0.8, source: `dried ${pulse} at ${Math.round(USDA_PULSES[pulse] / USDA_PULSES.beans * 100) / 100} × the mean dried bean, per kg at 0.8 kg a litre, from US retail prices 2023 (USDA ERS) [ASSUMED: that ratio then]` };
     if (like && GOODS[like] != null) return { item: like, ratio: 1, source: `at the price of ${like.split(' (')[0]}, the listed good it is most like [ASSUMED]` };
     return null;
 }

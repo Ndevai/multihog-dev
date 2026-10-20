@@ -1046,7 +1046,7 @@ export function registerRulesTools(enabled: boolean): void {
         }
         const r0 = price(a.question, ref?.item ?? a.item, a.trade, Number(a.quantity) || 1, a.city!, year);
         if ('error' in r0) return r0.error;
-        const r = ref && ref.source !== 'listed' ? { ...r0, silver: r0.silver * ref.ratio, labourDays: r0.labourDays == null ? null : r0.labourDays * ref.ratio, what: `${Number(a.quantity) || 1} ${ref.item.match(/\((\w+)/)?.[1] === 'each' ? '×' : ref.item.match(/\((\w+)/)?.[1] ?? '×'} of ${a.good}`, note: [r0.note, ref.source].filter(Boolean).join('; ') } : r0;
+        const r = ref && ref.source !== 'listed' ? { ...r0, silver: r0.silver * ref.ratio, labourDays: r0.labourDays == null ? null : r0.labourDays * ref.ratio, what: `${Number(a.quantity) || 1} ${ref.item.startsWith('beans or peas') ? 'kg' : ref.item.match(/\((\w+)/)?.[1] === 'each' ? '×' : ref.item.match(/\((\w+)/)?.[1] ?? '×'} of ${a.good}`, note: [r0.note, ref.source].filter(Boolean).join('; ') } : r0;
         const g = r.silver >= 10 ? Math.round(r.silver) : Math.round(r.silver * 100) / 100;
         // Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length].
         const days = r.labourDays == null ? '' : `; a building labourer earns that in ${r.labourDays >= 10 ? `${Math.round(r.labourDays)} days` : r.labourDays >= 0.1 ? `${Math.round(r.labourDays * 10) / 10} days` : spokenWork(r.labourDays * 10)}`;

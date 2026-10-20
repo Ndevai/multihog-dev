@@ -66,5 +66,7 @@ const W = await import('../src/rules/weather.js');
 const york = W.placeIn('A coaching inn near York, 3 November 1820, evening.', new Set());
 if (!(york && Math.abs(york.lat - 53.96) < 0.05 && /United Kingdom/.test(york.country))) { miss++; console.log(`MISS York: ${JSON.stringify(york)}`); }
 if (W.placeIn("Mary (the player's character) walks home.", new Set()) !== null) { miss++; console.log('MISS Mary is no place'); }
-console.log(`13 checks, ${miss} miss(es)`);
+const pot = Pr.referencePrice('potatoes'), len = Pr.referencePrice('lentils');
+if (!(pot?.item === 'apples (kg)' && Math.abs(pot.ratio - 0.4952) < 0.01 && len?.item === 'beans or peas (litre)')) { miss++; console.log(`MISS vegetables: ${JSON.stringify([pot, len])}`); }
+console.log(`14 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);
