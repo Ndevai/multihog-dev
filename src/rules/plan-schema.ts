@@ -44,14 +44,17 @@ export function callsFromKeyed(calls: Record<string, unknown>): { tool: string; 
  *  fixed keys in the schema, so their names are written as stored. */
 export const PERSON_KEY = "^(?:[A-Z][A-Za-z'-]*(?: [A-Z][A-Za-z'-]*){0,2}|the(?: [a-z0-9'-]+){1,4})$";
 const PERSON_ARGS = new Set(['who', 'speaker', 'listener', 'viewer']);
+const PERSON_VALUE = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker', 'pursuer', 'fleeing', 'target_who', 'requester_name']);
 /** The plan: one entry per tool (of the named tools, all when none named), each holding one call per subject; follow-on
  *  questions, each with the tool that answers it; tools wanted next; time, place, people. In a follow-on round, `require`
  *  names the tools the last round's questions asked for: the plan holds a call of each. */
 export function planSchema(only?: Set<string>, opts: { people?: string[]; require?: string[] } = {}): Schema {
     const tools = [...REGISTRY.values()].filter(t => !only || only.has(t.name));
+    const people = opts.people ?? [];
+    // A person argument inside a call (the listener, the target) takes one of the scene's people.
     const argsOf = (t: (typeof tools)[number], drop: string | null): Schema => ({
         type: 'object', additionalProperties: false, required: t.required.filter(k => k !== drop),
-        properties: Object.fromEntries(Object.entries(t.properties).filter(([k]) => k !== drop).map(([k, p]) => [k, propSchema(p as Prop)])),
+        properties: Object.fromEntries(Object.entries(t.properties).filter(([k]) => k !== drop).map(([k, p]) => [k, people.length && PERSON_VALUE.has(k) && (p as Prop).type === 'string' ? { type: 'string', enum: people } : propSchema(p as Prop)])),
     });
     const require = new Set((opts.require ?? []).filter(n => tools.some(t => t.name === n)));
     const entry = (t: (typeof tools)[number]): Schema => {
@@ -62,9 +65,11 @@ export function planSchema(only?: Set<string>, opts: { people?: string[]; requir
         const listed = (t.properties[key] as { enum?: string[] } | undefined)?.enum;
         if (listed?.length) return { type: 'object', properties: Object.fromEntries(listed.map(v => [v, args])), additionalProperties: false, maxProperties: 6, ...min };
         // Bounded: under constrained decoding a model can repeat one call until the token limit cuts the JSON.
-        // The endpoint refuses propertyNames (tools/probe-schema.mjs: HTTP 400), so a new person's key is free text here and
-        // its shape is checked where the call enters the engine (question-pass.ts validCalls, PERSON_KEY).
-        if (PERSON_ARGS.has(key)) return { type: 'object', properties: Object.fromEntries((opts.people ?? []).map(n => [n, args])), additionalProperties: args, maxProperties: 6, ...min };
+        // The scene's people (scene-people.ts) are the keys a person-keyed tool takes; NewCharacter also takes a new one. The
+        // endpoint refuses propertyNames (tools/probe-schema.mjs: HTTP 400), so the closed set is written as fixed properties.
+        if (PERSON_ARGS.has(key)) return people.length
+            ? { type: 'object', properties: Object.fromEntries(people.map(n => [n, args])), additionalProperties: t.name === 'NewCharacter' ? args : false, maxProperties: 6, ...min }
+            : { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
         return { type: 'object', additionalProperties: args, maxProperties: 6, ...min };
     };
     return {

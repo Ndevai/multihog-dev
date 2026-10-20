@@ -35,5 +35,19 @@ check('required tool', s2.properties.calls.required.includes('Choose') && s2.pro
 check('Price keys are the listed goods', 'beer (litre)' in s2.properties.calls.properties.Price.properties && s2.properties.calls.properties.Price.additionalProperties === false, Object.keys(s2.properties.calls.properties.Price.properties).slice(0, 3));
 const p2 = Q.rawPlan('{"calls":{},"then":[{"question":"Does he have apples left?","tool":"Choose"}]}');
 check('then with its tool', p2.then[0] === 'Does he have apples left?' && p2.thenTools[0] === 'Choose', p2);
-console.log(`25 checks, ${miss} miss(es)`);
+// The scene's people: cast, roles the text names, each of a group of two, names inside a sentence.
+const SP = await import('../src/rules/scene-people.js');
+const sp = SP.scenePeople(['Two men at the next table are whispering. I call to the innkeeper.', 'The maid set down a cup. Josiah Crake laughed in London.'], ['Tom']);
+for (const n of ['Tom', 'the innkeeper', 'the first man', 'the second man', 'the maid', 'Josiah Crake']) check(`scene person: ${n}`, sp.includes(n), sp);
+for (const n of ['London', 'the window', 'the next table']) check(`not a person: ${n}`, !sp.includes(n), sp);
+// Closed keys: a person-keyed tool takes the scene's people only; NewCharacter also a new one; person values are enums.
+const s3 = P.planSchema(new Set(['Look', 'NewCharacter', 'Communicate']), { people: sp });
+check('Look keys closed', s3.properties.calls.properties.Look.additionalProperties === false, null);
+check('NewCharacter takes a new key', typeof s3.properties.calls.properties.NewCharacter.additionalProperties === 'object', null);
+check('listener is one of the people', s3.properties.calls.properties.Communicate.properties.Tom.properties.listener.enum.includes('the innkeeper'), null);
+// Act times walking and posture; a climb in its words goes to BodyCheck.
+const { ctx } = await import('../tools/st-harness.mjs'); ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'x' }];
+check('Act passes a climb on', /decided by BodyCheck/.test(String(await T.REGISTRY.get('Act').exec({ who: 'Mara', action: 'climbs the wall and drops down into the garden', distance_m: 3 }))), null);
+check('Act walks', /walks/.test(String(await T.REGISTRY.get('Act').exec({ who: 'Mara', action: 'slips along the wall into the shadow of the hedge', distance_m: 5 }))), null);
+console.log(`41 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

@@ -1415,7 +1415,7 @@ export function registerRulesTools(enabled: boolean): void {
         tone_hz: { type: 'number', description: 'For a tonal sound (a bell, a whistle, a horn): its pitch, Hz (a church bell 300–600, a whistle 2000–3000)' },
         ...WAY_PROPS,
         reveals: str('The fact hearing it would teach, one short sentence (a secret overheard, who is coming); learned only if heard'),
-    }, ['listener', 'distance_m'], a => run(st => {
+    }, ['listener', 'distance_m', 'sound'], a => run(st => {
         const l = who(st, a.listener, a.listener_species);
         if (!l.p) return l.error;
         const out = listen(a.listener, l.p, { way: wayFor(st, l.p, a, !a.barrier || a.barrier === 'none'), sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: a.noise ?? 'quiet room (25 dB)', barrier: a.barrier ?? 'none' });
@@ -1771,6 +1771,9 @@ export function registerRulesTools(enabled: boolean): void {
         action: str('For one actor, the action in plain words (an alternative to steps) ("steps out of the house onto the street", "sits down", "stands up and crosses the room"); walking needs distance_m'),
         distance_m: { type: 'number', description: 'With action: the walking distance, m, from the scene' },
     }, [], a => run((st, rng) => {
+        // Act times walking and posture; a climb is BodyCheck's (with height_m) and a drop BodyFall's.
+        const said = [a.action, ...((a.actors as { action?: string }[] | undefined) ?? []).map(x => x.action)].filter(Boolean).join(' ');
+        if (/\b(?:climb|climbs|climbed|climbing|clambers?|scales?|scaled|scaling|vaults?|vaulted|jumps? (?:down|off|over|from)|leaps? (?:down|off|over|from)|drops? (?:down|from|over|into)|dropped (?:down|from|over|into)|falls?|fell)\b/i.test(String(said))) return `Act times walking and posture. A climb is decided by BodyCheck with height_m, and a drop by BodyFall from the height the climber stands at. State unchanged.`;
         if (a.who && !a.steps && !a.actors && a.action) {
             const r = stepsFromWords(Array.isArray(a.action) ? (a.action as unknown[]).join(', then ') : String(a.action), String(a.who), a.distance_m as number | undefined);
             if ('error' in r) return `${r.error} ${ACT_EXAMPLE} State unchanged.`;

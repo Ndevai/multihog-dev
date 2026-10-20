@@ -12,6 +12,7 @@ import { takeFlags } from './audit-flags.js';
 import { planSchema, callsFromKeyed, PERSON_KEY } from './plan-schema.js';
 import { routedTools, movesIn, ALWAYS } from './router.js';
 import { framedCalls, playerName, mergeCalls } from './frame.js';
+import { scenePeople } from './scene-people.js';
 import { worldHasMagic } from './world.js';
 import { knowledgeBlock } from './knowledge.js';
 import { loadColex } from './colex.js';
@@ -276,7 +277,8 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         framed.calls = framed.calls.filter(c => has(c.tool));
         framed.covered = new Set([...framed.covered].filter(has));
         // The people the story holds, as keys the plan writes them by (plan-schema.ts PERSON_KEY).
-        planTools.people = [...new Set([...Object.keys(s.state.people ?? {}), ...player ? [player] : [], ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]).filter(n => !/^(?:Scenario|Cast|Time|Place|Weather|Story|Body|Knows)$/i.test(n))])].slice(0, 24);
+        const sceneTexts = [said0, tracker.match(/\[CAST\][\s\S]*?\[\/CAST\]/)?.[0] ?? '', ...chat.filter(m => !m.is_system).slice(-3, -1).map(m => String(m.mes ?? ''))];
+        planTools.people = scenePeople(sceneTexts, [...player ? [player] : [], ...Object.keys(s.state.people ?? {}), ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]).filter(n => !/^(?:Scenario|Cast|Time|Place|Weather|Story|Body|Knows)$/i.test(n))]);
         KNOWN_PEOPLE = new Set(planTools.people);
         const routed = routedTools(said0, has);
         const left = routed ? [...routed].filter(t => !framed.covered.has(t) && !ALWAYS.includes(t)) : null;
@@ -335,7 +337,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
                 ...dropped.map(c => `${c.tool} ${JSON.stringify(c.args)}: ${!REGISTRY.has(c.tool) ? 'unknown tool' : badPeople(c).length ? `${badPeople(c).join(', ')} takes a person's name or role, as in "Mara" or "the innkeeper"` : `missing ${REGISTRY.get(c.tool).required.filter(k => c.args[k] === undefined || c.args[k] === '').join(', ')}`}.`),
                 noPlace ? 'Add "at": [latitude, longitude] of the scene, from the scene or scenario.' : '',
                 motion ? `The player's message moves their character ("${said.slice(0, 120)}"): add Act with action and distance_m from the scene.` : '',
-                ...sceneOpen.map(d => `${d.tool} ${JSON.stringify(d.args)}: call it with distance_m, noise and barrier from the scene, and effort when the scene sets how loud the words are.`)].filter(Boolean);
+                ...sceneOpen.map(d => `${d.tool} ${JSON.stringify(d.args)}: call it with ${[...REGISTRY.get(d.tool).required.filter(k => d.args[k] === undefined), 'noise', 'barrier'].join(', ')} from the scene${d.tool === 'Communicate' ? ', and effort when the scene sets how loud the words are' : ''}.`)].filter(Boolean);
             const fix = hoist(rawPlan(await send(QUESTION_SYSTEM, `${prompt}\n\n${REPAIR.replace('{problems}', problems.join('\n'))}`)));
             if (fix.at && !scenePosition())
                 setScenePosition(fix.at[0], fix.at[1]);
@@ -422,6 +424,9 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
             // The tools the open questions named are written this round (a question about the costermonger's apples named
             // Choose and came back with zero calls).
             planTools.require = [...new Set([...plan.thenTools, ...plan.need])];
+            // People drawn this turn (NewCharacter) are keys for the follow-on round.
+            planTools.people = [...new Set([...planTools.people, ...Object.keys(store().state.people ?? {})])].slice(0, 32);
+            KNOWN_PEOPLE = new Set(planTools.people);
             const added = extra.length ? `MORE TOOLS\n${toolCatalogue(new Set(extra)).split('\n\nOTHER TOOLS')[0]}\n\n` : '';
             const follow = FOLLOW_ON.replace('{results}', results.map((x, i) => `${i + 1}. ${x.tool}: ${storyResult(x.result)}`).join('\n') || '(none)')
                 .replace('{then}', [...plan.then, ...results.some(r => /Call Interpret/.test(r.result)) ? ['Which meaning does each listener take from the words a result names?'] : []].map(q => `- ${q}`).join('\n'));
