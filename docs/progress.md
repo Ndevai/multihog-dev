@@ -453,3 +453,13 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - The first GitHub run met NVIDIA's rate limit (429) on turn 1 and tested nothing. Model calls are the bottleneck: one story turn makes 4–6 calls, a full run about 60, and the free key allows a limited number per window. tools/nvidia.mjs now keeps every answer in answers-cache.jsonl, keyed by a SHA-256 of model, effort, system prompt, user prompt and schema (temperature 0, so the same request gets the same answer). A rerun after a fix asks the model only the calls whose prompts the fix changed (a fix in turn 3 replays turns 1–2 at once) and replays the rest. The workflow loads the file from play-results/cache/ before a run and saves it back after; the result header gives "N calls asked, M replayed". EVAL_CACHE=off asks every call again.
 - A 429 waits for the server's Retry-After, else 60 s × the try number.
+
+## 2026-10-20 (36) Where the project is stuck, and the order of work from here
+
+- State: 42 tools, about 20 000 lines in src, 168 commits, zero automated tests that run without the model. Faults per 12-turn story run: 12, 20, 13, 19. First-turn runs: 18, 6, 8, 1.
+- The bottleneck is the planner: one model step turns the player's free text into calls among 42 tools with exact arguments. Every fault class fixed so far sits there (Act arguments, missing place or time, missing tool, refused call). The deep layers (acoustics, materials, chemistry, body) pass their offline checks but are reached only when the planner gets the call right. A turn makes about 5 model calls; with a chance p of a fault in each call, a turn is clean (1 − p)^5 of the time (p = 0.1 gives 59 %), and each new tool raises p. Each fix needs a live run on a rate-limited key, so the fix–test loop costs hours.
+- Decision, in this order:
+  1. New layers stop until the 3 stories × 4 turns run clean twice in a row.
+  2. Code routes each turn: a verb lexicon and the parsers already written (stepsFromWords, distanceIn, placeIn, findStoryTime, coin counts) read the player's message into a frame (verb, object, destination, amount, time). Code picks the tools from that frame. The model fills only the arguments code leaves open, under a schema limited to those tools (planSchema(only)).
+  3. An offline corpus of player lines with their expected tools and arguments runs in seconds without the model, on every push. A model run is needed only for narration and the rule check.
+- The 2026-10-20 03:29 UTC GitHub run is the baseline: its faults, sorted by the step that made each one, decide how far step 2 has to reach.
