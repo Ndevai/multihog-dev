@@ -73,5 +73,7 @@ const nr = N.readNarration('{"scene":"Rain on the cobbles.","results":{"2":"She 
 check('reply read as beats', nr.beats.map(b => b.result).join() === '0,1,2' && nr.open[0] === 'Does he thank her?', nr);
 const s5 = P.planSchema(new Set(['BodyCheck', 'Look']), { people: ['Mara', 'the merchant'], actors: ['Mara'] });
 check('first round: a climb is the player\'s', Object.keys(s5.properties.calls.properties.BodyCheck.properties).join() === 'Mara' && 'the merchant' in s5.properties.calls.properties.Look.properties, null);
-console.log(`53 checks, ${miss} miss(es)`);
+const s6 = P.planSchema(new Set(['BodyCheck', 'Look']), { people: ['Mara', 'the merchant'], require: ['BodyCheck', 'Look'], used: new Map([['BodyCheck', new Set(['Mara', 'the merchant'])]]) });
+check('a tool with every key used is not required', !s6.properties.calls.required.includes('BodyCheck') && s6.properties.calls.required.includes('Look'), s6.properties.calls.required);
+console.log(`54 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

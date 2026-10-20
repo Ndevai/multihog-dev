@@ -640,3 +640,8 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 
 - Run of 808609e (results/run-39472546019): 7 faults; story 3 had 5. Its first plan copied Mara's climb under a second key, "the merchant" (climb mossy wall: SUCCESS). Required to tell that result, the narrator made "another figure" land behind her, and the next turn drew that figure as a girl of 16 who fled: four unbacked Look and Listen lines followed from one copied call. The cause is the key set: every person in the scene could be the subject of a climb in the first round. Body-action tools (Act, BodyCheck, BodyFall, HoldOn, Chase, BodyIntake, WorkOut; plan-schema.ts ACTOR_TOOLS) now take as first-round keys only the player's character and the people the player's message names. Other people's actions follow their choices, in a later round, where anyone in the scene may act. Stories 1 and 2: 1 fault each (the apples' price; rain against the window on a day whose rain was 0.2 mm, told in a scene beat).
 - `npm test`: 145 checks, 0 misses.
+
+## 2026-10-20 (61) Required tools come from open questions only
+
+- Run of 0ebda44 (results/run-39473976387): 2 faults in 12 turns (stories 1 and 2: none). Both came from one call: the follow-on round's schema required a call of each tool in "need", BodyCheck among them. Mara's climb had already used her key (entry 51), so the one key left to write under was the merchant's, and the merchant climbed the wall. Requiring is now reserved for the tools the open questions name ({question, tool}); "need" only offers tools. A tool with no key left is never required.
+- `npm test`: 146 checks, 0 misses.

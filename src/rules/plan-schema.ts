@@ -64,8 +64,11 @@ export function planSchema(only?: Set<string>, opts: { people?: string[]; actors
     const entry = (t: (typeof tools)[number]): Schema => {
         const key = subjectOf(t.name);
         if (!key) return argsOf(t, null);
-        const args = argsOf(t, key), min = require.has(t.name) ? { minProperties: 1 } : {};
         const used = opts.used?.get(t.name) ?? new Set<string>();
+        // A tool is required only while it has a key left to write under.
+        const open = PERSON_ARGS.has(key) ? (ACTOR_TOOLS.has(t.name) && opts.actors?.length ? opts.actors : people).some(n => !used.has(n)) || !people.length || t.name === 'NewCharacter' : true;
+        const args = argsOf(t, key), min = require.has(t.name) && open ? { minProperties: 1 } : {};
+        if (require.has(t.name) && !open) require.delete(t.name);
         // A subject with a fixed list (Price's goods) takes those keys only.
         const listed = (t.properties[key] as { enum?: string[] } | undefined)?.enum;
         if (listed?.length) return { type: 'object', properties: Object.fromEntries(listed.filter(v => !used.has(v)).map(v => [v, args])), additionalProperties: false, maxProperties: 6, ...min };

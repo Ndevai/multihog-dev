@@ -445,7 +445,9 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
                 planTools.current = new Set([...only, ...extra]);
             // The tools the open questions named are written this round (a question about the costermonger's apples named
             // Choose and came back with zero calls).
-            planTools.require = [...new Set([...plan.thenTools, ...plan.need])];
+            // Required: the tools the open questions name ("need" only offers tools; requiring them forced a second climb
+            // under the merchant's key once Mara's climb had used hers).
+            planTools.require = [...new Set(plan.thenTools)];
             // A later round follows the first round's results: anyone in the scene may act in it.
             planTools.actors = [];
             // People drawn this turn (NewCharacter) are keys for the follow-on round.
