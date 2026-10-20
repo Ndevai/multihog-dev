@@ -80,5 +80,8 @@ fresh();
 const st1 = () => ctx.chatMetadata.rulesEngine.state;
 await run('Claim', { who: 'Clara', claim: 'Clara has a purse', kind: 'something the character has', item: 'purse', in_world: true, base_share: '95% nearly everyone', share: '95% nearly everyone' });
 if (!(Po.unrecorded(st1(), 'Clara', 'silver thimble') && !Po.unrecorded(st1(), 'Bob', 'silver thimble'))) { miss++; console.log('MISS unrecorded'); }
-console.log(`19 checks, ${miss} miss(es)`);
+// A given name sets the sex: Josiah is a man in every draw, Mary a woman.
+for (let i = 0; i < 5; i++) { fresh(); expect('Josiah is a man', String(await run('NewCharacter', { who: `Josiah Crake` })), /\b(?:man|boy)\b/); }
+fresh(); expect('Mary is a woman', String(await run('NewCharacter', { who: 'Mary Kelly' })), /\b(?:woman|girl)\b/);
+console.log(`21 checks, ${miss} miss(es)`);
 process.exit(miss ? 1 : 0);

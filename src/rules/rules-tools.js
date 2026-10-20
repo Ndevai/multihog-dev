@@ -22,6 +22,7 @@ import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
 import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, contactBurn, listen, look, holdLoad, chase } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, MOTION_START } from './actions.js';
+import { GIVEN_NAMES } from './data/given-names.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
 import { formatStoryTime, spokenTime } from './clock.js';
@@ -1795,6 +1796,11 @@ export function registerRulesTools(enabled) {
         const young = /\b(girl|boy|maid|lad|lass)\b/i.exec(String(a.who))?.[1]?.toLowerCase();
         if (young && !a.sex)
             a = { ...a, sex: /girl|maid|lass/.test(young) ? 'female' : 'male' };
+        // A given name sets the sex by the share of girls among the births it was given to (SSA 1880–2008; data/given-names.ts):
+        // a draw against that share, so "Josiah Crake" is a man and "Leslie" a woman 54 % of the time.
+        const given = /^([A-Z][a-z]+)\b/.exec(String(a.who))?.[1]?.toLowerCase(), share = given ? GIVEN_NAMES[given] : undefined;
+        if (!a.sex && share != null)
+            a = { ...a, sex: rng() < share ? 'female' : 'male' };
         // A role noun that names a woman: maid- words, -ess (hostess, seamstress), wife, widow, landlady, mistress.
         if (!a.sex && /\b(?:maid\w*|\w+ess|\w*wife|widow|landlady|lady|mistress|nun|matron)\b/i.test(`${a.who} ${a.occupation ?? ''}`) && !/\b(?:process|business|address|access)\b/i.test(`${a.who} ${a.occupation ?? ''}`))
             a = { ...a, sex: 'female' };
