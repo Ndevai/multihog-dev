@@ -52,7 +52,9 @@ const t0 = Date.now();
 const OUT = `story-result-${chosen.map(([i]) => i + 1).join('-')}.txt`;
 const total = chosen.reduce((x, [, s]) => x + s.turns.length, 0);
 const save = () => fs.writeFileSync(new URL(`../${OUT}`, import.meta.url), `${MODEL}, reasoning ${EFFORT}, ${Math.round((Date.now() - t0) / 60000)} min, ${new Date().toISOString()}\n${faults.length} fault(s) in ${log.length} of ${total} turns\n${faults.join('\n')}\n\n${log.join('\n')}\n`);
+let stopped = false;
 for (const [si, story] of chosen) {
+    if (stopped) break;
     ctx.chatMetadata = {}; ctx.chat = [];
     const cast = `[CAST]\n${story.cast}\nScenario: ${story.scenario}\n[/CAST]`;
     const timeBlock = () => { const t = T.storyTime(); return t === null ? '' : `[TIME]\n${C.formatStoryTime(t)}\n[/TIME]`; };
@@ -98,6 +100,8 @@ for (const [si, story] of chosen) {
         faults.push(...f.map(x => `${tag} ${x}`));
         log.push(`=== ${tag}: ${turn.player}\nclock: ${now === null ? 'none' : C.formatStoryTime(now)}\nfaults: ${f.length ? '\n  ' + f.join('\n  ') : 'none'}\n--- calls\n${calls}\n--- reply\n${reply}\n${openNote ? `--- ${openNote}\n` : ''}--- planner answers\n${sent.filter(s => /prepare one turn|choose which/.test(s.system)).map(s => s.out.slice(-1200)).join('\n- - -\n')}\n`);
         save();
+        // The model stopped answering (rate limit, outage): the rest of the run would test nothing.
+        if (f.some(x => /did not answer/.test(x))) { console.log(`\nStopped: ${f.find(x => /did not answer/.test(x))}`); stopped = true; break; }
         console.log(`story ${si + 1} turn ${ti + 1} done (${Math.round((Date.now() - t0) / 1000)} s): ${f.length} fault(s)`);
     }
 }

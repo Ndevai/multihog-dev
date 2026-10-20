@@ -25,27 +25,34 @@ export const EFFORT = process.env.EVAL_EFFORT ?? 'low';
 // GLM-5.3, nvext refused); EVAL_GUIDED=off sends no schema.
 export const GUIDED = process.env.EVAL_GUIDED ?? 'openai';
 const guide = schema => !schema || !GUIDED || GUIDED === 'off' ? {} : GUIDED === 'nvext' ? { nvext: { guided_json: schema } } : GUIDED === 'vllm' ? { guided_json: schema } : { response_format: { type: 'json_schema', json_schema: { name: 'plan', schema, strict: true } } };
+// A refused or empty answer is never passed on as an answer: a 429 (rate limit) waits and retries, an empty reply (no text,
+// or the whole budget spent thinking) is asked again, and after the last try the call throws with what happened, so a run
+// shows "the model did not answer" instead of turns that silently ran nothing.
+export const TRIES = Number(process.env.EVAL_TRIES ?? 5);
 export async function send(system, user, opts = {}, model = MODEL) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    let last = '';
+    for (let attempt = 1; attempt <= TRIES; attempt++) {
         try {
             const r = await fetch(`${BASE}/chat/completions`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0, max_tokens: 8192, stream: true,
                     reasoning_effort: EFFORT, chat_template_kwargs: { reasoning_effort: EFFORT }, ...guide(opts?.schema) }) });
-            if (r.status === 429) { await new Promise(res => setTimeout(res, 15000 * attempt)); continue; }
+            if (r.status === 429) { last = '429 rate limit (NVIDIA)'; console.log(`  rate limited, waiting ${20 * attempt} s (try ${attempt} of ${TRIES})`); await new Promise(res => setTimeout(res, 20000 * attempt)); continue; }
             if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`);
-            let out = '', buf = '';
+            let out = '', thought = 0, finish = '', buf = '';
             const dec = new TextDecoder();
             for await (const chunk of r.body) {
                 buf += dec.decode(chunk, { stream: true });
                 let i; while ((i = buf.indexOf('\n')) >= 0) {
                     const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
                     if (!line.startsWith('data:') || line === 'data: [DONE]') continue;
-                    try { out += JSON.parse(line.slice(5)).choices?.[0]?.delta?.content ?? ''; } catch { /* partial line */ }
+                    try { const c = JSON.parse(line.slice(5)).choices?.[0]; out += c?.delta?.content ?? ''; thought += (c?.delta?.reasoning_content ?? c?.delta?.reasoning ?? '').length; finish = c?.finish_reason ?? finish; } catch { /* partial line */ }
                 }
             }
-            return out;
-        } catch (e) { if (attempt === 3) throw e; await new Promise(res => setTimeout(res, 5000)); }
+            if (out.trim()) return out;
+            last = `empty answer (finish ${finish || 'none'}, ${thought} characters of thinking)`;
+            console.log(`  ${last}; asking again (try ${attempt} of ${TRIES})`);
+        } catch (e) { last = String(e.message ?? e); if (attempt === TRIES) break; await new Promise(res => setTimeout(res, 5000 * attempt)); }
     }
-    return '';
+    throw new Error(`the model did not answer after ${TRIES} tries: ${last}`);
 }
 
