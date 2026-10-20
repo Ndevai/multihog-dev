@@ -463,3 +463,11 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   2. Code routes each turn: a verb lexicon and the parsers already written (stepsFromWords, distanceIn, placeIn, findStoryTime, coin counts) read the player's message into a frame (verb, object, destination, amount, time). Code picks the tools from that frame. The model fills only the arguments code leaves open, under a schema limited to those tools (planSchema(only)).
   3. An offline corpus of player lines with their expected tools and arguments runs in seconds without the model, on every push. A model run is needed only for narration and the rule check.
 - The 2026-10-20 03:29 UTC GitHub run is the baseline: its faults, sorted by the step that made each one, decide how far step 2 has to reach.
+
+## 2026-10-20 (37) IPUMS International refused
+
+- IPUMS International (and with it NAPP and Mosaic, which use the same account) grants access only to people at an NGO or academic institution, checked by an institutional email; a personal application is refused (their letter, 2026-10-19). Every "needs IPUMS" item in this log now uses other sources:
+  - Occupations before 1969 outside England and Wales: published census tables, which are free to read. Great Britain 1801–1971 from A Vision of Britain Through Time (the source already used for 1881). Other countries from the ILO Year Book of Labour Statistics, the economically active by industry and sex, about 1930 onward.
+  - Rooms per dwelling: the published housing tables of the censuses, 1891 onward for Britain.
+  - The United States 1850–1940: IPUMS USA is a separate application and its terms page names no institutional requirement. The user can apply if US stories matter.
+- None of this blocks the current work (entry 36: the planner); the census layer stays frozen with the other layers.
