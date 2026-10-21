@@ -25,6 +25,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
 | Rule check | on | one model call after each reply |
 | Connection | same as the chat | a Connection Manager profile for the two extra calls (e.g. a faster model) |
 | Reply length | the connection's own | max tokens for the two extra calls |
+| Rules as suggestions | off | for a world far from real history: the outcomes reach the narrator as likely rather than fixed, the story and world book decide, and the rule check redoes nothing |
 
 ## Commands
 

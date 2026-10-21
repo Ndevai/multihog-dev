@@ -24,7 +24,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
 const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
-const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, profile: '', maxTokens: 0, effort: 'low' };
+const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, profile: '', maxTokens: 0, effort: 'low' };
 const ctx = () => SillyTavern.getContext();
 const toastr = globalThis.toastr;
 function settings() {
@@ -236,7 +236,11 @@ globalThis.rulesEngineInterceptor = async (chat, _size, _abort, type) => {
             console.warn('[Rules engine] question pass skipped:', e);
         }
     }
-    const parts = [questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decidedInjection(), takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
+    // Suggestions: for a world that departs far from real history, the engine's outcomes are offered, and the story and the
+    // world book decide; the rule check then redoes nothing and the reply is free prose.
+    const suggest = settings().suggest;
+    const decided = suggest ? decidedInjection().replace(/Narrate them as given; they stand\./, SUGGEST_LINE) : decidedInjection();
+    const parts = [suggest ? SUGGEST_BRIEF : questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
     c.setExtensionPrompt(KEY, parts.filter(Boolean).join('\n\n'), IN_CHAT, DEPTH, false, SYSTEM);
 };
 // Two things fit the player's word equally: the player says which (a guess would change what the scene can hold).
@@ -288,6 +292,8 @@ async function buildSettings() {
     bind('rules_engine_rule_check', 'ruleCheck');
     if (document.getElementById('rules_engine_structured'))
         bind('rules_engine_structured', 'structured');
+    if (document.getElementById('rules_engine_suggest'))
+        bind('rules_engine_suggest', 'suggest');
     const profile = document.getElementById('rules_engine_profile');
     const profiles = ctx().extensionSettings.connectionManager?.profiles ?? [];
     for (const p of profiles)
@@ -328,7 +334,11 @@ async function buildSettings() {
 const folder = () => decodeURIComponent(new URL('.', import.meta.url).pathname.replace(/\/src\/$/, '').split('/').pop() || NAME);
 // Structured narration (narration.ts) on the main reply: when the question pass decided this turn and the connection takes
 // a schema, the reply's request carries the beats schema; the reply is read into prose when it arrives.
-const structuredNow = () => { const s = settings(); return s.enabled && s.structured && s.questionPass && GUIDED && questionPassRan(); };
+const SUGGEST_LINE = 'They are what the real world of this time and place would most likely give. Take each as a suggestion: keep it where this world and the story agree with it, and change it where they differ.';
+const SUGGEST_BRIEF = `<rule_engine>
+This story's world departs from real history. The rule engine works out what the real world of the story's time and place would most likely give ([DECIDED]); this world's own rules, its world book and the story come first. Use each outcome as a guide to likelihood and detail, and keep the story's own laws and established facts.
+</rule_engine>`;
+const structuredNow = () => { const s = settings(); return s.enabled && s.structured && !s.suggest && s.questionPass && GUIDED && questionPassRan(); };
 function addReplySchema(data) {
     if (!structuredNow())
         return;
@@ -373,7 +383,7 @@ function wireEvents() {
         onRulesMessageReceived(id); });
     on(ev.MESSAGE_RECEIVED, async (id) => {
         // A greeting has no player turn to check against.
-        if (!live() || !settings().ruleCheck || !ctx().chat.some(m => m.is_user))
+        if (!live() || !settings().ruleCheck || settings().suggest || !ctx().chat.some(m => m.is_user))
             return;
         const chatId = ctx().getCurrentChatId();
         const ownsChat = () => ctx().getCurrentChatId() === chatId;

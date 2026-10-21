@@ -30,8 +30,8 @@ const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
 
-interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; profile: string; maxTokens: number; effort: string }
-const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, profile: '', maxTokens: 0, effort: 'low' };
+interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; profile: string; maxTokens: number; effort: string }
+const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, profile: '', maxTokens: 0, effort: 'low' };
 
 interface Ctx {
     chat: STMessage[]; chatMetadata: Record<string, any>; extensionSettings: Record<string, any>;
@@ -228,7 +228,11 @@ function storyState(): string {
             if (read.length) toastr.info(read.map(r => `${r.phrase} → ${r.label}${r.year != null ? ` (${r.year})` : ''}`).join('; '), 'Read as');
         } catch (e) { console.warn('[Rules engine] question pass skipped:', e); }
     }
-    const parts = [questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decidedInjection(), takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
+    // Suggestions: for a world that departs far from real history, the engine's outcomes are offered, and the story and the
+    // world book decide; the rule check then redoes nothing and the reply is free prose.
+    const suggest = settings().suggest;
+    const decided = suggest ? decidedInjection().replace(/Narrate them as given; they stand\./, SUGGEST_LINE) : decidedInjection();
+    const parts = [suggest ? SUGGEST_BRIEF : questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
     c.setExtensionPrompt(KEY, parts.filter(Boolean).join('\n\n'), IN_CHAT, DEPTH, false, SYSTEM);
 };
 
@@ -272,7 +276,7 @@ async function buildSettings(): Promise<void> {
     const html = await ctx().renderExtensionTemplateAsync(`third-party/${folder()}`, 'settings');
     document.getElementById('extensions_settings2')?.insertAdjacentHTML('beforeend', html);
     const s = settings();
-    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured', after?: () => void) => {
+    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured' | 'suggest', after?: () => void) => {
         const el = document.getElementById(id) as HTMLInputElement;
         el.checked = s[key];
         el.addEventListener('change', () => { settings()[key] = el.checked; ctx().saveSettingsDebounced(); after?.(); });
@@ -281,6 +285,7 @@ async function buildSettings(): Promise<void> {
     bind('rules_engine_question_pass', 'questionPass');
     bind('rules_engine_rule_check', 'ruleCheck');
     if (document.getElementById('rules_engine_structured')) bind('rules_engine_structured', 'structured');
+    if (document.getElementById('rules_engine_suggest')) bind('rules_engine_suggest', 'suggest');
     const profile = document.getElementById('rules_engine_profile') as HTMLSelectElement;
     const profiles: { id: string; name: string }[] = ctx().extensionSettings.connectionManager?.profiles ?? [];
     for (const p of profiles) profile.add(new Option(p.name, p.id));
@@ -311,7 +316,11 @@ const folder = () => decodeURIComponent(new URL('.', import.meta.url).pathname.r
 
 // Structured narration (narration.ts) on the main reply: when the question pass decided this turn and the connection takes
 // a schema, the reply's request carries the beats schema; the reply is read into prose when it arrives.
-const structuredNow = () => { const s = settings(); return s.enabled && s.structured && s.questionPass && GUIDED && questionPassRan(); };
+const SUGGEST_LINE = 'They are what the real world of this time and place would most likely give. Take each as a suggestion: keep it where this world and the story agree with it, and change it where they differ.';
+const SUGGEST_BRIEF = `<rule_engine>
+This story's world departs from real history. The rule engine works out what the real world of the story's time and place would most likely give ([DECIDED]); this world's own rules, its world book and the story come first. Use each outcome as a guide to likelihood and detail, and keep the story's own laws and established facts.
+</rule_engine>`;
+const structuredNow = () => { const s = settings(); return s.enabled && s.structured && !s.suggest && s.questionPass && GUIDED && questionPassRan(); };
 function addReplySchema(data: Record<string, unknown>): void {
     if (!structuredNow()) return;
     const schema = narrationSchema(decidedResults().length), rf = { type: 'json_schema', json_schema: { name: 'reply', strict: true, schema } };
@@ -343,7 +352,7 @@ function wireEvents(): void {
     on(ev.MESSAGE_RECEIVED, (id: number) => { if (live()) onRulesMessageReceived(id); });
     on(ev.MESSAGE_RECEIVED, async (id: number) => {
         // A greeting has no player turn to check against.
-        if (!live() || !settings().ruleCheck || !ctx().chat.some(m => m.is_user)) return;
+        if (!live() || !settings().ruleCheck || settings().suggest || !ctx().chat.some(m => m.is_user)) return;
         const chatId = ctx().getCurrentChatId();
         const ownsChat = () => ctx().getCurrentChatId() === chatId;
         await onRulesAuditMessage(id, {

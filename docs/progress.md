@@ -821,3 +821,10 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
 - The barmaid a Transfer paid was never drawn: Transfer's from and to were outside the person arguments. They count when the plan lists the name in named_as or present (otherwise they are places).
 - Seen in the narration: "a 80-year-old" is now "an 80-year-old" (also 8, 11, 18). A result sentence that starts in lower case after a full stop ("Wound 1. the sailor") is capitalised.
 - Census trades: the multi-word aliases ("inn, hotel servant", "seaman (merchant service)") never matched, because the alias was compared unnormalised. A barmaid was drawn as an innkeeper and a sailor as Royal Navy. Barmaid, barman, tapster, waiter, waitress and potman are now inn and hotel servants; a sailor is a merchant seaman.
+
+## 2026-10-20 (87) Rules as suggestions
+- A setting at the bottom of the panel, off by default, for a world far from real history.
+  - [DECIDED] is introduced as what the real world of that time and place would most likely give, to keep where the world and story agree and change where they differ.
+  - The brief puts the world's own rules, its world book and the story first.
+  - The rule check redoes nothing, and the reply is free prose (structured replies are off).
+  - The engine still decides and records everything (bodies, possessions, clock).
