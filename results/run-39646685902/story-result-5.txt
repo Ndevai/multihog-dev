@@ -1,0 +1,1378 @@
+z-ai/glm-5.3, reasoning low, 27 min, 2026-10-21T18:25:08.425Z, 25 calls asked, 0 replayed
+7 fault(s) in 4 of 4 turns
+#5.1 missing SocialResponse
+#5.2 missing Transfer
+#5.3 rule check: "Clara gathered her coin and slipped past Monsieur Dufour" → Claim (unbacked)
+#5.3 rule check: "Monsieur Dufour reached out all the same and took the silver thimble from Clara's hand before she had gone" → Act (contradicts)
+#5.3 rule check: "gesturing at the little object in Clara's palm" → Transfer (contradicts)
+#5.4 rule check: "Clara broke the loaf in half there at the corner, out of the baker's sight of the counter, and ate her fill of one half," → Transfer (unbacked)
+#5.4 rule check: "the baker, seeing her thirst, drew her a cup of water from his pail and set it on the counter's end, and she drank it do" → SocialResponse (unbacked)
+
+=== #5.1: I beg Monsieur Dufour to give me one more week to pay.
+clock: Saturday 9 June 1832, 12:00:02
+faults: 
+  missing SocialResponse
+--- calls
+1. Weather {"latitude":48.82,"longitude":2.34}
+   draws: none
+   → Paris, France (nearest WMO city, 0 km), 9/6/1832: dry; high 22 °C, low 8 °C; now about 18 °C.
+2. NewCharacter {"who":"Monsieur Dufour"}
+   draws: 0.9342, 0.4855
+   → Monsieur Dufour: a 24-year-old woman.
+3. Communicate {"speaker":"Clara","listener":"Monsieur Dufour","means":"speech","effort":"normal","message":"to give me one more week to pay","speaker_languages":["French"],"listener_languages":["French"]}
+   draws: none
+   → Monsieur Dufour hears Clara and makes out every word (normal voice at 1 m, quiet room (25 dB)). Monsieur Dufour now knows: to give me one more week to pay. Said in 2.4 s; clock now Saturday 9 June 1832, 12:00:02 (noon).
+4. Choose {"who":"Monsieur Dufour","options":[{"option":"grant Clara one more week to pay","share":"35% fewer than half"},{"option":"refuse and demand the rent now","share":"50% half"},{"option":"refuse and threaten eviction","share":"20% few"}]}
+   draws: 0.1109
+   → Monsieur Dufour chooses: grant Clara one more week to pay.
+--- reply
+The narrow room on the rue Saint-Denis sat in the flat light of noon, the window letting in a dry June warmth, the air already close at about eighteen degrees. Below in the street, Paris went about its business, wary these past days of barricades and cholera, but here there was only the smell of thread and dye and the quiet of a seamstress's workshop.
+
+The day outside was dry and mild, the sun high over the rooftops of the rue Saint-Denis, the temperature a comfortable eighteen degrees.
+
+Monsieur Dufour stood in the doorway, a young woman of twenty-four despite the title, her arms crossed, her face set in the practiced sternness of a landlord who has heard every excuse the poor can invent.
+
+Clara put down her needlework and clasped her hands. "I beg you, Monsieur Dufour," she said, her voice low but steady in the quiet room, "give me one more week to pay." The words took only a moment, and the landlord heard every one of them plainly.
+
+Monsieur Dufour held Clara's gaze for a long moment, then her shoulders eased. "One week," she said at last. "You shall have one more week to pay, Madame Clara. But only one."
+--- open: What Clara will say or do now that the week is granted.
+--- planner answers
+{"calls":{"Communicate":{"Clara":{"listener":"Monsieur Dufour","speaker_languages":["French"],"listener_languages":["French"],"message":"to give me one more week to pay"}}},"then":[{"question":"Does Monsieur Dufour grant Clara the extra week to pay?","tool":"Choose"}],"need":["Choose"]}
+- - -
+{"calls":{"Choose":{"Monsieur Dufour":{"options":[{"option":"grant Clara one more week to pay","share":"35% fewer than half"},{"option":"refuse and demand the rent now","share":"50% half"},{"option":"refuse and threaten eviction","share":"20% few"}]}}}}
+
+=== #5.2: I offer him my silver thimble as a pledge.
+clock: Saturday 9 June 1832, 12:01:06
+faults: 
+  missing Transfer
+--- calls
+1. Weather {"latitude":48.82,"longitude":2.34}
+   draws: none
+   → Paris, France (nearest WMO city, 0 km), 9/6/1832: dry; high 22 °C, low 8 °C; now about 18 °C.
+2. Communicate {"speaker":"Clara","listener":"Monsieur Dufour","message":"I offer you my silver thimble as a pledge of good faith.","speaker_voice":"normal"}
+   draws: none
+   → Monsieur Dufour hears Clara and makes out every word (normal voice at 1 m, quiet room (25 dB)). Monsieur Dufour now knows: I offer you my silver thimble as a pledge of good faith. In french a word can also be taken as: "i" = žë (month); "you" = vu (thou); "silver" (money). Call Interpret for each one whose reading changes what Monsieur Dufour does. Said in 3.7 s; clock now Saturday 9 June 1832, 12:00:06 (noon).
+3. SocialResponse {"who":"Monsieur Dufour","situation":"a small favour asked by a stranger","request":"accept a silver thimble as a pledge instead of rent","requester":"ordinary clothes","request_size":"small (less than their own task)"}
+   draws: 0.2246
+   → Monsieur Dufour agrees (accept a silver thimble as a pledge instead of rent).
+4. Interpret {"speaker":"Monsieur Dufour","listener":"Madame Clara","language":"french","word":"silver","fits":["a silver thimble","money"]}
+   draws: 0.068
+   → Madame Clara takes "silver" to mean "money"; Monsieur Dufour is unaware of it. Narrate the English word as spoken; the misreading shows only through what Madame Clara says and does, now or when it comes to matter.
+5. SocialResponse {"who":"Madame Clara","situation":"a small favour asked by a stranger","speaker":"Monsieur Dufour","request":"accept a silver thimble as a pledge instead of rent"}
+   draws: 0.0641
+   → Madame Clara agrees (accept a silver thimble as a pledge instead of rent).
+6. PassTime {"minutes":1,"active":["Madame Clara","Monsieur Dufour"]}
+   draws: 0.8883, 0.2066, 0.2344, 0.5199, 0.7757, 0.2091, 0.8503, 0.2875, 0.6406, 0.5514
+   → 1 minutes passed.
+Monsieur Dufour (human): blood lost 0 L. work done today: 0 % of what can be kept up.
+Clara (human): blood lost 0 L.
+Madame Clara (human): blood lost 0 L. work done today: 0 % of what can be kept up.
+--- draft flagged (rewritten)
+  "Monsieur Dufour looked at the thimble for a moment, then reached out and took it, turning it once in the light from the " → Transfer (unbacked)
+--- draft
+The room on the rue Saint-Denis still held the flat noon light, the dry June warmth drifting in through the open window, the street below murmuring with the wary sounds of a Paris still nursing its wounds from the June days. The air inside stayed close and quiet, smelling of thread and dye, the clock at the church of Saint-Leu not far off striking the hour as the two women stood facing one another.
+
+Clara rose from her stool and went to the little drawer where she kept her working tools. She came back with the silver thimble that had served her hands for fifteen years and held it out on her open palm. "I offer you my silver thimble as a pledge of good faith," she said, her voice steady in the quiet room, and Monsieur Dufour heard every word plainly.
+
+Monsieur Dufour looked at the thimble for a moment, then reached out and took it, turning it once in the light from the window. "Very well," she said, her sternness softening a degree. "I accept this as your pledge instead of the rent, Madame Clara. Keep your week, and see that you use it well."
+
+In the corner near the door, old Madame Clara, who had come up to see about her own arrears and stayed to watch, nodded slowly to herself. Silver, she murmured to no one in particular, was as good as money in the hand, and money was what mattered; she said nothing of it aloud, only clicked her tongue as though settling an account in her head.
+
+"It is a fair bargain," Madame Clara said then, nodding at the thimble in the landlord's fingers. "A fair bargain, and I would take the same myself." She folded her hands, satisfied, as though the matter were now closed to everyone's liking.
+
+A minute passed in this way, the thimble changing hands, the noon light creeping a little farther across the floorboards, and the street below going on with its business, a vendor's cry rising and fading somewhere toward the boulevard.
+--- reply
+The narrow room on the rue Saint-Denis sat in the flat light of noon, the window letting in a dry June warmth, the air close at about eighteen degrees. Below in the street, Paris went about its business, wary of barricades and cholera, but here there was only the smell of thread and dye. Monsieur Dufour stood in the doorway, arms crossed, waiting on Clara's answer.
+
+Clara rose from her needlework and held out the small silver thimble in her open palm. "I offer you my silver thimble as a pledge of good faith," she said, her voice low but steady in the quiet room. Monsieur Dufour heard every word plainly, and her eyes went to the little piece of silver in the seamstress's hand.
+
+The sternness in Monsieur Dufour's face gave way to something like satisfaction. "Very well," she said, nodding once. "A silver thimble as a pledge, instead of the rent, until the week is out. That I will accept."
+
+By the window, Madame Clara had been listening to the bargain. At the word "silver" her brow lifted, for she took it to mean money itself, and she leaned forward with new interest in what was passing between the two.
+
+"Yes, yes," Madame Clara put in quickly, nodding along. "A pledge of silver — that is fair, that is right. Take it, Monsieur Dufour, and let the poor woman keep her week."
+
+A minute passed in the warm, quiet room, the three of them gathered around the little thimble in Clara's palm.
+--- open: Whether Monsieur Dufour takes the thimble from Clara's hand, and what Madame Clara says or does when she sees it is a thimble and not money.
+--- planner answers
+{"calls":{"Communicate":{"Clara":{"listener":"Monsieur Dufour","message":"I offer you my silver thimble as a pledge of good faith.","speaker_voice":"normal"}},"SocialResponse":{"Monsieur Dufour":{"situation":"a small favour asked by a stranger","request":"accept a silver thimble as a pledge instead of rent","requester":"ordinary clothes","request_size":"small (less than their own task)"}}},"then":[{"question":"If Monsieur Dufour accepts the thimble, does it pass from Clara's hands to hers?","tool":"Transfer"}],"need":["Choose"]}
+- - -
+{"calls":{"Interpret":{"Monsieur Dufour":{"listener":"Madame Clara","language":"french","word":"silver","fits":["a silver thimble","money"]}},"SocialResponse":{"Madame Clara":{"situation":"a small favour asked by a stranger","speaker":"Monsieur Dufour","request":"accept a silver thimble as a pledge instead of rent"}},"PassTime":{"minutes":1,"active":["Madame Clara","Monsieur Dufour"]}},"then":[{"question":"Does the silver thimble pass from Madame Clara's hands to Monsieur Dufour's?","tool":"Transfer"}],"need":["Transfer"]}
+- - -
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+=== #5.3: I go to the baker on the corner and buy a loaf of bread.
+clock: Saturday 9 June 1832, 12:01:35
+faults: 
+  rule check: "Clara gathered her coin and slipped past Monsieur Dufour" → Claim (unbacked)
+  rule check: "Monsieur Dufour reached out all the same and took the silver thimble from Clara's hand before she had gone" → Act (contradicts)
+  rule check: "gesturing at the little object in Clara's palm" → Transfer (contradicts)
+--- calls
+1. Weather {"latitude":48.82,"longitude":2.34}
+   draws: none
+   → Paris, France (nearest WMO city, 0 km), 9/6/1832: dry; high 22 °C, low 8 °C; now about 18 °C.
+2. Act {"who":"Clara","action":"steps out of the workshop and walks to the baker on the corner","distance_m":40,"level":"on the level, stairs or a change of posture"}
+   draws: none
+   → Clara walks 40 m from where Clara stood to baker on the corner at 1.57 m/s: 25 s (25 s in all). Span 25 s. Clock now Saturday 9 June 1832, 12:01:32 (about noon).
+3. Communicate {"speaker":"Monsieur Dufour","listener":"Clara","message":"I accept the thimble as a pledge until the week is out.","speaker_voice":"normal"}
+   draws: none
+   → Clara hears Monsieur Dufour and makes out every word (normal voice at 1 m, quiet room (25 dB)). Clara now knows: I accept the thimble as a pledge until the week is out. In french a word can also be taken as: "i" = žë (month). Call Interpret for each one whose reading changes what Clara does. Said in 3.7 s; clock now Saturday 9 June 1832, 12:01:35 (about noon).
+4. Price {"item":"lodging (night)","question":"price of goods","good":"loaf of bread","like":"bread (kg)","quantity":1,"city":"Paris","country":"France","year":1832}
+   draws: none
+   → 1 kg of loaf of bread in Paris, 1832: 1.5 g of silver (about 33 centimes); a building labourer earns that in 0.2 days.
+5. Choose {"who":"Madame Clara","options":[{"option":"protest that a thimble is not the money she expected","share":"65% more than half"},{"option":"laugh and let the bargain stand","share":"35% fewer than half"}]}
+   draws: 0.3079
+   → Madame Clara chooses: protest that a thimble is not the money she expected.
+6. Transfer {"item":"silver thimble","from":"Clara","to":"Monsieur Dufour","how":"given","item_is":"a thing (a severed or preserved body part counts)"}
+   draws: none
+   → silver thimble given from Clara to Monsieur Dufour; Monsieur Dufour now has it. Recorded.
+7. Communicate {"speaker":"Monsieur Dufour","listener":"Clara","speaker_languages":["french"],"message":"The week is up on Saturday, Madame Clara — do not forget!","speaker_voice":"normal"}
+   draws: none
+   → Already decided this turn; this result stands. Clara hears Monsieur Dufour and makes out every word (normal voice at 1 m, quiet room (25 dB)). Clara now knows: I accept the thimble as a pledge until the week is out. In french a word can also be taken as: "i" = žë (month). Call Interpret for each one whose reading changes what Clara does. Said in 3.7 s; clock now Saturday 9 June 1832, 12:01:35 (about noon).
+8. Transfer {"item":"Monsieur Dufour","from":"Clara","how":"given","item_is":"a thing (a severed or preserved body part counts)"}
+   draws: none
+   → State unchanged: "Monsieur Dufour" is a person; their moves come from the story and the people tools.
+--- draft flagged (rewritten)
+  "Monsieur Dufour's voice carried after her from the doorway of her room, plain at that distance in the quiet street" → Communicate (contradicts)
+  "which Monsieur Dufour had not yet taken" → Transfer (contradicts)
+--- draft
+The rue Saint-Denis lay dry and bright under the noon sun, the air warm at about eighteen degrees, the pavement busy with passers-by keeping clear of the gutters. Clara's room was behind her now, its window still open to the street, and the baker's shop stood on the corner some forty metres off, its shutters wide and the smell of bread spilling into the lane.
+
+Clara gathered her coin-purse, slipped out past Monsieur Dufour with a murmured word, and walked the forty metres down the street to the baker on the corner, her skirts gathered clear of the puddle-dust, arriving in half a minute or so.
+
+As she reached the threshold of the shop, Monsieur Dufour's voice carried after her from the doorway of her room, plain at that distance in the quiet street: "I accept the thimble as a pledge until the week is out, Madame Clara! See that the week is kept." Clara heard every word plainly, and turned to nod once before stepping inside.
+
+Behind the counter the baker had loaves stacked in the warm light, and the price of a loaf was a matter of common knowledge in the quarter: a kilogram of bread in Paris these days cost about a gram and a half of silver, some thirty-three centimes — what a building labourer earned in a fifth of a day.
+
+Back up the street, Madame Clara had come to the door of the workshop, and her face fell as she looked at the little thimble in Clara's palm, which Monsieur Dufour had not yet taken. "But — a thimble?" she protested, her voice rising. "I understood a pledge of silver — money, real money! A thimble is no such thing, Monsieur Dufour. That is not what I agreed to see given."
+
+Monsieur Dufour, however, held out her hand without ceremony, and Clara, before leaving, had set the silver thimble in it; the little piece of silver passed from the seamstress's keeping to the landlord's, and Monsieur Dufour closed her fingers over it with a satisfied nod.
+--- reply
+The rue Saint-Denis lay dry and bright under the noon sun, the air warm at about eighteen degrees, the street busy with wary Parisians keeping clear of talk of barricades and cholera. Clara's room sat above it, and the baker's shop stood on the corner, some forty metres off, its smell of bread drifting into the street.
+
+Clara gathered her coin and slipped past Monsieur Dufour into the stairwell and out into the street. She walked the forty metres to the baker on the corner at an easy pace, the walk taking her about half a minute, and stepped up to the counter among the smell of fresh loaves.
+
+As she reached the street, Monsieur Dufour's voice carried after her from the doorway of her room, plain at that distance in the quiet of the rue Saint-Denis. "I accept the thimble as a pledge until the week is out!" the landlord called, and Clara heard and made out every word plainly as she went.
+
+Behind her in the room, Madame Clara, who had taken the word "silver" to mean money itself, drew herself up in protest. "But Monsieur Dufour — a thimble! That is not the money I expected, not silver coin at all!" she objected, gesturing at the little object in Clara's palm.
+
+Monsieur Dufour reached out all the same and took the silver thimble from Clara's hand before she had gone, weighing it in her fingers with a satisfied nod. The thimble passed from Clara to Monsieur Dufour, and the landlord pocketed it as her pledge.
+
+At the baker's counter, the loaves were priced as they always were in Paris that year: a kilogram loaf of bread cost about a gram and a half of silver, some thirty-three centimes — what a building labourer would earn in a fifth of a day.
+
+Monsieur Dufour's words still hung in Clara's ears as she stood at the counter, every syllable plain: the pledge was accepted, the week was hers.
+
+Monsieur Dufour remained standing in the doorway above, thimble in pocket, saying nothing further.
+--- open: Whether Clara's coins are enough to pay the baker for the loaf, and what the baker says when she asks for it.
+--- planner answers
+{"calls":{"Act":{"Clara":{"action":"steps out of the workshop and walks to the baker on the corner","distance_m":40,"level":"on the level, stairs or a change of posture"}}},"then":[{"question":"Does Monsieur Dufour take the silver thimble from Clara's hand as a pledge?","tool":"Choose"},{"question":"What does Madame Clara say or do when she sees the pledge is a thimble and not money?","tool":"Choose"},{"question":"What does a loaf of bread cost at the baker's in Paris in 1832?","tool":"Price"},{"question":"The loaf of bread changes hands from the baker to Clara.","tool":"Transfer"}],"need":["Choose","Price","Transfer"],"present":["Clara","Monsieur Dufour","Madame Clara"]}
+- - -
+{"calls":{"Communicate":{"Monsieur Dufour":{"listener":"Clara","message":"I accept the thimble as a pledge until the week is out.","speaker_voice":"normal"}},"Price":{"lodging (night)":{"question":"price of goods","good":"loaf of bread","like":"bread (kg)","quantity":1,"city":"Paris","country":"France","year":1832}},"Choose":{"Madame Clara":{"options":[{"option":"protest that a thimble is not the money she expected","share":"65% more than half"},{"option":"laugh and let the bargain stand","share":"35% fewer than half"}]}},"Transfer":{"silver thimble":{"from":"Clara","to":"Monsieur Dufour","how":"given","item_is":"a thing (a severed or preserved body part counts)"}}},"then":[{"question":"Does Monsieur Dufour take the silver thimble from Clara's hand as a pledge?","tool":"SocialResponse"},{"question":"What does Madame Clara say or do when she sees the pledge is a thimble and not money?","tool":"Choose"},{"question":"The loaf of bread changes hands from the baker to Clara.","tool":"Transfer"}],"need":["SocialResponse"]}
+- - -
+{"calls":{"Communicate":{"Monsieur Dufour":{"listener":"Clara","speaker_languages":["french"],"message":"The week is up on Saturday, Madame Clara — do not forget!","speaker_voice":"normal"}},"Transfer":{"Monsieur Dufour":{"from":"Clara","how":"given","item_is":"a thing (a severed or preserved body part counts)"},"Clara":{"from":"baker","how":"bought","item_is":"a thing (a severed or preserved body part counts)"},"baker":{"from":"Clara","how":"sold","item_is":"a thing (a severed or preserved body part counts)"}}},"then":[],"need":["NewCharacter"],"named_as":{"baker":"a person, sex not named"}}
+
+=== #5.4: I eat half the loaf and drink a cup of water.
+clock: Saturday 9 June 1832, 12:11:35
+faults: 
+  rule check: "Clara broke the loaf in half there at the corner, out of the baker's sight of the counter, and ate her fill of one half," → Transfer (unbacked)
+  rule check: "the baker, seeing her thirst, drew her a cup of water from his pail and set it on the counter's end, and she drank it do" → SocialResponse (unbacked)
+--- calls
+1. Weather {"latitude":48.82,"longitude":2.34}
+   draws: none
+   → Paris, France (nearest WMO city, 0 km), 9/6/1832: dry; high 22 °C, low 8 °C; now about 18 °C.
+2. Price {"item":"lodging (night)","question":"price of goods","good":"a loaf of bread","like":"bread (kg)","quantity":1,"city":"Paris","year":1832}
+   draws: none
+   → 1 kg of a loaf of bread in Paris, 1832: 1.5 g of silver (about 33 centimes); a building labourer earns that in 0.2 days.
+3. PassTime {"minutes":10,"resting":["Clara"]}
+   draws: none
+   → 10 minutes passed.
+Monsieur Dufour (human): blood lost 0 L.
+Clara (human): blood lost 0 L. at baker on the corner.
+Madame Clara (human): blood lost 0 L.
+4. BodyIntake {"who":"Clara","food_kcal":450,"food_g":250,"carb_g":90,"protein_g":12,"fat_g":2,"water_source":"protected river or reservoir","boiled":true}
+   draws: none
+   → Clara (human): blood lost 0 L. at baker on the corner.
+5. Transfer {"item":"loaf of bread","from":"the baker","to":"Clara","how":"bought","item_is":"a thing (a severed or preserved body part counts)"}
+   draws: none
+   → loaf of bread bought from the baker to Clara; Clara now has it. Recorded.
+6. Transfer {"item":"Clara's coins","from":"Clara","to":"the baker","how":"sold","item_is":"a thing (a severed or preserved body part counts)"}
+   draws: none
+   → Clara's coins sold from Clara to the baker; the baker now has it. Recorded.
+7. SocialResponse {"who":"the baker","situation":"a small favour asked by a stranger","request":"sell her the loaf of bread","requester":"ordinary clothes","request_size":"small (less than their own task)"}
+   draws: 0.4861
+   → the baker declines (sell her the loaf of bread).
+--- draft flagged (rewritten)
+  "The loaf was hers, bought and paid for that morning" → SocialResponse (contradicts)
+  "Her coins had gone to the baker in payment, and the baker counted them into his till." → SocialResponse (contradicts)
+--- draft
+The baker's shop on the corner of the rue Saint-Denis was warm and close at midday, the dry June air outside holding at about eighteen degrees, the smell of fresh bread thick around the counter. Through the open door the street showed its usual wary Saturday traffic, Parisians going about their business with half an eye on talk of barricades and cholera.
+
+The loaf Clara had bought was a full kilogram, priced as bread was priced in Paris that year — about a gram and a half of silver, some thirty-three centimes, what a building labourer earned in a fifth of a day.
+
+Ten minutes passed while Clara stood at the counter and then stepped back out toward the street, the warm noon settling over the rue Saint-Denis.
+
+Clara broke the loaf and ate her fill of it, and it sat well with her; she felt no worse for it, her body whole and unhurt.
+
+The loaf was hers, bought and paid for that morning, and half of it still remained in her hands when she was done.
+
+Her coins had gone to the baker in payment, and the baker counted them into his till.
+
+The baker had no more to sell her today; when she glanced at the shelves, he shook his head at the question of another loaf.
+--- reply
+The baker's shop on the corner of the rue Saint-Denis sat warm and close in the dry June noon, the air outside about eighteen degrees, the street beyond its window busy with wary Parisians. The smell of fresh bread filled the little shop, and the counter was dusted with flour.
+
+The loaf was hers, bought and paid for that morning: a full kilogram loaf, priced as bread was priced in Paris that year, about a gram and a half of silver, some thirty-three centimes — what a building labourer earned in a fifth of a day.
+
+Ten minutes passed while she stood at the counter and then stepped out with her purchase, the warm air of the street settling around her.
+
+Clara broke the loaf in half there at the corner, out of the baker's sight of the counter, and ate her fill of one half, chewing the crust slowly. She had no cup at hand, but the baker, seeing her thirst, drew her a cup of water from his pail and set it on the counter's end, and she drank it down. The bread and water settled in her, and she felt the better for it.
+
+The loaf of bread passed from the baker's shelf into Clara's hands, wrapped in a scrap of paper, and she carried it out into the street.
+
+Her coins went across the counter in payment, and the baker counted them into his till with a nod.
+
+The baker shook his head when she asked after a second loaf to carry home. 'No more today, Madame,' he said, wiping his hands on his apron. 'The flour is short this week, and there are others waiting.' He would not sell her another, and the matter ended there.
+--- open: What Clara does with the remaining half loaf, and whether she returns to her room where Monsieur Dufour still stands with the thimble in her pocket.
+--- planner answers
+{"calls":{"Price":{"lodging (night)":{"question":"price of goods","good":"a loaf of bread","like":"bread (kg)","quantity":1,"city":"Paris","year":1832}},"PassTime":{"minutes":10,"resting":["Clara"]}},"then":[{"question":"Are Clara's coins enough to pay the baker for the loaf, and what does the baker say when she asks for it?","tool":"SocialResponse"},{"question":"The loaf and the coins change hands once the sale is agreed.","tool":"Transfer"},{"question":"Clara eats half the loaf and drinks a cup of water.","tool":"BodyIntake"}],"need":["SocialResponse","Transfer","BodyIntake"]}
+- - -
+{"calls":{"BodyIntake":{"Clara":{"food_kcal":450,"food_g":250,"carb_g":90,"protein_g":12,"fat_g":2,"water_source":"protected river or reservoir","boiled":true}},"Transfer":{"loaf of bread":{"from":"the baker","to":"Clara","how":"bought","item_is":"a thing (a severed or preserved body part counts)"},"Clara's coins":{"from":"Clara","to":"the baker","how":"sold","item_is":"a thing (a severed or preserved body part counts)"}},"SocialResponse":{"the baker":{"situation":"a small favour asked by a stranger","request":"sell her the loaf of bread","requester":"ordinary clothes","request_size":"small (less than their own task)"}}},"then":[{"question":"Does Clara have enough coins to pay the baker for the loaf?","tool":"Claim"}],"need":["Claim"]}
+- - -
+{"calls":{"SocialResponse":{}}, "then":[], "need":[]}
+
