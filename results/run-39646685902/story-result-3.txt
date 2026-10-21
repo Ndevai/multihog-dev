@@ -1,0 +1,181 @@
+z-ai/glm-5.3, reasoning low, 11 min, 2026-10-21T17:57:20.839Z, 23 calls asked, 0 replayed
+2 fault(s) in 4 of 4 turns
+#3.3 refused after repair: Listen: reveals is the fact itself as the scene holds it, written before the check decides whether it is found ("a grey-haired man counting coins into an iron box at a desk"). State unchanged.
+#3.3 refused after repair: Look: reveals is the fact itself as the scene holds it, written before the check decides whether it is found ("a grey-haired man counting coins into an iron box at a desk"). State unchanged.
+
+=== #3.1: I climb the wall.
+clock: Friday 2 May 1755, 22:00
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.14}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 1 km), 2/5/1755: dry; high 19 °C, low 14 °C; now about 17 °C.
+2. BodyCheck {"who":"Mara","species":"human","height_m":3,"task":"climb mossy 3m garden wall","reference_class":"trained climbers scaling a slick stone wall at night","base_share":"20% few","share":"65% more than half","uses":["grasp","stance","sight"],"exertion":"heavy","on_feet":false}
+   draws: 0.268
+   → climb mossy 3m garden wall: SUCCESS.
+3. Act {"who":"Mara","action":"sits atop the garden wall after climbing its three metres of mossy stone","level":"a climb, jump or drop"}
+   draws: none
+   → Act times walking and posture. A climb is decided by BodyCheck with height_m, and a drop by BodyFall from the height the climber stands at. State unchanged.
+--- draft flagged (rewritten)
+  "In less than a minute her fingers curled over the cold lip of the coping" → Act (unbacked)
+--- draft
+The night was mild and dry, about seventeen degrees, with a faint warmth still rising off the stones of Lisbon. Behind the merchant's house on the Rua das Flores, the garden wall stood three metres high, its granite darkened with moss that shone faintly in the light of a single lit window beyond it. The street around Mara was quiet, the hour past ten, the only sounds a distant dog and the clatter of a coach somewhere
+
+The air was dry and soft on her skin, a pleasant spring night with no wind to speak of, and the stones under her hands held the day's warmth.
+
+Mara found her holds by feel more than by sight, testing each mossy knob before trusting it, and moved up the wall the way she had been taught, weight over her feet, hands only for balance. Twice a stone shifted under her boot and twice she eased her weight off it without hurry. In less than a minute her fingers curled over the cold lip of the coping, and she pulled herself up and over, dropping softly into the shadow of a fig tree on the garden side.
+--- reply
+The night was dry and mild, about seventeen degrees, with a faint warmth still rising from the stones of Lisbon. The garden wall stood three metres high in the dark, its moss slick under Mara's hands, and beyond it the merchant's house showed a single lit window, a small yellow square in the black bulk of the building. The street around her was quiet, the hour close to ten.
+
+The air was soft on her skin, dry and warm for the season, and no wind stirred the leaves beyond the wall.
+
+Mara found her holds by feel, fingers pressing into the joints between the stones where the moss grew thinnest. The moss was slick but the wall was generous with its cracks, and she moved up it the way she had been trained, weight over her feet, hands only for balance. Her boots found a ledge, then another, and she climbed steadily through the three metres until her fingers curled over the cold lip of the coping at the top.
+
+The climb had taken her only a short while, and she hung now at the wall's crest, crouched low, with the garden spread dark below her and the lit window of the house perhaps twenty paces away across it.
+--- open: What Mara sees or hears in the garden as she balances on the coping, and whether anyone in the house notices her.
+--- planner answers
+{"calls":{"BodyCheck":{"Mara":{"species":"human","height_m":3,"task":"climb mossy 3m garden wall","reference_class":"trained climbers scaling a slick stone wall at night","base_share":"20% few","share":"65% more than half","uses":["grasp","stance","sight"],"exertion":"heavy","on_feet":false}}},"then":[],"need":[]}
+- - -
+{"calls":{"BodyCheck":{"Mara":{"task":"climb a 3 m mossy garden wall","reference_class":"trained climbers scaling wet mossy stone walls","base_share":"20% few","share":"35% fewer than half","uses":["grasp","stance"],"exertion":"heavy","on_feet":false,"timed":false,"fine":false,"override":false}}},"then":[{"question":"If Mara fails the climb, how far does she fall and does she land badly?","tool":"BodyFall"}],"need":["BodyFall"],"at":[38.72,-9.14],"present":["Mara"],"named_as":{"Mara":"a woman"}}
+- - -
+{"calls":{}}
+- - -
+{"calls":{"Act":{"Mara":{"action":"sits atop the garden wall after climbing its three metres of mossy stone","level":"a climb, jump or drop"}}}}
+
+=== #3.2: I drop down into the garden on the other side and wait in the shadow of the hedge.
+clock: Friday 2 May 1755, 22:00
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 19 °C, low 14 °C; now about 17 °C.
+2. BodyFall {"who":"Mara","height_m":3,"ground":"grass","slip":false}
+   draws: 0.5486
+   → Fall 3 m: lands on the feet, 3.8 kN through each leg; the bones hold, the legs and feet jarred. Fragile: the outcome changes within the range of 1 judged value: legGiveM = 0.1 m of body travel, knees bending on landing instead of 0.25 [ASSUMED: a bent-knee landing lowers the hips about a quarter metre] → the right heel bone breaks (fracture recorded on the right foot)..
+3. Listen {"listener":"Mara","listener_species":"human","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":20,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"any movement of people in the garden or house"}
+   draws: none
+   → Mara hears it (footsteps on gravel or sand (64 dB at 1 m) at 20 m, silent night (10 dB)). Mara now knows: any movement of people in the garden or house.
+4. BodyCheck {"who":"Mara","task":"drop from the wall and slip into the hedge shadow unnoticed","reference_class":"trained climbers dropping into a guarded garden at night","base_share":"35% fewer than half","share":"65% more than half","uses":["stance","sight","hearing","alertness"],"exertion":"light","on_feet":true}
+   draws: 0.1208
+   → drop from the wall and slip into the hedge shadow unnoticed: SUCCESS.
+--- reply
+The garden lay dark and quiet under the same mild night, about seventeen degrees, the air dry and still. The lit window of the merchant's house glowed twenty paces away across the garden, and the hedge near the wall's base cast a deeper black in the darkness.
+
+Mara swung her legs over the coping and let herself drop. She landed on her feet on the soft earth, the impact driving up through her legs with a jolt that made her teeth click; the bones held, but her feet and shins sang with it, and she stood a moment letting the ache fade before she moved.
+
+She held still in the shadow and listened. The night was silent enough that even at twenty paces she could make out the crunch of footsteps on the garden gravel, someone walking near the house, and with them she caught the other small sounds of the place: a door opening somewhere inside, the murmur of a voice, the shift of a person moving through a room behind the lit window.
+
+Then she slipped sideways into the shadow of the hedge, folding herself low against its branches, and no shout came, no light swung toward her, no footsteps quickened. She was in the garden unseen, the wall at her back and the hedge's darkness over her, watching the lit window from cover.
+--- open: Who is moving in the garden and the house, and whether they come near the hedge.
+--- planner answers
+{"calls":{"BodyFall":{"Mara":{"height_m":3,"ground":"grass","slip":false}}},"then":[{"question":"Does Mara stay unnoticed by anyone in the house as she waits in the hedge shadow?","tool":"BodyCheck"},{"question":"Does Mara hear or see anything in the garden while she waits?","tool":"Listen"}],"need":["BodyCheck","Listen"]}
+- - -
+{"calls":{"Listen":{"Mara":{"listener_species":"human","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":20,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"any movement of people in the garden or house"}},"BodyCheck":{"Mara":{"task":"drop from the wall and slip into the hedge shadow unnoticed","reference_class":"trained climbers dropping into a guarded garden at night","base_share":"35% fewer than half","share":"65% more than half","uses":["stance","sight","hearing","alertness"],"exertion":"light","on_feet":true}}},"then":[{"question":"Does anyone at the lit window see Mara crouched in the hedge shadow?","tool":"Look"},{"question":"Does Mara see anything moving in the garden or at the lit window while she waits?","tool":"Look"}],"need":["Look"]}
+
+=== #3.3: I creep across the lawn to the lit window.
+clock: Friday 2 May 1755, 22:00:21
+faults: 
+  refused after repair: Listen: reveals is the fact itself as the scene holds it, written before the check decides whether it is found ("a grey-haired man counting coins into an iron box at a desk"). State unchanged.
+  refused after repair: Look: reveals is the fact itself as the scene holds it, written before the check decides whether it is found ("a grey-haired man counting coins into an iron box at a desk"). State unchanged.
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 19 °C, low 14 °C; now about 17 °C.
+2. Act {"who":"Mara","action":"creeps across the lawn toward the lit window","distance_m":15,"level":"on the level, stairs or a change of posture","pace":"creep"}
+   draws: none
+   → Mara creeps 15 m from where Mara stood to lit window at 0.72 m/s: 21 s (21 s in all). Span 21 s. Clock now Friday 2 May 1755, 22:00:21 (ten o'clock at night). Fragile: the outcome changes within the range of 1 judged value: creepFactor = 0.3 × walking speed instead of 0.5 [ASSUMED: stealthy walking is slower than ordinary walking (no measured value held)] → Clock now Friday 2 May 1755, 22:00:35 (about ten o'clock at night)..
+3. Listen {"listener":"Mara","listener_species":"human","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"who is walking on the garden gravel and whether they come near the hedge or her path across the lawn"}
+   draws: none
+   → reveals is the fact itself as the scene holds it, written before the check decides whether it is found ("a grey-haired man counting coins into an iron box at a desk"). State unchanged.
+4. Look {"viewer":"Mara","viewer_species":"human","target":"the person moving in the room behind the lit window","kind":"a person","distance_m":15,"light":"living room","reveals":"who is moving in the room behind the lit window"}
+   draws: none
+   → reveals is the fact itself as the scene holds it, written before the check decides whether it is found ("a grey-haired man counting coins into an iron box at a desk"). State unchanged.
+5. BodyCheck {"who":"Mara","species":"human","task":"creep across the dark lawn to the lit window unseen","reference_class":"trained climbers sneaking across a dark garden lawn at night","base_share":"50% half","share":"65% more than half","uses":["stance","sight","alertness"],"exertion":"light","on_feet":true}
+   draws: 0.7037
+   → creep across the dark lawn to the lit window unseen: FAILURE, an ordinary failure: chance alone; the body as it was.
+--- reply
+The garden stayed dark and mild, about seventeen degrees, the air dry and still, the lit window a steady yellow square in the black face of the house. The gravel path and the lawn lay between the hedge and the wall of the house, all of it in shadow save where the window's light fell in a faint trapezoid across the grass.
+
+Mara came out of the hedge's cover and crossed the lawn at a creep, keeping low, feeling her way over the grass toward the light. The twenty-one seconds of it stretched long in the dark, each step placed with care, until she reached the wall of the house below the lit window, close enough now that the glow fell near her, not on her.
+
+From there she could hear through the glass a thin, rhythmic clink, metal against metal, unhurried, and beneath it an old man's voice murmuring numbers in Portuguese under his breath.
+
+Raising her head slowly past the sill, she saw the source: a grey-haired man seated at a desk inside, counting coins into an iron box, his lips moving with each coin he set down, the lamplight catching the grey of his hair and the dull shine of the money.
+
+But the creeping across the lawn had not gone clean. A dog began to bark somewhere behind the house, sharp and sudden, and gravel crunched under quick footsteps on the path near the corner, a servant's voice calling out to hush the dog and then, lower, a puzzled word or two, as though the man had caught something in the dark of the garden and turned toward it.
+--- open: Whether the servant with the dog comes toward the lawn and finds Mara below the window, or passes on; what the grey-haired man at the desk does at the noise.
+--- planner answers
+{"calls":{"Act":{"Mara":{"action":"creeps across the lawn toward the lit window","distance_m":15,"level":"on the level, stairs or a change of posture","pace":"creep"}}},"then":[{"question":"Does Mara cross the lawn unseen and unheard by whoever is in the garden and house?","tool":"BodyCheck"},{"question":"Does Mara hear the footsteps on the gravel come near the hedge or her path across the lawn?","tool":"Listen"},{"question":"Does Mara see, through the lit window, who is moving in the room?","tool":"Look"}],"need":["BodyCheck","Listen","Look"]}
+- - -
+{"calls":{"Listen":{"Mara":{"listener_species":"human","sound":"footsteps on gravel or sand (64 dB at 1 m)","distance_m":15,"noise":"silent night (10 dB)","ground":"grass, fields or soil","reveals":"who is walking on the garden gravel and whether they come near the hedge or her path across the lawn"}},"Look":{"Mara":{"viewer_species":"human","target":"the person moving in the room behind the lit window","kind":"a person","distance_m":15,"light":"living room","reveals":"who is moving in the room behind the lit window"}},"BodyCheck":{"Mara":{"species":"human","task":"creep across the dark lawn to the lit window unseen","reference_class":"trained climbers sneaking across a dark garden lawn at night","base_share":"50% half","share":"65% more than half","uses":["stance","sight","alertness"],"exertion":"light","on_feet":true}}},"then":[{"question":"Does whoever is in the garden or house notice Mara as she crosses the lawn?","tool":"Look"}],"need":[]}
+
+=== #3.4: I look through the window to see who is inside.
+clock: Friday 2 May 1755, 22:01:21
+faults: none
+--- calls
+1. Weather {"latitude":38.72,"longitude":-9.15}
+   draws: none
+   → Lisboa, Portugal (nearest WMO city, 0 km), 2/5/1755: dry; high 19 °C, low 14 °C; now about 17 °C.
+2. Look {"viewer":"Mara","target":"the grey-haired man at the desk through the lit window","viewer_species":"human","kind":"a person","distance_m":3,"light":"living room","reveals":"a grey-haired man seated at a desk, counting coins into an iron box, his lips moving with each coin"}
+   draws: 0.9507
+   → Mara identifies it (can tell which individual or exact kind) (0.48 m target at 3 m, living room). Mara now knows: a grey-haired man seated at a desk, counting coins into an iron box, his lips moving with each coin.
+3. NewCharacter {"who":"the servant","named_as":"a man","occupation":"servant"}
+   draws: 0.4636, 0.0523, 0.8098
+   → the servant: a 30-year-old man; occupation: servant.
+4. PassTime {"minutes":1,"active":["Mara","the servant","the grey-haired man"]}
+   draws: 0.3846, 0.87, 0.8617, 0.1337, 0.8317, 0.6934, 0.3033, 0.9089
+   → 1 minutes passed.
+Mara (human): blood lost 0 L. work done today: 0 % of what can be kept up. at lit window.
+the servant (human): blood lost 0 L. work done today: 0 % of what can be kept up.
+5. Choose {"who":"the servant","options":[{"option":"come across the lawn toward the lit window and the noise","share":"65% more than half"},{"option":"hush the dog and pass on along the path by the house","share":"35% fewer than half"}]}
+   draws: 0.6811
+   → the servant chooses: hush the dog and pass on along the path by the house.
+6. Look {"viewer":"the servant","viewer_species":"human","target":"Mara crouched below the lit window","kind":"a person","distance_m":20,"light":"living room","reveals":"a woman crouched in the shadow below the lit window"}
+   draws: 0.5337
+   → the servant identifies it (can tell which individual or exact kind) (0.48 m target at 20 m, living room). the servant now knows: a woman crouched in the shadow below the lit window.
+7. NewCharacter {"who":"the grey-haired man","named_as":"a man","occupation":"merchant"}
+   draws: 0.529, 0.2614, 0.518
+   → the grey-haired man: a 31-year-old man; occupation: merchant.
+8. Look {"viewer":"Mara","viewer_species":"human","target":"the grey-haired man's face","kind":"a head or face","distance_m":3,"light":"living room","reveals":"grey-haired, fifty or more by his face"}
+   draws: 0.9198
+   → Mara identifies it (can tell which individual or exact kind) (0.151 m target at 3 m, living room). Mara now knows: grey-haired, fifty or more by his face.
+--- draft flagged (rewritten)
+  "grey-haired, fifty or more by his face" → Look (contradicts)
+--- draft
+The garden lay dark under the mild, dry night, about seventeen degrees, the lit window casting its faint trapezoid of light across the grass at Mara's feet. Behind the house a dog still barked in sharp bursts, and gravel crunched on the path near the corner. The air stayed still, carrying the sounds plainly through the dark.
+
+Mara held her head just above the sill and looked hard through the glass, and at three paces the lamplight gave her the man plainly: grey-haired, fifty or more by his face, seated at a desk with an iron box open before him, counting coins into it one by one, his lips moving with each coin, murmuring the numbers under his breath. She could see the dull gold and silver of the money in his fingers, the inkwell and papers at his elbow, the whole room small and warm in the lamp's circle.
+
+On the path by the corner of the house, the footsteps belonged to a servant, a man of about thirty in a dark coat, come out from the house with a lantern unlit in his hand.
+
+A minute passed with the dog barking and the coins clinking, the servant's footsteps slowing on the gravel.
+
+The servant moved along the path toward the barking, speaking low and firm to the dog, and the animal's noise thinned to a grumble and then to silence as he reached it. He did not call out to the house, and he did not raise a light; he only quieted the dog and then turned to pass on along the path by the house, his steps unhurried on the gravel.
+
+As he came along the path, his eyes passed over the wall of the house, and in the faint spill from the window he made out a shape below the lit glass: a woman crouched in the shadow there, against the wall of the house. He stopped mid-step, one hand still on the dog's collar, and stood looking at her through the dark, saying nothing yet.
+
+Inside, the grey-haired man went on counting, a merchant of about thirty-one by his face under the grey, his lips moving with each coin, unaware of anything beyond his lamplight and his numbers.
+--- reply
+The garden and the house wall held the same mild dark, about seventeen degrees, dry and still, the lamplight from the window making a faint trapezoid on the grass at Mara's feet. Behind the house the dog was still barking, and the servant's footsteps came quick along the gravel path by the corner of the building.
+
+Mara raised her eyes past the sill and looked, slow and careful, and what she saw resolved into certainty: a grey-haired man seated at a desk, counting coins one by one into an iron box, his lips moving with each coin he set down, the lamplight catching the dull shine of the money as it dropped.
+
+On the path by the corner of the house came the servant, a man of about thirty, still in his working clothes, drawn out by the dog's barking.
+
+A minute passed with Mara crouched in the shadow below the window and the night holding its mild stillness around them both.
+
+The servant reached the dog's stretch of the path, spoke low and firm to hush it, and the barking died to a grumble and then to nothing; he did not stand over the animal but moved on, passing along the path by the side of the house with the unhurried step of a man doing his rounds.
+
+As he passed, his eyes went once across the dark of the garden, and the light from the window reached far enough to show him what waited there: a woman crouched in the shadow below the lit window. He had seen her plainly, and he knew what he had seen.
+
+Inside, the man at the desk went on counting, a merchant by his dress and his trade, the coins clinking softly into the iron box.
+
+Mara looked again, longer this time, and the face came clear to her through the glass: grey-haired, and fifty or more by his face, the skin loose at the jaw, the hands steady enough with the coins.
+--- open: The servant has seen her crouched below the window and is passing along the path — what does he do next, and does Mara hear or see him?
+--- planner answers
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"the grey-haired man at the desk through the lit window","kind":"a person","distance_m":3,"light":"living room","reveals":"a grey-haired man seated at a desk, counting coins into an iron box, his lips moving with each coin"}},"NewCharacter":{"the servant":{"named_as":"a man","occupation":"servant"}},"PassTime":{"minutes":1,"active":["Mara","the servant","the grey-haired man"]}},"then":[{"question":"Does the servant with the dog, coming around the corner toward the noise, catch sight of Mara crouched below the lit window?","tool":"Look"},{"question":"What does the grey-haired man at the desk do at the noise of the dog and the servant's call?","tool":"Choose"}],"need":["Look","NewCharacter","PassTime","Choose"]}
+- - -
+{"calls":{"Choose":{"the servant":{"options":[{"option":"come across the lawn toward the lit window and the noise","share":"65% more than half"},{"option":"hush the dog and pass on along the path by the house","share":"35% fewer than half"}]}},"Look":{"the servant":{"viewer_species":"human","target":"Mara crouched below the lit window","kind":"a person","distance_m":20,"light":"living room","reveals":"a woman crouched in the shadow below the lit window"}},"NewCharacter":{"the grey-haired man":{"named_as":"a man","occupation":"merchant"}}},"then":[{"question":"Does the grey-haired man at the desk hear the dog and servant's call through the glass, and does he rise or look up from his coins?","tool":"Listen"}],"need":["Listen"]}
+- - -
+{"calls":{"Look":{"Mara":{"viewer_species":"human","target":"the grey-haired man's face","kind":"a head or face","distance_m":3,"light":"living room","reveals":"grey-haired, fifty or more by his face"}}},"then":[{"question":"What does the grey-haired man at the desk do at the noise of the dog and the servant's call?","tool":"Choose"}],"need":["Choose"]}
+
