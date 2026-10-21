@@ -336,7 +336,7 @@ const folder = () => decodeURIComponent(new URL('.', import.meta.url).pathname.r
 // a schema, the reply's request carries the beats schema; the reply is read into prose when it arrives.
 const SUGGEST_LINE = 'They are what the real world of this time and place would most likely give. Take each as a suggestion: keep it where this world and the story agree with it, and change it where they differ.';
 const SUGGEST_BRIEF = `<rule_engine>
-This story's world departs from real history. The rule engine works out what the real world of the story's time and place would most likely give ([DECIDED]); this world's own rules, its world book and the story come first. Use each outcome as a guide to likelihood and detail, and keep the story's own laws and established facts.
+This story's world departs from real history. The rule engine works out what the real world of the story's time and place would most likely give ([DECIDED]); this world's own rules, its world book and the story come first. Use each outcome as a guide to likelihood and detail, and keep the story's own laws and established facts. [BODY], [TIME] and the belongings list hold what the engine recorded; where the story has already told an outcome differently, the story's version stands.
 </rule_engine>`;
 const structuredNow = () => { const s = settings(); return s.enabled && s.structured && !s.suggest && s.questionPass && GUIDED && questionPassRan(); };
 function addReplySchema(data) {
