@@ -54,6 +54,11 @@ const send = async (system, user, o = {}) => {
 // Card text shown to the question model, characters per field [ASSUMED]: enough for species, build and training.
 const CARD_CHARS = 1500;
 /** The player's persona, the character card and the scenario: where species, build and training are written. */
+function groupMembers() {
+    const c = ctx();
+    const g = c.groupId ? c.groups?.find(x => x.id === c.groupId) : null;
+    return g ? g.members.map(a => c.characters.find(ch => ch.avatar === a)).filter((x) => !!x) : [];
+}
 function castBlock() {
     const c = ctx();
     const raw = c.getCharacterCardFields?.() ?? {};
@@ -61,6 +66,8 @@ function castBlock() {
     const lines = [
         field('persona') && `${c.name1 || 'Player'} (the player's character): ${field('persona')}`,
         field('description') && `${c.name2 || 'Character'}: ${field('description')}`,
+        // A group chat's other members, each with their own card (drawn as strangers they took a random age and sex).
+        ...groupMembers().filter(m => m.name !== c.name2).map(m => `${m.name}: ${String(m.description ?? m.data?.description ?? '').trim().slice(0, CARD_CHARS) || 'a character of this story'}`),
         field('scenario') && `Scenario: ${field('scenario')}`,
     ].filter(Boolean);
     return lines.length ? `[CAST]\n${lines.join('\n')}\n[/CAST]` : '';

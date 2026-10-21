@@ -33,7 +33,15 @@ Write the reply as the JSON {"scene":"…","results":{"1":"…","2":"…"},"open
 /** The narration read from the model's JSON, or null when the text is plain prose. */
 export function readNarration(text: unknown): Narration | null {
     const s = String(text ?? '').trim(), at = s.indexOf('{'), end = s.lastIndexOf('}');
-    if (at < 0 || end <= at) return null;
+    if (at < 0) return null;
+    // A reply cut off by its length limit, or with a broken character, is not valid JSON; its finished passages are read
+    // one by one, so the player sees prose instead of raw JSON.
+    const salvage = (): Narration | null => {
+        if (!/^\s*\{\s*"(?:scene|results|beats)"/.test(s.slice(at))) return null;
+        const beats = [...s.slice(at).matchAll(/"(scene|\d+|text)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m, i) => { try { return { result: m[1] === 'scene' ? 0 : /^\d+$/.test(m[1]) ? Number(m[1]) : i, text: JSON.parse(`"${m[2]}"`) as string }; } catch { return null; } }).filter((b): b is Beat => !!b && !!b.text.trim());
+        return beats.length ? { beats, open: [] } : null;
+    };
+    if (end <= at) return salvage();
     try {
         const o = JSON.parse(s.slice(at, end + 1));
         // The scene-and-results form: the scene is beat 0, each result's passage the beat with its number.
@@ -43,7 +51,7 @@ export function readNarration(text: unknown): Narration | null {
         if (!Array.isArray(o.beats)) return null;
         const beats = o.beats.filter((b: unknown): b is Beat => !!b && typeof (b as Beat).text === 'string' && Number.isInteger((b as Beat).result));
         return beats.length ? { beats, open: Array.isArray(o.open) ? o.open.filter((q: unknown): q is string => typeof q === 'string' && !!q.trim()) : [] } : null;
-    } catch { return null; }
+    } catch { return salvage(); }
 }
 /** The prose shown: the beats' texts in order, one paragraph each. */
 export const proseOf = (n: Narration) => n.beats.map(b => b.text.trim()).filter(Boolean).join('\n\n');

@@ -828,3 +828,7 @@ Newest first. Each entry: date, model, what changed (plain words), what was chec
   - The brief puts the world's own rules, its world book and the story first.
   - The rule check redoes nothing, and the reply is free prose (structured replies are off).
   - The engine still decides and records everything (bodies, possessions, clock).
+
+## 2026-10-20 (88) Group casts and cut-off replies
+- Group chats: the cast held only the card of whoever spoke last. Other members named in a call were drawn as strangers with a random age and sex, against their cards. Every group member's card description is now in [CAST].
+- Structured replies: a reply cut off by its length limit is not valid JSON, and the player saw the raw JSON. Its finished passages (scene, numbered results) are now read one by one and shown as prose.
