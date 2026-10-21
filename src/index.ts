@@ -232,7 +232,7 @@ function storyState(): string {
     // world book decide; the rule check then redoes nothing and the reply is free prose.
     const suggest = settings().suggest;
     const decided = suggest ? decidedInjection().replace(/Narrate them as given; they stand\./, SUGGEST_LINE) : decidedInjection();
-    const parts = [suggest ? SUGGEST_BRIEF : questionPassRan() ? RULES_BRIEF_DECIDED : RULES_BRIEF, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
+    const parts = [!questionPassRan() ? RULES_BRIEF : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
     c.setExtensionPrompt(KEY, parts.filter(Boolean).join('\n\n'), IN_CHAT, DEPTH, false, SYSTEM);
 };
 
