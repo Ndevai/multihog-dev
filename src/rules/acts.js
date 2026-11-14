@@ -12,7 +12,7 @@ const STATES = {
 };
 // The character's place among people, as a z-score: very low −2, low −1, average 0, high +1, very high +2 [bands ASSUMED].
 export const LEVELS = ['very low', 'low', 'average', 'high', 'very high'];
-export const levelZ = (l) => Math.max(0, LEVELS.indexOf(l)) - 2;
+export const levelZ = (l) => { const i = LEVELS.indexOf(l); return i < 0 ? 0 : i - 2; };
 // An act toward the trait's high pole needs a state of 5 or more (mild) or 6 or more (strong); toward its low pole 3 or less
 // (mild) or 2 or less (strong), as the rating bins 4.5 / 5.5 / 3.5 / 2.5 [thresholds ASSUMED; Fleeson rates adjectives, not acts].
 export const POLES = ['toward the high pole', 'toward the low pole'];

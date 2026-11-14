@@ -2,6 +2,12 @@
 // breathing, core-temperature stages and freezing skin.
 import { createBody, step, coreOf, skinOf, basalMet, SEGMENTS, LOCAL_BSA } from './jos3.js';
 import { ENSEMBLES, GARMENTS } from './ensembles.js';
+import { def, reaches } from '../constants.js';
+// Full thickness at Ω ≥ 10⁴: the classification of burns by the damage integral in Wang, Foley & Zhou 2024 (arXiv 2408.11947,
+// eq. 10: first degree 0.53 ≤ Ω < 1, second 1 ≤ Ω < 10⁴, third Ω ≥ 10⁴), after Pearce, Diller & Valvano 2017 and Orgill et al.
+// 1998. Others read full thickness as Ω ≥ 1 at the dermis's base instead (Torvi & Dale 1994); this engine has one skin node,
+// so the threshold is applied to its integral, a judgement registered with a range of an order of magnitude each way.
+def({ id: 'fullBurnOmega', value: 1e4, unit: 'Henriques damage integral Ω', status: 'assumed', src: 'full thickness at Ω ≥ 10⁴ (Wang, Foley & Zhou 2024, arXiv 2408.11947, eq. 10, after Pearce, Diller & Valvano 2017 and Orgill et al. 1998), applied to the one skin node\'s integral', range: [1e3, 1e5], file: 'thermal/exposure.ts' });
 // Body plans DF builds like the human one use the human model [ASSUMED]; other species are not simulated (OPEN-82).
 const HUMANLIKE = new Set(['HUMAN', 'DWARF', 'ELF', 'GOBLIN']);
 export const thermalCapable = (species) => HUMANLIKE.has(String(species ?? 'HUMAN').toUpperCase());
@@ -148,7 +154,7 @@ export function thermalMinute(p, { active = false, sleeping = false, restL = 0 }
     frozenAll.push(...frozen);
     // Burns: Henriques damage integral Ω = Σ A e^(−ΔE/RT) Δt per segment skin node (A 3.1e98 /s, ΔE 6.27e5 J/mol; endpoint
     // transepidermal necrosis; table in Fritz et al. 2021, Mil Med 186 S1:408). Ω ≥ 1: partial thickness; Ω ≥ 10^4: full
-    // thickness [ASSUMED threshold]. Immersed segments: the skin surface at the water temperature, as in the constant-
+    // thickness (fullBurnOmega, registered above). Immersed segments: the skin surface at the water temperature, as in the constant-
     // temperature hot-water exposures that define the endpoint (Moritz & Henriques 1947); otherwise the skin node [ASSUMED].
     const burned = [];
     skin.map((t, i) => water?.segs[i] ? Math.max(t, water.tc) : clo[i] > 0 ? t : surfaceT(t, e.tdb, e.tr ?? e.tdb, e.v ?? 0.1)).forEach((t, i) => burned.push(...burnDose(p, i, t, 60)));
@@ -180,7 +186,7 @@ export function burnDose(p, i, t, seconds) {
     if (t <= 44)
         return [];
     dose[i] += 3.1e98 * Math.exp(-6.27e5 / (8.314 * (t + 273.15))) * seconds;
-    const depth = dose[i] >= 1e4 ? 'full' : dose[i] >= 1 ? 'partial' : null;
+    const depth = reaches('fullBurnOmega', dose[i]) ? 'full' : dose[i] >= 1 ? 'partial' : null;
     if (!depth || burnt[SEGMENTS[i]] === depth || burnt[SEGMENTS[i]] === 'full')
         return [];
     burnt[SEGMENTS[i]] = depth;

@@ -1,0 +1,2213 @@
+diff --git a/README.md b/README.md
+index 788d02f..ff1225f 100644
+--- a/README.md
++++ b/README.md
+@@ -48,7 +48,8 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - Under your message a folded line shows how the engine read it, one tagged call each ("Sight Tom · 15 m", "Body vault the low wall · 46 %"), the tag's colour for the kind of rule; click it to open, hover a row to see the rule call. It stays with the message, in a book serif that follows the story's era (Garamond for the 1500s, the Fell types, Baskerville, a Victorian Modern, Caslon; Georgia from 1970 or with no date). When your words leave a choice open, the likeliest reading is taken and shown ("☞ walk after the thief in the open — or…") unless a wrong guess would hurt someone ("I hit him" with two men at the bar, or "I look at Tom and Will, then I punch him"): then the engine asks in a sentence ("Do you mean to hit ¹Tom or ²Will?"; click or press the number), or "Say it another way" stops the reply. Opened, a guess offers the others as links; one puts "no, catch up with the thief" in your input box. That line, or one of your own such as "no, Will" or "I meant to keep out of sight", redoes the last turn that way.
+ - How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor; Tab from the box enters the toolbar while it shows. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another. With **Multiple distinctions** on (the default), each part of the voice has a place of its own in the chat: a thin stroke above a word for its pitch (a rise-fall and a fall-rise differ), heavier letters for louder and paler ones for softer, a wavy rule under creaky words, dots under breathy ones and a broken rule under whispered ones, wider gaps for slower and a lean for faster, a drawn-out vowel written again ("Nooo"), narrow letters for falsetto, and the feeling's colour at the line's edge. Every line keeps the story's line spacing. Hover a marked word to read its marks with their sizes ("louder (about 6 dB above your normal voice)"). Turn it off in the settings for the lighter look.
+ - The chat is a page of its own: with **Dialogue page** on (the default), messages are set black on ivory in a book serif that follows the story's era, with no letter shadow and room between the lines for the voice marks, whatever your theme; quoted words keep the text colour, as in print. After your name a word says what your character is doing in the line: SPEAKING when the line holds said words (a speech call, or words in quotation marks), THINKING when your character works something out; hover it for the call it rests on. Off, messages keep the theme's look and the word stays.
+-- One thing on screen at a time: with **Text box** on (the default), the chat shows one box at the foot of the screen under the speaker's name, without the picture at the left. A new box starts wherever said words begin or end: said words are black with SPEAKING on the plate, everything else is dark blue. Tap the text or press → for the next box, ‹ or ← to go back; "Log" shows the whole chat and "Box" returns. The setting under it makes a box hold a whole message. Your SillyTavern background shows above the box.
++- One thing on screen at a time: with **Text box** on (the default), the chat shows one box at the foot of the screen under the name of whoever says it. A new box starts wherever said words begin or end, and a long stretch goes on in the next box. Said words are black (white on the dark page) with SPEAKING, or WHISPERING, at the plate's right; everything else is blue and belongs to your character, with THINKING when you work something out. Letters appear one by one, said words at the speaker's pace and the rest at reading pace; a tap shows the rest at once, then the next box. "Auto" moves on by itself once a box has been read, ‹ or ← goes back, and "Log" shows the whole chat. The narrator names who says each quotation, so the plate can show it; in your own lines, the person acting just before a quotation says it.
++- Words that name what the engine decided are marked in gold, as important words are in yellow in a visual novel. **Page colours** offers the light page or a dark one (white, light blue and gold on black), and **The speaker's picture** can show the character card's picture large above the box.
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
+ - Water below 0 °C is not ice by its temperature alone: the Substance lookup decides whether it freezes from how much there is, what is in it and how long it has been cold, so a cloud droplet at −1 °C stays liquid, a bucket freezes, and water touching frost freezes at once.
+diff --git a/docs/constants.md b/docs/constants.md
+index ef124cf..30c08c5 100644
+--- a/docs/constants.md
++++ b/docs/constants.md
+@@ -1,7 +1,7 @@
+ # Constants
+ 
+ Generated by `node tools/constants-doc.mjs` from the registry in `src/rules/constants.ts`; do not edit by hand.
+-135 constants: 28 sourced, 30 fitted, 77 assumed, 0 raw.
++138 constants: 29 sourced, 30 fitted, 79 assumed, 0 raw.
+ Assumed and fitted ones carry a range; a call that uses them is rerun at both ends and reports when its outcome changes ("Fragile").
+ 
+ | Constant | Value | Unit | Status | Range | Source | File |
+@@ -45,6 +45,9 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | tpmPhase | 16.8 | clock hour of peak alertness | sourced | 15–18 | Ingre et al. 2014 default (their aircrew data put it near 15 h) | body-engine.ts |
+ | unconsciousSdLog | 0.8 | SD of ln minutes | assumed | 0.4–1.2 | spread of the time unconscious | body-engine.ts |
+ | workDoublingMin | 105 | min on a task by which the odds of failing double | fitted | 90–120 | doubled by the last 30 minutes of a 2-hour spell (Tucker et al. 2003) | body-engine.ts |
++| boxKeyNounWeight | 1.5 | × the weight of a matching word that is no noun | assumed | 1.1–2 | a noun names the thing decided; any value above 1 breaks a tie of matching words toward it | box.ts |
++| boxLines | 4 | lines of text in the box | assumed | 3–6 | the reference's boxes hold 1–2 lines (the player's screenshots); 4 keeps an ordinary sentence whole at 412 px | box.ts |
++| boxReadWpm | 260 | words per minute, silent reading of fiction | sourced |  | adult silent reading in English: fiction 260, non-fiction 238 words per minute (Brysbaert 2019, J Mem Lang 109:104047) | box.ts |
+ | asphyxiaFloorN | 623 | N below which no asphyxia dose adds | assumed | 400–1112 | discomfort threshold against a bar, Hopkins et al. 1993 | crowd.ts |
+ | asphyxiaN | 6227 | N on the chest that kills in asphyxiaS | sourced | 4500–7000 | Hopkins et al. 1993, as given by G. K. Still | crowd.ts |
+ | asphyxiaPow | 1.74 | power of force in the time to death | fitted | 1.6–1.9 | through 6,227 N for 15 s and 1,112 N for 4–6 min (Hopkins et al. 1993) | crowd.ts |
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 8ac6a38..0364c3c 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1035,29 +1035,44 @@ Measured with SillyTavern's own stylesheets and message template (release branch
+ 
+ Check: `tests/ui.test.mjs` R34 (modes from calls, older notes and quoted words; plates by the line as it stands) and R35 (the page's inks at 4.5:1 or more, its type, the modes without a hue); U7 and R32 hold the kind and feeling colours on the page's ground; negative controls RN1–RN8.
+ 
+-**The text box (2026-11-11 (116); `style.css` body.rules-box, `ui.ts` voiceUnits, `index.ts` unitChat, showBox, stepBox and buildBox, the setting "Text box", on by default).** One unit of the chat is on screen at a time, in a box at the foot of the chat under its speaker's name, as a visual novel's text box holds one line. The player's answers (2026-11-11) set it: one thing per screen; a new box at each change of voice; the speaker as the name plate only, without the picture at the left; one distinction marked, [±voiced].
++**The text box (2026-11-11 (116), (117); `style.css` body.rules-box, `ui.ts` voiceUnits, `rules/box.ts`, `index.ts` unitChat, fitUnits, showBox, showPlate, showFigure, typeUnit, stepBox, buildBox, readReply and markKeys; the setting "Text box", on by default).** One unit of the chat is on screen at a time, in a box at the foot of the chat under the name of the one it belongs to, as a visual novel's text box holds one line. The player's answers (2026-11-11) set it: one thing per screen; a stretch per box (a new box at each change of voice); the name plate, and by a setting a large picture; one distinction coloured, [±voiced], as the reference colours it; no narrator; both colour sets; key words; letters one by one and AUTO. The reference is Danganronpa: "white text denoting that it's spoken aloud, blue text being internal dialogue, and all textboxes having the name of the current speaker" (Anderson 2022); its narration is the main character's first-person thought in the same blue, and "yellow text are important words or phrases the game calls out" (Let's Play Archive, Trigger Happy Havoc prologue). What its plate's "SPEAKING" stands for was found in no source; here the word says what the colour does not.
+ 
+ | Term | Definition |
+ |---|---|
+ | [+voiced] | words that leave a mouth as sound: the quoted words of any message (`quotes.ts`; SillyTavern sets them in `<q>`) |
+ | [−voiced] | every other stretch of text: an account of the scene or of an act, or words formed without sound |
+-| unit | a stretch of a paragraph with one value of [±voiced]; a block that is no paragraph (a block quotation, a list, a table) is one unit |
++| unit | a stretch of a paragraph with one value of [±voiced], cut again after a sentence's end where it is longer than the box; a block that is no paragraph (a block quotation, a list, a table) is one unit |
++| the one a unit belongs to | the speaker of a [+voiced] unit; the player's character for a [−voiced] one (the box has no narrator) |
++| key word | the reply's run of words that names what one decided result says (`box.ts` keyPhrase) |
+ 
+ | IF | THEN |
+ |---|---|
+ | a paragraph has quoted parts | each quoted part is a unit, and the parts between two of them are one unit |
+ | a stretch between two units has no letter or digit (", " or ".") | it joins the unit before it; at the paragraph's start, the one after it |
+-| the unit shown is [+voiced] | its text is the ink (black) and the plate says "speaking" |
+-| the unit shown is [−voiced] | its text is darkslateblue (8.99:1 on ivory) and the plate says no "speaking"; "thinking" stays where a WorkOut call put it |
+-| a tap on the text, → or › | the next unit; after a message's last unit, the next message's first |
+-| ← or ‹ | the unit before; before a message's first unit, the last of the message before |
++| a unit takes more than boxLines lines (4 [ASSUMED], measured in the message's own type and width) | it is cut after the last sentence end that keeps a piece within the box's characters; a single longer sentence stays whole and scrolls |
++| the box is on | the narrator's prompt carries SPEAKER_RULE: the speaker's name in square brackets before each quotation; the reply's names leave its text (`takeSpeakers`) and are kept per swipe (`extra.rulesSpeakers`) |
++| a quotation has a name the reply wrote | that name |
++| else the quotation runs on into a speech tag (it ends on a comma or dash, or the words after it open in lower case) | the tag's subject ("No," Mara says; "No!" she says) |
++| else | the subject of the last sentence before it in its paragraph; else the speaker of the quotation before it; else the message's author |
++| a subject | the first name or nominative pronoun among a sentence's first three words, read past front adverbs: a name of the cast, a given name (SSA, as `frame.ts` reads them) or no common word (SCOWL), or a given name that is also an auxiliary where the auxiliary cannot stand ("Will does not look up"); I, we, you → the player's character; he, she, they → the last person named whose given name's sex does not differ; an article and its noun phrase → that phrase ("The old guard") |
++| the unit shown is [+voiced] | its text is the ink (black on ivory; white on the dark page); at the plate's right "speaking", or "whispering" when its words carry the whisper's mark |
++| the unit shown is [−voiced] | its text is darkslateblue (8.99:1 on ivory) or lightskyblue (12.96:1 on black); at the plate's right "thinking" when the line has a WorkOut call, else no word |
++| Auto is on | "auto" stands at the plate's right too |
++| the setting "The speaker's picture" is "large" | the picture of the one the player's character faces stands above the box: the speaker of the unit shown when it is someone else (a card's avatar at full size), else the last one shown; someone without a card has none |
++| the setting "Page colours" is "dark" | messages are white on black, asides darkgray (8.95:1), key words gold letters (14.97:1); the tone is dark for kind and feeling colours |
++| a reply arrives and the engine decided results this turn | each result's key word is kept (`extra.rulesKeys`) and marked where it first stands: gold ground under black letters (14.97:1), or gold letters on the dark page |
++| a unit is newly shown going forward | its letters appear one by one: said words at voiceSyllablesPerS (5 syllables/s) per syllable (vowel groups), other text at boxReadWpm (260 words a minute, Brysbaert 2019); the text not yet shown is drawn without ink (CSS Custom Highlight API), so nothing moves |
++| a tap, → or › while a unit appears | the rest of it at once; else the next unit; after a message's last unit, the next message's first |
++| ← or ‹ | the unit before, shown whole; before a message's first unit, the last of the message before |
++| Auto is on and a unit has appeared | the next unit after what reading the unit takes beyond its appearing, and one word's reading more (60 000 ÷ 260 = 231 ms) |
++| reduced motion is asked for, the setting "Letters appear one by one" is off, or the browser lacks the highlight API | the unit shows whole |
+ | "Log" | the whole chat, scrolling, with the same colours and without pictures; "Box" returns |
+-| a message is being written or edited, or the setting "a box holds a whole message" | the message shows whole in the box |
++| a message is being written or edited, or the setting "a box holds a whole message" | the message shows whole in the box, under its author's name, without letters one by one |
+ | a message is drawn anew (the player's line, a reply) | the box goes to its first unit |
+ 
+-The speaker named on the plate is the message's author. Inside a narrator's message the one who says a quoted part is not known to the engine, so the plate says "speaking" beside the narrator's name. The box keeps four lines' height and scrolls past 60 % of the screen's height [ASSUMED: both]. The bar's buttons are 44 px or more each way (WCAG 2.5.5).
++The box keeps boxLines lines' height and scrolls past 60 % of the screen's height [ASSUMED]. The bar's buttons are 44 px or more each way (WCAG 2.5.5).
+ 
+-Check: `tests/ui.test.mjs` R36 (units by change of voice, the colour of text that is not voiced, the box's rules); negative controls RO1–RO4; Chromium with SillyTavern's stylesheets (`st-chat.mjs … voice 21`): 16 presses of → walk the 17 units of 7 messages and further presses stay at the last; one message and no picture drawn at each, "speaking" on the 5 voiced units only; the log 0 faults in 36 of 36 combinations.
++Check: `tests/ui.test.mjs` R36 (units by change of voice, the colour of text that is not voiced, the box's rules), R37 (the dark page's colours, key words on their ground), R38 (who says each stretch; the names before quotations leave the text), R39 (cuts, syllables, letters at the pace of speech or of reading, AUTO's wait), R40 (key words, the plate's word, the box's wiring); negative controls RO1–RO4, RP1–RP15; Chromium with SillyTavern's stylesheets (`st-chat.mjs … voice 26`): 26 presses walk the 24 units of 8 messages; speakers Tom, Will, Kyoko (from the reply's name), Mara; "whispering" on the whispered line, "thinking" on the WorkOut line; the long paragraph in 2 boxes; a unit appeared in 1168 to 1181 ms over three runs against 1154 computed; AUTO moved on 231 to 238 ms after a unit had appeared; the log 0 faults in 36 of 36 combinations for each colour set.
+ 
+ 
+ | Step | Source |
+diff --git a/docs/progress.md b/docs/progress.md
+index e69e986..5ba78e4 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,15 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-11 (117), Claude
++- The player on (116): their answers had been suggestions, and communication comes before settings that change the whole chat. Asked for the reference's facts and the questions again in plain words. Facts: Bright Data could not be used (the account has no zone; creating one needs the player's card), so two pages were read directly (Anderson 2022 on V3's interface; the Let's Play Archive's Trigger Happy Havoc prologue): white text is said aloud, blue is the main character's thought and narration, yellow marks important words, every box names its speaker. What the plate's "SPEAKING" means was found in no source.
++- Answered: one box on screen; a stretch per box (picked here: it keeps one speaker and one colour per box, as the reference does); the name plate, and a large picture as a setting; the colour asks the reference's question, said aloud or not; a word at the plate's right for what the colour does not say; no narrator; both colour sets; key words, kept apart from the voice marks; the narrator names who says each quotation, and in the player's own lines the person acting before a quotation says it (the player's clue); letters one by one and AUTO; choice banners later; the box stays on.
++- Changed (`rules/box.ts`, `index.ts`, `style.css`, `settings.html`): each unit carries the one it belongs to (speakersOf: a name the reply wrote in brackets before a quotation, SPEAKER_RULE, taken out of the text; a speech tag after it; the subject of the sentence before it; the speaker before; the author; the player's character for every stretch not said). A unit longer than 4 lines is cut after a sentence's end. The plate shows the unit's speaker and at its right speaking, whispering, thinking or nothing, and auto. Letters appear at 5 syllables per second for said words and 260 words a minute for the rest, drawn without ink until shown; a tap shows the rest; Auto waits the reading time beyond the appearing plus one word (231 ms). Settings: page colours light or dark (white, lightskyblue, gold on black), the speaker's picture none or large, letters one by one. Key words: each decided result's run of words in the reply (keyPhrase), gold ground under black letters or gold letters on the dark page. Three constants registered (boxReadWpm sourced, boxLines and boxKeyNounWeight assumed). The prompt audit reads the narrator's two rules now (NARRATION_RULE, SPEAKER_RULE).
++- Fixed on the way: a reply's swipe kept its raw form (the structured JSON, now also the speakers' names) while only the message text became prose, so swiping back to it would show the raw form (read from the code; not seen in a running SillyTavern); the swipe now keeps the prose shown.
++- Checked: route 218, frame 202, intent 37, engine 203, plan 60, size 9, ui 88 (8 new: R37–R40), sequences 300, all 0 misses. Negative controls RP1–RP15 caught (three first not caught; their tests were made to tell the cases apart), and all 62 on the touched files. Chromium with SillyTavern's stylesheets: 26 presses walk 24 units of 8 messages with speakers Tom, Will, Kyoko (from the reply's name), Mara; the long paragraph in 2 boxes; a unit appeared in 1168 to 1181 ms over three runs against 1154 computed; a tap left 0 letters unshown; AUTO moved on after 231 to 238 ms; the log 0 faults in 72 of 72 combinations (36 per colour set; lowest contrast 8.55:1 on the dark page). Prompt audit: the same 11 lines with two more prompts read.
++- Not checked: a running SillyTavern; the full-size avatar's address (`characters/<file>`); a reply while it streams (its bracketed names show until it is drawn whole); swipes inside the box.
++- Next, for the player: the reference's choice banners for the extension's questions; a speech tag between two quotations ("he says") joined to its quotation's box instead of a box of its own; a marked word's own tempo while its letters appear; the speaker's own speaking rate from the body.
++
+ ## 2026-11-11 (116), Claude
+ - The player on (115): SillyTavern's chat is unusable to them; "ugly" means the whole of the chat's messages in view at once, and the picture at the left; the reference's features are to be taken as that game has them; questions should narrow the space, with options stated as code where English merges distinctions ("semantic" meaning concepts apart from any one language). (115) had read "through English" as words on the screen; this entry corrects that.
+ - Asked, four questions with the options drawn or written as code; answered: one thing per screen (undecided between a unit and a whole message); a new box at each change of voice; the speaker as the name plate only; of four distinctions offered, [±voiced] alone (the question was not clear to the player; restated in the reply).
+diff --git a/history/review-tests/browser/voice-look/README.md b/history/review-tests/browser/voice-look/README.md
+index f0b297d..7d13515 100644
+--- a/history/review-tests/browser/voice-look/README.md
++++ b/history/review-tests/browser/voice-look/README.md
+@@ -7,7 +7,7 @@ Scripts for section 47 (`docs/progress.md` (114)). Each takes the repository roo
+ | `measure.mjs <root> [distinct or plain] [font] [width]` | sets the 13 lines of `lines.json` and reports, per line: whether it keeps the story's line height, words drawn over the next, blurred and hollow letters, the pitch stroke's colour; prints `MISS <label>` on a fault |
+ | `specimen.mjs <root> <out.png> [look] [font] [dark or light] [width]` | draws the same lines as a sheet |
+ | `toolbar.mjs <root> <out.png> [font]` | loads `src/index.js` with a stand-in SillyTavern and draws the toolbar and one chat line |
+-| `st-chat.mjs <root> <SillyTavern checkout> <out.png or -> [theme] [flat, bubble or document] [width] [page on or off] [measure or -] [box: off, voice, message or log] [taps on next]` | sections 48 and 49 (`docs/progress.md` (115), (116)); with the box on it goes to the first unit, presses → as often as asked and prints the place, the plate and the text after each press; draws a chat of 7 messages with SillyTavern's own stylesheets and message template, read from a checkout as files (none of its scripts run), the extension loaded through `src/index.js` with a stand-in context; with `measure` it reports, per message: every line at one height, words drawn over the next, a pause away from its word, a pitch stroke in the line above, letter shadows, each text's contrast on what lies behind it; prints `MISS <label>` on a fault |
++| `st-chat.mjs <root> <SillyTavern checkout> <out.png or -> [theme] [flat, bubble or document] [width] [page on or off] [measure or -] [box: off, voice, message or log] [taps on next] [page colours: light or dark] [picture: none or large] [typing: off or on]` | sections 48 to 50 (`docs/progress.md` (115) to (117)); the plate is printed as drawn (the name shown, the words at its right), with the unit's colour, a key word and the picture's source; with typing on it times the letters, a tap and AUTO; with the box on it goes to the first unit, presses → as often as asked and prints the place, the plate and the text after each press; draws a chat of 7 messages with SillyTavern's own stylesheets and message template, read from a checkout as files (none of its scripts run), the extension loaded through `src/index.js` with a stand-in context; with `measure` it reports, per message: every line at one height, words drawn over the next, a pause away from its word, a pitch stroke in the line above, letter shadows, each text's contrast on what lies behind it; prints `MISS <label>` on a fault |
+ | `palette-css.mjs <root>` | the feeling colours of `style.css`: sRGB, contrast on each shipped theme, pairwise CIELUV distances for normal colour vision, a deuteranope and a protanope |
+ 
+ `themes.mjs` holds the shipped themes as `tests/ui.test.mjs` lists them; `st-chat.mjs` reads them from the checkout (`default/content/themes`). Playwright with Chromium is needed (`require('playwright')`).
+diff --git a/history/review-tests/browser/voice-look/st-chat.mjs b/history/review-tests/browser/voice-look/st-chat.mjs
+index bde12fe..894952c 100644
+--- a/history/review-tests/browser/voice-look/st-chat.mjs
++++ b/history/review-tests/browser/voice-look/st-chat.mjs
+@@ -2,13 +2,14 @@
+ // its scripts run) and the extension loaded through its own index.js with a stand-in context, as toolbar.mjs does.
+ // Usage: node st-chat.mjs <repo root> <SillyTavern checkout> <out.png> [theme: a file name in default/content/themes, or light]
+ //        [display: flat|bubble|document] [width] [page: on|off] [measure or -] [box: off|voice|message|log] [taps on "next"]
++//        [page colours: light|dark] [picture: none|large] [typing: off|on]
+ // With the box on, the chat keeps the height of a phone's screen and the picture is of that screen.
+ // With "measure" it prints one line per check and MISS <label> on a fault.
+ import { createRequire } from 'node:module';
+ import fs from 'node:fs';
+ import path from 'node:path';
+ const { chromium } = createRequire(import.meta.url)('playwright');
+-const [root, st, out, themeName = 'Dark Lite', display = 'flat', width = '412', pageArg = 'on', measure = '', boxArg = 'off', steps = '0'] = process.argv.slice(2);
++const [root, st, out, themeName = 'Dark Lite', display = 'flat', width = '412', pageArg = 'on', measure = '', boxArg = 'off', steps = '0', colours = 'light', picture = 'none', typingArg = 'off'] = process.argv.slice(2);
+ const pub = path.join(st, 'public');
+ const types = { '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.html': 'text/html', '.png': 'image/png', '.svg': 'image/svg+xml' };
+ 
+@@ -40,11 +41,11 @@ html, body { height: auto; overflow: visible; } body { background: linear-gradie
+ <div id="extensions_settings2" style="display:none"></div><div id="tpl" style="display:none">${template}</div>
+ <script>
+ window.toastr = { info(){}, warning(){}, success(){} }; window.__h = {};
+-const ctx = { name1: 'Mara', chatMetadata: {}, chat: [], extensionSettings: ${JSON.stringify({ 'rules-engine': { page: pageArg !== 'off', box: boxArg !== 'off', boxUnit: boxArg === 'message' ? 'message' : 'voice' } })}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
++const ctx = { name1: 'Mara', name2: 'Narrator', chatMetadata: {}, chat: [], extensionSettings: ${JSON.stringify({ 'rules-engine': { page: pageArg !== 'off', pageColours: colours, box: boxArg !== 'off', boxUnit: boxArg === 'message' ? 'message' : 'voice', boxPicture: picture, boxTyping: typingArg === 'on' } })}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
+   eventTypes: { MESSAGE_RECEIVED: 'mr', CHAT_COMPLETION_SETTINGS_READY: 'ccsr', TEXT_COMPLETION_SETTINGS_READY: 'tcsr', GENERATION_STARTED: 'gs', MESSAGE_SWIPED: 'ms', CHAT_CHANGED: 'cc', MESSAGE_DELETED: 'md', USER_MESSAGE_RENDERED: 'umr', CHARACTER_MESSAGE_RENDERED: 'cmr', MESSAGE_UPDATED: 'mu', MORE_MESSAGES_LOADED: 'mml' },
+   setExtensionPrompt() {}, saveSettingsDebounced() {}, registerFunctionTool() {}, unregisterFunctionTool() {}, saveMetadata: async () => {}, saveMetadataDebounced() {},
+   renderExtensionTemplateAsync: async () => (await fetch('http://rules.test/ext/settings.html')).text(), POPUP_TYPE: { TEXT: 1, INPUT: 2 }, callGenericPopup: async () => null,
+-  getCurrentChatId: () => 'c1', characters: [], writeExtensionField: async () => {}, generate: async () => {} };
++  getCurrentChatId: () => 'c1', characters: [{ name: 'Kyoko', avatar: 'Kyoko.png' }], writeExtensionField: async () => {}, generate: async () => {} };
+ window.SillyTavern = { getContext: () => ctx };
+ window.__ready = import('http://rules.test/ext/src/index.js').then(() => new Promise(r => { const t = setInterval(() => { if (document.getElementById('rules-voice')) { clearInterval(t); r(true); } }, 50); }));
+ </script></body></html>`;
+@@ -57,6 +58,8 @@ page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/
+ await page.route('http://rules.test/**', route => {
+     const u = decodeURIComponent(new URL(route.request().url()).pathname);
+     if (u === '/__page.html') return route.fulfill({ status: 200, contentType: 'text/html', body: html });
++    // A character card's picture at full size (the box's large picture).
++    if (u.startsWith('/st/characters/')) return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100"><rect width="60" height="100" fill="#8a7fa8"/><circle cx="30" cy="22" r="12" fill="#eee"/><rect x="12" y="38" width="36" height="62" rx="8" fill="#eee"/></svg>' });
+     const [base, rel] = u.startsWith('/ext/') ? [root, u.slice(5)] : u.startsWith('/st/') ? [pub, u.slice(4)] : [null, ''];
+     const f = base ? path.join(base, rel) : '';
+     // Of SillyTavern only stylesheets, fonts and pictures are served: its scripts stay unread.
+@@ -93,6 +96,10 @@ const info = await page.evaluate(async () => {
+         { user: true, t: mark('I stand up. "Get out of my house, right now, before I throw you out myself. No. Not one more word."', [['I', 'feeling:anger'], ['right now', 'loud'], ['now', 'up'], ['now', 'down'], ['myself', 'stress'], ['No', 'stretch'], ['house', 'pause'], ['Not one more word', 'creaky'], ['word', 'down']]),
+             calls: [{ tool: 'Communicate', args: { speaker: 'Mara', listener: 'Tom', means: 'speech', effort: 'loud', message: 'Get out of my house, right now, before I throw you out myself.' } }, { tool: 'Act', args: { who: 'Mara', action: 'stands up' } }] },
+         { user: true, t: 'I walk to the back door and listen for a while before I open it.', calls: [{ tool: 'Listen', args: { listener: 'Mara', sound: 'steps behind the door', distance_m: 2 } }] },
++        // Section 50: a quotation whose speaker only the reply's own name gives (rulesSpeakers), two speakers acting in one
++        // paragraph, a key word (rulesKeys), and a paragraph longer than the box.
++        { name: 'Narrator', t: '"Who set all this up?"\n\nKyoko frowns at the door. "And why did they choose us?" Mara shrugs. "No idea."\n\nThe lock gives with a dry click and the door swings inward on a dark stair. Dust lies thick on every step, and the air that rises from below smells of wet stone and old smoke. Somewhere far down, water drips in a slow and even beat, and a draught bends the candle flame sideways. Nothing else stirs on the stair.',
++            extra: { rulesSpeakers: { 0: [{ q: '"Who set all this up?"', who: 'Kyoko' }] }, rulesKeys: { 0: [{ phrase: 'lock gives', result: 'The lock gives' }] } } },
+         { name: 'Narrator', html: '<p>Nothing moves. On the door someone has chalked:</p><blockquote><p>What has keys but opens no locks?</p></blockquote><p>Below it, <u>underlined twice</u>, a tally: <code>IIII II</code>, and <strong>one word</strong> rubbed out.</p>' },
+     ];
+     const chat = document.getElementById('chat'), c = window.SillyTavern.getContext();
+@@ -104,7 +111,7 @@ const info = await page.evaluate(async () => {
+         mes.querySelector('.mes_text').innerHTML = l.html ?? format(l.t);
+         if (i === lines.length - 1) mes.classList.add('last_mes');
+         chat.appendChild(mes);
+-        c.chat.push({ is_user: !!l.user, name: l.user ? 'Mara' : l.name, mes: l.t ?? '', ...l.calls ? { extra: { [U.NOTE_KEY]: { ...note(l.calls), line: l.t } } } : {} });
++        c.chat.push({ is_user: !!l.user, name: l.user ? 'Mara' : l.name, mes: l.t ?? '', ...l.calls || l.extra ? { extra: { ...l.extra ?? {}, ...l.calls ? { [U.NOTE_KEY]: { ...note(l.calls), line: l.t } } : {} } } : {} });
+     });
+     for (const f of window.__h['cc'] ?? []) f();
+     await document.fonts.ready;
+@@ -113,10 +120,37 @@ const info = await page.evaluate(async () => {
+ await page.waitForTimeout(200);
+ if (boxArg !== 'off') {
+     // The box as the player drives it: the chat opens at its newest message; "back" to the first, then the taps asked for.
+-    const place = () => page.evaluate(() => `${document.getElementById('rules-box-count')?.textContent} | ${document.querySelector('#chat .rules-now .name_text')?.textContent}${[...document.querySelectorAll('#chat .rules-now .rules-mode')].filter(e => e.getClientRects().length).map(e => ` [${e.textContent}]`).join('')} | ${(document.querySelector('#chat .rules-unit-now') ?? document.querySelector('#chat .rules-now .mes_text'))?.textContent.replace(/[\u{E0000}-\u{E007F}]/gu, '').slice(0, 60)}`);
++    // The place, the plate as drawn (the name shown, the words at its right), the unit's colour and its first words; with the
++    // large picture, the picture's source.
++    const place = () => page.evaluate(() => {
++        const mes = document.querySelector('#chat .rules-now'), shown = e => !!e && e.getClientRects().length > 0;
++        const name = [...mes.querySelectorAll('.name_text, .rules-who')].find(shown)?.textContent;
++        const words = [...mes.querySelectorAll('.rules-mode')].filter(shown).map(e => `[${e.textContent}]`).join('');
++        const unit = mes.querySelector('.rules-unit-now'), fig = document.getElementById('rules-box-figure');
++        return `${document.getElementById('rules-box-count')?.textContent} | ${name}${words ? ` ${words}` : ''} | ${unit ? getComputedStyle(unit).color : ''} | ${(unit?.textContent ?? mes.querySelector('.mes_text').textContent).trim().slice(0, 48)}${mes.querySelector('.rules-unit-now mark.rules-key') ? ' | key: ' + mes.querySelector('.rules-unit-now mark.rules-key').textContent : ''}${shown(fig) ? ` | picture ${fig.getAttribute('src').slice(0, 24)}` : ''}`;
++    });
+     for (let i = 0; i < 40; i++) await page.click('#rules-box-back');
+     console.log(`first: ${await place()}`);
+     for (let i = 0; i < Number(steps); i++) { await page.keyboard.press('ArrowRight'); console.log(`${i + 1}: ${await place()}`); }
++    if (typingArg === 'on') {
++        // Letters one by one: after a step, the letters not yet shown are a highlight range; it shrinks as time passes, a tap
++        // shows the rest, and left alone it ends when box.ts revealTimes says the last letter appears. Then AUTO.
++        const hidden = () => page.evaluate(() => { const h = CSS.highlights.get('rules-unshown'); return h ? [...h][0].toString().length : 0; });
++        for (let i = 0; i < 40; i++) await page.click('#rules-box-back');
++        await page.keyboard.press('ArrowRight');
++        const a = await hidden(); await page.waitForTimeout(400); const b = await hidden();
++        await page.keyboard.press('ArrowRight'); const c = await hidden(), at = await place();
++        console.log(`typing: ${a} letters unshown at once, ${b} after 400 ms; a tap shows the rest: ${c} unshown, still at ${at.split(' | ')[0]}`);
++        await page.keyboard.press('ArrowRight');
++        const t0 = Date.now(), want = await page.evaluate(async () => { const B = await import('http://rules.test/ext/src/rules/box.js'); const u = document.querySelector('.rules-unit-now'); return Math.round(B.revealTimes(u.textContent, u.getAttribute('data-said') === 'true').at(-1)); });
++        while (await hidden() && Date.now() - t0 < 20000) await page.waitForTimeout(20);
++        console.log(`typing: the unit appeared in ${Date.now() - t0} ms (revealTimes ${want} ms)`);
++        await page.click('#rules-box-auto');
++        const from = (await place()).split(' | ')[0], t1 = Date.now();
++        while ((await place()).split(' | ')[0] === from && Date.now() - t1 < 30000) await page.waitForTimeout(20);
++        console.log(`auto: from ${from} to ${(await place()).split(' | ')[0]} after ${Date.now() - t1} ms; plate ${(await place()).split(' | ')[1]}`);
++        await page.click('#rules-box-auto');
++    }
+     if (boxArg === 'log') await page.click('#rules-box-log');
+     const drawn = await page.evaluate(() => ({ messages: [...document.querySelectorAll('#chat .mes')].filter(m => m.getClientRects().length).length, pictures: [...document.querySelectorAll('#chat .mesAvatarWrapper')].filter(m => m.getClientRects().length).length }));
+     console.log(`drawn: ${drawn.messages} message(s), ${drawn.pictures} picture(s)`);
+@@ -175,7 +209,7 @@ if (measure === 'measure') {
+                 if (s.textShadow !== 'none' && !/rgba\([^)]*, 0\)/.test(s.textShadow)) out.push(`MISS letter shadow: "${w.textContent}" in message ${id}: ${s.textShadow}`);
+                 if (s.filter !== 'none') out.push(`MISS blur: "${w.textContent}" in message ${id}`);
+             }
+-            for (const e of mes.querySelectorAll('.name_text, .timestamp, .mes_text p, .mes_text q, .mes_text em, .mes_text u, .mes_text code, .mes_text blockquote p, .rules-v, .rules-v-add, .rules-run, .rules-mode, .rules-reading, .rules-tag, .rules-reading-taken')) {
++            for (const e of mes.querySelectorAll('.name_text, .rules-who, .timestamp, .mes_text p, .mes_text q, .mes_text em, .mes_text u, .mes_text code, .mes_text blockquote p, .rules-unit, mark.rules-key, .rules-v, .rules-v-add, .rules-run, .rules-mode, .rules-reading, .rules-tag, .rules-reading-taken')) {
+                 if (!e.textContent.trim() || !e.getClientRects().length) continue;
+                 const k = contrast(e);
+                 if (k < lowest) { lowest = k; lowestAt = `${e.className || e.tagName.toLowerCase()} in message ${id}`; }
+diff --git a/history/section-50-run.txt b/history/section-50-run.txt
+new file mode 100644
+index 0000000..e386f2e
+--- /dev/null
++++ b/history/section-50-run.txt
+@@ -0,0 +1,200 @@
++# Section 50 run (the tree of section 49 against this tree; 2026-11-11)
++
++## Tests (the steps of npm test; tsc Version 5.6.3)
++route: 218 checks, 0 miss(es)
++frame: 202 checks, 0 miss(es)
++intent: 37 checks, 0 miss(es)
++engine: 203 checks, 0 miss(es)
++plan: 60 checks, 0 miss(es)
++size: 9 of 9
++ui: 88 of 88
++sequences: 300 run, 0 distinct failing sequence(s)
++
++## Negative controls (every control on ui.js, index.js, style.css, box.js, lexicon.js)
++U1 caught others latest (0 s)
++U2 caught note as text (0 s)
++U3 caught edited line (0 s)
++U4 caught no default (0 s)
++U4b caught choices alike (0 s)
++U4c caught number keys (0 s)
++U4d caught shared words (0 s)
++U6 caught era bands (0 s)
++U7 caught kind contrast (0 s)
++U7b caught tone (0 s)
++U8 caught reserved name (0 s)
++H3 caught layer holds the text (0 s)
++H4 caught chat classes (0 s)
++R12 caught voice button from the keyboard (0 s)
++R20 caught say it another way takes the line back (0 s)
++I18 caught the note shows the line as meant (0 s)
++L1 caught the prefixed words the lexicon's build dropped are words (0 s)
++L3 caught the grammar's prepositions are words (0 s)
++RW7 caught a pause titled by its length (0 s)
++RW11 caught the typesetting's added words are not selected (0 s)
++RY13 caught a world-book line is read without its hidden marks (0 s)
++RZ11 caught the narrator's prompt carries no tag character (0 s)
++RL3 caught pitch order in the chat (0 s)
++RL4 caught stress mark in the chat (0 s)
++RM3 caught the look's sizes come from the sound (0 s)
++RM4 caught further time is 1 ÷ rate − 1 (0 s)
++RM5 caught the palest ink keeps 4.5:1 (0 s)
++RM6 caught the pitch stroke takes the word's own colour (0 s)
++RM7 caught a breathy word keeps a sharp edge (0 s)
++RM8 caught a word with a pitch stroke adds no height to its line (0 s)
++RM9 caught a feeling's colour reads on the theme (0 s)
++RM10 caught two feelings' colours stay apart (0 s)
++RM11 caught a drawn-out vowel is written again (0 s)
++RM12 caught a pause's dots count its silence (0 s)
++RM13 caught the space between two slower words takes the tempo (0 s)
++RM14 caught words that share a phonation stand in one run (0 s)
++RM15 caught a mark's quantity on hover (0 s)
++RN3 caught quoted words are said (0 s)
++RN4 caught an edited line keeps what its own words show (0 s)
++RN5 caught the mode's call on hover (0 s)
++RN6 caught the page's aside ink reads on its ground (0 s)
++RN7 caught the page keeps SillyTavern's x-height (0 s)
++RN8 caught a pause stays by its word (0 s)
++RO1 caught a stretch without a letter joins its neighbour (0 s)
++RO2 caught each quoted part is a unit (0 s)
++RO3 caught text that is not voiced reads on the page (0 s)
++RO4 caught the box has no picture (0 s)
++RP1 caught the name the reply wrote comes first (0 s)
++RP2 caught a speech tag after a quotation names its speaker (0 s)
++RP3 caught he or she is the last person of that sex named (0 s)
++RP4 caught a given name that is also an auxiliary names a person before a verb (0 s)
++RP5 caught the names before quotations leave the text (0 s)
++RP6 caught a long stretch is cut at the last sentence end that fits (0 s)
++RP7 caught said words appear syllable by syllable (0 s)
++RP8 caught AUTO waits one word more (0 s)
++RP9 caught a result's gloss is no story word (0 s)
++RP10 caught text not said reads on the dark page (0 s)
++RP11 caught a key word reads on its gold ground (0 s)
++RP12 caught the narrator names each speaker while the box is on (0 s)
++RP13 caught Auto toggles one settings object (0 s)
++RP14 caught the plate names the stretch's speaker in the box (0 s)
++RP15 caught the plate's word is whispering for a whisper (0 s)
++62 of 62 controls caught.
++
++## Prompt audit
++node tools/prompt-audit.mjs: 11 lines, the same as section 49's tree, with NARRATION_RULE and SPEAKER_RULE now read
++
++## Chromium with SillyTavern's stylesheets (release branch, commit 06bde93)
++
++node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - "Dark Lite" flat 412 on - voice 26 light none off
++first: 1 / 8 · 1 / 5 | Mara | rgb(72, 61, 139) | The tavern door bangs shut behind you. Tom looks
++1: 1 / 8 · 2 / 5 | Tom [speaking] | rgb(0, 0, 0) | "You are late,"
++2: 1 / 8 · 3 / 5 | Mara | rgb(72, 61, 139) | he says, not quite smiling.
++3: 1 / 8 · 4 / 5 | Tom [speaking] | rgb(0, 0, 0) | "Sit. Will has been counting the same six coins 
++4: 1 / 8 · 5 / 5 | Mara | rgb(72, 61, 139) | Will does not look up. A candle gutters between 
++5: 2 / 8 · 1 / 2 | Mara | rgb(72, 61, 139) | fearfully I lean in close to Tom.
++6: 2 / 8 · 2 / 2 | Mara [whispering] | rgb(0, 0, 0) | "They are ˈright behind that door. Do not make a
++7: 3 / 8 · 1 / 3 | Mara | rgb(72, 61, 139) | Tom's hand stops over the dice. He hears you: th
++8: 3 / 8 · 2 / 3 | Tom [speaking] | rgb(0, 0, 0) | "How many?"
++9: 3 / 8 · 3 / 3 | Mara | rgb(72, 61, 139) | he breathes.
++10: 4 / 8 | Mara [thinking] | rgb(72, 61, 139) | Mara tries to work out the riddle chalked on the
++11: 5 / 8 · 1 / 2 | Mara | rgb(72, 61, 139) | angrily I stand up.
++12: 5 / 8 · 2 / 2 | Mara [speaking] | rgb(0, 0, 0) | "Get out of my house, — ··· right now, before I 
++13: 6 / 8 | Mara | rgb(72, 61, 139) | I walk to the back door and listen for a while b
++14: 7 / 8 · 1 / 7 | Kyoko [speaking] | rgb(0, 0, 0) | "Who set all this up?"
++15: 7 / 8 · 2 / 7 | Mara | rgb(72, 61, 139) | Kyoko frowns at the door.
++16: 7 / 8 · 3 / 7 | Kyoko [speaking] | rgb(0, 0, 0) | "And why did they choose us?"
++17: 7 / 8 · 4 / 7 | Mara | rgb(72, 61, 139) | Mara shrugs.
++18: 7 / 8 · 5 / 7 | Mara [speaking] | rgb(0, 0, 0) | "No idea."
++19: 7 / 8 · 6 / 7 | Mara | rgb(72, 61, 139) | The lock gives with a dry click and the door swi | key: lock gives
++20: 7 / 8 · 7 / 7 | Mara | rgb(72, 61, 139) | Somewhere far down, water drips in a slow and ev
++21: 8 / 8 · 1 / 3 | Mara | rgb(72, 61, 139) | Nothing moves. On the door someone has chalked:
++22: 8 / 8 · 2 / 3 | Mara | rgb(0, 0, 0) | What has keys but opens no locks?
++23: 8 / 8 · 3 / 3 | Mara | rgb(72, 61, 139) | Below it, underlined twice, a tally: IIII II, an
++24: 8 / 8 · 3 / 3 | Mara | rgb(72, 61, 139) | Below it, underlined twice, a tally: IIII II, an
++25: 8 / 8 · 3 / 3 | Mara | rgb(72, 61, 139) | Below it, underlined twice, a tally: IIII II, an
++26: 8 / 8 · 3 / 3 | Mara | rgb(72, 61, 139) | Below it, underlined twice, a tally: IIII II, an
++drawn: 1 message(s), 0 picture(s)
++
++node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - light flat 412 on - voice 0 light none on
++typing: 14 letters unshown at once, 8 after 400 ms; a tap shows the rest: 0 unshown, still at 1 / 8 · 2 / 5
++typing: the unit appeared in 1172 ms (revealTimes 1154 ms)
++auto: from 1 / 8 · 3 / 5 to 1 / 8 · 4 / 5 after 231 ms; plate Tom [speaking][auto]
++
++node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - "Dark Lite" flat 412 on - voice 20 dark large off
++first: 1 / 8 · 1 / 5 | Mara | rgb(135, 206, 250) | The tavern door bangs shut behind you. Tom looks
++14: 7 / 8 · 1 / 7 | Kyoko [speaking] | rgb(255, 255, 255) | "Who set all this up?" | picture characters/Kyoko.png
++15: 7 / 8 · 2 / 7 | Mara | rgb(135, 206, 250) | Kyoko frowns at the door. | picture characters/Kyoko.png
++16: 7 / 8 · 3 / 7 | Kyoko [speaking] | rgb(255, 255, 255) | "And why did they choose us?" | picture characters/Kyoko.png
++17: 7 / 8 · 4 / 7 | Mara | rgb(135, 206, 250) | Mara shrugs. | picture characters/Kyoko.png
++18: 7 / 8 · 5 / 7 | Mara [speaking] | rgb(255, 255, 255) | "No idea." | picture characters/Kyoko.png
++19: 7 / 8 · 6 / 7 | Mara | rgb(135, 206, 250) | The lock gives with a dry click and the door swi | key: lock gives | picture characters/Kyoko.png
++20: 7 / 8 · 7 / 7 | Mara | rgb(135, 206, 250) | Somewhere far down, water drips in a slow and ev | picture characters/Kyoko.png
++
++## The log, 6 themes × 3 displays × 2 widths × 2 colour sets (st-chat.mjs <root> <SillyTavern> - <theme> <display> <width> on measure log 0 <colours> none off)
++[light] Dark Lite, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Dark Lite, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Dark Lite, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Dark Lite, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Dark Lite, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Dark Lite, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Azure, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Azure, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Azure, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Azure, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Azure, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Azure, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Cappuccino, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Cappuccino, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Cappuccino, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Cappuccino, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Cappuccino, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Cappuccino, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Celestial Macaron, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Celestial Macaron, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Celestial Macaron, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Celestial Macaron, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Celestial Macaron, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Celestial Macaron, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Dark V 1.0, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Dark V 1.0, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Dark V 1.0, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Dark V 1.0, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] Dark V 1.0, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] Dark V 1.0, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] light, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] light, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] light, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] light, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[light] light, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++[light] light, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 7), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++[dark] Dark Lite, flat, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Dark Lite, flat, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Dark Lite, bubble, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Dark Lite, bubble, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Dark Lite, document, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Dark Lite, document, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Azure, flat, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Azure, flat, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Azure, bubble, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Azure, bubble, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Azure, document, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Azure, document, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Cappuccino, flat, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Cappuccino, flat, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Cappuccino, bubble, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Cappuccino, bubble, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Cappuccino, document, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Cappuccino, document, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Celestial Macaron, flat, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Celestial Macaron, flat, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Celestial Macaron, bubble, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Celestial Macaron, bubble, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Celestial Macaron, document, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Celestial Macaron, document, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Dark V 1.0, flat, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Dark V 1.0, flat, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Dark V 1.0, bubble, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Dark V 1.0, bubble, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] Dark V 1.0, document, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] Dark V 1.0, document, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] light, flat, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] light, flat, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] light, bubble, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] light, bubble, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
++[dark] light, document, 412 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.14 em
++[dark] light, document, 800 px, page on: 0 miss(es); lowest contrast 8.55:1 (rules-v-add rules-v-add-feeling in message 4), of a marked word 8.55:1; least room over a pitch stroke 0.36 em
+diff --git a/settings.html b/settings.html
+index f10e90b..37f3c6a 100644
+--- a/settings.html
++++ b/settings.html
+@@ -10,9 +10,14 @@
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_rule_check" /><span>Rule check: after each reply, a model call compares it with the engine's results and redoes it once when it bends one</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_structured" /><span>Structured replies: the narrator writes one passage per decided result plus scenery, and names what is left open for the next turn; the reply is shown as prose</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_page" /><span>Dialogue page: the chat is set as a light page, black on ivory, in a book serif that follows the story's era, with room between the lines for the voice marks and no letter shadow, whatever the theme. Off, messages keep the theme's look</span></label>
+-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box" /><span>Text box: one thing on screen at a time, in a box at the foot of the chat under the speaker's name, without the picture at the left. Tap the text or press → for the next, ‹ or ← to go back, "Log" for the whole chat. Off, the chat scrolls</span></label>
++            <label for="rules_engine_page_colours"><small>Page colours</small></label>
++            <select id="rules_engine_page_colours" class="text_pole"><option value="light">light: black on ivory, text that is not said in dark blue</option><option value="dark">dark: white on black, text that is not said in light blue, key words in gold</option></select>
++            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box" /><span>Text box: one thing on screen at a time, in a box at the foot of the chat under the name of who says it. Tap the text or press → for the next, ‹ or ← to go back, "Auto" to move on by itself, "Log" for the whole chat. Off, the chat scrolls</span></label>
+             <label for="rules_engine_box_unit"><small>A box holds</small></label>
+-            <select id="rules_engine_box_unit" class="text_pole"><option value="voice">said words, or the text between them (a new box at each quotation)</option><option value="message">a whole message</option></select>
++            <select id="rules_engine_box_unit" class="text_pole"><option value="voice">said words, or the text between them (a new box at each quotation; a long stretch goes on in the next box)</option><option value="message">a whole message</option></select>
++            <label for="rules_engine_box_picture"><small>The speaker's picture</small></label>
++            <select id="rules_engine_box_picture" class="text_pole"><option value="none">none: the name plate only</option><option value="large">large, above the box (the character card's picture)</option></select>
++            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box_typing" /><span>Letters appear one by one: said words at the speaker's pace, other text at reading pace. A tap shows the rest at once</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_distinct" /><span>Multiple distinctions: your marked lines show each part of the voice in a place of its own (above a word a thin stroke for its pitch; heavier letters for louder, paler for softer; under the words a wavy rule for creaky, dots for breathy, a broken rule for whispered; wider gaps for slower, a lean for faster, narrow letters for falsetto; the feeling's colour at the line's edge); off: the lighter look</span></label>
+             <label for="rules_engine_profile"><small>Connection for the question pass and rule check</small></label>
+             <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
+diff --git a/src/index.js b/src/index.js
+index 6ee091a..405f542 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -7,6 +7,8 @@ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided,
+ import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
++import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase } from './rules/box.js';
++import { peek } from './rules/constants.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+ import { registerRulesEvalCommand } from './rules/eval.js';
+ import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
+@@ -25,7 +27,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
+ const IN_CHAT = 1, SYSTEM = 0;
+ // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
+ const DEPTH = 1;
+-const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, box: true, boxUnit: 'voice', profile: '', maxTokens: 0, effort: 'low' };
++const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxTyping: true, boxAuto: false, profile: '', maxTokens: 0, effort: 'low' };
+ const ctx = () => SillyTavern.getContext();
+ const toastr = globalThis.toastr;
+ function settings() {
+@@ -277,7 +279,8 @@ globalThis.rulesEngineInterceptor = async (chat, _size, abort, type) => {
+     // world book decide; the rule check then redoes nothing and the reply is free prose.
+     const suggest = settings().suggest;
+     const decided = suggest ? decidedInjection().replace(/Narrate them as given; they stand\./, SUGGEST_LINE) : decidedInjection();
+-    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
++    // While the box is on, the narrator names the speaker before each quotation (box.ts SPEAKER_RULE), for the box's plate.
++    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : ''];
+     // The narrator's prompt carries no hidden tag character (voice-code.ts untagged).
+     c.setExtensionPrompt(KEY, untagged(parts.filter(Boolean).join('\n\n')), IN_CHAT, DEPTH, false, SYSTEM);
+ };
+@@ -536,31 +539,43 @@ function typesetChat() {
+         else
+             mes.removeAttribute('data-rules-feeling');
+     }
++    markKeys();
+     toneLook();
+ }
+ // The box: one unit of the chat on screen at a time, as a visual novel shows one line in its text box (ui.ts voiceUnits). Every
+-// message's paragraphs are set in units by change of voice; the box shows the unit at `boxAt` and its message's name plate,
+-// with "speaking" on the plate while the unit is voiced. A tap on the text, → or the bar's ›, shows the next unit, and after
+-// a message's last unit the next message's first; ‹ and ← go back. "Log" shows the whole chat, scrolling, and "Box" returns.
+-// A message being written or edited has no units yet and shows whole.
++// message's paragraphs are set in units by change of voice, each with the one it belongs to (box.ts speakersOf); the box shows
++// the unit at `boxAt` under that name, with a word at the plate's right for what the colour does not say (box.ts slotOf). A
++// tap on the text, → or the bar's ›, shows the rest of a unit still appearing, then the next unit, and after a message's last
++// unit the next message's first; ‹ and ← go back. "Auto" moves on by itself; "Log" shows the whole chat, scrolling, and "Box"
++// returns. A message being written or edited has no units yet and shows whole.
+ let boxAt = null, boxLog = false;
+ const boxOn = () => settings().enabled && settings().box;
+ const unitsIn = (mes) => settings().boxUnit === 'message' ? [] : [...mes.querySelectorAll('.mes_text .rules-unit')];
++const playerName = () => String(ctx().name1 || 'You');
++/** The cast by name: the player's character, the character of a one-to-one chat and a group's members. */
++const castNames = () => { const c = ctx(); return [c.name1, c.name2, ...groupMembers().map(m => m.name)].filter((n) => !!n); };
+ /** Each drawn message's text in units: a quoted stretch, the text between two of them, or a block that is no paragraph (a
+- * list, a table, a block quotation) as one. Done once per drawing of a message: SillyTavern redraws its text whole. */
++ * list, a table, a block quotation) as one; each unit carries the one it belongs to (data-who). Done once per drawing of a
++ * message: SillyTavern redraws its text whole. */
+ function unitChat() {
+-    for (const mes of document.querySelectorAll('#chat .mes')) {
++    const all = [...document.querySelectorAll('#chat .mes')];
++    all.forEach((mes, at) => {
+         const text = mes.querySelector('.mes_text');
+         if (!text || text.querySelector('.rules-unit, .edit_textarea'))
+-            continue;
+-        let said = false;
++            return;
++        const msg = ctx().chat?.[Number(mes.getAttribute('mesid'))];
++        // The names the reply wrote before its quotations (readReply), matched to the quotations by their words, in order.
++        const tags = [...(msg?.extra?.rulesSpeakers?.[msg?.swipe_id ?? 0] ?? [])];
++        const bare = (t) => t.replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
++        const paragraphs = [];
+         for (const block of [...text.children]) {
+             if (block.tagName !== 'P') {
+                 block.classList.add('rules-unit');
+                 block.setAttribute('data-said', 'false');
++                paragraphs.push([{ span: block, s: { said: false, text: block.textContent ?? '' } }]);
+                 continue;
+             }
+-            const nodes = [...block.childNodes];
++            const nodes = [...block.childNodes], para = [];
+             for (const u of voiceUnits(nodes.map(n => ({ said: n.nodeName === 'Q', text: n.textContent ?? '' })))) {
+                 const span = document.createElement('span');
+                 span.className = 'rules-unit';
+@@ -568,18 +583,194 @@ function unitChat() {
+                 nodes[u.from].before(span);
+                 for (let i = u.from; i < u.to; i++)
+                     span.appendChild(nodes[i]);
+-                said ||= u.said;
++                const words = span.textContent ?? '', t = u.said ? tags.findIndex(x => bare(x.q) === bare(words)) : -1;
++                para.push({ span, s: { said: u.said, text: words, tag: t >= 0 ? tags.splice(t, 1)[0].who : null } });
+             }
++            paragraphs.push(para);
+         }
+-        // Another speaker's message has no plate word of its own: its voiced units bring "speaking" (style.css shows it in the box).
+-        if (said && !mes.querySelector('.rules-modes')) {
+-            const tag = drawModes(document, [{ mode: 'speaking', title: 'Words in quotation marks are said' }]);
+-            tag.classList.add('rules-modes-unit');
+-            mes.querySelector('.name_text')?.after(tag);
++        // The people the message before named, for a pronoun at this one's start.
++        const named = all[at - 1] ? [...all[at - 1].querySelectorAll('.rules-unit[data-who]')].map(e => e.getAttribute('data-who') ?? '').filter(n => n && n !== playerName()) : [];
++        const author = msg?.is_user ? playerName() : mes.getAttribute('ch_name') || mes.querySelector('.name_text')?.textContent || '';
++        const who = speakersOf(paragraphs.map(p => p.map(x => x.s)), { player: playerName(), author, names: castNames() }, named);
++        paragraphs.forEach((p, i) => p.forEach((x, j) => x.span.setAttribute('data-who', who[i][j])));
++    });
++}
++/** A unit longer than the box goes on in the next box, cut after a sentence's end (box.ts cutsOf): measured in the message's
++ * own type and width once it is drawn, at boxLines lines. Done once per unit (data-fit); a piece keeps its unit's voice and speaker. */
++function fitUnits(mes) {
++    const text = mes.querySelector('.mes_text');
++    const units = [...mes.querySelectorAll('.mes_text span.rules-unit:not([data-fit])')];
++    if (!text || !units.length || !text.clientWidth)
++        return;
++    const probe = document.createElement('div');
++    probe.style.cssText = `position: absolute; visibility: hidden; width: ${text.clientWidth}px; white-space: normal;`;
++    text.appendChild(probe);
++    const lh = parseFloat(getComputedStyle(probe).lineHeight) || 1;
++    for (const unit of units) {
++        unit.setAttribute('data-fit', '');
++        const words = unit.textContent ?? '';
++        probe.textContent = words;
++        const lines = Math.round(probe.getBoundingClientRect().height / lh);
++        if (lines <= peek('boxLines'))
++            continue;
++        // The characters that fill the box, in proportion to the lines this unit takes.
++        const cuts = cutsOf(words, Math.floor(words.length * peek('boxLines') / lines));
++        for (const cut of cuts.reverse()) {
++            const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
++            let seen = 0, at = null;
++            for (let n = walk.nextNode(); n; n = walk.nextNode()) {
++                if (seen + n.length >= cut) {
++                    at = n;
++                    break;
++                }
++                seen += n.length;
++            }
++            if (!at)
++                continue;
++            const r = document.createRange();
++            r.setStart(at, cut - seen);
++            r.setEnd(unit, unit.childNodes.length);
++            const piece = unit.cloneNode(false);
++            piece.classList.remove('rules-unit-now');
++            piece.appendChild(r.extractContents());
++            unit.after(piece);
+         }
+     }
++    probe.remove();
++}
++// The letters of a unit appear one by one (box.ts revealTimes): the text not yet shown is a highlight range drawn without ink
++// (CSS Custom Highlight API; style.css ::highlight(rules-unshown)), so the box keeps its lines and nothing moves as letters
++// appear. Without the API, with reduced motion asked for, or with the setting off, the unit shows whole.
++let typing = null, autoTimer, shownKey = '', stepDir = 0, figureSrc = null;
++const UNSHOWN = 'rules-unshown';
++const highlights = () => globalThis.CSS?.highlights;
++function stopTyping() {
++    if (typing)
++        cancelAnimationFrame(typing.raf);
++    typing = null;
++    highlights()?.delete(UNSHOWN);
++}
++/** AUTO: the next unit once this one has been read (box.ts autoWait), while the box shows it and Auto stays on. */
++function scheduleAuto(unit, appearMs) {
++    clearTimeout(autoTimer);
++    if (!settings().boxAuto || boxLog || !boxOn())
++        return;
++    autoTimer = setTimeout(() => { if (settings().boxAuto && !boxLog && unit.classList.contains('rules-unit-now') && !typing)
++        stepBox(1); }, autoWait(unit.textContent ?? '', appearMs));
+ }
+-/** The box as the settings and `boxAt` have it: the classes on the page, the current message and unit, the bar's count. */
++function typeUnit(unit) {
++    stopTyping();
++    clearTimeout(autoTimer);
++    const text = unit.textContent ?? '', times = revealTimes(text, unit.getAttribute('data-said') === 'true'), total = times.at(-1) ?? 0;
++    const hl = highlights(), Hl = globalThis.Highlight;
++    if (!settings().boxTyping || reducedMotion() || !hl || !Hl || !text.trim()) {
++        scheduleAuto(unit, 0);
++        return;
++    }
++    const nodes = [];
++    const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
++    for (let n = walk.nextNode(); n; n = walk.nextNode())
++        nodes.push(n);
++    const range = document.createRange(), last = nodes.at(-1);
++    hl.set(UNSHOWN, new Hl(range));
++    const t0 = performance.now();
++    let shown = 0;
++    const frame = () => {
++        if (!typing || typing.unit !== unit)
++            return;
++        if (!unit.isConnected) {
++            stopTyping();
++            return;
++        }
++        const t = performance.now() - t0;
++        while (shown < text.length && times[shown] <= t)
++            shown++;
++        if (shown >= text.length) {
++            stopTyping();
++            scheduleAuto(unit, total);
++            return;
++        }
++        let seen = 0;
++        for (const n of nodes) {
++            if (seen + n.length > shown) {
++                range.setStart(n, shown - seen);
++                break;
++            }
++            seen += n.length;
++        }
++        range.setEnd(last, last.length);
++        typing.raf = requestAnimationFrame(frame);
++    };
++    typing = { unit, raf: 0, total };
++    frame();
++}
++/** The rest of a unit still appearing, at once (a tap or → while it appears). */
++function finishTyping() {
++    if (!typing)
++        return false;
++    const { unit, total } = typing;
++    stopTyping();
++    scheduleAuto(unit, total);
++    return true;
++}
++/** The picture above the box (setting "Picture: large"): the one the player's character faces, as the reference shows the one
++ * spoken with over the scene: the speaker of the unit shown when it is someone else, else the last one shown. A card's
++ * picture is its avatar at full size; someone without a card has none, and no picture is drawn rather than another's. */
++function avatarOf(who, mes) {
++    const card = ctx().characters?.find(c => c.name === who);
++    if (card?.avatar)
++        return `characters/${encodeURIComponent(card.avatar)}`;
++    if (who !== mes.getAttribute('ch_name'))
++        return null;
++    const src = mes.querySelector('.avatar img')?.getAttribute('src') ?? '', m = /[?&]type=(avatar|persona)&file=([^&]+)/.exec(src);
++    return m ? `${m[1] === 'avatar' ? 'characters' : 'User Avatars'}/${m[2]}` : src || null;
++}
++function showFigure(mes, unit) {
++    const chat = document.getElementById('chat');
++    if (!chat)
++        return;
++    let fig = document.getElementById('rules-box-figure');
++    if (!fig) {
++        fig = document.createElement('img');
++        fig.id = 'rules-box-figure';
++        fig.alt = '';
++        fig.setAttribute('aria-hidden', 'true');
++    }
++    if (chat.firstElementChild !== fig)
++        chat.prepend(fig);
++    const who = unit?.getAttribute('data-who') ?? mes.getAttribute('ch_name') ?? '';
++    if (who && who !== playerName())
++        figureSrc = avatarOf(who, mes);
++    fig.hidden = settings().boxPicture !== 'large' || !figureSrc;
++    if (figureSrc && fig.getAttribute('src') !== figureSrc)
++        fig.setAttribute('src', figureSrc);
++}
++/** The plate of the message shown: the name of the one the unit belongs to, and at its right the slot's words. */
++function showPlate(mes, unit) {
++    const name = mes.querySelector('.name_text');
++    if (!name)
++        return;
++    let who = mes.querySelector('.rules-who');
++    if (!who) {
++        who = document.createElement('span');
++        who.className = 'rules-who';
++        name.after(who);
++    }
++    who.textContent = unit?.getAttribute('data-who') || name.textContent || '';
++    let slot = mes.querySelector('.rules-slot');
++    if (!slot) {
++        slot = document.createElement('span');
++        slot.className = 'rules-slot';
++        name.closest('.flex1')?.appendChild(slot) ?? who.after(slot);
++    }
++    const said = unit?.getAttribute('data-said') === 'true';
++    const thinking = platesOf(ctx().chat ?? []).find(p => String(p.index) === mes.getAttribute('mesid'))?.modes.find(m => m.mode === 'thinking');
++    const titles = { speaking: 'Said aloud: words in quotation marks', whispering: 'Whispered: said without voicing', thinking: thinking?.title ?? 'Thinking', auto: 'The box moves on by itself' };
++    const words = unit ? slotOf({ said, whispered: !!unit.querySelector('.rules-v-whisper, .rules-run-whisper'), thinking: !said && !!thinking, auto: settings().boxAuto }) : settings().boxAuto ? ['auto'] : [];
++    slot.replaceChildren(...words.map(w => { const e = document.createElement('span'); e.className = `rules-mode rules-mode-${w}`; e.textContent = w; e.title = titles[w]; return e; }));
++}
++/** The box as the settings and `boxAt` have it: the classes on the page, the current message and unit, the plate, the
++ * picture, the bar's count; a unit newly shown going forward appears letter by letter. */
+ function showBox() {
+     if (typeof document === 'undefined' || !document.body?.classList)
+         return;
+@@ -589,6 +780,11 @@ function showBox() {
+     const bar = document.getElementById('rules-box-bar');
+     if (bar)
+         bar.hidden = !on;
++    if (!on || boxLog) {
++        stopTyping();
++        clearTimeout(autoTimer);
++        shownKey = '';
++    }
+     if (!on)
+         return;
+     unitChat();
+@@ -596,17 +792,16 @@ function showBox() {
+     const mes = all.find(m => m.getAttribute('mesid') === boxAt?.mes) ?? all.at(-1);
+     if (!mes)
+         return;
+-    const units = unitsIn(mes), unit = Math.min(mes.getAttribute('mesid') === boxAt?.mes ? boxAt.unit : 0, Math.max(0, units.length - 1));
+-    boxAt = { mes: mes.getAttribute('mesid') ?? '', unit };
+     for (const m of all)
+         m.classList.toggle('rules-now', m === mes);
++    fitUnits(mes);
++    const units = unitsIn(mes), unit = Math.min(mes.getAttribute('mesid') === boxAt?.mes ? boxAt.unit : 0, Math.max(0, units.length - 1));
++    boxAt = { mes: mes.getAttribute('mesid') ?? '', unit };
+     document.querySelectorAll('#chat .rules-unit-now').forEach(e => e.classList.remove('rules-unit-now'));
+-    units[unit]?.classList.add('rules-unit-now');
+-    // The plate's "speaking" follows the unit shown; a box holding a whole message keeps the message's own words.
+-    for (const m of all)
+-        m.removeAttribute('data-rules-said');
+-    if (units.length)
+-        mes.setAttribute('data-rules-said', String(units[unit].getAttribute('data-said') === 'true'));
++    const now = units[unit];
++    now?.classList.add('rules-unit-now');
++    showPlate(mes, now);
++    showFigure(mes, now);
+     const count = document.getElementById('rules-box-count');
+     if (count)
+         count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
+@@ -615,11 +810,28 @@ function showBox() {
+         log.textContent = boxLog ? 'Box' : 'Log';
+         log.setAttribute('aria-pressed', String(boxLog));
+     }
++    document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
++    // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
++    const key = `${boxAt.mes}:${unit}:${units.length}`;
++    if (!boxLog && now && key !== shownKey) {
++        if (stepDir === -1) {
++            stopTyping();
++            clearTimeout(autoTimer);
++        }
++        else
++            typeUnit(now);
++    }
++    if (!boxLog)
++        shownKey = now ? key : '';
++    stepDir = 0;
+ }
+-/** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. */
++/** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. Going on while
++ * a unit still appears shows the rest of it first. */
+ function stepBox(d) {
+     if (!boxOn() || boxLog || !boxAt)
+         return;
++    if (d === 1 && finishTyping())
++        return;
+     const all = [...document.querySelectorAll('#chat .mes')], i = all.findIndex(m => m.getAttribute('mesid') === boxAt.mes);
+     if (i < 0)
+         return;
+@@ -630,9 +842,10 @@ function stepBox(d) {
+         boxAt = { mes: all[i + d].getAttribute('mesid') ?? '', unit: d > 0 ? 0 : Math.max(0, unitsIn(all[i + d]).length - 1) };
+     else
+         return;
++    stepDir = d;
+     showBox();
+ }
+-/** The box's bar above the message box (back, the count, on, the log) and its keys and taps; built once. */
++/** The box's bar above the message box (back, the count, on, auto, the log) and its keys and taps; built once. */
+ function buildBox() {
+     const form = document.getElementById('form_sheld'), chat = document.getElementById('chat');
+     if (!form || !chat || document.getElementById('rules-box-bar'))
+@@ -648,6 +861,18 @@ function buildBox() {
+     count.setAttribute('aria-live', 'off');
+     bar.appendChild(count);
+     button('rules-box-next', '›', 'Next', () => stepBox(1));
++    button('rules-box-auto', 'Auto', 'Move on by itself once a box has been read', () => {
++        // settings() rebuilds the stored object on each call, so the toggle reads and writes one object.
++        const s = settings();
++        s.boxAuto = !s.boxAuto;
++        ctx().saveSettingsDebounced();
++        showBox();
++        const now = document.querySelector('#chat .rules-unit-now');
++        if (settings().boxAuto && now && !typing)
++            scheduleAuto(now, Infinity);
++        else if (!settings().boxAuto)
++            clearTimeout(autoTimer);
++    });
+     button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog)
+         document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
+     form.before(bar);
+@@ -680,6 +905,8 @@ function applyLook() {
+     if (typeof document === 'undefined')
+         return;
+     document.body?.classList?.toggle('rules-page', settings().page);
++    document.body?.classList?.toggle('rules-page-dark', settings().page && settings().pageColours === 'dark');
++    document.body?.style?.setProperty('--rules-box-lines', String(peek('boxLines')));
+     document.body?.classList?.toggle('rules-distinct', settings().distinct);
+     for (const [name, value] of Object.entries(lookVars()))
+         document.body?.style?.setProperty(`--rules-${name}`, String(value));
+@@ -687,7 +914,7 @@ function applyLook() {
+ }
+ /** The tone of what the chat's text stands on: light on the dialogue page, whose ground is its own; off the page the theme's,
+  * read from its text colour (light text is a dark theme). */
+-const toneNow = () => settings().page ? 'light' : toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor'));
++const toneNow = () => settings().page ? (settings().pageColours === 'dark' ? 'dark' : 'light') : toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor'));
+ /** The tone, for the feeling colours' lightness (style.css, body[data-rules-tone]), and on the dialogue page the story's era on
+  * the chat, for its type (style.css, .rules-era-…); both read again whenever the chat is drawn, as the player can change the
+  * theme and the story's time moves. */
+@@ -753,6 +980,18 @@ async function buildSettings() {
+     // The notes are drawn again with the page: their kind colours take the tone of what they stand on.
+     if (document.getElementById('rules_engine_page'))
+         bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); showBox(); });
++    if (document.getElementById('rules_engine_box_typing'))
++        bind('rules_engine_box_typing', 'boxTyping');
++    // A setting given as a choice of named values: the select shows the saved one and saves the one picked.
++    const choice = (id, key, values, after) => {
++        const el = document.getElementById(id);
++        if (!el)
++            return;
++        el.value = String(s[key]);
++        el.addEventListener('change', () => { settings()[key] = values.find(v => v === el.value) ?? values[0]; ctx().saveSettingsDebounced(); after(); });
++    };
++    choice('rules_engine_page_colours', 'pageColours', ['light', 'dark'], () => { applyLook(); drawNotes(); showBox(); });
++    choice('rules_engine_box_picture', 'boxPicture', ['none', 'large'], showBox);
+     if (document.getElementById('rules_engine_box'))
+         bind('rules_engine_box', 'box', () => { boxLog = false; drawNotes(); showBox(); });
+     const boxUnit = document.getElementById('rules_engine_box_unit');
+@@ -819,21 +1058,59 @@ function readReply(id) {
+     const msg = c.chat?.[id];
+     if (!msg || msg.is_user || msg.is_system)
+         return;
+-    const nar = readNarration(msg.mes);
+-    if (!nar) {
+-        setOpen([]);
+-        return;
+-    }
+-    msg.mes = proseOf(nar);
++    const before = msg.mes, swipe = msg.swipe_id ?? 0, nar = readNarration(msg.mes);
+     msg.extra ??= {};
+-    (msg.extra.rulesNarration ??= {})[msg.swipe_id ?? 0] = nar;
+-    setOpen(nar.open ?? []);
++    if (nar) {
++        msg.mes = proseOf(nar);
++        (msg.extra.rulesNarration ??= {})[swipe] = nar;
++    }
++    setOpen(nar?.open ?? []);
++    // The names the narrator wrote before its quotations (box.ts takeSpeakers) leave the text; the box's plate reads them.
++    const sp = takeSpeakers(msg.mes);
++    msg.mes = sp.text;
++    if (sp.said.length)
++        (msg.extra.rulesSpeakers ??= {})[swipe] = sp.said;
++    // The words that name what the engine decided this turn (box.ts keyPhrase), set apart in the chat as the reference sets
++    // important words in yellow (style.css mark.rules-key).
++    const people = castNames(), keys = decidedResults().flatMap(r => { const phrase = keyPhrase(r.result, msg.mes, people); return phrase ? [{ phrase, result: r.result }] : []; });
++    if (keys.length)
++        (msg.extra.rulesKeys ??= {})[swipe] = keys;
++    if (msg.mes === before && !keys.length)
++        return;
++    // The swipe keeps the text shown, so swiping back to it shows prose, not the reply's raw form.
++    if (Array.isArray(msg.swipes) && msg.swipes[swipe] === before)
++        msg.swipes[swipe] = msg.mes;
+     try {
+         c.updateMessageBlock?.(id, msg);
+     }
+     catch { /* the block is drawn after this event */ }
+     c.saveChatDebounced?.();
+ }
++/** Each reply's key words (readReply) marked where they first stand in its text, with the result they name on hover. */
++function markKeys() {
++    for (const mes of document.querySelectorAll('#chat .mes[is_user="false"]')) {
++        const text = mes.querySelector('.mes_text'), msg = ctx().chat?.[Number(mes.getAttribute('mesid'))];
++        const keys = msg?.extra?.rulesKeys?.[msg?.swipe_id ?? 0];
++        if (!text || !keys?.length || text.querySelector('mark.rules-key, .edit_textarea'))
++            continue;
++        for (const k of keys) {
++            const walk = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
++            for (let n = walk.nextNode(); n; n = walk.nextNode()) {
++                const at = n.data.indexOf(k.phrase);
++                if (at < 0 || n.parentElement?.closest('mark.rules-key'))
++                    continue;
++                const m = document.createElement('mark');
++                m.className = 'rules-key';
++                m.title = `What the engine decided: ${k.result}`;
++                const rest = n.splitText(at);
++                rest.splitText(k.phrase.length);
++                rest.replaceWith(m);
++                m.appendChild(rest);
++                break;
++            }
++        }
++    }
++}
+ function wireEvents() {
+     const c = ctx(), on = c.eventSource.on.bind(c.eventSource), ev = c.eventTypes;
+     const live = () => settings().enabled && !!ctx().chatMetadata;
+@@ -868,7 +1145,7 @@ function wireEvents() {
+     on(ev.MESSAGE_SWIPED, (id) => { if (live())
+         onRulesSwiped(id); });
+     on(ev.CHAT_CHANGED, () => { if (live())
+-        syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; showBox(); });
++        syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
+     on(ev.MESSAGE_DELETED, () => { if (live())
+         syncRulesToChat(); drawNotes(); showBox(); });
+     // The reading notes follow the chat as it is drawn: a new or re-drawn message, older messages loaded, an edit (a line
+diff --git a/src/index.ts b/src/index.ts
+index 4fc798c..413c8fb 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -11,6 +11,8 @@ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided,
+ import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
++import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, type Stretch, type SlotWord } from './rules/box.js';
++import { peek } from './rules/constants.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+ import { registerRulesEvalCommand } from './rules/eval.js';
+ import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
+@@ -34,11 +36,15 @@ const DEPTH = 1;
+ // distinct: the multiple-distinctions look for marked lines (style.css, body.rules-distinct), each voice dimension in a visual
+ // channel of its own; off, the lighter look.
+ // page: the chat set as a light page in the story's book serif, whatever the theme (style.css, body.rules-page); off, the theme's look.
++// pageColours: the page's colours: 'light', black on ivory; 'dark', the reference's (white on black, text that is not said in light blue).
+ // box: one unit of the chat on screen at a time, in a box at the foot of the chat (style.css, body.rules-box); off, the scrolling chat.
+ // boxUnit: what a box holds: 'voice', a stretch of text with one value of [±voiced] (quoted words, or the text between them);
+ // 'message', a whole message.
+-interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; page: boolean; box: boolean; boxUnit: 'voice' | 'message'; profile: string; maxTokens: number; effort: string }
+-const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, box: true, boxUnit: 'voice', profile: '', maxTokens: 0, effort: 'low' };
++// boxPicture: 'none', the speaker as the name plate only; 'large', also their picture, large, above the box.
++// boxTyping: a stretch's letters appear one by one at its pace (box.ts revealTimes); off, at once.
++// boxAuto: the box moves on by itself once a stretch has been read (box.ts autoWait); the bar's "Auto" sets it.
++interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; page: boolean; pageColours: 'light' | 'dark'; box: boolean; boxUnit: 'voice' | 'message'; boxPicture: 'none' | 'large'; boxTyping: boolean; boxAuto: boolean; profile: string; maxTokens: number; effort: string }
++const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxTyping: true, boxAuto: false, profile: '', maxTokens: 0, effort: 'low' };
+ 
+ interface Ctx {
+     chat: STMessage[]; chatMetadata: Record<string, any>; extensionSettings: Record<string, any>;
+@@ -262,7 +268,8 @@ function storyState(): string {
+     // world book decide; the rule check then redoes nothing and the reply is free prose.
+     const suggest = settings().suggest;
+     const decided = suggest ? decidedInjection().replace(/Narrate them as given; they stand\./, SUGGEST_LINE) : decidedInjection();
+-    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : ''];
++    // While the box is on, the narrator names the speaker before each quotation (box.ts SPEAKER_RULE), for the box's plate.
++    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), decided, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : ''];
+     // The narrator's prompt carries no hidden tag character (voice-code.ts untagged).
+     c.setExtensionPrompt(KEY, untagged(parts.filter(Boolean).join('\n\n')), IN_CHAT, DEPTH, false, SYSTEM);
+ };
+@@ -444,80 +451,227 @@ function typesetChat(): void {
+         const f = mes.querySelector('.rules-v-add-feeling[data-feeling]')?.getAttribute('data-feeling');
+         if (f) mes.setAttribute('data-rules-feeling', f); else mes.removeAttribute('data-rules-feeling');
+     }
++    markKeys();
+     toneLook();
+ }
+ 
+ // The box: one unit of the chat on screen at a time, as a visual novel shows one line in its text box (ui.ts voiceUnits). Every
+-// message's paragraphs are set in units by change of voice; the box shows the unit at `boxAt` and its message's name plate,
+-// with "speaking" on the plate while the unit is voiced. A tap on the text, → or the bar's ›, shows the next unit, and after
+-// a message's last unit the next message's first; ‹ and ← go back. "Log" shows the whole chat, scrolling, and "Box" returns.
+-// A message being written or edited has no units yet and shows whole.
++// message's paragraphs are set in units by change of voice, each with the one it belongs to (box.ts speakersOf); the box shows
++// the unit at `boxAt` under that name, with a word at the plate's right for what the colour does not say (box.ts slotOf). A
++// tap on the text, → or the bar's ›, shows the rest of a unit still appearing, then the next unit, and after a message's last
++// unit the next message's first; ‹ and ← go back. "Auto" moves on by itself; "Log" shows the whole chat, scrolling, and "Box"
++// returns. A message being written or edited has no units yet and shows whole.
+ let boxAt: { mes: string; unit: number } | null = null, boxLog = false;
+ const boxOn = () => settings().enabled && settings().box;
+ const unitsIn = (mes: Element) => settings().boxUnit === 'message' ? [] : [...mes.querySelectorAll('.mes_text .rules-unit')];
++const playerName = () => String((ctx() as Ctx & { name1?: string }).name1 || 'You');
++/** The cast by name: the player's character, the character of a one-to-one chat and a group's members. */
++const castNames = () => { const c = ctx() as Ctx & { name1?: string; name2?: string }; return [c.name1, c.name2, ...groupMembers().map(m => m.name)].filter((n): n is string => !!n); };
+ /** Each drawn message's text in units: a quoted stretch, the text between two of them, or a block that is no paragraph (a
+- * list, a table, a block quotation) as one. Done once per drawing of a message: SillyTavern redraws its text whole. */
++ * list, a table, a block quotation) as one; each unit carries the one it belongs to (data-who). Done once per drawing of a
++ * message: SillyTavern redraws its text whole. */
+ function unitChat(): void {
+-    for (const mes of document.querySelectorAll('#chat .mes')) {
++    const all = [...document.querySelectorAll('#chat .mes')];
++    all.forEach((mes, at) => {
+         const text = mes.querySelector('.mes_text');
+-        if (!text || text.querySelector('.rules-unit, .edit_textarea')) continue;
+-        let said = false;
++        if (!text || text.querySelector('.rules-unit, .edit_textarea')) return;
++        const msg = ctx().chat?.[Number(mes.getAttribute('mesid'))] as STMessage | undefined;
++        // The names the reply wrote before its quotations (readReply), matched to the quotations by their words, in order.
++        const tags = [...((msg?.extra?.rulesSpeakers as Record<number, { q: string; who: string }[]> | undefined)?.[msg?.swipe_id ?? 0] ?? [])];
++        const bare = (t: string) => t.replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
++        const paragraphs: { span: Element; s: Stretch }[][] = [];
+         for (const block of [...text.children]) {
+-            if (block.tagName !== 'P') { block.classList.add('rules-unit'); block.setAttribute('data-said', 'false'); continue; }
+-            const nodes = [...block.childNodes];
++            if (block.tagName !== 'P') { block.classList.add('rules-unit'); block.setAttribute('data-said', 'false'); paragraphs.push([{ span: block, s: { said: false, text: block.textContent ?? '' } }]); continue; }
++            const nodes = [...block.childNodes], para: { span: Element; s: Stretch }[] = [];
+             for (const u of voiceUnits(nodes.map(n => ({ said: n.nodeName === 'Q', text: n.textContent ?? '' })))) {
+                 const span = document.createElement('span');
+                 span.className = 'rules-unit'; span.setAttribute('data-said', String(u.said));
+                 nodes[u.from]!.before(span);
+                 for (let i = u.from; i < u.to; i++) span.appendChild(nodes[i]!);
+-                said ||= u.said;
++                const words = span.textContent ?? '', t = u.said ? tags.findIndex(x => bare(x.q) === bare(words)) : -1;
++                para.push({ span, s: { said: u.said, text: words, tag: t >= 0 ? tags.splice(t, 1)[0]!.who : null } });
+             }
++            paragraphs.push(para);
+         }
+-        // Another speaker's message has no plate word of its own: its voiced units bring "speaking" (style.css shows it in the box).
+-        if (said && !mes.querySelector('.rules-modes')) {
+-            const tag = drawModes(document as unknown as Doc, [{ mode: 'speaking', title: 'Words in quotation marks are said' }]) as unknown as HTMLElement;
+-            tag.classList.add('rules-modes-unit');
+-            mes.querySelector('.name_text')?.after(tag);
++        // The people the message before named, for a pronoun at this one's start.
++        const named = all[at - 1] ? [...all[at - 1]!.querySelectorAll('.rules-unit[data-who]')].map(e => e.getAttribute('data-who') ?? '').filter(n => n && n !== playerName()) : [];
++        const author = msg?.is_user ? playerName() : mes.getAttribute('ch_name') || mes.querySelector('.name_text')?.textContent || '';
++        const who = speakersOf(paragraphs.map(p => p.map(x => x.s)), { player: playerName(), author, names: castNames() }, named);
++        paragraphs.forEach((p, i) => p.forEach((x, j) => x.span.setAttribute('data-who', who[i]![j]!)));
++    });
++}
++/** A unit longer than the box goes on in the next box, cut after a sentence's end (box.ts cutsOf): measured in the message's
++ * own type and width once it is drawn, at boxLines lines. Done once per unit (data-fit); a piece keeps its unit's voice and speaker. */
++function fitUnits(mes: Element): void {
++    const text = mes.querySelector('.mes_text') as HTMLElement | null;
++    const units = [...mes.querySelectorAll('.mes_text span.rules-unit:not([data-fit])')];
++    if (!text || !units.length || !text.clientWidth) return;
++    const probe = document.createElement('div');
++    probe.style.cssText = `position: absolute; visibility: hidden; width: ${text.clientWidth}px; white-space: normal;`;
++    text.appendChild(probe);
++    const lh = parseFloat(getComputedStyle(probe).lineHeight) || 1;
++    for (const unit of units) {
++        unit.setAttribute('data-fit', '');
++        const words = unit.textContent ?? '';
++        probe.textContent = words;
++        const lines = Math.round(probe.getBoundingClientRect().height / lh);
++        if (lines <= peek('boxLines')) continue;
++        // The characters that fill the box, in proportion to the lines this unit takes.
++        const cuts = cutsOf(words, Math.floor(words.length * peek('boxLines') / lines));
++        for (const cut of cuts.reverse()) {
++            const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
++            let seen = 0, at: Text | null = null;
++            for (let n = walk.nextNode() as Text | null; n; n = walk.nextNode() as Text | null) { if (seen + n.length >= cut) { at = n; break; } seen += n.length; }
++            if (!at) continue;
++            const r = document.createRange();
++            r.setStart(at, cut - seen); r.setEnd(unit, unit.childNodes.length);
++            const piece = unit.cloneNode(false) as Element;
++            piece.classList.remove('rules-unit-now');
++            piece.appendChild(r.extractContents());
++            unit.after(piece);
+         }
+     }
+-}
+-/** The box as the settings and `boxAt` have it: the classes on the page, the current message and unit, the bar's count. */
++    probe.remove();
++}
++
++// The letters of a unit appear one by one (box.ts revealTimes): the text not yet shown is a highlight range drawn without ink
++// (CSS Custom Highlight API; style.css ::highlight(rules-unshown)), so the box keeps its lines and nothing moves as letters
++// appear. Without the API, with reduced motion asked for, or with the setting off, the unit shows whole.
++let typing: { unit: Element; raf: number; total: number } | null = null, autoTimer: ReturnType<typeof setTimeout> | undefined, shownKey = '', stepDir: 1 | -1 | 0 = 0, figureSrc: string | null = null;
++const UNSHOWN = 'rules-unshown';
++const highlights = () => (globalThis as unknown as { CSS?: { highlights?: Map<string, unknown> } }).CSS?.highlights;
++function stopTyping(): void {
++    if (typing) cancelAnimationFrame(typing.raf);
++    typing = null;
++    highlights()?.delete(UNSHOWN);
++}
++/** AUTO: the next unit once this one has been read (box.ts autoWait), while the box shows it and Auto stays on. */
++function scheduleAuto(unit: Element, appearMs: number): void {
++    clearTimeout(autoTimer);
++    if (!settings().boxAuto || boxLog || !boxOn()) return;
++    autoTimer = setTimeout(() => { if (settings().boxAuto && !boxLog && unit.classList.contains('rules-unit-now') && !typing) stepBox(1); }, autoWait(unit.textContent ?? '', appearMs));
++}
++function typeUnit(unit: Element): void {
++    stopTyping(); clearTimeout(autoTimer);
++    const text = unit.textContent ?? '', times = revealTimes(text, unit.getAttribute('data-said') === 'true'), total = times.at(-1) ?? 0;
++    const hl = highlights(), Hl = (globalThis as unknown as { Highlight?: new (...r: Range[]) => unknown }).Highlight;
++    if (!settings().boxTyping || reducedMotion() || !hl || !Hl || !text.trim()) { scheduleAuto(unit, 0); return; }
++    const nodes: Text[] = [];
++    const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
++    for (let n = walk.nextNode(); n; n = walk.nextNode()) nodes.push(n as Text);
++    const range = document.createRange(), last = nodes.at(-1)!;
++    hl.set(UNSHOWN, new Hl(range));
++    const t0 = performance.now();
++    let shown = 0;
++    const frame = () => {
++        if (!typing || typing.unit !== unit) return;
++        if (!unit.isConnected) { stopTyping(); return; }
++        const t = performance.now() - t0;
++        while (shown < text.length && times[shown]! <= t) shown++;
++        if (shown >= text.length) { stopTyping(); scheduleAuto(unit, total); return; }
++        let seen = 0;
++        for (const n of nodes) { if (seen + n.length > shown) { range.setStart(n, shown - seen); break; } seen += n.length; }
++        range.setEnd(last, last.length);
++        typing.raf = requestAnimationFrame(frame);
++    };
++    typing = { unit, raf: 0, total };
++    frame();
++}
++/** The rest of a unit still appearing, at once (a tap or → while it appears). */
++function finishTyping(): boolean {
++    if (!typing) return false;
++    const { unit, total } = typing;
++    stopTyping(); scheduleAuto(unit, total);
++    return true;
++}
++
++/** The picture above the box (setting "Picture: large"): the one the player's character faces, as the reference shows the one
++ * spoken with over the scene: the speaker of the unit shown when it is someone else, else the last one shown. A card's
++ * picture is its avatar at full size; someone without a card has none, and no picture is drawn rather than another's. */
++function avatarOf(who: string, mes: Element): string | null {
++    const card = (ctx().characters as { name: string; avatar?: string }[] | undefined)?.find(c => c.name === who);
++    if (card?.avatar) return `characters/${encodeURIComponent(card.avatar)}`;
++    if (who !== mes.getAttribute('ch_name')) return null;
++    const src = mes.querySelector('.avatar img')?.getAttribute('src') ?? '', m = /[?&]type=(avatar|persona)&file=([^&]+)/.exec(src);
++    return m ? `${m[1] === 'avatar' ? 'characters' : 'User Avatars'}/${m[2]}` : src || null;
++}
++function showFigure(mes: Element, unit: Element | undefined): void {
++    const chat = document.getElementById('chat');
++    if (!chat) return;
++    let fig = document.getElementById('rules-box-figure') as HTMLImageElement | null;
++    if (!fig) { fig = document.createElement('img'); fig.id = 'rules-box-figure'; fig.alt = ''; fig.setAttribute('aria-hidden', 'true'); }
++    if (chat.firstElementChild !== fig) chat.prepend(fig);
++    const who = unit?.getAttribute('data-who') ?? mes.getAttribute('ch_name') ?? '';
++    if (who && who !== playerName()) figureSrc = avatarOf(who, mes);
++    fig.hidden = settings().boxPicture !== 'large' || !figureSrc;
++    if (figureSrc && fig.getAttribute('src') !== figureSrc) fig.setAttribute('src', figureSrc);
++}
++
++/** The plate of the message shown: the name of the one the unit belongs to, and at its right the slot's words. */
++function showPlate(mes: Element, unit: Element | undefined): void {
++    const name = mes.querySelector('.name_text');
++    if (!name) return;
++    let who = mes.querySelector('.rules-who');
++    if (!who) { who = document.createElement('span'); who.className = 'rules-who'; name.after(who); }
++    who.textContent = unit?.getAttribute('data-who') || name.textContent || '';
++    let slot = mes.querySelector('.rules-slot');
++    if (!slot) { slot = document.createElement('span'); slot.className = 'rules-slot'; name.closest('.flex1')?.appendChild(slot) ?? who.after(slot); }
++    const said = unit?.getAttribute('data-said') === 'true';
++    const thinking = platesOf(ctx().chat ?? []).find(p => String(p.index) === mes.getAttribute('mesid'))?.modes.find(m => m.mode === 'thinking');
++    const titles: Record<SlotWord, string> = { speaking: 'Said aloud: words in quotation marks', whispering: 'Whispered: said without voicing', thinking: thinking?.title ?? 'Thinking', auto: 'The box moves on by itself' };
++    const words = unit ? slotOf({ said, whispered: !!unit.querySelector('.rules-v-whisper, .rules-run-whisper'), thinking: !said && !!thinking, auto: settings().boxAuto }) : settings().boxAuto ? ['auto' as const] : [];
++    slot.replaceChildren(...words.map(w => { const e = document.createElement('span'); e.className = `rules-mode rules-mode-${w}`; e.textContent = w; e.title = titles[w]; return e; }));
++}
++
++/** The box as the settings and `boxAt` have it: the classes on the page, the current message and unit, the plate, the
++ * picture, the bar's count; a unit newly shown going forward appears letter by letter. */
+ function showBox(): void {
+     if (typeof document === 'undefined' || !document.body?.classList) return;
+     const on = boxOn();
+     document.body.classList.toggle('rules-box', on); document.body.classList.toggle('rules-box-log', on && boxLog);
+     const bar = document.getElementById('rules-box-bar');
+     if (bar) bar.hidden = !on;
++    if (!on || boxLog) { stopTyping(); clearTimeout(autoTimer); shownKey = ''; }
+     if (!on) return;
+     unitChat();
+     const all = [...document.querySelectorAll('#chat .mes')];
+     const mes = all.find(m => m.getAttribute('mesid') === boxAt?.mes) ?? all.at(-1);
+     if (!mes) return;
++    for (const m of all) m.classList.toggle('rules-now', m === mes);
++    fitUnits(mes);
+     const units = unitsIn(mes), unit = Math.min(mes.getAttribute('mesid') === boxAt?.mes ? boxAt!.unit : 0, Math.max(0, units.length - 1));
+     boxAt = { mes: mes.getAttribute('mesid') ?? '', unit };
+-    for (const m of all) m.classList.toggle('rules-now', m === mes);
+     document.querySelectorAll('#chat .rules-unit-now').forEach(e => e.classList.remove('rules-unit-now'));
+-    units[unit]?.classList.add('rules-unit-now');
+-    // The plate's "speaking" follows the unit shown; a box holding a whole message keeps the message's own words.
+-    for (const m of all) m.removeAttribute('data-rules-said');
+-    if (units.length) mes.setAttribute('data-rules-said', String(units[unit]!.getAttribute('data-said') === 'true'));
++    const now = units[unit];
++    now?.classList.add('rules-unit-now');
++    showPlate(mes, now);
++    showFigure(mes, now);
+     const count = document.getElementById('rules-box-count');
+     if (count) count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
+     const log = document.getElementById('rules-box-log');
+     if (log) { log.textContent = boxLog ? 'Box' : 'Log'; log.setAttribute('aria-pressed', String(boxLog)); }
+-}
+-/** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. */
++    document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
++    // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
++    const key = `${boxAt.mes}:${unit}:${units.length}`;
++    if (!boxLog && now && key !== shownKey) { if (stepDir === -1) { stopTyping(); clearTimeout(autoTimer); } else typeUnit(now); }
++    if (!boxLog) shownKey = now ? key : '';
++    stepDir = 0;
++}
++/** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. Going on while
++ * a unit still appears shows the rest of it first. */
+ function stepBox(d: 1 | -1): void {
+     if (!boxOn() || boxLog || !boxAt) return;
++    if (d === 1 && finishTyping()) return;
+     const all = [...document.querySelectorAll('#chat .mes')], i = all.findIndex(m => m.getAttribute('mesid') === boxAt!.mes);
+     if (i < 0) return;
+     const u = boxAt.unit + d;
+     if (u >= 0 && u < Math.max(1, unitsIn(all[i]!).length)) boxAt = { mes: boxAt.mes, unit: u };
+     else if (all[i + d]) boxAt = { mes: all[i + d]!.getAttribute('mesid') ?? '', unit: d > 0 ? 0 : Math.max(0, unitsIn(all[i + d]!).length - 1) };
+     else return;
++    stepDir = d;
+     showBox();
+ }
+-/** The box's bar above the message box (back, the count, on, the log) and its keys and taps; built once. */
++/** The box's bar above the message box (back, the count, on, auto, the log) and its keys and taps; built once. */
+ function buildBox(): void {
+     const form = document.getElementById('form_sheld'), chat = document.getElementById('chat');
+     if (!form || !chat || document.getElementById('rules-box-bar')) return;
+@@ -527,6 +681,12 @@ function buildBox(): void {
+     button('rules-box-back', '‹', 'Back', () => stepBox(-1));
+     const count = document.createElement('span'); count.id = 'rules-box-count'; count.setAttribute('aria-live', 'off'); bar.appendChild(count);
+     button('rules-box-next', '›', 'Next', () => stepBox(1));
++    button('rules-box-auto', 'Auto', 'Move on by itself once a box has been read', () => {
++        // settings() rebuilds the stored object on each call, so the toggle reads and writes one object.
++        const s = settings(); s.boxAuto = !s.boxAuto; ctx().saveSettingsDebounced(); showBox();
++        const now = document.querySelector('#chat .rules-unit-now');
++        if (settings().boxAuto && now && !typing) scheduleAuto(now, Infinity); else if (!settings().boxAuto) clearTimeout(autoTimer);
++    });
+     button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog) document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
+     form.before(bar);
+     // A tap on the box's text is "next"; a tap on anything that acts by itself (a link, a button, the note, an edit) is its own,
+@@ -549,13 +709,15 @@ function buildBox(): void {
+ function applyLook(): void {
+     if (typeof document === 'undefined') return;
+     document.body?.classList?.toggle('rules-page', settings().page);
++    document.body?.classList?.toggle('rules-page-dark', settings().page && settings().pageColours === 'dark');
++    document.body?.style?.setProperty('--rules-box-lines', String(peek('boxLines')));
+     document.body?.classList?.toggle('rules-distinct', settings().distinct);
+     for (const [name, value] of Object.entries(lookVars())) document.body?.style?.setProperty(`--rules-${name}`, String(value));
+     toneLook();
+ }
+ /** The tone of what the chat's text stands on: light on the dialogue page, whose ground is its own; off the page the theme's,
+  * read from its text colour (light text is a dark theme). */
+-const toneNow = () => settings().page ? 'light' : toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor'));
++const toneNow = () => settings().page ? (settings().pageColours === 'dark' ? 'dark' : 'light') : toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor'));
+ /** The tone, for the feeling colours' lightness (style.css, body[data-rules-tone]), and on the dialogue page the story's era on
+  * the chat, for its type (style.css, .rules-era-…); both read again whenever the chat is drawn, as the player can change the
+  * theme and the story's time moves. */
+@@ -599,7 +761,7 @@ async function buildSettings(): Promise<void> {
+     const html = await ctx().renderExtensionTemplateAsync(`third-party/${folder()}`, 'settings');
+     document.getElementById('extensions_settings2')?.insertAdjacentHTML('beforeend', html);
+     const s = settings();
+-    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured' | 'suggest' | 'distinct' | 'page' | 'box', after?: () => void) => {
++    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured' | 'suggest' | 'distinct' | 'page' | 'box' | 'boxTyping', after?: () => void) => {
+         const el = document.getElementById(id) as HTMLInputElement;
+         el.checked = s[key];
+         el.addEventListener('change', () => { settings()[key] = el.checked; ctx().saveSettingsDebounced(); after?.(); });
+@@ -612,6 +774,16 @@ async function buildSettings(): Promise<void> {
+     if (document.getElementById('rules_engine_distinct')) bind('rules_engine_distinct', 'distinct', applyLook);
+     // The notes are drawn again with the page: their kind colours take the tone of what they stand on.
+     if (document.getElementById('rules_engine_page')) bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); showBox(); });
++    if (document.getElementById('rules_engine_box_typing')) bind('rules_engine_box_typing', 'boxTyping');
++    // A setting given as a choice of named values: the select shows the saved one and saves the one picked.
++    const choice = <K extends 'pageColours' | 'boxPicture'>(id: string, key: K, values: Settings[K][], after: () => void) => {
++        const el = document.getElementById(id) as HTMLSelectElement | null;
++        if (!el) return;
++        el.value = String(s[key]);
++        el.addEventListener('change', () => { settings()[key] = values.find(v => v === el.value) ?? values[0]!; ctx().saveSettingsDebounced(); after(); });
++    };
++    choice('rules_engine_page_colours', 'pageColours', ['light', 'dark'], () => { applyLook(); drawNotes(); showBox(); });
++    choice('rules_engine_box_picture', 'boxPicture', ['none', 'large'], showBox);
+     if (document.getElementById('rules_engine_box')) bind('rules_engine_box', 'box', () => { boxLog = false; drawNotes(); showBox(); });
+     const boxUnit = document.getElementById('rules_engine_box_unit') as HTMLSelectElement | null;
+     if (boxUnit) { boxUnit.value = s.boxUnit; boxUnit.addEventListener('change', () => { settings().boxUnit = boxUnit.value === 'message' ? 'message' : 'voice'; ctx().saveSettingsDebounced(); boxAt = boxAt && { mes: boxAt.mes, unit: 0 }; showBox(); }); }
+@@ -659,17 +831,46 @@ function addReplySchema(data: Record<string, unknown>): void {
+ }
+ function readReply(id: number): void {
+     const c = ctx() as Ctx & { saveChatDebounced?: () => void; updateMessageBlock?: (id: number, m: STMessage) => void };
+-    const msg = c.chat?.[id];
++    const msg = c.chat?.[id] as (STMessage & { swipes?: string[] }) | undefined;
+     if (!msg || msg.is_user || msg.is_system) return;
+-    const nar = readNarration(msg.mes);
+-    if (!nar) { setOpen([]); return; }
+-    msg.mes = proseOf(nar);
++    const before = msg.mes, swipe = msg.swipe_id ?? 0, nar = readNarration(msg.mes);
+     msg.extra ??= {};
+-    ((msg.extra.rulesNarration ??= {}) as Record<number, unknown>)[msg.swipe_id ?? 0] = nar;
+-    setOpen(nar.open ?? []);
++    if (nar) { msg.mes = proseOf(nar); ((msg.extra.rulesNarration ??= {}) as Record<number, unknown>)[swipe] = nar; }
++    setOpen(nar?.open ?? []);
++    // The names the narrator wrote before its quotations (box.ts takeSpeakers) leave the text; the box's plate reads them.
++    const sp = takeSpeakers(msg.mes);
++    msg.mes = sp.text;
++    if (sp.said.length) ((msg.extra.rulesSpeakers ??= {}) as Record<number, unknown>)[swipe] = sp.said;
++    // The words that name what the engine decided this turn (box.ts keyPhrase), set apart in the chat as the reference sets
++    // important words in yellow (style.css mark.rules-key).
++    const people = castNames(), keys = decidedResults().flatMap(r => { const phrase = keyPhrase(r.result, msg.mes, people); return phrase ? [{ phrase, result: r.result }] : []; });
++    if (keys.length) ((msg.extra.rulesKeys ??= {}) as Record<number, unknown>)[swipe] = keys;
++    if (msg.mes === before && !keys.length) return;
++    // The swipe keeps the text shown, so swiping back to it shows prose, not the reply's raw form.
++    if (Array.isArray(msg.swipes) && msg.swipes[swipe] === before) msg.swipes[swipe] = msg.mes;
+     try { c.updateMessageBlock?.(id, msg); } catch { /* the block is drawn after this event */ }
+     c.saveChatDebounced?.();
+ }
++/** Each reply's key words (readReply) marked where they first stand in its text, with the result they name on hover. */
++function markKeys(): void {
++    for (const mes of document.querySelectorAll('#chat .mes[is_user="false"]')) {
++        const text = mes.querySelector('.mes_text'), msg = ctx().chat?.[Number(mes.getAttribute('mesid'))];
++        const keys = (msg?.extra?.rulesKeys as Record<number, { phrase: string; result: string }[]> | undefined)?.[msg?.swipe_id ?? 0];
++        if (!text || !keys?.length || text.querySelector('mark.rules-key, .edit_textarea')) continue;
++        for (const k of keys) {
++            const walk = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
++            for (let n = walk.nextNode() as Text | null; n; n = walk.nextNode() as Text | null) {
++                const at = n.data.indexOf(k.phrase);
++                if (at < 0 || n.parentElement?.closest('mark.rules-key')) continue;
++                const m = document.createElement('mark');
++                m.className = 'rules-key'; m.title = `What the engine decided: ${k.result}`;
++                const rest = n.splitText(at); rest.splitText(k.phrase.length);
++                rest.replaceWith(m); m.appendChild(rest);
++                break;
++            }
++        }
++    }
++}
+ 
+ function wireEvents(): void {
+     const c = ctx(), on = c.eventSource.on.bind(c.eventSource), ev = c.eventTypes;
+@@ -694,7 +895,7 @@ function wireEvents(): void {
+         }).catch(e => console.warn('[Rules engine] rule check skipped:', e));
+     });
+     on(ev.MESSAGE_SWIPED, (id: number) => { if (live()) onRulesSwiped(id); });
+-    on(ev.CHAT_CHANGED, () => { if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; showBox(); });
++    on(ev.CHAT_CHANGED, () => { if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
+     on(ev.MESSAGE_DELETED, () => { if (live()) syncRulesToChat(); drawNotes(); showBox(); });
+     // The reading notes follow the chat as it is drawn: a new or re-drawn message, older messages loaded, an edit (a line
+     // edited since its reading shows no note, ui.ts notesOf).
+diff --git a/src/rules/box.js b/src/rules/box.js
+new file mode 100644
+index 0000000..8c9a02e
+--- /dev/null
++++ b/src/rules/box.js
+@@ -0,0 +1,239 @@
++// The text box's rules (index.ts showBox; docs/df-body-engine.md, "The text box"). Free of SillyTavern and of the page, so tests
++// run them on plain strings: who each stretch of a message belongs to, where a long stretch goes on in the next box, when each
++// letter of a stretch appears, how long AUTO waits, and which words of a reply name what the engine decided.
++//
++// The reference (the player's, 2026-11-11: Danganronpa) sets "white text denoting that it's spoken aloud, blue text being internal
++// dialogue, and all textboxes having the name of the current speaker" (Anderson 2022, "Interactive Fiction – UI Elements and
++// Narrative in Danganronpa v3"); its narration is the main character's first-person thought, in the same blue (Let's Play
++// Archive, Trigger Happy Havoc prologue: blue text "are the Main Character's inner thoughts", the narration among them), and
++// "yellow text are important words or phrases the game calls out". The player chose no narrator, so here too every stretch
++// that is not said belongs to the player's character.
++import { def, peek } from './constants.js';
++import './voice.js';
++import { GIVEN_NAMES } from './data/given-names.js';
++import { isWord, stems } from './lexicon.js';
++import { nameSex } from './frame.js';
++import { PREPOSITION, AUXILIARY, NOMINATIVE, noun } from './grammar.js';
++import { QUOTED } from './quotes.js';
++// Silent reading of English fiction: 260 words per minute, non-fiction 238 (Brysbaert 2019, J Mem Lang 109:104047, a
++// meta-analysis of 190 studies). Text that is not said has no sound to time it by, so it appears at the reader's own pace.
++def({ id: 'boxReadWpm', value: 260, unit: 'words per minute, silent reading of fiction', status: 'sourced', src: 'adult silent reading in English: fiction 260, non-fiction 238 words per minute (Brysbaert 2019, J Mem Lang 109:104047)', file: 'box.ts' });
++// The box's height in lines: a stretch longer than this goes on in the next box. The reference's boxes hold one to two lines
++// in the player's screenshots; four keeps a sentence of ordinary length whole on a phone (a judgement, registered below).
++// A key word's weight when it is a noun, against 1 for another word of the result: the thing decided is mostly a thing or a
++// body part, so a run with a noun wins a tie of words.
++def({ id: 'boxKeyNounWeight', value: 1.5, unit: '× the weight of a matching word that is no noun', status: 'assumed', src: 'a noun names the thing decided; any value above 1 breaks a tie of matching words toward it', range: [1.1, 2], file: 'box.ts' });
++def({ id: 'boxLines', value: 4, unit: 'lines of text in the box', status: 'assumed', src: "the reference's boxes hold 1–2 lines (the player's screenshots); 4 keeps an ordinary sentence whole at 412 px", range: [3, 6], file: 'box.ts' });
++// The closed word classes (CGEL ch. 5, 7, 3: pronouns, determinatives, prepositions, coordinators and subordinators,
++// auxiliaries), which never name a person, and the deictic adverbs a sentence can open with. A capitalised word outside them
++// names a person when it is a given name (Social Security Administration, as frame.ts reads them) or no common English
++// word (lexicon.ts, SCOWL): "Tom", "Kyoko" are names; "Silence", "Nothing", "Below" are not.
++const CLOSED = /^(?:the|a|an|this|that|these|those|my|your|his|her|its|our|their|some|any|no|every|each|all|both|either|neither|another|other|such|what|which|whose|who|whom|me|him|us|them|it|itself|myself|yourself|himself|herself|ourselves|themselves|one|nothing|nobody|someone|somebody|something|everyone|everybody|everything|anyone|anybody|anything|none|and|but|or|nor|so|yet|if|when|whenever|while|as|because|though|although|unless|since|once|whether|then|now|there|here|still|just|only|even|also|too|again|soon|later|finally|suddenly|instead|meanwhile|perhaps|maybe|not|never|always|yes|oh|ah|well)$/i;
++const closed = (w) => CLOSED.test(w) || PREPOSITION.test(w) || AUXILIARY.test(w) || NOMINATIVE.test(w);
++/** A front adverb: a closed word, or an -ly adverb ("Slowly, Tom stands"). */
++const front = (w) => closed(w) || /^[A-Za-z]{3,}ly$/.test(w);
++const capital = (w) => /^\p{Lu}[\p{Ll}'’-]/u.test(w);
++/** Whether a capitalised word names a person. */
++export const personName = (w) => capital(w) && !closed(w) && (GIVEN_NAMES[w.toLowerCase()] != null || !isWord(w));
++/** A given name that is also a closed word (Will, May, Can) names a person where the closed word cannot stand: inside a
++ * sentence, or opening one before a finite verb ("Will does not look up", "Will has been counting"); a question opening on
++ * the auxiliary has its subject next ("Will you come?"). */
++const nameAt = (ws, i, sentenceStart) => personName(ws[i]) || (capital(ws[i]) && GIVEN_NAMES[ws[i].toLowerCase()] != null
++    && (!sentenceStart || (!!ws[i + 1] && !NOMINATIVE.test(ws[i + 1]) && (AUXILIARY.test(ws[i + 1]) || /^\p{Ll}+(?:s|ed)$/u.test(ws[i + 1])))));
++const SENTENCE_END = /[.!?…]+["”’)\]*_]*(?:\s+|$)/g;
++const words = (t) => [...t.matchAll(/[\p{L}\p{N}'’-]+/gu)].map(m => m[0]);
++/** The person a stretch's last sentence is about: its subject, the first name or nominative pronoun among its first three
++ * words, read past front adverbs ("Then Tom looks up", "Slowly she turns"; CGEL ch. 4 §3.1: the subject stands just before
++ * the verb, adjuncts in front of it). A pronoun is the player's character for I, we and you (the box's main character), and
++ * for he, she or they the person last named whose given name's sex does not differ (frame.ts nameSex); null when none is
++ * named, or when the sentence opens on a noun phrase ("The old man coughs"). */
++export function subjectOf(sentence, names, player, named) {
++    const ws = words(sentence).map(w => w.replace(/['’]s$/, ''));
++    for (let i = 0; i < Math.min(3, ws.length); i++) {
++        const w = ws[i];
++        if (NOMINATIVE.test(w)) {
++            const p = w.toLowerCase().replace(/['’].*$/, '');
++            if (p === 'i' || p === 'we' || p === 'you')
++                return player;
++            const want = p === 'he' ? 'male' : p === 'she' ? 'female' : null;
++            for (let j = named.length - 1; j >= 0; j--) {
++                const n = named[j], s = nameSex(n.split(' ')[0]);
++                if (n !== player && (!want || !s || s === want))
++                    return n;
++            }
++            return null;
++        }
++        if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0)))
++            return names.get(w) ?? w;
++        // An article opens a noun phrase that names someone without a name ("The old guard says"): its words up to the verb
++        // (a word in -s or -ed after the first) or a closed word, three at most, so the plate reads "The old guard".
++        if (/^(?:the|a|an|this|that)$/i.test(w)) {
++            const np = [];
++            for (const x of ws.slice(i + 1, i + 4)) {
++                if (closed(x) || (np.length && /(?:s|ed)$/.test(x)))
++                    break;
++                np.push(x.toLowerCase());
++            }
++            return np.length ? `${w[0].toUpperCase()}${w.slice(1).toLowerCase()} ${np.join(' ')}` : null;
++        }
++        if (!front(w))
++            return null;
++    }
++    return null;
++}
++/** Who each stretch of a message belongs to, paragraph by paragraph. IF the reply wrote the speaker's name before a quotation
++ * → THEN that name. IF the quotation runs on into a speech tag (it ends on a comma, or the words after it open in lower case:
++ * "No," Mara says / "No!" she says) → THEN the tag's subject. ELSE the subject of the last sentence before it in its paragraph
++ * (Tom looks up. "Sit."), ELSE the speaker of the quotation before it in the paragraph, ELSE the message's author. A stretch
++ * that is not said belongs to the player's character: the box has no narrator (the player's pick, 2026-11-11), as the
++ * reference's narration is its main character's. `named` carries the people named so far (the chat's earlier messages), for
++ * a pronoun. */
++export function speakersOf(paragraphs, cast, named = []) {
++    const names = new Map();
++    for (const n of [...cast.names, cast.player, cast.author])
++        for (const w of words(n))
++            if (capital(w) && !closed(w))
++                names.set(w, n);
++    const note = (text) => {
++        for (const sentence of text.split(SENTENCE_END)) {
++            const ws = words(sentence).map(x => x.replace(/['’]s$/, ''));
++            ws.forEach((w, i) => { if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0)))
++                named.push(names.get(w) ?? w); });
++        }
++    };
++    return paragraphs.map(p => {
++        let lastSaid = null;
++        return p.map((s, i) => {
++            if (!s.said) {
++                note(s.text.replace(QUOTED, ' '));
++                return cast.player;
++            }
++            const after = p[i + 1], before = p[i - 1];
++            const runsOn = !!after && !after.said && (/[,—–-]\s*["”’»›]*\s*$/.test(s.text) || /^\s*[,—–-]?\s*\p{Ll}/u.test(after.text));
++            const who = s.tag?.trim() || (runsOn ? subjectOf(after.text.replace(/^[\s,—–-]+/, ''), names, cast.player, named) : null)
++                || (before && !before.said ? subjectOf(before.text.trim().split(SENTENCE_END).filter(x => x.trim()).pop() ?? '', names, cast.player, named) : null)
++                || lastSaid || cast.author;
++            if (who !== cast.player)
++                named.push(who);
++            lastSaid = who;
++            return who;
++        });
++    });
++}
++/** The names a reply wrote before its quotations ([Mara] "No.", as SPEAKER_RULE asks), each with the quotation it stands
++ * before, and the reply without them. A bracket stands for a name only directly before an opening quotation mark. */
++export function takeSpeakers(text) {
++    const marker = /\[([^[\]\n]{1,40})\][ \t]*(?=["“„«‹])/g, at = [];
++    let out = '', last = 0;
++    for (const m of text.matchAll(marker)) {
++        out += text.slice(last, m.index);
++        at.push({ pos: out.length, who: m[1].trim() });
++        last = m.index + m[0].length;
++    }
++    out += text.slice(last);
++    const said = [...out.matchAll(QUOTED)].flatMap(m => { const a = at.find(x => x.pos === m.index); return a ? [{ q: m[0], who: a.who }] : []; });
++    return { text: out, said };
++}
++/** The narrator's instruction while the box is on: the name before each quotation, so the box's plate names who says it. */
++export const SPEAKER_RULE = `<speakers>
++Before each quotation, write the name of the one who says it in square brackets, as in: Tom looks up. [Tom] "Sit." Code takes the brackets out before the reply is shown, so the sentences around them read as ordinary prose.
++</speakers>`;
++// ------------------------------------------------------------------------------------------------------------- the box
++/** Where a long stretch is cut so each piece fits the box: after a sentence's end, each piece `budget` characters or fewer
++ * where a sentence's end allows it (a sentence longer than the budget stays whole). Offsets into the text, in order. */
++export function cutsOf(text, budget) {
++    const ends = [...text.matchAll(SENTENCE_END)].map(m => m.index + m[0].length).filter(e => e < text.trimEnd().length);
++    const cuts = [];
++    for (let start = 0; text.length - start > budget;) {
++        const fit = ends.filter(e => e > start && e - start <= budget), next = fit.at(-1) ?? ends.find(e => e > start);
++        if (next == null)
++            break;
++        cuts.push(next);
++        start = next;
++    }
++    return cuts;
++}
++/** A word's syllables, by a stated count (vowel letters, not a dictionary's syllables): its groups of vowel letters (y among
++ * them), less a final silent e (one at least for a word with a letter); a number, one per digit. */
++export function syllables(word) {
++    const w = word.toLowerCase().replace(/[^a-z0-9]/g, '');
++    if (/^\d+$/.test(w))
++        return w.length;
++    if (!w)
++        return 0;
++    let n = (w.match(/[aeiouy]+/g) ?? []).length;
++    if (n > 1 && /[^aeiouyl]e$/.test(w))
++        n--;
++    return Math.max(1, n);
++}
++/** When each letter of a stretch appears, ms from its start (one entry per UTF-16 unit of the text). Said words appear at the
++ * speaker's own speaking rate (voice.ts voiceSyllablesPerS, × `rate` for a marked tempo), each word's letters spread over its
++ * syllables; text that is not said appears at the reader's silent-reading rate (boxReadWpm), one word at a time. What lies
++ * between two words appears with the word before it. */
++export function revealTimes(text, said, rate = 1) {
++    const out = new Array(text.length).fill(0);
++    let t = 0, prevEnd = 0;
++    for (const m of text.matchAll(/[\p{L}\p{N}'’-]+/gu)) {
++        const start = m.index, len = m[0].length;
++        for (let i = prevEnd; i < start; i++)
++            out[i] = t;
++        const dur = said ? 1000 * syllables(m[0]) / (peek('voiceSyllablesPerS') * rate) : 60000 / peek('boxReadWpm');
++        for (let i = 0; i < len; i++)
++            out[start + i] = t + dur * (i + 1) / len;
++        t += dur;
++        prevEnd = start + len;
++    }
++    for (let i = prevEnd; i < text.length; i++)
++        out[i] = t;
++    return out;
++}
++/** How long AUTO waits after a stretch has appeared: what reading it takes beyond its appearing (silent reading, boxReadWpm),
++ * and one word's reading more, as the reader's eyes follow the newest word. */
++export function autoWait(text, appearMs) {
++    const perWord = 60000 / peek('boxReadWpm');
++    return Math.max(0, words(text).length * perWord - appearMs) + perWord;
++}
++export function slotOf(o) {
++    const word = o.said ? (o.whispered ? 'whispering' : 'speaking') : o.thinking ? 'thinking' : null;
++    return [...word ? [word] : [], ...o.auto ? ['auto'] : []];
++}
++// ------------------------------------------------------------------------------------------------------------- key words
++const content = (w) => !closed(w) && /\p{L}{3,}|\p{N}/u.test(w);
++const same = (a, b) => { const x = new Set(stems(a.toLowerCase())); return stems(b.toLowerCase()).some(s => x.has(s)); };
++/** The words of a reply that name what one decided result says, as the reference sets important words in yellow: the longest
++ * run of the reply's words that are content words of the result (one of its words in any inflection: "heel bone" for "the
++ * right heel bone breaks"), nouns weighing more, joined by at most two closed words ("riddle on the door"), people's names left out (they are in
++ * every result). The result's bracketed gloss (the kind of problem) is no story word. Null when the reply names none. */
++export function keyPhrase(result, reply, people) {
++    const gist = result.replace(/\([^)]*\)/g, ' ');
++    const want = words(gist).filter(w => content(w) && !personName(w) && !people.some(p => words(p).includes(w)));
++    if (!want.length)
++        return null;
++    const toks = [...reply.matchAll(/[\p{L}\p{N}'’-]+|[^\s\p{L}\p{N}]/gu)].map(m => ({ w: m[0], at: m.index }));
++    // A run's weight: its matching words, a noun (WordNet) counting boxKeyNounWeight, as the thing decided is mostly a thing or
++    // a body part ("the whisper" before "hears"); equal weights, the longer run.
++    const weight = (w) => noun(w) ? peek('boxKeyNounWeight') : 1;
++    let best = null;
++    for (let i = 0; i < toks.length; i++) {
++        if (!content(toks[i].w) || !want.some(w => same(w, toks[i].w)))
++            continue;
++        let j = i, score = weight(toks[i].w);
++        for (let k = i + 1, gap = 0; k < toks.length && gap <= 2; k++) {
++            const w = toks[k].w;
++            if (content(w) && want.some(x => same(x, w))) {
++                j = k;
++                score += weight(w);
++                gap = 0;
++            }
++            else if (/^[\p{L}'’-]+$/u.test(w) && closed(w))
++                gap++;
++            else
++                break;
++        }
++        const len = toks[j].at + toks[j].w.length - toks[i].at;
++        if (!best || score > best.score || (score === best.score && len > best.len))
++            best = { from: i, to: j, score, len };
++        i = j;
++    }
++    return best ? reply.slice(toks[best.from].at, toks[best.to].at + toks[best.to].w.length) : null;
++}
+diff --git a/src/rules/box.ts b/src/rules/box.ts
+new file mode 100644
+index 0000000..59b7e9e
+--- /dev/null
++++ b/src/rules/box.ts
+@@ -0,0 +1,221 @@
++// The text box's rules (index.ts showBox; docs/df-body-engine.md, "The text box"). Free of SillyTavern and of the page, so tests
++// run them on plain strings: who each stretch of a message belongs to, where a long stretch goes on in the next box, when each
++// letter of a stretch appears, how long AUTO waits, and which words of a reply name what the engine decided.
++//
++// The reference (the player's, 2026-11-11: Danganronpa) sets "white text denoting that it's spoken aloud, blue text being internal
++// dialogue, and all textboxes having the name of the current speaker" (Anderson 2022, "Interactive Fiction – UI Elements and
++// Narrative in Danganronpa v3"); its narration is the main character's first-person thought, in the same blue (Let's Play
++// Archive, Trigger Happy Havoc prologue: blue text "are the Main Character's inner thoughts", the narration among them), and
++// "yellow text are important words or phrases the game calls out". The player chose no narrator, so here too every stretch
++// that is not said belongs to the player's character.
++import { def, peek } from './constants.js';
++import './voice.js';
++import { GIVEN_NAMES } from './data/given-names.js';
++import { isWord, stems } from './lexicon.js';
++import { nameSex } from './frame.js';
++import { PREPOSITION, AUXILIARY, NOMINATIVE, noun } from './grammar.js';
++import { QUOTED } from './quotes.js';
++
++// Silent reading of English fiction: 260 words per minute, non-fiction 238 (Brysbaert 2019, J Mem Lang 109:104047, a
++// meta-analysis of 190 studies). Text that is not said has no sound to time it by, so it appears at the reader's own pace.
++def({ id: 'boxReadWpm', value: 260, unit: 'words per minute, silent reading of fiction', status: 'sourced', src: 'adult silent reading in English: fiction 260, non-fiction 238 words per minute (Brysbaert 2019, J Mem Lang 109:104047)', file: 'box.ts' });
++// The box's height in lines: a stretch longer than this goes on in the next box. The reference's boxes hold one to two lines
++// in the player's screenshots; four keeps a sentence of ordinary length whole on a phone (a judgement, registered below).
++// A key word's weight when it is a noun, against 1 for another word of the result: the thing decided is mostly a thing or a
++// body part, so a run with a noun wins a tie of words.
++def({ id: 'boxKeyNounWeight', value: 1.5, unit: '× the weight of a matching word that is no noun', status: 'assumed', src: 'a noun names the thing decided; any value above 1 breaks a tie of matching words toward it', range: [1.1, 2], file: 'box.ts' });
++def({ id: 'boxLines', value: 4, unit: 'lines of text in the box', status: 'assumed', src: "the reference's boxes hold 1–2 lines (the player's screenshots); 4 keeps an ordinary sentence whole at 412 px", range: [3, 6], file: 'box.ts' });
++
++// ------------------------------------------------------------------------------------------------------------- speakers
++/** One stretch of a paragraph: said (quoted words) or not, its text, and for a said stretch the name the reply wrote before
++ * it ([Mara] "No."), if any. */
++export interface Stretch { said: boolean; text: string; tag?: string | null }
++/** Who a message can name: the player's character, the message's author (for the player's own line, the same), the cast by
++ * name (the player's character, the character cards in the chat). */
++export interface Cast { player: string; author: string; names: string[] }
++
++// The closed word classes (CGEL ch. 5, 7, 3: pronouns, determinatives, prepositions, coordinators and subordinators,
++// auxiliaries), which never name a person, and the deictic adverbs a sentence can open with. A capitalised word outside them
++// names a person when it is a given name (Social Security Administration, as frame.ts reads them) or no common English
++// word (lexicon.ts, SCOWL): "Tom", "Kyoko" are names; "Silence", "Nothing", "Below" are not.
++const CLOSED = /^(?:the|a|an|this|that|these|those|my|your|his|her|its|our|their|some|any|no|every|each|all|both|either|neither|another|other|such|what|which|whose|who|whom|me|him|us|them|it|itself|myself|yourself|himself|herself|ourselves|themselves|one|nothing|nobody|someone|somebody|something|everyone|everybody|everything|anyone|anybody|anything|none|and|but|or|nor|so|yet|if|when|whenever|while|as|because|though|although|unless|since|once|whether|then|now|there|here|still|just|only|even|also|too|again|soon|later|finally|suddenly|instead|meanwhile|perhaps|maybe|not|never|always|yes|oh|ah|well)$/i;
++const closed = (w: string) => CLOSED.test(w) || PREPOSITION.test(w) || AUXILIARY.test(w) || NOMINATIVE.test(w);
++/** A front adverb: a closed word, or an -ly adverb ("Slowly, Tom stands"). */
++const front = (w: string) => closed(w) || /^[A-Za-z]{3,}ly$/.test(w);
++const capital = (w: string) => /^\p{Lu}[\p{Ll}'’-]/u.test(w);
++/** Whether a capitalised word names a person. */
++export const personName = (w: string) => capital(w) && !closed(w) && (GIVEN_NAMES[w.toLowerCase()] != null || !isWord(w));
++/** A given name that is also a closed word (Will, May, Can) names a person where the closed word cannot stand: inside a
++ * sentence, or opening one before a finite verb ("Will does not look up", "Will has been counting"); a question opening on
++ * the auxiliary has its subject next ("Will you come?"). */
++const nameAt = (ws: string[], i: number, sentenceStart: boolean) => personName(ws[i]!) || (capital(ws[i]!) && GIVEN_NAMES[ws[i]!.toLowerCase()] != null
++    && (!sentenceStart || (!!ws[i + 1] && !NOMINATIVE.test(ws[i + 1]!) && (AUXILIARY.test(ws[i + 1]!) || /^\p{Ll}+(?:s|ed)$/u.test(ws[i + 1]!)))));
++
++const SENTENCE_END = /[.!?…]+["”’)\]*_]*(?:\s+|$)/g;
++const words = (t: string) => [...t.matchAll(/[\p{L}\p{N}'’-]+/gu)].map(m => m[0]);
++
++/** The person a stretch's last sentence is about: its subject, the first name or nominative pronoun among its first three
++ * words, read past front adverbs ("Then Tom looks up", "Slowly she turns"; CGEL ch. 4 §3.1: the subject stands just before
++ * the verb, adjuncts in front of it). A pronoun is the player's character for I, we and you (the box's main character), and
++ * for he, she or they the person last named whose given name's sex does not differ (frame.ts nameSex); null when none is
++ * named, or when the sentence opens on a noun phrase ("The old man coughs"). */
++export function subjectOf(sentence: string, names: Map<string, string>, player: string, named: string[]): string | null {
++    const ws = words(sentence).map(w => w.replace(/['’]s$/, ''));
++    for (let i = 0; i < Math.min(3, ws.length); i++) {
++        const w = ws[i]!;
++        if (NOMINATIVE.test(w)) {
++            const p = w.toLowerCase().replace(/['’].*$/, '');
++            if (p === 'i' || p === 'we' || p === 'you') return player;
++            const want = p === 'he' ? 'male' : p === 'she' ? 'female' : null;
++            for (let j = named.length - 1; j >= 0; j--) { const n = named[j]!, s = nameSex(n.split(' ')[0]!); if (n !== player && (!want || !s || s === want)) return n; }
++            return null;
++        }
++        if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0))) return names.get(w) ?? w;
++        // An article opens a noun phrase that names someone without a name ("The old guard says"): its words up to the verb
++        // (a word in -s or -ed after the first) or a closed word, three at most, so the plate reads "The old guard".
++        if (/^(?:the|a|an|this|that)$/i.test(w)) {
++            const np: string[] = [];
++            for (const x of ws.slice(i + 1, i + 4)) { if (closed(x) || (np.length && /(?:s|ed)$/.test(x))) break; np.push(x.toLowerCase()); }
++            return np.length ? `${w[0]!.toUpperCase()}${w.slice(1).toLowerCase()} ${np.join(' ')}` : null;
++        }
++        if (!front(w)) return null;
++    }
++    return null;
++}
++
++/** Who each stretch of a message belongs to, paragraph by paragraph. IF the reply wrote the speaker's name before a quotation
++ * → THEN that name. IF the quotation runs on into a speech tag (it ends on a comma, or the words after it open in lower case:
++ * "No," Mara says / "No!" she says) → THEN the tag's subject. ELSE the subject of the last sentence before it in its paragraph
++ * (Tom looks up. "Sit."), ELSE the speaker of the quotation before it in the paragraph, ELSE the message's author. A stretch
++ * that is not said belongs to the player's character: the box has no narrator (the player's pick, 2026-11-11), as the
++ * reference's narration is its main character's. `named` carries the people named so far (the chat's earlier messages), for
++ * a pronoun. */
++export function speakersOf(paragraphs: Stretch[][], cast: Cast, named: string[] = []): string[][] {
++    const names = new Map<string, string>();
++    for (const n of [...cast.names, cast.player, cast.author]) for (const w of words(n)) if (capital(w) && !closed(w)) names.set(w, n);
++    const note = (text: string) => {
++        for (const sentence of text.split(SENTENCE_END)) {
++            const ws = words(sentence).map(x => x.replace(/['’]s$/, ''));
++            ws.forEach((w, i) => { if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0))) named.push(names.get(w) ?? w); });
++        }
++    };
++    return paragraphs.map(p => {
++        let lastSaid: string | null = null;
++        return p.map((s, i) => {
++            if (!s.said) { note(s.text.replace(QUOTED, ' ')); return cast.player; }
++            const after = p[i + 1], before = p[i - 1];
++            const runsOn = !!after && !after.said && (/[,—–-]\s*["”’»›]*\s*$/.test(s.text) || /^\s*[,—–-]?\s*\p{Ll}/u.test(after.text));
++            const who = s.tag?.trim() || (runsOn ? subjectOf(after!.text.replace(/^[\s,—–-]+/, ''), names, cast.player, named) : null)
++                || (before && !before.said ? subjectOf(before.text.trim().split(SENTENCE_END).filter(x => x.trim()).pop() ?? '', names, cast.player, named) : null)
++                || lastSaid || cast.author;
++            if (who !== cast.player) named.push(who);
++            lastSaid = who;
++            return who;
++        });
++    });
++}
++
++/** The names a reply wrote before its quotations ([Mara] "No.", as SPEAKER_RULE asks), each with the quotation it stands
++ * before, and the reply without them. A bracket stands for a name only directly before an opening quotation mark. */
++export function takeSpeakers(text: string): { text: string; said: { q: string; who: string }[] } {
++    const marker = /\[([^[\]\n]{1,40})\][ \t]*(?=["“„«‹])/g, at: { pos: number; who: string }[] = [];
++    let out = '', last = 0;
++    for (const m of text.matchAll(marker)) { out += text.slice(last, m.index); at.push({ pos: out.length, who: m[1]!.trim() }); last = m.index! + m[0].length; }
++    out += text.slice(last);
++    const said = [...out.matchAll(QUOTED)].flatMap(m => { const a = at.find(x => x.pos === m.index); return a ? [{ q: m[0], who: a.who }] : []; });
++    return { text: out, said };
++}
++/** The narrator's instruction while the box is on: the name before each quotation, so the box's plate names who says it. */
++export const SPEAKER_RULE = `<speakers>
++Before each quotation, write the name of the one who says it in square brackets, as in: Tom looks up. [Tom] "Sit." Code takes the brackets out before the reply is shown, so the sentences around them read as ordinary prose.
++</speakers>`;
++
++// ------------------------------------------------------------------------------------------------------------- the box
++/** Where a long stretch is cut so each piece fits the box: after a sentence's end, each piece `budget` characters or fewer
++ * where a sentence's end allows it (a sentence longer than the budget stays whole). Offsets into the text, in order. */
++export function cutsOf(text: string, budget: number): number[] {
++    const ends = [...text.matchAll(SENTENCE_END)].map(m => m.index! + m[0].length).filter(e => e < text.trimEnd().length);
++    const cuts: number[] = [];
++    for (let start = 0; text.length - start > budget;) {
++        const fit = ends.filter(e => e > start && e - start <= budget), next = fit.at(-1) ?? ends.find(e => e > start);
++        if (next == null) break;
++        cuts.push(next); start = next;
++    }
++    return cuts;
++}
++
++/** A word's syllables, by a stated count (vowel letters, not a dictionary's syllables): its groups of vowel letters (y among
++ * them), less a final silent e (one at least for a word with a letter); a number, one per digit. */
++export function syllables(word: string): number {
++    const w = word.toLowerCase().replace(/[^a-z0-9]/g, '');
++    if (/^\d+$/.test(w)) return w.length;
++    if (!w) return 0;
++    let n = (w.match(/[aeiouy]+/g) ?? []).length;
++    if (n > 1 && /[^aeiouyl]e$/.test(w)) n--;
++    return Math.max(1, n);
++}
++/** When each letter of a stretch appears, ms from its start (one entry per UTF-16 unit of the text). Said words appear at the
++ * speaker's own speaking rate (voice.ts voiceSyllablesPerS, × `rate` for a marked tempo), each word's letters spread over its
++ * syllables; text that is not said appears at the reader's silent-reading rate (boxReadWpm), one word at a time. What lies
++ * between two words appears with the word before it. */
++export function revealTimes(text: string, said: boolean, rate = 1): number[] {
++    const out = new Array<number>(text.length).fill(0);
++    let t = 0, prevEnd = 0;
++    for (const m of text.matchAll(/[\p{L}\p{N}'’-]+/gu)) {
++        const start = m.index!, len = m[0].length;
++        for (let i = prevEnd; i < start; i++) out[i] = t;
++        const dur = said ? 1000 * syllables(m[0]) / (peek('voiceSyllablesPerS') * rate) : 60000 / peek('boxReadWpm');
++        for (let i = 0; i < len; i++) out[start + i] = t + dur * (i + 1) / len;
++        t += dur; prevEnd = start + len;
++    }
++    for (let i = prevEnd; i < text.length; i++) out[i] = t;
++    return out;
++}
++/** How long AUTO waits after a stretch has appeared: what reading it takes beyond its appearing (silent reading, boxReadWpm),
++ * and one word's reading more, as the reader's eyes follow the newest word. */
++export function autoWait(text: string, appearMs: number): number {
++    const perWord = 60000 / peek('boxReadWpm');
++    return Math.max(0, words(text).length * perWord - appearMs) + perWord;
++}
++
++/** The word on the plate's right, beside the speaker's name, for the stretch shown: what the colour does not already say. A
++ * said stretch is "speaking", or "whispering" when its words carry the whisper's mark (no voicing: a different act of the
++ * larynx, voice.ts phonation); a stretch not said is "thinking" when the engine made a WorkOut call for the line, and has no
++ * word when it is a description. AUTO, while the box moves on by itself, stands beside it. */
++export type SlotWord = 'speaking' | 'whispering' | 'thinking' | 'auto';
++export function slotOf(o: { said: boolean; whispered: boolean; thinking: boolean; auto: boolean }): SlotWord[] {
++    const word: SlotWord | null = o.said ? (o.whispered ? 'whispering' : 'speaking') : o.thinking ? 'thinking' : null;
++    return [...word ? [word] : [], ...o.auto ? ['auto' as const] : []];
++}
++
++// ------------------------------------------------------------------------------------------------------------- key words
++const content = (w: string) => !closed(w) && /\p{L}{3,}|\p{N}/u.test(w);
++const same = (a: string, b: string) => { const x = new Set(stems(a.toLowerCase())); return stems(b.toLowerCase()).some(s => x.has(s)); };
++/** The words of a reply that name what one decided result says, as the reference sets important words in yellow: the longest
++ * run of the reply's words that are content words of the result (one of its words in any inflection: "heel bone" for "the
++ * right heel bone breaks"), nouns weighing more, joined by at most two closed words ("riddle on the door"), people's names left out (they are in
++ * every result). The result's bracketed gloss (the kind of problem) is no story word. Null when the reply names none. */
++export function keyPhrase(result: string, reply: string, people: string[]): string | null {
++    const gist = result.replace(/\([^)]*\)/g, ' ');
++    const want = words(gist).filter(w => content(w) && !personName(w) && !people.some(p => words(p).includes(w)));
++    if (!want.length) return null;
++    const toks = [...reply.matchAll(/[\p{L}\p{N}'’-]+|[^\s\p{L}\p{N}]/gu)].map(m => ({ w: m[0], at: m.index! }));
++    // A run's weight: its matching words, a noun (WordNet) counting boxKeyNounWeight, as the thing decided is mostly a thing or
++    // a body part ("the whisper" before "hears"); equal weights, the longer run.
++    const weight = (w: string) => noun(w) ? peek('boxKeyNounWeight') : 1;
++    let best: { from: number; to: number; score: number; len: number } | null = null;
++    for (let i = 0; i < toks.length; i++) {
++        if (!content(toks[i]!.w) || !want.some(w => same(w, toks[i]!.w))) continue;
++        let j = i, score = weight(toks[i]!.w);
++        for (let k = i + 1, gap = 0; k < toks.length && gap <= 2; k++) {
++            const w = toks[k]!.w;
++            if (content(w) && want.some(x => same(x, w))) { j = k; score += weight(w); gap = 0; }
++            else if (/^[\p{L}'’-]+$/u.test(w) && closed(w)) gap++;
++            else break;
++        }
++        const len = toks[j]!.at + toks[j]!.w.length - toks[i]!.at;
++        if (!best || score > best.score || (score === best.score && len > best.len)) best = { from: i, to: j, score, len };
++        i = j;
++    }
++    return best ? reply.slice(toks[best.from]!.at, toks[best.to]!.at + toks[best.to]!.w.length) : null;
++}
+diff --git a/src/rules/lexicon.js b/src/rules/lexicon.js
+index 5b71797..287ce9b 100644
+--- a/src/rules/lexicon.js
++++ b/src/rules/lexicon.js
+@@ -8,7 +8,7 @@ import { PREFIXED } from './data/wordnet.js';
+ // The prepositions of the grammar (grammar.ts PREPOSITION): Hunspell's dictionaries lack "into" among them.
+ import { PREPOSITION } from './grammar.js';
+ let WORDS = null;
+-const stems = (w) => {
++export const stems = (w) => {
+     const out = [w];
+     const add = (s) => { if (s.length >= 2)
+         out.push(s); };
+diff --git a/src/rules/lexicon.ts b/src/rules/lexicon.ts
+index 7cff267..11d553b 100644
+--- a/src/rules/lexicon.ts
++++ b/src/rules/lexicon.ts
+@@ -9,7 +9,7 @@ import { PREFIXED } from './data/wordnet.js';
+ import { PREPOSITION } from './grammar.js';
+ 
+ let WORDS: Set<string> | null = null;
+-const stems = (w: string): string[] => {
++export const stems = (w: string): string[] => {
+     const out = [w];
+     const add = (s: string) => { if (s.length >= 2) out.push(s); };
+     if (w.endsWith("'s")) add(w.slice(0, -2));
+diff --git a/style.css b/style.css
+index 81b3f71..a4876ee 100644
+--- a/style.css
++++ b/style.css
+@@ -279,7 +279,19 @@ body.rules-page #chat .mes_block { font-family: var(--rules-serif, Georgia, 'Iow
+ body.rules-page #chat .mes_text { font-size: calc(var(--mainFontSize) * 1.19); font-size-adjust: 0.46; font-weight: 400; line-height: 1.7; }
+ /* The name plate: the name in small capitals, as a play's text sets its speakers, over a hairline. */
+ body.rules-page #chat .ch_name { border-bottom: 1px solid var(--SmartThemeBorderColor); padding-bottom: 0.15em; }
+-body.rules-page #chat .name_text { font-variant: small-caps; letter-spacing: 0.04em; }
++body.rules-page #chat .name_text, body.rules-page #chat .rules-who { font-variant: small-caps; letter-spacing: 0.04em; }
++/* The page's dark colours (setting "Page colours: dark", body.rules-page-dark), the reference's: said words white, text that is
++   not said light blue, key words gold, on black (Anderson 2022: "white text denoting that it's spoken aloud, blue text being
++   internal dialogue"; Let's Play Archive: "yellow text are important words or phrases the game calls out"). Named colours
++   again: white on black 21:1, lightskyblue 12.96:1, gold 14.97:1, darkgray asides 8.95:1 (tests/ui.test.mjs R37). The tone is
++   dark (index.ts toneNow), so kind and feeling colours take their dark values. */
++body.rules-page.rules-page-dark #chat .mes {
++    --SmartThemeBodyColor: white; --SmartThemeQuoteColor: white; --SmartThemeUnderlineColor: white; --SmartThemeEmColor: darkgray;
++    --SmartThemeBlurTintColor: black; --SmartThemeBotMesBlurTintColor: black; --SmartThemeUserMesBlurTintColor: black;
++    --SmartThemeBorderColor: dimgray; --SmartThemeShadowColor: transparent;
++    background-color: black;
++}
++body.rules-page-dark:not(.bubblechat) #chat { background-color: black; }
+ 
+ /* The modes on the name plate (src/ui.ts drawModes), in every look: after the name, one word for what the character is doing
+    in the line, so the plate reads as a clause ("Mara speaking"). The word carries the mode; its box repeats it without a hue:
+@@ -293,29 +305,51 @@ body[data-rules-tone="light"] .rules-mode-speaking { color: white; }
+ /* The box (setting "Text box", on by default: body.rules-box; src/index.ts showBox): one unit of the chat on screen at a time,
+    in a box at the foot of the chat under its speaker's name, as a visual novel's text box holds one line. Every other message
+    and every other unit of the message is not drawn; the chat above the box takes no tint, so SillyTavern's background is the scene.
+-   The picture at the left goes in the box and in the log: the speaker is the name on the plate. A message without units (one
+-   being written or edited, or the setting "a whole message") shows whole. The box keeps four lines' height, so it does not
+-   jump from unit to unit, and scrolls past 60 % of the screen's height [ASSUMED: both]. */
++   The picture at the left goes in the box and in the log: the speaker is the name on the plate (and, by the setting, a large
++   picture above the box). A message without units (one being written or edited, or the setting "a whole message") shows
++   whole. The box keeps the height of box.ts boxLines lines (index.ts sets --rules-box-lines from it, so the file holds no
++   second copy; 1.7em is the page's line height), so it does not jump from unit to unit; a longer stretch goes on in the next box (index.ts fitUnits), and a single
++   sentence longer than that scrolls past 60 % of the screen's height [ASSUMED]. */
+ body.rules-box #chat .mesAvatarWrapper { display: none; }
+ body.rules-box:not(.rules-box-log) #chat { justify-content: flex-end; overflow: hidden; background-color: transparent; }
+ body.rules-box:not(.rules-box-log) #chat .mes:not(.rules-now) { display: none; }
+ body.rules-box:not(.rules-box-log) #chat .mes:has(.rules-unit-now) .mes_text > :not(.rules-unit-now):not(:has(.rules-unit-now)) { display: none; }
+ body.rules-box:not(.rules-box-log) #chat .mes:has(.rules-unit-now) .mes_text .rules-unit:not(.rules-unit-now) { display: none; }
+-body.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: 6.8em; max-height: 60vh; overflow-y: auto; cursor: pointer; }
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: calc(var(--rules-box-lines) * 1.7em); max-height: 60vh; overflow-y: auto; cursor: pointer; }
+ /* [±voiced], the one distinction the units carry: voiced words (quoted: they leave a mouth as sound) take the ink, text that
+    is not voiced a named blue, as the reference sets speech in its text colour and the rest in blue; darkslateblue reads at
+-   8.99:1 on ivory (tests/ui.test.mjs R36); a block that is no paragraph (a block quotation, a list, a table) keeps the ink,
+-   since SillyTavern lays its own ground under some of them. On the plate, "speaking" stands while the unit shown is voiced: on another
+-   speaker's message it is drawn for its voiced units only, on the player's it steps aside for a unit that is not voiced. */
++   8.99:1 on ivory, lightskyblue 12.96:1 on the dark page's black (tests/ui.test.mjs R36, R37); a block that is no paragraph (a
++   block quotation, a list, a table) keeps the ink, since SillyTavern lays its own ground under some of them. */
+ body.rules-page #chat span.rules-unit[data-said="false"] { color: darkslateblue; }
+-.rules-modes-unit { display: none; }
+-body.rules-box:not(.rules-box-log) #chat .mes[data-rules-said="true"] .rules-modes-unit { display: inline-flex; }
+-body.rules-box:not(.rules-box-log) #chat .mes[data-rules-said="false"] .rules-mode-speaking { display: none; }
++body.rules-page.rules-page-dark #chat span.rules-unit[data-said="false"] { color: lightskyblue; }
++/* The plate in the box (index.ts showPlate): the name of the one the unit shown belongs to (box.ts speakersOf: the speaker of
++   a quotation, the player's character for the rest) stands for the message's author, and at the plate's right one word for
++   what the colour does not say (box.ts slotOf: speaking, whispering, thinking, auto), as the reference's plate carries its
++   word at the right. The modes after the name are the log's. */
++.rules-who, .rules-slot { display: none; }
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .name_text { display: none; }
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who { display: inline; }
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-slot { display: inline-flex; gap: 0.35em; margin-left: auto; align-self: center; }
++body.rules-box:not(.rules-box-log) #chat .rules-modes { display: none; }
++/* The picture (setting "The speaker's picture: large", index.ts showFigure): the one the player's character faces, at full
++   height above the box, over SillyTavern's background, as the reference stands the one spoken with over the scene. */
++#rules-box-figure { display: none; }
++body.rules-box:not(.rules-box-log) #chat #rules-box-figure:not([hidden]) { display: block; flex: 1 1 0; min-height: 0; width: 100%; object-fit: contain; object-position: center bottom; }
++/* Letters not yet shown (index.ts typeUnit): a highlight drawn without ink, so the lines stand where they will and nothing
++   moves as the letters appear. */
++::highlight(rules-unshown) { color: transparent; background-color: transparent; text-decoration-color: transparent; text-shadow: none; }
++/* Key words (index.ts markKeys; box.ts keyPhrase): the words that name what the engine decided, as the reference sets important
++   words in yellow. A ground of gold under black letters (14.97:1; darkslateblue on gold 6.72:1) where the page is light or the
++   theme's own; gold letters on the dark page. Neither is the voice marks' channel (weight, spacing, rules under the words) nor
++   the feeling's (the message's edge). */
++mark.rules-key { background-color: gold; color: black; padding: 0 0.1em; border-radius: 2px; }
++body.rules-page.rules-page-dark #chat mark.rules-key { background-color: transparent; color: gold; padding: 0; }
+ /* The box's bar, above the message box: back, the place (message of messages, unit of units), on, and the log. Each button
+    is 44 px or more each way (WCAG 2.5.5, target size). In the log only its own button shows. */
+ #rules-box-bar { display: flex; align-items: center; gap: 0.4em; padding: 0.2em 0.5em; font-size: calc(var(--mainFontSize) * 0.85); color: var(--SmartThemeBodyColor); background-color: var(--SmartThemeBlurTintColor); border: 1px solid var(--SmartThemeBorderColor); border-bottom: 0; }
+ #rules-box-bar[hidden] { display: none; }
+ #rules-box-bar button { min-width: 44px; min-height: 44px; padding: 0 0.6em; font: inherit; color: inherit; background: none; border: 1px solid var(--SmartThemeBorderColor); border-radius: 4px; cursor: pointer; }
++#rules-box-bar button[aria-pressed="true"] { color: var(--SmartThemeBlurTintColor); background-color: var(--SmartThemeBodyColor); }
+ #rules-box-bar button:focus-visible { outline: 1px solid var(--interactable-outline-color); outline-offset: 1px; }
+ #rules-box-count { flex: 1 1 auto; text-align: center; font-variant-numeric: tabular-nums; }
+-body.rules-box-log #rules-box-back, body.rules-box-log #rules-box-next, body.rules-box-log #rules-box-count { visibility: hidden; }
++body.rules-box-log #rules-box-back, body.rules-box-log #rules-box-next, body.rules-box-log #rules-box-count, body.rules-box-log #rules-box-auto { visibility: hidden; }
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 3f2532f..f37cca4 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -5237,5 +5237,140 @@
+   "replace": "",
+   "miss": "the box draws one message and one unit, no picture",
+   "test": "ui"
++ },
++ {
++  "id": "RP1",
++  "name": "the name the reply wrote comes first",
++  "file": "src/rules/box.js",
++  "find": "const who = s\\.tag\\?\\.trim\\(\\) \\|\\|",
++  "replace": "const who = ",
++  "miss": "who says each stretch",
++  "test": "ui"
++ },
++ {
++  "id": "RP2",
++  "name": "a speech tag after a quotation names its speaker",
++  "file": "src/rules/box.js",
++  "find": "\\(runsOn \\? subjectOf",
++  "replace": "(false ? subjectOf",
++  "miss": "who says each stretch",
++  "test": "ui"
++ },
++ {
++  "id": "RP3",
++  "name": "he or she is the last person of that sex named",
++  "file": "src/rules/box.js",
++  "find": "\\(!want \\|\\| !s \\|\\| s === want\\)",
++  "replace": "(true)",
++  "miss": "who says each stretch",
++  "test": "ui"
++ },
++ {
++  "id": "RP4",
++  "name": "a given name that is also an auxiliary names a person before a verb",
++  "file": "src/rules/box.js",
++  "find": "GIVEN_NAMES\\[ws\\[i\\]\\.toLowerCase\\(\\)\\] != null",
++  "replace": "false",
++  "miss": "who says each stretch",
++  "test": "ui"
++ },
++ {
++  "id": "RP5",
++  "name": "the names before quotations leave the text",
++  "file": "src/rules/box.js",
++  "find": "out \\+= text\\.slice\\(last, m\\.index\\);",
++  "replace": "out += text.slice(last, m.index + m[0].length);",
++  "miss": "the names before quotations leave the text",
++  "test": "ui"
++ },
++ {
++  "id": "RP6",
++  "name": "a long stretch is cut at the last sentence end that fits",
++  "file": "src/rules/box.js",
++  "find": "fit\\.at\\(-1\\) \\?\\?",
++  "replace": "fit[0] ??",
++  "miss": "a long stretch goes on after a sentence",
++  "test": "ui"
++ },
++ {
++  "id": "RP7",
++  "name": "said words appear syllable by syllable",
++  "file": "src/rules/box.js",
++  "find": "1000 \\* syllables\\(m\\[0\\]\\)",
++  "replace": "1000",
++  "miss": "letters appear at the pace of speech or of reading",
++  "test": "ui"
++ },
++ {
++  "id": "RP8",
++  "name": "AUTO waits one word more",
++  "file": "src/rules/box.js",
++  "find": "- appearMs\\) \\+ perWord;",
++  "replace": "- appearMs);",
++  "miss": "letters appear at the pace of speech or of reading",
++  "test": "ui"
++ },
++ {
++  "id": "RP9",
++  "name": "a result's gloss is no story word",
++  "file": "src/rules/box.js",
++  "find": "result\\.replace\\(/\\\\\\(\\[\\^\\)\\]\\*\\\\\\)/g, ' '\\)",
++  "replace": "result",
++  "miss": "key words name what was decided",
++  "test": "ui"
++ },
++ {
++  "id": "RP10",
++  "name": "text not said reads on the dark page",
++  "file": "style.css",
++  "find": "rules-page-dark #chat span\\.rules-unit\\[data-said=\\\"false\\\"\\] \\{ color: lightskyblue; \\}",
++  "replace": "rules-page-dark #chat span.rules-unit[data-said=\"false\"] { color: darkslateblue; }",
++  "miss": "the dark page reads, apart from its ink",
++  "test": "ui"
++ },
++ {
++  "id": "RP11",
++  "name": "a key word reads on its gold ground",
++  "file": "style.css",
++  "find": "mark\\.rules-key \\{ background-color: gold; color: black;",
++  "replace": "mark.rules-key { background-color: gold; color: white;",
++  "miss": "the dark page reads, apart from its ink",
++  "test": "ui"
++ },
++ {
++  "id": "RP12",
++  "name": "the narrator names each speaker while the box is on",
++  "file": "src/index.js",
++  "find": "boxOn\\(\\) \\? SPEAKER_RULE : ''",
++  "replace": "''",
++  "miss": "the box names, types and moves on as set",
++  "test": "ui"
++ },
++ {
++  "id": "RP13",
++  "name": "Auto toggles one settings object",
++  "file": "src/index.js",
++  "find": "const s = settings\\(\\);\\s*s\\.boxAuto = !s\\.boxAuto;",
++  "replace": "settings().boxAuto = !settings().boxAuto;",
++  "miss": "the box names, types and moves on as set",
++  "test": "ui"
++ },
++ {
++  "id": "RP14",
++  "name": "the plate names the stretch's speaker in the box",
++  "file": "style.css",
++  "find": "body\\.rules-box:not\\(\\.rules-box-log\\) #chat \\.mes\\.rules-now \\.name_text \\{ display: none; \\}",
++  "replace": "",
++  "miss": "the box names, types and moves on as set",
++  "test": "ui"
++ },
++ {
++  "id": "RP15",
++  "name": "the plate's word is whispering for a whisper",
++  "file": "src/rules/box.js",
++  "find": "o\\.whispered \\? 'whispering' : 'speaking'",
++  "replace": "'speaking'",
++  "miss": "the plate's word says what the colour does not",
++  "test": "ui"
+  }
+ ]
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index e6b5b82..26e7e23 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -120,10 +120,16 @@ const THEMES = { dark: [['Azure', 'rgba(171, 198, 223, 1)', 'rgba(23, 23, 23, 0)
+     ['Dark V 1.0', 'rgba(207, 207, 197, 1)', 'rgba(29, 33, 40, 0.9)', 'rgba(29, 33, 40, 0.9)']], light: [['light', 'rgba(30, 30, 30, 1)', 'rgba(243, 241, 234, 1)', 'rgba(255, 255, 255, 0.5)']] };
+ // The dialogue page is one more light ground (style.css, body.rules-page): its inks and its ground are named colours (CSS
+ // Color 4, named colours), set as SillyTavern's theme variables inside each message, so U7 and R32 hold on it as on a theme.
+-const NAMED = { black: [0, 0, 0], white: [255, 255, 255], ivory: [255, 255, 240], dimgray: [105, 105, 105], silver: [192, 192, 192], darkslateblue: [72, 61, 139] };
++const NAMED = { black: [0, 0, 0], white: [255, 255, 255], ivory: [255, 255, 240], dimgray: [105, 105, 105], silver: [192, 192, 192], darkslateblue: [72, 61, 139],
++    lightskyblue: [135, 206, 250], gold: [255, 215, 0], darkgray: [169, 169, 169] };
+ const pageBlock = /body\.rules-page #chat \.mes \{([^}]*)\}/.exec(css)?.[1] ?? '';
+ const pageInk = k => NAMED[new RegExp(`--SmartTheme${k}: (\\w+);`).exec(pageBlock)?.[1] ?? ''], pageGround = NAMED[/background-color: (\w+);/.exec(pageBlock)?.[1] ?? ''];
+ if (pageInk('BodyColor') && pageGround) THEMES.light.push(['the dialogue page', `rgba(${pageInk('BodyColor').join(', ')}, 1)`, `rgba(${pageGround.join(', ')}, 1)`, `rgba(${pageGround.join(', ')}, 1)`]);
++// The page's dark colours (style.css body.rules-page-dark) are one more dark ground, so U7 and R32 hold the kind and feeling
++// colours on it too.
++const darkBlock = /body\.rules-page\.rules-page-dark #chat \.mes \{([^}]*)\}/.exec(css)?.[1] ?? '';
++const darkInk = k => NAMED[new RegExp(`--SmartTheme${k}: (\\w+);`).exec(darkBlock)?.[1] ?? ''], darkGround = NAMED[/background-color: (\w+);/.exec(darkBlock)?.[1] ?? ''];
++if (darkInk('BodyColor') && darkGround) THEMES.dark.push(['the dark page', `rgba(${darkInk('BodyColor').join(', ')}, 1)`, `rgba(${darkGround.join(', ')}, 1)`, `rgba(${darkGround.join(', ')}, 1)`]);
+ const OKABE_ITO = ['#56B4E9', '#009E73', '#D55E00', '#E69F00', '#CC79A7', '#F0E442', '#0072B2'];
+ const shares = [...css.matchAll(/\[data-tone="(dark|light)"\] \.rules-k-(\w+) \{ color: color-mix\(in srgb, (#[0-9A-F]{6}) (\d+)%, var\(--SmartThemeBodyColor\)\); \}/g)];
+ const low = [];
+@@ -480,6 +486,65 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+   ok(unvoiced && pageGround && contrast(unvoiced, pageGround) >= 4.5 && contrast(unvoiced, pageInk('BodyColor')) > 1.5, 'text that is not voiced reads on the page, apart from the ink', unvoiced && pageGround ? contrast(unvoiced, pageGround).toFixed(2) : 'no named colour');
+   ok(/body\.rules-box #chat \.mesAvatarWrapper \{ display: none; \}/.test(css) && /body\.rules-box:not\(\.rules-box-log\) #chat \.mes:not\(\.rules-now\) \{ display: none; \}/.test(css)
+       && /body\.rules-box:not\(\.rules-box-log\) #chat \.mes:has\(\.rules-unit-now\) \.mes_text \.rules-unit:not\(\.rules-unit-now\) \{ display: none; \}/.test(css)
+-      && /\.mes\[data-rules-said="false"\] \.rules-mode-speaking \{ display: none; \}/.test(css) && /#rules-box-bar button \{ min-width: 44px; min-height: 44px;/.test(css), 'the box draws one message and one unit, no picture', '');
++      && /body\.rules-box:not\(\.rules-box-log\) #chat \.rules-modes \{ display: none; \}/.test(css) && /#rules-box-bar button \{ min-width: 44px; min-height: 44px;/.test(css), 'the box draws one message and one unit, no picture', '');
++}
++// R37: the page's dark colours (style.css body.rules-page-dark), the reference's: said words white, text that is not said light
++// blue, key words gold, asides darkgray, all on black at 4.5:1 or more; the dark page counts as a dark ground for the kind and
++// feeling colours (U7, R32). Key words elsewhere: black on a gold ground, and the blue of text not said on gold.
++{
++  const named = re => NAMED[re.exec(css)?.[1] ?? ''];
++  const unsaidDark = named(/body\.rules-page\.rules-page-dark #chat span\.rules-unit\[data-said="false"\] \{ color: (\w+); \}/), keyDark = named(/body\.rules-page\.rules-page-dark #chat mark\.rules-key \{ background-color: transparent; color: (\w+);/);
++  const keyGround = named(/mark\.rules-key \{ background-color: (\w+); color: \w+;/), keyInk = named(/mark\.rules-key \{ background-color: \w+; color: (\w+);/);
++  const unsaidLight = named(/body\.rules-page #chat span\.rules-unit\[data-said="false"\] \{ color: (\w+); \}/);
++  const pairs = [['ink', darkInk('BodyColor'), darkGround], ['aside', darkInk('EmColor'), darkGround], ['not said', unsaidDark, darkGround], ['key word', keyDark, darkGround], ['key word on its ground', keyInk, keyGround], ['not said on a key ground', unsaidLight, keyGround]];
++  const low = pairs.filter(([, a, b]) => !a || !b || contrast(a, b) < 4.5).map(([k, a, b]) => `${k} ${a && b ? contrast(a, b).toFixed(2) : 'no named colour'}`);
++  ok(!low.length && THEMES.dark.some(t => t[0] === 'the dark page') && contrast(unsaidDark, darkInk('BodyColor')) > 1.5, 'the dark page reads, apart from its ink', low.join('; ') || pairs.map(([k, a, b]) => `${k} ${contrast(a, b).toFixed(2)}`).join('; '));
++}
++// R38: who each stretch belongs to (box.ts speakersOf, takeSpeakers): the name the reply wrote before a quotation; a speech tag
++// after it; the subject of the sentence before it (a name, a given name that is also a closed word, I for the player, he or
++// she by the sex of the last name, a noun phrase); the speaker before; the author; and the player's character for every
++// stretch that is not said.
++{
++  const B = await import('../src/rules/box.js');
++  const P = t => { const out = []; let last = 0; for (const m of t.matchAll(/"[^"]*"/g)) { if (m.index > last) out.push({ said: false, text: t.slice(last, m.index) }); out.push({ said: true, text: m[0] }); last = m.index + m[0].length; } if (last < t.length) out.push({ said: false, text: t.slice(last) }); return out; };
++  const said = (paras, cast = { player: 'Mara', author: 'Narrator', names: ['Mara'] }, tags = {}) => { const ps = paras.map(P); ps.flat().forEach(s => { if (tags[s.text]) s.tag = tags[s.text]; }); const who = B.speakersOf(ps, cast); return ps.flatMap((p, i) => p.map((s, j) => s.said ? who[i][j] : s.text.trim() && who[i][j] !== cast.player ? `!${who[i][j]}` : null)).filter(Boolean).join(' '); };
++  const got = [
++    said(['Tom looks up from the dice. "You are late," he says, not quite smiling. "Sit."', 'Will does not look up. "Seven," he says.']),
++    said(['Kyoko frowns. "Who set all this up?" I shrug. "No idea."'], { player: 'Makoto Naegi', author: 'Makoto Naegi', names: ['Makoto Naegi', 'Kyoko Kirigiri'] }),
++    said(['Anna nods to Tom. She smiles. "Thank you."', 'The old guard coughs. "Papers." "Fine," a voice behind the door says.', '"Sit."']),
++    said(['"Who set all this up?"', 'Tom laughs. "Me."'], undefined, { '"Who set all this up?"': 'Kyoko' }),
++  ];
++  ok(JSON.stringify(got) === JSON.stringify(['Tom Tom Will', 'Kyoko Kirigiri Makoto Naegi', 'Anna The old guard A voice Narrator', 'Kyoko Tom']), 'who says each stretch', JSON.stringify(got));
++  const tk = B.takeSpeakers('Tom looks up. [Tom] "Sit." Mara laughs. [Mara]"No." [a note] stays.');
++  ok(tk.text === 'Tom looks up. "Sit." Mara laughs. "No." [a note] stays.' && JSON.stringify(tk.said) === JSON.stringify([{ q: '"Sit."', who: 'Tom' }, { q: '"No."', who: 'Mara' }]) && /\[Tom\] "Sit\."/.test(B.SPEAKER_RULE), 'the names before quotations leave the text', JSON.stringify(tk));
++}
++// R39: the box's time and size (box.ts): a long stretch is cut after a sentence's end so each piece fits; said words appear at
++// the speaker's syllables per second (voice.ts voiceSyllablesPerS, 5), other text at 260 words a minute (Brysbaert 2019);
++// AUTO waits what reading takes beyond the appearing, and one word more.
++{
++  const B = await import('../src/rules/box.js');
++  const cuts = B.cutsOf('One short sentence. Another one here. A third sentence that is a bit longer than the others. Last.', 40);
++  const syl = ['the', 'make', 'little', 'riddle', 'beautiful', '60'].map(B.syllables);
++  const sit = B.revealTimes('"Sit, Anna."', true), plain = B.revealTimes('He waits by the door.', false);
++  const near = (a, b) => Math.abs(a - b) < 0.5;
++  ok(JSON.stringify(cuts) === JSON.stringify([38, 93]) && JSON.stringify(syl) === JSON.stringify([1, 1, 2, 2, 3, 2]), 'a long stretch goes on after a sentence', JSON.stringify([cuts, syl]));
++  ok(near(sit.at(-1), 600) && sit[0] === 0 && near(sit[4], 200) && near(plain.at(-1), 5 * 60000 / 260) && near(B.autoWait('He waits by the door.', plain.at(-1)), 60000 / 260)
++      && near(B.autoWait('"Sit, Anna."', 600), 60000 / 260) && near(B.autoWait('"Sit, Anna."', 0), 3 * 60000 / 260), 'letters appear at the pace of speech or of reading', JSON.stringify([sit.at(-1), plain.at(-1), B.autoWait('"Sit, Anna."', 0)]));
++}
++// R40: key words (box.ts keyPhrase): the reply's longest run of the result's own words, nouns first, the result's gloss and
++// people's names left out; the slot's words (box.ts slotOf); the box's plate, picture, highlight and key-word rules, and the
++// wiring that names speakers, strips their names and toggles Auto on one settings object (src/index.js).
++{
++  const B = await import('../src/rules/box.js'), idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), html = fs.readFileSync(`${ROOT}/settings.html`, 'utf8');
++  const keys = [B.keyPhrase('The right heel bone breaks', 'She lands hard and her right heel bone gives with a crack.', ['Mara']),
++    B.keyPhrase('Mara works out the riddle on the door (a riddle or trick that needs a new view), 60 s', 'Mara stares at the riddle on the door: a trick that needs a new view.', ['Mara']),
++    B.keyPhrase('Tom hears the whisper at 0.5 m', 'Tom hears you: the whisper carries.', ['Mara', 'Tom']), B.keyPhrase('Mara rests', 'Nothing else stirs.', ['Mara'])];
++  ok(JSON.stringify(keys) === JSON.stringify(['right heel bone', 'riddle on the door', 'whisper', null]), 'key words name what was decided', JSON.stringify(keys));
++  const slots = [B.slotOf({ said: true, whispered: false, thinking: false, auto: false }), B.slotOf({ said: true, whispered: true, thinking: true, auto: true }), B.slotOf({ said: false, whispered: false, thinking: true, auto: false }), B.slotOf({ said: false, whispered: false, thinking: false, auto: false })];
++  ok(JSON.stringify(slots) === JSON.stringify([['speaking'], ['whispering', 'auto'], ['thinking'], []]), "the plate's word says what the colour does not", JSON.stringify(slots));
++  ok(/body\.rules-box:not\(\.rules-box-log\) #chat \.mes\.rules-now \.name_text \{ display: none; \}/.test(css) && /\.mes\.rules-now \.rules-who \{ display: inline; \}/.test(css)
++      && /::highlight\(rules-unshown\) \{ color: transparent;/.test(css) && /#rules-box-figure:not\(\[hidden\]\) \{ display: block;/.test(css)
++      && /boxOn\(\) \? SPEAKER_RULE : ''/.test(idx) && /msg\.mes = sp\.text;/.test(idx) && /const s = settings\(\);\s*s\.boxAuto = !s\.boxAuto;/.test(idx)
++      && ['rules_engine_page_colours', 'rules_engine_box_picture', 'rules_engine_box_typing'].every(id => html.includes(`id="${id}"`)), 'the box names, types and moves on as set', '');
+ }
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tools/prompt-audit.mjs b/tools/prompt-audit.mjs
+index 8a98da0..e47d9d0 100644
+--- a/tools/prompt-audit.mjs
++++ b/tools/prompt-audit.mjs
+@@ -5,8 +5,8 @@
+ process.chdir(new URL('..', import.meta.url).pathname);
+ const { tools } = await import('./st-harness.mjs');
+ const Q = await import('../src/rules/question-pass.js'), A = await import('../src/rules/rules-audit.js'), T = await import('../src/rules/rules-tools.js');
+-const W = await import('../src/rules/world.js');
+-const texts = [['QUESTION_SYSTEM', Q.QUESTION_SYSTEM], ['PICK_SYSTEM', Q.PICK_SYSTEM], ['FOLLOW_ON', Q.FOLLOW_ON], ['REPAIR', Q.REPAIR], ['FILL_SYSTEM', W.FILL_SYSTEM], ['correctionNote', A.correctionNote([{ quote: 'q', tool: 'Listen', problem: 'unbacked' }])], ['AUDIT_SYSTEM', A.AUDIT_SYSTEM], ['RULES_BRIEF', T.RULES_BRIEF], ['RULES_BRIEF_DECIDED', T.RULES_BRIEF_DECIDED]];
++const W = await import('../src/rules/world.js'), N = await import('../src/rules/narration.js'), BX = await import('../src/rules/box.js');
++const texts = [['QUESTION_SYSTEM', Q.QUESTION_SYSTEM], ['PICK_SYSTEM', Q.PICK_SYSTEM], ['FOLLOW_ON', Q.FOLLOW_ON], ['REPAIR', Q.REPAIR], ['FILL_SYSTEM', W.FILL_SYSTEM], ['correctionNote', A.correctionNote([{ quote: 'q', tool: 'Listen', problem: 'unbacked' }])], ['AUDIT_SYSTEM', A.AUDIT_SYSTEM], ['RULES_BRIEF', T.RULES_BRIEF], ['RULES_BRIEF_DECIDED', T.RULES_BRIEF_DECIDED], ['NARRATION_RULE', N.NARRATION_RULE], ['SPEAKER_RULE', BX.SPEAKER_RULE]];
+ const walk = (name, p) => { if (p.description) texts.push([name, p.description]); if (p.enum) texts.push([`${name} options`, p.enum.join(' | ')]); for (const [k, q] of Object.entries(p.properties ?? p.items?.properties ?? {})) walk(`${name}.${k}`, q); };
+ for (const t of tools.values()) { texts.push([t.name, t.description]); for (const [k, q] of Object.entries(t.parameters?.properties ?? {})) walk(`${t.name}.${k}`, q); }
+ const MODERN = /\b(television|tv|traffic|car|cars|phone|vacuum|jackhammer|jet|an engine|computer|internet|bus|train)\b/i, RULE = /rule engine|the engine/i;

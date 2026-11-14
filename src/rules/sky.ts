@@ -1,6 +1,7 @@
 // Light from the sky at the story's date, hour and latitude (docs/df-body-engine.md §6.2), with the low-accuracy
 // formulae of Meeus, Astronomical Algorithms (1991): Sun ch. 24, obliquity (21.2), equation of time (27.3, Smart),
 // Moon's mean arguments ch. 45 and illuminated fraction (46.1, 46.4).
+import { def, k } from './constants.js';
 const rad = Math.PI / 180, deg = 180 / Math.PI;
 const norm360 = (x: number) => ((x % 360) + 360) % 360;
 
@@ -42,27 +43,80 @@ export function moon(jd: number, s: Sun = sun(jd)) {
 
 const altitude = (lat: number, dec: number, H: number) => Math.asin(Math.sin(lat * rad) * Math.sin(dec * rad) + Math.cos(lat * rad) * Math.cos(dec * rad) * Math.cos(H * rad)) * deg;
 
-// Illuminance, lux (Wikipedia, Lux): sunrise or sunset on a clear day 400, held while the Sun is below 6° [ASSUMED band,
-// the photographers' "golden hour"]; full daylight 15 800; civil twilight (Sun 0° to −6°) 3.4; full Moon 0.12; quarter
-// Moon 0.01; clear starlight 0.002. Moonlight between full and quarter is interpolated in log lux by phase angle and
-// continued at the same slope beyond quarter [ASSUMED].
-const moonLux = (i: number) => 0.12 * (0.01 / 0.12) ** (i / 90);
+// Illuminance on level ground, lux. The Wikipedia (Lux) anchors stay as the ends of the curve: sunrise or sunset 400, the end of
+// civil twilight (Sun at −6°) 3.4, clear starlight 0.002 (Sun at −18° or lower). Between the anchors the Sun's altitude sets
+// log lux linearly [ASSUMED form], so no minute changes the light by more than a few tens of percent.
+def({ id: 'daylightEfficacy', value: 113, unit: 'lm per W of global horizontal irradiance', status: 'sourced', src: 'CIBSE, Solar radiation, long-wave radiation and daylight, Fig. 1: clear sky, Sun at 30°, global 113 lm/W (diffuse 104); one measured mean elsewhere 121.5 lm/W (Saint-Pierre, Réunion, arXiv 1212.5259)', range: [95, 125], file: 'sky.ts' });
+def({ id: 'ktDefault', value: 0.18, unit: 'clear-sky index (global irradiance ÷ clear-sky irradiance)', status: 'assumed', src: 'no weather day held: the value that gives the earlier 15 800 lx at a Sun altitude of 50°', range: [0.05, 1], file: 'sky.ts' });
+def({ id: 'moonExtinction', value: 0.2, unit: 'mag per air mass', status: 'assumed', src: 'extinction at low altitude; Krisciunas & Schaefer 1991 give 0.172 at 2 800 m', range: [0.12, 0.35], file: 'sky.ts' });
+// Cloud: Kasten & Czeplak 1980 (Hamburg), hourly global irradiance ÷ clear-sky = 1 − 0.75 (N/8)^3.4, N the cloud amount in
+// oktas (as CIBSE gives it, eq. 16; CIBSE restricts it to 7 oktas or less in the UK). Twilight and night light under full
+// cover: 0.25 of clear down to −6° (the same relation [ASSUMED]), 0.05 at −18° and below (overcast starlight 0.0001 ÷ clear
+// starlight 0.002 lux, the engine's presets from Wikipedia, Lux), log-linear between [ASSUMED], with the same (N/8)^3.4 shape.
+def({ id: 'overcastNight', value: 0.05, unit: 'share of clear-sky night light under full cloud', status: 'assumed', src: 'overcast starlight 0.0001 ÷ clear starlight 0.002 lux (Wikipedia, Lux)', range: [0.02, 0.2], file: 'sky.ts' });
+/** Global horizontal irradiance of a clear sky, W/m², Sun altitude h degrees (Haurwitz 1945: 1098 cos z exp(−0.059 / cos z), as pvlib implements it). */
+export const haurwitz = (h: number) => h <= 0 ? 0 : 1098 * Math.sin(h * rad) * Math.exp(-0.059 / Math.sin(h * rad));
+/** Relative air mass at altitude h degrees (Kasten & Young 1989; about 38 at the horizon). */
+const airMass = (h: number) => 1 / (Math.sin(Math.max(0, h) * rad) + 0.50572 * (Math.max(0, h) + 6.07995) ** -1.6364);
+/** Cloud cover share 0–1 → global irradiance ÷ clear sky (Kasten & Czeplak 1980). */
+export const kastenCzeplak = (cover: number) => 1 - 0.75 * Math.min(1, Math.max(0, cover)) ** 3.4;
+/** The cloud cover share that gives clear-sky index `kt` under Kasten & Czeplak (its inverse); 0 for kt ≥ 1. */
+export const coverOfKt = (kt: number) => Math.min(1, Math.max(0, (1 - kt) / 0.75) ** (1 / 3.4));
+/**
+ * Moonlight on level ground, lux, for phase angle `phase` (0° full, 90° quarter) and altitude `alt` degrees. Magnitude
+ * V = −12.73 + 0.026|α| + 4e−9 α⁴ (Krisciunas & Schaefer 1991, Eq. 9); a magnitude 0 source gives 2.54e−6 lx (Crumey 2014);
+ * extinction k × air mass; the horizontal surface sees it times sin(altitude).
+ */
+export const moonLux = (phase: number, alt: number) => alt <= 0 ? 0
+    : 2.54e-6 * 10 ** (-0.4 * (-12.73 + 0.026 * phase + 4e-9 * phase ** 4)) * 10 ** (-0.4 * k('moonExtinction') * airMass(alt)) * Math.sin(alt * rad);
+/** The Sun's altitude, degrees, at `utc` story minutes (UTC) at latitude `lat` and longitude `east` (degrees east). */
+export function sunAltUtc(utc: number, lat: number, east: number): number {
+    const s = sun(julianDay(utc));
+    return altitude(lat, s.dec, 15 * (((utc % 1440) + 1440) % 1440 / 60 - 12) + east + s.eqTime);
+}
+/** Clear-sky global irradiation of the UTC day that holds `utc` story minutes, Wh/m² (Haurwitz, every 10 minutes). */
+export function clearDayWh(utc: number, lat: number, east: number): number {
+    const d0 = Math.floor(utc / 1440) * 1440 - east * 4;
+    let wh = 0;
+    for (let q = 5; q < 1440; q += 10) wh += haurwitz(sunAltUtc(d0 + q, lat, east)) / 6;
+    return wh;
+}
 
-export interface SkyLight { lux: number; label: string; sunAlt: number; moonAlt: number; moonLit: number }
+export interface SkyLight { lux: number; label: string; sunAlt: number; moonAlt: number; moonLit: number; kt?: number; cover?: number }
 /**
  * { lux, label } of natural light for story time `minutes` (calendar dates only) at latitude `lat` (degrees, north +).
- * The story clock is taken as local mean solar time [ASSUMED: time zones ignored].
+ * The story clock is the civil clock of the place when `utcOffsetH` (hours east of UTC; zone.ts gives it) is given; with no
+ * offset it is local solar time [ASSUMED], as before. `lon` is degrees east. Cloud, best first: `ghi`, the measured global
+ * irradiance of the clock hour (W/m², ERA5), as a clear-sky index against the hour's mean Haurwitz value when that is at
+ * least 50 W/m²; `cloud`, the hour's cloud cover in % (ERA5), through Kasten & Czeplak; `kt`, a clear-sky index for the day
+ * (a generated day's radiation, or its wet or dry state); none: the engine's default index, under a clear night sky.
  */
-export function skyLight(minutes: number, lat: number): SkyLight {
-    const jd = julianDay(minutes), s = sun(jd), m = moon(jd, s);
-    const clock = ((minutes % 1440) + 1440) % 1440 / 60;
-    const H = 15 * (clock - 12) + s.eqTime;
+export interface SkyOptions { lon?: number; utcOffsetH?: number; kt?: number; ghi?: number | null; cloud?: number | null }
+export function skyLight(minutes: number, lat: number, { lon, utcOffsetH, kt, ghi, cloud }: SkyOptions = {}): SkyLight {
+    const off = utcOffsetH ?? (lon ?? 0) / 15, east = lon ?? off * 15, utc = minutes - off * 60;
+    const jd = julianDay(utc), s = sun(jd), m = moon(jd, s);
+    const H = 15 * (((utc % 1440) + 1440) % 1440 / 60 - 12) + east + s.eqTime;
     const hs = altitude(lat, s.dec, H), hm = altitude(lat, m.dec, H + (s.ra - m.ra));
     const lit = m.k >= 0.9 ? 'full or nearly full' : m.k >= 0.6 ? 'gibbous' : m.k >= 0.4 ? 'half' : 'crescent';
-    if (hs >= 6) return { lux: 15800, label: 'daylight', sunAlt: hs, moonAlt: hm, moonLit: m.k };
-    if (hs >= 0) return { lux: 400, label: 'low sun (sunrise or sunset)', sunAlt: hs, moonAlt: hm, moonLit: m.k };
-    if (hs >= -6) return { lux: 3.4, label: 'civil twilight', sunAlt: hs, moonAlt: hm, moonLit: m.k };
-    const ml = hm > 0 ? moonLux(m.i) : 0;
-    if (ml > 0.002) return { lux: ml, label: `night, ${m.waxing ? 'waxing' : 'waning'} ${lit} moon up`, sunAlt: hs, moonAlt: hm, moonLit: m.k };
-    return { lux: 0.002, label: hm > 0 ? `night, ${lit} moon up, mostly starlight` : 'night, moon down, starlight', sunAlt: hs, moonAlt: hm, moonLit: m.k };
+    // The clock hour's mean clear-sky irradiance, from four points in the hour.
+    const hour0 = utc - (((minutes % 60) + 60) % 60);
+    const clear = [7.5, 22.5, 37.5, 52.5].reduce((t, q) => t + haurwitz(sunAltUtc(hour0 + q, lat, east)), 0) / 4;
+    const measured = ghi != null && Number.isFinite(ghi) && clear >= 50 ? Math.min(1.1, Math.max(0.03, ghi / clear)) : null;
+    const index = measured ?? (cloud != null && Number.isFinite(cloud) ? kastenCzeplak(cloud / 100) : kt ?? k('ktDefault'));
+    const cover = cloud != null && Number.isFinite(cloud) ? Math.min(1, Math.max(0, cloud / 100)) : measured != null || kt != null ? coverOfKt(index) : 0;
+    // Share of clear-sky light left under that cover for the Sun below 6°: 0.25 at full cover in twilight, 0.05 at night.
+    const full = hs >= -6 ? 0.25 : hs <= -18 ? k('overcastNight') : 0.25 * (k('overcastNight') / 0.25) ** ((-6 - hs) / 12);
+    const dim = 1 - (1 - full) * cover ** 3.4;
+    const out = (lux: number, label: string): SkyLight => ({ lux, label, sunAlt: hs, moonAlt: hm, moonLit: m.k, kt: Math.round(index * 1000) / 1000, cover: Math.round(cover * 100) / 100 });
+    const sky = cloud != null && Number.isFinite(cloud) || measured != null ? (cover >= 0.75 ? 'overcast' : cover >= 0.3 ? 'partly cloudy' : 'clear') : '';
+    const withSky = (label: string) => sky ? `${label}, ${sky}` : label;
+    if (hs >= 0) return out(Math.max(400 * dim, index * haurwitz(hs) * k('daylightEfficacy')), withSky(hs >= 6 ? 'daylight' : 'low sun (sunrise or sunset)'));
+    const ml = moonLux(m.i, hm);
+    const dusk = hs <= -18 ? 0.002 : hs <= -6 ? 0.002 * (3.4 / 0.002) ** ((hs + 18) / 12) : 3.4 * (400 / 3.4) ** ((hs + 6) / 6);
+    const lux = (dusk + ml) * dim;
+    if (hs >= -6) return out(lux, withSky('civil twilight'));
+    if (hs >= -12) return out(lux, withSky('nautical twilight'));
+    if (hs > -18) return out(lux, withSky('astronomical twilight'));
+    if (ml > 0.002) return out(lux, withSky(`night, ${m.waxing ? 'waxing' : 'waning'} ${lit} moon up`));
+    return out(lux, withSky(hm > 0 ? `night, ${lit} moon up, mostly starlight` : 'night, moon down, starlight'));
 }

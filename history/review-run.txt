@@ -1,0 +1,66 @@
+The fifth review's findings (New1.pdf), each run with its own test: review-tests/review5.test.mjs (node tests/review5.test.mjs 2>&1 >/dev/null, from the repository's root).
+F1 is the review's own case: its correction never took effect (the scene's last two messages do not name Will), so the swipe now repeats that turn as it was; F1b is the case with Will named.
+F3 and F4 check for their own diffs (castBlock, the audit prompt's string); the fix takes tag characters out where every request leaves (send.ts): F3b checks that, and engine R54.
+Ft rows are the table's other claims; Ft9 and Ft10 print the arithmetic.
+
+On section 34's tree:
+F1 REPRO swipe of a corrected turn after an earlier turn is deleted in mid-chat: before Tom 2, Will 0; after Tom 1, Will 0, redone The player corrects their last line: it meant Will.
+F2 REPRO "I look at Tom and Will, then I punch him." asks: null
+F3 REPRO castBlock sends card fields with hidden tag characters, if any
+F4 REPRO audit prompt keeps hidden tag characters: true
+F3b REPRO the audit prompt and a card as sent to the model: hidden tag characters
+F5 REPRO Act.action not starting with its motion verb: Today I walk 10 m to the gate. | I punch Tom. I walk 10 m to the door.
+F6 REPRO routeTurn('Er sagte: ›Climb the wall!‹') → []
+F7 REPRO cut-off before a closing guillemet: false
+F8 REPRO full-thickness threshold not registered: Skin surface at 68 °C for 10 s: 5 partial burn wound(s) on right hand thumb, right hand first finger, right hand second finger, right hand third finger, right hand fourth finger. Mara (human): blood l
+F9 REPRO old reply keeps the worlds of swipes 0,1
+F1b REPRO the same, the correction in force first (Tom 0, Will 2): after the swipe Tom 0, Will 0, redone null, model asked 2 time(s) (the kept calls replayed ask none)
+Ft1 OK edited line regenerated after a later turn was deleted: 630 (the edited words: 630)
+Ft3 OK [DECIDED] on the correction turn holds the redo and the blow; after a tool call holds them
+Ft9 (not a defect test) 5.5–10 min band: code 0.187; the comment's reading (half 5.5–10, half past 10) gives 0.187; the review's (139 − 36) / (1238 − 962) = 0.373 takes the past-10 group as part of the past-5.5 one, but the pools differ (1,075 + 1,238 = 2,313 against 1,019 + 962 = 1,981; and 1,019 under 10 min < 1,075 under 5.5 min)
+Ft10 (not a defect test) vacuum cleaner 85 dB at 1.8 m → 90.1 at 1 m (comment: 90); car 67.5 at 10 m → 87.5 (comment: 87.5)
+
+On this tree:
+F1 REPRO swipe of a corrected turn after an earlier turn is deleted in mid-chat: before Tom 2, Will 0; after Tom 2, Will 0, redone null
+F2 OK "I look at Tom and Will, then I punch him." asks: {"text":"\"Punch him\": who?","options":[{"label":"Punch Will","weight":1,"harm":true,"fix":{"tool":"BodyStrike","arg":"who","value":"Will","note":"\"him\" in the player's line is Will (BodyStrike who)."}},{"label":"Punch Tom","weight":1,"harm":true,"fix":{"tool":"BodyStrike","arg":"who","value":"Tom","note":"\"him\" in the player's line is Tom (BodyStrike who)."}}]}
+F3 REPRO castBlock sends card fields with hidden tag characters, if any
+F4 REPRO audit prompt keeps hidden tag characters: true
+F3b OK the audit prompt and a card as sent to the model: none
+F5 OK Act.action not starting with its motion verb: 
+F6 OK routeTurn('Er sagte: ›Climb the wall!‹') → ["Communicate","Interpret"]
+F7 OK cut-off before a closing guillemet: true
+F8 OK full-thickness threshold not registered: Skin surface at 68 °C for 10 s: 5 partial burn wound(s) on right hand thumb, right hand first finger, right hand second finger, right hand third finger, right hand fourth finger. Mara (human): blood l
+F9 OK old reply keeps the worlds of swipes 1
+F1b OK the same, the correction in force first (Tom 0, Will 2): after the swipe Tom 0, Will 2, redone The player corrects their last line: it meant Will., model asked 0 time(s) (the kept calls replayed ask none)
+Ft1 OK edited line regenerated after a later turn was deleted: 630 (the edited words: 630)
+Ft3 OK [DECIDED] on the correction turn holds the redo and the blow; after a tool call holds them
+Ft9 (not a defect test) 5.5–10 min band: code 0.187; the comment's reading (half 5.5–10, half past 10) gives 0.187; the review's (139 − 36) / (1238 − 962) = 0.373 takes the past-10 group as part of the past-5.5 one, but the pools differ (1,075 + 1,238 = 2,313 against 1,019 + 962 = 1,981; and 1,019 under 10 min < 1,075 under 5.5 min)
+Ft10 (not a defect test) vacuum cleaner 85 dB at 1.8 m → 90.1 at 1 m (comment: 90); car 67.5 at 10 m → 87.5 (comment: 87.5)
+
+The new checks on section 34's tree (each must miss there):
+MISS a correction swiped after an earlier turn is deleted replays as it was: Tom [], Will [] (before [{"id":1,"part":"right lower leg","pid":"RLL","type":"blunt","bleed":0,"age":0,"cleanedAt":null,"infection":null,"splin
+MISS an edited correction swiped corrects the line before: Tom [{"id":1,"part":"left upper arm","pid":"LUA","type":"blunt","bleed":0,"age":0,"cleanedAt":null,"infection":null,"splinted":false,"heals":13,"healed":false}],
+MISS old replies keep the shown swipe's world only: {"rulesResult":{"0":{"a":1},"1":{"a":2}},"rulesLog":{"0":1,"1":2}}; latest {"rulesResult":{"0":{"a":3},"1":{"a":4}},"rulesLog":{"0":3,"1":4}}
+MISS registered burn threshold and drowning band: hand third finger burn (partial), closes in 7.8 days. wound 5 right hand fourth finger burn (partial), closes in 12.6 days. burned 2.7 % of body surface: about 0 % of suc
+MISS no tag character reaches a model: "Rules󠁌󠁿Card: Tom󠁑󠁿󠀁."; "Fact 1 recorded: The bell󠁌󠁿 tolls. Known by everyone."
+MISS him with two named in the line is asked: I look at Tom and Will, then I punch him. | Tom and Will stand there. I punch him.; Punch Bob,Punch Will
+186 checks, 6 miss(es)
+MISS an Act's action from its motion verb: "Today I walk 10 m to the gate." → "Today I walk 10 m to the gate."; "I punch Tom. I walk 10 m to the door." → "punch Tom. I walk 10 m to the door."; "*I walk 10 m to the do
+MISS quoted words in any quotation marks: I say to Tom, „Run away!“ → „Run away!“ | I say to Tom, »Run away!« → »Run away!« | I say to Tom, «Run away!» → «Run away!» | I say to Tom, ›Run away!‹ 
+190 checks, 2 miss(es)
+MISS quoted words in guillemets are speech: Er sagte: ›Climb the wall!‹ →  | ›Climb the wall!‹ I shout. → BodyCheck,Communicate,Interpret
+157 checks, 1 miss(es)
+MISS slips outside quotes only: "Hello," I punhc Tom. → "Hello," I punhc Tom. | I say: „I will punhc you.“ → I say: „I will punch you.“ | «I will punhc you», I say. → «I will punch you», I say.
+36 checks, 1 miss(es)
+MISS cut-offs before closing marks: Er rief: ›War-‹ | (wai-) | He said ‘Sto-’ | «Sto-» | [sto-]
+MISS speech in any quotes: raised,raised,,loud raised I shout «stop!»
+MISS narrator prompt without tag characters
+ui: 45 of 48
+
+Random sequences, 1,000 of 40 steps on seeds 1–6 (node tests/sequences.test.mjs 1000 40 <seed>):
+sequences: 1000 run, 0 distinct failing sequence(s)
+sequences: 1000 run, 0 distinct failing sequence(s)
+sequences: 1000 run, 0 distinct failing sequence(s)
+sequences: 1000 run, 0 distinct failing sequence(s)
+sequences: 1000 run, 0 distinct failing sequence(s)
+sequences: 1000 run, 0 distinct failing sequence(s)

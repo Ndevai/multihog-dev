@@ -1,0 +1,277 @@
+diff --git a/src/rules/question-pass.js b/src/rules/question-pass.js
+index 2af6628..f1dff2c 100644
+--- a/src/rules/question-pass.js
++++ b/src/rules/question-pass.js
+@@ -116,13 +116,20 @@ function sceneCuesFor(chat, line, player, st, log) {
+             earlier.push({ verb: v.verb, head: o === 'none' ? '' : o.head, tools });
+         }
+     });
+-    return { words: [line, ...before].join(' ').match(/[A-Za-z']+/g) ?? [], recentTools: log.filter(e => e.msg >= n - 6 && e.msg < n).map(e => e.tool), held: (st.items?.[player] ?? []).map(x => x.item), earlier };
++    // The scene's state for checking each reading's pre-state (scene-state.ts): who holds what, whose belongings are on record,
++    // who stands where.
++    const view = { actor: player, items: Object.fromEntries(Object.entries(st.items ?? {}).map(([h, xs]) => [h, xs.map(x => x.item)])), accounted: st.accounted ?? [],
++        spot: Object.fromEntries(Object.entries(st.people ?? {}).flatMap(([n, p]) => p.at ? [[n, p.at]] : [])) };
++    return { words: [line, ...before].join(' ').match(/[A-Za-z']+/g) ?? [], recentTools: log.filter(e => e.msg >= n - 6 && e.msg < n).map(e => e.tool), held: (st.items?.[player] ?? []).map(x => x.item), earlier, view };
+ }
+ /** For the planner: the verbs of the line whose senses still name different tools, each reading's chance from the scene's
+  *  cues and the cues behind it. */
+ function readingsNote(line) {
+     const rows = verbsAt(line, KNOWN_VERBS).map(v => ({ v, odds: senseOdds(v.verb, v.after, line) })).filter(x => x.odds && x.odds.length > 1);
+-    return rows.length ? `\n\nREADINGS (the senses each verb can still mean here, by what its object is, and how strongly the scene points to each; choose by the scene)\n${rows.map(({ v, odds }) => `- "${v.word}": ${odds.map(o => `${o.tools.join(' + ') || 'no tool'} ${Math.round(o.p * 100)} %${o.why.length ? ` (${o.why.join('; ')})` : ''}`).join(' · ')}`).join('\n')}` : '';
++    // A reading's open pre-state (the state does not record it: who has authority over whom) is named, for the planner to read
++    // from the scene.
++    const open = (o) => (o.needs ?? []).filter(c => c.verdict === 'open').map(c => c.says);
++    return rows.length ? `\n\nREADINGS (the senses each verb can still mean here, by what its object is, and how strongly the scene points to each; choose by the scene)\n${rows.map(({ v, odds }) => `- "${v.word}": ${odds.map(o => `${o.tools.join(' + ') || 'no tool'} ${Math.round(o.p * 100)} %${o.why.length ? ` (${o.why.join('; ')})` : ''}${open(o).length ? ` [open: ${open(o).join('; ')}]` : ''}`).join(' · ')}`).join('\n')}` : '';
+ }
+ /** The real date and hour, for a present-day scene that gives none. */
+ const today = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+diff --git a/src/rules/question-pass.ts b/src/rules/question-pass.ts
+index a275d80..a6efb31 100644
+--- a/src/rules/question-pass.ts
++++ b/src/rules/question-pass.ts
+@@ -107,7 +107,7 @@ export function castPerson(name: string, cast: string): { age?: number; sex?: 'm
+ /** The scene's cues for weighing a verb's senses (sense-odds.ts): the line and the two messages before it, the tools decided
+  *  in the last six messages, what the player's character holds, and each earlier player line's verbs with the tools its turn
+  *  called (the change record's entries carry the chat length at their call: a line at index j called at length j + 1). */
+-function sceneCuesFor(chat: STMessage[], line: string, player: string, st: { items?: Record<string, { item: string }[]> }, log: { msg: number; tool: string }[]): SceneCues {
++function sceneCuesFor(chat: STMessage[], line: string, player: string, st: { items?: Record<string, { item: string }[]>; accounted?: string[]; people?: Record<string, { at?: string }> }, log: { msg: number; tool: string }[]): SceneCues {
+     const n = chat.length, before = chat.filter(m => !m.is_system).slice(-3, -1).map(wordsOf);
+     const earlier: SceneCues['earlier'] = [];
+     chat.forEach((m, j) => {
+@@ -115,13 +115,20 @@ function sceneCuesFor(chat: STMessage[], line: string, player: string, st: { ite
+         const tools = log.filter(e => e.msg === j + 1).map(e => e.tool);
+         for (const v of verbsAt(inStory(wordsOf(m)), KNOWN_VERBS)) { const o = objectAfter(v.after); earlier.push({ verb: v.verb, head: o === 'none' ? '' : o.head, tools }); }
+     });
+-    return { words: [line, ...before].join(' ').match(/[A-Za-z']+/g) ?? [], recentTools: log.filter(e => e.msg >= n - 6 && e.msg < n).map(e => e.tool), held: (st.items?.[player] ?? []).map(x => x.item), earlier };
++    // The scene's state for checking each reading's pre-state (scene-state.ts): who holds what, whose belongings are on record,
++    // who stands where.
++    const view = { actor: player, items: Object.fromEntries(Object.entries(st.items ?? {}).map(([h, xs]) => [h, xs.map(x => x.item)])), accounted: st.accounted ?? [],
++        spot: Object.fromEntries(Object.entries(st.people ?? {}).flatMap(([n, p]) => p.at ? [[n, p.at]] : [])) };
++    return { words: [line, ...before].join(' ').match(/[A-Za-z']+/g) ?? [], recentTools: log.filter(e => e.msg >= n - 6 && e.msg < n).map(e => e.tool), held: (st.items?.[player] ?? []).map(x => x.item), earlier, view };
+ }
+ /** For the planner: the verbs of the line whose senses still name different tools, each reading's chance from the scene's
+  *  cues and the cues behind it. */
+ function readingsNote(line: string): string {
+     const rows = verbsAt(line, KNOWN_VERBS).map(v => ({ v, odds: senseOdds(v.verb, v.after, line) })).filter(x => x.odds && x.odds.length > 1);
+-    return rows.length ? `\n\nREADINGS (the senses each verb can still mean here, by what its object is, and how strongly the scene points to each; choose by the scene)\n${rows.map(({ v, odds }) => `- "${v.word}": ${odds!.map(o => `${o.tools.join(' + ') || 'no tool'} ${Math.round(o.p * 100)} %${o.why.length ? ` (${o.why.join('; ')})` : ''}`).join(' · ')}`).join('\n')}` : '';
++    // A reading's open pre-state (the state does not record it: who has authority over whom) is named, for the planner to read
++    // from the scene.
++    const open = (o: { needs?: { verdict: string; says: string }[] }) => (o.needs ?? []).filter(c => c.verdict === 'open').map(c => c.says);
++    return rows.length ? `\n\nREADINGS (the senses each verb can still mean here, by what its object is, and how strongly the scene points to each; choose by the scene)\n${rows.map(({ v, odds }) => `- "${v.word}": ${odds!.map(o => `${o.tools.join(' + ') || 'no tool'} ${Math.round(o.p * 100)} %${o.why.length ? ` (${o.why.join('; ')})` : ''}${open(o).length ? ` [open: ${open(o).join('; ')}]` : ''}`).join(' · ')}`).join('\n')}` : '';
+ }
+ /** The real date and hour, for a present-day scene that gives none. */
+ const today = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+diff --git a/src/rules/sense-odds.js b/src/rules/sense-odds.js
+index 6b59953..8967752 100644
+--- a/src/rules/sense-odds.js
++++ b/src/rules/sense-odds.js
+@@ -5,23 +5,28 @@
+ // from many weighted constraints at once, MacDonald, Pearlmutter & Seidenberg 1994). Senses that name the same tools are one
+ // reading: the outcome turns on the tool.
+ // Cues: the verb's sense earlier in this chat (one sense per discourse, Gale, Church & Yarowsky 1992), with the same object
+-// (one sense per collocation, Yarowsky 1993); a weapon the actor holds; a tool decided in the last messages; the scene's
+-// words that the sense's WordNet definition shares (Lesk 1986).
++// (one sense per collocation, Yarowsky 1993); a weapon the actor holds; a tool decided in the last messages; what the scene's
++// state allows (scene-state.ts: each reading's VerbNet pre-state against who holds what and who stands where). The scene's
++// words a sense's definition shares (Lesk 1986), weighed until 2026-10-28 (111), are no cue: word co-occurrence gave a
++// sensible and a senseless use the same score (Glenberg & Robertson 2000; scene-state.ts).
+ import { def, k } from './constants.js';
+-import { readings, kindsOf } from './senses.js';
++import { readings, kindsOf, objectAfter } from './senses.js';
+ import { toolsOfClass } from './router.js';
+-import { SENSE_GLOSS } from './data/sense-gloss.js';
++import { preState } from './scene-state.js';
+ def({ id: 'senseOneDiscourse', value: 0.94, unit: 'share of a word\'s later uses in one discourse with its earlier sense', status: 'sourced', src: 'Gale, Church & Yarowsky 1992 (HLT, "One sense per discourse"): 51 of 54 pairs of a polysemous noun in one encyclopedia article shared a sense; 98 % adjusted for unambiguous words', range: [0.9, 0.98], file: 'sense-odds.ts' });
+ def({ id: 'senseOneCollocation', value: 0.95, unit: 'share of a verb\'s uses with one object that keep one sense', status: 'sourced', src: 'Yarowsky 1993 (HLT, "One sense per collocation"), Table 3: verb-object pairs .95, binary ambiguities in 380 million words', range: [0.9, 0.97], file: 'sense-odds.ts' });
+ def({ id: 'senseInstrumentLR', value: 3, unit: 'likelihood ratio for a blow or a shot when the actor holds a weapon', status: 'assumed', src: 'a weapon in hand makes the sense that uses one likelier; no measure for roleplay', range: [1.5, 6], file: 'sense-odds.ts' });
+ def({ id: 'senseRecentLR', value: 2, unit: 'likelihood ratio for a sense whose tool was decided in the last messages', status: 'assumed', src: 'an act going on in the scene (a fight, a sale) makes its sense likelier, as topics persist; no measure for roleplay', range: [1.2, 4], file: 'sense-odds.ts' });
+-def({ id: 'senseGlossLR', value: 1.5, unit: 'likelihood ratio per scene word a sense\'s WordNet definition shares (at most 3)', status: 'assumed', src: 'Lesk 1986 counts the overlap; its weight per word is no published value', range: [1.1, 3], file: 'sense-odds.ts' });
++def({ id: 'stateFailLR', value: 0.05, unit: 'likelihood ratio for a reading whose every sense needs a state the scene contradicts', status: 'assumed', src: 'SayCan multiplies by the skill\'s chance of success in the state (Ahn et al. 2022); a contradicted pre-state leaves the reading only if the record is wrong', range: [0.01, 0.2], file: 'sense-odds.ts' });
+ def({ id: 'senseDraftShare', value: 0.8, unit: 'chance of the blow reading at which code drafts the blow itself', status: 'assumed', src: 'below it the planner reads the sense from the scene', range: [0.6, 0.95], file: 'sense-odds.ts' });
+ let CUES = null;
+ export const setSceneCues = (c) => { CUES = c; };
+ export const sceneCues = () => CUES;
+-const stem = (w) => w.toLowerCase().replace(/(?:ing|ed|es|s)$/, '').slice(0, 6);
+-const STOPWORD = /^(?:the|and|that|this|with|from|have|they|them|then|there|what|when|your|into|just|like|will|would|could|about|their|over|said|says|does)$/;
++/** The second object's head in a two-object line ("give the cook a coin": coin). */
++function secondHead(after, first) {
++    const i = after.indexOf(first);
++    return i < 0 ? undefined : after.slice(i + 1).find(w => !!kindsOf(w) && !/^(?:a|an|the|some|his|her|my|their|your|our)$/.test(w));
++}
+ /** The readings of `verb` the line can still mean, grouped by the tools they name, each with its chance and the cues behind
+  *  it; null when the senses left name one set of tools (nothing to weigh). */
+ export function senseOdds(verb, after, raw = '', names = [], cues = CUES) {
+@@ -35,7 +40,7 @@ export function senseOdds(verb, after, raw = '', names = [], cues = CUES) {
+     }
+     if (groups.size < 2)
+         return null;
+-    const n = groups.size, logw = new Map([...groups.keys()].map(key => [key, 0])), why = new Map([...groups.keys()].map(key => [key, []]));
++    const n = groups.size, logw = new Map([...groups.keys()].map(key => [key, 0])), why = new Map([...groups.keys()].map(key => [key, []])), needs = new Map();
+     const bump = (key, lr, cue) => { logw.set(key, logw.get(key) + Math.log(lr)); why.get(key).push(cue); };
+     if (cues) {
+         // The verb's earlier reading in this chat, by the tools its turn called; with the same object, the stronger cue.
+@@ -61,17 +66,23 @@ export function senseOdds(verb, after, raw = '', names = [], cues = CUES) {
+             if (t)
+                 bump(key, k('senseRecentLR'), `${t} decided just before`);
+         }
+-        // The scene's words a sense's definition shares (Lesk 1986), at most three per reading.
+-        const scene = new Set(cues.words.map(w => w.toLowerCase()).filter(w => w.length > 3 && !STOPWORD.test(w) && w !== verb).map(stem));
+-        for (const [key, g] of groups) {
+-            const bag = new Set(g.classes.flatMap(c => (SENSE_GLOSS[verb]?.[c] ?? '').split(' ')).filter(Boolean).map(stem));
+-            const shared = [...bag].filter(w => scene.has(w)).slice(0, 3);
+-            if (shared.length)
+-                bump(key, k('senseGlossLR') ** shared.length, `the scene says ${shared.join(', ')}`);
++        // What the scene's state allows: each sense's VerbNet pre-state against who holds what and who stands where. A reading
++        // whose every sense needs what the state contradicts falls (scene-state.ts). A confirmed pre-state raises nothing: the
++        // other readings' pre-states are often unstated, so a confirmation would favour the senses VerbNet happens to annotate
++        // (an affordance is a chance of success, near 1 for every feasible reading: Ahn et al. 2022).
++        if (cues.view) {
++            const obj = objectAfter(after, raw, names), frame = obj === 'none' ? 'none' : obj.dative ? 'two' : 'one';
++            const fill = obj === 'none' ? {} : { object: obj.head, second: obj.dative ? secondHead(after, obj.head) : undefined };
++            for (const [key, g] of groups) {
++                const checks = g.classes.map(c => preState(c, frame, fill, cues.view));
++                needs.set(key, checks.flat());
++                if (checks.every(cs => cs.some(c => c.verdict === 'fails')))
++                    bump(key, k('stateFailLR'), checks.flat().find(c => c.verdict === 'fails').says);
++            }
+         }
+     }
+     const max = Math.max(...logw.values()), z = [...logw.values()].reduce((s, v) => s + Math.exp(v - max), 0);
+-    return [...groups.entries()].map(([key, g]) => ({ tools: g.tools, p: Math.exp(logw.get(key) - max) / z, why: why.get(key) })).sort((a, b) => b.p - a.p);
++    return [...groups.entries()].map(([key, g]) => ({ tools: g.tools, p: Math.exp(logw.get(key) - max) / z, why: why.get(key), ...needs.get(key)?.length ? { needs: needs.get(key) } : {} })).sort((a, b) => b.p - a.p);
+ }
+ /** The chance of the readings that name `tool`. */
+ export const shareOf = (odds, tool) => odds.filter(o => o.tools.includes(tool)).reduce((s, o) => s + o.p, 0);
+diff --git a/src/rules/sense-odds.ts b/src/rules/sense-odds.ts
+index 550f591..d935a20 100644
+--- a/src/rules/sense-odds.ts
++++ b/src/rules/sense-odds.ts
+@@ -5,18 +5,20 @@
+ // from many weighted constraints at once, MacDonald, Pearlmutter & Seidenberg 1994). Senses that name the same tools are one
+ // reading: the outcome turns on the tool.
+ // Cues: the verb's sense earlier in this chat (one sense per discourse, Gale, Church & Yarowsky 1992), with the same object
+-// (one sense per collocation, Yarowsky 1993); a weapon the actor holds; a tool decided in the last messages; the scene's
+-// words that the sense's WordNet definition shares (Lesk 1986).
++// (one sense per collocation, Yarowsky 1993); a weapon the actor holds; a tool decided in the last messages; what the scene's
++// state allows (scene-state.ts: each reading's VerbNet pre-state against who holds what and who stands where). The scene's
++// words a sense's definition shares (Lesk 1986), weighed until 2026-10-28 (111), are no cue: word co-occurrence gave a
++// sensible and a senseless use the same score (Glenberg & Robertson 2000; scene-state.ts).
+ import { def, k } from './constants.js';
+-import { readings, kindsOf } from './senses.js';
++import { readings, kindsOf, objectAfter } from './senses.js';
+ import { toolsOfClass } from './router.js';
+-import { SENSE_GLOSS } from './data/sense-gloss.js';
++import { preState, type SceneView, type Check } from './scene-state.js';
+ 
+ def({ id: 'senseOneDiscourse', value: 0.94, unit: 'share of a word\'s later uses in one discourse with its earlier sense', status: 'sourced', src: 'Gale, Church & Yarowsky 1992 (HLT, "One sense per discourse"): 51 of 54 pairs of a polysemous noun in one encyclopedia article shared a sense; 98 % adjusted for unambiguous words', range: [0.9, 0.98], file: 'sense-odds.ts' });
+ def({ id: 'senseOneCollocation', value: 0.95, unit: 'share of a verb\'s uses with one object that keep one sense', status: 'sourced', src: 'Yarowsky 1993 (HLT, "One sense per collocation"), Table 3: verb-object pairs .95, binary ambiguities in 380 million words', range: [0.9, 0.97], file: 'sense-odds.ts' });
+ def({ id: 'senseInstrumentLR', value: 3, unit: 'likelihood ratio for a blow or a shot when the actor holds a weapon', status: 'assumed', src: 'a weapon in hand makes the sense that uses one likelier; no measure for roleplay', range: [1.5, 6], file: 'sense-odds.ts' });
+ def({ id: 'senseRecentLR', value: 2, unit: 'likelihood ratio for a sense whose tool was decided in the last messages', status: 'assumed', src: 'an act going on in the scene (a fight, a sale) makes its sense likelier, as topics persist; no measure for roleplay', range: [1.2, 4], file: 'sense-odds.ts' });
+-def({ id: 'senseGlossLR', value: 1.5, unit: 'likelihood ratio per scene word a sense\'s WordNet definition shares (at most 3)', status: 'assumed', src: 'Lesk 1986 counts the overlap; its weight per word is no published value', range: [1.1, 3], file: 'sense-odds.ts' });
++def({ id: 'stateFailLR', value: 0.05, unit: 'likelihood ratio for a reading whose every sense needs a state the scene contradicts', status: 'assumed', src: 'SayCan multiplies by the skill\'s chance of success in the state (Ahn et al. 2022); a contradicted pre-state leaves the reading only if the record is wrong', range: [0.01, 0.2], file: 'sense-odds.ts' });
+ def({ id: 'senseDraftShare', value: 0.8, unit: 'chance of the blow reading at which code drafts the blow itself', status: 'assumed', src: 'below it the planner reads the sense from the scene', range: [0.6, 0.95], file: 'sense-odds.ts' });
+ 
+ /** What the scene holds for weighing senses, set by the question pass for its turn. */
+@@ -29,14 +31,19 @@ export interface SceneCues {
+     held: string[];
+     /** Earlier lines of this chat: a verb, its object's head, and the tools its turn called. */
+     earlier: { verb: string; head: string; tools: string[] }[];
++    /** The scene's state: who acts, who holds what, whose belongings are on record, who stands where. */
++    view?: SceneView;
+ }
+ let CUES: SceneCues | null = null;
+ export const setSceneCues = (c: SceneCues | null) => { CUES = c; };
+ export const sceneCues = () => CUES;
+ 
+-const stem = (w: string) => w.toLowerCase().replace(/(?:ing|ed|es|s)$/, '').slice(0, 6);
+-const STOPWORD = /^(?:the|and|that|this|with|from|have|they|them|then|there|what|when|your|into|just|like|will|would|could|about|their|over|said|says|does)$/;
+-export type Odds = { tools: string[]; p: number; why: string[] }[];
++/** The second object's head in a two-object line ("give the cook a coin": coin). */
++function secondHead(after: string[], first: string): string | undefined {
++    const i = after.indexOf(first);
++    return i < 0 ? undefined : after.slice(i + 1).find(w => !!kindsOf(w) && !/^(?:a|an|the|some|his|her|my|their|your|our)$/.test(w));
++}
++export type Odds = { tools: string[]; p: number; why: string[]; needs?: Check[] }[];
+ /** The readings of `verb` the line can still mean, grouped by the tools they name, each with its chance and the cues behind
+  *  it; null when the senses left name one set of tools (nothing to weigh). */
+ export function senseOdds(verb: string, after: string[], raw = '', names: string[] = [], cues: SceneCues | null = CUES): Odds | null {
+@@ -45,7 +52,7 @@ export function senseOdds(verb: string, after: string[], raw = '', names: string
+     const groups = new Map<string, { tools: string[]; classes: string[] }>();
+     for (const r of rd) { const t = toolsOfClass(r.cls), key = [...t].sort().join('+'); (groups.get(key) ?? groups.set(key, { tools: t, classes: [] }).get(key)!).classes.push(r.cls); }
+     if (groups.size < 2) return null;
+-    const n = groups.size, logw = new Map([...groups.keys()].map(key => [key, 0])), why = new Map([...groups.keys()].map(key => [key, [] as string[]]));
++    const n = groups.size, logw = new Map([...groups.keys()].map(key => [key, 0])), why = new Map([...groups.keys()].map(key => [key, [] as string[]])), needs = new Map<string, Check[]>();
+     const bump = (key: string, lr: number, cue: string) => { logw.set(key, logw.get(key)! + Math.log(lr)); why.get(key)!.push(cue); };
+     if (cues) {
+         // The verb's earlier reading in this chat, by the tools its turn called; with the same object, the stronger cue.
+@@ -64,16 +71,22 @@ export function senseOdds(verb: string, after: string[], raw = '', names: string
+         if (weapon) for (const [key, g] of groups) if (g.tools.some(t => t === 'BodyStrike' || t === 'BodyCheck')) bump(key, k('senseInstrumentLR'), `holds ${weapon}`);
+         // A tool decided in the last messages: the act going on.
+         for (const [key, g] of groups) { const t = g.tools.find(x => cues.recentTools.includes(x)); if (t) bump(key, k('senseRecentLR'), `${t} decided just before`); }
+-        // The scene's words a sense's definition shares (Lesk 1986), at most three per reading.
+-        const scene = new Set(cues.words.map(w => w.toLowerCase()).filter(w => w.length > 3 && !STOPWORD.test(w) && w !== verb).map(stem));
+-        for (const [key, g] of groups) {
+-            const bag = new Set(g.classes.flatMap(c => (SENSE_GLOSS[verb]?.[c] ?? '').split(' ')).filter(Boolean).map(stem));
+-            const shared = [...bag].filter(w => scene.has(w)).slice(0, 3);
+-            if (shared.length) bump(key, k('senseGlossLR') ** shared.length, `the scene says ${shared.join(', ')}`);
++        // What the scene's state allows: each sense's VerbNet pre-state against who holds what and who stands where. A reading
++        // whose every sense needs what the state contradicts falls (scene-state.ts). A confirmed pre-state raises nothing: the
++        // other readings' pre-states are often unstated, so a confirmation would favour the senses VerbNet happens to annotate
++        // (an affordance is a chance of success, near 1 for every feasible reading: Ahn et al. 2022).
++        if (cues.view) {
++            const obj = objectAfter(after, raw, names), frame = obj === 'none' ? 'none' : obj.dative ? 'two' : 'one';
++            const fill = obj === 'none' ? {} : { object: obj.head, second: obj.dative ? secondHead(after, obj.head) : undefined };
++            for (const [key, g] of groups) {
++                const checks = g.classes.map(c => preState(c, frame, fill, cues.view!));
++                needs.set(key, checks.flat());
++                if (checks.every(cs => cs.some(c => c.verdict === 'fails'))) bump(key, k('stateFailLR'), checks.flat().find(c => c.verdict === 'fails')!.says);
++            }
+         }
+     }
+     const max = Math.max(...logw.values()), z = [...logw.values()].reduce((s, v) => s + Math.exp(v - max), 0);
+-    return [...groups.entries()].map(([key, g]) => ({ tools: g.tools, p: Math.exp(logw.get(key)! - max) / z, why: why.get(key)! })).sort((a, b) => b.p - a.p);
++    return [...groups.entries()].map(([key, g]) => ({ tools: g.tools, p: Math.exp(logw.get(key)! - max) / z, why: why.get(key)!, ...needs.get(key)?.length ? { needs: needs.get(key) } : {} })).sort((a, b) => b.p - a.p);
+ }
+ /** The chance of the readings that name `tool`. */
+ export const shareOf = (odds: Odds, tool: string) => odds.filter(o => o.tools.includes(tool)).reduce((s, o) => s + o.p, 0);
+diff --git a/tests/engine.test.mjs b/tests/engine.test.mjs
+index 9bc9697..eb21553 100644
+--- a/tests/engine.test.mjs
++++ b/tests/engine.test.mjs
+@@ -1917,12 +1917,26 @@ for (const who of ['Mara', 'Ash']) {
+   await Q.runQuestionPass(ctx.chat, async (sys, user) => { prompts.push(String(user)); return JSON.stringify({ calls: {} }); }, '', undefined, async () => null);
+   ctx.name1 = undefined;
+   const told = prompts.some(p => /READINGS[\s\S]*"charge": [^\n]*BodyStrike \d+ %[^\n]*Price \d+ %/.test(p));
+-  // Each cue alone raises its reading: a weapon held, a blow just before, the scene's words its definition shares.
++  // Each cue alone raises its reading: a weapon held, a blow just before. The scene's words are no cue (2026-10-28 (111)): "sudden
++  // attack, battle" said leaves the readings where they were.
+   const alone = c => O.shareOf(O.senseOdds('charge', after, line, [], { words: line.split(' '), recentTools: [], held: [], earlier: [], ...c }) ?? [], 'BodyStrike');
+-  const each = { held: alone({ held: ['sword'] }), recent: alone({ recentTools: ['BodyStrike'] }), words: alone({ words: [...line.split(' '), 'sudden', 'attack', 'battle'] }) };
+-  const flat = Object.entries(each).filter(([, v]) => !(v > none + 0.05)).map(([kk]) => kk);
++  const each = { held: alone({ held: ['sword'] }), recent: alone({ recentTools: ['BodyStrike'] }) };
++  const flat = [...Object.entries(each).filter(([, v]) => !(v > none + 0.05)).map(([kk]) => kk), ...Math.abs(alone({ words: [...line.split(' '), 'sudden', 'attack', 'battle'] }) - none) > 0.001 ? ['words moved it'] : []];
+   if (!(none < 0.3 && fightP >= 0.8 && billedP > 0.9 && drafted && !plain && told && !flat.length)) { miss++; console.log(`MISS the scene's cues weigh a verb's senses: no cues ${none.toFixed(2)}, a fight ${fightP.toFixed(2)}, billed before ${billedP.toFixed(2)}; drafted with the fight ${drafted}, without ${plain}; planner told ${told}; cues that raise nothing: ${flat.join(', ')}`); }
+ }
++// The scene's state weighs a reading by what the reading needs before the act (scene-state.ts, VerbNet's pre-state): taking a
++// coin needs Mara not to have it, so with a coin on record in her hands the taking falls, and with none it rises; the words
++// are the same. The planner is told a pre-state the state does not record (who has authority over the cook).
++{
++  const O = await import('../src/rules/sense-odds.js');
++  const view = (items) => ({ actor: 'Mara', items: { Mara: items }, accounted: ['Mara'], spot: {} });
++  const base = { words: [], recentTools: [], held: [], earlier: [] };
++  const take = items => O.shareOf(O.senseOdds('take', ['the', 'coin'], 'I take the coin.', ['Mara'], { ...base, view: view(items) }) ?? [], 'Transfer');
++  const none = O.shareOf(O.senseOdds('take', ['the', 'coin'], 'I take the coin.', ['Mara'], base) ?? [], 'Transfer');
++  const S = await import('../src/rules/scene-state.js');
++  const authority = S.preState('fire-10.10', 'one', { object: 'cook' }, view([]));
++  if (!(take(['coin']) < 0.1 && take([]) > none + 0.1 && authority.some(c => c.verdict === 'open' && /authority over cook/.test(c.says)))) { miss++; console.log(`MISS the scene's state weighs a reading: taking a coin held ${take(['coin']).toFixed(2)}, none held ${take([]).toFixed(2)}, no state ${none.toFixed(2)}; authority ${JSON.stringify(authority)}`); }
++}
+ // The scene's words add the tools whose inputs they name to the planner's (cue-tools.ts): smoke in the hallway makes the
+ // crawl's air one, shown in full, not among the one-line others.
+ {
+@@ -1959,5 +1973,5 @@ for (const who of ['Mara', 'Ash']) {
+   fresh(); await runEval(send, [EVAL_SCENES.find(x => x.id === 43)]);
+   if (routed !== 0 || picks !== 1) { miss++; console.log(`MISS the eval offers tools as play does: picker asked ${routed} time(s) on a routed line, ${picks - routed} on a line with no verb routed`); }
+ }
+-console.log(`201 checks, ${miss} miss(es)`);
++console.log(`202 checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

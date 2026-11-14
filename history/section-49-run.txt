@@ -1,0 +1,149 @@
+# Section 49 run (the tree of section 48 against this tree; 2026-11-11)
+
+## Tests (the steps of npm test; tsc Version 5.6.3)
+route: 218 checks, 0 miss(es)
+frame: 202 checks, 0 miss(es)
+intent: 37 checks, 0 miss(es)
+engine: 203 checks, 0 miss(es)
+plan: 60 checks, 0 miss(es)
+size: 9 of 9
+ui: 80 of 80
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## Negative controls (every control on ui.js, index.js, style.css, reading.js)
+N62 caught who acts in a call (14 s)
+U1 caught others latest (0 s)
+U1b caught actor left out (0 s)
+U1c caught hover detail (0 s)
+U2 caught note as text (0 s)
+U3 caught edited line (0 s)
+U4 caught no default (0 s)
+U4b caught choices alike (0 s)
+U4c caught number keys (0 s)
+U4d caught shared words (0 s)
+U6 caught era bands (0 s)
+U7 caught kind contrast (0 s)
+U7b caught tone (0 s)
+U8 caught reserved name (0 s)
+H3 caught layer holds the text (0 s)
+H4 caught chat classes (0 s)
+R12 caught voice button from the keyboard (0 s)
+R20 caught say it another way takes the line back (0 s)
+I18 caught the note shows the line as meant (0 s)
+RW7 caught a pause titled by its length (0 s)
+RW11 caught the typesetting's added words are not selected (0 s)
+RY13 caught a world-book line is read without its hidden marks (0 s)
+RZ11 caught the narrator's prompt carries no tag character (0 s)
+RL3 caught pitch order in the chat (0 s)
+RL4 caught stress mark in the chat (0 s)
+RM3 caught the look's sizes come from the sound (0 s)
+RM4 caught further time is 1 ÷ rate − 1 (0 s)
+RM5 caught the palest ink keeps 4.5:1 (0 s)
+RM6 caught the pitch stroke takes the word's own colour (0 s)
+RM7 caught a breathy word keeps a sharp edge (0 s)
+RM8 caught a word with a pitch stroke adds no height to its line (0 s)
+RM9 caught a feeling's colour reads on the theme (0 s)
+RM10 caught two feelings' colours stay apart (0 s)
+RM11 caught a drawn-out vowel is written again (0 s)
+RM12 caught a pause's dots count its silence (0 s)
+RM13 caught the space between two slower words takes the tempo (0 s)
+RM14 caught words that share a phonation stand in one run (0 s)
+RM15 caught a mark's quantity on hover (0 s)
+RN1 caught a gesture is no speaking (0 s)
+RN2 caught working something out is the mind's (0 s)
+RN3 caught quoted words are said (0 s)
+RN4 caught an edited line keeps what its own words show (0 s)
+RN5 caught the mode's call on hover (0 s)
+RN6 caught the page's aside ink reads on its ground (0 s)
+RN7 caught the page keeps SillyTavern's x-height (0 s)
+RN8 caught a pause stays by its word (0 s)
+RO1 caught a stretch without a letter joins its neighbour (0 s)
+RO2 caught each quoted part is a unit (0 s)
+RO3 caught text that is not voiced reads on the page (0 s)
+RO4 caught the box has no picture (0 s)
+50 of 50 controls caught.
+
+## Prompt audit
+unchanged: the output of tools/prompt-audit.mjs is the same as on the uploaded tree of (114)
+
+## The box in Chromium with SillyTavern's own stylesheets and message template (commit 06bde93, read as files)
+node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - "Dark Lite" flat 412 on - voice 21
+place (message of messages · unit of units) | the plate | the text shown
+first: 1 / 7 · 1 / 5 | Narrator | The tavern door bangs shut behind you. Tom looks up from the
+1: 1 / 7 · 2 / 5 | Narrator [speaking] | "You are late,"
+2: 1 / 7 · 3 / 5 | Narrator |  he says, not quite smiling. 
+3: 1 / 7 · 4 / 5 | Narrator [speaking] | "Sit. Will has been counting the same six coins since noon."
+4: 1 / 7 · 5 / 5 | Narrator | Will does not look up. A candle gutters between them, and pa
+5: 2 / 7 · 1 / 2 | Mara | fearfully I lean in close to Tom. 
+6: 2 / 7 · 2 / 2 | Mara [speaking] | "They are ˈright behind that door. Do not make a sound."
+7: 3 / 7 · 1 / 3 | Narrator | Tom's hand stops over the dice. He hears you: the whisper ca
+8: 3 / 7 · 2 / 3 | Narrator [speaking] | "How many?"
+9: 3 / 7 · 3 / 3 | Narrator |  he breathes.
+10: 4 / 7 | Mara [thinking] | Mara tries to work out the riddle chalked on the door before
+11: 5 / 7 · 1 / 2 | Mara | angrily I stand up. 
+12: 5 / 7 · 2 / 2 | Mara [speaking] | "Get out of my house, — ··· right now, before I throw you ou
+13: 6 / 7 | Mara | I walk to the back door and listen for a while before I open
+14: 7 / 7 · 1 / 3 | Narrator | Nothing moves. On the door someone has chalked:
+15: 7 / 7 · 2 / 3 | Narrator | What has keys but opens no locks?
+16: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
+17: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
+18: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
+19: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
+20: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
+21: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
+drawn: 1 message(s), 0 picture(s)
+
+node … on - message 7  (a box holds a whole message)
+first: 1 / 7 | Narrator | The tavern door bangs shut behind you. Tom looks up from the
+1: 2 / 7 | Mara [speaking] | fearfully I lean in close to Tom. "They are ˈright behind th
+2: 3 / 7 | Narrator | Tom's hand stops over the dice. He hears you: the whisper ca
+3: 4 / 7 | Mara [thinking] | Mara tries to work out the riddle chalked on the door before
+4: 5 / 7 | Mara [speaking] | angrily I stand up. "Get out of my house, — ··· right now, b
+5: 6 / 7 | Mara | I walk to the back door and listen for a while before I open
+6: 7 / 7 | Narrator | Nothing moves. On the door someone has chalked:What has keys
+7: 7 / 7 | Narrator | Nothing moves. On the door someone has chalked:What has keys
+drawn: 1 message(s), 0 picture(s)
+
+## The log, measured (box on, "Log" pressed): 6 themes × 3 displays × 412 and 800 px
+Dark Lite, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark Lite, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark Lite, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark Lite, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark Lite, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark Lite, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Azure, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Azure, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Azure, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Azure, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Azure, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Azure, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Cappuccino, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Cappuccino, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Cappuccino, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Cappuccino, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Cappuccino, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Cappuccino, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Celestial Macaron, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Celestial Macaron, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Celestial Macaron, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Celestial Macaron, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Celestial Macaron, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Celestial Macaron, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark V 1.0, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark V 1.0, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark V 1.0, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark V 1.0, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark V 1.0, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark V 1.0, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+light, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+light, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+light, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+light, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+light, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+light, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+
+First run of the log, before a block that is no paragraph kept the ink: 36 of 36 with a fault,
+  MISS contrast: p "What has keys but opens " in message 6, 4.24:1 (darkslateblue on SillyTavern's block-quotation ground)
+and 11 times a line-height miss of the measuring script itself (a line that starts with code: its smaller text sits lower); the script now leaves text of another size out.
+
+Contrast on ivory: darkslateblue 8.99:1

@@ -3,6 +3,7 @@
 // core → skin → fur → air by convection and radiation. Fur depth per creature is fitted so that still-air conductance equals the
 // allometric minimal wet conductance (Schleucher & Withers 2001: birds at rest 0.702 M^−0.519 mL O2 g−1 h−1 °C−1, M in g;
 // mammals about 50 % higher), then wind acts through the model's convection.
+import { def, k, peek } from '../constants.js';
 const KLEIBER = (m) => 70 * m ** 0.75 * 4.185 / (24 * 3.6); // basal W, mass kg (as NicheMapR)
 const SIGMA = 5.6703744191844294e-8;
 function dryAir(db) {
@@ -98,7 +99,9 @@ const SWEATERS = new Set(['HORSE', 'DONKEY', 'MULE', 'COW', 'WATER_BUFFALO', 'YA
     'GIBBON_BILOU', 'GIBBON_WHITE_BROWED', 'GIBBON_BLACK_CRESTED', 'GRAY_LANGUR', 'CAPUCHIN', 'SPIDER_MONKEY', 'LION_TAMARIN']);
 export const dfCelsius = (u) => (u - 9968 - 32) * 5 / 9; // DF Urist: °U = °F + 9968
 export const BODY_HEAT_J_KG = 3470; // specific heat of body tissue [ASSUMED human value]
-const PEAK = 4.9; // peak / resting heat production (Eyolfson et al. 2001, human) [ASSUMED for all]
+// Peak ÷ resting heat production: human shivering (Eyolfson et al. 2001) for every warm-blooded creature, a judgement with
+// the range mammals typically show (4–8: Minnaar et al. 2014, J Exp Biol 217:1363, citing Careau 2013 and Hinds et al. 1993).
+const PEAK = def({ id: 'endoPeak', value: 4.9, unit: 'peak ÷ resting heat production', status: 'assumed', src: 'human shivering (Eyolfson et al. 2001) for every warm-blooded creature; mammals typically 4–8 (Minnaar et al. 2014, J Exp Biol 217:1363)', range: [4, 8], file: 'thermal/endotherm.ts' });
 /**
  * One minute for a creature with HOMEOTHERM. Returns { core, waterL (evaporation beyond the resting share), kcal }.
  * met: multiple of basal (same METs as humans [ASSUMED]).
@@ -121,9 +124,11 @@ export function endothermMinute(p, c, { met = 1.3 } = {}) {
         ? ellipsoid({ mass: p.mass, coreT: core0, furdepth: fur, furcond: keepsFur ? 0.04 : 0.58, airT: w.tc, windspd: Math.max(0.01, w.speed ?? 0), fluid: 'water' })
         : ellipsoid({ mass: p.mass, coreT: core0, furdepth: fur, airT: e.tdb, radT: e.tr ?? e.tdb, windspd: Math.max(0.1, v), rh: e.rh ?? 50 });
     const act = basal * met;
-    // Heat production rises to cover loss when cold, up to PEAK × basal; when warm, evaporation removes what conduction cannot.
-    const need = loss.qLoss;
-    const produce = Math.min(Math.max(act, need), PEAK * basal + (act - basal));
+    // Heat production rises to cover loss when cold, up to the peak × basal; when warm, evaporation removes what conduction cannot.
+    // The peak is read as a judgement (constants.ts k) only where it can bind: a loss beyond the cap at the low end of its range.
+    const need = loss.qLoss, cap = (x) => x * basal + (act - basal);
+    const peak = need > cap(PEAK.range[0]) ? k('endoPeak') : peek('endoPeak');
+    const produce = Math.min(Math.max(act, need), cap(peak));
     // Evaporation limit (NicheMapR endoR defaults: panting up to 5 × breathing, skin wetted up to 100 %): breathing water × 5
     // plus the wet skin share, by the Lewis relation he = 16.5 K/kPa × hc (ASHRAE) against the air's vapour pressure; vapour
     // passes the fur freely [ASSUMED]. Only sweaters wet the skin fully; the rest stay at endoR's resting 0.5 %.

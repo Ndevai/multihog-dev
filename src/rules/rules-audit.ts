@@ -1,6 +1,7 @@
 // After each reply, a separate model pass lists rule-governed events that no tool result backs.
 // Code then redoes the reply once with the missing calls named; a second failure is shown to the user.
 
+import { faithAudit, faithFix, faithOf } from './faith.js';
 import { setFlags } from './audit-flags.js';
 import { checkedText, type Narration } from './narration.js';
 import { turnKey } from './turn.js';
@@ -16,15 +17,15 @@ const MAX_RETRIES = 1;
 
 export const AUDIT_SYSTEM = `You check a roleplay narrator's reply against the rule-engine results of the same turn.
 List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
-Engine-governed events: a player's claim about their own character (what they are, an item they have) taking effect; an item changing hands, found, lost or used up; a character working something out or failing to; someone vomiting or feeling sick; a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a check succeeding or failing; an attack landing or missing; story time passing (minutes, hours, days); a clock time or a duration of an action stated in the narration ("at 10:19", "forty seconds later", "it took him a minute to reach the door") that no PassTime or Act result gives, with tool Act; a spell being cast; a treatment working; skin burned by touching something hot. Where distance, noise, darkness, injury, a possible lie or a stranger's free choice leaves it in doubt: a sound heard or missed, and someone or something spotted or recognized at a distance, when it teaches a character a fact or moves them to act (the background sounds and sights of a place are description); whether a message is understood; a statement believed or seen through as a lie; whether a bystander steps in; an order to hurt someone obeyed or refused; a stranger agreeing to or declining a small request; a grip held or lost; a plank, rope or bar holding or breaking under a load; whether a pursuer catches someone; romantic interest after a first meeting; a price, wage or bill stated for a European city between 1500 and 1913; when a disease's symptoms start or how many fall ill in an outbreak; the day's weather; a character's pick among several real options; an attack on a defended position succeeding or failing.
+Engine-governed events: a player's claim about their own character (what they are, an item they have) taking effect; an item changing hands, found, lost or used up; a character working something out or failing to; someone vomiting or feeling sick; a blow, cut, stab, bite or burn landing on someone; any injury, bleeding, fracture or death; a fall; a check succeeding or failing; an attack landing or missing; story time passing (minutes, hours, days); a clock time or a duration of an action stated in the narration ("at 10:19", "forty seconds later", "it took him a minute to reach the door") that no PassTime or Act result gives, with tool Act; a spell being cast; a treatment working; skin burned by touching something hot. Where distance, noise, darkness, injury, a possible lie or a stranger's free choice leaves it in doubt: a sound heard or missed, and someone or something spotted or recognized at a distance, when it teaches a character a fact or moves them to act (the background sounds and sights of a place are description); whether a message is understood; a statement believed or seen through as a lie; whether a bystander steps in; an order to hurt someone obeyed or refused; a stranger agreeing to or declining a small request; a grip held or lost; a plank, rope or bar holding or breaking under a load; whether a pursuer catches someone; romantic interest after a first meeting; a price, wage or bill stated in the narration; when a disease's symptoms start or how many fall ill in an outbreak; the day's weather; a character's pick among several real options; an attack on a defended position succeeding or failing.
 Also list each place where a character states or acts on a fact that the KNOWS list gives only to other characters, with tool KNOWS and problem unknown_to_them; a character also knows what they perceive in the scene now and what they learn in this reply.
 This list is complete: report the events of these kinds. A stated duration is a number with a unit of time, or a clock time. An event is backed when an engine result of the matching tool describes it.
-First write EVIDENCE: one line per engine-governed event in the reply, giving its words and the engine result that backs or contradicts it. Then write the JSON {"events":[{"quote":"exact words from the reply","tool":"Act|WorkOut|Sickness|Transfer|Claim|BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|SocialResponse|HoldOn|Chase|Price|Disease|Weather|Choose|Battle|Break|KNOWS","problem":"unbacked|contradicts|unknown_to_them"}]}. An empty list means every event is backed.`;
+First write EVIDENCE: one line per engine-governed event in the reply, giving its words and the engine result that backs or contradicts it. Then write the JSON {"events":[{"quote":"exact words from the reply","tool":"Act|WorkOut|Sickness|Transfer|Claim|BodyCheck|BodyStrike|BodyWound|BodyFall|PassTime|CastSpell|BodyTreat|RollTheDice|BodyContact|Listen|Look|Communicate|SocialResponse|HoldOn|Chase|Price|Disease|Weather|Choose|Battle|Break|KNOWS|FAITH","problem":"unbacked|contradicts|unknown_to_them|added_act|changed_words|retold_line"}]}. A PLAYER'S LINE section, when the prompt has one, adds its own kinds with tool FAITH. An empty list means every event is backed.`;
 
 /** The rule check under constrained decoding: the JSON alone, the evidence in the model's reasoning; and its schema. */
 export const AUDIT_GUIDED = AUDIT_SYSTEM.replace(/First write EVIDENCE:[^\n]*?Then write the JSON /, 'Write the JSON ');
 export const auditSchema = () => ({ type: 'object', additionalProperties: false, required: ['events'], properties: { events: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, required: ['quote', 'tool', 'problem'], properties: {
-    quote: { type: 'string' }, tool: { type: 'string', enum: [...TOOLS, 'KNOWS'] }, problem: { type: 'string', enum: ['unbacked', 'contradicts', 'unknown_to_them'] } } } } } });
+    quote: { type: 'string' }, tool: { type: 'string', enum: [...TOOLS, 'KNOWS', 'FAITH'] }, problem: { type: 'string', enum: ['unbacked', 'contradicts', 'unknown_to_them', 'added_act', 'changed_words', 'retold_line'] } } } } } });
 export function buildAuditPrompt(reply: string, results: TurnResult[], knows = '', clock = ''): string {
     const lines = results.length
         ? results.map((r, i) => `${i + 1}. ${r.tool}: ${r.result.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '')}`).join('\n')
@@ -33,7 +34,7 @@ export function buildAuditPrompt(reply: string, results: TurnResult[], knows = '
 }
 
 const TOOLS = new Set(['Act', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'BodyCheck', 'BodyStrike', 'BodyWound', 'BodyFall', 'PassTime', 'CastSpell', 'BodyTreat', 'RollTheDice', 'BodyContact', 'Listen', 'Look', 'Communicate', 'SocialResponse', 'HoldOn', 'Chase', 'Price', 'Disease', 'Weather', 'Choose', 'Battle', 'Break']);
-const FLAGS = new Set([...TOOLS, 'KNOWS']);
+const FLAGS = new Set([...TOOLS, 'KNOWS', 'FAITH']);
 
 /** Events from the checker's text; null when the text holds no readable JSON (the check is then skipped). */
 export function parseAudit(text: unknown): AuditEvent[] | null {
@@ -49,7 +50,7 @@ export function parseAudit(text: unknown): AuditEvent[] | null {
 }
 
 export function correctionNote(events: AuditEvent[], decided = false): string {
-    const items = events.map(e => e.tool === 'KNOWS' ? `- "${e.quote}" → the character learns this on the page first (seen, heard, told), or acts on what they know`
+    const items = events.map(e => e.tool === 'FAITH' ? `- "${e.quote}" → ${faithFix(e.problem ?? '')}` : e.tool === 'KNOWS' ? `- "${e.quote}" → the character learns this on the page first (seen, heard, told), or acts on what they know`
         : `- "${e.quote}" → ${e.tool}${e.problem === 'contradicts' ? ' (narrate what it returns)' : ''}`).join('\n');
     return `<rule_engine_correction>\n${decided ? 'The previous draft of this reply stated these events ahead of the rule engine. Narrate each as [DECIDED] gives it; an event [DECIDED] leaves open is told up to the moment its outcome would show:' : 'The previous draft of this reply stated these events ahead of the rule engine. For each, call the named tool and narrate what it returns:'}\n${items}\n</rule_engine_correction>`;
 }
@@ -65,14 +66,15 @@ export function turnResults(ctx: STContext): TurnResult[] {
         .concat(askedResults());
 }
 
-let pending: { events: AuditEvent[]; decided: boolean } | null = null;
+let pending: { events: AuditEvent[]; decided: boolean; turn: string } | null = null;
 
 /** Interceptor, after the question pass: the correction for the reply being redone, once. A flagged event whose tool now
  *  returned a miss (a sound not heard) is left out of the note: the rewrite then has no reason to name it. */
 export function takeAuditNote() {
     const p = pending;
     pending = null;
-    if (!p) return null;
+    // The note belongs to the turn it was made for: a redo that never started gives it to no later turn or other chat.
+    if (!p || p.turn !== turnKey(SillyTavern.getContext().chat)) return null;
     const r = askedResults(), missed = (tool: string) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result, askedArgs()[r.indexOf(x)])); };
     const events = p.events.filter(e => !missed(e.tool));
     return events.length ? correctionNote(events, p.decided) : null;
@@ -88,24 +90,30 @@ export async function onRulesAuditMessage(messageId: number, deps: AuditDeps): P
     const msg = Number.isInteger(messageId) ? ctx.chat?.[messageId] : null;
     if (!msg || msg.is_user || msg.is_system || msg.extra?.tool_invocations || !String(msg.mes ?? '').trim() || !ctx.chatMetadata) return null;
     const key = turnKey(ctx.chat);
-    const reply = msg.mes;
+    // The swipe read, kept: the check's answer belongs to it, and a swipe shown meanwhile (one of the same words, which the
+    // text check below cannot tell apart) is not rewritten for it.
+    const reply = msg.mes, swipe = msg.swipe_id ?? 0;
     // A structured reply: the check reads every beat.
-    const nar = (msg.extra?.rulesNarration as Record<number, Narration> | undefined)?.[msg.swipe_id ?? 0];
+    const nar = (msg.extra?.rulesNarration as Record<number, Narration> | undefined)?.[swipe];
     const checked = nar ? checkedText(nar) : reply;
-    if (nar && !checked.trim()) { (msg.extra!.rulesAudit ??= {})[msg.swipe_id ?? 0] = []; return []; }
+    if (nar && !checked.trim()) { (msg.extra!.rulesAudit ??= {})[swipe] = []; return []; }
     const st = ctx.chatMetadata.rulesEngine?.state ?? {}, now = st.clock ? st.clock.t + st.clock.add : null;
-    const raw = await deps.send(GUIDED ? AUDIT_GUIDED : AUDIT_SYSTEM, buildAuditPrompt(checked, turnResults(ctx), knowledgeBlock(st), now === null ? '' : formatStoryTime(now)), GUIDED ? { schema: auditSchema() } : undefined);
-    if (!deps.ownsChat() || ctx.chat[messageId] !== msg || msg.mes !== reply) return null;
+    // The player's line at its knob's stop (faith.ts): from 1.0 the reply keeps to it, and the check says where it departs.
+    const line = [...ctx.chat].reverse().find(m => m.is_user), held = line ? faithAudit(faithOf(line.extra?.rulesFaith), String(ctx.name1 ?? 'the player\'s character'), String(line.mes ?? '')) : '';
+    const raw = await deps.send(GUIDED ? AUDIT_GUIDED : AUDIT_SYSTEM, `${buildAuditPrompt(checked, turnResults(ctx), knowledgeBlock(st), now === null ? '' : formatStoryTime(now))}${held ? `\n\n${held}` : ''}`, GUIDED ? { schema: auditSchema() } : undefined);
+    if (!deps.ownsChat() || ctx.chat[messageId] !== msg || msg.mes !== reply || (msg.swipe_id ?? 0) !== swipe) return null;
     const events = parseAudit(raw);
     if (!events) return null;
     msg.extra ??= {};
-    (msg.extra.rulesAudit ??= {})[msg.swipe_id ?? 0] = events;
+    (msg.extra.rulesAudit ??= {})[swipe] = events;
     if (!events.length) return events;
+    // A rewrite is a swipe of the chat's last reply: once the player has written on, the flags stay a record of this reply.
+    if (turnKey(ctx.chat) !== key || ctx.chat.length - 1 !== messageId) return events;
     const tries = ctx.chatMetadata.rulesAuditRetries?.turn === key ? ctx.chatMetadata.rulesAuditRetries.count : 0;
     if (tries < MAX_RETRIES) {
         ctx.chatMetadata.rulesAuditRetries = { turn: key, count: tries + 1 };
-        pending = { events, decided: askedResults().length > 0 };
-        setFlags(events.filter(e => e.tool !== 'KNOWS'));
+        pending = { events, decided: askedResults().length > 0, turn: key };
+        setFlags(events.filter(e => e.tool !== 'KNOWS' && e.tool !== 'FAITH'), key);
         deps.generate('swipe');
     } else {
         deps.toast(`Rule check: ${events.length} event(s) in this reply have no engine result: ${events.map(e => `"${e.quote}"`).join('; ')}`);

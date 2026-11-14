@@ -1,0 +1,191 @@
+diff --git a/README.md b/README.md
+index 9f33913..41a3b91 100644
+--- a/README.md
++++ b/README.md
+@@ -49,8 +49,8 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor; Tab from the box enters the toolbar while it shows. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another. With **Multiple distinctions** on (the default), each part of the voice has a place of its own in the chat: a thin stroke above a word for its pitch (a rise-fall and a fall-rise differ), heavier letters for louder and paler ones for softer, a wavy rule under creaky words, dots under breathy ones and a broken rule under whispered ones, wider gaps for slower and a lean for faster, a drawn-out vowel written again ("Nooo"), narrow letters for falsetto, and the feeling's colour at the line's edge. Every line keeps the story's line spacing. Hover a marked word to read its marks with their sizes ("louder (about 6 dB above your normal voice)"). Turn it off in the settings for the lighter look.
+ - The chat is a page of its own: with **Dialogue page** on (the default), messages are set black on ivory in a book serif that follows the story's era, with no letter shadow and room between the lines for the voice marks, whatever your theme; quoted words keep the text colour, as in print. After your name a word says what your character is doing in the line: SPEAKING when the line holds said words (a speech call, or words in quotation marks), THINKING when your character works something out; hover it for the call it rests on. Off, messages keep the theme's look and the word stays.
+ - In the text box, the type is large enough to read at full speed with the phone at arm's length (0.2° of letter height at 58 cm), and a line above the chat says where and when the scene is and its light ("Recife · Sunday 15 July 1990, 18:20 · nautical twilight") instead of your device's clock; scrolling the box no longer pulls the page behind it.
+-- The text box has a visual novel's look by default ("The box's look: night"): a dark framed panel under a pink name tag, white spoken words and light blue narration, the buttons as small pills under it, and a blinking ▼ when the line has finished appearing. "page" keeps the page's own look.
+-- The first time a character speaks, a card crosses the screen with their name and trade (or age), as visual novels introduce people; the story's time and place sit in a badge in the corner, and the box's buttons are words along its bottom edge.
++- The text box has a visual novel's look by default ("The box's look: night"): a see-through dark panel in white corner brackets under a pink name tag, white spoken words and light blue narration, the buttons as small pills under it, and a blinking ▼ when the line has finished appearing. "page" keeps the page's own look.
++- The first time a character with a character card of their own speaks, a card crosses the screen with their name and trade (or age), as visual novels introduce people; the story's time and place sit in a badge in the corner, and the box's buttons are words along its bottom edge.
+ - One thing on screen at a time: with **Text box** on (the default), the chat shows one box at the foot of the screen under the name of whoever says it. A new box starts wherever said words begin or end, and a long stretch goes on in the next box. Said words are black (white on the dark page) with SPEAKING, or WHISPERING, at the plate's right; everything else is blue and belongs to your character, with THINKING when you work something out. Letters appear one by one, said words at the speaker's pace and the rest at reading pace; a tap shows the rest at once, then the next box. "Auto" moves on by itself once a box has been read, ‹ or ← goes back, and "Log" shows the whole chat. The narrator names who says each quotation, so the plate can show it; in your own lines, the person acting just before a quotation says it.
+ - Words that name what the engine decided are marked in gold, as important words are in yellow in a visual novel. **Page colours** offers the light page or a dark one (white, light blue and gold on black), and **The speaker's picture** can show the character card's picture large above the box.
+ - **Music**: add your own songs in the settings. Each is measured as you add it (tempo, loudness, brightness, key), and the song nearest the feelings in the scene plays: your line marked sad brings a calm song in a minor key, a character's joy a lively one in a major key. Give a song a set named after a character or a place, and it becomes their theme. When several feelings are in the scene, the strongest counts 90% and the newest 10%. A song stays while the scene stays in its area, unless another song is clearly nearer, and the next one fades in over 4 seconds. The ♪ button turns the music on and off.
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 7125f11..be8fde5 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1101,9 +1101,9 @@ The box's type and scene (2026-11-11 (124); `box.ts` boxFontPx, boxLinesAt, scen
+ | a scroll reaches the box's end | it stays in the box (overscroll-behavior: contain), so a pull at a phone's top does not reload the page |
+ | the screen is short (a phone held sideways) | the box stops at 60 % of the height and its lines scroll |
+ 
+-The first-meeting card, the date badge and the menu in the box (2026-11-12 (127); `box.ts` cardRole, sceneBadge; `index.ts` showBox, showCard; `style.css`). From twelve games' boxes (Let's Play Archive screenshots: 999, Danganronpa and V3, Doki Doki Literature Club, Phoenix Wright, Ghost Trick, Hatoful Boyfriend, Corpse Party, Virtue's Last Reward, Steins;Gate, Policenauts), the player picked three. The card: the first time the box reaches a character's first line in the chat, going on, a pink band with a white stripe crosses the screen with their picture (their character card's, when there is one), their trade as the story gave it (NewCharacter now keeps it as occupation) or else their age and noun ("16-year-old girl"), and their name; the next tap, key or Next takes it away and the line types; once per character per session. The badge: the night look's scene line as a corner badge, the clock large over the date and the place with its light. The menu: Back, the count, Next, Auto, music and Log as words along the frame's bottom edge (44 px targets), at layer 31 above SillyTavern's chat (30), whose box would otherwise take their taps. Whole-screen narration was left open: the player would take it only if the model could not call it at will. Check: R43; negative controls BX11, BX13, BX14.
++The first-meeting card, the date badge and the menu in the box (2026-11-12 (127); `box.ts` cardRole, sceneBadge; `index.ts` showBox, showCard; `style.css`). From twelve games' boxes (Let's Play Archive screenshots: 999, Danganronpa and V3, Doki Doki Literature Club, Phoenix Wright, Ghost Trick, Hatoful Boyfriend, Corpse Party, Virtue's Last Reward, Steins;Gate, Policenauts), the player picked three. The card: the first time the box reaches a character's first line in the chat, going on, a pink band with a white stripe crosses the screen with their picture (their character card's, when there is one), their trade as the story gave it (NewCharacter now keeps it as occupation) or else their age and noun ("16-year-old girl"), and their name; the next tap, key or Next takes it away and the line types; once per character per session. The badge: the night look's scene line as a corner badge, the clock large over the date and the place with its light. The menu: Back, the count, Next, Auto, music and Log as words along the frame's bottom edge (44 px targets), at layer 31 above SillyTavern's chat (30), whose box would otherwise take their taps. Whole-screen narration was left open: the player would take it only if the model could not call it at will. Since (128) the card shows only for a character with a SillyTavern character card of their own (the player: else every passer-by would get one), and the night panel is see-through (74 % at the top, 82 % at the foot: the least at which light sky blue reads at 4.5:1 over white; the trial's 55 % gave 2.4:1) inside white corner brackets instead of a full frame. Check: R42, R43; negative controls BX11, BX13–BX15.
+ 
+-The box's night look (2026-11-11 (126); `style.css` body.rules-box-night, `index.ts` showBox, toneNow, settings "The box's look"). Three trial looks were drawn on a phone (night, paper, quiet); the player picked night ("a mile better; the pink name tag fits"). It is the default: a dark panel (rgba(18, 20, 34, 0.92) to rgba(8, 9, 16, 0.96)) framed in white under an angled pink name tag (#e0336a, white, 19 px bold), the dark page's colours inside (white said words, light sky blue the rest, gold key words; the tone reads dark while it shows), the message's menu and pencil left to the log, the bar's buttons as pills under the frame (44 px), a blinking ▼ once the stretch has all appeared (still for reduced motion), the scene line and count on dark pills. Contrast over a white background showing through: white 14.8:1, light sky blue 8.6:1; the tag's white on pink 4.3:1, large type (WCAG 2 asks 3:1). "page" keeps the page's own look. Check: R42; negative controls BX7–BX10.
++The box's night look (2026-11-11 (126); `style.css` body.rules-box-night, `index.ts` showBox, toneNow, settings "The box's look"). Three trial looks were drawn on a phone (night, paper, quiet); the player picked night ("a mile better; the pink name tag fits"). It is the default: a dark panel (rgba(18, 20, 34, 0.92) to rgba(8, 9, 16, 0.96)) framed in white under an angled pink name tag (#e0336a, white, 19 px bold), the dark page's colours inside (white said words, light sky blue the rest, gold key words; the tone reads dark while it shows), the message's menu and pencil left to the log, the bar's buttons as pills under the frame (44 px), a blinking ▼ once the stretch has all appeared (still for reduced motion), the scene line and count on dark pills. Contrast over a white background showing through (since (128), at 74 %): white 7.9:1, light sky blue 4.6:1; the tag's white on pink 4.3:1, large type (WCAG 2 asks 3:1). "page" keeps the page's own look. Check: R42; negative controls BX7–BX10.
+ 
+ Pauses in speech (2026-11-11 (125); `box.ts` pauseMs, revealTimes): said words stop for 500 ms after a sentence end (. ! ? …) and 167 ms after a clause mark (, ; : — –), divided by the speaker's pace against the unmarked 5 syllables/s: the medium mode of silent pauses in read speech, near 500 ms (Campione & Véronis 2002), and the clause pause's share of the sentence pause, 0.2 ÷ 0.6 (Strangert 1991). Before, every syllable followed the last with no stop: "Sit. Will has been counting the same six coins since noon. Go on, sit down." appeared in 3.2 s, now in 4.4 s, with the stops where a speaker makes them. Not yet: lengthening before a boundary, stress, and the spread of pause lengths. Check: R39; negative control BX6.
+ 
+diff --git a/docs/progress.md b/docs/progress.md
+index 09f0994..6751419 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,12 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-12 (128), Claude
++- The player: the first-meeting card only for characters with a card they made, else every irrelevant person gets one; the panel: both (see-through and corner brackets).
++- Changed: `index.ts` hasCard (the name among SillyTavern's characters); `style.css` the night panel see-through (74 % to 82 %: the least opacity at which light sky blue keeps 4.5:1 over a white background; the trial's 55 % gave 2.4:1) inside white corner brackets.
++- Checked: ui 95; negative controls BX9, BX10, BX13, BX15 caught; Chromium on a scene and on white.
++- Next: the player's critique on their phone.
++
+ ## 2026-11-12 (127), Claude
+ - The player wanted inspiration from existing visual novels. Fetched: text boxes from twelve games' Let's Plays (Let's Play Archive), laid out with what makes each distinct. Picked: the first-meeting card (Danganronpa), the date badge in a corner (Hatoful Boyfriend), the menu inside the box (Doki Doki Literature Club); torn between a see-through panel and corner brackets (drawn side by side, with both, for their pick); whole-screen narration only if the model could not invoke it at will (left open).
+ - Changed: `box.ts` cardRole, sceneBadge; `index.ts` showCard, hideCard, the badge's three parts, the card before a character's first line; `rules-tools.ts` NewCharacter keeps the person's trade (occupation); `types.ts`; `style.css` the card, the badge, the menu (layer 31: SillyTavern's chat at 30 took its taps in the first render).
+diff --git a/src/index.js b/src/index.js
+index 1b85005..5c31b0d 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -845,10 +845,10 @@ function showBox() {
+     document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
+     // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
+     const key = `${boxAt.mes}:${unit}:${units.length}`;
+-    // The first time the box reaches a character's first line in the chat, going on, a card names them before it (as visual
+-    // novels introduce a person); the line types once the card is tapped away.
++    // The first time the box reaches the first line in the chat of a character with a card of their own, going on, a card names
++    // them before it (as visual novels introduce a person); the line types once the card is tapped away.
+     const who = now?.getAttribute('data-who') ?? '';
+-    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metShown.has(who)
++    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metShown.has(who) && hasCard(who)
+         && document.querySelector(`#chat .rules-unit[data-who="${CSS.escape(who)}"]`) === now) {
+         metShown.add(who);
+         showCard(who, mes);
+@@ -869,6 +869,9 @@ function showBox() {
+         shownKey = now ? key : '';
+     stepDir = 0;
+ }
++/** Whether the player made a SillyTavern character card for this name: only they get a first-meeting card (the player, 2026-11-12:
++ * else every passer-by the story names would get one). */
++const hasCard = (who) => !!ctx().characters?.some(c => c.name === who);
+ /** Characters whose first-meeting card was shown in this chat's session. */
+ const metShown = new Set();
+ /** The first-meeting card: the person's picture, their trade or age (box.ts cardRole), their name; a tap, the next key or
+diff --git a/src/index.ts b/src/index.ts
+index b6a8936..b7cb2a2 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -684,10 +684,10 @@ function showBox(): void {
+     document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
+     // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
+     const key = `${boxAt.mes}:${unit}:${units.length}`;
+-    // The first time the box reaches a character's first line in the chat, going on, a card names them before it (as visual
+-    // novels introduce a person); the line types once the card is tapped away.
++    // The first time the box reaches the first line in the chat of a character with a card of their own, going on, a card names
++    // them before it (as visual novels introduce a person); the line types once the card is tapped away.
+     const who = now?.getAttribute('data-who') ?? '';
+-    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metShown.has(who)
++    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metShown.has(who) && hasCard(who)
+         && document.querySelector(`#chat .rules-unit[data-who="${CSS.escape(who)}"]`) === now) {
+         metShown.add(who); showCard(who, mes); stopTyping(); clearTimeout(autoTimer); stepDir = 0; return;
+     }
+@@ -695,6 +695,9 @@ function showBox(): void {
+     if (!boxLog) shownKey = now ? key : '';
+     stepDir = 0;
+ }
++/** Whether the player made a SillyTavern character card for this name: only they get a first-meeting card (the player, 2026-11-12:
++ * else every passer-by the story names would get one). */
++const hasCard = (who: string) => !!(ctx().characters as { name: string }[] | undefined)?.some(c => c.name === who);
+ /** Characters whose first-meeting card was shown in this chat's session. */
+ const metShown = new Set<string>();
+ /** The first-meeting card: the person's picture, their trade or age (box.ts cardRole), their name; a tap, the next key or
+diff --git a/style.css b/style.css
+index 687b17b..1165fed 100644
+--- a/style.css
++++ b/style.css
+@@ -380,21 +380,29 @@ body.rules-box-log #rules-box-back, body.rules-box-log #rules-box-next, body.rul
+ body.rules-box-log #rules-box-music { visibility: visible; }
+ 
+ /* The box's night look (setting "The box's look": night, the default; index.ts showBox sets body.rules-box-night): the
+-   player's pick of three trial looks drawn on a phone (2026-11-11): a dark panel framed in white under an angled pink name
++   player's pick of three trial looks drawn on a phone (2026-11-11): a dark panel (since 2026-11-12 see-through, in white
++   corner brackets) under an angled pink name
+    tag, as visual novels set their boxes. Inside it the dark page's colours (white said words, light sky blue the rest, gold
+    key words; index.ts toneNow reads the tone as dark while it shows), whatever the page's colours. The device's controls (the
+    message's menu and pencil) stay in the log; the bar's buttons sit under the frame as pills; a blinking ▼ in the frame's
+    corner says the stretch has all appeared. The scene line and the count stand on dark pills, so they read on any background
+    SillyTavern shows behind. The tag's white on pink (#e0336a) is 4.3:1, held to large type (19 px bold:
+-   WCAG 2 asks 3:1 there); white on the panel 14.8:1 and light sky blue 8.6:1 over a white background showing through it
++   WCAG 2 asks 3:1 there); white on the panel 7.9:1 and light sky blue 4.6:1 over a white background showing through it
+    (tests/ui.test.mjs R42). */
+ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now {
+     --SmartThemeBodyColor: white; --SmartThemeQuoteColor: white; --SmartThemeUnderlineColor: white; --SmartThemeEmColor: darkgray;
+     --SmartThemeBlurTintColor: black; --SmartThemeBotMesBlurTintColor: black; --SmartThemeUserMesBlurTintColor: black;
+     --SmartThemeBorderColor: dimgray; --SmartThemeShadowColor: transparent;
+     position: relative; width: calc(100% - 24px); align-self: center; box-sizing: border-box; margin: 34px 12px 10px; padding: 26px 18px 30px; overflow: visible;
+-    background: linear-gradient(180deg, rgba(18, 20, 34, 0.92), rgba(8, 9, 16, 0.96)); border: 2px solid rgba(255, 255, 255, 0.9); border-radius: 4px;
+-    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.55);
++    /* See-through, under white corner brackets (the player's pick of both, 2026-11-12): 74 % is the least opacity at which
++       light sky blue still reads at 4.5:1 with a white background showing through (55 % gave 2.4:1). */
++    border: 2px solid transparent; border-radius: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
++    background:
++        linear-gradient(white, white) top left / 34px 3px no-repeat, linear-gradient(white, white) top left / 3px 34px no-repeat,
++        linear-gradient(white, white) top right / 34px 3px no-repeat, linear-gradient(white, white) top right / 3px 34px no-repeat,
++        linear-gradient(white, white) bottom left / 34px 3px no-repeat, linear-gradient(white, white) bottom left / 3px 34px no-repeat,
++        linear-gradient(white, white) bottom right / 34px 3px no-repeat, linear-gradient(white, white) bottom right / 3px 34px no-repeat,
++        linear-gradient(180deg, rgba(18, 20, 34, 0.74), rgba(8, 9, 16, 0.82));
+ }
+ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .ch_name { position: absolute; top: -21px; left: 12px; right: 12px; display: flex; align-items: center; border: 0; padding: 0; }
+ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who {
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 34d03df..8274ce4 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -5867,5 +5867,14 @@
+   "replace": "#rules-box-bar { position: relative; z-index: 3;",
+   "miss": "the card once, the menu above the chat",
+   "test": "ui"
++ },
++ {
++  "id": "BX15",
++  "name": "cards only for characters with a card",
++  "file": "src/index.js",
++  "find": "const hasCard = \\(who\\) => !!ctx\\(\\)\\.characters\\?\\.some\\(c => c\\.name === who\\);",
++  "replace": "const hasCard = (who) => true;",
++  "miss": "cards only for card characters; the see-through bracketed panel",
++  "test": "ui"
+  }
+ ]
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index 6095548..bcb7c5b 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -565,12 +565,12 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+ }
+ // R42: the box's night look (style.css body.rules-box-night; src/index.js; settings.html), the player's pick of three: on by
+ // default; the dark page's colours inside the panel and the tone dark while it shows; the panel's top colour over a white
+-// background showing through (alpha 0.92) still carries white at 4.5:1 or more and light sky blue too; the tag's white on
++// background showing through (alpha 0.74, see-through) still carries white at 4.5:1 or more and light sky blue too; the tag's white on
+ // #e0336a 3:1 or more at 19 px bold (WCAG 2: large type); the ▼ only once a stretch has appeared, still for reduced motion;
+ // the scene line and the count on dark pills.
+ {
+   const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), html = fs.readFileSync(`${ROOT}/settings.html`, 'utf8');
+-  const panel = over([18, 20, 34, 0.92], [255, 255, 255]), sky = [135, 206, 250];
++  const panel = over([18, 20, 34, 0.74], [255, 255, 255]), sky = [135, 206, 250];
+   const night = 'body.rules-box-night.rules-box:not(.rules-box-log)';
+   const has = t => css.includes(t);
+   ok(/boxLook: 'night',/.test(idx) && /settings\(\)\.boxLook === 'night' \? 'dark'/.test(idx) && /classList\.toggle\('rules-box-night', on && settings\(\)\.boxLook === 'night'\);\s*toneLook\(\);/.test(idx)
+@@ -592,8 +592,9 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+   ok(B.cardRole({ occupation: 'innkeeper', age: 34, sex: 'male' }) === 'innkeeper' && B.cardRole({ age: 16.4, sex: 'female' }) === '16-year-old girl' && B.cardRole({ age: 40 }) === '40-year-old adult' && B.cardRole(undefined) === ''
+       && JSON.stringify(badge) === JSON.stringify({ clock: '18:20', date: 'Sunday 15 July 1990', where: 'Recife · nautical twilight' }) && JSON.stringify(day) === JSON.stringify({ clock: '07:00', date: 'Day 2', where: '' }),
+       "the card's line and the badge's parts", JSON.stringify([badge, day]));
+-  ok(/!metShown\.has\(who\)\s*&& document\.querySelector\(`#chat \.rules-unit\[data-who="\$\{CSS\.escape\(who\)\}"\]`\) === now\)/.test(idx) && /stepDir !== -1/.test(idx) && /if \(d === 1 && hideCard\(\)\)\s*return;/.test(idx) && /metShown\.clear\(\)/.test(idx)
++  ok(/!metShown\.has\(who\) && hasCard\(who\)\s*&& document\.querySelector\(`#chat \.rules-unit\[data-who="\$\{CSS\.escape\(who\)\}"\]`\) === now\)/.test(idx) && /stepDir !== -1/.test(idx) && /if \(d === 1 && hideCard\(\)\)\s*return;/.test(idx) && /metShown\.clear\(\)/.test(idx)
+       && /#rules-box-bar \{ position: relative; z-index: 31;/.test(css) && /body\.rules-box\.rules-card-on:not\(\.rules-box-log\) #rules-box-card \{ display: flex; position: absolute; inset: 0; z-index: 40;/.test(css),
+       'the card once, the menu above the chat', '');
++  ok(/const hasCard = \(who\) => !!ctx\(\)\.characters\?\.some\(c => c\.name === who\)/.test(idx) && /rgba\(18, 20, 34, 0\.74\), rgba\(8, 9, 16, 0\.82\)/.test(css) && /linear-gradient\(white, white\) bottom right \/ 3px 34px no-repeat/.test(css), 'cards only for card characters; the see-through bracketed panel', '');
+ }
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

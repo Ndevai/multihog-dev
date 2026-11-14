@@ -1,0 +1,218 @@
+# Section 40 runs (2026-10-27). Tree: section 39 (3cc0471) → section 40 (aab3a2c).
+
+## npm test on section 40's tree
+172 checks, 0 miss(es)
+198 checks, 0 miss(es)
+37 checks, 0 miss(es)
+197 checks, 0 miss(es)
+60 checks, 0 miss(es)
+size: 9 of 9
+ui: 54 of 54
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## tests/engine.test.mjs (section 40's) on section 39's tree
+MISS the narrator reads outcomes in words: Fragile, [ASSUMED, CAS 6, g/mol, heat of formation, dB, such patients die, kg model, (Pulse), L (0%; without a date Weather says Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].
+197 checks, 1 miss(es)
+
+## What the narrator reads of results (review-tests/probes/results-*.mjs): section 39, the narrator's own tool calls (raw results)
+10766 texts; {"status":84,"fragile":40,"cite":28,"constant":27,"dB":1520,"deathChance":2,"chem":2,"program":4,"bloodZero":583}
+texts with any hit 2189 pattern hits 2290
+## section 39, through [DECIDED] (the sensitivity note stripped)
+10766 texts; {"status":44,"dB":1516,"deathChance":2,"chem":2,"program":4,"bloodZero":583}
+texts with any hit 2150 pattern hits 2151
+## section 40, both ways
+10770 texts; {}
+texts with any hit 0 pattern hits 0
+
+## The 17 tools the engine test leaves out, section 40 (1850 London, then 1990 Chicago)
+1850 NewCharacter  Tom: a 30-year-old man (as the story states).
+1850 NewCharacter  Mara: a 25-year-old woman (as the story states).
+1850 NewCharacter  Will: a 12-year-old boy (as the story states).
+1850 RollTheDice   Rolled 2d6 for coins in the purse: 7. Use this amount as rolled.
+1850 RollTheDice   Rolled 1d6 for which door: 3. Tier: the left door. Narrate this tier.
+1850 BodyChoke     Choke held 20 s: unconscious at 8.7 s. Will: unconscious (choked). Will (human): blood lost 0 L.
+1850 Communicate   Mara hears Tom and makes out every word (normal voice at 1 m, quiet room).
+1850 Interpret     Mara takes "bank" as Tom meant it.
+1850 NameCharacter the clerk: first name Belinda.
+1850 BodySize      Mara: 150 cm, 35 kg, blue or grey eyes, blond hair.
+1850 Disease       Will shows the first symptoms of measles 9 days after catching it.
+1850 Disease       Black Death, 1347–1352: it kills 53 % of the people of Europe and the Mediterranean.
+1850 Battle        The attack on the position succeeds, the attackers outnumbering the defenders many times over; in battles of this era numbers decided little, and leadership, ground and morale decided the rest. The fighting lasts about a
+1850 Substance     ethanol; at 20 °C: liquid (melts -114 °C, boils 78 °C); burns: 29.7 kJ/g; vapour catches fire from a flame at this temperature (flash point 12 °C); vapour pressure 5.90 kPa; ignites without a flame at 400 °C; burns in ai
+1850 Weather       No climate data for london: give the nearest listed town, or latitude and longitude.
+1850 Transfer      loaf of bread given from Tom to Mara; Mara now has it. Recorded.
+1850 Transfer      knife stolen from Mara to Will; Will now has it; it is still Mara's. Recorded.
+1850 Sickness      Mara stays well during the crossing.
+1850 Trust         Recorded: Tom betrayed Mara.
+1850 Trust         Mara keeps their guard up with Tom this time (betrayed; promised nothing; good faith kept 0 times since).
+1850 HoldOn        Tom lets go after 58.6 s: the grip tires (2 hands).
+1850 Chase         Tom catches Will after 1.5 s, 10 m run: Tom is faster.
+1850 Dose          Tom: Epinephrine IM 0.5 mg given; its course runs as time passes.
+1850 Break         a 20 × 2.5 cm pine (eastern white) plank over 2 m holds 80 kg (it gives at about 125 kg). Fragile: the outcome changes within the range of 1 judged value: timberFactor = 0.3 × clear-wood bending strength instead of 0.5 [
+1850 BodyStrike    punch (right hand) to right lower arm (front, forearm): momentum 48.6. right lower arm: skin smashed, fat smashed, muscle smashed, bone held; right elbow: muscle held, bone held. Wound 1. Will: unconscious (choked). Will
+1850 BodyCheck     BodyCheck waits: fix and call again: task_kind is required.
+1850 PassTime      Time stopped after 0 min 6 s of 30 minutes: Will comes to. 29 min 54 s remain. ⏎ Tom (human): blood lost 0 L. epinephrine 0.5 mg, 1 min in: pulse 100/min, blood pressure 130/73, breathing 12/min, oxygen 98 %, sedation 0.
+1850 Price         1 × bread (kg) in London, 1850: 1.46 g of silver (about 3¼ d); a building labourer earns that in about 50 minutes of a 10-hour day.
+1850 CastSpell     Too little PE to cast: needs 107, has 40. Mara (human): blood lost 0 L.
+1990 NewCharacter  Tom: a 30-year-old man (as the story states).
+1990 NewCharacter  Mara: a 25-year-old woman (as the story states).
+1990 NewCharacter  Will: a 12-year-old boy (as the story states).
+1990 RollTheDice   Rolled 2d6 for coins in the purse: 9. Use this amount as rolled.
+1990 RollTheDice   Rolled 1d6 for which door: 5. Tier: the right door. Narrate this tier.
+1990 BodyChoke     Choke held 20 s: unconscious at 8.6 s. Will: unconscious (choked). Will (human): blood lost 0 L.
+1990 Communicate   Mara hears Tom and makes out every word (normal voice at 1 m, quiet room).
+1990 Interpret     Mara takes "bank" as Tom meant it.
+1990 NameCharacter the clerk: first name Cheryl.
+1990 BodySize      Mara: 166 cm, 65 kg.
+1990 Disease       Will shows the first symptoms of measles 17 days after catching it.
+1990 Disease       Black Death, 1347–1352: it kills 60 % of the people of Europe and the Mediterranean.
+1990 Battle        The attack on the position succeeds, the attackers outnumbering the defenders many times over. The fighting lasts about 24 hours. Killed, wounded and captured: attackers 36, defenders 118.
+1990 Substance     ethanol; at 20 °C: liquid (melts -114 °C, boils 78 °C); burns: 29.7 kJ/g; vapour catches fire from a flame at this temperature (flash point 12 °C); vapour pressure 5.90 kPa; ignites without a flame at 400 °C; burns in ai
+1990 Weather       No climate data for chicago: give the nearest listed town, or latitude and longitude.
+1990 Transfer      loaf of bread given from Tom to Mara; Mara now has it. Recorded.
+1990 Transfer      knife stolen from Mara to Will; Will now has it; it is still Mara's. Recorded.
+1990 Sickness      Mara stays well during the crossing.
+1990 Trust         Recorded: Tom betrayed Mara.
+1990 Trust         Mara keeps their guard up with Tom this time (betrayed; promised nothing; good faith kept 0 times since).
+1990 HoldOn        Tom lets go after 49.7 s: the grip tires (2 hands).
+1990 Chase         Tom catches Will after 1.2 s, 10 m run: Tom is faster.
+1990 Dose          Tom: Epinephrine IM 0.5 mg given; its course runs as time passes.
+1990 Break         a 20 × 2.5 cm pine (eastern white) plank over 2 m holds 80 kg (it gives at about 125 kg). Fragile: the outcome changes within the range of 1 judged value: timberFactor = 0.3 × clear-wood bending strength instead of 0.5 [
+1990 BodyStrike    punch (right hand) to left upper leg (front, hip): momentum 67.8. left upper leg: skin smashed, fat smashed, muscle smashed, bone held; left hip: muscle held, bone held. Wound 1. Will: unconscious (choked). Will (human):
+1990 BodyCheck     BodyCheck waits: fix and call again: task_kind is required.
+1990 PassTime      Time stopped after 0 min 10 s of 30 minutes: Will comes to. 29 min 50 s remain. ⏎ Tom (human): blood lost 0 L. epinephrine 0.5 mg, 1 min in: pulse 100/min, blood pressure 130/73, breathing 12/min, oxygen 98 %, sedation 0
+1990 Price         1 × bread (kg) at London prices, 1850: 1.46 g of silver (about 3¼ d); a building labourer earns that in about 50 minutes of a 10-hour day.
+1990 CastSpell     Too little PE to cast: needs 107, has 40. Mara (human): blood lost 0 L.
+
+## Negative controls on the files this pass touched: shard A
+N01 caught Watson (43 s)
+N02 caught clock (41 s)
+N03 caught mass (50 s)
+N09 caught Eisner (38 s)
+N13 caught WVS (37 s)
+N15 caught water (31 s)
+N17 caught list (31 s)
+N18 caught work (31 s)
+N20 caught choose (30 s)
+N21 caught feats (31 s)
+N23 caught DRM (30 s)
+N24 caught BMI (30 s)
+N27 caught fear (36 s)
+N29 caught sighting (31 s)
+N32 caught drowning (36 s)
+N33 caught precedence (32 s)
+N34 caught taskmet (31 s)
+N36 caught day (33 s)
+N37 caught fates (40 s)
+N38 caught childrun (39 s)
+N39 caught breathhold (33 s)
+N41 caught lightseen (32 s)
+N43 caught contrast (33 s)
+N44 caught climate (33 s)
+N45 caught students (31 s)
+N46 caught absorb (31 s)
+N47 caught swim (31 s)
+N51 caught factors (36 s)
+N51b caught applies (38 s)
+N52 caught tradesex (33 s)
+N54 caught reach (33 s)
+N60 caught fixed choice (35 s)
+N60b caught player asked (35 s)
+N64 caught correction restores (34 s)
+N64b caught correction fixed (41 s)
+N66b caught swipe told (38 s)
+N67 caught taken kept (32 s)
+N67b caught taken others (33 s)
+V5 caught across cultures (34 s)
+V6 caught marks applied (34 s)
+V7 caught marks off for reading (39 s)
+V8 caught narrator told (32 s)
+H6 caught pass reads unseen marks (40 s)
+R1 caught regenerate without a reply (31 s)
+R2 caught delete back to the greeting (31 s)
+R4 caught chat opened during the pass (34 s)
+R5 caught marks read from the codes (33 s)
+R6 caught third-person line routed (37 s)
+R8 caught one Lombard rise (33 s)
+R8b caught feeling on the speech spectrum (38 s)
+R9 caught soft ground one row lower (37 s)
+R15 caught swipe after a function call (30 s)
+R18 caught knockout threshold registered (33 s)
+PL2 caught a description is not a person (1 s)
+Q1 caught bystanders overhear (32 s)
+Q1b caught a wall between a room and outdoors (47 s)
+Q2 caught expert defender (52 s)
+Q4 caught an out-of-character line (33 s)
+I16 caught the turn reads the line as meant (42 s)
+I17 caught the planner is told the line as meant (32 s)
+RV1 caught a pass run again for its place starts from the line's start (empty Send) (29 s)
+61 of 61 controls caught.
+
+## Shard B
+RV2 caught a pass run again for its place starts from the line's start (swipe, tools off) (45 s)
+RV5 caught code reads earlier lines as typed, not as notation (41 s)
+RV6 caught a written time is read from the words (49 s)
+RV15 caught a slip's injury share is read as a judgement (44 s)
+RW1 caught swiping back records what the swipe shown changed (32 s)
+RW2 caught swiping back takes the other swipe's changes out (45 s)
+RW4 caught a regenerate without a reply takes the snapshot with the line in first (30 s)
+RW5 caught a deleted line takes its pass with it (31 s)
+RW6 caught the prompts carry the notation whoever calls (36 s)
+RX1 caught a line keeps the world its pass left (30 s)
+RX2 caught a deletion restores the last message of any kind that holds a world (31 s)
+RX3 caught the greeting and a tool call keep their world when a generation starts from them (31 s)
+RX5 caught a line whose pass ran is started again (31 s)
+RX6 caught a line starts from the world the message before it ended with (31 s)
+RX7 caught a deletion cuts the record to what it held then (32 s)
+RX8 caught a deletion leaves a record that rebuilds the world (22 s)
+RX9 caught a start put back leaves a record that rebuilds the world (a line started again, a rewrite, a correction) (20 s)
+RY1 caught a line's pass run again starts from the start the line keeps (32 s)
+RY2 caught a correction redone after a later line is deleted is the correction it was (33 s)
+RY3 caught a swipe of a reply right after a line starts from the line's start (34 s)
+RY4 caught a swipe of a reply after tool calls starts from the last tool message's world (32 s)
+RY5 caught a swipe shown keeps the record from its line's start (33 s)
+RY6 caught a correction puts back the start its line keeps (36 s)
+RY7 caught a start put back cuts the record to the changes it held (33 s)
+RY8 caught the line's first pass keeps its start on it (32 s)
+RY9 caught a line that keeps a start starts there when its pass runs again (a pass that failed after its calls) (31 s)
+RY10 caught old player lines let go of their worlds (31 s)
+RY11 caught replies keep their worlds when old lines let go (29 s)
+RY12 caught a chat saved by version 100 starts a line again from the engine's lineStart (31 s)
+RY23 caught a head-first fall below the first row lies on the line (38 s)
+RY24 caught head first on soft ground is the row itself (33 s)
+RY25 caught a head-first fall below the first row goes up to the first row only (32 s)
+RY26 caught a correction reads the pass the line before keeps (33 s)
+RZ1 caught a line's kept pass follows its words, not its place (33 s)
+RZ2 caught a correction reads the line before it in SillyTavern's chat (33 s)
+RZ3 caught draws follow the line's words, not its place (39 s)
+RZ4 caught old replies keep the shown swipe's world only (32 s)
+RZ5 caught old replies keep the shown swipe's record count only (34 s)
+RZ7 caught the drowning band 5.5–10 min is a registered judgement (38 s)
+RZ9 caught a tool's result carries no tag character (35 s)
+RS1 caught a correction put back keeps that world as its line's start (34 s)
+RS2 caught a pass that fails after its calls ran takes them back (32 s)
+RS3 caught a tool that waited writes nothing once another chat is open (33 s)
+RS14 caught PassTime stops at the second a person comes to (34 s)
+RA14 caught replies keep their worlds in the archive, by id (33 s)
+RA15 caught the archive keeps the bases of every world a message reaches (31 s)
+RC7 caught the planner's catalogue is the scene's (38 s)
+RC9 caught the brief tells of handguns from their year (32 s)
+RC10 caught the narrator is offered the line's tools (32 s)
+RC11 caught the narrator reads the scene's arguments (31 s)
+RC12 caught an act's everyday name is read (33 s)
+RC13 caught a scene's country keeps its own fit (32 s)
+RD1 caught a sound's level in dB is left out (31 s)
+RD2 NOT CAUGHT (status 0, 1627051 bytes out) a value's status tag is left out (38 s)
+RD3 caught the narrator's tool calls leave the sensitivity note out (34 s)
+RD4 NOT CAUGHT (status 0, 1656674 bytes out) the dose line names no program (47 s)
+RD5 caught the dose names no model (47 s)
+RD6 caught a compound is named, no CAS number (40 s)
+RD7 caught a burn's line gives its extent, no death chance (31 s)
+RD8 caught no blood-loss class when no blood is lost (31 s)
+RD9 caught Weather without a date names the time to add (37 s)
+59 of 61 controls caught.
+
+## RD2 and RD4 rerun with the check's room volume and a minute after the dose
+RD2 caught a value's status tag is left out (32 s)
+RD4 caught the dose line names no program (28 s)
+2 of 2 controls caught.

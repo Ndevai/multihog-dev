@@ -1,6 +1,17 @@
 // Usage: import { call, m } from "./tools/st-harness.mjs"; m.setStoryTime(...); await call("Weather", { place: "Recife" }).
 // Runs the extension's tools in Node the way SillyTavern would: a fake context, fetch read from the repo's files.
 import fs from 'node:fs';
+// Runs repeat: each chat's salt (crypto.getRandomValues) and Math.random come from one fixed seed (mulberry32), so a
+// statistical check counts the same sample on every run and a test result never depends on the run. RULES_TEST_SEED=<n>
+// takes another sample; RULES_TEST_SEED=random draws afresh, to look for checks whose bounds sit too close.
+const SEED = process.env.RULES_TEST_SEED ?? '1';
+if (SEED !== 'random') {
+    let a = (Number(SEED) >>> 0) || 1;
+    const next = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    Math.random = next;
+    const real = globalThis.crypto.getRandomValues.bind(globalThis.crypto);
+    globalThis.crypto.getRandomValues = arr => { if (!(arr instanceof Uint32Array)) return real(arr); for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(next() * 4294967296); return arr; };
+}
 const REPO = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const tools = new Map(); let turn = 0;
 const ctx = { chatMetadata: {}, chat: [{ mes: 'start', is_user: true }], registerFunctionTool: t => tools.set(t.name, t), unregisterFunctionTool: n => tools.delete(n),

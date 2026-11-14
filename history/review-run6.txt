@@ -1,0 +1,397 @@
+The sixth review (ss.pdf), run. Node 22.23.4, TypeScript 5.6.3, Chromium through Playwright; 2026-10-27.
+
+== Build: on section 35's tree (the upload), npx tsc -p . then git status: no file changed (the committed .js files are what tsc emits).
+
+== npm test steps, section 35's tree: route 157, frame 193, intent 36, engine 187, plan 58, size 9 of 9, ui 48 of 48, sequences 300 run with 0 failing; 0 misses.
+== npm test steps, section 36's tree: route 158, frame 196, intent 37, engine 192, plan 59, size 9 of 9, ui 51 of 51, sequences 300 run with 0 failing; 0 misses.
+== node tests/sequences.test.mjs 1500 40 7, then 8, section 36's tree:
+sequences: 1500 run, 0 distinct failing sequence(s)
+sequences: 1500 run, 0 distinct failing sequence(s)
+
+== The new checks on section 35's tree (the upload), each must miss there
+-- tests/route.test.mjs
+MISS a fall verb with an object is no fall: I drop the sword. | I slip the note into his pocket. | I trip the guard. | I fall asleep. | I fall silent. | I fall in love with Ann.; falls lost: 
+158 checks, 1 miss(es)
+-- tests/frame.test.mjs
+MISS a manner or a topic is no message: I shout to Tom with all my might. → with all my might | I tell Tom about my plan. → about my plan
+MISS emphasis inside emphasis: who undefined; I pay 2*3 coins and smile.
+MISS a pronoun looked at is its person: ["him","him"]
+196 checks, 3 miss(es)
+-- tests/intent.test.mjs
+MISS a woman named before him back: I nod to Ann and hit him back.
+37 checks, 1 miss(es)
+-- tests/plan.test.mjs
+MISS a brace inside a message is text: [null,null]
+59 checks, 1 miss(es)
+-- tests/ui.test.mjs
+MISS numbers in brackets and temperatures stay words: John Smith (35) checks items (1) and (2). → pause 35 s after Smith · pause 1 s after items · pause 2 s after and | The year (1850) was cold. → pause 1850 s after year | It is 20 °C outside. → quieter: C outside | Set the oven to 180 °C, Tom. → quieter: C Tom | It is -5 °F. → quieter: F
+MISS marks on the letters inside guillemets: «Stop»- ["«Stop󠁋󠁿»"]
+MISS a line that quotes is no correction: Will, ›run!‹ | Will «stop»
+ui: 48 of 51
+-- tests/engine.test.mjs
+MISS a pass that fails after its calls ran takes them back: 607 (600)
+MISS a line edited into a correction keeps the world it put back: Tom 2, Will 1
+MISS a waiting tool writes nothing into another chat: ["Wit"]
+MISS a rule-check note stays with its turn: <rule_engine_correction>
+MISS PassTime stops when a person comes to: Time stopped after 1 min of 5 minutes: Kit comes to. 4 min remain.
+192 checks, 5 miss(es)
+
+== ss.pdf's own tests (review-tests/review6.test.mjs), section 35's tree
+P1 REPRO line edited into a correction, then swiped: after the correction Tom 0, Will 1, redone The player corrects their last line: it meant Will.; after the swipe Tom 1, Will 1
+P2 OK correctionOf on quoted speech: [["›No, Will!‹",null],["«No, Will»",null],["„No, Will!“",null]]
+P2b REPRO correctionOf with guillemet speech after "No, Will": [["No, Will, ›run!‹","Will, ›run!‹"],["No, Will «stop»","Will «stop»"]]
+P3 REPRO a missed Look records a sighting: {"t":null,"identified":false} ← Wit misses it (0.509 m target at 5000 m, dim street or public lighting).
+P4 REPRO "with all my might" as a message: {"tool":"Communicate","args":{"speaker":"Mara","listener":"Tom","means":"speech","effort":"shout","message":"with all my might"}}
+P5 REPRO nested emphasis *I punch **Tom**.*: who=undefined; unEmphasis → "I punch *Tom*."
+P6 REPRO parenthesized integers: {"marked":true,"plain":"John Smith checks items and."}
+P7 REPRO a woman named before "him back": I nod to Ann and hit him back.; changes []; open []
+P8 REPRO guillemets: notation «Stop»-; mirror [{"text":"«Stop󠁋󠁿»","family":"move","title":"cut off"}]
+P9 REPRO pointerdown listener absent (a source check, not a behaviour check)
+P10 REPRO waking from a choke: Time stopped after 1 min of 5 minutes: Kit comes to. 4 min remain.
+Kit (human): blood lost 0 L. wound 1 upper body blunt, closes in 13 days.
+P11 REPRO reach at 230 dB: {"sii":-0.01,"words":0.03,"audible":true,"snr":205,"pAudible":1}
+P12 REPRO old reply snapshots keep transient pulse tracks
+
+== the same, section 36's tree
+P1 OK line edited into a correction, then swiped: after the correction Tom 0, Will 1, redone The player corrects their last line: it meant Will.; after the swipe Tom 0, Will 1
+P2 OK correctionOf on quoted speech: [["›No, Will!‹",null],["«No, Will»",null],["„No, Will!“",null]]
+P2b OK correctionOf with guillemet speech after "No, Will": [["No, Will, ›run!‹",null],["No, Will «stop»",null]]
+P3 REPRO a missed Look records a sighting: {"t":null,"identified":false} ← Wit misses it (0.509 m target at 5000 m, dim street or public lighting).
+P4 OK "with all my might" as a message: {"tool":"Communicate","args":{"speaker":"Mara","listener":"Tom","means":"speech","effort":"shout"}}
+P5 OK nested emphasis *I punch **Tom**.*: who=Tom; unEmphasis → "I punch Tom."
+P6 OK parenthesized integers: {"marked":false,"plain":"John Smith (35) checks items (1) and (2)."}
+P7 OK a woman named before "him back": I nod to Ann and hit Tom back.; changes [{"from":"him back","to":"Tom back","why":"Tom did it to you last (\"back\": in return)","p":0.95}]; open []
+P8 OK guillemets: notation «Stop-»; mirror [{"text":"«"},{"text":"Stop󠁋󠁿","family":"move","title":"cut off"},{"text":"»"}]
+P9 REPRO pointerdown listener absent (a source check, not a behaviour check)
+P10 OK waking from a choke: Time stopped after 0 min 18 s of 5 minutes: Kit comes to. 4 min 42 s remain.
+Kit (human): blood lost 0 L. wound 1 upper body blunt, closes in 13 days.
+P11 REPRO reach at 230 dB: {"sii":-0.01,"words":0.03,"audible":true,"snr":205,"pAudible":1}
+P12 REPRO old reply snapshots keep transient pulse tracks
+
+== Browser (review-tests/browser/e.mjs): the extension's index.js in a stand-in SillyTavern page, Chromium
+--- uploaded tree
+E1 toolbar shown with words selected: true
+E1 after Tab: {"focus":"send_but","inBar":false,"hidden":true}
+E1 Shift+Tab path: rules-voice-open → options_button → 
+
+Pitchrises → rules_engine_suggest
+E2 marked: "I say stop<L><> now"
+E2 after Backspace: "I say sto<L><> now"
+E2 caret after two ArrowLeft from after the block: 7
+E2 after undo: "I say stop<L><> now"
+E3 touch: bar shown before tap: true
+E3 touch: hidden codes after tapping "louder": 2
+E3 focus after tap: send_textarea
+E4 typeset idempotent: {"same":true,"spans":1,"html":"I say <span class=\"rules-v rules-v-loud\" title=\"louder\">stop</span> now"}
+--- fixed tree
+E1 toolbar shown with words selected: true
+E1 after Tab: {"focus":"rules-voice-btn","inBar":true,"hidden":false}
+E1 Shift+Tab path: rules-voice-open → options_button → 
+
+Pitchrises → rules_engine_suggest
+E2 marked: "I say stop<L><> now"
+E2 after Backspace: "I say sto<L><> now"
+E2 caret after two ArrowLeft from after the block: 7
+E2 after undo: "I say stop<L><> now"
+E3 touch: bar shown before tap: true
+E3 touch: hidden codes after tapping "louder": 2
+E3 focus after tap: send_textarea
+E4 typeset idempotent: {"same":true,"spans":1,"html":"I say <span class=\"rules-v rules-v-loud\" title=\"louder\">stop</span> now"}
+
+== Area H (review-tests/probes/chat-growth.mjs), 4 people, one new fact every 4 turns
+turn 1: chat 0.01 MB, metadata 0.01 MB, one state 1 kB, history 6 entries, snapshots 1, turn 247 ms
+turn 10: chat 0.09 MB, metadata 0.04 MB, one state 3 kB, history 15 entries, snapshots 10, turn 58 ms
+turn 30: chat 0.25 MB, metadata 0.14 MB, one state 5 kB, history 35 entries, snapshots 30, turn 40 ms
+turn 60: chat 0.47 MB, metadata 0.23 MB, one state 6 kB, history 65 entries, snapshots 30, turn 46 ms
+turn 120: chat 1.09 MB, metadata 0.44 MB, one state 10 kB, history 125 entries, snapshots 30, turn 51 ms
+
+== Area C, section 35's tree (review-tests/probes/reader-lines.mjs): 61 lines
+
+» "Get away from her!" I shout at Tom.
+  route: {"Communicate":"shout","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Tom","means":"speech","effort":"shout","message":"Get away from her!"}
+
+» *I draw my sword and step toward Tom.*
+  route: {"Act":"draw","SocialResponse":"draw","Break":"draw"}
+  frame: 
+
+» *sighs* "Fine. I'll pay you two shillings."
+  route: {"Communicate":"sighs","Interpret":"with Communicate"}
+  frame: 
+
+» I punch Tom in the face. **Hard.**
+  route: {"BodyStrike":"punch"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I _whisper_ to Will, "Meet me at the docks."
+  route: {"Communicate":"whisper","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Will","means":"speech","effort":"whisper","message":"Meet me at the docks."}
+
+» Eu vou até a porta e bato. "Olá?"
+  route: {"Communicate":"quoted words","Interpret":"with Communicate"}
+  frame: 
+
+» Ich sage: »Komm her, Tom!« und warte.
+  route: {"Communicate":"quoted words","Interpret":"with Communicate"}
+  frame: 
+
+» Er rief: ›Halt!‹ I keep walking.
+  route: {"Communicate":"quoted words","Act":"motion","Interpret":"with Communicate"}
+  frame: 
+
+» It is 30°C and I am sweating; I drink some water.
+  route: {"BodyIntake":"drink"}
+  frame: 
+
+» I check the thermometer: -5 °C. Too cold to swim.
+  prosody: marked=true plain="I check the thermometer: -5 C. Too cold to swim." delivery="quieter: C Too cold to swim" effort=null
+  route: {"Look":"check","BodyCheck":"swim"}
+  frame: 
+
+» I call the FBI and the CIA.
+  route: {"Communicate":"call","Interpret":"with Communicate"}
+  frame: 
+
+» I tell Tom the IT desk is on the 2nd floor.
+  route: {"Communicate":"tell","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Tom","means":"speech","effort":"normal","message":"the IT desk is on the 2nd floor"}
+
+» NO! I SAID STOP!
+  prosody: marked=true plain="No! I said stop!" delivery="louder: No, said stop" effort=raised
+  route: {"Communicate":"said","Interpret":"with Communicate"}
+  frame: 
+
+» I grin :) and hand Will the letter.
+  route: {"Transfer":"hand"}
+  frame: Transfer {"item":"letter","quantity":1,"from":"Mara","to":"Will","how":"given"}
+
+» I wait 10 min, then walk 200 m to the station.
+  route: {"PassTime":"wait","Act":"walk"}
+  frame: Act {"who":"Mara","action":"walk 200 m to the station.","level":"on the level, stairs or a change of posture","distance_m":200}
+
+» I walk to the bar and order a pint of ale.
+  route: {"Act":"walk","Transfer":"order","Communicate":"order","SocialResponse":"order","Price":"a measure of goods","Interpret":"with Communicate"}
+  frame: 
+
+» I ask Ann for directions.
+  route: {"Communicate":"ask","SocialResponse":"ask","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Ann","means":"speech","effort":"normal","message":"for directions"}
+
+» Tom (35) and Will (12) watch me.
+  prosody: marked=true plain="Tom and Will watch me." delivery="pause 35 s after Tom · pause 12 s after Will" effort=null
+  route: {"Look":"watch"}
+  frame: 
+
+» I pick the lock (2 tries).
+  route: {"BodyCheck":"pick the lock"}
+  frame: 
+
+» I give Will 3 coins.
+  route: {"Transfer":"give"}
+  frame: 
+
+» I sneak past the guard.
+  route: {"Act":"sneak","Transfer":"sneak"}
+  frame: 
+
+» I look at Ann and smile.
+  route: {"Look":"look","Communicate":"smile","Interpret":"with Communicate"}
+  frame: Look {"viewer":"Mara","target":"Ann"}
+
+» Mara climbs the wall quietly.
+  route: {"BodyCheck":"climbs"}
+  frame: 
+
+» I listen at the door.
+  route: {"Listen":"listen"}
+  frame: Listen {"listener":"Mara"}
+
+» I sit down by the fire and rest for an hour.
+  route: {"Act":"sit","PassTime":"rest"}
+  frame: Act {"who":"Mara","action":"sit down by the fire and rest for an hour.","level":"on the level, stairs or a change of posture"} | PassTime {"minutes":60,"resting":["Mara"]}
+
+» I throw the knife at Tom.
+  route: {"BodyCheck":"throw"}
+  frame: 
+
+» I nod to Ann and hit him back.
+  route: {"BodyStrike":"hit","Act":"hit"}
+  frame: 
+  ask: ASK "Hit him": who? ["Hit Tom","Hit Will"]
+
+» Will: "What do you want?" I glare at him.
+  route: {"Look":"glare","Communicate":"quoted words","Interpret":"with Communicate"}
+  frame: Look {"viewer":"Mara","target":"him"}
+
+» I run 5 km.
+  route: {"Act":"run"}
+  frame: Act {"who":"Mara","action":"run 5 km.","level":"on the level, stairs or a change of posture","distance_m":5000}
+
+» I say nothing.
+  route: {"Communicate":"say","Interpret":"with Communicate"}
+  frame: 
+
+» I don't trust Tom.
+  route: {}
+  frame: 
+
+» I say hello to Will :D
+  route: {"Communicate":"say","Interpret":"with Communicate"}
+  frame: 
+
+» I swim across the river (about 50 m).
+  route: {"BodyCheck":"swim"}
+  frame: 
+
+» I meet Tom at 3 p.m. (15:00).
+  route: {}
+  frame: 
+
+» I buy 2 lbs of flour.
+  route: {"Price":"buy","Transfer":"buy"}
+  frame: 
+
+» I kick the door open.
+  route: {"BodyStrike":"kick","Break":"kick"}
+  frame: 
+
+» I'm hungry. I eat the bread.
+  route: {"BodyIntake":"eat"}
+  frame: 
+
+» I tell Tom about my plan with all the details.
+  route: {"Communicate":"tell","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Tom","means":"speech","effort":"normal","message":"about my plan with all the details"}
+
+» I write a letter to Ann.
+  route: {"Communicate":"write","Interpret":"with Communicate"}
+  frame: 
+
+» I fall asleep.
+  route: {"BodyFall":"fall"}
+  frame: 
+
+» I drop the sword.
+  route: {"BodyFall":"drop"}
+  frame: 
+
+» I drop my bag and run.
+  route: {"BodyFall":"drop","Act":"run"}
+  frame: 
+
+» I slip the note into his pocket.
+  route: {"BodyFall":"slip","Act":"motion"}
+  frame: 
+
+» I trip the guard.
+  route: {"BodyFall":"trip"}
+  frame: 
+
+» I fall silent.
+  route: {"BodyFall":"fall"}
+  frame: 
+
+» I fall back behind the wall.
+  route: {"BodyFall":"fall"}
+  frame: 
+
+» I fall in love with Ann.
+  route: {"BodyFall":"fall"}
+  frame: 
+
+» I drop to my knees.
+  route: {"BodyFall":"drop"}
+  frame: 
+
+» I slip on the ice.
+  route: {"BodyFall":"slip","Act":"motion"}
+  frame: 
+
+» I stumble into the room.
+  route: {"BodyFall":"stumble"}
+  frame: 
+
+» I drop down from the wall.
+  route: {"BodyFall":"drop"}
+  frame: 
+
+» I push the door open.
+  route: {"BodyCheck":"push"}
+  frame: 
+
+» I force a smile.
+  route: {"BodyCheck":"force"}
+  frame: 
+
+» I take a seat.
+  route: {"Transfer":"take"}
+  frame: 
+
+» I take the bread.
+  route: {"Transfer":"take"}
+  frame: 
+
+» I pass the salt to Will.
+  route: {"Act":"pass","Transfer":"pass","PassTime":"pass"}
+  frame: Transfer {"item":"salt","quantity":1,"from":"Mara","to":"Will","how":"given"}
+
+» I pass the guard.
+  route: {"Act":"pass","Transfer":"pass","PassTime":"pass"}
+  frame: 
+
+» I throw a glance at Tom.
+  route: {"Look":"throw"}
+  frame: 
+
+» I hold the door for Ann.
+  route: {"Act":"hold","HoldOn":"hold"}
+  frame: 
+
+» I break the silence.
+  route: {"Break":"break"}
+  frame: 
+
+» I break into a run.
+  route: {"Break":"break","Act":"motion"}
+  frame: 
+
+== Area C, prosody alone (review-tests/probes/prosody-lines.mjs): 37 lines, section 35's tree
+"It is 20 °C outside."               MARKED "It is 20 C outside." | quieter: C outside | effort null
+"It is 68 °F."                       MARKED "It is 68 F." | quieter: F | effort null
+"Set the oven to 180 °C, Tom."       MARKED "Set the oven to 180 C, Tom." | quieter: C Tom | effort null
+"An angle of 45 ° is enough."               "An angle of 45 ° is enough." |  | effort null
+"\"Hhh,\" I sigh."                          "\"Hhh,\" I sigh." |  | effort null
+"Hh. Fine."                          MARKED "Fine." |  | effort null
+"\"Shhh!\" I hiss."                         "\"Shhh!\" I hiss." |  | effort null
+"I meet him at 10:30."                      "I meet him at 10:30." |  | effort null
+"\"W-wait!\" I stammer."                    "\"W-wait!\" I stammer." |  | effort null
+"\"I-I don't know.\""                       "\"I-I don't know.\"" |  | effort null
+"I SO want to go."                   MARKED "I so want to go." | louder: so | effort raised
+"I said NO."                         MARKED "I said no." | louder: no | effort raised
+"xD"                                        "xD" |  | effort null
+"XD that was funny"                         "XD that was funny" |  | effort null
+"WTF is that?"                              "WTF is that?" |  | effort null
+"BRB"                                       "BRB" |  | effort null
+"I go to the ER."                           "I go to the ER." |  | effort null
+"NYC is far."                               "NYC is far." |  | effort null
+"<3"                                        "<3" |  | effort null
+":-)"                                       ":-)" |  | effort null
+"D-:"                                       "D-:" |  | effort null
+"Re:Zero is on."                            "Re:Zero is on." |  | effort null
+"Item (a) and item (b)."                    "Item (a) and item (b)." |  | effort null
+"He is 6'2\" tall."                         "He is 6'2\" tall." |  | effort null
+"The year (1850) was cold."          MARKED "The year was cold." | pause 1850 s after year | effort null
+"I got (.) nothing."                 MARKED "I got nothing." | short pause after got | effort null
+"Wait (0.5) what?"                   MARKED "Wait what?" | pause 0.5 s after Wait | effort null
+"I count to (3)."                    MARKED "I count to." | pause 3 s after to | effort null
+"\"Help!\" (I yell.)"                       "\"Help!\" (I yell.)" |  | effort null
+"I pay 5 (five) coins."                     "I pay 5 (five) coins." |  | effort null
+"The °old° man."                     MARKED "The old man." | quieter: old | effort null
+"HEY TOM, OVER HERE!"                MARKED "Hey tom, over here!" | louder: Hey tom over here | effort loud
+"My PIN is 1234."                           "My PIN is 1234." |  | effort null
+"I swim 3:00 min."                          "I swim 3:00 min." |  | effort null
+"I eat a ☺ cookie."                         "I eat a ☺ cookie." |  | effort null
+"“Stop”, I say ˈquietly."            MARKED "“Stop”, I say quietly." | stressed: quietly | effort null
+"I am at 0° latitude."                      "I am at 0° latitude." |  | effort null
+
+== Negative controls, section 36's tree (negative-controls-run.txt): 409 of 409 caught.

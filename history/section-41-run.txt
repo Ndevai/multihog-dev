@@ -1,0 +1,248 @@
+# Section 41 runs (2026-10-27). Tree: section 40 (3317228) → section 41 (1446893).
+
+## npm test on section 41's tree
+183 checks, 0 miss(es)
+201 checks, 0 miss(es)
+37 checks, 0 miss(es)
+197 checks, 0 miss(es)
+60 checks, 0 miss(es)
+size: 9 of 9
+ui: 54 of 54
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## The new route and frame cases on section 40's tree
+MISS "I charge the cook two shillings."
+  routed: BodyStrike, Price, Act
+  wrong: BodyStrike, Act
+MISS "I charge at the guard."
+  routed: BodyStrike, Price, Act
+  wrong: Price
+MISS "I hold a meeting."
+  routed: Act, HoldOn
+  wrong: HoldOn, Act
+MISS "I hold the rope."
+  routed: Act, HoldOn
+  wrong: Act
+MISS "I cut the cook."
+  routed: BodyStrike, Act, Break
+  wrong: Break
+MISS "I shove Tom into the wall."
+  routed: Act, Break
+  wrong: Break
+MISS "I throw the cook a coin."
+  routed: BodyCheck
+  lacking: Transfer
+MISS "I serve the soup."
+  routed: Price, Transfer, PassTime
+  wrong: Price
+MISS "I get hit by Tom."
+  routed: BodyStrike, Act
+  wrong: Act
+MISS "I make a promise to Tom."
+  routed: Transfer, Communicate, Interpret
+  wrong: Transfer
+183 checks, 10 miss(es)
+183 checks, 10 miss(es)
+MISS "I charge the cook."
+  BodyStrike written by code (the words lack an argument): {"attacker":"Mara","who":"the cook"}
+MISS "I cut the cook a slice of bread."
+  BodyStrike written by code (the words lack an argument): {"attacker":"Mara","who":"the cook"}
+201 checks, 2 miss(es)
+201 checks, 2 miss(es)
+
+## 272 player lines, old router against new (review-tests/probes/realdiff.mjs)
+I wait until Tom leaves, then follow him outside.
+   Act Chase PassTime Transfer → Act Chase PassTime
+I whisper to Ann that we should leave, then walk to the door.
+   Act Communicate Interpret Transfer → Act Communicate Interpret
+I shove Tom into the wall.
+   Act Break → Act
+I charge the cook two shillings.
+   Act BodyStrike Price → Price
+I charge at the guard.
+   Act BodyStrike Price → Act BodyStrike
+I hold a meeting.
+   Act HoldOn → ∅
+I hold the rope.
+   Act HoldOn → HoldOn
+I cut the cook.
+   Act BodyStrike Break → BodyStrike
+I throw the cook a coin.
+   BodyCheck → BodyCheck Transfer
+I serve the soup.
+   PassTime Price Transfer → PassTime Transfer
+I get hit by Tom.
+   Act BodyStrike → BodyStrike
+I make a promise to Tom.
+   Communicate Interpret Transfer → Communicate Interpret
+I talk to Rob about the horse.
+   Communicate Interpret SocialResponse → Communicate Interpret
+280 lines, 13 changed
+
+## "I throw the cook" and 19 variations, router tools and the calls code drafts: section 40
+I throw the cook.                    BodyCheck                          
+I throw the cook out.                BodyCheck                          
+I throw the cook a coin.             BodyCheck                          
+I throw the cook down the stairs.    BodyCheck                          
+I throw myself at the cook.          BodyCheck                          
+I throw a party for the cook.        BodyCheck                          
+I throw a punch at the cook.         BodyStrike                         
+I throw the cook off the scent.      BodyCheck                          
+I throw the cook's knife away.       BodyCheck                          
+I throw a stone at the cook.         BodyCheck                          
+I fire the cook.                     ∅                                  
+I fire at the cook.                  BodyStrike BodyCheck               
+I charge the cook.                   BodyStrike Price Act               code drafts: BodyStrike
+I charge the cook a shilling.        BodyStrike Price Act               code drafts: BodyStrike
+I strike the cook.                   BodyStrike                         code drafts: BodyStrike
+I strike a deal with the cook.       BodyStrike                         
+I cut the cook.                      BodyStrike Act Break               code drafts: BodyStrike
+I cut the cook a slice of bread.     BodyStrike Act Break Price         code drafts: BodyStrike
+I hit the cook.                      BodyStrike Act                     code drafts: BodyStrike
+I hit the cook up for money.         BodyStrike Act                     code drafts: BodyStrike
+## section 41
+I throw the cook.                    BodyCheck                          
+I throw the cook out.                BodyCheck                          
+I throw the cook a coin.             BodyCheck Transfer                 
+I throw the cook down the stairs.    BodyCheck                          
+I throw myself at the cook.          BodyCheck                          
+I throw a party for the cook.        BodyCheck                          
+I throw a punch at the cook.         BodyStrike                         
+I throw the cook off the scent.      BodyCheck                          
+I throw the cook's knife away.       BodyCheck                          
+I throw a stone at the cook.         BodyCheck                          
+I fire the cook.                     ∅                                  
+I fire at the cook.                  BodyStrike BodyCheck               
+I charge the cook.                   BodyStrike Price Act               
+I charge the cook a shilling.        Price                              
+I strike the cook.                   BodyStrike                         code drafts: BodyStrike
+I strike a deal with the cook.       BodyStrike                         
+I cut the cook.                      BodyStrike                         code drafts: BodyStrike
+I cut the cook a slice of bread.     BodyStrike Price                   
+I hit the cook.                      BodyStrike Act                     code drafts: BodyStrike
+I hit the cook up for money.         BodyStrike Act                     code drafts: BodyStrike
+
+## Inventory summary (sense-inventory.tsv)
+16224 phrases from 676 verbs: {"one reading":9490,"changed":4249,"open: an unrestricted sense adds a tool":920,"named, other senses":172,"named":932,"open: senses the object fits name different tools":461}
+plausible (the object fits a kept sense): 8172 {"one reading":4930,"changed":1647,"named, other senses":159,"open: an unrestricted sense adds a tool":516,"named":459,"open: senses the object fits name different tools":461}
+
+## Negative controls on router.js, frame.js and senses.js
+N57 caught look verbs in a line (1 s)
+N57b caught blow verbs in a line (0 s)
+N65d caught router light verbs (0 s)
+R13 caught action without markup (1 s)
+R13b caught action without its subject (1 s)
+R14c caught legs timed in the frame (1 s)
+R22 caught the player's own acts (0 s)
+R22b caught infinitive after an object (1 s)
+R22c caught subordinate clause lends no subject (1 s)
+RT1 caught a measure of goods has a price (0 s)
+RT2 caught quoted words are a message (0 s)
+RT3 caught a message is interpreted (1 s)
+RT4 caught verbs only where a verb stands (0 s)
+Q4b caught out-of-character asides (1 s)
+Q5 caught he and she (1 s)
+Q6 caught a blow strikes a creature (1 s)
+Q6c caught one spoken to is a person (1 s)
+Q6d caught a place is no message (1 s)
+Q7 caught an act not done (1 s)
+Q7b caught a verb not done routes nothing (0 s)
+Q8 caught a compound subject (1 s)
+Q10 caught a direction is no target (1 s)
+Q11 caught into the water (1 s)
+Q11b caught pick the lock (0 s)
+Q11c caught keep watch (0 s)
+Q11d caught cast a spell (0 s)
+Q11e caught a shot (0 s)
+Q11f caught pretence (1 s)
+Q11g caught going to (0 s)
+Q11h caught a breath taken (0 s)
+G1 caught a light use is said with its verb (1 s)
+G2 caught the router routes a light use's act (1 s)
+G10 caught a noun FrameNet routes decides first (1 s)
+G13 caught a name may open a sentence (1 s)
+G14 caught a bare infinitival after an NP is the NP's act (1 s)
+G15 caught an oblique controls the infinitival (1 s)
+G16 caught a purpose clause after two objects (1 s)
+G20 caught the router reads covertly negative verbs (1 s)
+G21 caught a look's target stops at a coordinator (1 s)
+G22 caught an apology is said (1 s)
+G9 caught a light make reads its noun's act (1 s)
+G25 caught a modal is no lexical verb (0 s)
+G26 caught a name inside a sentence is no verb (1 s)
+G27 caught get and a participle before by is a passive (1 s)
+G28 caught a causative's own sense is no act (1 s)
+G29 caught a passive verb is its agent's act (1 s)
+G30 caught a passive blow strikes its subject (1 s)
+G35 caught wanting someone to act is no act (1 s)
+G38 caught a look's target keeps its of phrase (1 s)
+G39 caught the subject after an adjunct in front position (1 s)
+G56 caught a let-imperative is said (0 s)
+G57 caught a let-imperative's verb is offered (1 s)
+G59 caught a vocative's directive is speech to them (1 s)
+G60 caught a vocative's directive routes speech (0 s)
+G63 caught the hand-over takes the to phrase (1 s)
+G64 caught it handed over is the thing named before (1 s)
+G65 caught two things before it: the scene settles (1 s)
+G66 caught a subject's noun phrase ends where its verb starts (1 s)
+G67 caught a person introduced by a noun phrase is an antecedent (1 s)
+G68 caught the person noun phrase's head is its last person noun (1 s)
+G70 caught a noun phrase's sex from its head (1 s)
+G71 caught a reflexive object is the subject (1 s)
+G72 caught coordinated noun phrases are one target (1 s)
+G73 caught a cleft is read as its basic counterpart (1 s)
+G76 caught the acts in the order told (1 s)
+G77 caught a before-clause act comes after (1 s)
+G78 caught an after-clause act comes before (1 s)
+G79 caught an NP of time in front position is no verb (1 s)
+G80 caught used to is no using (0 s)
+G81 caught central adverbs between have and its participle (0 s)
+G82 caught a name opening a sentence is a subject (0 s)
+G98 caught a timed walk is time spent walking (1 s)
+G99 caught a goal bounds the walk: no duration (0 s)
+G100 caught a timed run is running (1 s)
+G101 caught a timed walk settles the Act (1 s)
+RV12 caught curly apostrophes route as straight ones (0 s)
+RW12 caught a listener's noun phrase runs to its head (1 s)
+RW13 caught a group of people is spoken to (1 s)
+RW14 caught a group of people heads a listener's noun phrase (1 s)
+RY14 caught him is a person or an animal named before, not a thing (1 s)
+RY15 caught a pronoun after a preposition names no one new (1 s)
+RY16 caught the phrase's second word is read ahead, not taken (1 s)
+RY17 caught one met as a monk is the monk (1 s)
+RY21 caught the story's words come without markdown emphasis (1 s)
+RY22 caught framing reads a line without markdown emphasis (1 s)
+RZ14 caught an Act's action leaves out sentences that make no move (1 s)
+RZ15 caught the move's verb is read outside quoted words (1 s)
+RZ17 caught the message is the words in any quotation marks (1 s)
+RZ18 caught the router reads no verb inside quoted words (0 s)
+RZ19 caught words in guillemets route Communicate (0 s)
+RS7 caught a manner or a topic after the listener is no message (1 s)
+RS8 caught emphasis runs are read longest first (1 s)
+RS12 caught a verb of falling with an object or a state complement is no fall (1 s)
+RS16 caught a pronoun looked at is the person the grammar finds for it (1 s)
+RA1 caught a weather verb routes Weather only with "it" as its subject (0 s)
+RA2 caught Levin's verbs of killing by a means route by the means (0 s)
+RA3 caught a phrasal verb routes by its own entry (1 s)
+RA4 caught taking a seat is sitting down (0 s)
+RA5 caught slipping past someone is keeping out of their sight (1 s)
+RA6 caught a weapon swung at someone is a blow tried (0 s)
+RA8 caught the words said end at a joined clause with its own subject (0 s)
+RA9 caught a posture held for a timed while passes the time (1 s)
+RB3 caught fire with a person as its object is no shot (1 s)
+RB5 caught fire up starts a thing (1 s)
+RB6 caught a named verb's empty list is its answer (1 s)
+RB7 caught opening or returning fire is a shot (1 s)
+RB8 caught gunning down is a shot (1 s)
+RE1 caught a verb's senses are those its object fits (1 s)
+RE2 caught two objects after a verb of giving hand the second over (1 s)
+RE3 caught the object's first sense is read first (0 s)
+RE4 caught a particle makes a phrasal verb (0 s)
+RE5 caught a unit symbol is a measure (0 s)
+RE6 caught a negative requirement is no match (0 s)
+RE7 caught a blow verb with a fitting other sense is the planner's (1 s)
+RE8 caught a person after a verb of fulfilling needs a with-phrase (0 s)
+RE9 caught fulfilling is a hand-over (1 s)
+RE10 caught returning fire is no motion (1 s)
+RE11 caught a blow verb with two objects is done for the first (1 s)
+118 of 118 controls caught.

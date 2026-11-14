@@ -1,0 +1,202 @@
+# Section 48 run (the uploaded tree of (114) against this tree; 2026-11-11)
+
+## Tests (the steps of npm test; tsc Version 5.6.3)
+route: 218 checks, 0 miss(es)
+frame: 202 checks, 0 miss(es)
+intent: 37 checks, 0 miss(es)
+engine: 203 checks, 0 miss(es)
+plan: 60 checks, 0 miss(es)
+size: 9 of 9
+ui: 77 of 77
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## Negative controls (every control on ui.js, index.js, style.css, reading.js, voice.js, voice-code.js, prosody.js)
+N62 caught who acts in a call (13 s)
+U1 caught others latest (0 s)
+U1b caught actor left out (0 s)
+U1c caught hover detail (0 s)
+U2 caught note as text (0 s)
+U3 caught edited line (0 s)
+U4 caught no default (0 s)
+U4b caught choices alike (0 s)
+U4c caught number keys (0 s)
+U4d caught shared words (0 s)
+U6 caught era bands (0 s)
+U7 caught kind contrast (0 s)
+U7b caught tone (0 s)
+U8 caught reserved name (0 s)
+V1 caught capitals loud (0 s)
+V2 caught abbreviations (0 s)
+V3 caught closer needs opener (0 s)
+V4 caught pi to five (0 s)
+V4b caught pi in engine (13 s)
+H1 caught toggle off (0 s)
+H2 caught marks kept on backspace (0 s)
+H3 caught layer holds the text (0 s)
+H4 caught chat classes (0 s)
+H5 caught one feeling (0 s)
+R10 caught signs after a quotation mark (0 s)
+R10b caught one colon is writing (0 s)
+R11 caught Backspace in quotes (0 s)
+R12 caught voice button from the keyboard (0 s)
+R20 caught say it another way takes the line back (0 s)
+R21 caught guillemets are quotes (0 s)
+R21b caught capitals on common words (0 s)
+R21c caught suspended hyphen (0 s)
+I18 caught the note shows the line as meant (0 s)
+RV7 caught Backspace: a word left with no letter loses its marks (0 s)
+RV8 caught Delete: a word left with no letter loses its marks (0 s)
+RV9 caught a dash may cling to a VoQS opener (0 s)
+RV10 caught a word a dash joins to a VoQS opener is a word of its own (0 s)
+RV11 caught a dash may cling to a VoQS closer (0 s)
+RW7 caught a pause titled by its length (0 s)
+RW8 caught a pause's length kept for its title (0 s)
+RW9 caught capitals after a determiner are an abbreviation (0 s)
+RW10 caught LA, DC, HR, PR and ER are abbreviations (0 s)
+RW11 caught the typesetting's added words are not selected (0 s)
+RY13 caught a world-book line is read without its hidden marks (0 s)
+RY18 caught abbreviations that are nouns stay after a determiner (0 s)
+RY19 caught AIDS and SIM stay as written (0 s)
+RY20 caught a hyphen before a colon is a face, not a cut-off (0 s)
+RZ10 caught every character of the Tags block is taken out (13 s)
+RZ11 caught the narrator's prompt carries no tag character (0 s)
+RZ21 caught speech in any quotation marks is the speech whose loudness counts (0 s)
+RZ22 caught a quote left open runs to the line's end (0 s)
+RZ23 caught a cut-off before a closing quotation mark or bracket (0 s)
+RZ24 caught a word opening any quotation marks starts a sentence (0 s)
+RS9 caught a whole number in brackets is no timed pause (0 s)
+RS10 caught a degree sign before C, F or K is a unit (0 s)
+RS13 caught a mark goes on the letters inside any quotation marks and before a dash (0 s)
+RA10 caught every request to a model leaves with notation (0 s)
+RA11 caught a shouted name keeps its capital (0 s)
+RA12 caught a feeling keeps the selection (0 s)
+RL1 caught pitch order in the notation (0 s)
+RL2 caught pitch order in the delivery (0 s)
+RL3 caught pitch order in the chat (0 s)
+RL4 caught stress mark in the chat (0 s)
+RM1 caught a louder word's level is the raised voice's (0 s)
+RM2 caught faster with slower keeps the speaker's own rate (0 s)
+RM3 caught the look's sizes come from the sound (0 s)
+RM4 caught further time is 1 ÷ rate − 1 (0 s)
+RM5 caught the palest ink keeps 4.5:1 (0 s)
+RM6 caught the pitch stroke takes the word's own colour (0 s)
+RM7 caught a breathy word keeps a sharp edge (0 s)
+RM8 caught a word with a pitch stroke adds no height to its line (0 s)
+RM9 caught a feeling's colour reads on the theme (0 s)
+RM10 caught two feelings' colours stay apart (0 s)
+RM11 caught a drawn-out vowel is written again (0 s)
+RM12 caught a pause's dots count its silence (0 s)
+RM13 caught the space between two slower words takes the tempo (0 s)
+RM14 caught words that share a phonation stand in one run (0 s)
+RM15 caught a mark's quantity on hover (0 s)
+RN1 caught a gesture is no speaking (0 s)
+RN2 caught working something out is the mind's (0 s)
+RN3 caught quoted words are said (0 s)
+RN4 caught an edited line keeps what its own words show (0 s)
+RN5 caught the mode's call on hover (0 s)
+RN6 caught the page's aside ink reads on its ground (0 s)
+RN7 caught the page keeps SillyTavern's x-height (0 s)
+RN8 caught a pause stays by its word (0 s)
+86 of 86 controls caught.
+
+## Prompt audit
+unchanged: the output of tools/prompt-audit.mjs is the same on both trees (12 lines)
+
+## The chat in Chromium with SillyTavern's own stylesheets and message template
+SillyTavern release branch, commit 06bde939fb1e9c4c8d8641d810f0a916b5bce127 (2026-09-14), read as files; none of its scripts run.
+node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - <theme> <display> <width> <page> measure
+7 messages, 5 of them the player's; "light" is no shipped theme (SillyTavern's variables set to a light page, as tests/ui.test.mjs lists it).
+
+### The dialogue page (36 combinations)
+Dark Lite, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark Lite, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark Lite, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark Lite, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark Lite, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark Lite, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Azure, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Azure, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Azure, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Azure, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Azure, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Azure, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Cappuccino, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Cappuccino, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Cappuccino, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Cappuccino, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Cappuccino, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Cappuccino, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Celestial Macaron, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Celestial Macaron, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Celestial Macaron, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Celestial Macaron, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Celestial Macaron, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Celestial Macaron, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark V 1.0, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark V 1.0, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark V 1.0, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark V 1.0, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+Dark V 1.0, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+Dark V 1.0, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+light, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+light, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+light, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+light, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+light, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
+light, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
+
+### The theme's look, page off (36 combinations; the MISS lines counted by kind below)
+Dark Lite, flat, 412 px, page off: 1 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
+Dark Lite, flat, 800 px, page off: 0 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
+Dark Lite, bubble, 412 px, page off: 14 miss(es); lowest contrast 4.34:1 (rules-run rules-run-whisper in message 1), of a marked word 4.34:1; least room over a pitch stroke 0.07 em
+Dark Lite, bubble, 800 px, page off: 13 miss(es); lowest contrast 4.34:1 (rules-run rules-run-whisper in message 1), of a marked word 4.34:1; least room over a pitch stroke 0.07 em
+Dark Lite, document, 412 px, page off: 1 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
+Dark Lite, document, 800 px, page off: 0 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
+Azure, flat, 412 px, page off: 56 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
+Azure, flat, 800 px, page off: 55 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
+Azure, bubble, 412 px, page off: 53 miss(es); lowest contrast 3.03:1 (rules-run rules-run-whisper in message 1), of a marked word 3.03:1; least room over a pitch stroke 0.07 em
+Azure, bubble, 800 px, page off: 52 miss(es); lowest contrast 3.03:1 (rules-run rules-run-whisper in message 1), of a marked word 3.03:1; least room over a pitch stroke 0.07 em
+Azure, document, 412 px, page off: 49 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
+Azure, document, 800 px, page off: 48 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
+Cappuccino, flat, 412 px, page off: 49 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
+Cappuccino, flat, 800 px, page off: 48 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
+Cappuccino, bubble, 412 px, page off: 33 miss(es); lowest contrast 3.59:1 (rules-run rules-run-whisper in message 1), of a marked word 3.59:1; least room over a pitch stroke 0.07 em
+Cappuccino, bubble, 800 px, page off: 32 miss(es); lowest contrast 3.59:1 (rules-run rules-run-whisper in message 1), of a marked word 3.59:1; least room over a pitch stroke 0.07 em
+Cappuccino, document, 412 px, page off: 49 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
+Cappuccino, document, 800 px, page off: 48 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
+Celestial Macaron, flat, 412 px, page off: 1 miss(es); lowest contrast 5.00:1 (timestamp in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
+Celestial Macaron, flat, 800 px, page off: 0 miss(es); lowest contrast 5.00:1 (timestamp in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
+Celestial Macaron, bubble, 412 px, page off: 10 miss(es); lowest contrast 3.89:1 (timestamp in message 1), of a marked word 3.93:1; least room over a pitch stroke 0.07 em
+Celestial Macaron, bubble, 800 px, page off: 9 miss(es); lowest contrast 3.89:1 (timestamp in message 1), of a marked word 3.93:1; least room over a pitch stroke 0.07 em
+Celestial Macaron, document, 412 px, page off: 1 miss(es); lowest contrast 5.59:1 (em in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
+Celestial Macaron, document, 800 px, page off: 0 miss(es); lowest contrast 5.59:1 (em in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
+Dark V 1.0, flat, 412 px, page off: 20 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
+Dark V 1.0, flat, 800 px, page off: 19 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
+Dark V 1.0, bubble, 412 px, page off: 20 miss(es); lowest contrast 5.11:1 (em in message 0), of a marked word 5.11:1; least room over a pitch stroke 0.07 em
+Dark V 1.0, bubble, 800 px, page off: 19 miss(es); lowest contrast 5.11:1 (em in message 0), of a marked word 5.11:1; least room over a pitch stroke 0.07 em
+Dark V 1.0, document, 412 px, page off: 20 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
+Dark V 1.0, document, 800 px, page off: 19 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
+light, flat, 412 px, page off: 14 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
+light, flat, 800 px, page off: 13 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
+light, bubble, 412 px, page off: 14 miss(es); lowest contrast 3.69:1 (rules-run rules-run-whisper in message 1), of a marked word 3.69:1; least room over a pitch stroke 0.07 em
+light, bubble, 800 px, page off: 13 miss(es); lowest contrast 3.69:1 (rules-run rules-run-whisper in message 1), of a marked word 3.69:1; least room over a pitch stroke 0.07 em
+light, document, 412 px, page off: 14 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
+light, document, 800 px, page off: 13 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
+
+MISS lines by kind, page off:
+    460 contrast
+    342 letter shadow
+     18 stroke in the line above
+
+Letter shadows found, page off (computed text-shadow of a marked word):
+    114 rgb(0, 0, 0) 0px 0px 5px
+    114 rgba(0, 0, 0, 0.3) 0px 0px 1px
+    114 rgba(0, 0, 0, 0.9) 0px 0px 2px
+
+### The pause check misses without its fix
+style.css without ".rules-v-add-micro, .rules-v-add-pause, .rules-v-add-rest { white-space: nowrap; }", Dark Lite, flat, 412 px, page on:
+  MISS pause away from its word: after "," in message 4
+
+### Measured for the page's type
+x-height of SillyTavern's Noto Sans (public/webfonts/NotoSans/NotoSans-Regular.woff2 and -Medium.woff2), the letter x drawn at 1000 px in Chromium: 0.546875 em each
+contrast on ivory (WCAG relative luminance): black 20.81, dimgray 5.44, a whispered word (black at 0.78) 11.65, a softer word (black at 0.88) 16.44, teal 4.73

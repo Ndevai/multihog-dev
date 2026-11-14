@@ -140,7 +140,7 @@ type Coef = { Tb: number; Tm: number; Hform: number; Gform: number; Hfus: number
 let JOB: { base: Coef; groups: Record<string, Coef> } | null = null;
 let loading: Promise<void> | null = null;
 export function loadJoback(): Promise<void> {
-    loading ??= fetch(new URL('../../rules/joback.json', import.meta.url)).then(r => r.json()).then(d => { JOB = d; });
+    loading ??= fetch(new URL('../../rules/joback.json', import.meta.url)).then(r => r.json()).then(d => { JOB = d; }).catch(e => { loading = null; throw e; });
     return loading;
 }
 export const jobackLoaded = () => JOB !== null;

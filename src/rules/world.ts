@@ -3,6 +3,7 @@
 // as little history as its premise needs, each change following from the premise by a stated cause (minimal-rewrite rule,
 // Tetlock & Belkin 1996). So each entry names its cause and the areas of life the cause reaches; every other area stays as in
 // real history, and the entry shows in the world through a few stated reflections.
+import { objectEnd } from './json-text.js';
 import { checkArgs, str, type Props } from './tool-schema.js';
 import { creatureId } from './df/index.js';
 import { SPEECH_OVERRIDE } from './body-engine.js';
@@ -114,12 +115,10 @@ Write only the JSON object.`;
 export function parseEntry(text: unknown): Record<string, unknown> | null {
     const s = String(text ?? ''), at = s.lastIndexOf('{"what"') >= 0 ? s.lastIndexOf('{"what"') : s.indexOf('{');
     if (at < 0) return null;
-    let depth = 0;
-    for (let i = at; i < s.length; i++) {
-        if (s[i] === '{') depth++;
-        else if (s[i] === '}' && --depth === 0) { try { return JSON.parse(s.slice(at, i + 1)); } catch { return null; } }
-    }
-    return null;
+    // Braces inside its strings are text ("a door marked {sealed}"), not the object's own.
+    const end = objectEnd(s, at);
+    if (end < 0) return null;
+    try { return JSON.parse(s.slice(at, end + 1)); } catch { return null; }
 }
 
 /** The world-book entry for `name` (a creature or people) when the scene lies outside its area, with the distance; else null.

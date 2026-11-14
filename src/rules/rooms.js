@@ -75,15 +75,14 @@ export function heatMinute(r) {
 export function feelHeat(r, p) {
     if (!p.env)
         return;
-    const q = p;
     if (r.hot == null) {
-        if (q.fireHeat) {
+        if (p.fireHeat) {
             p.env.tdb = p.env.tr = r.air_c;
-            q.fireHeat = false;
+            p.fireHeat = false;
         }
         return;
     }
-    q.fireHeat = true;
+    p.fireHeat = true;
     const head = p.env.posture === 'lying' ? 0.3 : k('headStanding'), T0 = r.base_c ?? r.air_c;
     const inLayer = r.layer != null && head >= r.layer;
     p.env.tdb = inLayer ? r.hot : T0;

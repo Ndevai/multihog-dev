@@ -1,0 +1,1951 @@
+diff --git a/.gitignore b/.gitignore
+index ce17e32..88a453d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -4,3 +4,6 @@ play-result.txt
+ story-result*.txt
+ answers-cache.jsonl
+ probe-result.txt
++
++# The averaged person for the natural voice: CC BY-NC (EARS), kept out of the repository (voices/README.md).
++voices/*.bin
+diff --git a/README.md b/README.md
+index eb17b01..7813871 100644
+--- a/README.md
++++ b/README.md
+@@ -51,7 +51,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - In the text box, the type is large enough to read at full speed with the phone at arm's length (0.2° of letter height at 58 cm), and a line above the chat says where and when the scene is and its light ("Recife · Sunday 15 July 1990, 18:20 · nautical twilight") instead of your device's clock; scrolling the box no longer pulls the page behind it.
+ - The text box has a visual novel's look by default ("The box's look: night"): a see-through dark panel in white corner brackets under a pink name tag, white spoken words and light blue narration, the buttons as small pills under it, and a blinking ▼ when the line has finished appearing. "page" keeps the page's own look.
+ - The first time a character with a character card of their own speaks, a card crosses the screen with their name and trade (or age), as visual novels introduce people; the story's time and place sit in a badge in the corner, and the box's buttons are words along its bottom edge.
+-- Characters speak their lines aloud as they type (setting "Voices: natural", the default): each speaker copies a real person recorded talking freely (EARS, 95 adults), the one nearest the pitch, throat length and age their body gives, with that person's way of talking; the letters keep time with the audio. The voices download once (165 MB) and stay in the browser; the first line of a session waits for them (about 9 s on a desktop), a tap shows a waiting line at once. Narration and whispers stay silent. "robotic" speaks with eSpeak NG in each speaker's exact computed voice (whispers whispered); "blips" gives one tone a syllable; "off" silences them.
++- Characters speak their lines aloud as they type (setting "Voices: natural", the default): each voice is computed from the speaker's body (the pitch their vocal folds give, their throat's length, their pace), applied to the averaged way of speaking of 16 people talking freely, so a tall man sounds low, a small child high and slow, and any body gives its own voice. It needs `voices/averaged-person.bin` (handed over separately; see voices/README.md) and downloads the speech model once (165 MB); the first line of a session waits for it (about 8 s on a desktop), a tap shows a waiting line at once. Narration and whispers stay silent. "robotic" speaks with eSpeak NG; "blips" gives one tone a syllable; "off" silences them.
+ - One thing on screen at a time: with **Text box** on (the default), the chat shows one box at the foot of the screen under the name of whoever says it. A new box starts wherever said words begin or end, and a long stretch goes on in the next box. Said words are black (white on the dark page) with SPEAKING, or WHISPERING, at the plate's right; everything else is blue and belongs to your character, with THINKING when you work something out. Letters appear one by one, said words at the speaker's pace and the rest at reading pace; a tap shows the rest at once, then the next box. "Auto" moves on by itself once a box has been read, ‹ or ← goes back, and "Log" shows the whole chat. The narrator names who says each quotation, so the plate can show it; in your own lines, the person acting just before a quotation says it.
+ - Words that name what the engine decided are marked in gold, as important words are in yellow in a visual novel. **Page colours** offers the light page or a dark one (white, light blue and gold on black), and **The speaker's picture** can show the character card's picture large above the box.
+ - **Music**: add your own songs in the settings. Each is measured as you add it (tempo, loudness, brightness, key), and the song nearest the feelings in the scene plays: your line marked sad brings a calm song in a minor key, a character's joy a lively one in a major key. Give a song a set named after a character or a place, and it becomes their theme. When several feelings are in the scene, the strongest counts 90% and the newest 10%. A song stays while the scene stays in its area, unless another song is clearly nearer, and the next one fades in over 4 seconds. The ♪ button turns the music on and off.
+diff --git a/docs/constants.md b/docs/constants.md
+index 58bedfa..8075aa0 100644
+--- a/docs/constants.md
++++ b/docs/constants.md
+@@ -98,7 +98,7 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | musicCrossfadeS | 4 | s, crossfade between two songs | assumed | 1–8 | long enough that no gap or jump is heard, short enough to follow a change of scene | music.ts |
+ | musicSilenceDbfs | -60 | dB of a frame's RMS against full scale | assumed | -70–-50 | a frame this far under full scale is silence or the tail of a fade | music.ts |
+ | musicStrongestWeight | 0.9 | share of the scene's point the strongest feeling takes | assumed | 0.5–1 | the player's weighting, 2026-11-11: strongest 90 %, newest 10 % | music.ts |
+-| earsAgeStep | 15 | years of age that weigh as one SD of pitch or tract in the choice of recording | assumed | 8–30 | one and a half EARS age bands (10 years each) | pocket.ts |
++| speechRegister | 1.16 | × free speech's pitch, for connected speech | assumed | 1–1.25 | adult women's connected speech near 200 Hz against EARS's monologues at 172 (200 ÷ 172); the player's ear preferred it | pocket.ts |
+ | achMedian | 0.45 | per hour | sourced |  | US EPA Exposure Factors Handbook 2011, Table 19-1 | rooms.ts |
+ | charcoalC | 100 | % carbon | assumed | 75–100 | charcoal taken as pure carbon | rooms.ts |
+ | coCharcoal | 276 | g CO per kg | sourced |  | IPCC EFDB India Annex 7 (stove tests) | rooms.ts |
+@@ -186,7 +186,7 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ 
+ ## Assumptions not yet registered
+ 
+-346 tags written only in comments (337 assumed, 9 raw); each is a candidate for the registry above.
++348 tags written only in comments (339 assumed, 9 raw); each is a candidate for the registry above.
+ 
+ | File | Line | Kind | Text |
+ |---|---|---|---|
+@@ -343,6 +343,7 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | music.ts | 206 | assumed | centroid), taken equally [ASSUMED weights], the common code's activation cues; valence from its majorness, the cue that |
+ | nouns.ts | 10 | assumed | people are [ASSUMED list] (WordNet's groups also hold tables and classes, so a group noun is no person by itself). |
+ | personality.ts | 3 | assumed | [ASSUMED: unit spread within each group]. Country is left out: in the 1,015,341 IPIP-FFM records (docs/data/ |
++| pocket.ts | 87 | assumed | speech near 200 Hz against EARS's relaxed monologues at 172, a general benchmark [ASSUMED]). |
+ | population.ts | 69 | assumed | 1810. Maturity at 20 [ASSUMED], so a quarter's mid-year minus 20 is the birth year. Prepended only before Clio's first |
+ | population.ts | 106 | assumed | _populationPercent, cldr-json main branch, 2026-10-13: 524 languages). Present-day estimates, so used from 1950 on [ASSUMED]. |
+ | population.ts | 129 | assumed | 0, 1, 5, …, 100, log-linear between the table's ages). A period table stands for the person's own cohort [ASSUMED]. |
+@@ -527,7 +528,8 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | vision.ts | 132 | assumed | sky is taken as bright as a white surface under it, ρb = 1 [ASSUMED], so a dark figure there keeps the contrast of 1 that |
+ | vision.ts | 138 | assumed | two contrasts, lit side and shaded side [ASSUMED: the background keeps its sunlit level]. The shaded side's share of the |
+ | vision.ts | 142 | assumed | the engine's clear-sky index × 0.75 [ASSUMED: a clear sky passes about 75 % of the light above the air]. Clear sun: 0.18; |
+-| voice-body.ts | 76 | assumed | mean adult of that sex (voice-sound.ts HEIGHT) [ASSUMED: heard as the average body until BodySize places them]; the |
++| voice-body.ts | 41 | assumed | from 36 to 96 months, then to 1 at 120 [ASSUMED: straight between their 96-month median and "adult-like by 10"]; under 36 |
++| voice-body.ts | 88 | assumed | their own growth timing) [ASSUMED: heard as the average body until BodySize places them]; the narrator's notes keep only |
+ | voice-sound.ts | 233 | assumed | 103:3153). The search steps ln Q by 0.05 [ASSUMED: the grid the stretch–pitch curves were mapped at] down to 0.6 below |
+ | weather.ts | 62 | assumed | Air temperature through the day: lowest at 06:00, highest at 15:00, cosine between [ASSUMED]. |
+ | work.ts | 13 | assumed | Rest: Cunningham 500 + 22 × lean kg kcal/day (as used there), lean share 0.80 men, 0.70 women, at 70 kg [ASSUMED] → 1.20 / 1.09 W/kg. |
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index c0caaef..495ce05 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1103,10 +1103,12 @@ The box's type and scene (2026-11-11 (124); `box.ts` boxFontPx, boxLinesAt, scen
+ 
+ The robotic voice (2026-11-12 (130), named "speech" until (131); `speech.ts`, `index.ts` speakUnit, `voice-body.ts` speakingFactsOf, `lib/espeak-ng`). Setting "Voices": natural (the default since (131), Pocket TTS since (132)), robotic, blips, off; a stored "speech" reads as robotic. eSpeak NG speaks a said stretch: its English rules turn the letters into speech sounds; the voice is the speaker's from the engine. eSpeak's own voice, measured in Node on "The north wind and the sun…" (63 syllables): median pitch 1.29 × its pitch base (1.27–1.30 at 100–240 Hz), formant spacing 1005 Hz at 100 % (a 17.57 cm tract by c ÷ 2ΔF, in proportion to the setting from 90 to 130 %), 4.94 syllables a second at 175 words a minute. So: base = the speaker's resting pitch ÷ 1.29 and top = 1.44 × base (eSpeak's default range), formants = 100 × 17.57 ÷ their tract (cm) for formants 1–8, words a minute = 175 × their syllables a second ÷ 4.94; a whispered stretch takes eSpeak's whisper (voicing 17, its breath). The letters appear as the words are heard (eSpeak's word events, each word's letters spread until the next word). A tracked person with a sex but no height is heard as the mean adult of that sex [ASSUMED], the notes still saying nothing of their body; someone the engine does not track stays silent. In Chromium the synthesizer loads in 0.14 s and speaks Tom's 4.6 s line in 0.19 s; until it has loaded, blips stand in. Tom: base 106 to 152 Hz, formants 98 %, 162 words a minute; a girl of 11: 190 to 274 Hz, 122 %. Check: voice-body V9; negative controls SP1–SP4; voice-speech.wav.
+ 
+-The natural voice (2026-11-12 (132), replacing (131)'s Piper voice; `pocket.ts`, `data/ears-voices.ts`, `data/pocket-tokenizer.ts`, `index.ts` loadNatural, makeEarsVoice, naturalJob, playNatural, `voice-worker.ts`). The player heard Piper's audiobook voices as unlike people in real life; of six clips, the two in which Pocket TTS copied people talking freely were "by far" the closest. Pocket TTS (Kyutai 2026, 100M parameters; the ONNX export KevinAHM/pocket-tts-onnx, english_2026-04, int8 where it exists, 165 MB, CC BY 4.0) copies a voice from a 10 s recording, its way of talking included. The recordings: EARS (Richter et al. 2024), 107 adults recorded in an anechoic room, each with sex, age band, height band and first language; Kyutai's cleaned copy of the middle 10 s of each one's first free monologue, fetched at play time (CC BY-NC 4.0, never in the repo). The catalogue, measured outside the repo in Praat: each copy saying "The north wind and the sun…" (28 syllables), its median pitch (To Pitch (ac), two passes: De Looze & Hirst 2008), its tract from the formant spacing over F1–F4 (Burg, ceiling 5000 Hz for men, 5500 for women; Reby & McComb 2003), its syllables a second. 95 kept: 9 whose first language is not English or not given (the accent comes with the copy), and 3 whose copy's pitch lies more than ln 0.2 from their own recording's (p011, p027, p076: the copy is not faithful) left out. Free speech is lower than the isolated words the engine's voice is fitted to: copies' medians men 105.4 Hz and 18.92 cm, women 171.5 Hz and 16.78 cm, against Hillenbrand et al.'s 130.9 and 220.1 Hz, 17.79 and 15.80 cm; a computed voice is put on the copies' scale by the line through the two sexes' means (ln f0 and tract), then the nearest copy chosen: (Δ ln f0 ÷ 0.166)² + (Δ tract ÷ 0.767 cm)² + (Δ age ÷ 15 years)² (the SDs: the copies' own, the mean of the sexes'; earsAgeStep assumed). Within each sex, the EARS speakers' height tells little of their voice: tract r = 0.33 (men, copies) and 0.0 (women), ln f0 r = −0.13 and −0.23 (recordings), so sex and age carry most of who is heard. The text: the model's own SentencePiece unigram tokenizer, in TypeScript (the same ids as the original on 5,004 sentences of this repo's docs); quotation marks dropped; the export's preparation (a capital, a full stop) and split (sentences, joined within 50 tokens). The loop (voice-worker.ts, the export's own): the recording at 24 kHz (resampled by a Hann-windowed sinc) → Mimi encoder → after the model's start-of-voice vector, read once into the language model's memory; per line: text conditioner → language model, then frame by frame the flow network's latent from noise of variance 0.7 (the export's default), until the end-of-speech logit passes −4 and 3 frames more (5 for four words or fewer); Mimi decoder → 24 kHz. The language model's memory is sized to the line (the export fixes 1,000 frames; 256 gives the same output to the last bit), its declared length freed in the downloaded bytes (03 08 E8 07 → 03 12 01 63, same length). The networks and each recording's encoding are kept in IndexedDB. The voice keeps the recording's own pace; the typing is stretched to the sound. Whispers, narration and untracked people stay silent. Checked: the browser's output against the export's Python loop at temperature 0: the same length, spectra within 4.0 dB (band correlation 0.943), closer than the Python loop on 1 thread against 4 (6.1 dB, 0.856); in Chromium, desktop CPU, one thread: networks ready in 7.6 s, a voice copied in 5.0 s, a 3 s line made in 3.5 s; the real extension in the SillyTavern stand-in: Tom's first line heard 8.9 s after it was reached (the one-time load and copy), its typing ending 36 ms from the sound's end. Tom (136.4 Hz, 17.9 cm, 35): p102; a woman of 30, 164 cm: p012; a girl of 11: p068 (a woman of 18–25: the corpus is adults); a man of 70: p097. Check: voice-body V10; negative controls NV7–NV11, PK1–PK13; free-speech-voices.wav.
++The natural voice (2026-11-12 (132), Pocket TTS; since (138) computed from the body, no recorded person chosen; `pocket.ts`, `averaged-person.ts`, `world-vocoder.ts`, `data/pocket-tokenizer.ts`, `index.ts` loadNatural, makeBodyVoice, naturalJob, `voice-worker.ts`). The player: age, sex and a recorded person are labels; a voice is what the body's causes make, any combination of them a voice. The voice's parts: the movement of speech (rhythm, melody, articulation), which no tissue model computes, is the averaged person: 16 EARS speakers (8 men, 8 women, native American English, Richter et al. 2024) copied by Pocket TTS saying "The north wind and the sun…" (46 syllables), analysed by WORLD (Morise et al. 2016), each envelope put on one tract length, aligned by DTW and averaged, the melody smoothed over 80 ms and kept at the takes' own 5–95 % range (Praat; averaging had narrowed it from 6.6 to 4.1 semitones). It is a 1.14 MB file (voices/averaged-person.bin) made outside the repository and handed to the player: derived from EARS, CC BY-NC 4.0. Its own measures: 149.9 Hz, a 17.34 cm tract, 4.74 syllables a second. A body's voice: that movement spoken with the body's pitch (the engine's folds, put on free speech's scale by the line through the sexes' means: men 105.4 Hz, women 171.5 Hz in EARS's copies against Hillenbrand et al.'s 130.9 and 220.1; then × 1.16 for connected speech, speechRegister, assumed, the player's ear preferring it), its tract (every frequency of the envelope scaled by the averaged person's tract over the body's: F ∝ 1 ÷ L), its pace (frames repeated or skipped; English's rate where the story set no language, children slower by Mahr et al. 2021), synthesized by WORLD's synthesis ported to TypeScript, then encoded once per body (the encoding kept in IndexedDB) and copied by Pocket TTS for every line. The parameters a voice is made of: pitch level, tract length, pace (and through them height, growth, puberty, the folds' length and stretch); new voices are new values. Checked: the port against pyworld's synthesis: correlation 0.999999 on steady, gliding and interrupted voicing and on the averaged person's own melody and envelope; after an unvoiced start the pulses sit 2–3 samples (0.1 ms) apart (pyworld 0.3.6 may bundle a later WORLD than the 0.3.5 source ported). The reshaped recordings: pitch within 0.2 % and tract within 0.3 cm of each body (Praat, formant ceiling scaled to the body). Pocket's copies of a reshaped recording drift by up to 6 % in pitch and 0.9 cm in tract before any correction; a one-time correction from an 8 s calibration took out less than each line's own intonation moves (a question 5–9 % higher), so none is made. By ear: Tom an adult man, the woman a common adult woman, a girl of 8 a child and of 5 younger still; a girl of 11 a young woman, as measured bodies predict (girls of 10–12 only about 1.4 semitones above women, formants about 10 % higher): her way of speaking, which an adult average cannot carry, is what sets her apart. The real extension in the SillyTavern stand-in: Tom's first line heard 8.1 s after it was reached (loading, reshaping and encoding once), its typing ending 30 ms from the sound's end. Not computed: breath and roughness from the folds' closure, aging tissue, a child's way of speaking. Check: voice-body V10; negative controls AP1–AP6, WV1, PK1–PK4, PK7, PK8, PK11–PK13, NV7–NV11; natural-by-body.wav.
+ 
+ Heard height of a child (2026-11-12 (133); `voice-body.ts` speakingFactsOf). Someone whose height the story has not set but whose sex it has is heard as the mean adult of that sex grown to the share of adult height their age gives (growth.ts heightShare with their own timing): a girl of 11 at 142.2 cm, 12 at 149.4, 14 at 160.8, an adult at 163.8; until (133) every such person, a child included, was heard at the adult's height. Check: voice-body V11; negative control VB18.
+ 
++Children's pace (2026-11-12 (136); `voice-body.ts` childRate). A child's syllables a second are the adult's × the median articulation rate at their age over adults' 3.6 (Mahr, Rathouz & Hustad 2021, 570 children in sentence repetition: 2.7 at 36 months, 3.3 at 96, adult-like by about 10): 0.75 at 3, 0.82 at 5, 0.92 at 8, 1 from 10; the adult age trend (−0.079 % a year, measured from 16 to 69) from 16 only (until (136) it ran below 16 and made children faster). Check: voice-body V12; negative controls VB19, VB20.
++
+ The causal voice (2026-11-12 (133), prototypes, not in the extension). The player: age, sex and a recorded person are labels; a voice is what the body's causes make, any combination of them a voice. Two builds from the same bodies, compared by ear (history/review-tests/causal-voice): A, the movement of speech (rhythm, melody, articulation) averaged over 16 speakers' Pocket TTS copies (WORLD analysis, envelopes on one tract length, DTW, mean), spoken with the body's pitch level, tract and pace: pitch within 1.4 % of the target and tract within 0.4 cm for all four bodies (Praat); B, VocalTractLab's physics (3D tract, tube acoustics, geometric glottis) with eSpeak's phonemes at the body's pace, the tract grown to the body's growth state and scaled to the engine's tract (exact to 0.01 cm), the glottis's rest length, thickness and f0 the engine's. The parameters a voice is made of, in both: fold length, thickness and resting pitch; the speech register's pitch level; tract length (and in B its proportions by growth state and puberty); pace. Not derived in either: the movement itself (B's melody is a rule, A's an average), breath and roughness from tissue, aging tissue.
+ 
+ Voice blips (2026-11-12 (129); `blips.ts`, `voice-body.ts` voiceHarmonics, `index.ts` playBlips). As a said stretch types in the box, each syllable sounds a tone in the speaker's own voice: their resting pitch from the simulated folds, harmonic k at 1 ÷ k (the glottal source's −12 dB an octave and the lips' radiation +6: Fant 1960) × their own tract's |U lips ÷ U glottis| there, up to 5 kHz, as one periodic wave per voice. Syllables (box.ts syllables) spread evenly over the time a word's letters appear, each sounding blipVowelShare 0.5 of it [ASSUMED], with 5 ms ramps [ASSUMED], at blipLevel 0.25 × the music's volume [ASSUMED], with the setting Voices on blips (since (130); before, while the music was on). Narration and thought are no sound and stay silent; a whisper is voiceless and stays silent; a speaker without a computed voice (no height or sex, or the run not finished) stays silent. Check: Tom (180 cm) at 136 Hz, strongest at harmonics 3–4 (409–546 Hz) round his F1 of 483 Hz; a girl of 11 at 245 Hz; voice-blips.wav. Check: voice-body V8; negative controls BL1–BL4.
+diff --git a/docs/progress.md b/docs/progress.md
+index d97d228..6e2ef28 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,38 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-12 (138), Claude
++- The player chose: the averaged person made here from EARS and handed over as a file, kept out of the repository.
++- Changed: the natural voice is computed from the body: new `averaged-person.ts` (the file's reader; a body's recording: the averaged movement with the body's pitch, tract and pace), new `world-vocoder.ts` (WORLD's synthesis in TypeScript), `pocket.ts` bodyTarget (free speech's scale, speechRegister 1.16 registered), `voice-worker.ts` (the averaged person; a body's voice made and encoded in the worker), `index.ts` (the file from voices/, one encoding per body kept, English's pace where no language is set); the EARS catalogue and the nearest-speaker choice removed; `voices/README.md`, `.gitignore`.
++- Checked: all suites 0 misses (voice-body 13, V10 rewritten); negative controls AP1–AP6, WV1 and the 14 kept voice controls caught (PK5, PK6, PK9, PK10 retired with their code); the port against pyworld (0.999999); reshaped recordings within 0.2 % in pitch and 0.3 cm in tract; one-time drift correction tried and dropped (it removes less than each line's own intonation); the real extension in the stand-in: Tom's line heard 8.1 s after it was reached the first time, typing within 30 ms of the sound; a sound file of five bodies the extension's way.
++- Not checked: the time a phone takes to reshape and encode a body (0.5–0.8 s and 5 s on this desktop) and to make a line.
++- Next: the player's ear and their phone; breath and roughness from the folds' closure; children's way of speaking needs children's free speech.
++
++## 2026-11-12 (137), Claude
++- The player, by ear, on the ages: Tom at the raised register a young-to-adult man; the girl of 11 a young woman; the girl of 8 a child; the girl of 5 younger than her. The build makes children where the body differs enough; a girl of 11 is near a woman by size, as measured.
++- Tried, for the phone: the averaged person made once as a 9.8 s recording (avg_prompt.py), reshaped per body (WORLD) and copied by Pocket TTS (prompt_copy.py). The reshaped recordings hit pitch exactly and tract within 0.3 cm (Praat, formant ceiling scaled to the body); the copies drift: pitch +5 to +11 %, tract −1.7 cm (Tom) to 0 (girl of 5), speech rate 3.4 against 4.1–4.4. So a line needs the body's values set again after the copy (WORLD in the browser).
++- Next: the player's choice of where the averaged person comes from; WORLD compiled for the browser.
++
++## 2026-11-12 (136), Claude
++- The player, by ear, on the probes: the woman at the raised register a more natural (or older) woman; the girl of 11 at it a more energetic young woman; with breath a young woman with a puff of air. Neither register nor breath makes a child of 11.
++- Changed: `voice-body.ts` childRate: children slower by Mahr et al.'s medians, the adult age trend only from 16.
++- Checked: all suites 0 misses (voice-body 13, V12 new); negative controls VB19, VB20 caught; a probe of Tom and girls of 11, 8 and 5 at the raised register (222, 241, 271 Hz; tracts 15.3, 14.0, 12.5 cm on the copies' scale; the 8 and 5 slower) sent: if the 8 and 5 sound like children, the build makes children where the body differs enough, and a girl of 11 is near a woman by size (as measured: +1.4 semitones, formants about 10 % higher) and set apart by her way of speaking, which the adult-averaged movement does not carry.
++- Next: the player's ear on the ages.
++
++## 2026-11-12 (135), Claude
++- The player, by ear, on the rebuilt A: Tom a common adult man, the woman a common adult woman, the girl of 14 the same as her, the girl of 11 a young woman of 17-19.
++- Found: the girl of 11 already differs from the woman as measured children do: pitch +1.6 semitones (measured connected speech, girls 10-12: 228-231 Hz, Bennett 1983, Lee et al. 1999; adult women about 200: +1.4) and tract 9 % shorter. So the cue is elsewhere. Candidates: the register (the free-speech scale follows EARS's relaxed monologues, women 172 Hz, about 15 % under the connected speech other studies measure, which puts the girl at 189 Hz, inside a woman's range); breath (a posterior glottal gap in 85 % of girls and 75 % of women, Patel et al. 2012); the tract's proportions (VocalTractLab's grown anatomy gives no usable answer: its formant peaks mis-number and its /a/ lowers F1 for the child, against measured children); the movement (adult).
++- Changed: `history/review-tests/causal-voice/build_a.py` takes a register factor and a breath probe; `props.py` (the proportions attempt, kept for the record).
++- Checked: probe clips (woman and girl at the EARS register and at ×1.16; the girl with breath, and with both) sent for the player's ear.
++- Next: the player's ear on the probes decides which cause goes into the voice.
++
++## 2026-11-12 (134), Claude
++- The player, by ear: A's Tom understandable; B's barely English, worse the smaller the body; A's woman "fast and worried", the girls of 14 and 11 like her, hurried.
++- Found: B (VocalTractLab with a German speaker's shapes) is set aside: unintelligible. A was fast because the test bodies other than Tom had no language and took the 17-language mean rate (5.1–5.2 syllables/s against English's 4.4; the line is English); its melody was flat because averaging 16 aligned contours narrowed them (5–95 % range 4.1 semitones against the takes' own 6.6, by Praat) and left wobble. Children's articulation rate is adult-like by about 10 years (Mahr, Rathouz & Hustad 2021, 570 children), so pace does not set a girl of 11 apart; the engine's adult age slope extended below 16 is wrong for younger children (next).
++- Changed: `history/review-tests/causal-voice/build_a.py`: the melody bridged over unvoiced gaps, smoothed over 80 ms and scaled to the takes' median range (Praat); the bodies speak English's rate.
++- Checked: speech rate 4.29–4.55 syllables/s against the bodies' 4.18–4.43; melody 5.8 semitones; pitch within 1.2 % of each target; a sound file of the four bodies.
++- Next: the player's ear on the rebuilt A; the rate of the language spoken (the line's) rather than the person's first language; children under 10 slower (Mahr et al.'s growth curves).
++
+ ## 2026-11-12 (133), Claude
+ - The player: picking the nearest of 95 recorded people, with age matched as a label, is a lookup; age and sex are labels for states of a body, and a voice is what the body's causes make, any combination a voice. They asked for both a neural build driven by the body and a physics build, compared by ear.
+ - Changed: `voice-body.ts` speakingFactsOf: a child of unset height is heard at their age's grown height (was the adult's); two prototypes in `history/review-tests/causal-voice/` (A: speech movement averaged over 16 speakers, the body's pitch, tract and pace imposed through WORLD; B: VocalTractLab with the body's grown, scaled tract and its folds, eSpeak's phonemes at the body's pace), and a patch to VocalTractLab's backend (its anatomy change emptied every vowel and consonant shape; its speaker writer broke its own file).
+diff --git a/docs/third-party.md b/docs/third-party.md
+index 25fb159..9fd931f 100644
+--- a/docs/third-party.md
++++ b/docs/third-party.md
+@@ -15,8 +15,9 @@
+ | src/rules/artsynth.ts (the articulatory synthesizer: speakers, Mermelstein's tract geometry, the 89 tubes, the aerodynamic and wall equations, the radiation) | Praat, artsynth/ (Speaker.cpp, Speaker_to_Delta.cpp, Art_Speaker.cpp, Art_Speaker_Delta.cpp, Artword.cpp, Artword_Speaker_to_Sound.cpp), github.com/praat/praat commit 6a9874e, (C) Paul Boersma; the equations of Boersma 1998, Functional Phonology, ch. 2–5; ported to TypeScript line by line | GNU GPL version 2 or later; this repository is GPL-3.0, so the port is under GPL-3.0 |
+ | src/rules/voice-sound.ts (jitter and shimmer thresholds) | Praat's manual, "Voice 2. Jitter" and "Voice 3. Shimmer" (fon/manual_voice.cpp), quoting MDVP | cited numbers, no code copied |
+ | lib/espeak-ng/ (espeak-ng.js, espeak-ng.data) | eSpeak NG (github.com/espeak-ng/espeak-ng), compiled to JavaScript and WebAssembly by Echogarden (npm @echogarden/espeak-ng-emscripten 0.3.5); the data trimmed to English (111 of 459 files) outside the repo, the script's file list rewritten to match (lib/espeak-ng/README.md) | GNU GPL version 3 (lib/espeak-ng/COPYING), as this repository |
+-| src/rules/data/pocket-tokenizer.ts; the networks the box downloads at play time (not in the repo) | Pocket TTS (Kyutai, github.com/kyutai-labs/pocket-tts; huggingface.co/kyutai/pocket-tts) as exported to ONNX by KevinAHM (huggingface.co/KevinAHM/pocket-tts-onnx, english_2026-04, revision 58a6d00): the tokenizer's 4,000 pieces and scores copied from its tokenizer.model; the generation loop of its pocket_tts_onnx.py rewritten in TypeScript (src/voice-worker.ts) | CC BY 4.0 (the model card and the export's); Kyutai's terms forbid cloning a voice without its owner's consent: the box copies only EARS speakers, recorded for a released corpus |
+-| src/rules/data/ears-voices.ts; the recordings the box fetches at play time (not in the repo) | EARS (Richter et al. 2024, Interspeech; github.com/facebookresearch/ears_dataset): the speakers' reported sex, age and height bands and first language; their free-speech recordings as Kyutai's tts-voices repository holds them (huggingface.co/kyutai/tts-voices, cleaned, revision 323332d), each copy's pitch, tract and rate measured outside the repo | CC BY-NC 4.0: non-commercial use, with attribution |
++| src/rules/data/pocket-tokenizer.ts; the networks the box downloads at play time (not in the repo) | Pocket TTS (Kyutai, github.com/kyutai-labs/pocket-tts; huggingface.co/kyutai/pocket-tts) as exported to ONNX by KevinAHM (huggingface.co/KevinAHM/pocket-tts-onnx, english_2026-04, revision 58a6d00): the tokenizer's 4,000 pieces and scores copied from its tokenizer.model; the generation loop of its pocket_tts_onnx.py rewritten in TypeScript (src/voice-worker.ts) | CC BY 4.0 (the model card and the export's); Kyutai's terms forbid cloning a voice without its owner's consent: the box copies only voices computed from bodies on the average of 16 EARS speakers, recorded for a released corpus, no one person's voice |
++| src/rules/world-vocoder.ts | WORLD (Masanori Morise; github.com/mmorise/World, as pyworld 0.3.5 bundles it): synthesis.cpp and the parts of common.cpp and matlabfunctions.cpp it calls, ported line by line to TypeScript | Modified BSD licence (copyright Masanori Morise), kept with the port's header |
++| voices/averaged-person.bin (not in the repo: handed to the player) | EARS (Richter et al. 2024, Interspeech; github.com/facebookresearch/ears_dataset): 16 speakers' free speech as Kyutai's tts-voices repository holds it (cleaned), copied by Pocket TTS, analysed and averaged with WORLD (history/review-tests/causal-voice/avg_prompt.py) | CC BY-NC 4.0: non-commercial use, with attribution; kept out of this GPL repository |
+ | onnxruntime-web 1.31.1, loaded at play time from cdn.jsdelivr.net (not in the repo) | Microsoft, github.com/microsoft/onnxruntime | MIT |
+ | src/rules/data/who-growth.ts | WHO Child Growth Standards 2006 and WHO Reference 2007 (height and BMI for age as L, M, S), as the R package AGD 0.45 (van Buuren; CRAN) holds them, built outside the repo | WHO tables, cited; AGD is GPL-2 or GPL-3 |
+ | src/rules/data/geonames.ts | GeoNames cities15000 (geonames.org) | CC BY 4.0 |
+diff --git a/history/review-tests/causal-voice/avg_prompt.py b/history/review-tests/causal-voice/avg_prompt.py
+new file mode 100644
+index 0000000..63d6730
+--- /dev/null
++++ b/history/review-tests/causal-voice/avg_prompt.py
+@@ -0,0 +1,12 @@
++# The averaged person as a recording: 16 EARS speakers' Pocket copies of a 10-second passage, analysed (WORLD), envelopes on
++# one tract, aligned (DTW) and averaged as build_a.py does; the melody smoothed and kept at the takes' own range (Praat). Saved
++# as WORLD features (avg_prompt.npz) and as audio at the group's own pitch and tract (avg_prompt.wav).
++import sys, json, numpy as np, soundfile as sf, warnings
++warnings.filterwarnings('ignore')
++sys.argv = ['build_a.py', '/dev/null', '/tmp', "The north wind and the sun were disputing which was the stronger, when a traveler came along wrapped in a warm cloak. They agreed that the one who first made him take it off would be the stronger.", '0']
++src = open('build_a.py').read(); src = src[:src.index("# The averaged voice's own tract, measured")]
++exec(compile(src, 'build_a.py', 'exec'))
++f0 = np.where(vo, np.exp(dev + np.log(150.0)), 0.0)
++np.savez('avg_prompt.npz', env=env, ap=ap, vo=vo, dev=dev, FS=FS, FP=FP)
++y = pw.synthesize(np.ascontiguousarray(f0), np.ascontiguousarray(env), np.ascontiguousarray(ap), FS, FP); y = y / np.abs(y).max() * 0.9
++sf.write('avg_prompt.wav', y, FS, subtype='PCM_16'); print('prompt', round(len(y) / FS, 2), 's')
+diff --git a/history/review-tests/causal-voice/build_a.py b/history/review-tests/causal-voice/build_a.py
+index 706fbc5..6cd9448 100644
+--- a/history/review-tests/causal-voice/build_a.py
++++ b/history/review-tests/causal-voice/build_a.py
+@@ -51,6 +51,11 @@ for sid in pick:
+     np.random.seed(7); a = m.generate(text, np.load(f'ears_out/{sid}.npy'))
+     i = np.nonzero(np.abs(a) > 0.01 * np.abs(a).max())[0]; a = a[max(0, i[0] - 1200): i[-1] + 1200]
+     f0, sp, ap = analyse(a); takes.append({'id': sid, 'f0': f0, 'sp': sp, 'ap': ap, 'L': cat[sid]['copy']['tract']})
++    # The take's own melody range, measured by Praat (two-pass pitch, as the catalogue), the target the averaged melody keeps.
++    import parselmouth as pm
++    snd = pm.Sound(a, FS); f1 = snd.to_pitch_ac(pitch_floor=60, pitch_ceiling=700).selected_array['frequency']; f1 = f1[f1 > 0]
++    f2 = snd.to_pitch_ac(pitch_floor=max(40, 0.75 * np.percentile(f1, 25)), pitch_ceiling=1.5 * np.percentile(f1, 75)).selected_array['frequency']; f2 = f2[f2 > 0]
++    takes[-1]['praatRange'] = float(np.percentile(np.log(f2), 95) - np.percentile(np.log(f2), 5))
+ Lref = float(np.mean([t['L'] for t in takes]))
+ for t in takes:
+     t['spn'] = warp(t['sp'], Lref / t['L'])
+@@ -66,6 +71,15 @@ vo = np.mean([at(t, mp, 'f0') > 0 for t, mp in zip(takes, maps)], 0) > 0.5
+ devs = np.array([at(t, mp, 'dev') for t, mp in zip(takes, maps)]); vs = np.array([at(t, mp, 'f0') > 0 for t, mp in zip(takes, maps)])
+ dev = np.where(vs.sum(0) > 0, (devs * vs).sum(0) / np.maximum(vs.sum(0), 1), 0.0)
+ time = np.mean([mp * [1, ] * 1 for mp in maps], 0); time = np.maximum.accumulate(time + np.arange(n) * 1e-6)
++# The melody: averaging aligned contours narrows them (their peaks fall at slightly different frames) and leaves frame-to-frame
++# wobble. Bridged over unvoiced gaps, smoothed over 80 ms (16 frames), then scaled so its 5-95 % range over voiced frames equals
++# the median of the 16 takes' own, measured by Praat (WORLD's tracker slips octaves on some takes and reads ranges too wide).
++vi = np.nonzero(vo)[0]
++if len(vi) > 1:
++    full = np.interp(np.arange(n), vi, dev[vi]); k16 = np.ones(16) / 16; sm = np.convolve(np.pad(full, 8, mode='edge'), k16, mode='same')[8:-8]
++    rng = lambda x: np.percentile(x, 95) - np.percentile(x, 5)
++    own = float(np.median([t['praatRange'] for t in takes])); was = rng(sm[vo]); dev = (sm - np.median(sm[vo])) * own / max(was, 1e-6)
++    print('melody 5-95 %: averaged', round(was * 1731 / 100, 2), 'st, speakers (median)', round(own * 1731 / 100, 2), 'st')
+ # On a uniform grid along the averaged time.
+ grid = np.arange(0, time[-1], 1.0); pos = np.interp(grid, time, np.arange(n)); k = np.round(pos).astype(int)
+ env, ap, vo, dev = env[k], ap[k], vo[k], dev[k]
+@@ -82,10 +96,21 @@ for t, v in zip(pt.xs(), pt.selected_array['frequency']):
+ Lref = 35300 / (2 * float(np.median(dfs))); print('averaged voice measures', round(Lref, 2), 'cm')
+ # 3. The body: pitch level from its folds (on free speech's register), formants from its tract, pace from its rate.
+ bodies = json.load(open(bodies_file))
++import os
++REG, BREATH, TAG = float(os.environ.get('REG', '1')), float(os.environ.get('BREATH', '0')), os.environ.get('TAG', '')
+ for name, b in bodies.items():
+-    L, f0b, rate = b['copies']['tract'], b['copies']['f0'], b['sylPerS']
++    if os.environ.get('ONLY') and name not in os.environ['ONLY'].split(','): continue
++    L, f0b, rate = b['copies']['tract'], b['copies']['f0'] * REG, b['sylPerS']
+     stretch = avg_rate / rate; T = int(round(len(grid) * stretch)); src = np.clip(np.round(np.arange(T) / stretch).astype(int), 0, len(grid) - 1)
+     sp_b = warp(env[src], L / Lref); f0_b = np.where(vo[src], np.exp(dev[src] + np.log(f0b)), 0.0)
+-    y = pw.synthesize(np.ascontiguousarray(f0_b), np.ascontiguousarray(sp_b), np.ascontiguousarray(ap[src]), FS, FP)
+-    y = y / np.abs(y).max() * 0.9; sf.write(f'{out_dir}/A-{name}.wav', y, FS, subtype='PCM_16')
++    ap_b = ap[src].copy()
++    if BREATH:
++        # Probe: a glottis that does not close (a posterior gap) leaks air: more noise above 1.5 kHz in voiced frames (BREATH dB
++        # more aperiodic energy) and a steeper source (the same dB less at 4 kHz, linear in octaves above 500 Hz) [ASSUMED sizes].
++        fr = np.arange(sp_b.shape[1]) * FS / (2 * (sp_b.shape[1] - 1)); vmask = f0_b > 0
++        lift = np.clip(10 ** (BREATH / 20), 1, None); hi = fr > 1500
++        ap_b[np.ix_(vmask, hi)] = np.clip(ap_b[np.ix_(vmask, hi)] * lift, 0, 0.999)
++        tilt = 10 ** (-BREATH * np.clip(np.log2(np.maximum(fr, 500) / 500) / 3, 0, None) / 10); sp_b[vmask] *= tilt
++    y = pw.synthesize(np.ascontiguousarray(f0_b), np.ascontiguousarray(sp_b), np.ascontiguousarray(ap_b), FS, FP)
++    y = y / np.abs(y).max() * 0.9; sf.write(f'{out_dir}/A-{name}{TAG}.wav', y, FS, subtype='PCM_16')
+     print(name, 'f0', round(f0b, 1), 'tract', round(L, 2), 'rate', rate, '->', round(len(y) / FS, 2), 's')
+diff --git a/history/review-tests/causal-voice/drift_fix.py b/history/review-tests/causal-voice/drift_fix.py
+new file mode 100644
+index 0000000..32111cb
+--- /dev/null
++++ b/history/review-tests/causal-voice/drift_fix.py
+@@ -0,0 +1,51 @@
++# Per body: reshape the averaged person, copy a calibration line, measure the copy's drift (pitch, tract, speech rate), reshape
++# again with the drift taken out, then copy two other lines and measure them against the body.
++import json, sys, numpy as np, soundfile as sf, warnings, onnxruntime as ort, parselmouth as pm
++warnings.filterwarnings('ignore'); import pyworld as pw
++sys.path.insert(0, 'onnx-src'); import pocket_tts_onnx as P
++REG = 1.16; SYL_PROMPT = 46
++CAL = ('I told you the cart would be late, and it was, so we waited by the road.', 18)
++TESTS = [('Sit. Will has been counting the same six coins since noon.', 12), ('Where did you put the lantern we bought at the market yesterday?', 16)]
++class C(P.PocketTTSOnnx):
++    def _model_file(self, stem):
++        n = super()._model_file(stem); return n.replace('.onnx', '_dyn.onnx') if stem == 'flow_lm_main' else n
++    def _make_session_options(self):
++        o = ort.SessionOptions(); o.intra_op_num_threads = 4; o.log_severity_level = 3; return o
++    def _init_state(self, manifest):
++        st = super()._init_state(manifest)
++        if manifest is self.flow_state_manifest:
++            for e in manifest:
++                if 1000 in e['shape']: st[e['input_name']] = self._make_filled_array([512 if d == 1000 else d for d in e['shape']], self._numpy_dtype(e['dtype']), e['fill'])
++        return st
++def measure(p, male, syl, L_hint):
++    s = pm.Sound(p); f1 = s.to_pitch_ac(pitch_floor=60, pitch_ceiling=700).selected_array['frequency']; f1 = f1[f1 > 0]
++    pt = s.to_pitch_ac(pitch_floor=max(40, 0.75 * np.percentile(f1, 25)), pitch_ceiling=1.5 * np.percentile(f1, 75)); f = pt.selected_array['frequency']
++    ceil = (5000 if male else 5500) * (18.92 if male else 16.78) / L_hint
++    fm = s.to_formant_burg(time_step=0.01, max_number_of_formants=5, maximum_formant=ceil); dfs = []
++    for t, v in zip(pt.xs(), f):
++        F = [fm.get_value_at_time(i, t) for i in (1, 2, 3, 4)]
++        if v > 0 and not any(np.isnan(F)): x = np.array([0.5, 1.5, 2.5, 3.5]); dfs.append(float(np.dot(x, F) / np.dot(x, x)))
++    x = s.values[0]; hop = int(0.01 * s.sampling_frequency); e = np.array([np.sqrt(np.mean(x[i:i + hop] ** 2)) + 1e-9 for i in range(0, len(x) - hop, hop)])
++    idx = np.nonzero(20 * np.log10(e / e.max()) > -35)[0]; span = (idx[-1] - idx[0]) * 0.01
++    return float(np.median(f[f > 0])), 35300 / (2 * float(np.median(dfs))), syl / span
++Z = np.load('avg_prompt.npz'); env, ap, vo, dev, FS, FP = Z['env'], Z['ap'], Z['vo'], Z['dev'], int(Z['FS']), float(Z['FP'])
++f0p, Lp, ratep = measure('avg_prompt.wav', False, SYL_PROMPT, 17.3)
++def warp(sp, k):
++    n = sp.shape[1]; f = np.arange(n); src = np.clip(f * k, 0, n - 1)
++    return np.exp(np.array([np.interp(src, f, np.log(row + 1e-12)) for row in sp]))
++def reshape(f0t, Lt, ratet, path):
++    st = ratep / ratet; T = int(round(len(vo) * st)); src = np.clip(np.round(np.arange(T) / st).astype(int), 0, len(vo) - 1)
++    f0 = np.where(vo[src], np.exp(dev[src] + np.log(f0t)), 0.0); sp = warp(env[src], Lt / Lp)
++    y = pw.synthesize(np.ascontiguousarray(f0), np.ascontiguousarray(sp), np.ascontiguousarray(ap[src]), FS, FP); sf.write(path, (y / np.abs(y).max() * 0.9).astype(np.float32), FS, subtype='PCM_16')
++m = C(models_dir='onnx', language='english_2026-04', temperature=0.7)
++for name, b in json.load(open(sys.argv[1])).items():
++    tf0, tL, tr = b['copies']['f0'] * REG, b['copies']['tract'], b['sylPerS']
++    reshape(tf0, tL, tr, f'probe/r1-{name}.wav'); np.random.seed(5); emb = m.encode_voice(f'probe/r1-{name}.wav')
++    a = m.generate(CAL[0], emb); sf.write(f'probe/cal-{name}.wav', a, FS, subtype='PCM_16'); cf, cL, cr = measure(f'probe/cal-{name}.wav', b['male'], CAL[1], tL)
++    # The drift, taken out: ask the reshape for what would land on the body after the copy's drift.
++    reshape(tf0 * tf0 / cf, tL * tL / cL, tr * tr / cr, f'probe/r2-{name}.wav'); emb2 = m.encode_voice(f'probe/r2-{name}.wav')
++    res = []
++    for k, (line, syl) in enumerate(TESTS):
++        np.random.seed(11 + k); a = m.generate(line, emb2); sf.write(f'probe/fix-{name}-{k}.wav', a, FS, subtype='PCM_16')
++        f, L, r = measure(f'probe/fix-{name}-{k}.wav', b['male'], syl, tL); res.append(f'{100 * (f / tf0 - 1):+4.0f} % {L - tL:+5.2f} cm {100 * (r / tr - 1):+4.0f} %')
++    print(f"{name:7s} drift before: pitch {100 * (cf / tf0 - 1):+.0f} %, tract {cL - tL:+.2f} cm, rate {100 * (cr / tr - 1):+.0f} % | after, two other lines: {res[0]} ; {res[1]}", flush=True)
+diff --git a/history/review-tests/causal-voice/drift_fix2.py b/history/review-tests/causal-voice/drift_fix2.py
+new file mode 100644
+index 0000000..16f4437
+--- /dev/null
++++ b/history/review-tests/causal-voice/drift_fix2.py
+@@ -0,0 +1,51 @@
++# Per body: reshape the averaged person, copy a calibration line, measure the copy's drift (pitch, tract, speech rate), reshape
++# again with the drift taken out, then copy two other lines and measure them against the body.
++import json, sys, numpy as np, soundfile as sf, warnings, onnxruntime as ort, parselmouth as pm
++warnings.filterwarnings('ignore'); import pyworld as pw
++sys.path.insert(0, 'onnx-src'); import pocket_tts_onnx as P
++REG = 1.16; SYL_PROMPT = 46
++CAL = ('I told you the cart would be late, and it was, so we waited by the road. Nobody in this village remembers the old road to the coast anymore, and the rain kept falling.', 41)
++TESTS = [('Sit. Will has been counting the same six coins since noon.', 12), ('Where did you put the lantern we bought at the market yesterday?', 16)]
++class C(P.PocketTTSOnnx):
++    def _model_file(self, stem):
++        n = super()._model_file(stem); return n.replace('.onnx', '_dyn.onnx') if stem == 'flow_lm_main' else n
++    def _make_session_options(self):
++        o = ort.SessionOptions(); o.intra_op_num_threads = 4; o.log_severity_level = 3; return o
++    def _init_state(self, manifest):
++        st = super()._init_state(manifest)
++        if manifest is self.flow_state_manifest:
++            for e in manifest:
++                if 1000 in e['shape']: st[e['input_name']] = self._make_filled_array([512 if d == 1000 else d for d in e['shape']], self._numpy_dtype(e['dtype']), e['fill'])
++        return st
++def measure(p, male, syl, L_hint):
++    s = pm.Sound(p); f1 = s.to_pitch_ac(pitch_floor=60, pitch_ceiling=700).selected_array['frequency']; f1 = f1[f1 > 0]
++    pt = s.to_pitch_ac(pitch_floor=max(40, 0.75 * np.percentile(f1, 25)), pitch_ceiling=1.5 * np.percentile(f1, 75)); f = pt.selected_array['frequency']
++    ceil = (5000 if male else 5500) * (18.92 if male else 16.78) / L_hint
++    fm = s.to_formant_burg(time_step=0.01, max_number_of_formants=5, maximum_formant=ceil); dfs = []
++    for t, v in zip(pt.xs(), f):
++        F = [fm.get_value_at_time(i, t) for i in (1, 2, 3, 4)]
++        if v > 0 and not any(np.isnan(F)): x = np.array([0.5, 1.5, 2.5, 3.5]); dfs.append(float(np.dot(x, F) / np.dot(x, x)))
++    x = s.values[0]; hop = int(0.01 * s.sampling_frequency); e = np.array([np.sqrt(np.mean(x[i:i + hop] ** 2)) + 1e-9 for i in range(0, len(x) - hop, hop)])
++    idx = np.nonzero(20 * np.log10(e / e.max()) > -35)[0]; span = (idx[-1] - idx[0]) * 0.01
++    return float(np.median(f[f > 0])), 35300 / (2 * float(np.median(dfs))), syl / span
++Z = np.load('avg_prompt.npz'); env, ap, vo, dev, FS, FP = Z['env'], Z['ap'], Z['vo'], Z['dev'], int(Z['FS']), float(Z['FP'])
++f0p, Lp, ratep = measure('avg_prompt.wav', False, SYL_PROMPT, 17.3)
++def warp(sp, k):
++    n = sp.shape[1]; f = np.arange(n); src = np.clip(f * k, 0, n - 1)
++    return np.exp(np.array([np.interp(src, f, np.log(row + 1e-12)) for row in sp]))
++def reshape(f0t, Lt, ratet, path):
++    st = ratep / ratet; T = int(round(len(vo) * st)); src = np.clip(np.round(np.arange(T) / st).astype(int), 0, len(vo) - 1)
++    f0 = np.where(vo[src], np.exp(dev[src] + np.log(f0t)), 0.0); sp = warp(env[src], Lt / Lp)
++    y = pw.synthesize(np.ascontiguousarray(f0), np.ascontiguousarray(sp), np.ascontiguousarray(ap[src]), FS, FP); sf.write(path, (y / np.abs(y).max() * 0.9).astype(np.float32), FS, subtype='PCM_16')
++m = C(models_dir='onnx', language='english_2026-04', temperature=0.7)
++for name, b in json.load(open(sys.argv[1])).items():
++    tf0, tL, tr = b['copies']['f0'] * REG, b['copies']['tract'], b['sylPerS']
++    reshape(tf0, tL, tr, f'probe/r1-{name}.wav'); np.random.seed(5); emb = m.encode_voice(f'probe/r1-{name}.wav')
++    a = m.generate(CAL[0], emb); sf.write(f'probe/cal-{name}.wav', a, FS, subtype='PCM_16'); cf, cL, cr = measure(f'probe/cal-{name}.wav', b['male'], CAL[1], tL)
++    # The drift, taken out: ask the reshape for what would land on the body after the copy's drift.
++    reshape(tf0 * tf0 / cf, tL * tL / cL, tr * tr / cr, f'probe/r2-{name}.wav'); emb2 = m.encode_voice(f'probe/r2-{name}.wav')
++    res = []
++    for k, (line, syl) in enumerate(TESTS):
++        np.random.seed(11 + k); a = m.generate(line, emb2); sf.write(f'probe/fix-{name}-{k}.wav', a, FS, subtype='PCM_16')
++        f, L, r = measure(f'probe/fix-{name}-{k}.wav', b['male'], syl, tL); res.append(f'{100 * (f / tf0 - 1):+4.0f} % {L - tL:+5.2f} cm {100 * (r / tr - 1):+4.0f} %')
++    print(f"{name:7s} drift before: pitch {100 * (cf / tf0 - 1):+.0f} %, tract {cL - tL:+.2f} cm, rate {100 * (cr / tr - 1):+.0f} % | after, two other lines: {res[0]} ; {res[1]}", flush=True)
+diff --git a/history/review-tests/causal-voice/prompt_copy.py b/history/review-tests/causal-voice/prompt_copy.py
+new file mode 100644
+index 0000000..9bbe638
+--- /dev/null
++++ b/history/review-tests/causal-voice/prompt_copy.py
+@@ -0,0 +1,43 @@
++# Per body: the averaged person's recording reshaped to the body (WORLD: pitch level, tract by envelope warp, pace by time
++# scale), copied by Pocket TTS saying the test line; the copy's pitch, tract and speech rate measured (Praat) against the body.
++import json, sys, numpy as np, soundfile as sf, warnings, onnxruntime as ort, parselmouth as pm
++warnings.filterwarnings('ignore'); import pyworld as pw
++sys.path.insert(0, 'onnx-src'); import pocket_tts_onnx as P
++REG = 1.16; LINE = 'Sit. Will has been counting the same six coins since noon.'; SYL_LINE = 12; SYL_PROMPT = 46
++class C(P.PocketTTSOnnx):
++    def _model_file(self, stem):
++        n = super()._model_file(stem); return n.replace('.onnx', '_dyn.onnx') if stem == 'flow_lm_main' else n
++    def _make_session_options(self):
++        o = ort.SessionOptions(); o.intra_op_num_threads = 4; o.log_severity_level = 3; return o
++    def _init_state(self, manifest):
++        st = super()._init_state(manifest)
++        if manifest is self.flow_state_manifest:
++            for e in manifest:
++                if 1000 in e['shape']: st[e['input_name']] = self._make_filled_array([512 if d == 1000 else d for d in e['shape']], self._numpy_dtype(e['dtype']), e['fill'])
++        return st
++def measure(p, male, syl):
++    s = pm.Sound(p); f1 = s.to_pitch_ac(pitch_floor=60, pitch_ceiling=700).selected_array['frequency']; f1 = f1[f1 > 0]
++    pt = s.to_pitch_ac(pitch_floor=max(40, 0.75 * np.percentile(f1, 25)), pitch_ceiling=1.5 * np.percentile(f1, 75)); f = pt.selected_array['frequency']
++    fm = s.to_formant_burg(time_step=0.01, max_number_of_formants=5, maximum_formant=5000 if male else 5500); dfs = []
++    for t, v in zip(pt.xs(), f):
++        F = [fm.get_value_at_time(i, t) for i in (1, 2, 3, 4)]
++        if v > 0 and not any(np.isnan(F)): x = np.array([0.5, 1.5, 2.5, 3.5]); dfs.append(float(np.dot(x, F) / np.dot(x, x)))
++    x = s.values[0]; hop = int(0.01 * s.sampling_frequency); e = np.array([np.sqrt(np.mean(x[i:i + hop] ** 2)) + 1e-9 for i in range(0, len(x) - hop, hop)])
++    idx = np.nonzero(20 * np.log10(e / e.max()) > -35)[0]; span = (idx[-1] - idx[0]) * 0.01
++    return float(np.median(f[f > 0])), 35300 / (2 * float(np.median(dfs))), syl / span
++Z = np.load('avg_prompt.npz'); env, ap, vo, dev, FS, FP = Z['env'], Z['ap'], Z['vo'], Z['dev'], int(Z['FS']), float(Z['FP'])
++f0p, Lp, ratep = measure('avg_prompt.wav', False, SYL_PROMPT); print(f'prompt: f0 {f0p:.1f} tract {Lp:.2f} rate {ratep:.2f}')
++def warp(sp, k):
++    n = sp.shape[1]; f = np.arange(n); src = np.clip(f * k, 0, n - 1)
++    return np.exp(np.array([np.interp(src, f, np.log(row + 1e-12)) for row in sp]))
++m = C(models_dir='onnx', language='english_2026-04', temperature=0.7)
++bodies = json.load(open(sys.argv[1])); out = {}
++for name, b in bodies.items():
++    tf0, tL, trate = b['copies']['f0'] * REG, b['copies']['tract'], b['sylPerS']
++    st = ratep / trate; T = int(round(len(vo) * st)); src = np.clip(np.round(np.arange(T) / st).astype(int), 0, len(vo) - 1)
++    f0 = np.where(vo[src], np.exp(dev[src] + np.log(tf0)), 0.0); sp = warp(env[src], tL / Lp)
++    y = pw.synthesize(np.ascontiguousarray(f0), np.ascontiguousarray(sp), np.ascontiguousarray(ap[src]), FS, FP); y = (y / np.abs(y).max() * 0.9).astype(np.float32)
++    sf.write(f'probe/prompt-{name}.wav', y, FS, subtype='PCM_16')
++    np.random.seed(3); emb = m.encode_voice(f'probe/prompt-{name}.wav'); a = m.generate(LINE, emb); sf.write(f'probe/copy-{name}.wav', a, FS, subtype='PCM_16')
++    pf, pL, pr = measure(f'probe/prompt-{name}.wav', b['male'], SYL_PROMPT); cf, cL, cr = measure(f'probe/copy-{name}.wav', b['male'], SYL_LINE)
++    print(f"{name:7s} target f0 {tf0:6.1f} tract {tL:5.2f} rate {trate:4.2f} | prompt {pf:6.1f} {pL:5.2f} {pr:4.2f} | copy {cf:6.1f} ({100 * (cf / tf0 - 1):+.0f} %) {cL:5.2f} ({cL - tL:+.2f}) {cr:4.2f}", flush=True)
+diff --git a/history/review-tests/causal-voice/props.py b/history/review-tests/causal-voice/props.py
+new file mode 100644
+index 0000000..d1c81a0
+--- /dev/null
++++ b/history/review-tests/causal-voice/props.py
+@@ -0,0 +1,26 @@
++# The tract's proportions: each vowel's F1-F4 in VocalTractLab's anatomy grown to a girl of 11 and to an adult woman, each
++# scaled to the engine's tract (14.4 and 15.8 cm); per vowel and formant, the girl's ratio to the woman's, divided by the
++# uniform ratio (15.8 / 14.4): what a uniform shrink misses.
++import json, subprocess, numpy as np
++from math import exp
++V = '/tmp/claude-0/-home-user/26640b87-f889-5042-96a2-8de1ebfc8fbc/scratchpad/vtl'; W = f'{V}/work'
++def child(*a):
++    r = subprocess.run([f'{V}/venv/bin/python', '-I', f'{V}/vtl_child.py', *map(str, a)], capture_output=True, text=True, cwd=W)
++    return json.loads([l for l in r.stdout.splitlines() if l.startswith('RESULT ')][-1][7:])
++def share(t):
++    p = (163.4, 152.7, 0.1320, 1.1785, 12.49); return 1 - 2 * (1 - p[1] / p[0]) / (exp(p[2] * (t - p[4])) + exp(p[3] * (t - p[4])))
++ref = f'{V}/JD3.orig.speaker'; res = {}
++for name, sh, tract in [('girl11', 0.8683, 14.4), ('woman', 1.0, 15.8)]:
++    t = 1.0
++    while t < 25 and share(t) < sh - 1e-4: t += 0.01
++    an = np.array(child('ages', ref, t)['fem']); spk = f'{W}/prop-{name}.speaker'; s = 1.0; target = 35300 / (2 * tract)
++    for _ in range(4):
++        a2 = an.copy(); a2[list(range(11))] *= s; child('anatomy', ref, json.dumps(list(a2)), spk); s *= child('measure', spk)['spacing'] / target
++    a2 = an.copy(); a2[list(range(11))] *= s; child('anatomy', ref, json.dumps(list(a2)), spk)
++    res[name] = child('vowels', spk); print(name, 'growth age', round(t, 2), 'anatomy', [round(x, 2) for x in a2[:11]])
++u = 15.8 / 14.4; out = {}
++for v in res['woman']:
++    g, w = res['girl11'][v], res['woman'][v]
++    if len(g) == 4 and len(w) == 4: out[v] = {'woman': [round(x) for x in w], 'ratio_over_uniform': [round(g[i] / w[i] / u, 3) for i in range(4)]}
++for v, d in out.items(): print(v.ljust(3), d['woman'], d['ratio_over_uniform'])
++json.dump({'uniform': u, 'vowels': out}, open(f'{W}/proportions-girl11.json', 'w'))
+diff --git a/history/review-tests/causal-voice/vtl_child.py b/history/review-tests/causal-voice/vtl_child.py
+index 610d178..6333991 100644
+--- a/history/review-tests/causal-voice/vtl_child.py
++++ b/history/review-tests/causal-voice/vtl_child.py
+@@ -27,6 +27,11 @@ elif mode == 'anatomy':                  # set the given anatomy on the referenc
+     open(sys.argv[4], 'w').write(x)
+ elif mode == 'measure':                  # the neutral vowel's formant spacing
+     out['spacing'], out['peaks'] = spacing()
++elif mode == 'vowels':                   # F1-F4 of each vowel shape (transfer function peaks)
++    for v in ['a', 'e', 'i', 'o', 'u', 'E', 'I', 'O', 'U', '@', '6', '2', 'y', '9', 'Y', 'E:']:
++        st = vc.get_shape(v, 'tract'); tf = vc.tract_state_to_transfer_function(st, n_spectrum_samples=8192)
++        mag = np.array(tf['magnitude_spectrum']); f = np.arange(len(mag)) * 44100 / 8192
++        out[v] = [float(f[i]) for i in range(2, len(mag) - 2) if mag[i] > mag[i - 1] and mag[i] > mag[i + 1] and f[i] > 150][:4]
+ elif mode == 'synth':                    # segments -> gestures (pitch tier replaced) -> audio
+     seg, ges, wav, f0json = sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
+     vc.phoneme_file_to_gesture_file(seg, ges)
+diff --git a/settings.html b/settings.html
+index 29caa81..2bd9897 100644
+--- a/settings.html
++++ b/settings.html
+@@ -20,7 +20,7 @@
+             <label for="rules_engine_box_look"><small>The box's look</small></label>
+             <select id="rules_engine_box_look" class="text_pole"><option value="night">night: a dark framed panel under a pink name tag</option><option value="page">page: the page's own look</option></select>
+             <label for="rules_engine_box_voice"><small>Voices</small></label>
+-            <select id="rules_engine_box_voice" class="text_pole"><option value="natural">natural: each speaker copies a real person talking freely, the one nearest their voice (downloads 165 MB once)</option><option value="robotic">robotic: each speaker's own computed voice (eSpeak)</option><option value="blips">blips: a tone a syllable in their voice</option><option value="off">off</option></select>
++            <select id="rules_engine_box_voice" class="text_pole"><option value="natural">natural: each voice computed from the speaker's body (needs voices/averaged-person.bin; downloads 165 MB once)</option><option value="robotic">robotic: each speaker's own computed voice (eSpeak)</option><option value="blips">blips: a tone a syllable in their voice</option><option value="off">off</option></select>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_box_typing" /><span>Letters appear one by one: said words at the speaker's pace, other text at reading pace. A tap shows the rest at once</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_music" /><span>Music: your songs, each measured when you add it (tempo, loudness, brightness, key). The song nearest the feelings in the scene plays, and it stays while the scene stays in its area. A song's set names a character (their theme while their feeling leads the scene) or a place (while your character is there)</span></label>
+             <label for="rules_engine_music_volume"><small>Music volume</small></label>
+diff --git a/src/index.js b/src/index.js
+index bd6a692..916b89f 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -11,7 +11,7 @@ import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait,
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady, voiceHarmonics, speakingFactsOf } from './rules/voice-body.js';
+ import { speechVoice, speechVoiceFile, speechTimes, scaleTimes } from './rules/speech.js';
+-import { POCKET_MODEL, nearestEars, earsUrl, wavSamples, resample, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
++import { POCKET_MODEL, bodyTarget, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
+ import { blipPlan, BLIP_RAMP_S } from './rules/blips.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong } from './rules/music.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -755,10 +755,11 @@ function speakUnit(unit, text) {
+     speechSource = src;
+     return speechTimes(text, words, 1000 * n / fs);
+ }
+-// The natural voice (rules/pocket.ts, data/ears-voices.ts): Pocket TTS's networks, downloaded once from Hugging Face (165 MB)
+-// and kept in the browser's IndexedDB, run by onnxruntime-web (jsDelivr) in a worker (voice-worker.ts), each speaker copying the
+-// free-speech recording of the EARS speaker nearest their body's voice. A recording is fetched and encoded once and its
+-// encoding kept. Each said stretch is made once, ahead, as its message is shown; the box waits for a stretch still being made.
++// The natural voice (rules/pocket.ts, rules/averaged-person.ts): Pocket TTS's networks, downloaded once from Hugging Face (165
++// MB) and kept in the browser's IndexedDB, run by onnxruntime-web (jsDelivr) in a worker (voice-worker.ts); each speaker's
++// voice is the averaged person (voices/averaged-person.bin, sent to the player apart from the repository: CC BY-NC) spoken with
++// the body's pitch, tract and pace, made and encoded once per body and its encoding kept. Each said stretch is made once, ahead,
++// as its message is shown; the box waits for a stretch still being made.
+ const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/';
+ let voiceWorker = null, voiceLoad = null, voiceJobId = 0, voiceWait = null;
+ const voiceJobs = new Map(), voiceCache = new Map(), voiceDone = new Map(), voicesMade = new Map();
+@@ -822,31 +823,36 @@ function loadNatural() {
+             };
+             voiceWorker.postMessage({ type: 'load', ortUrl: ORT_URL, files }, Object.values(files));
+         });
++        // The averaged person, from the extension's folder (not in the repository: the player keeps the file they were sent).
++        const res = await fetch(new URL('../voices/averaged-person.bin', import.meta.url));
++        if (!res.ok) {
++            toast('The natural voice needs voices/averaged-person.bin in the extension folder.');
++            throw new Error(`averaged-person.bin: ${res.status}`);
++        }
++        const buffer = await res.arrayBuffer(), r = await askWorker({ type: 'person', buffer }, [buffer]);
++        if (r.error)
++            throw new Error(r.error);
+     })().catch(err => { console.warn('[Rules engine] the natural voice could not load:', err); voiceLoad = null; throw err; });
+     return voiceLoad;
+ }
+-/** An EARS speaker's voice in the worker: their recording's encoding, kept in IndexedDB after the first time. */
+-function makeEarsVoice(id) {
+-    let made = voicesMade.get(id);
++/** A body's voice in the worker: the averaged person spoken with the body's causes, encoded; the encoding kept in IndexedDB. */
++function makeBodyVoice(voice, body) {
++    let made = voicesMade.get(voice);
+     if (!made) {
+         made = (async () => {
+-            const key = `encoding:${earsUrl(id)}`, kept = await storedModel(key);
++            const key = `encoding:averaged-person:1:${voice}`, kept = await storedModel(key);
+             if (kept) {
+-                const r = await askWorker({ type: 'voice', voice: id, embedding: new Float32Array(kept) });
++                const r = await askWorker({ type: 'voice', voice, embedding: new Float32Array(kept) });
+                 if (!r.error)
+                     return;
+             }
+-            const res = await fetch(earsUrl(id));
+-            if (!res.ok)
+-                throw new Error(`the recording's download answered ${res.status}`);
+-            const w = wavSamples(await res.arrayBuffer()), samples = resample(w.samples, w.rate, POCKET_MODEL.sampleRate);
+-            const r = await askWorker({ type: 'voice', voice: id, samples }, [samples.buffer]);
++            const r = await askWorker({ type: 'voice', voice, body });
+             if (r.error || !r.embedding)
+                 throw new Error(r.error ?? 'no encoding');
+             await storedModel(key, r.embedding.buffer.slice(0));
+         })();
+-        made.catch(() => voicesMade.delete(id));
+-        voicesMade.set(id, made);
++        made.catch(() => voicesMade.delete(voice));
++        voicesMade.set(voice, made);
+     }
+     return made;
+ }
+@@ -856,14 +862,15 @@ function naturalJob(unit) {
+     const who = unit.getAttribute('data-who'), p = who ? trackedPeople()[who] : undefined;
+     if (settings().boxVoice !== 'natural' || unit.getAttribute('data-said') !== 'true' || !p || unit.querySelector('.rules-v-whisper, .rules-run-whisper'))
+         return null;
+-    const facts = speakingFactsOf(p), v = voiceOf(facts), text = spokenText(unit.textContent ?? '');
++    // The line is English (the model's language): its pace is English's for someone whose language the story has not set.
++    const facts = speakingFactsOf(p), v = voiceOf({ ...facts, language: facts.language ?? 'english' }), text = spokenText(unit.textContent ?? '');
+     if (!v.f0Hz || !v.tractCm || !/\p{L}/u.test(text))
+         return null;
+-    const ears = nearestEars(v.f0Hz, v.tractCm, facts.age), key = `${ears.id}|${text}`;
++    const body = bodyTarget(v.f0Hz, v.tractCm, v.sylPerS), voice = `${body.f0}|${body.tractCm}|${body.sylPerS}`, key = `${voice}|${text}`;
+     let job = voiceCache.get(key);
+     if (!job) {
+-        job = loadNatural().then(() => makeEarsVoice(ears.id))
+-            .then(() => askWorker({ type: 'speak', voice: ears.id, chunks: pocketJob(text), temperature: POCKET_MODEL.temperature }))
++        job = loadNatural().then(() => makeBodyVoice(voice, body))
++            .then(() => askWorker({ type: 'speak', voice, chunks: pocketJob(text), temperature: POCKET_MODEL.temperature }))
+             .then(r => r.audio ?? null).catch(() => null).then(a => { voiceDone.set(key, a); return a; });
+         voiceCache.set(key, job);
+     }
+diff --git a/src/index.ts b/src/index.ts
+index 2cde677..662f0b0 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -15,7 +15,7 @@ import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait,
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady, voiceHarmonics, speakingFactsOf } from './rules/voice-body.js';
+ import { speechVoice, speechVoiceFile, speechTimes, scaleTimes } from './rules/speech.js';
+-import { POCKET_MODEL, nearestEars, earsUrl, wavSamples, resample, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
++import { POCKET_MODEL, bodyTarget, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
+ import { blipPlan, BLIP_RAMP_S } from './rules/blips.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong, type Cues } from './rules/music.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -623,10 +623,11 @@ function speakUnit(unit: Element, text: string): number[] | null {
+     src.connect(g).connect(blipCtx.destination); src.start(); speechSource = src;
+     return speechTimes(text, words, 1000 * n / fs);
+ }
+-// The natural voice (rules/pocket.ts, data/ears-voices.ts): Pocket TTS's networks, downloaded once from Hugging Face (165 MB)
+-// and kept in the browser's IndexedDB, run by onnxruntime-web (jsDelivr) in a worker (voice-worker.ts), each speaker copying the
+-// free-speech recording of the EARS speaker nearest their body's voice. A recording is fetched and encoded once and its
+-// encoding kept. Each said stretch is made once, ahead, as its message is shown; the box waits for a stretch still being made.
++// The natural voice (rules/pocket.ts, rules/averaged-person.ts): Pocket TTS's networks, downloaded once from Hugging Face (165
++// MB) and kept in the browser's IndexedDB, run by onnxruntime-web (jsDelivr) in a worker (voice-worker.ts); each speaker's
++// voice is the averaged person (voices/averaged-person.bin, sent to the player apart from the repository: CC BY-NC) spoken with
++// the body's pitch, tract and pace, made and encoded once per body and its encoding kept. Each said stretch is made once, ahead,
++// as its message is shown; the box waits for a stretch still being made.
+ const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/';
+ let voiceWorker: Worker | null = null, voiceLoad: Promise<void> | null = null, voiceJobId = 0, voiceWait: Element | null = null;
+ const voiceJobs = new Map<number, (m: { audio?: Float32Array; embedding?: Float32Array; error?: string }) => void>(), voiceCache = new Map<string, Promise<Float32Array | null>>(), voiceDone = new Map<string, Float32Array | null>(), voicesMade = new Map<string, Promise<void>>();
+@@ -677,25 +678,27 @@ function loadNatural(): Promise<void> {
+             };
+             voiceWorker!.postMessage({ type: 'load', ortUrl: ORT_URL, files }, Object.values(files));
+         });
++        // The averaged person, from the extension's folder (not in the repository: the player keeps the file they were sent).
++        const res = await fetch(new URL('../voices/averaged-person.bin', import.meta.url));
++        if (!res.ok) { toast('The natural voice needs voices/averaged-person.bin in the extension folder.'); throw new Error(`averaged-person.bin: ${res.status}`); }
++        const buffer = await res.arrayBuffer(), r = await askWorker({ type: 'person', buffer }, [buffer]);
++        if (r.error) throw new Error(r.error);
+     })().catch(err => { console.warn('[Rules engine] the natural voice could not load:', err); voiceLoad = null; throw err; });
+     return voiceLoad;
+ }
+-/** An EARS speaker's voice in the worker: their recording's encoding, kept in IndexedDB after the first time. */
+-function makeEarsVoice(id: string): Promise<void> {
+-    let made = voicesMade.get(id);
++/** A body's voice in the worker: the averaged person spoken with the body's causes, encoded; the encoding kept in IndexedDB. */
++function makeBodyVoice(voice: string, body: { f0: number; tractCm: number; sylPerS: number }): Promise<void> {
++    let made = voicesMade.get(voice);
+     if (!made) {
+         made = (async () => {
+-            const key = `encoding:${earsUrl(id)}`, kept = await storedModel(key);
+-            if (kept) { const r = await askWorker({ type: 'voice', voice: id, embedding: new Float32Array(kept) }); if (!r.error) return; }
+-            const res = await fetch(earsUrl(id));
+-            if (!res.ok) throw new Error(`the recording's download answered ${res.status}`);
+-            const w = wavSamples(await res.arrayBuffer()), samples = resample(w.samples, w.rate, POCKET_MODEL.sampleRate);
+-            const r = await askWorker({ type: 'voice', voice: id, samples }, [samples.buffer]);
++            const key = `encoding:averaged-person:1:${voice}`, kept = await storedModel(key);
++            if (kept) { const r = await askWorker({ type: 'voice', voice, embedding: new Float32Array(kept) }); if (!r.error) return; }
++            const r = await askWorker({ type: 'voice', voice, body });
+             if (r.error || !r.embedding) throw new Error(r.error ?? 'no encoding');
+             await storedModel(key, r.embedding.buffer.slice(0) as ArrayBuffer);
+         })();
+-        made.catch(() => voicesMade.delete(id));
+-        voicesMade.set(id, made);
++        made.catch(() => voicesMade.delete(voice));
++        voicesMade.set(voice, made);
+     }
+     return made;
+ }
+@@ -704,13 +707,14 @@ function makeEarsVoice(id: string): Promise<void> {
+ function naturalJob(unit: Element): { key: string; job: Promise<Float32Array | null> } | null {
+     const who = unit.getAttribute('data-who'), p = who ? trackedPeople()[who] : undefined;
+     if (settings().boxVoice !== 'natural' || unit.getAttribute('data-said') !== 'true' || !p || unit.querySelector('.rules-v-whisper, .rules-run-whisper')) return null;
+-    const facts = speakingFactsOf(p), v = voiceOf(facts), text = spokenText(unit.textContent ?? '');
++    // The line is English (the model's language): its pace is English's for someone whose language the story has not set.
++    const facts = speakingFactsOf(p), v = voiceOf({ ...facts, language: facts.language ?? 'english' }), text = spokenText(unit.textContent ?? '');
+     if (!v.f0Hz || !v.tractCm || !/\p{L}/u.test(text)) return null;
+-    const ears = nearestEars(v.f0Hz, v.tractCm, facts.age), key = `${ears.id}|${text}`;
++    const body = bodyTarget(v.f0Hz, v.tractCm, v.sylPerS), voice = `${body.f0}|${body.tractCm}|${body.sylPerS}`, key = `${voice}|${text}`;
+     let job = voiceCache.get(key);
+     if (!job) {
+-        job = loadNatural().then(() => makeEarsVoice(ears.id))
+-            .then(() => askWorker({ type: 'speak', voice: ears.id, chunks: pocketJob(text), temperature: POCKET_MODEL.temperature }))
++        job = loadNatural().then(() => makeBodyVoice(voice, body))
++            .then(() => askWorker({ type: 'speak', voice, chunks: pocketJob(text), temperature: POCKET_MODEL.temperature }))
+             .then(r => r.audio ?? null).catch(() => null).then(a => { voiceDone.set(key, a); return a; });
+         voiceCache.set(key, job);
+     }
+diff --git a/src/rules/averaged-person.js b/src/rules/averaged-person.js
+new file mode 100644
+index 0000000..905ad52
+--- /dev/null
++++ b/src/rules/averaged-person.js
+@@ -0,0 +1,61 @@
++// The averaged person (the player's picks, 2026-11-12: a voice is computed from the body's causes, not chosen from recorded
++// people; the movement of speech averaged over many speakers; the average made outside the extension from EARS and kept out of
++// its repository, CC BY-NC 4.0). The file (voices/averaged-person.bin, made by history/review-tests/causal-voice/avg_prompt.py)
++// holds 16 speakers' speech movement on one passage as WORLD features: voicing and melody (ln f0 about its own level) per 5 ms
++// frame, the envelope and the aperiodicity. A body's recording is that movement spoken with the body's causes: its pitch level
++// (folds), its tract (every frequency of the envelope scaled by the averaged person's tract over the body's) and its pace;
++// WORLD's synthesis (world-vocoder.ts) makes the sound, which Pocket TTS then copies for every line (pocket.ts, voice-worker.ts).
++import { synthesize } from './world-vocoder.js';
++/** The file's parts: "RVAP", the header's length (uint32), the header (JSON), voicing (uint8 a frame), melody (float32 a frame),
++ * envelope (int16 1000 × ln, envBins a frame: every second WORLD bin), aperiodicity (uint8 4 × −dB, apBins a frame: every
++ * eighth). */
++export function parseAveragedPerson(buf) {
++    const b = new Uint8Array(buf);
++    if (String.fromCharCode(b[0], b[1], b[2], b[3]) !== 'RVAP')
++        throw new Error('not an averaged-person file');
++    const hl = new DataView(buf).getUint32(4, true), header = JSON.parse(new TextDecoder().decode(b.subarray(8, 8 + hl)));
++    const n = header.frames, at0 = 8 + hl, copy = (from, bytes) => buf.slice(from, from + bytes);
++    const voiced = new Uint8Array(copy(at0, n)), melody = new Float32Array(copy(at0 + n, 4 * n));
++    const env = new Int16Array(copy(at0 + 5 * n, 2 * n * header.envBins)), ap = new Uint8Array(copy(at0 + 5 * n + 2 * n * header.envBins, n * header.apBins));
++    return { fs: header.fs, framePeriodMs: header.framePeriodMs, fftSize: header.fftSize, frames: n, envBins: header.envBins, apBins: header.apBins, own: header.own, voiced, melody, env, ap, header };
++}
++/** Frame s's envelope over WORLD's bins 0..fftSize/2 for a tract k times the averaged person's: the stored envelope (ln) read at
++ * bin × k, between its stored bins; past the top, the top's. */
++export function envelopeRow(p, s, k) {
++    const half = p.fftSize / 2, step = half / (p.envBins - 1), row = s * p.envBins, e = new Float64Array(half + 1);
++    for (let bin = 0; bin <= half; bin++) {
++        const x = Math.min(p.envBins - 1, bin * k / step), j = Math.min(p.envBins - 2, Math.floor(x)), w = x - j;
++        e[bin] = Math.exp(((1 - w) * p.env[row + j] + w * p.env[row + j + 1]) / 1000);
++    }
++    return e;
++}
++/** Frame s's aperiodicity over WORLD's bins, between its stored bins (stored as 4 × −dB). */
++export function aperiodicityRow(p, s) {
++    const half = p.fftSize / 2, step = half / (p.apBins - 1), row = s * p.apBins, a = new Float64Array(half + 1);
++    for (let bin = 0; bin <= half; bin++) {
++        const y = bin / step, m = Math.min(p.apBins - 2, Math.floor(y)), v = y - m;
++        a[bin] = 10 ** (-((1 - v) * p.ap[row + m] + v * p.ap[row + m + 1]) / 4 / 20);
++    }
++    return a;
++}
++/** The averaged person's movement spoken by a body: frames repeated or skipped to the body's pace, the melody about the body's
++ * pitch, the envelope read at f × (the body's tract ÷ the averaged person's), so a tract k times shorter puts every resonance k
++ * times higher (F ∝ 1 ÷ L, a tube's resonances), the aperiodicity as it was. */
++export function bodyRecording(p, t, seed = 1) {
++    const stretch = p.own.sylPerS / t.sylPerS, T = Math.max(2, Math.round(p.frames * stretch)), k = t.tractCm / p.own.tractCm;
++    const f0 = new Float64Array(T), sp = [], ap = [];
++    for (let i = 0; i < T; i++) {
++        const s = Math.min(p.frames - 1, Math.round(i / stretch));
++        f0[i] = p.voiced[s] ? Math.exp(p.melody[s] + Math.log(t.f0)) : 0;
++        sp.push(envelopeRow(p, s, k));
++        ap.push(aperiodicityRow(p, s));
++    }
++    const y = synthesize(f0, sp, ap, p.fftSize, p.framePeriodMs, p.fs, Math.round(T * p.framePeriodMs * p.fs / 1000), seed);
++    let peak = 0;
++    for (const v of y)
++        peak = Math.max(peak, Math.abs(v));
++    if (peak > 0)
++        for (let i = 0; i < y.length; i++)
++            y[i] = y[i] * 0.9 / peak;
++    return y;
++}
+diff --git a/src/rules/averaged-person.ts b/src/rules/averaged-person.ts
+new file mode 100644
+index 0000000..cfb6877
+--- /dev/null
++++ b/src/rules/averaged-person.ts
+@@ -0,0 +1,63 @@
++// The averaged person (the player's picks, 2026-11-12: a voice is computed from the body's causes, not chosen from recorded
++// people; the movement of speech averaged over many speakers; the average made outside the extension from EARS and kept out of
++// its repository, CC BY-NC 4.0). The file (voices/averaged-person.bin, made by history/review-tests/causal-voice/avg_prompt.py)
++// holds 16 speakers' speech movement on one passage as WORLD features: voicing and melody (ln f0 about its own level) per 5 ms
++// frame, the envelope and the aperiodicity. A body's recording is that movement spoken with the body's causes: its pitch level
++// (folds), its tract (every frequency of the envelope scaled by the averaged person's tract over the body's) and its pace;
++// WORLD's synthesis (world-vocoder.ts) makes the sound, which Pocket TTS then copies for every line (pocket.ts, voice-worker.ts).
++import { synthesize } from './world-vocoder.js';
++
++export interface AveragedPerson {
++    fs: number; framePeriodMs: number; fftSize: number; frames: number; envBins: number; apBins: number;
++    own: { f0: number; tractCm: number; sylPerS: number };
++    voiced: Uint8Array; melody: Float32Array; env: Int16Array; ap: Uint8Array; header: Record<string, unknown>;
++}
++/** The file's parts: "RVAP", the header's length (uint32), the header (JSON), voicing (uint8 a frame), melody (float32 a frame),
++ * envelope (int16 1000 × ln, envBins a frame: every second WORLD bin), aperiodicity (uint8 4 × −dB, apBins a frame: every
++ * eighth). */
++export function parseAveragedPerson(buf: ArrayBuffer): AveragedPerson {
++    const b = new Uint8Array(buf);
++    if (String.fromCharCode(b[0]!, b[1]!, b[2]!, b[3]!) !== 'RVAP') throw new Error('not an averaged-person file');
++    const hl = new DataView(buf).getUint32(4, true), header = JSON.parse(new TextDecoder().decode(b.subarray(8, 8 + hl))) as AveragedPerson & Record<string, unknown>;
++    const n = header.frames, at0 = 8 + hl, copy = (from: number, bytes: number) => buf.slice(from, from + bytes);
++    const voiced = new Uint8Array(copy(at0, n)), melody = new Float32Array(copy(at0 + n, 4 * n));
++    const env = new Int16Array(copy(at0 + 5 * n, 2 * n * header.envBins)), ap = new Uint8Array(copy(at0 + 5 * n + 2 * n * header.envBins, n * header.apBins));
++    return { fs: header.fs, framePeriodMs: header.framePeriodMs, fftSize: header.fftSize, frames: n, envBins: header.envBins, apBins: header.apBins, own: header.own, voiced, melody, env, ap, header };
++}
++/** Frame s's envelope over WORLD's bins 0..fftSize/2 for a tract k times the averaged person's: the stored envelope (ln) read at
++ * bin × k, between its stored bins; past the top, the top's. */
++export function envelopeRow(p: AveragedPerson, s: number, k: number): Float64Array {
++    const half = p.fftSize / 2, step = half / (p.envBins - 1), row = s * p.envBins, e = new Float64Array(half + 1);
++    for (let bin = 0; bin <= half; bin++) {
++        const x = Math.min(p.envBins - 1, bin * k / step), j = Math.min(p.envBins - 2, Math.floor(x)), w = x - j;
++        e[bin] = Math.exp(((1 - w) * p.env[row + j]! + w * p.env[row + j + 1]!) / 1000);
++    }
++    return e;
++}
++/** Frame s's aperiodicity over WORLD's bins, between its stored bins (stored as 4 × −dB). */
++export function aperiodicityRow(p: AveragedPerson, s: number): Float64Array {
++    const half = p.fftSize / 2, step = half / (p.apBins - 1), row = s * p.apBins, a = new Float64Array(half + 1);
++    for (let bin = 0; bin <= half; bin++) {
++        const y = bin / step, m = Math.min(p.apBins - 2, Math.floor(y)), v = y - m;
++        a[bin] = 10 ** (-((1 - v) * p.ap[row + m]! + v * p.ap[row + m + 1]!) / 4 / 20);
++    }
++    return a;
++}
++/** The body a recording is made for: pitch (Hz) and tract (cm) on the averaged person's scale (free speech), pace. */
++export interface BodyTarget { f0: number; tractCm: number; sylPerS: number }
++/** The averaged person's movement spoken by a body: frames repeated or skipped to the body's pace, the melody about the body's
++ * pitch, the envelope read at f × (the body's tract ÷ the averaged person's), so a tract k times shorter puts every resonance k
++ * times higher (F ∝ 1 ÷ L, a tube's resonances), the aperiodicity as it was. */
++export function bodyRecording(p: AveragedPerson, t: BodyTarget, seed = 1): Float32Array {
++    const stretch = p.own.sylPerS / t.sylPerS, T = Math.max(2, Math.round(p.frames * stretch)), k = t.tractCm / p.own.tractCm;
++    const f0 = new Float64Array(T), sp: Float64Array[] = [], ap: Float64Array[] = [];
++    for (let i = 0; i < T; i++) {
++        const s = Math.min(p.frames - 1, Math.round(i / stretch));
++        f0[i] = p.voiced[s] ? Math.exp(p.melody[s]! + Math.log(t.f0)) : 0;
++        sp.push(envelopeRow(p, s, k)); ap.push(aperiodicityRow(p, s));
++    }
++    const y = synthesize(f0, sp, ap, p.fftSize, p.framePeriodMs, p.fs, Math.round(T * p.framePeriodMs * p.fs / 1000), seed);
++    let peak = 0; for (const v of y) peak = Math.max(peak, Math.abs(v));
++    if (peak > 0) for (let i = 0; i < y.length; i++) y[i] = y[i]! * 0.9 / peak;
++    return y;
++}
+diff --git a/src/rules/data/ears-voices.js b/src/rules/data/ears-voices.js
+deleted file mode 100644
+index 98fb5a4..0000000
+--- a/src/rules/data/ears-voices.js
++++ /dev/null
+@@ -1,108 +0,0 @@
+-// The voices the free-speech voice copies (pocket.ts): the native English speakers of EARS (Richter et al. 2024, "EARS: an
+-// anechoic fullband speech dataset", Interspeech; github.com/facebookresearch/ears_dataset; CC BY-NC 4.0), each one's sex, age
+-// and height as they reported them (the middle of their band: ages 18-25 ... 66-75, heights by 4 inches) and their voice as
+-// Pocket TTS copies it from the middle 10 s of their first free monologue (Kyutai's cleaned copy): the copy saying "The north
+-// wind and the sun..." (28 syllables), measured in Praat (parselmouth) outside the repo: the median pitch (To Pitch (ac), two
+-// passes: De Looze & Hirst 2008), the tract from the formant spacing over F1-F4 (Burg, ceiling 5000 Hz for men, 5500 for women;
+-// Reby & McComb 2003: c / 2dF, c = 353 m/s), syllables a second over the speech's span. 95 of 107 kept. Left out: those
+-// whose first language is not English or not given (their accent comes with the copy: p001, p005, p013, p020, p042, p067, p072, p103, p107), and those whose
+-// copy's pitch lies more than ln 0.2 (22 %) from their own recording's (the copy is not faithful: p011, p027, p076).
+-// Medians: men (37) 105.4 Hz and 18.92 cm, women (56) 171.4 Hz and 16.78 cm.
+-export const EARS_MEDIANS = { male: { f0: 105.4, tract: 18.92 }, female: { f0: 171.4, tract: 16.78 } };
+-export const EARS_VOICES = [
+-    { id: 'p002', sex: 'female', age: 50.5, heightCm: 156.2, f0: 183.9, tract: 16.09, sylPerS: 4.93 },
+-    { id: 'p003', sex: 'female', age: 30.5, heightCm: 166.4, f0: 148.1, tract: 16.62, sylPerS: 4.969 },
+-    { id: 'p004', sex: 'male', age: 21.5, heightCm: 176.5, f0: 82.8, tract: 18.48, sylPerS: 5.276 },
+-    { id: 'p006', sex: 'female', age: 40.5, heightCm: 146.1, f0: 191.3, tract: 18.4, sylPerS: 4.085 },
+-    { id: 'p007', sex: 'male', age: 40.5, heightCm: 176.5, f0: 95.8, tract: 17.42, sylPerS: 5.138 },
+-    { id: 'p008', sex: 'male', age: 60.5, heightCm: 186.7, f0: 137.1, tract: 19.76, sylPerS: 4.449 },
+-    { id: 'p009', sex: 'male', age: 21.5, heightCm: 176.5, f0: 94.3, tract: 20.03, sylPerS: 5.607 },
+-    { id: 'p010', sex: 'male', age: 40.5, heightCm: 176.5, f0: 100.9, tract: 18.72, sylPerS: 4.248 },
+-    { id: 'p012', sex: 'female', age: 30.5, heightCm: 166.4, f0: 164.8, tract: 16.98, sylPerS: 4.608 },
+-    { id: 'p014', sex: 'female', age: 30.5, heightCm: 166.4, f0: 161.3, tract: 16.21, sylPerS: 4.016 },
+-    { id: 'p015', sex: 'female', age: 50.5, heightCm: 166.4, f0: 149.0, tract: 16.32, sylPerS: 3.428 },
+-    { id: 'p016', sex: 'male', age: 21.5, heightCm: 176.5, f0: 115.7, tract: 18.85, sylPerS: 4.867 },
+-    { id: 'p017', sex: 'male', age: 40.5, heightCm: 186.7, f0: 88.3, tract: 19.07, sylPerS: 4.295 },
+-    { id: 'p018', sex: 'female', age: 50.5, heightCm: 156.2, f0: 136.8, tract: 16.83, sylPerS: 4.628 },
+-    { id: 'p019', sex: 'male', age: 21.5, heightCm: 176.5, f0: 105.4, tract: 18.91, sylPerS: 5.136 },
+-    { id: 'p021', sex: 'female', age: 70.5, heightCm: 156.2, f0: 156.0, tract: 16.23, sylPerS: 4.467 },
+-    { id: 'p022', sex: 'male', age: 40.5, heightCm: 176.5, f0: 113.8, tract: 18.25, sylPerS: 5.2 },
+-    { id: 'p023', sex: 'male', age: 30.5, heightCm: 186.7, f0: 150.2, tract: 18.41, sylPerS: 5.08 },
+-    { id: 'p024', sex: 'female', age: 40.5, heightCm: 166.4, f0: 179.1, tract: 17.95, sylPerS: 5.622 },
+-    { id: 'p025', sex: 'male', age: 50.5, heightCm: 176.5, f0: 103.4, tract: 18.52, sylPerS: 4.488 },
+-    { id: 'p026', sex: 'female', age: 50.5, heightCm: 166.4, f0: 184.8, tract: 16.22, sylPerS: 5.606 },
+-    { id: 'p028', sex: 'female', age: 21.5, heightCm: 166.4, f0: 197.9, tract: 16.98, sylPerS: 4.499 },
+-    { id: 'p029', sex: 'female', age: 30.5, heightCm: 176.5, f0: 172.8, tract: 15.89, sylPerS: 4.3 },
+-    { id: 'p030', sex: 'female', age: 30.5, heightCm: 166.4, f0: 169.2, tract: 17.2, sylPerS: 3.381 },
+-    { id: 'p031', sex: 'male', age: 21.5, heightCm: 176.5, f0: 139.9, tract: 19.97, sylPerS: 5.749 },
+-    { id: 'p032', sex: 'female', age: 60.5, heightCm: 176.5, f0: 135.0, tract: 16.52, sylPerS: 5.123 },
+-    { id: 'p033', sex: 'female', age: 60.5, heightCm: 176.5, f0: 170.1, tract: 16.67, sylPerS: 3.851 },
+-    { id: 'p034', sex: 'female', age: 60.5, heightCm: 156.2, f0: 155.0, tract: 17.61, sylPerS: 5.101 },
+-    { id: 'p035', sex: 'female', age: 21.5, heightCm: 166.4, f0: 210.3, tract: 16.68, sylPerS: 4.458 },
+-    { id: 'p036', sex: 'female', age: 30.5, heightCm: 156.2, f0: 155.9, tract: 17.55, sylPerS: 4.965 },
+-    { id: 'p037', sex: 'female', age: 50.5, heightCm: 166.4, f0: 218.1, tract: 17.14, sylPerS: 5.135 },
+-    { id: 'p038', sex: 'male', age: 30.5, heightCm: 166.4, f0: 133.7, tract: 17.15, sylPerS: 5.471 },
+-    { id: 'p039', sex: 'male', age: 30.5, heightCm: 176.5, f0: 119.1, tract: 21.05, sylPerS: 5.135 },
+-    { id: 'p040', sex: 'male', age: 21.5, heightCm: 176.5, f0: 101.4, tract: 18.98, sylPerS: 5.915 },
+-    { id: 'p041', sex: 'female', age: 21.5, heightCm: 166.4, f0: 156.6, tract: 17.65, sylPerS: 5.289 },
+-    { id: 'p043', sex: 'female', age: 21.5, heightCm: 166.4, f0: 189.9, tract: 17.95, sylPerS: 6.002 },
+-    { id: 'p044', sex: 'female', age: 50.5, heightCm: 156.2, f0: 168.1, tract: 18.2, sylPerS: 5.632 },
+-    { id: 'p045', sex: 'female', age: 21.5, heightCm: 166.4, f0: 193.3, tract: 17.96, sylPerS: 4.654 },
+-    { id: 'p046', sex: 'male', age: 30.5, heightCm: 186.7, f0: 102.4, tract: 20.05, sylPerS: 5.093 },
+-    { id: 'p047', sex: 'female', age: 60.5, heightCm: 156.2, f0: 164.7, tract: 16.95, sylPerS: 5.255 },
+-    { id: 'p048', sex: 'female', age: 60.5, heightCm: 166.4, f0: 153.2, tract: 16.6, sylPerS: 4.792 },
+-    { id: 'p049', sex: 'male', age: 40.5, heightCm: 176.5, f0: 126.6, tract: 19.14, sylPerS: 5.286 },
+-    { id: 'p050', sex: 'female', age: 60.5, heightCm: 146.1, f0: 185.2, tract: 16.76, sylPerS: 4.822 },
+-    { id: 'p051', sex: 'female', age: 50.5, heightCm: 156.2, f0: 164.3, tract: 16.55, sylPerS: 4.462 },
+-    { id: 'p052', sex: 'female', age: 21.5, heightCm: 156.2, f0: 153.5, tract: 17.23, sylPerS: 5.029 },
+-    { id: 'p053', sex: 'female', age: 21.5, heightCm: 166.4, f0: 233.3, tract: 16.37, sylPerS: 3.699 },
+-    { id: 'p054', sex: 'male', age: 50.5, heightCm: 186.7, f0: 80.1, tract: 19.66, sylPerS: 4.323 },
+-    { id: 'p055', sex: 'female', age: 50.5, heightCm: 166.4, f0: 179.9, tract: 16.8, sylPerS: 4.527 },
+-    { id: 'p056', sex: 'female', age: 21.5, heightCm: 156.2, f0: 175.4, tract: 16.94, sylPerS: 4.633 },
+-    { id: 'p057', sex: 'male', age: 21.5, heightCm: 186.7, f0: 125.5, tract: 18.39, sylPerS: 5.021 },
+-    { id: 'p058', sex: 'female', age: 30.5, heightCm: 156.2, f0: 222.0, tract: 15.35, sylPerS: 5.178 },
+-    { id: 'p059', sex: 'female', age: 30.5, heightCm: 166.4, f0: 181.0, tract: 17.07, sylPerS: 5.13 },
+-    { id: 'p060', sex: 'male', age: 30.5, heightCm: 176.5, f0: 97.7, tract: 18.17, sylPerS: 5.129 },
+-    { id: 'p061', sex: 'female', age: 60.5, heightCm: 166.4, f0: 128.6, tract: 16.2, sylPerS: 4.655 },
+-    { id: 'p062', sex: 'female', age: 21.5, heightCm: 156.2, f0: 178.4, tract: 17.19, sylPerS: 5.132 },
+-    { id: 'p063', sex: 'female', age: 40.5, heightCm: 156.2, f0: 182.0, tract: 16.27, sylPerS: 4.026 },
+-    { id: 'p064', sex: 'female', age: 40.5, heightCm: 166.4, f0: 151.6, tract: 17.08, sylPerS: 4.969 },
+-    { id: 'p065', sex: 'male', age: 60.5, heightCm: 176.5, f0: 138.7, tract: 18.9, sylPerS: 4.482 },
+-    { id: 'p066', sex: 'female', age: 50.5, heightCm: 166.4, f0: 157.0, tract: 16.51, sylPerS: 3.954 },
+-    { id: 'p068', sex: 'female', age: 21.5, heightCm: 156.2, f0: 199.3, tract: 16.38, sylPerS: 5.192 },
+-    { id: 'p069', sex: 'female', age: 50.5, heightCm: 156.2, f0: 144.4, tract: 16.45, sylPerS: 4.083 },
+-    { id: 'p070', sex: 'female', age: 40.5, heightCm: 156.2, f0: 194.7, tract: 16.7, sylPerS: 4.023 },
+-    { id: 'p071', sex: 'male', age: 21.5, heightCm: 166.4, f0: 134.1, tract: 17.32, sylPerS: 4.577 },
+-    { id: 'p073', sex: 'female', age: 21.5, heightCm: 176.5, f0: 156.1, tract: 17.57, sylPerS: 4.813 },
+-    { id: 'p074', sex: 'male', age: 21.5, heightCm: 176.5, f0: 82.7, tract: 18.22, sylPerS: 4.491 },
+-    { id: 'p075', sex: 'female', age: 21.5, heightCm: 156.2, f0: 165.2, tract: 17.43, sylPerS: 4.844 },
+-    { id: 'p077', sex: 'male', age: 50.5, heightCm: 176.5, f0: 108.6, tract: 19.63, sylPerS: 4.812 },
+-    { id: 'p078', sex: null, age: 21.5, heightCm: 166.4, f0: 212.0, tract: 16.7, sylPerS: 4.436 },
+-    { id: 'p079', sex: 'female', age: 50.5, heightCm: 156.2, f0: 213.2, tract: 16.43, sylPerS: 3.943 },
+-    { id: 'p080', sex: 'female', age: 30.5, heightCm: 166.4, f0: 182.2, tract: 17.57, sylPerS: 4.045 },
+-    { id: 'p081', sex: 'male', age: 21.5, heightCm: 166.4, f0: 129.7, tract: 19.07, sylPerS: 5.487 },
+-    { id: 'p082', sex: 'female', age: 30.5, heightCm: 166.4, f0: 164.0, tract: 16.47, sylPerS: 4.322 },
+-    { id: 'p083', sex: 'female', age: 30.5, heightCm: 166.4, f0: 138.9, tract: 15.86, sylPerS: 5.311 },
+-    { id: 'p084', sex: 'female', age: 70.5, heightCm: 166.4, f0: 139.4, tract: 16.76, sylPerS: 5.13 },
+-    { id: 'p085', sex: 'male', age: 30.5, heightCm: 176.5, f0: 87.4, tract: 19.34, sylPerS: 4.671 },
+-    { id: 'p086', sex: 'male', age: 21.5, heightCm: 176.5, f0: 112.9, tract: 19.95, sylPerS: 6.183 },
+-    { id: 'p087', sex: 'male', age: 60.5, heightCm: 176.5, f0: 95.0, tract: 19.47, sylPerS: 4.662 },
+-    { id: 'p088', sex: 'male', age: 21.5, heightCm: 176.5, f0: 88.9, tract: 18.63, sylPerS: 5.591 },
+-    { id: 'p089', sex: 'female', age: 30.5, heightCm: 166.4, f0: 213.6, tract: 17.2, sylPerS: 5.092 },
+-    { id: 'p090', sex: 'male', age: 60.5, heightCm: 176.5, f0: 131.1, tract: 18.84, sylPerS: 4.27 },
+-    { id: 'p091', sex: 'male', age: 30.5, heightCm: 166.4, f0: 100.1, tract: 19.02, sylPerS: 4.467 },
+-    { id: 'p092', sex: 'female', age: 40.5, heightCm: 166.4, f0: 158.2, tract: 18.65, sylPerS: 4.926 },
+-    { id: 'p093', sex: 'female', age: 60.5, heightCm: 166.4, f0: 215.8, tract: 15.92, sylPerS: 4.18 },
+-    { id: 'p094', sex: 'male', age: 40.5, heightCm: 176.5, f0: 121.6, tract: 18.92, sylPerS: 4.668 },
+-    { id: 'p095', sex: 'male', age: 40.5, heightCm: 176.5, f0: 100.9, tract: 17.94, sylPerS: 5.138 },
+-    { id: 'p096', sex: null, age: 21.5, heightCm: 156.2, f0: 237.8, tract: 17.07, sylPerS: 5.459 },
+-    { id: 'p097', sex: 'male', age: 60.5, heightCm: 186.7, f0: 123.4, tract: 18.31, sylPerS: 4.083 },
+-    { id: 'p098', sex: 'female', age: 50.5, heightCm: 156.2, f0: 179.1, tract: 16.55, sylPerS: 4.493 },
+-    { id: 'p099', sex: 'female', age: 50.5, heightCm: 166.4, f0: 99.6, tract: 18.57, sylPerS: 5.299 },
+-    { id: 'p100', sex: 'female', age: 40.5, heightCm: 176.5, f0: 199.4, tract: 16.84, sylPerS: 4.27 },
+-    { id: 'p101', sex: 'male', age: 50.5, heightCm: 186.7, f0: 88.4, tract: 19.14, sylPerS: 5.962 },
+-    { id: 'p102', sex: 'male', age: 30.5, heightCm: 176.5, f0: 112.4, tract: 19.08, sylPerS: 5.347 },
+-    { id: 'p104', sex: 'female', age: 60.5, heightCm: 166.4, f0: 183.3, tract: 17.42, sylPerS: 5.633 },
+-    { id: 'p105', sex: 'male', age: 40.5, heightCm: 186.7, f0: 88.3, tract: 20.28, sylPerS: 5.007 },
+-    { id: 'p106', sex: 'female', age: 60.5, heightCm: 156.2, f0: 191.4, tract: 16.5, sylPerS: 4.483 }
+-];
+diff --git a/src/rules/data/ears-voices.ts b/src/rules/data/ears-voices.ts
+deleted file mode 100644
+index 8f0b4ae..0000000
+--- a/src/rules/data/ears-voices.ts
++++ /dev/null
+@@ -1,108 +0,0 @@
+-// The voices the free-speech voice copies (pocket.ts): the native English speakers of EARS (Richter et al. 2024, "EARS: an
+-// anechoic fullband speech dataset", Interspeech; github.com/facebookresearch/ears_dataset; CC BY-NC 4.0), each one's sex, age
+-// and height as they reported them (the middle of their band: ages 18-25 ... 66-75, heights by 4 inches) and their voice as
+-// Pocket TTS copies it from the middle 10 s of their first free monologue (Kyutai's cleaned copy): the copy saying "The north
+-// wind and the sun..." (28 syllables), measured in Praat (parselmouth) outside the repo: the median pitch (To Pitch (ac), two
+-// passes: De Looze & Hirst 2008), the tract from the formant spacing over F1-F4 (Burg, ceiling 5000 Hz for men, 5500 for women;
+-// Reby & McComb 2003: c / 2dF, c = 353 m/s), syllables a second over the speech's span. 95 of 107 kept. Left out: those
+-// whose first language is not English or not given (their accent comes with the copy: p001, p005, p013, p020, p042, p067, p072, p103, p107), and those whose
+-// copy's pitch lies more than ln 0.2 (22 %) from their own recording's (the copy is not faithful: p011, p027, p076).
+-// Medians: men (37) 105.4 Hz and 18.92 cm, women (56) 171.4 Hz and 16.78 cm.
+-export const EARS_MEDIANS = { male: { f0: 105.4, tract: 18.92 }, female: { f0: 171.4, tract: 16.78 } };
+-export const EARS_VOICES: { id: string; sex: 'male' | 'female' | null; age: number | null; heightCm: number | null; f0: number; tract: number; sylPerS: number }[] = [
+-    { id: 'p002', sex: 'female', age: 50.5, heightCm: 156.2, f0: 183.9, tract: 16.09, sylPerS: 4.93 },
+-    { id: 'p003', sex: 'female', age: 30.5, heightCm: 166.4, f0: 148.1, tract: 16.62, sylPerS: 4.969 },
+-    { id: 'p004', sex: 'male', age: 21.5, heightCm: 176.5, f0: 82.8, tract: 18.48, sylPerS: 5.276 },
+-    { id: 'p006', sex: 'female', age: 40.5, heightCm: 146.1, f0: 191.3, tract: 18.4, sylPerS: 4.085 },
+-    { id: 'p007', sex: 'male', age: 40.5, heightCm: 176.5, f0: 95.8, tract: 17.42, sylPerS: 5.138 },
+-    { id: 'p008', sex: 'male', age: 60.5, heightCm: 186.7, f0: 137.1, tract: 19.76, sylPerS: 4.449 },
+-    { id: 'p009', sex: 'male', age: 21.5, heightCm: 176.5, f0: 94.3, tract: 20.03, sylPerS: 5.607 },
+-    { id: 'p010', sex: 'male', age: 40.5, heightCm: 176.5, f0: 100.9, tract: 18.72, sylPerS: 4.248 },
+-    { id: 'p012', sex: 'female', age: 30.5, heightCm: 166.4, f0: 164.8, tract: 16.98, sylPerS: 4.608 },
+-    { id: 'p014', sex: 'female', age: 30.5, heightCm: 166.4, f0: 161.3, tract: 16.21, sylPerS: 4.016 },
+-    { id: 'p015', sex: 'female', age: 50.5, heightCm: 166.4, f0: 149.0, tract: 16.32, sylPerS: 3.428 },
+-    { id: 'p016', sex: 'male', age: 21.5, heightCm: 176.5, f0: 115.7, tract: 18.85, sylPerS: 4.867 },
+-    { id: 'p017', sex: 'male', age: 40.5, heightCm: 186.7, f0: 88.3, tract: 19.07, sylPerS: 4.295 },
+-    { id: 'p018', sex: 'female', age: 50.5, heightCm: 156.2, f0: 136.8, tract: 16.83, sylPerS: 4.628 },
+-    { id: 'p019', sex: 'male', age: 21.5, heightCm: 176.5, f0: 105.4, tract: 18.91, sylPerS: 5.136 },
+-    { id: 'p021', sex: 'female', age: 70.5, heightCm: 156.2, f0: 156.0, tract: 16.23, sylPerS: 4.467 },
+-    { id: 'p022', sex: 'male', age: 40.5, heightCm: 176.5, f0: 113.8, tract: 18.25, sylPerS: 5.2 },
+-    { id: 'p023', sex: 'male', age: 30.5, heightCm: 186.7, f0: 150.2, tract: 18.41, sylPerS: 5.08 },
+-    { id: 'p024', sex: 'female', age: 40.5, heightCm: 166.4, f0: 179.1, tract: 17.95, sylPerS: 5.622 },
+-    { id: 'p025', sex: 'male', age: 50.5, heightCm: 176.5, f0: 103.4, tract: 18.52, sylPerS: 4.488 },
+-    { id: 'p026', sex: 'female', age: 50.5, heightCm: 166.4, f0: 184.8, tract: 16.22, sylPerS: 5.606 },
+-    { id: 'p028', sex: 'female', age: 21.5, heightCm: 166.4, f0: 197.9, tract: 16.98, sylPerS: 4.499 },
+-    { id: 'p029', sex: 'female', age: 30.5, heightCm: 176.5, f0: 172.8, tract: 15.89, sylPerS: 4.3 },
+-    { id: 'p030', sex: 'female', age: 30.5, heightCm: 166.4, f0: 169.2, tract: 17.2, sylPerS: 3.381 },
+-    { id: 'p031', sex: 'male', age: 21.5, heightCm: 176.5, f0: 139.9, tract: 19.97, sylPerS: 5.749 },
+-    { id: 'p032', sex: 'female', age: 60.5, heightCm: 176.5, f0: 135.0, tract: 16.52, sylPerS: 5.123 },
+-    { id: 'p033', sex: 'female', age: 60.5, heightCm: 176.5, f0: 170.1, tract: 16.67, sylPerS: 3.851 },
+-    { id: 'p034', sex: 'female', age: 60.5, heightCm: 156.2, f0: 155.0, tract: 17.61, sylPerS: 5.101 },
+-    { id: 'p035', sex: 'female', age: 21.5, heightCm: 166.4, f0: 210.3, tract: 16.68, sylPerS: 4.458 },
+-    { id: 'p036', sex: 'female', age: 30.5, heightCm: 156.2, f0: 155.9, tract: 17.55, sylPerS: 4.965 },
+-    { id: 'p037', sex: 'female', age: 50.5, heightCm: 166.4, f0: 218.1, tract: 17.14, sylPerS: 5.135 },
+-    { id: 'p038', sex: 'male', age: 30.5, heightCm: 166.4, f0: 133.7, tract: 17.15, sylPerS: 5.471 },
+-    { id: 'p039', sex: 'male', age: 30.5, heightCm: 176.5, f0: 119.1, tract: 21.05, sylPerS: 5.135 },
+-    { id: 'p040', sex: 'male', age: 21.5, heightCm: 176.5, f0: 101.4, tract: 18.98, sylPerS: 5.915 },
+-    { id: 'p041', sex: 'female', age: 21.5, heightCm: 166.4, f0: 156.6, tract: 17.65, sylPerS: 5.289 },
+-    { id: 'p043', sex: 'female', age: 21.5, heightCm: 166.4, f0: 189.9, tract: 17.95, sylPerS: 6.002 },
+-    { id: 'p044', sex: 'female', age: 50.5, heightCm: 156.2, f0: 168.1, tract: 18.2, sylPerS: 5.632 },
+-    { id: 'p045', sex: 'female', age: 21.5, heightCm: 166.4, f0: 193.3, tract: 17.96, sylPerS: 4.654 },
+-    { id: 'p046', sex: 'male', age: 30.5, heightCm: 186.7, f0: 102.4, tract: 20.05, sylPerS: 5.093 },
+-    { id: 'p047', sex: 'female', age: 60.5, heightCm: 156.2, f0: 164.7, tract: 16.95, sylPerS: 5.255 },
+-    { id: 'p048', sex: 'female', age: 60.5, heightCm: 166.4, f0: 153.2, tract: 16.6, sylPerS: 4.792 },
+-    { id: 'p049', sex: 'male', age: 40.5, heightCm: 176.5, f0: 126.6, tract: 19.14, sylPerS: 5.286 },
+-    { id: 'p050', sex: 'female', age: 60.5, heightCm: 146.1, f0: 185.2, tract: 16.76, sylPerS: 4.822 },
+-    { id: 'p051', sex: 'female', age: 50.5, heightCm: 156.2, f0: 164.3, tract: 16.55, sylPerS: 4.462 },
+-    { id: 'p052', sex: 'female', age: 21.5, heightCm: 156.2, f0: 153.5, tract: 17.23, sylPerS: 5.029 },
+-    { id: 'p053', sex: 'female', age: 21.5, heightCm: 166.4, f0: 233.3, tract: 16.37, sylPerS: 3.699 },
+-    { id: 'p054', sex: 'male', age: 50.5, heightCm: 186.7, f0: 80.1, tract: 19.66, sylPerS: 4.323 },
+-    { id: 'p055', sex: 'female', age: 50.5, heightCm: 166.4, f0: 179.9, tract: 16.8, sylPerS: 4.527 },
+-    { id: 'p056', sex: 'female', age: 21.5, heightCm: 156.2, f0: 175.4, tract: 16.94, sylPerS: 4.633 },
+-    { id: 'p057', sex: 'male', age: 21.5, heightCm: 186.7, f0: 125.5, tract: 18.39, sylPerS: 5.021 },
+-    { id: 'p058', sex: 'female', age: 30.5, heightCm: 156.2, f0: 222.0, tract: 15.35, sylPerS: 5.178 },
+-    { id: 'p059', sex: 'female', age: 30.5, heightCm: 166.4, f0: 181.0, tract: 17.07, sylPerS: 5.13 },
+-    { id: 'p060', sex: 'male', age: 30.5, heightCm: 176.5, f0: 97.7, tract: 18.17, sylPerS: 5.129 },
+-    { id: 'p061', sex: 'female', age: 60.5, heightCm: 166.4, f0: 128.6, tract: 16.2, sylPerS: 4.655 },
+-    { id: 'p062', sex: 'female', age: 21.5, heightCm: 156.2, f0: 178.4, tract: 17.19, sylPerS: 5.132 },
+-    { id: 'p063', sex: 'female', age: 40.5, heightCm: 156.2, f0: 182.0, tract: 16.27, sylPerS: 4.026 },
+-    { id: 'p064', sex: 'female', age: 40.5, heightCm: 166.4, f0: 151.6, tract: 17.08, sylPerS: 4.969 },
+-    { id: 'p065', sex: 'male', age: 60.5, heightCm: 176.5, f0: 138.7, tract: 18.9, sylPerS: 4.482 },
+-    { id: 'p066', sex: 'female', age: 50.5, heightCm: 166.4, f0: 157.0, tract: 16.51, sylPerS: 3.954 },
+-    { id: 'p068', sex: 'female', age: 21.5, heightCm: 156.2, f0: 199.3, tract: 16.38, sylPerS: 5.192 },
+-    { id: 'p069', sex: 'female', age: 50.5, heightCm: 156.2, f0: 144.4, tract: 16.45, sylPerS: 4.083 },
+-    { id: 'p070', sex: 'female', age: 40.5, heightCm: 156.2, f0: 194.7, tract: 16.7, sylPerS: 4.023 },
+-    { id: 'p071', sex: 'male', age: 21.5, heightCm: 166.4, f0: 134.1, tract: 17.32, sylPerS: 4.577 },
+-    { id: 'p073', sex: 'female', age: 21.5, heightCm: 176.5, f0: 156.1, tract: 17.57, sylPerS: 4.813 },
+-    { id: 'p074', sex: 'male', age: 21.5, heightCm: 176.5, f0: 82.7, tract: 18.22, sylPerS: 4.491 },
+-    { id: 'p075', sex: 'female', age: 21.5, heightCm: 156.2, f0: 165.2, tract: 17.43, sylPerS: 4.844 },
+-    { id: 'p077', sex: 'male', age: 50.5, heightCm: 176.5, f0: 108.6, tract: 19.63, sylPerS: 4.812 },
+-    { id: 'p078', sex: null, age: 21.5, heightCm: 166.4, f0: 212.0, tract: 16.7, sylPerS: 4.436 },
+-    { id: 'p079', sex: 'female', age: 50.5, heightCm: 156.2, f0: 213.2, tract: 16.43, sylPerS: 3.943 },
+-    { id: 'p080', sex: 'female', age: 30.5, heightCm: 166.4, f0: 182.2, tract: 17.57, sylPerS: 4.045 },
+-    { id: 'p081', sex: 'male', age: 21.5, heightCm: 166.4, f0: 129.7, tract: 19.07, sylPerS: 5.487 },
+-    { id: 'p082', sex: 'female', age: 30.5, heightCm: 166.4, f0: 164.0, tract: 16.47, sylPerS: 4.322 },
+-    { id: 'p083', sex: 'female', age: 30.5, heightCm: 166.4, f0: 138.9, tract: 15.86, sylPerS: 5.311 },
+-    { id: 'p084', sex: 'female', age: 70.5, heightCm: 166.4, f0: 139.4, tract: 16.76, sylPerS: 5.13 },
+-    { id: 'p085', sex: 'male', age: 30.5, heightCm: 176.5, f0: 87.4, tract: 19.34, sylPerS: 4.671 },
+-    { id: 'p086', sex: 'male', age: 21.5, heightCm: 176.5, f0: 112.9, tract: 19.95, sylPerS: 6.183 },
+-    { id: 'p087', sex: 'male', age: 60.5, heightCm: 176.5, f0: 95.0, tract: 19.47, sylPerS: 4.662 },
+-    { id: 'p088', sex: 'male', age: 21.5, heightCm: 176.5, f0: 88.9, tract: 18.63, sylPerS: 5.591 },
+-    { id: 'p089', sex: 'female', age: 30.5, heightCm: 166.4, f0: 213.6, tract: 17.2, sylPerS: 5.092 },
+-    { id: 'p090', sex: 'male', age: 60.5, heightCm: 176.5, f0: 131.1, tract: 18.84, sylPerS: 4.27 },
+-    { id: 'p091', sex: 'male', age: 30.5, heightCm: 166.4, f0: 100.1, tract: 19.02, sylPerS: 4.467 },
+-    { id: 'p092', sex: 'female', age: 40.5, heightCm: 166.4, f0: 158.2, tract: 18.65, sylPerS: 4.926 },
+-    { id: 'p093', sex: 'female', age: 60.5, heightCm: 166.4, f0: 215.8, tract: 15.92, sylPerS: 4.18 },
+-    { id: 'p094', sex: 'male', age: 40.5, heightCm: 176.5, f0: 121.6, tract: 18.92, sylPerS: 4.668 },
+-    { id: 'p095', sex: 'male', age: 40.5, heightCm: 176.5, f0: 100.9, tract: 17.94, sylPerS: 5.138 },
+-    { id: 'p096', sex: null, age: 21.5, heightCm: 156.2, f0: 237.8, tract: 17.07, sylPerS: 5.459 },
+-    { id: 'p097', sex: 'male', age: 60.5, heightCm: 186.7, f0: 123.4, tract: 18.31, sylPerS: 4.083 },
+-    { id: 'p098', sex: 'female', age: 50.5, heightCm: 156.2, f0: 179.1, tract: 16.55, sylPerS: 4.493 },
+-    { id: 'p099', sex: 'female', age: 50.5, heightCm: 166.4, f0: 99.6, tract: 18.57, sylPerS: 5.299 },
+-    { id: 'p100', sex: 'female', age: 40.5, heightCm: 176.5, f0: 199.4, tract: 16.84, sylPerS: 4.27 },
+-    { id: 'p101', sex: 'male', age: 50.5, heightCm: 186.7, f0: 88.4, tract: 19.14, sylPerS: 5.962 },
+-    { id: 'p102', sex: 'male', age: 30.5, heightCm: 176.5, f0: 112.4, tract: 19.08, sylPerS: 5.347 },
+-    { id: 'p104', sex: 'female', age: 60.5, heightCm: 166.4, f0: 183.3, tract: 17.42, sylPerS: 5.633 },
+-    { id: 'p105', sex: 'male', age: 40.5, heightCm: 186.7, f0: 88.3, tract: 20.28, sylPerS: 5.007 },
+-    { id: 'p106', sex: 'female', age: 60.5, heightCm: 156.2, f0: 191.4, tract: 16.5, sylPerS: 4.483 }
+-];
+diff --git a/src/rules/pocket.js b/src/rules/pocket.js
+index 257bf60..123858f 100644
+--- a/src/rules/pocket.js
++++ b/src/rules/pocket.js
+@@ -1,11 +1,9 @@
+-// The free-speech voice (the player's pick, 2026-11-12: of six clips, the two copying people talking freely were "by far" the
+-// closest to people heard in real life): Pocket TTS (Kyutai 2026, 100M parameters, the ONNX export KevinAHM/pocket-tts-onnx,
+-// CC BY 4.0) speaks a said stretch in the voice of a real recording, a speaker of EARS talking freely (Richter et al. 2024;
+-// data/ears-voices.ts), the one whose copied voice is nearest the speaker's own computed pitch, tract and age. The networks run
+-// in the worker (voice-worker.ts); this file holds what they need around them: the text's tokens, the stretches the model
+-// takes at once, the recording's samples at 24 kHz, the choice of recording.
++// The natural voice (the player's picks, 2026-11-12): Pocket TTS (Kyutai 2026, 100M parameters, the ONNX export
++// KevinAHM/pocket-tts-onnx, CC BY 4.0) speaks a said stretch in a voice computed from the speaker's body: the averaged person
++// (averaged-person.ts: 16 speakers' movement of speech) reshaped to the body's pitch, tract and pace, then copied. The networks
++// run in the worker (voice-worker.ts); this file holds what they need around them: the text's tokens, the stretches the model
++// takes at once, a recording's samples at 24 kHz, the body's target.
+ import { POCKET_PIECES } from './data/pocket-tokenizer.js';
+-import { EARS_VOICES, EARS_MEDIANS } from './data/ears-voices.js';
+ import { MEASURED } from './voice-sound.js';
+ import { def, peek } from './constants.js';
+ // ------------------------------------------------------------------------------------------------------------ the text
+@@ -109,87 +107,26 @@ export function pocketChunks(text, maxTokens = 50) {
+ }
+ /** The frames a stretch may run to (_estimate_max_gen_len): 3 tokens a second, 2 s more, at 12.5 frames a second. */
+ export const pocketMaxFrames = (tokens) => Math.ceil((tokens / 3 + 2) * 12.5);
+-// ------------------------------------------------------------------------------------------------------- the recording
+-/** A 16-bit PCM WAV's samples (mono, or the channels' mean) and rate. */
+-export function wavSamples(buf) {
+-    const v = new DataView(buf);
+-    let p = 12, rate = 0, ch = 1, bits = 16;
+-    while (p + 8 <= v.byteLength) {
+-        const id = String.fromCharCode(v.getUint8(p), v.getUint8(p + 1), v.getUint8(p + 2), v.getUint8(p + 3)), size = v.getUint32(p + 4, true);
+-        if (id === 'fmt ') {
+-            ch = v.getUint16(p + 10, true);
+-            rate = v.getUint32(p + 12, true);
+-            bits = v.getUint16(p + 22, true);
+-        }
+-        if (id === 'data') {
+-            if (bits !== 16)
+-                throw new Error(`a ${bits}-bit WAV`);
+-            const n = Math.floor(Math.min(size, v.byteLength - p - 8) / (2 * ch)), out = new Float32Array(n);
+-            for (let i = 0; i < n; i++) {
+-                let s = 0;
+-                for (let c = 0; c < ch; c++)
+-                    s += v.getInt16(p + 8 + 2 * (i * ch + c), true);
+-                out[i] = s / ch / 32768;
+-            }
+-            return { rate, samples: out };
+-        }
+-        p += 8 + size + (size & 1);
+-    }
+-    throw new Error('no data in the WAV');
+-}
+-/** Samples at another rate: band-limited interpolation (a sinc windowed by Hann, 16 zero crossings each side, cut at the lower
+- * Nyquist), as resample_poly does in the reference code. */
+-export function resample(x, from, to) {
+-    if (from === to)
+-        return x;
+-    const n = Math.floor(x.length * to / from), out = new Float32Array(n), cut = Math.min(1, to / from), half = 16 / cut;
+-    for (let i = 0; i < n; i++) {
+-        const c = i * from / to, lo = Math.ceil(c - half), hi = Math.floor(c + half);
+-        let s = 0;
+-        for (let k = Math.max(0, lo); k <= Math.min(x.length - 1, hi); k++) {
+-            const d = k - c, w = 0.5 + 0.5 * Math.cos(Math.PI * d / half), a = Math.PI * d * cut;
+-            s += x[k] * w * cut * (d === 0 ? 1 : Math.sin(a) / a);
+-        }
+-        out[i] = s;
+-    }
+-    return out;
+-}
+-// --------------------------------------------------------------------------------------------------- the choice of voice
++// ------------------------------------------------------------------------------------------------------- the body's target
+ // The engine's voices are on Hillenbrand et al.'s scale (isolated words: the mean man 130.9 Hz and 17.79 cm, the mean woman
+-// 220.1 Hz and 15.80 cm; voice-sound.ts MEASURED); the copies speak freely, lower (EARS medians: men 107.0 Hz, women 174.1 Hz).
+-// A computed voice is put on the copies' scale by the line through the two sexes' means (ln f0 and tract; derived), then the
+-// nearest copy is chosen: pitch in SDs of ln f0 and tract in cm SDs, each the mean of the two sexes' SDs among the copies, and
+-// age, the middle of the speaker's age band, in steps of earsAgeStep years [ASSUMED: the voice ages through breath and rough
+-// phonation the body engine does not compute yet].
+-def({ id: 'earsAgeStep', value: 15, unit: 'years of age that weigh as one SD of pitch or tract in the choice of recording', status: 'assumed', src: "one and a half EARS age bands (10 years each)", range: [8, 30], file: 'pocket.ts' });
++// 220.1 Hz and 15.80 cm; voice-sound.ts MEASURED); free speech is lower (EARS's native English speakers as Pocket TTS copies
++// them, 37 men and 56 women: medians 105.4 Hz and 18.92 cm, 171.5 Hz and 16.78 cm, measured in Praat). A computed voice is put
++// on that scale by the line through the two sexes' means (ln f0 and tract; derived). The pitch is then raised to connected
++// speech's register (speechRegister: the player heard the woman at 200 Hz as more natural than at 172; adult women's connected
++// speech near 200 Hz against EARS's relaxed monologues at 172, a general benchmark [ASSUMED]).
++export const EARS_MEDIANS = { male: { f0: 105.4, tract: 18.92 }, female: { f0: 171.5, tract: 16.78 } };
++def({ id: 'speechRegister', value: 1.16, unit: "× free speech's pitch, for connected speech", status: 'assumed', src: "adult women's connected speech near 200 Hz against EARS's monologues at 172 (200 ÷ 172); the player's ear preferred it", range: [1, 1.25], file: 'pocket.ts' });
+ const lnLine = (x, x0, x1, y0, y1) => y0 + (x - x0) * (y1 - y0) / (x1 - x0);
+-/** A computed pitch (Hz) and tract (cm) on the copies' scale. */
++/** A computed pitch (Hz) and tract (cm) on free speech's scale. */
+ export function onCopiesScale(f0Hz, tractCm) {
+     const m = MEASURED.male, w = MEASURED.female, em = EARS_MEDIANS.male, ew = EARS_MEDIANS.female;
+     return { f0: Math.exp(lnLine(Math.log(f0Hz), Math.log(m.f0Hz), Math.log(w.f0Hz), Math.log(em.f0), Math.log(ew.f0))), tract: lnLine(tractCm, m.tractCm, w.tractCm, em.tract, ew.tract) };
+ }
+-const sdOf = (xs) => { const m = xs.reduce((a, b) => a + b, 0) / xs.length; return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / (xs.length - 1)); };
+-const bySex = (sex) => EARS_VOICES.filter(v => v.sex === sex);
+-export const EARS_SD = {
+-    lnF0: (sdOf(bySex('male').map(v => Math.log(v.f0))) + sdOf(bySex('female').map(v => Math.log(v.f0)))) / 2,
+-    tract: (sdOf(bySex('male').map(v => v.tract)) + sdOf(bySex('female').map(v => v.tract))) / 2,
+-};
+-/** The EARS speaker nearest a speaker's computed pitch (Hz), tract (cm) and age (years; none counts no age). */
+-export function nearestEars(f0Hz, tractCm, age) {
++/** What the averaged person is reshaped to for a body (averaged-person.ts): its pitch in connected speech, its tract, its pace. */
++export function bodyTarget(f0Hz, tractCm, sylPerS) {
+     const c = onCopiesScale(f0Hz, tractCm);
+-    let best = EARS_VOICES[0], d0 = Infinity;
+-    for (const v of EARS_VOICES) {
+-        const d = ((Math.log(c.f0) - Math.log(v.f0)) / EARS_SD.lnF0) ** 2 + ((c.tract - v.tract) / EARS_SD.tract) ** 2 + (age != null && v.age != null ? ((age - v.age) / peek('earsAgeStep')) ** 2 : 0);
+-        if (d < d0) {
+-            d0 = d;
+-            best = v;
+-        }
+-    }
+-    return best;
++    return { f0: Math.round(c.f0 * peek('speechRegister') * 10) / 10, tractCm: Math.round(c.tract * 100) / 100, sylPerS: Math.round(sylPerS * 100) / 100 };
+ }
+-/** Where a speaker's free-speech recording is fetched: Kyutai's copy of EARS (the middle 10 s of their first free monologue,
+- * cleaned; CC BY-NC 4.0, fetched at play time, never kept in this repository), at a fixed revision. */
+-export const earsUrl = (id) => `https://huggingface.co/kyutai/tts-voices/resolve/323332d33f997de8394f24a193e1a76df720e01a/ears/${id}/freeform_speech_01_enhanced.wav`;
+ /** The networks and their settings: the export's English bundle (english_2026-04) at a fixed revision, int8 where it exists
+  * (163 MB in all), 24 kHz, temperature 0.7 (the export's default). */
+ export const POCKET_MODEL = {
+diff --git a/src/rules/pocket.ts b/src/rules/pocket.ts
+index 92075f7..106327a 100644
+--- a/src/rules/pocket.ts
++++ b/src/rules/pocket.ts
+@@ -1,11 +1,9 @@
+-// The free-speech voice (the player's pick, 2026-11-12: of six clips, the two copying people talking freely were "by far" the
+-// closest to people heard in real life): Pocket TTS (Kyutai 2026, 100M parameters, the ONNX export KevinAHM/pocket-tts-onnx,
+-// CC BY 4.0) speaks a said stretch in the voice of a real recording, a speaker of EARS talking freely (Richter et al. 2024;
+-// data/ears-voices.ts), the one whose copied voice is nearest the speaker's own computed pitch, tract and age. The networks run
+-// in the worker (voice-worker.ts); this file holds what they need around them: the text's tokens, the stretches the model
+-// takes at once, the recording's samples at 24 kHz, the choice of recording.
++// The natural voice (the player's picks, 2026-11-12): Pocket TTS (Kyutai 2026, 100M parameters, the ONNX export
++// KevinAHM/pocket-tts-onnx, CC BY 4.0) speaks a said stretch in a voice computed from the speaker's body: the averaged person
++// (averaged-person.ts: 16 speakers' movement of speech) reshaped to the body's pitch, tract and pace, then copied. The networks
++// run in the worker (voice-worker.ts); this file holds what they need around them: the text's tokens, the stretches the model
++// takes at once, a recording's samples at 24 kHz, the body's target.
+ import { POCKET_PIECES } from './data/pocket-tokenizer.js';
+-import { EARS_VOICES, EARS_MEDIANS } from './data/ears-voices.js';
+ import { MEASURED } from './voice-sound.js';
+ import { def, peek } from './constants.js';
+ 
+@@ -80,74 +78,26 @@ export function pocketChunks(text: string, maxTokens = 50): string[] {
+ /** The frames a stretch may run to (_estimate_max_gen_len): 3 tokens a second, 2 s more, at 12.5 frames a second. */
+ export const pocketMaxFrames = (tokens: number) => Math.ceil((tokens / 3 + 2) * 12.5);
+ 
+-// ------------------------------------------------------------------------------------------------------- the recording
+-/** A 16-bit PCM WAV's samples (mono, or the channels' mean) and rate. */
+-export function wavSamples(buf: ArrayBuffer): { rate: number; samples: Float32Array } {
+-    const v = new DataView(buf);
+-    let p = 12, rate = 0, ch = 1, bits = 16;
+-    while (p + 8 <= v.byteLength) {
+-        const id = String.fromCharCode(v.getUint8(p), v.getUint8(p + 1), v.getUint8(p + 2), v.getUint8(p + 3)), size = v.getUint32(p + 4, true);
+-        if (id === 'fmt ') { ch = v.getUint16(p + 10, true); rate = v.getUint32(p + 12, true); bits = v.getUint16(p + 22, true); }
+-        if (id === 'data') {
+-            if (bits !== 16) throw new Error(`a ${bits}-bit WAV`);
+-            const n = Math.floor(Math.min(size, v.byteLength - p - 8) / (2 * ch)), out = new Float32Array(n);
+-            for (let i = 0; i < n; i++) { let s = 0; for (let c = 0; c < ch; c++) s += v.getInt16(p + 8 + 2 * (i * ch + c), true); out[i] = s / ch / 32768; }
+-            return { rate, samples: out };
+-        }
+-        p += 8 + size + (size & 1);
+-    }
+-    throw new Error('no data in the WAV');
+-}
+-/** Samples at another rate: band-limited interpolation (a sinc windowed by Hann, 16 zero crossings each side, cut at the lower
+- * Nyquist), as resample_poly does in the reference code. */
+-export function resample(x: Float32Array, from: number, to: number): Float32Array {
+-    if (from === to) return x;
+-    const n = Math.floor(x.length * to / from), out = new Float32Array(n), cut = Math.min(1, to / from), half = 16 / cut;
+-    for (let i = 0; i < n; i++) {
+-        const c = i * from / to, lo = Math.ceil(c - half), hi = Math.floor(c + half);
+-        let s = 0;
+-        for (let k = Math.max(0, lo); k <= Math.min(x.length - 1, hi); k++) {
+-            const d = k - c, w = 0.5 + 0.5 * Math.cos(Math.PI * d / half), a = Math.PI * d * cut;
+-            s += x[k]! * w * cut * (d === 0 ? 1 : Math.sin(a) / a);
+-        }
+-        out[i] = s;
+-    }
+-    return out;
+-}
+-
+-// --------------------------------------------------------------------------------------------------- the choice of voice
++// ------------------------------------------------------------------------------------------------------- the body's target
+ // The engine's voices are on Hillenbrand et al.'s scale (isolated words: the mean man 130.9 Hz and 17.79 cm, the mean woman
+-// 220.1 Hz and 15.80 cm; voice-sound.ts MEASURED); the copies speak freely, lower (EARS medians: men 107.0 Hz, women 174.1 Hz).
+-// A computed voice is put on the copies' scale by the line through the two sexes' means (ln f0 and tract; derived), then the
+-// nearest copy is chosen: pitch in SDs of ln f0 and tract in cm SDs, each the mean of the two sexes' SDs among the copies, and
+-// age, the middle of the speaker's age band, in steps of earsAgeStep years [ASSUMED: the voice ages through breath and rough
+-// phonation the body engine does not compute yet].
+-def({ id: 'earsAgeStep', value: 15, unit: 'years of age that weigh as one SD of pitch or tract in the choice of recording', status: 'assumed', src: "one and a half EARS age bands (10 years each)", range: [8, 30], file: 'pocket.ts' });
++// 220.1 Hz and 15.80 cm; voice-sound.ts MEASURED); free speech is lower (EARS's native English speakers as Pocket TTS copies
++// them, 37 men and 56 women: medians 105.4 Hz and 18.92 cm, 171.5 Hz and 16.78 cm, measured in Praat). A computed voice is put
++// on that scale by the line through the two sexes' means (ln f0 and tract; derived). The pitch is then raised to connected
++// speech's register (speechRegister: the player heard the woman at 200 Hz as more natural than at 172; adult women's connected
++// speech near 200 Hz against EARS's relaxed monologues at 172, a general benchmark [ASSUMED]).
++export const EARS_MEDIANS = { male: { f0: 105.4, tract: 18.92 }, female: { f0: 171.5, tract: 16.78 } } as const;
++def({ id: 'speechRegister', value: 1.16, unit: "× free speech's pitch, for connected speech", status: 'assumed', src: "adult women's connected speech near 200 Hz against EARS's monologues at 172 (200 ÷ 172); the player's ear preferred it", range: [1, 1.25], file: 'pocket.ts' });
+ const lnLine = (x: number, x0: number, x1: number, y0: number, y1: number) => y0 + (x - x0) * (y1 - y0) / (x1 - x0);
+-/** A computed pitch (Hz) and tract (cm) on the copies' scale. */
++/** A computed pitch (Hz) and tract (cm) on free speech's scale. */
+ export function onCopiesScale(f0Hz: number, tractCm: number): { f0: number; tract: number } {
+     const m = MEASURED.male, w = MEASURED.female, em = EARS_MEDIANS.male, ew = EARS_MEDIANS.female;
+     return { f0: Math.exp(lnLine(Math.log(f0Hz), Math.log(m.f0Hz), Math.log(w.f0Hz), Math.log(em.f0), Math.log(ew.f0))), tract: lnLine(tractCm, m.tractCm, w.tractCm, em.tract, ew.tract) };
+ }
+-const sdOf = (xs: number[]) => { const m = xs.reduce((a, b) => a + b, 0) / xs.length; return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / (xs.length - 1)); };
+-const bySex = (sex: 'male' | 'female') => EARS_VOICES.filter(v => v.sex === sex);
+-export const EARS_SD = {
+-    lnF0: (sdOf(bySex('male').map(v => Math.log(v.f0))) + sdOf(bySex('female').map(v => Math.log(v.f0)))) / 2,
+-    tract: (sdOf(bySex('male').map(v => v.tract)) + sdOf(bySex('female').map(v => v.tract))) / 2,
+-};
+-/** The EARS speaker nearest a speaker's computed pitch (Hz), tract (cm) and age (years; none counts no age). */
+-export function nearestEars(f0Hz: number, tractCm: number, age?: number): (typeof EARS_VOICES)[number] {
++/** What the averaged person is reshaped to for a body (averaged-person.ts): its pitch in connected speech, its tract, its pace. */
++export function bodyTarget(f0Hz: number, tractCm: number, sylPerS: number): { f0: number; tractCm: number; sylPerS: number } {
+     const c = onCopiesScale(f0Hz, tractCm);
+-    let best = EARS_VOICES[0]!, d0 = Infinity;
+-    for (const v of EARS_VOICES) {
+-        const d = ((Math.log(c.f0) - Math.log(v.f0)) / EARS_SD.lnF0) ** 2 + ((c.tract - v.tract) / EARS_SD.tract) ** 2 + (age != null && v.age != null ? ((age - v.age) / peek('earsAgeStep')) ** 2 : 0);
+-        if (d < d0) { d0 = d; best = v; }
+-    }
+-    return best;
++    return { f0: Math.round(c.f0 * peek('speechRegister') * 10) / 10, tractCm: Math.round(c.tract * 100) / 100, sylPerS: Math.round(sylPerS * 100) / 100 };
+ }
+-/** Where a speaker's free-speech recording is fetched: Kyutai's copy of EARS (the middle 10 s of their first free monologue,
+- * cleaned; CC BY-NC 4.0, fetched at play time, never kept in this repository), at a fixed revision. */
+-export const earsUrl = (id: string) => `https://huggingface.co/kyutai/tts-voices/resolve/323332d33f997de8394f24a193e1a76df720e01a/ears/${id}/freeform_speech_01_enhanced.wav`;
+ /** The networks and their settings: the export's English bundle (english_2026-04) at a fixed revision, int8 where it exists
+  * (163 MB in all), 24 kHz, temperature 0.7 (the export's default). */
+ export const POCKET_MODEL = {
+diff --git a/src/rules/voice-body.js b/src/rules/voice-body.js
+index 3361578..61b7956 100644
+--- a/src/rules/voice-body.js
++++ b/src/rules/voice-body.js
+@@ -31,6 +31,17 @@ def({ id: 'voiceRateSpread', value: 0.0882, unit: "SD of a speaker's rate ÷ the
+ // Talk runs slower than reading: the same 17 adults read at 5.08 and spoke freely at 4.12 syllables/s (Kuhlmann & Iwarsson
+ // 2024, J Voice 38:346, as voice.ts reads them).
+ export const TALK_OF_READING = 4.12 / 5.08;
++// Children articulate more slowly: in sentence repetition, 570 children's median rate rose from 2.7 syllables/s at 36 months
++// to 3.3 at 96 months against adults' 3.6, and was generally adult-like by about 10 years (Mahr, Rathouz & Hustad 2021, J
++// Speech Lang Hear Res 64:4057, PMC9132150). A child's rate is the adult's × the median's share of the adults' 3.6: linear
++// from 36 to 96 months, then to 1 at 120 [ASSUMED: straight between their 96-month median and "adult-like by 10"]; under 36
++// months the 36-month share. The adult age trend (−0.079 % a year, measured from 16 to 69) holds from 16; from 10 to 16, 1.
++export function childRate(age) {
++    const m = Math.max(36, age * 12);
++    if (m >= 120)
++        return 1;
++    return (m <= 96 ? 2.7 + (m - 36) / 60 * 0.6 : 3.3 + (m - 96) / 24 * 0.3) / 3.6;
++}
+ /** A language's bits per syllable: its measured value, or the 17 languages' mean for one outside them. */
+ export function bitsOf(language) {
+     const l = String(language ?? '').trim().toLowerCase(), row = Object.values(INFO_RATE).find(r => r.names.includes(l));
+@@ -51,7 +62,7 @@ export function causesOf(f) {
+ export function voiceOf(f) {
+     const male = /^m/i.test(f.sex ?? ''), sexKnown = /^(m|f|w)/i.test(f.sex ?? '');
+     const { bits, measured } = bitsOf(f.language);
+-    const sexRate = !sexKnown ? 1 : male ? 1.0268 : 0.9732, ageRate = f.age != null ? 1 - 0.000794 * (f.age - 30.6) : 1;
++    const sexRate = !sexKnown ? 1 : male ? 1.0268 : 0.9732, ageRate = f.age != null ? childRate(f.age) * (1 - 0.000794 * (Math.max(16, f.age) - 30.6)) : 1;
+     const sylPerS = Math.round(peek('voiceInfoRate') / bits * sexRate * ageRate * (1 + peek('voiceRateSpread') * (f.rateZ ?? 0)) * TALK_OF_READING * 100) / 100;
+     const out = { bits: Math.round(bits * 100) / 100, bitsMeasured: measured, sylPerS };
+     const c = causesOf(f);
+diff --git a/src/rules/voice-body.ts b/src/rules/voice-body.ts
+index 23220da..28f0957 100644
+--- a/src/rules/voice-body.ts
++++ b/src/rules/voice-body.ts
+@@ -35,6 +35,16 @@ def({ id: 'voiceRateSpread', value: 0.0882, unit: "SD of a speaker's rate ÷ the
+ // 2024, J Voice 38:346, as voice.ts reads them).
+ export const TALK_OF_READING = 4.12 / 5.08;
+ 
++// Children articulate more slowly: in sentence repetition, 570 children's median rate rose from 2.7 syllables/s at 36 months
++// to 3.3 at 96 months against adults' 3.6, and was generally adult-like by about 10 years (Mahr, Rathouz & Hustad 2021, J
++// Speech Lang Hear Res 64:4057, PMC9132150). A child's rate is the adult's × the median's share of the adults' 3.6: linear
++// from 36 to 96 months, then to 1 at 120 [ASSUMED: straight between their 96-month median and "adult-like by 10"]; under 36
++// months the 36-month share. The adult age trend (−0.079 % a year, measured from 16 to 69) holds from 16; from 10 to 16, 1.
++export function childRate(age: number): number {
++    const m = Math.max(36, age * 12);
++    if (m >= 120) return 1;
++    return (m <= 96 ? 2.7 + (m - 36) / 60 * 0.6 : 3.3 + (m - 96) / 24 * 0.3) / 3.6;
++}
+ /** A language's bits per syllable: its measured value, or the 17 languages' mean for one outside them. */
+ export function bitsOf(language: string | undefined): { bits: number; measured: boolean } {
+     const l = String(language ?? '').trim().toLowerCase(), row = Object.values(INFO_RATE).find(r => r.names.includes(l));
+@@ -62,7 +72,7 @@ export function causesOf(f: VoiceFacts): BodyCauses | null {
+ export function voiceOf(f: VoiceFacts): Voice {
+     const male = /^m/i.test(f.sex ?? ''), sexKnown = /^(m|f|w)/i.test(f.sex ?? '');
+     const { bits, measured } = bitsOf(f.language);
+-    const sexRate = !sexKnown ? 1 : male ? 1.0268 : 0.9732, ageRate = f.age != null ? 1 - 0.000794 * (f.age - 30.6) : 1;
++    const sexRate = !sexKnown ? 1 : male ? 1.0268 : 0.9732, ageRate = f.age != null ? childRate(f.age) * (1 - 0.000794 * (Math.max(16, f.age) - 30.6)) : 1;
+     const sylPerS = Math.round(peek('voiceInfoRate') / bits * sexRate * ageRate * (1 + peek('voiceRateSpread') * (f.rateZ ?? 0)) * TALK_OF_READING * 100) / 100;
+     const out: Voice = { bits: Math.round(bits * 100) / 100, bitsMeasured: measured, sylPerS };
+     const c = causesOf(f);
+diff --git a/src/rules/world-vocoder.js b/src/rules/world-vocoder.js
+new file mode 100644
+index 0000000..6f81b5d
+--- /dev/null
++++ b/src/rules/world-vocoder.js
+@@ -0,0 +1,201 @@
++// WORLD's synthesis (Morise, Yokomori & Ozawa 2016, IEICE Trans Inf Syst E99-D:1877; github.com/mmorise/World, modified BSD
++// licence, src/synthesis.cpp and the parts of common.cpp and matlabfunctions.cpp it calls), ported line by line to TypeScript:
++// speech from a pitch track, a spectral envelope and an aperiodicity per frame. Each glottal pulse (one per period where
++// voiced, at 500 Hz where not) adds a minimum-phase response of the envelope's periodic part and of its noise part filtered by
++// the aperiodicity. The natural voice (pocket.ts) uses it to give the averaged person a body's pitch, tract and pace.
++/** A radix-2 complex FFT in place (re, im of length n, a power of 2); sign −1 forward, +1 backward, unnormalised (FFTW's). */
++export function fft(re, im, sign) {
++    const n = re.length;
++    for (let i = 1, j = 0; i < n; i++) {
++        let bit = n >> 1;
++        for (; j & bit; bit >>= 1)
++            j ^= bit;
++        j ^= bit;
++        if (i < j) {
++            let t = re[i];
++            re[i] = re[j];
++            re[j] = t;
++            t = im[i];
++            im[i] = im[j];
++            im[j] = t;
++        }
++    }
++    for (let len = 2; len <= n; len <<= 1) {
++        const a = sign * 2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a), half = len >> 1;
++        for (let i = 0; i < n; i += len) {
++            let cr = 1, ci = 0;
++            for (let k = 0; k < half; k++) {
++                const p = i + k, q = p + half, tr = re[q] * cr - im[q] * ci, ti = re[q] * ci + im[q] * cr;
++                re[q] = re[p] - tr;
++                im[q] = im[p] - ti;
++                re[p] = re[p] + tr;
++                im[p] = im[p] + ti;
++                const nr = cr * wr - ci * wi;
++                ci = cr * wi + ci * wr;
++                cr = nr;
++            }
++        }
++    }
++}
++/** A seeded standard normal draw (xorshift128 and Box–Muller), so a synthesis can be repeated. */
++export function normalSource(seed = 88675123) {
++    let x = 123456789, y = 362436069, z = 521288629, w = seed >>> 0, spare = null;
++    const u = () => { const t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >>> 19) ^ (t ^ (t >>> 8))) >>> 0; return (w + 1) / 4294967297; };
++    return () => {
++        if (spare !== null) {
++            const s = spare;
++            spare = null;
++            return s;
++        }
++        const r = Math.sqrt(-2 * Math.log(u())), a = 2 * Math.PI * u();
++        spare = r * Math.sin(a);
++        return r * Math.cos(a);
++    };
++}
++/** The minimum-phase spectrum (bins 0..n/2, re and im) of a log amplitude spectrum (bins 0..n/2; GetMinimumPhaseSpectrum). */
++function minimumPhase(logHalf, n, outRe, outIm) {
++    const re = new Float64Array(n), im = new Float64Array(n);
++    for (let i = 0; i <= n / 2; i++)
++        re[i] = logHalf[i];
++    for (let i = n / 2 + 1; i < n; i++)
++        re[i] = logHalf[n - i];
++    fft(re, im, -1); // the cepstrum (WORLD's "inverse_fft": an r2c forward)
++    im[0] = -im[0];
++    for (let i = 1; i < n / 2; i++) {
++        re[i] = re[i] * 2;
++        im[i] = -im[i] * 2;
++    }
++    im[n / 2] = -im[n / 2];
++    for (let i = n / 2 + 1; i < n; i++) {
++        re[i] = 0;
++        im[i] = 0;
++    }
++    fft(re, im, -1);
++    for (let i = 0; i <= n / 2; i++) {
++        const t = Math.exp(re[i] / n);
++        outRe[i] = t * Math.cos(im[i] / n);
++        outIm[i] = t * Math.sin(im[i] / n);
++    }
++}
++/** The real waveform of a half spectrum (bins 0..n/2), unnormalised (FFTW's c2r), shifted by half its length (fftshift). */
++function realShifted(re, im, n, out) {
++    const R = new Float64Array(n), I = new Float64Array(n);
++    for (let i = 0; i <= n / 2; i++) {
++        R[i] = re[i];
++        I[i] = im[i];
++    }
++    for (let i = n / 2 + 1; i < n; i++) {
++        R[i] = re[n - i];
++        I[i] = -im[n - i];
++    }
++    fft(R, I, 1);
++    for (let i = 0; i < n / 2; i++) {
++        out[i] = R[i + n / 2];
++        out[i + n / 2] = R[i];
++    }
++}
++const safeAp = (x) => Math.max(0.001, Math.min(0.999999999999, x));
++/** WORLD Synthesis(): f0 (Hz, 0 unvoiced) per frame, the envelope and the aperiodicity per frame (bins 0..fftSize/2), the frame
++ * period (ms), the rate (Hz) and the output's length in samples. */
++export function synthesize(f0, sp, ap, fftSize, framePeriodMs, fs, yLength, seed = 1) {
++    const n = fftSize, half = n / 2, frames = f0.length, fp = framePeriodMs / 1000, randn = normalSource(seed), y = new Float64Array(yLength);
++    // The time base: f0 and voicing linear between frames, pulses where the accumulated phase passes 2π.
++    const lowest = fs / n + 1, cf0 = new Float64Array(frames + 1), cvuv = new Float64Array(frames + 1), ct = new Float64Array(frames + 1);
++    for (let i = 0; i < frames; i++) {
++        ct[i] = i * fp;
++        cf0[i] = f0[i] < lowest ? 0 : f0[i];
++        cvuv[i] = cf0[i] === 0 ? 0 : 1;
++    }
++    ct[frames] = frames * fp;
++    cf0[frames] = cf0[frames - 1] * 2 - cf0[frames - 2];
++    cvuv[frames] = cvuv[frames - 1] * 2 - cvuv[frames - 2];
++    const lin = (arr, t) => { const k = Math.min(frames - 1, Math.max(0, Math.floor(t / fp))); const s = (t - ct[k]) / fp; return arr[k] + s * (arr[k + 1] - arr[k]); };
++    const vuv = new Uint8Array(yLength), pulses = [], shifts = [];
++    let total = 0, prevWrap = 0;
++    for (let i = 0; i < yLength; i++) {
++        const t = i / fs, v = lin(cvuv, t) > 0.5 ? 1 : 0, f = v ? lin(cf0, t) : 500;
++        vuv[i] = v;
++        total += 2 * Math.PI * f / fs;
++        const wrap = total % (2 * Math.PI);
++        if (i > 0 && Math.abs(wrap - prevWrap) > Math.PI) {
++            const y1 = prevWrap - 2 * Math.PI, y2 = wrap;
++            pulses.push(i - 1);
++            shifts.push((-y1 / (y2 - y1)) / fs);
++        }
++        prevWrap = wrap;
++    }
++    // The DC remover (GetDCRemover).
++    const dc = new Float64Array(n);
++    let dcSum = 0;
++    for (let i = 0; i < half; i++) {
++        dc[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * (i + 1) / (1 + n));
++        dc[n - i - 1] = dc[i];
++        dcSum += dc[i] * 2;
++    }
++    for (let i = 0; i < half; i++) {
++        dc[i] = dc[i] / dcSum;
++        dc[n - i - 1] = dc[i];
++    }
++    const env = new Float64Array(half + 1), apr = new Float64Array(half + 1), logH = new Float64Array(half + 1), mr = new Float64Array(half + 1), mi = new Float64Array(half + 1);
++    const per = new Float64Array(n), aper = new Float64Array(n), nr = new Float64Array(n), ni = new Float64Array(n), sr = new Float64Array(half + 1), si = new Float64Array(half + 1);
++    for (let p = 0; p < pulses.length; p++) {
++        const idx = pulses[p], t = idx / fs, noiseSize = pulses[Math.min(pulses.length - 1, p + 1)] - idx, v = vuv[idx];
++        // The envelope and the aperiodicity at the pulse (GetSpectralEnvelope, GetAperiodicRatio).
++        const lo = Math.min(frames - 1, Math.floor(t / fp)), hi = Math.min(frames - 1, Math.ceil(t / fp)), w = t / fp - lo;
++        for (let i = 0; i <= half; i++) {
++            if (lo === hi) {
++                env[i] = Math.abs(sp[lo][i]);
++                apr[i] = safeAp(ap[lo][i]) ** 2;
++            }
++            else {
++                env[i] = (1 - w) * Math.abs(sp[lo][i]) + w * Math.abs(sp[hi][i]);
++                apr[i] = ((1 - w) * safeAp(ap[lo][i]) + w * safeAp(ap[hi][i])) ** 2;
++            }
++        }
++        // The periodic response (GetPeriodicResponse).
++        per.fill(0);
++        if (v > 0.5 && apr[0] <= 0.999) {
++            for (let i = 0; i <= half; i++)
++                logH[i] = Math.log(env[i] * (1 - apr[i]) + 1e-12) / 2;
++            minimumPhase(logH, n, mr, mi);
++            const c = 2 * Math.PI * shifts[p] * fs / n;
++            for (let i = 0; i <= half; i++) {
++                const r2 = Math.cos(c * i), i2 = Math.sqrt(1 - r2 * r2);
++                sr[i] = mr[i] * r2 + mi[i] * i2;
++                si[i] = mi[i] * r2 - mr[i] * i2;
++            }
++            realShifted(sr, si, n, per);
++            let d = 0;
++            for (let i = half; i < n; i++)
++                d += per[i];
++            for (let i = 0; i < half; i++)
++                per[i] = -d * dc[i];
++            for (let i = half; i < n; i++)
++                per[i] = per[i] - d * dc[i];
++        }
++        // The aperiodic response (GetAperiodicResponse): noise of the pulse's length, its mean taken out, filtered.
++        nr.fill(0);
++        ni.fill(0);
++        let mean = 0;
++        for (let i = 0; i < noiseSize; i++) {
++            nr[i] = randn();
++            mean += nr[i];
++        }
++        mean /= Math.max(1, noiseSize);
++        for (let i = 0; i < noiseSize; i++)
++            nr[i] = nr[i] - mean;
++        fft(nr, ni, -1);
++        for (let i = 0; i <= half; i++)
++            logH[i] = Math.log(v !== 0 ? env[i] * apr[i] : env[i]) / 2;
++        minimumPhase(logH, n, mr, mi);
++        for (let i = 0; i <= half; i++) {
++            sr[i] = mr[i] * nr[i] - mi[i] * ni[i];
++            si[i] = mr[i] * ni[i] + mi[i] * nr[i];
++        }
++        realShifted(sr, si, n, aper);
++        const sq = Math.sqrt(noiseSize), offset = idx - half + 1;
++        for (let j = Math.max(0, -offset); j < Math.min(n, yLength - offset); j++)
++            y[j + offset] = y[j + offset] + (per[j] * sq + aper[j]) / n;
++    }
++    return Float32Array.from(y);
++}
+diff --git a/src/rules/world-vocoder.ts b/src/rules/world-vocoder.ts
+new file mode 100644
+index 0000000..8857c04
+--- /dev/null
++++ b/src/rules/world-vocoder.ts
+@@ -0,0 +1,119 @@
++// WORLD's synthesis (Morise, Yokomori & Ozawa 2016, IEICE Trans Inf Syst E99-D:1877; github.com/mmorise/World, modified BSD
++// licence, src/synthesis.cpp and the parts of common.cpp and matlabfunctions.cpp it calls), ported line by line to TypeScript:
++// speech from a pitch track, a spectral envelope and an aperiodicity per frame. Each glottal pulse (one per period where
++// voiced, at 500 Hz where not) adds a minimum-phase response of the envelope's periodic part and of its noise part filtered by
++// the aperiodicity. The natural voice (pocket.ts) uses it to give the averaged person a body's pitch, tract and pace.
++
++/** A radix-2 complex FFT in place (re, im of length n, a power of 2); sign −1 forward, +1 backward, unnormalised (FFTW's). */
++export function fft(re: Float64Array, im: Float64Array, sign: 1 | -1): void {
++    const n = re.length;
++    for (let i = 1, j = 0; i < n; i++) {
++        let bit = n >> 1;
++        for (; j & bit; bit >>= 1) j ^= bit;
++        j ^= bit;
++        if (i < j) { let t = re[i]!; re[i] = re[j]!; re[j] = t; t = im[i]!; im[i] = im[j]!; im[j] = t; }
++    }
++    for (let len = 2; len <= n; len <<= 1) {
++        const a = sign * 2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a), half = len >> 1;
++        for (let i = 0; i < n; i += len) {
++            let cr = 1, ci = 0;
++            for (let k = 0; k < half; k++) {
++                const p = i + k, q = p + half, tr = re[q]! * cr - im[q]! * ci, ti = re[q]! * ci + im[q]! * cr;
++                re[q] = re[p]! - tr; im[q] = im[p]! - ti; re[p] = re[p]! + tr; im[p] = im[p]! + ti;
++                const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr;
++            }
++        }
++    }
++}
++/** A seeded standard normal draw (xorshift128 and Box–Muller), so a synthesis can be repeated. */
++export function normalSource(seed = 88675123): () => number {
++    let x = 123456789, y = 362436069, z = 521288629, w = seed >>> 0, spare: number | null = null;
++    const u = () => { const t = x ^ (x << 11); x = y; y = z; z = w; w = (w ^ (w >>> 19) ^ (t ^ (t >>> 8))) >>> 0; return (w + 1) / 4294967297; };
++    return () => {
++        if (spare !== null) { const s = spare; spare = null; return s; }
++        const r = Math.sqrt(-2 * Math.log(u())), a = 2 * Math.PI * u(); spare = r * Math.sin(a); return r * Math.cos(a);
++    };
++}
++
++/** The minimum-phase spectrum (bins 0..n/2, re and im) of a log amplitude spectrum (bins 0..n/2; GetMinimumPhaseSpectrum). */
++function minimumPhase(logHalf: Float64Array, n: number, outRe: Float64Array, outIm: Float64Array): void {
++    const re = new Float64Array(n), im = new Float64Array(n);
++    for (let i = 0; i <= n / 2; i++) re[i] = logHalf[i]!;
++    for (let i = n / 2 + 1; i < n; i++) re[i] = logHalf[n - i]!;
++    fft(re, im, -1);                                         // the cepstrum (WORLD's "inverse_fft": an r2c forward)
++    im[0] = -im[0]!;
++    for (let i = 1; i < n / 2; i++) { re[i] = re[i]! * 2; im[i] = -im[i]! * 2; }
++    im[n / 2] = -im[n / 2]!;
++    for (let i = n / 2 + 1; i < n; i++) { re[i] = 0; im[i] = 0; }
++    fft(re, im, -1);
++    for (let i = 0; i <= n / 2; i++) { const t = Math.exp(re[i]! / n); outRe[i] = t * Math.cos(im[i]! / n); outIm[i] = t * Math.sin(im[i]! / n); }
++}
++/** The real waveform of a half spectrum (bins 0..n/2), unnormalised (FFTW's c2r), shifted by half its length (fftshift). */
++function realShifted(re: Float64Array, im: Float64Array, n: number, out: Float64Array): void {
++    const R = new Float64Array(n), I = new Float64Array(n);
++    for (let i = 0; i <= n / 2; i++) { R[i] = re[i]!; I[i] = im[i]!; }
++    for (let i = n / 2 + 1; i < n; i++) { R[i] = re[n - i]!; I[i] = -im[n - i]!; }
++    fft(R, I, 1);
++    for (let i = 0; i < n / 2; i++) { out[i] = R[i + n / 2]!; out[i + n / 2] = R[i]!; }
++}
++const safeAp = (x: number) => Math.max(0.001, Math.min(0.999999999999, x));
++
++/** WORLD Synthesis(): f0 (Hz, 0 unvoiced) per frame, the envelope and the aperiodicity per frame (bins 0..fftSize/2), the frame
++ * period (ms), the rate (Hz) and the output's length in samples. */
++export function synthesize(f0: ArrayLike<number>, sp: ArrayLike<number>[], ap: ArrayLike<number>[], fftSize: number, framePeriodMs: number, fs: number, yLength: number, seed = 1): Float32Array {
++    const n = fftSize, half = n / 2, frames = f0.length, fp = framePeriodMs / 1000, randn = normalSource(seed), y = new Float64Array(yLength);
++    // The time base: f0 and voicing linear between frames, pulses where the accumulated phase passes 2π.
++    const lowest = fs / n + 1, cf0 = new Float64Array(frames + 1), cvuv = new Float64Array(frames + 1), ct = new Float64Array(frames + 1);
++    for (let i = 0; i < frames; i++) { ct[i] = i * fp; cf0[i] = f0[i]! < lowest ? 0 : f0[i]!; cvuv[i] = cf0[i] === 0 ? 0 : 1; }
++    ct[frames] = frames * fp; cf0[frames] = cf0[frames - 1]! * 2 - cf0[frames - 2]!; cvuv[frames] = cvuv[frames - 1]! * 2 - cvuv[frames - 2]!;
++    const lin = (arr: Float64Array, t: number) => { const k = Math.min(frames - 1, Math.max(0, Math.floor(t / fp))); const s = (t - ct[k]!) / fp; return arr[k]! + s * (arr[k + 1]! - arr[k]!); };
++    const vuv = new Uint8Array(yLength), pulses: number[] = [], shifts: number[] = [];
++    let total = 0, prevWrap = 0;
++    for (let i = 0; i < yLength; i++) {
++        const t = i / fs, v = lin(cvuv, t) > 0.5 ? 1 : 0, f = v ? lin(cf0, t) : 500;
++        vuv[i] = v; total += 2 * Math.PI * f / fs; const wrap = total % (2 * Math.PI);
++        if (i > 0 && Math.abs(wrap - prevWrap) > Math.PI) {
++            const y1 = prevWrap - 2 * Math.PI, y2 = wrap; pulses.push(i - 1); shifts.push((-y1 / (y2 - y1)) / fs);
++        }
++        prevWrap = wrap;
++    }
++    // The DC remover (GetDCRemover).
++    const dc = new Float64Array(n); let dcSum = 0;
++    for (let i = 0; i < half; i++) { dc[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * (i + 1) / (1 + n)); dc[n - i - 1] = dc[i]!; dcSum += dc[i]! * 2; }
++    for (let i = 0; i < half; i++) { dc[i] = dc[i]! / dcSum; dc[n - i - 1] = dc[i]!; }
++    const env = new Float64Array(half + 1), apr = new Float64Array(half + 1), logH = new Float64Array(half + 1), mr = new Float64Array(half + 1), mi = new Float64Array(half + 1);
++    const per = new Float64Array(n), aper = new Float64Array(n), nr = new Float64Array(n), ni = new Float64Array(n), sr = new Float64Array(half + 1), si = new Float64Array(half + 1);
++    for (let p = 0; p < pulses.length; p++) {
++        const idx = pulses[p]!, t = idx / fs, noiseSize = pulses[Math.min(pulses.length - 1, p + 1)]! - idx, v = vuv[idx]!;
++        // The envelope and the aperiodicity at the pulse (GetSpectralEnvelope, GetAperiodicRatio).
++        const lo = Math.min(frames - 1, Math.floor(t / fp)), hi = Math.min(frames - 1, Math.ceil(t / fp)), w = t / fp - lo;
++        for (let i = 0; i <= half; i++) {
++            if (lo === hi) { env[i] = Math.abs(sp[lo]![i]!); apr[i] = safeAp(ap[lo]![i]!) ** 2; }
++            else { env[i] = (1 - w) * Math.abs(sp[lo]![i]!) + w * Math.abs(sp[hi]![i]!); apr[i] = ((1 - w) * safeAp(ap[lo]![i]!) + w * safeAp(ap[hi]![i]!)) ** 2; }
++        }
++        // The periodic response (GetPeriodicResponse).
++        per.fill(0);
++        if (v > 0.5 && apr[0]! <= 0.999) {
++            for (let i = 0; i <= half; i++) logH[i] = Math.log(env[i]! * (1 - apr[i]!) + 1e-12) / 2;
++            minimumPhase(logH, n, mr, mi);
++            const c = 2 * Math.PI * shifts[p]! * fs / n;
++            for (let i = 0; i <= half; i++) { const r2 = Math.cos(c * i), i2 = Math.sqrt(1 - r2 * r2); sr[i] = mr[i]! * r2 + mi[i]! * i2; si[i] = mi[i]! * r2 - mr[i]! * i2; }
++            realShifted(sr, si, n, per);
++            let d = 0; for (let i = half; i < n; i++) d += per[i]!;
++            for (let i = 0; i < half; i++) per[i] = -d * dc[i]!;
++            for (let i = half; i < n; i++) per[i] = per[i]! - d * dc[i]!;
++        }
++        // The aperiodic response (GetAperiodicResponse): noise of the pulse's length, its mean taken out, filtered.
++        nr.fill(0); ni.fill(0); let mean = 0;
++        for (let i = 0; i < noiseSize; i++) { nr[i] = randn(); mean += nr[i]!; }
++        mean /= Math.max(1, noiseSize); for (let i = 0; i < noiseSize; i++) nr[i] = nr[i]! - mean;
++        fft(nr, ni, -1);
++        for (let i = 0; i <= half; i++) logH[i] = Math.log(v !== 0 ? env[i]! * apr[i]! : env[i]!) / 2;
++        minimumPhase(logH, n, mr, mi);
++        for (let i = 0; i <= half; i++) { sr[i] = mr[i]! * nr[i]! - mi[i]! * ni[i]!; si[i] = mr[i]! * ni[i]! + mi[i]! * nr[i]!; }
++        realShifted(sr, si, n, aper);
++        const sq = Math.sqrt(noiseSize), offset = idx - half + 1;
++        for (let j = Math.max(0, -offset); j < Math.min(n, yLength - offset); j++) y[j + offset] = y[j + offset]! + (per[j]! * sq + aper[j]!) / n;
++    }
++    return Float32Array.from(y);
++}
+diff --git a/src/voice-worker.js b/src/voice-worker.js
+index b07d725..dc54231 100644
+--- a/src/voice-worker.js
++++ b/src/voice-worker.js
+@@ -1,4 +1,5 @@
+-"use strict";
++import { parseAveragedPerson, bodyRecording } from './rules/averaged-person.js';
++let person = null;
+ const scope = globalThis;
+ const LATENT = 32, COND = 1024, FULL = 1000, BLOCK = 32, DECODE_FRAMES = 15;
+ let ort, nets, flowManifest, mimiManifest, bos;
+@@ -118,10 +119,18 @@ scope.onmessage = e => {
+                 nets = { encoder: await make('mimi_encoder.onnx'), text: await make('text_conditioner.onnx'), main: await make('flow_lm_main_int8.onnx'), flow: await make('flow_lm_flow_int8.onnx'), decoder: await make('mimi_decoder_int8.onnx') };
+                 scope.postMessage({ type: 'loaded' });
+             }
++            else if (m.type === 'person') {
++                person = parseAveragedPerson(m.buffer);
++                scope.postMessage({ type: 'personed', id: m.id });
++            }
+             else if (m.type === 'voice') {
+                 let emb = m.embedding;
+                 if (!emb) {
+-                    const out = await nets.encoder.run({ audio: f32(m.samples, [1, 1, m.samples.length]) });
++                    // A body's voice: the averaged person spoken with the body's causes (averaged-person.ts), then encoded.
++                    const samples = m.samples ?? (m.body && person ? bodyRecording(person, m.body) : null);
++                    if (!samples)
++                        throw new Error('no recording and no averaged person');
++                    const out = await nets.encoder.run({ audio: f32(samples, [1, 1, samples.length]) });
+                     emb = Float32Array.from(out['latents'].data);
+                 }
+                 await makeVoice(m.voice, emb);
+@@ -139,7 +148,7 @@ scope.onmessage = e => {
+             }
+         }
+         catch (err) {
+-            scope.postMessage(m.type === 'load' ? { type: 'error', error: String(err) } : { type: m.type === 'voice' ? 'voiced' : 'audio', id: m.id, error: String(err) });
++            scope.postMessage(m.type === 'load' ? { type: 'error', error: String(err) } : { type: m.type === 'voice' ? 'voiced' : m.type === 'person' ? 'personed' : 'audio', id: m.id, error: String(err) });
+         }
+     });
+ };
+diff --git a/src/voice-worker.ts b/src/voice-worker.ts
+index 0ed9bbc..f51b837 100644
+--- a/src/voice-worker.ts
++++ b/src/voice-worker.ts
+@@ -1,4 +1,4 @@
+-// The free-speech voice's worker (index.ts, rules/pocket.ts): Pocket TTS's five networks (the ONNX export KevinAHM/pocket-tts-onnx,
++// The natural voice's worker (index.ts, rules/pocket.ts, rules/averaged-person.ts): Pocket TTS's five networks (the ONNX export KevinAHM/pocket-tts-onnx,
+ // english_2026-04, int8 where it exists) run by onnxruntime-web off the page's thread, so the box keeps typing while a line is
+ // made. The loop is the export's own (pocket_tts_onnx.py): a recording's 24 kHz samples → the Mimi encoder → a voice prompt the
+ // language model reads first; a line's tokens → the text conditioner → the language model, then one frame at a time: the model's
+@@ -17,8 +17,11 @@ type State = Record<string, Tensor>;
+ type Chunk = { ids: number[]; framesAfterEos: number; maxFrames: number };
+ type Msg =
+     | { type: 'load'; ortUrl: string; files: Record<string, ArrayBuffer> }
+-    | { type: 'voice'; id: number; voice: string; samples?: Float32Array; embedding?: Float32Array }
++    | { type: 'person'; id: number; buffer: ArrayBuffer }
++    | { type: 'voice'; id: number; voice: string; samples?: Float32Array; embedding?: Float32Array; body?: BodyTarget }
+     | { type: 'speak'; id: number; voice: string; chunks: Chunk[]; temperature: number };
++import { parseAveragedPerson, bodyRecording, type AveragedPerson, type BodyTarget } from './rules/averaged-person.js';
++let person: AveragedPerson | null = null;
+ const scope = globalThis as unknown as { onmessage: (e: { data: Msg }) => void; postMessage(m: unknown, transfer?: Transferable[]): void };
+ 
+ const LATENT = 32, COND = 1024, FULL = 1000, BLOCK = 32, DECODE_FRAMES = 15;
+@@ -121,10 +124,16 @@ scope.onmessage = e => {
+                 const make = (f: string) => ort.InferenceSession.create(new Uint8Array(m.files[f]!));
+                 nets = { encoder: await make('mimi_encoder.onnx'), text: await make('text_conditioner.onnx'), main: await make('flow_lm_main_int8.onnx'), flow: await make('flow_lm_flow_int8.onnx'), decoder: await make('mimi_decoder_int8.onnx') };
+                 scope.postMessage({ type: 'loaded' });
++            } else if (m.type === 'person') {
++                person = parseAveragedPerson(m.buffer);
++                scope.postMessage({ type: 'personed', id: m.id });
+             } else if (m.type === 'voice') {
+                 let emb = m.embedding;
+                 if (!emb) {
+-                    const out = await nets.encoder.run({ audio: f32(m.samples!, [1, 1, m.samples!.length]) });
++                    // A body's voice: the averaged person spoken with the body's causes (averaged-person.ts), then encoded.
++                    const samples = m.samples ?? (m.body && person ? bodyRecording(person, m.body) : null);
++                    if (!samples) throw new Error('no recording and no averaged person');
++                    const out = await nets.encoder.run({ audio: f32(samples, [1, 1, samples.length]) });
+                     emb = Float32Array.from(out['latents']!.data as Float32Array);
+                 }
+                 await makeVoice(m.voice, emb);
+@@ -138,7 +147,7 @@ scope.onmessage = e => {
+                 scope.postMessage({ type: 'audio', id: m.id, audio }, [audio.buffer]);
+             }
+         } catch (err) {
+-            scope.postMessage(m.type === 'load' ? { type: 'error', error: String(err) } : { type: m.type === 'voice' ? 'voiced' : 'audio', id: m.id, error: String(err) });
++            scope.postMessage(m.type === 'load' ? { type: 'error', error: String(err) } : { type: m.type === 'voice' ? 'voiced' : m.type === 'person' ? 'personed' : 'audio', id: m.id, error: String(err) });
+         }
+     });
+ };
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 6a67725..c67d63f 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -6030,24 +6030,6 @@
+   "miss": "the natural voice",
+   "test": "voice-body"
+  },
+- {
+-  "id": "PK5",
+-  "name": "a WAV's channels averaged",
+-  "file": "src/rules/pocket.js",
+-  "find": "out\\[i\\]\\ =\\ s\\ /\\ ch\\ /\\ 32768;",
+-  "replace": "out[i] = s / 32768;",
+-  "miss": "the natural voice",
+-  "test": "voice-body"
+- },
+- {
+-  "id": "PK6",
+-  "name": "the resampling kernel's gain",
+-  "file": "src/rules/pocket.js",
+-  "find": "s\\ \\+=\\ x\\[k\\]\\ \\*\\ w\\ \\*\\ cut\\ \\*\\ \\(d\\ ===\\ 0",
+-  "replace": "s += x[k] * w * (d === 0",
+-  "miss": "the natural voice",
+-  "test": "voice-body"
+- },
+  {
+   "id": "PK7",
+   "name": "only the named inputs' memory freed",
+@@ -6066,24 +6048,6 @@
+   "miss": "the natural voice",
+   "test": "voice-body"
+  },
+- {
+-  "id": "PK9",
+-  "name": "the choice weighs the tract",
+-  "file": "src/rules/pocket.js",
+-  "find": "\\ \\+\\ \\(\\(c\\.tract\\ \\-\\ v\\.tract\\)\\ /\\ EARS_SD\\.tract\\)\\ \\*\\*\\ 2",
+-  "replace": "",
+-  "miss": "the natural voice",
+-  "test": "voice-body"
+- },
+- {
+-  "id": "PK10",
+-  "name": "the choice weighs age",
+-  "file": "src/rules/pocket.js",
+-  "find": "\\ \\+\\ \\(age\\ !=\\ null\\ \\&\\&\\ v\\.age\\ !=\\ null\\ \\?\\ \\(\\(age\\ \\-\\ v\\.age\\)\\ /\\ peek\\('earsAgeStep'\\)\\)\\ \\*\\*\\ 2\\ :\\ 0\\)",
+-  "replace": "",
+-  "miss": "the natural voice",
+-  "test": "voice-body"
+- },
+  {
+   "id": "PK11",
+   "name": "quotation marks not spoken",
+@@ -6119,5 +6083,86 @@
+   "replace": "heightCm: HEIGHT[male ? 'male' : 'female'].mean",
+   "miss": "a child's unset height grows with age",
+   "test": "voice-body"
++ },
++ {
++  "id": "VB19",
++  "name": "children slower by Mahr's medians",
++  "file": "src/rules/voice-body.js",
++  "find": "ageRate\\ =\\ f\\.age\\ !=\\ null\\ \\?\\ childRate\\(f\\.age\\)\\ \\*\\ ",
++  "replace": "ageRate = f.age != null ? ",
++  "miss": "children's pace",
++  "test": "voice-body"
++ },
++ {
++  "id": "VB20",
++  "name": "the adult age trend from 16 only",
++  "file": "src/rules/voice-body.js",
++  "find": "Math\\.max\\(16,\\ f\\.age\\)\\ \\-\\ 30\\.6",
++  "replace": "f.age - 30.6",
++  "miss": "children's pace",
++  "test": "voice-body"
++ },
++ {
++  "id": "AP1",
++  "name": "the envelope read at bin x tract ratio",
++  "file": "src/rules/averaged-person.js",
++  "find": "bin\\ \\*\\ k\\ /\\ step",
++  "replace": "bin / k / step",
++  "miss": "the natural voice",
++  "test": "voice-body"
++ },
++ {
++  "id": "AP2",
++  "name": "the melody about the body's pitch",
++  "file": "src/rules/averaged-person.js",
++  "find": "Math\\.exp\\(p\\.melody\\[s\\]\\ \\+\\ Math\\.log\\(t\\.f0\\)\\)",
++  "replace": "Math.exp(p.melody[s] + Math.log(150))",
++  "miss": "the natural voice",
++  "test": "voice-body"
++ },
++ {
++  "id": "AP3",
++  "name": "frames stretched to the body's pace",
++  "file": "src/rules/averaged-person.js",
++  "find": "const\\ stretch\\ =\\ p\\.own\\.sylPerS\\ /\\ t\\.sylPerS",
++  "replace": "const stretch = 1",
++  "miss": "the natural voice",
++  "test": "voice-body"
++ },
++ {
++  "id": "AP4",
++  "name": "connected speech's register",
++  "file": "src/rules/pocket.js",
++  "find": "c\\.f0\\ \\*\\ peek\\('speechRegister'\\)",
++  "replace": "c.f0",
++  "miss": "the natural voice",
++  "test": "voice-body"
++ },
++ {
++  "id": "AP5",
++  "name": "the worker speaks the body's recording",
++  "file": "src/voice-worker.js",
++  "find": "m\\.samples\\ \\?\\?\\ \\(m\\.body\\ \\&\\&\\ person\\ \\?\\ bodyRecording\\(person,\\ m\\.body\\)\\ :\\ null\\)",
++  "replace": "m.samples ?? null",
++  "miss": "the natural voice",
++  "test": "voice-body"
++ },
++ {
++  "id": "AP6",
++  "name": "English's pace when the language is unset",
++  "file": "src/index.js",
++  "find": "language:\\ facts\\.language\\ \\?\\?\\ 'english'",
++  "replace": "language: facts.language",
++  "miss": "the natural voice",
++  "test": "voice-body"
++ },
++ {
++  "id": "WV1",
++  "name": "a pulse each period",
++  "file": "src/rules/world-vocoder.js",
++  "find": "total\\ \\+=\\ 2\\ \\*\\ Math\\.PI\\ \\*\\ f\\ /\\ fs",
++  "replace": "total += Math.PI * f / fs",
++  "miss": "the natural voice",
++  "test": "voice-body"
+  }
+ ]
+diff --git a/tests/voice-body.test.mjs b/tests/voice-body.test.mjs
+index 899437d..eab4bc6 100644
+--- a/tests/voice-body.test.mjs
++++ b/tests/voice-body.test.mjs
+@@ -127,25 +127,20 @@ const near = (a, b, d) => Math.abs(a - b) <= d;
+       && /if \(settings\(\)\.boxVoice !== 'robotic' \|\| unit\.getAttribute\('data-said'\) !== 'true' \|\| !p\)\s*return null;/.test(idx) && /new URL\(`\.\.\/lib\/espeak-ng\/\$\{p\}`, import\.meta\.url\)/.test(idx)
+       && data === 877770 && /remote_package_size:877770/.test(js), 'the robotic voice', JSON.stringify([tom, girl, t.map(Math.round)]));
+ }
+-// V10: the natural voice (pocket.ts; data/ears-voices.ts; data/pocket-tokenizer.ts; src/index.js naturalJob; src/voice-worker.js):
+-// the tokenizer gives the original SentencePiece's ids (bytes for "…"); a stretch is prepared and split as the export does;
+-// quotation marks are not spoken; the typing's times end with the sound; a 16-bit stereo WAV reads as its channels' mean; a 1 kHz tone resampled from 32 to 24 kHz
+-// stays a 1 kHz tone; the memory's length is freed only in the named inputs of a model file, 3 bytes for 3; the engine's mean
+-// man lands on the copies' male medians; Tom (136.4 Hz, 17.9 cm, 35) hears p102, a girl of 11 (243 Hz, 14.5 cm) p068, a man of
+-// 70 (140 Hz, 17.6 cm) p097; the box makes it only for said words, waits for a line still being made, keeps the networks and
+-// each recording's encoding in IndexedDB, stretches the typing to the sound, and the worker stops a line at its end signal.
++// V10: the natural voice (pocket.ts; averaged-person.ts; world-vocoder.ts; data/pocket-tokenizer.ts; src/index.js naturalJob;
++// src/voice-worker.js): the tokenizer gives the original SentencePiece's ids (bytes for "…"); a stretch is prepared and split as
++// the export does; quotation marks are not spoken; the typing's times end with the sound; the memory's length is freed only in
++// the named inputs of a model file, 3 bytes for 3; the engine's mean man lands on free speech's male medians, his target 1.16
++// higher in pitch (connected speech); an averaged-person file reads back; the envelope of a tract half as long puts a resonance
++// at twice the frequency; WORLD's synthesis of a steady 200 Hz voice repeats every 120 samples; a body recording at half the
++// pace is twice as long and its pitch is the body's; the box makes the voice for said words only, from the averaged person in
++// the extension folder, keeps each body's encoding, and the worker stops a line at its end signal.
+ {
+-  const P = await import('../src/rules/pocket.js'), Sp = await import('../src/rules/speech.js'), E = await import('../src/rules/data/ears-voices.js'), Vs = await import('../src/rules/voice-sound.js'), fs = await import('node:fs'), root = new URL('..', import.meta.url).pathname;
++  const P = await import('../src/rules/pocket.js'), Sp = await import('../src/rules/speech.js'), Vs = await import('../src/rules/voice-sound.js');
++  const A = await import('../src/rules/averaged-person.js'), Wv = await import('../src/rules/world-vocoder.js'), fs = await import('node:fs'), root = new URL('..', import.meta.url).pathname;
+   const idx = fs.readFileSync(`${root}/src/index.js`, 'utf8'), wk = fs.readFileSync(`${root}/src/voice-worker.js`, 'utf8');
+   const tok = [P.pocketTokens('Sit. Will has been counting the same six coins since noon.'), P.pocketTokens("Don't—wait… it's 3:45, café?")];
+   const long = 'The north wind and the sun were disputing which was the stronger, when a traveler came along wrapped in a warm cloak. They agreed that the one who first succeeded in making the traveler take his cloak off should be considered stronger than the other.';
+-  // A WAV: 16-bit, two channels, 8 kHz, frames (1000, 3000) and (-2000, 0).
+-  const wav = new ArrayBuffer(52), dv = new DataView(wav), str = (o, t) => [...t].forEach((c, i) => dv.setUint8(o + i, c.charCodeAt(0)));
+-  str(0, 'RIFF'); dv.setUint32(4, 44, true); str(8, 'WAVE'); str(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true); dv.setUint32(24, 8000, true); dv.setUint32(28, 32000, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true);
+-  str(36, 'data'); dv.setUint32(40, 8, true); [1000, 3000, -2000, 0].forEach((v, i) => dv.setInt16(44 + 2 * i, v, true));
+-  const w = P.wavSamples(wav);
+-  const tone = Float32Array.from({ length: 32000 }, (_, i) => Math.sin(2 * Math.PI * 1000 * i / 32000)), re = P.resample(tone, 32000, 24000);
+-  let err = 0; for (let i = 2000; i < 22000; i++) err = Math.max(err, Math.abs(re[i] - Math.sin(2 * Math.PI * 1000 * i / 24000)));
+   // A model file by hand (protobuf): the graph (field 7) with an input "state_0" [2, 1000] and an input "other" [1000], and an
+   // initializer (field 5) whose bytes hold the same 03 08 E8 07.
+   const len = b => { const o = []; let n = b.length; do { o.push((n & 127) | (n > 127 ? 128 : 0)); n >>= 7; } while (n); return o; };
+@@ -153,21 +148,35 @@ const near = (a, b, d) => Math.abs(a - b) <= d;
+   const vi = (name, dims) => ld(1, txt(name)).concat(ld(2, ld(1, [8, 1, ...ld(2, dims.flatMap(dim))])));
+   const model = new Uint8Array(ld(7, [...ld(5, [0x03, 0x08, 0xe8, 0x07]), ...ld(11, vi('state_0', [2, 1000])), ...ld(11, vi('other', [1000]))])), before = model.slice();
+   const freed = P.freeCacheLength(model, ['state_0']), diff = [...model].map((b, i) => b !== before[i] ? i : -1).filter(i => i >= 0);
+-  const c = P.onCopiesScale(Vs.MEASURED.male.f0Hz, Vs.MEASURED.male.tractCm);
+-  const picks = [P.nearestEars(136.4, 17.9, 35).id, P.nearestEars(243, 14.5, 11).id, P.nearestEars(140, 17.6, 70).id];
++  const c = P.onCopiesScale(Vs.MEASURED.male.f0Hz, Vs.MEASURED.male.tractCm), tgt = P.bodyTarget(Vs.MEASURED.male.f0Hz, Vs.MEASURED.male.tractCm, 4.4);
++  // An averaged-person file by hand: 400 frames, all voiced at its own level, a flat envelope but one peak at stored bin 20
++  // (WORLD bin 40, 937.5 Hz), no aperiodicity; its own pace 5 syllables/s and tract 17 cm.
++  const F = 400, EB = 257, AB = 65, head = new TextEncoder().encode(JSON.stringify({ fs: 24000, framePeriodMs: 5, fftSize: 1024, frames: F, envBins: EB, apBins: AB, own: { f0: 150, tractCm: 17, sylPerS: 5 } }));
++  const buf = new ArrayBuffer(8 + head.length + F + 4 * F + 2 * F * EB + F * AB), u8 = new Uint8Array(buf), dvw = new DataView(buf);
++  u8.set([82, 86, 65, 80]); dvw.setUint32(4, head.length, true); u8.set(head, 8);
++  let o = 8 + head.length; u8.fill(1, o, o + F); o += F; o += 4 * F;
++  for (let f = 0; f < F; f++) for (let b = 0; b < EB; b++) dvw.setInt16(o + 2 * (f * EB + b), b === 20 ? 0 : -4000, true);
++  o += 2 * F * EB; u8.fill(240, o, o + F * AB);
++  const person = A.parseAveragedPerson(buf), peakAt = row => row.indexOf(Math.max(...row));
++  const pk = [peakAt(A.envelopeRow(person, 10, 1)), peakAt(A.envelopeRow(person, 10, 0.5))];
++  const rec = A.bodyRecording(person, { f0: 200, tractCm: 17, sylPerS: 2.5 });
++  const lagOf = (y, from, to) => { let best = 0, bl = 0; for (let L = 60; L <= 180; L++) { let s = 0; for (let i = from; i < to; i++) s += y[i] * y[i + L]; if (s > best) { best = s; bl = L; } } return bl; };
++  const steady = Wv.synthesize(new Float64Array(80).fill(200), Array.from({ length: 80 }, () => new Float64Array(513).fill(0.01)), Array.from({ length: 80 }, () => new Float64Array(513).fill(0.001)), 1024, 5, 24000, 9600);
+   ok(JSON.stringify(tok) === '[[1912,274,263,2772,392,385,1026,273,265,548,925,571,356,261,1024,260,3385,263],[1201,264,274,3133,1088,562,230,132,170,275,264,261,260,450,3244,487,437,262,331,2250,745,292]]'
+       && JSON.stringify(P.pocketPrepare('ok go')) === '{"text":"Ok go.","framesAfterEos":5}' && P.pocketChunks(long).length === 2 && P.pocketMaxFrames(18) === 100
+       && P.spokenText('"Sit," she said') === 'Sit, she said' && JSON.stringify(Sp.scaleTimes([0, 100, 200], 1000)) === '[0,500,1000]'
+-      && w.rate === 8000 && JSON.stringify(Array.from(w.samples).map(x => Math.round(x * 32768))) === '[2000,-1000]' && re.length === 24000 && err < 0.01
+       && freed === 1 && diff.length === 3 && model[diff[0] - 1] === 0x03 && model[diff[0]] === 0x12 && model[diff[0] + 2] === 0x63 && diff[0] > 8
+-      && Math.abs(c.f0 - E.EARS_MEDIANS.male.f0) < 1e-9 && Math.abs(c.tract - E.EARS_MEDIANS.male.tract) < 1e-9 && E.EARS_VOICES.length === 95 && JSON.stringify(picks) === '["p102","p068","p097"]'
++      && Math.abs(c.f0 - 105.4) < 1e-9 && Math.abs(c.tract - 18.92) < 1e-9 && JSON.stringify(tgt) === '{"f0":122.3,"tractCm":18.92,"sylPerS":4.4}'
++      && person.frames === 400 && person.own.tractCm === 17 && JSON.stringify(pk) === '[40,80]'
++      && rec.length === 2 * 400 * 120 && lagOf(rec, 30000, 32000) === 120 && lagOf(steady, 3000, 5000) === 120
+       && /if \(settings\(\)\.boxVoice !== 'natural' \|\| unit\.getAttribute\('data-said'\) !== 'true' \|\| !p \|\| unit\.querySelector\('\.rules-v-whisper, \.rules-run-whisper'\)\)\s*return null;/.test(idx)
+       && /scaleTimes\(read, 1000 \* natural\.length \/ POCKET_MODEL\.sampleRate\)/.test(idx) && /if \(!spoken && !natural\)\s*playBlips/.test(idx)
+-      && /if \(nat && !voiceDone\.has\(nat\.key\)\)/.test(idx) && /indexedDB\.open\('rules-engine-voices', 1\)/.test(idx) && /nearestEars\(v\.f0Hz, v\.tractCm, facts\.age\)/.test(idx)
+-      && /freeCacheLength\(new Uint8Array\(files\['flow_lm_main_int8\.onnx'\]\)/.test(idx) && /await storedModel\(key, r\.embedding\.buffer/.test(idx)
+-      && /if \(s\.boxVoice === 'speech'\)\s*s\.boxVoice = 'robotic';/.test(idx) && /new Worker\(new URL\('\.\/voice-worker\.js', import\.meta\.url\), \{ type: 'module' \}\)/.test(idx)
+-      && /if \(r\.eos > -4 && eosAt < 0\)\s*eosAt = step;/.test(wk) && /normal\(LATENT, Math\.sqrt\(temperature\)\)/.test(wk) && /x\[i\] \+= flow\[i\];/.test(wk) && /ort\.env\.wasm\.numThreads = 1;/.test(wk),
+-      'the natural voice', JSON.stringify([tok, P.pocketChunks(long).length, Array.from(w.samples), err, freed, diff, c, picks]));
++      && /if \(nat && !voiceDone\.has\(nat\.key\)\)/.test(idx) && /indexedDB\.open\('rules-engine-voices', 1\)/.test(idx)
++      && /bodyTarget\(v\.f0Hz, v\.tractCm, v\.sylPerS\)/.test(idx) && /voiceOf\(\{ \.\.\.facts, language: facts\.language \?\? 'english' \}\)/.test(idx)
++      && /new URL\('\.\.\/voices\/averaged-person\.bin', import\.meta\.url\)/.test(idx) && /await storedModel\(key, r\.embedding\.buffer/.test(idx)
++      && /freeCacheLength\(new Uint8Array\(files\['flow_lm_main_int8\.onnx'\]\)/.test(idx) && /if \(s\.boxVoice === 'speech'\)\s*s\.boxVoice = 'robotic';/.test(idx)
++      && /bodyRecording\(person, m\.body\)/.test(wk) && /if \(r\.eos > -4 && eosAt < 0\)\s*eosAt = step;/.test(wk) && /normal\(LATENT, Math\.sqrt\(temperature\)\)/.test(wk) && /ort\.env\.wasm\.numThreads = 1;/.test(wk),
++      'the natural voice', JSON.stringify([tok, freed, diff, c, tgt, pk, rec.length, lagOf(rec, 30000, 32000), lagOf(steady, 3000, 5000)]));
+ }
+ // V11: a child whose height the story has not set is heard at the height their age's growth gives (the adult mean × the share
+ // of adult height: a girl of 11 at 142.2 cm, of 12 at 149.4, of 14 at 160.8), so her voice changes year by year (tract 14.4,
+@@ -177,4 +186,10 @@ const near = (a, b, d) => Math.abs(a - b) <= d;
+   const tr = [11, 12, 14].map(age => V.voiceOf(V.speakingFactsOf({ species: 'human', sex: 'female', age })).tractCm);
+   ok(JSON.stringify(hs) === '["142.2","149.4","160.8","163.8"]' && JSON.stringify(tr) === '[14.4,14.9,15.6]', "a child's unset height grows with age", JSON.stringify([hs, tr]));
+ }
++// V12: children's pace (Mahr et al. 2021): a child of 3 at 0.75 of an adult's rate, 5 at 0.82, 8 at 0.92, 10 and 14 at 1; the
++// adult age trend not carried below 16 (a girl of 11 as fast as one of 16).
++{
++  const r = [3, 5, 8, 10, 14].map(a => +V.childRate(a).toFixed(3)), rate = a => V.voiceOf({ sex: 'female', age: a, language: 'english' }).sylPerS;
++  ok(JSON.stringify(r) === '[0.75,0.817,0.917,1,1]' && rate(11) === rate(16) && rate(5) < 0.85 * rate(16) && rate(40) < rate(16), "children's pace", JSON.stringify([r, rate(5), rate(11), rate(16), rate(40)]));
++}
+ console.log(`voice-body: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0;
+diff --git a/voices/README.md b/voices/README.md
+new file mode 100644
+index 0000000..8f8b644
+--- /dev/null
++++ b/voices/README.md
+@@ -0,0 +1,7 @@
++# voices/
++
++The natural voice (setting "Voices: natural") reads `averaged-person.bin` from this folder: the movement of speech of 16 EARS
++speakers (Richter et al. 2024), averaged, which each character's voice is computed from (src/rules/averaged-person.ts). It is
++derived from EARS, licensed CC BY-NC 4.0 (non-commercial use, with attribution), so it is not part of this repository
++(`.gitignore`); it is made by `history/review-tests/causal-voice/avg_prompt.py` and handed over as a file. Put it here as
++`voices/averaged-person.bin`. Without it the natural voice stays silent and a notice names the missing file.

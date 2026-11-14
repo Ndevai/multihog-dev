@@ -4,14 +4,17 @@
 // accurately than inside it (Chain-of-Verification, Dhuliawala et al. 2023: list precision 0.17 → 0.36), and a model that
 // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
 // tools itself; a call already made here returns the same result (the turn's decision ledger).
-import { turnKey } from './turn.js';
-import { MAGIC_TOOLS, REGISTRY, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition } from './rules-tools.js';
+import { turnKey, placeOf, lineOf } from './turn.js';
+import { MAGIC_TOOLS, REGISTRY, fittedTool, sceneTools, storyText, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, restoreTurnStart, restoreLineStart, keepResult, keepStart, hasStart, passRanFor, keepPass, keptPass } from './rules-tools.js';
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
 import { planSchema, callsFromKeyed, PERSON_KEY, subjectOf } from './plan-schema.js';
 import { routedTools, movesIn, ALWAYS } from './router.js';
-import { framedCalls, playerName, mergeCalls, sameSubject } from './frame.js';
+import { framedCalls, playerName, mergeCalls, sameSubject, nameSex, inStory } from './frame.js';
+import { setSceneCues, senseOdds } from './sense-odds.js';
+import { verbsAt, KNOWN_VERBS } from './verbs.js';
+import { objectAfter } from './senses.js';
 import { scenePeople } from './scene-people.js';
 import { unrecorded } from './possessions.js';
 import { worldHasMagic } from './world.js';
@@ -21,19 +24,37 @@ import { loadLanguageYears } from './languages.js';
 import { loadChat } from './history.js';
 import { loadPopulation } from './population.js';
 import { loadThings, thingsIn, thingsBlock, setRead, READ } from './things.js';
+import { decide, applyFix, personSex, correctionOf, correctionFix } from './ask.js';
+import { readingItems } from './reading.js';
+import { understand } from './intent.js';
+import { objectEnd } from './json-text.js';
+import { readProsody, deliveryOf, effortOf } from './prosody.js';
+import { marksOf, hasHidden, visible, toNotation } from './voice-code.js';
+/** A message's words as code reads them: the player's line as typed, without its marks (the toolbar's codes, kept in `voiced`
+ * once the chat is notated, or the signs a player typed, read by prosody.ts); any other message as it is. The notation is
+ * the models' (questionPrompt, pickTools): read by code, its signs changed the words ("2:20 (0.5) pm" read as 2:20 at
+ * night, "sho::ve" kept as a word). */
+const wordsOf = (m) => {
+    const t = m.voiced ?? String(m.mes ?? '');
+    return !m.is_user ? t : hasHidden(t) ? visible(t) : readProsody(t).plain;
+};
+/** A message as the models read it: hidden marks in the notation, whoever calls (index.ts notates the chat first, and a
+ * notated line comes back as it is; /rules-eval and the tools' runs do not), so no hidden character reaches a model. */
+const shown = (m) => toNotation(String(m.mes ?? '')).slice(0, MESSAGE_CHARS);
 // Calls run per turn, at most [ASSUMED]; scene messages shown and their length.
 const MAX_CALLS = 8, SCENE_MESSAGES = 8, MESSAGE_CHARS = 1500, TRACKER_CHARS = 4000;
 // Enums longer than this are shown as free text; the tool then names the valid values in its reply [ASSUMED].
 const ENUM_SHOWN = 40;
 const SKIP_ALWAYS = new Set(['BodyStatus']);
 /** Tools the question model is not shown: BodyStatus always, magic tools in a world without magic. */
-const SKIP = { has: (n) => SKIP_ALWAYS.has(n) || (MAGIC_TOOLS.has(n) && !worldHasMagic()) };
+// A tool the scene has no use for (magic in a world without it, a battle before 1600: scene-fit.ts) is skipped too.
+const SKIP = { has: (n) => SKIP_ALWAYS.has(n) || (MAGIC_TOOLS.has(n) && !worldHasMagic()) || (REGISTRY.has(n) && !fittedTool(n)) };
 export const QUESTION_SYSTEM = `You prepare one turn of a roleplay for its narrator. Code decides outcomes with the tools listed below; the narrator then writes what they return.
 Read the scene and the player's message. Find each thing the next reply will state that code decides. Two kinds: outcomes in doubt (an action that may fail, a blow that may land, whether a sound is heard or a sight seen, whether a message is understood, how a person responds), and facts code fixes even when nothing is in doubt (the time an action or a wait takes, the day's weather, an item changing hands, a new person's age and sex, a fact the scene establishes or a character learns).
 Ask about the things this reply shows. An outcome that follows from another one still in doubt (a blow after an order is obeyed, an answer after a call is heard, an animal's next move after a kick lands) goes in "then" as a question; you will get the results of the calls and write its call then.
-A player's message that states something new about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character working something out (a riddle, a code, clues, a sum, a plan) → WorkOut. Seasickness or sickness after surgery → Sickness. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A new person who first acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
+A player's message that states something new about their own character (what they are, an item they have, an ability, something they did before, something outside their control happening to them now, something they know) → Claim, before the actions that rely on it. A sight or sound that would teach a fact (a secret overheard, a face recognized, a clue worked out) → Look, Listen or WorkOut with "reveals": the fact is learned only if perceived. A player's message that states the result of their character's action ("I climb the wall", "I knock him out") is an attempt: its outcome is a question. An item that changes hands, is found, made, lost or used up with nothing in doubt in this reply, or that did so in the last narrator message → Transfer. A character moving within the scene or changing posture (stepping out of a house, crossing a room, going upstairs, sitting down, standing up, reaching for something) → Act, so the clock moves by the action's time: be_at for where they start when [BODY] gives no spot, then walk_to with distance_m from the scene. Time passing → PassTime when the reply covers more than a few minutes (travel, waiting, work, sleep); an action that takes minutes to finish (crossing a river, picking a lock, writing a letter) can be interrupted, so PassTime goes before its outcome. A new person who first acts or speaks in this reply → NewCharacter, once per person. The player's character feels and chooses what the player writes: Appraise and Choose are for the other characters. Dice → RollTheDice for a quantity or a table the scene calls for.
 For each, write a question, then the tool call that answers it, with argument values taken from the scene. Use the character names as the scene writes them; "we", "us" and "they" become the names of everyone the scene puts in the group, the person addressed included only when the scene includes them. An action each member of a group does alone (jumping a gap, climbing a wall, swimming across) → one entry per person. The calls are grouped by tool, and within a tool keyed by the person or thing the call is about (the actor, the speaker, the listener, the viewer, the good priced, the item handed over): each person's motions this turn go in their one Act, in order; each good has one Price. A tool about no one in particular (Weather, PassTime) takes its arguments directly. Tools run in the order written, so put time passing after the actions it follows.
-When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": the scene's date and hour as YYYY-MM-DD HH:MM (or "Day 1 HH:MM" when only the hour is known). A scene set in the present day (cars, phones, buses) with no date given takes the date and hour in TODAY. The first time the scene or scenario says where the scene is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them; and "named_as": for each person new to the story, what the words naming them fix, by meaning, in any language.
+When STORY STATE has no [TIME] and the scene, the cast or the scenario gives a date or hour, add "time": the scene's date and hour as YYYY-MM-DD HH:MM (or "Day 1 HH:MM" when only the hour is known). A scene set in the present day with no date given takes the date and hour in TODAY. The first time the scene or scenario says where the scene is, add "at": [latitude, longitude]. Always add "present": the names of every character in the scene now, as the scene writes them; and "named_as": for each person new to the story, what the words naming them fix, by meaning, in any language.
 First write QUESTIONS: one line per question. Then write the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":[{"question":"follow-on question","tool":"the tool that answers it"}],"need":["ToolName"]}. A plan with zero calls is {"calls":{}}.`;
 // The second round: follow-on outcomes asked once the first calls have results (decide, look at the result, decide again:
 // FLARE, Jiang et al. 2023; ReAct, Yao et al. 2023). At most one extra round per turn.
@@ -80,6 +101,29 @@ export function castPerson(name, cast) {
     const sex = /\b(brother|son|father|husband|uncle|nephew|grandson|grandfather|man|boy)\b/.test(kin) ? 'male' : /\b(sister|daughter|mother|wife|aunt|niece|granddaughter|grandmother|woman|girl)\b/.test(kin) ? 'female' : undefined;
     return { age: Number(m[2]), ...sex ? { sex } : {} };
 }
+/** The scene's cues for weighing a verb's senses (sense-odds.ts): the line and the two messages before it, the tools decided
+ *  in the last six messages, what the player's character holds, and each earlier player line's verbs with the tools its turn
+ *  called (the change record's entries carry the chat length at their call: a line at index j called at length j + 1). */
+function sceneCuesFor(chat, line, player, st, log) {
+    const n = chat.length, before = chat.filter(m => !m.is_system).slice(-3, -1).map(wordsOf);
+    const earlier = [];
+    chat.forEach((m, j) => {
+        if (!m.is_user || j >= n - 1 || j < n - 25)
+            return;
+        const tools = log.filter(e => e.msg === j + 1).map(e => e.tool);
+        for (const v of verbsAt(inStory(wordsOf(m)), KNOWN_VERBS)) {
+            const o = objectAfter(v.after);
+            earlier.push({ verb: v.verb, head: o === 'none' ? '' : o.head, tools });
+        }
+    });
+    return { words: [line, ...before].join(' ').match(/[A-Za-z']+/g) ?? [], recentTools: log.filter(e => e.msg >= n - 6 && e.msg < n).map(e => e.tool), held: (st.items?.[player] ?? []).map(x => x.item), earlier };
+}
+/** For the planner: the verbs of the line whose senses still name different tools, each reading's chance from the scene's
+ *  cues and the cues behind it. */
+function readingsNote(line) {
+    const rows = verbsAt(line, KNOWN_VERBS).map(v => ({ v, odds: senseOdds(v.verb, v.after, line) })).filter(x => x.odds && x.odds.length > 1);
+    return rows.length ? `\n\nREADINGS (the senses each verb can still mean here, by what its object is, and how strongly the scene points to each; choose by the scene)\n${rows.map(({ v, odds }) => `- "${v.word}": ${odds.map(o => `${o.tools.join(' + ') || 'no tool'} ${Math.round(o.p * 100)} %${o.why.length ? ` (${o.why.join('; ')})` : ''}`).join(' · ')}`).join('\n')}` : '';
+}
 /** The real date and hour, for a present-day scene that gives none. */
 const today = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 /** One line per argument: name, * when required, type or allowed values, description. */
@@ -103,7 +147,7 @@ function describe(name, p, required, depth = 0) {
 /** The tools as the question model reads them; * marks a required argument. With `only`, the others are named in one line
  *  each (their first sentence). */
 export function toolCatalogue(only) {
-    const tools = [...REGISTRY.values()].filter(t => !SKIP.has(t.name));
+    const tools = sceneTools().filter(t => !SKIP.has(t.name));
     const full = tools.filter(t => !only || only.has(t.name)).map(t => `${t.name}: ${t.description}\n${Object.entries(t.properties).map(([k, p]) => describe(k, p, t.required.includes(k))).join('\n')}`).join('\n\n');
     const rest = only ? tools.filter(t => !only.has(t.name)) : [];
     return rest.length ? `${full}\n\nOTHER TOOLS (arguments on request: to use one, add its name to "need" and its question to "then")\n${rest.map(oneLine).join('\n')}` : full;
@@ -116,11 +160,11 @@ const oneLine = (t) => `${t.name}: ${t.description.split(/(?<=\.)\s/)[0]}`;
 export const PICK_SYSTEM = `You choose which rule tools the next reply of a roleplay may need. Code decides outcomes with these tools. Read the scene and the player's message and name every tool whose outcome the reply may need: an action that may fail, a blow, a sound or sight, a message, a person's response, the time an action takes, time passing, the weather, an item changing hands, a fact established or learned, something the player states about their own character, a new person. When unsure whether a tool applies, include it. Write only the JSON {"tools":["Name", ...]}.`;
 const PICK_MESSAGES = 3;
 /** The picker's answer as a schema: names of offered tools only. */
-const pickSchema = () => ({ type: 'object', additionalProperties: false, required: ['tools'], properties: { tools: { type: 'array', maxItems: 10, items: { type: 'string', enum: [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(t => t.name) } } } });
+const pickSchema = () => ({ type: 'object', additionalProperties: false, required: ['tools'], properties: { tools: { type: 'array', maxItems: 10, items: { type: 'string', enum: sceneTools().filter(t => !SKIP.has(t.name)).map(t => t.name) } } } });
 /** The tools the question model asks for, or null when its answer cannot be read (then every tool is shown). */
 export async function pickTools(chat, send) {
-    const index = [...REGISTRY.values()].filter(t => !SKIP.has(t.name)).map(oneLine).join('\n');
-    const recent = chat.filter(m => !m.is_system).slice(-PICK_MESSAGES).map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
+    const index = sceneTools().filter(t => !SKIP.has(t.name)).map(oneLine).join('\n');
+    const recent = chat.filter(m => !m.is_system).slice(-PICK_MESSAGES).map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${shown(m)}`).join('\n\n');
     const open = OPEN.length ? `OPEN FROM THE LAST REPLY\n${OPEN.map(q => `- ${q}`).join('\n')}\n\n` : '';
     const text = String(await send(PICK_SYSTEM, `TOOLS\n${index}\n\n${open}SCENE (the last message is the player's)\n${recent}`) ?? '');
     const m = [...text.matchAll(/\{\s*"tools"\s*:\s*\[[^\]]*\]\s*\}/g)].pop();
@@ -146,13 +190,8 @@ export function rawPlan(text) {
     const s = String(text ?? '');
     const starts = [...s.matchAll(/\{\s*"calls"/g)].map(m => m.index).reverse();
     for (const at of starts) {
-        let depth = 0, end = -1;
-        for (let i = at; i < s.length && end < 0; i++) {
-            if (s[i] === '{')
-                depth++;
-            else if (s[i] === '}' && --depth === 0)
-                end = i;
-        }
+        // Braces inside a JSON string are text (a message quoting ":}" or a whispered "{W …"), not the object's own.
+        const end = objectEnd(s, at);
         if (end < 0)
             continue;
         try {
@@ -181,6 +220,20 @@ export function rawPlan(text) {
     return { calls: [], then: [], thenTools: [], read: {}, unsure: {}, need: [] };
 }
 const strings = (o, ok) => o && typeof o === 'object' && !Array.isArray(o) ? Object.fromEntries(Object.entries(o).filter(([, v]) => ok(v))) : {};
+let ITEMS = [], REPHRASE = false, TAKEN = null, REDONE = null, VOICE = null, MEANT = [];
+/** What this turn read into the player's line (intent.ts), each "written → read as", for the note under the line. */
+export const meantReading = () => MEANT.map(c => `${c.from} → ${c.to}`);
+/** How the player's line was said, read from their marks (prosody.ts), or null when it carries none. */
+export const voiceRead = () => VOICE;
+/** The correction this turn redid the last one by ("no, Will"), or null. */
+export const redoneBy = () => REDONE;
+export const actionsRead = () => ITEMS.map(i => i.text);
+/** The reading's lines with their calls, for the note under the player's line (src/ui.ts). */
+export const actionItems = () => ITEMS;
+/** The reading taken without asking this turn (ask.ts decide), with the other readings offered, shown with the reading so
+ * the player can change it. */
+export const takenReading = () => TAKEN;
+export const rephraseAsked = () => REPHRASE;
 /** The things the model read, kept only when the id is one offered for that phrase; unsure phrases go to the player. */
 async function resolveRead(found, plan, choose) {
     const out = [];
@@ -217,7 +270,7 @@ let OPEN = [];
 export const setOpen = (q) => { OPEN = q.slice(0, 4); };
 export function questionPrompt(chat, knows, tracker = '', only) {
     const recent = chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES)
-        .map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${String(m.mes ?? '').slice(0, MESSAGE_CHARS)}`).join('\n\n');
+        .map(m => `${m.is_user ? 'PLAYER' : (m.name || 'NARRATOR')}: ${shown(m)}`).join('\n\n');
     const state = tracker.trim() ? `STORY STATE\n${tracker.trim().slice(0, TRACKER_CHARS)}\n\n` : '';
     const now = /\[TIME\]/.test(tracker) ? '' : `TODAY\n${today()}\n\n`;
     const open = OPEN.length ? `OPEN FROM THE LAST REPLY (the scene was moving toward these; decide each this reply shows)\n${OPEN.map(q => `- ${q}`).join('\n')}\n\n` : '';
@@ -228,13 +281,50 @@ export let GUIDED = false;
 export const setGuided = (v) => { GUIDED = v; };
 // Under constrained decoding the answer is the JSON plan alone; the model's reasoning carries the questions.
 const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":[{"question":"follow-on question","tool":"the tool that answers it"}],"need":["ToolName"]}; a plan with zero calls is {"calls":{}}.');
-export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
+// How many calls of the running pass have run, for a pass that fails part way (runQuestionPass below).
+let RAN = 0;
+/** The pass, run once; a pass that fails after some of its calls ran takes them back, so the narrator's own tool calls decide
+ *  the turn (README: function calling is used when the question pass fails) and no call runs twice. */
+export async function runQuestionPass(chat, sendRaw, tracker = '', choose, ask) {
+    const meta = SillyTavern.getContext().chatMetadata;
+    RAN = 0;
+    try {
+        return await passOnce(chat, sendRaw, tracker, choose, ask);
+    }
+    catch (e) {
+        const c = SillyTavern.getContext(), at = (c.chat ?? []).map((m, i) => m.is_user ? i : -1).filter(i => i >= 0).pop();
+        if (RAN && at != null && c.chatMetadata === meta)
+            restoreLineStart(at);
+        throw e;
+    }
+}
+async function passOnce(chat, sendRaw, tracker = '', choose, ask) {
+    setSceneCues(null);
     const planTools = { current: undefined, people: [], actors: [], require: [] };
-    const send = (system, user) => !GUIDED ? sendRaw(system, user)
+    // Every wait (the model, the player's answer, the data) ends the pass when another chat was opened meanwhile, before a
+    // tool writes this turn into that chat.
+    const meta = SillyTavern.getContext().chatMetadata;
+    const held = (p) => p.then(v => { if (SillyTavern.getContext().chatMetadata !== meta)
+        throw new Error('another chat was opened during the question pass'); return v; });
+    const send = (system, user) => held(!GUIDED ? sendRaw(system, user)
         : system === QUESTION_SYSTEM ? sendRaw(GUIDED_SYSTEM(), user, { schema: planSchema(planTools.current, { people: planTools.people, actors: planTools.actors, require: planTools.require, used: usedKeys() }) })
-            : system === PICK_SYSTEM ? sendRaw(system, user, { schema: pickSchema() }) : sendRaw(system, user);
+            : system === PICK_SYSTEM ? sendRaw(system, user, { schema: pickSchema() }) : sendRaw(system, user));
+    if (ask) {
+        const a = ask;
+        ask = (q, o) => held(a(q, o));
+    }
+    if (choose) {
+        const c = choose;
+        choose = (q, o) => held(c(q, o));
+    }
     const ctx = SillyTavern.getContext();
     setRead([]);
+    ITEMS = [];
+    REPHRASE = false;
+    TAKEN = null;
+    REDONE = null;
+    VOICE = null;
+    MEANT = [];
     if (!ctx.chatMetadata || !chat.length || !chat[chat.length - 1].is_user || !REGISTRY.size)
         return [];
     const s = store(), turn = turnKey(ctx.chat);
@@ -244,24 +334,49 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
     const markUsed = (c, result) => { const k = subjectOf(c.tool); if (!k || REFUSED.test(result))
         return; (used.get(c.tool) ?? used.set(c.tool, new Set()).get(c.tool)).add(String(c.args[k] ?? c.args.question ?? '')); };
     const runAll = async (list) => { for (const c of list) {
+        await held(Promise.resolve());
         clearDraws();
         const result = String(await REGISTRY.get(c.tool).exec(c.args));
         results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) });
+        RAN++;
         markUsed(c, result);
     } };
     let calls, time = null, present;
+    // A pass that has run for this place in the chat (the same line, or the line edited in place) is redone from the line's
+    // start: a swipe's state may hold the calls (the follow-up generation after the narrator's tools saved it with their
+    // effects, and with function calling off now SillyTavern leaves the tool messages out of the prompt, so this chat ends at
+    // the player's line again); so does a Send with an empty box after a reply failed, was stopped or was deleted.
+    const lineAt = (ctx.chat ?? []).map((m, i) => m.is_user ? i : -1).filter(i => i >= 0).pop();
+    // So does a line whose pass ran before, once later lines are deleted and the turn kept was theirs (it keeps a result).
+    if (lineAt != null && (hasStart(lineAt) || (s.asked && placeOf(s.asked.turn) === placeOf(turn)) || passRanFor(lineAt)))
+        restoreLineStart(lineAt);
+    // The pass a line keeps (its calls, and what a correction meant) stands when the turn kept is another's: a later line
+    // was deleted, so "no, Will" is redone as the correction it was, not read afresh with the turn it corrected gone. It is
+    // the line's own pass while the line's words are the same, wherever a deletion before it moved the line (its place, the
+    // count of lines, changes; an edited line's words do not match, and its pass runs afresh).
+    if (s.asked?.turn !== turn && lineAt != null) {
+        const kept = keptPass(lineAt);
+        if (kept && lineOf(kept.turn) === lineOf(turn))
+            s.asked = { ...structuredClone(kept), turn };
+    }
     if (s.asked?.turn === turn) {
         calls = s.asked.calls;
         time = s.asked.time ?? null;
         present = s.asked.present;
         setRead(s.asked.read ?? []);
+        // A swipe of a turn redone by a correction, or of one that took a reading unasked, keeps both: the narrator is told
+        // again that the last account did not happen, and the note under the player's line still offers the change.
+        REDONE = s.asked.corrected ?? null;
+        TAKEN = s.asked.taken ?? null;
+        VOICE = s.asked.voice ?? null;
+        MEANT = s.asked.meant ?? [];
         if (time !== null && storyTime() === null)
             setStoryTime(time);
         await runAll(calls);
         // A rewrite after the rule check: each flagged event gets its tool run now, from the results so far.
-        const flags = takeFlags().filter(f => REGISTRY.has(f.tool));
+        const flags = takeFlags(turn).filter(f => REGISTRY.has(f.tool));
         if (flags.length && calls.length < MAX_CALLS) {
-            await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
+            await held(Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]));
             const tools = new Set(flags.map(f => f.tool));
             planTools.current = tools;
             const prompt = questionPrompt(chat, knowledgeBlock(s.state), tracker, tools);
@@ -273,34 +388,128 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         }
     }
     else {
-        await Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]);
-        const found = thingsIn(String(chat[chat.length - 1].mes ?? ''));
+        await held(Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]));
+        // A correction of the last turn ("no, Will"; "I meant to keep out of sight", ask.ts): the world goes back to before that
+        // turn, and its line is planned again with the correction fixed, on the scene as it stood then (the reply that told the
+        // wrong version is left out of what the planner reads). A line that names nothing the last one could have meant is an
+        // ordinary line.
+        let corrFix = null;
+        {
+            const me = playerName(ctx.name1, tracker), corr = me ? correctionOf(wordsOf(chat[chat.length - 1])) : null;
+            const prevIdx = chat.slice(0, -1).map((m, i) => m.is_user ? i : -1).filter(i => i >= 0).pop();
+            // The line before this one in SillyTavern's chat, which still holds the reply a swipe rewrites.
+            const fullPrev = lineAt == null ? undefined : (ctx.chat ?? []).slice(0, lineAt).map((m, i) => m.is_user ? i : -1).filter(i => i >= 0).pop();
+            // The turn corrected is the pass the line before keeps, which a deletion earlier in the chat leaves in place (the
+            // engine's latest pass goes with the count of lines it was kept by); for a chat from before lines kept theirs, the
+            // engine's latest.
+            const last = (fullPrev != null ? keptPass(fullPrev) : undefined) ?? s.asked;
+            if (corr && me && last && last.turn !== turn && prevIdx != null && fullPrev != null) {
+                const prevLine = wordsOf(chat[prevIdx]), hasTool = (n) => REGISTRY.has(n) && !SKIP.has(n);
+                const recent = [prevLine, ...chat.slice(0, prevIdx).filter(m => !m.is_system).slice(-2).map(wordsOf)];
+                const mentioned = Object.keys(s.state.people ?? {}).filter(n => recent.some(t => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(t)));
+                const people = scenePeople(recent, mentioned).map(name => ({ name }));
+                const f = correctionFix(corr, prevLine, me, people, last.calls, hasTool);
+                if (f && restoreTurnStart(fullPrev)) {
+                    chat = chat.slice(0, prevIdx + 1);
+                    corrFix = f;
+                    REDONE = f.plain ?? f.note;
+                }
+            }
+        }
+        // The line's first pass keeps on it the world the line starts from (a correction's: the world put back), so a pass run
+        // again for it starts there whichever order the line joined the chat in, and after later lines are deleted
+        // (rules-tools.ts restoreLineStart).
+        if (lineAt != null)
+            keepStart(lineAt, !!corrFix);
+        // The player's marks on their line (prosody.ts): read by code, then taken off, so the verbs, names and things are read
+        // from the words alone.
+        // The toolbar's marks are read from their codes (kept in `voiced` once the line is notated for the model); a line
+        // without them is read for the signs typed in it.
+        const last = chat[chat.length - 1], lineAsSaved = last.voiced ?? String(last.mes ?? '');
+        // The story's people and the cast's names keep their capital in a line shouted in capitals ("I SHOUT AT WILL").
+        const known = [...Object.keys(s.state.people ?? {}), ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]), String(ctx.name1 ?? '')];
+        const pros = hasHidden(lineAsSaved) ? marksOf(lineAsSaved) : readProsody(lineAsSaved, known);
+        VOICE = pros.marked ? deliveryOf(pros) || null : null;
+        const found = thingsIn(pros.plain);
         // Code reads the tools from the player's verbs (router.ts) and writes every call whose arguments the words give
         // (frame.ts); the planner is asked only for the tools left open, and skipped when none are. The model picks the
         // tools only when no verb maps to one.
-        const said0 = String(chat[chat.length - 1].mes ?? ''), has = (n) => REGISTRY.has(n) && !SKIP.has(n);
+        // Out-of-character asides are talk about the game: the story's acts are read from the rest (frame.ts inStory).
+        const typed = inStory(pros.plain), has = (n) => REGISTRY.has(n) && !SKIP.has(n);
+        if (!typed)
+            return [];
         const player = playerName(ctx.name1, tracker);
-        const framed = player ? framedCalls(said0, player) : { calls: [], covered: new Set() };
+        // The line as the player meant it (intent.ts): the words read from the scene the line was written in, before the
+        // grammar reads them — slips respelt, "again" as the last act, "him back" as the one who did it, a search's goal
+        // filled; who an open "him" is weighed for the chooser below; the goal in force told to the planner.
+        const sitPeople = scenePeople([typed, tracker.match(/\[CAST\][\s\S]*?\[\/CAST\]/)?.[0] ?? '', ...chat.filter(m => !m.is_system).slice(-3, -1).map(wordsOf)], [...player ? [player] : [], ...Object.keys(s.state.people ?? {})])
+            .map(name => ({ name, sex: personSex(name, s.state.people?.[name]?.sex) }));
+        const meant = player ? understand(typed, { player, people: sitPeople, narration: chat.filter(m => !m.is_system && !m.is_user).slice(-2).map(m => String(m.mes ?? '')),
+            earlier: chat.filter(m => !m.is_system && m.is_user).slice(-7, -1).map(m => inStory(wordsOf(m))), lastCalls: s.asked && s.asked.turn !== turn ? s.asked.calls : [] }) : null;
+        MEANT = meant?.changes ?? [];
+        const said0 = meant?.text ?? typed;
+        setSceneCues(player ? sceneCuesFor(chat, said0, player, s.state, s.history?.log ?? []) : null);
+        const framed = player ? framedCalls(said0, player, s.state.people?.[player]?.sex ?? nameSex(player.split(' ')[0]) ?? personSex(player)) : { calls: [], covered: new Set() };
         framed.calls = framed.calls.filter(c => has(c.tool));
         framed.covered = new Set([...framed.covered].filter(has));
         // The people the story holds, as keys the plan writes them by (plan-schema.ts PERSON_KEY).
-        const sceneTexts = [said0, tracker.match(/\[CAST\][\s\S]*?\[\/CAST\]/)?.[0] ?? '', ...chat.filter(m => !m.is_system).slice(-3, -1).map(m => String(m.mes ?? ''))];
+        const sceneTexts = [said0, tracker.match(/\[CAST\][\s\S]*?\[\/CAST\]/)?.[0] ?? '', ...chat.filter(m => !m.is_system).slice(-3, -1).map(wordsOf)];
         planTools.people = scenePeople(sceneTexts, [...player ? [player] : [], ...Object.keys(s.state.people ?? {}), ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]).filter(n => !/^(?:Scenario|Cast|Time|Place|Weather|Story|Body|Knows)$/i.test(n))]);
         KNOWN_PEOPLE = new Set(planTools.people);
         // The first round's actors: the player's character and the people the player's message names.
         planTools.actors = [...new Set([...player ? [player] : [], ...planTools.people.filter(n => n !== player && new RegExp(`\\b${n.replace(/^the /, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(said0))])];
-        const routed = routedTools(said0, has);
+        // A choice the player's line leaves open (ask.ts: a verb of two senses, "him" with two men in the scene) goes to the
+        // player; the answer is fixed for the turn. Closing the question stops the turn so the player can say it otherwise.
+        let fix = corrFix;
+        if (player && ask && !corrFix) {
+            const recent = [said0, ...chat.filter(m => !m.is_system).slice(-3, -1).map(wordsOf)];
+            // The scene's people: those the recent lines name, the story's own among them (a name opening a sentence is one).
+            const mentioned = Object.keys(s.state.people ?? {}).filter(n => recent.some(t => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(t)));
+            const held = (n) => s.state.people?.[n];
+            const people = scenePeople(recent, mentioned).map(name => ({ name, sex: personSex(name, held(name)?.sex), spot: held(name)?.at ?? null }));
+            // What the scene gives for weighing the readings: the narrator's last lines, whom the player acted on last turn.
+            const narration = chat.filter(m => !m.is_system && !m.is_user).slice(-2).map(m => String(m.mes ?? ''));
+            const lastTargets = s.asked && s.asked.turn !== turn ? s.asked.calls.filter(c => ['BodyStrike', 'Look', 'Communicate'].includes(c.tool) && [c.args.attacker, c.args.viewer, c.args.speaker].includes(player))
+                .map(c => String(c.args.who ?? c.args.target ?? c.args.listener ?? '')) : [];
+            const d = decide(said0, player, people, has, { narration, lastTargets, spot: held(player)?.at ?? null, pronouns: Object.fromEntries((meant?.open ?? []).map(o => [o.pronoun, o.weights])) }, Math.random, lineAt == null ? 1 : (ctx.chat ?? [])[lineAt]?.extra?.rulesFaith);
+            if (d && 'ask' in d) {
+                const picked = await ask(d.ask.text, d.ask.options.map(o => o.label));
+                if (picked == null) {
+                    REPHRASE = true;
+                    return [];
+                }
+                fix = d.ask.options.find(o => o.label === picked)?.fix ?? null;
+            }
+            else if (d) {
+                fix = d.take.fix;
+                TAKEN = { label: d.take.label, others: d.question.options.filter(o => o !== d.take).map(o => o.label) };
+            }
+        }
+        // The scene's names are subjects: a line in the third person ("Mara climbs the wall") is read by its verbs too.
+        // The line and the two messages before it, as the picker reads them (PICK_MESSAGES).
+        const before = chat.filter(m => !m.is_system).slice(-PICK_MESSAGES, -1);
+        const routed = routedTools(said0, has, planTools.people, before.map(wordsOf), before.filter(m => !m.is_user).map(wordsOf), player ?? '');
         const left = routed ? [...routed].filter(t => !framed.covered.has(t) && !ALWAYS.includes(t)) : null;
         const only = routed ? new Set([...left, ...ALWAYS.filter(has)]) : await pickTools(chat, send) ?? undefined;
+        if (fix?.require && only && has(fix.require))
+            only.add(fix.require);
         planTools.current = only;
         const settled = framed.calls.filter(c => framed.covered.has(c.tool)), drafts = framed.calls.filter(c => !framed.covered.has(c.tool));
         const already = (settled.length ? `\n\nCODE HAS ALREADY CALLED (from the player's words; these results come back with yours)\n${settled.map(c => `- ${c.tool} ${JSON.stringify(c.args)}`).join('\n')}` : '')
             + (drafts.length ? `\n\nCODE READ FROM THE PLAYER'S WORDS (call these with the scene's numbers added: distance_m, noise, barrier)\n${drafts.map(c => `- ${c.tool} ${JSON.stringify(c.args)}`).join('\n')}` : '');
-        const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only) + already, thingsBlock(found)].filter(Boolean).join('\n\n');
-        const skipPlanner = !!routed && left.length === 0 && framed.calls.length > 0;
+        const chosen = fix ? `\n\nTHE PLAYER'S CHOICE (fixed; write the calls to match it)\n- ${fix.note}` : '';
+        // What code read into the line, and the goal the player stated last: the planner reads the line as meant.
+        const asMeant = (meant?.changes.length ? `\n\nTHE PLAYER'S LINE AS MEANT (code's reading of what the words left out or slipped on)\n${meant.changes.map(c => `- "${c.from}" read as "${c.to}": ${c.why}`).join('\n')}\n- The line read: ${said0}` : '')
+            + (meant?.goal ? `\n\nTHE PLAYER'S STATED GOAL (their own words, earlier; in force until they state another)\n- ${meant.goal}` : '');
+        // How the line is said, from the player's marks: fixed, as a choice is (code sets the speech's effort and feeling).
+        const voiced = VOICE && player ? `\n\nHOW ${player.toUpperCase()} SAYS IT (from the player's marks; fixed)\n- ${VOICE}` : '';
+        const readingsText = readingsNote(said0);
+        setSceneCues(null);
+        const prompt = [questionPrompt(chat, knowledgeBlock(s.state), tracker, only) + already + chosen + asMeant + voiced + readingsText, thingsBlock(found)].filter(Boolean).join('\n\n');
+        const skipPlanner = !!routed && left.length === 0 && framed.calls.length > 0 && !fix?.require;
         // A scene tool code drafted is written by the plan: its schema requires a call of it (the planner left Mary's words
         // to the costermonger at their defaults, 1 m in a quiet room, on a busy street).
-        planTools.require = [...new Set(drafts.map(d => d.tool))];
+        planTools.require = [...new Set([...drafts.map(d => d.tool), ...fix?.require && has(fix.require) ? [fix.require] : []])];
         const lastPlanText = skipPlanner ? '{"calls":{}}' : String(await send(QUESTION_SYSTEM, prompt) ?? '');
         planTools.require = [];
         const plan = hoist(rawPlan(lastPlanText));
@@ -308,12 +517,12 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         setRead(await resolveRead(found, plan, choose));
         present = plan.present;
         // A date the player wrote is read by code and wins over the plan's; the plan's comes next, then the cast and scene.
-        const written = storyTime() === null ? findStoryTime(String(chat[chat.length - 1].mes ?? '')) : null;
+        const written = storyTime() === null ? findStoryTime(pros.plain) : null;
         time = written ?? (plan.time && storyTime() === null ? parseStoryTime(plan.time) : null);
         // A date written in the player's message, the cast and scenario, or the recent scene sets the clock when the plan
         // gives none (a London 1899 date stated by the player reached no tool).
         if (time === null && storyTime() === null) {
-            const texts = [String(chat[chat.length - 1].mes ?? ''), tracker, ...chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES).reverse().map(m => String(m.mes ?? ''))];
+            const texts = [pros.plain, tracker, ...chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES).reverse().map(wordsOf)];
             for (const t of texts) {
                 const f = findStoryTime(t);
                 if (f !== null) {
@@ -329,7 +538,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         // A place named in the player's message, the cast and scenario or the scene places it when the plan gives no position.
         if (!scenePosition()) {
             const skip = new Set([...(plan.present ?? []), ...[...tracker.matchAll(/^([^:\n(]+?)\s*(?:\(|:)/gm)].map(m => m[1].trim())].map(x => x.toLowerCase()));
-            for (const t of [String(chat[chat.length - 1].mes ?? ''), tracker, ...chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES).reverse().map(m => String(m.mes ?? ''))]) {
+            for (const t of [pros.plain, tracker, ...chat.filter(m => !m.is_system).slice(-SCENE_MESSAGES).reverse().map(wordsOf)]) {
                 const pl = placeIn(t, skip);
                 if (pl && pl.lat != null && pl.lon != null) {
                     setScenePosition(pl.lat, pl.lon);
@@ -341,7 +550,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
         calls = dedupe(mergeCalls(framed.calls, valid));
         const unread = !/\{\s*"calls"/.test(lastPlanText);
         // A motion the player's message names (step out, sit down, cross the room) needs its time: code reads the verb.
-        const said = String(chat[chat.length - 1].mes ?? ''), motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && movesIn(said);
+        const said = pros.plain, motion = !calls.some(c => c.tool === 'Act' || (c.tool === 'PassTime' && Array.isArray(c.args.walking))) && REGISTRY.has('Act') && movesIn(said);
         const noPlace = !scenePosition() && (time !== null || storyTime() !== null) && (storyTime() ?? 0) / 1440 > 146097;
         // A scene tool code drafted (Communicate) that the plan left out still needs the scene's numbers.
         const sceneOpen = drafts.filter(d => !valid.some(c => sameSubject(d, c)));
@@ -434,6 +643,11 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
                 calls.splice(drop, 0, climb);
             }
         }
+        // The player's chosen person stands on their calls of that tool, whatever the plan wrote.
+        if (fix && player)
+            applyFix(calls, fix, player);
+        if (player && pros.marked)
+            applyVoice(calls, pros, player);
         await runAll(calls);
         // Refused calls: the tool's message goes back once; a corrected call's result replaces the refusal.
         const bad = results.map((r, i) => ({ r, i })).filter(x => REFUSED.test(x.r.result));
@@ -490,7 +704,13 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose) {
     const w = results.find(r => r.tool === 'Weather'), told = s.weatherTold;
     const prev = told?.turn === turn ? told.prev : told?.key ?? null, key = w ? day(w.result) : prev;
     s.weatherTold = { turn, prev, key };
-    s.asked = { turn, calls, results, time, read: READ, present, weatherRepeat: !!w && key === prev };
+    // The line keeps the world its pass left, so a deletion of its reply leaves its outcome standing (syncRulesToChat).
+    if (lineAt != null)
+        keepResult(lineAt);
+    s.asked = { turn, calls, results, time, read: READ, present, weatherRepeat: !!w && key === prev, ...REDONE ? { corrected: REDONE } : {}, ...TAKEN ? { taken: TAKEN } : {}, ...MEANT.length ? { meant: MEANT } : {}, ...VOICE ? { voice: VOICE, voiceBy: playerName(ctx.name1, tracker) ?? undefined } : {} };
+    if (lineAt != null)
+        keepPass(lineAt, s.asked);
+    ITEMS = readingItems(calls, playerName(ctx.name1, tracker));
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
     console.debug('[Rules engine] question pass', calls, results, READ);
     return READ;
@@ -522,6 +742,18 @@ export function askedResults() {
 export const isMiss = (tool, result, args) => !args?.reveals && (tool === 'Listen' || tool === 'Look') && /misses it/.test(result);
 /** A result as [DECIDED] lists it: the tool and the person or thing it is about ("BodyFall (the merchant)"), so a result whose
  *  text names no one ("Fall 3 m: lands on the feet") is told of the right person; a merchant's fall was told as Mara's. */
+/** The player's marks on their own speech (Communicate, the player the speaker): the effort the marks fix (all whispered,
+ * all louder, some louder) and the feeling a ((…)) names, whatever the plan wrote. */
+export function applyVoice(calls, p, player) {
+    const effort = effortOf(p);
+    for (const c of calls)
+        if (c.tool === 'Communicate' && c.args.speaker === player && (c.args.means ?? 'speech') === 'speech') {
+            if (effort)
+                c.args.effort = effort;
+            if (p.feeling)
+                c.args.voice_feeling = p.feeling;
+        }
+}
 const labelled = (x, args) => { const k = subjectOf(x.tool), v = k && args?.[k]; return typeof v === 'string' && v ? `${x.tool} (${v})` : x.tool; };
 const repeatWeather = (tool) => tool === 'Weather' && !!store().asked?.weatherRepeat;
 export function decidedInjection() {
@@ -531,7 +763,9 @@ export function decidedInjection() {
     const still = askedResults().find(x => repeatWeather(x.tool));
     if (!r.length && !still)
         return '';
-    return `[DECIDED]\nOutcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${labelled(x, x.args)}: ${storyResult(x.result)}`).join('\n')}${still ? `\nStill so from earlier (the sky and air as the reply mentions them): ${storyResult(still.result)}` : ''}\n[/DECIDED]`;
+    // A turn that redoes the last one as the player corrected it: the last reply's account of that line did not happen.
+    const redo = store().asked?.corrected, voice = store().asked?.voice, by = store().asked?.voiceBy;
+    return `[DECIDED]\n${redo ? `${redo} The last reply's account of that line did not happen: tell the line again as these outcomes have it.\n` : ''}${voice ? `How ${by ?? 'the player\'s character'} said the line (the player's own marks): ${voice}.\n` : ''}Outcomes the rule engine decided for this reply, numbered. Narrate them as given; they stand.\n${r.map((x, i) => `${i + 1}. ${labelled(x, x.args)}: ${storyResult(x.result)}`).join('\n')}${still ? `\nStill so from earlier (the sky and air as the reply mentions them): ${storyResult(still.result)}` : ''}\n[/DECIDED]`;
 }
 /** This turn's [DECIDED] results, in their numbered order. */
 export function decidedResults() {
@@ -539,4 +773,4 @@ export function decidedResults() {
 }
 /** A result as the story reads it: the sensitivity note ("Fragile: … → the right heel bone breaks") is for the log, and a
  *  narrator that read one told the other outcome as fact. */
-export const storyResult = (r) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '').replace(/^([a-z])|(\.\s+)(the|a|an)\b/g, (m, a, p, w) => a ? a.toUpperCase() : `${p}${w[0].toUpperCase()}${w.slice(1)}`).replace(/\b(a) (?=[aeiou8]\d*-year|\d*1[18]-year)/gi, '$1n ');
+export const storyResult = (r) => storyText(r).replace(/^([a-z])|(\.\s+)(the|a|an)\b/g, (m, a, p, w) => a ? a.toUpperCase() : `${p}${w[0].toUpperCase()}${w.slice(1)}`).replace(/\b(a) (?=[aeiou8]\d*-year|\d*1[18]-year)/gi, '$1n ');

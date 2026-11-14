@@ -1,0 +1,496 @@
+diff --git a/README.md b/README.md
+index 3332233..80e50d8 100644
+--- a/README.md
++++ b/README.md
+@@ -48,6 +48,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - Under your message a folded line shows how the engine read it, one tagged call each ("Sight Tom · 15 m", "Body vault the low wall · 46 %"), the tag's colour for the kind of rule; click it to open, hover a row to see the rule call. It stays with the message, in a book serif that follows the story's era (Garamond for the 1500s, the Fell types, Baskerville, a Victorian Modern, Caslon; Georgia from 1970 or with no date). When your words leave a choice open, the likeliest reading is taken and shown ("☞ walk after the thief in the open — or…") unless a wrong guess would hurt someone ("I hit him" with two men at the bar, or "I look at Tom and Will, then I punch him"): then the engine asks in a sentence ("Do you mean to hit ¹Tom or ²Will?"; click or press the number), or "Say it another way" stops the reply. Opened, a guess offers the others as links; one puts "no, catch up with the thief" in your input box. That line, or one of your own such as "no, Will" or "I meant to keep out of sight", redoes the last turn that way.
+ - How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor; Tab from the box enters the toolbar while it shows. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another. With **Multiple distinctions** on (the default), each part of the voice has a place of its own in the chat: a thin stroke above a word for its pitch (a rise-fall and a fall-rise differ), heavier letters for louder and paler ones for softer, a wavy rule under creaky words, dots under breathy ones and a broken rule under whispered ones, wider gaps for slower and a lean for faster, a drawn-out vowel written again ("Nooo"), narrow letters for falsetto, and the feeling's colour at the line's edge. Every line keeps the story's line spacing. Hover a marked word to read its marks with their sizes ("louder (about 6 dB above your normal voice)"). Turn it off in the settings for the lighter look.
+ - The chat is a page of its own: with **Dialogue page** on (the default), messages are set black on ivory in a book serif that follows the story's era, with no letter shadow and room between the lines for the voice marks, whatever your theme; quoted words keep the text colour, as in print. After your name a word says what your character is doing in the line: SPEAKING when the line holds said words (a speech call, or words in quotation marks), THINKING when your character works something out; hover it for the call it rests on. Off, messages keep the theme's look and the word stays.
++- In the text box, the type is large enough to read at full speed with the phone at arm's length (0.2° of letter height at 58 cm), and a line above the chat says where and when the scene is and its light ("Recife · Sunday 15 July 1990, 18:20 · nautical twilight") instead of your device's clock; scrolling the box no longer pulls the page behind it.
+ - One thing on screen at a time: with **Text box** on (the default), the chat shows one box at the foot of the screen under the name of whoever says it. A new box starts wherever said words begin or end, and a long stretch goes on in the next box. Said words are black (white on the dark page) with SPEAKING, or WHISPERING, at the plate's right; everything else is blue and belongs to your character, with THINKING when you work something out. Letters appear one by one, said words at the speaker's pace and the rest at reading pace; a tap shows the rest at once, then the next box. "Auto" moves on by itself once a box has been read, ‹ or ← goes back, and "Log" shows the whole chat. The narrator names who says each quotation, so the plate can show it; in your own lines, the person acting just before a quotation says it.
+ - Words that name what the engine decided are marked in gold, as important words are in yellow in a visual novel. **Page colours** offers the light page or a dark one (white, light blue and gold on black), and **The speaker's picture** can show the character card's picture large above the box.
+ - **Music**: add your own songs in the settings. Each is measured as you add it (tempo, loudness, brightness, key), and the song nearest the feelings in the scene plays: your line marked sad brings a calm song in a minor key, a character's joy a lively one in a major key. Give a song a set named after a character or a place, and it becomes their theme. When several feelings are in the scene, the strongest counts 90% and the newest 10%. A song stays while the scene stays in its area, unless another song is clearly nearer, and the next one fades in over 4 seconds. The ♪ button turns the music on and off.
+diff --git a/docs/constants.md b/docs/constants.md
+index 147acb7..233377f 100644
+--- a/docs/constants.md
++++ b/docs/constants.md
+@@ -1,7 +1,7 @@
+ # Constants
+ 
+ Generated by `node tools/constants-doc.mjs` from the registry in `src/rules/constants.ts`; do not edit by hand.
+-166 constants: 32 sourced, 43 fitted, 91 assumed, 0 raw.
++169 constants: 34 sourced, 43 fitted, 92 assumed, 0 raw.
+ Assumed and fitted ones carry a range; a call that uses them is rerun at both ends and reports when its outcome changes ("Fragile").
+ 
+ | Constant | Value | Unit | Status | Range | Source | File |
+@@ -45,9 +45,12 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | tpmPhase | 16.8 | clock hour of peak alertness | sourced | 15–18 | Ingre et al. 2014 default (their aircrew data put it near 15 h) | body-engine.ts |
+ | unconsciousSdLog | 0.8 | SD of ln minutes | assumed | 0.4–1.2 | spread of the time unconscious | body-engine.ts |
+ | workDoublingMin | 105 | min on a task by which the odds of failing double | fitted | 90–120 | doubled by the last 30 minutes of a 2-hour spell (Tucker et al. 2003) | body-engine.ts |
++| boxCriticalPrintDeg | 0.2 | ° of x-height, the smallest print read at full speed | sourced |  | critical print size of normal vision (Legge & Bigelow 2011) | box.ts |
++| boxFarReadCm | 58 | cm from the eyes, the farthest a phone was held to read | sourced |  | text messages, 129 people: 17.5–58 cm, mean 36.2 (Bababekova et al. 2011) | box.ts |
+ | boxKeyNounWeight | 1.5 | × the weight of a matching word that is no noun | assumed | 1.1–2 | a noun names the thing decided; any value above 1 breaks a tie of matching words toward it | box.ts |
+ | boxLines | 4 | lines of text in the box | assumed | 3–6 | the reference's boxes hold 1–2 lines (the player's screenshots); 4 keeps an ordinary sentence whole at 412 px | box.ts |
+ | boxReadWpm | 260 | words per minute, silent reading of fiction | sourced |  | adult silent reading in English: fiction 260, non-fiction 238 words per minute (Brysbaert 2019, J Mem Lang 109:104047) | box.ts |
++| cssPxMm | 0.16 | mm per CSS pixel on a phone | assumed | 0.14–0.18 | a 6.3-inch 1080 × 2400 screen at 416 ppi, device pixel ratio 2.625 | box.ts |
+ | asphyxiaFloorN | 623 | N below which no asphyxia dose adds | assumed | 400–1112 | discomfort threshold against a bar, Hopkins et al. 1993 | crowd.ts |
+ | asphyxiaN | 6227 | N on the chest that kills in asphyxiaS | sourced | 4500–7000 | Hopkins et al. 1993, as given by G. K. Still | crowd.ts |
+ | asphyxiaPow | 1.74 | power of force in the time to death | fitted | 1.6–1.9 | through 6,227 N for 15 s and 1,112 N for 4–6 min (Hopkins et al. 1993) | crowd.ts |
+@@ -400,21 +403,21 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | rules-tools.ts | 881 | assumed | 2019: a diffuse room, checked on 50–540 people, stated valid from about 30). Used from 10 people [ASSUMED extension]. |
+ | rules-tools.ts | 894 | assumed | actors' footsteps (64 dB at 1 m on gravel or sand, the Listen preset; creeping −10 dB, running +6, sprinting +8 [ASSUMED]) |
+ | rules-tools.ts | 896 | assumed | room and outdoors, with no open doorway [ASSUMED, as Communicate]; and sees them in the same room or outdoors with the light there (one glance at a |
+-| rules-tools.ts | 1324 | assumed | On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default]. |
+-| rules-tools.ts | 1353 | assumed | speak; otherwise one of the other four feelings is heard, each as likely [ASSUMED equal confusions]: the meta-analysis |
+-| rules-tools.ts | 1386 | assumed | supports more than one, each is equally likely [ASSUMED: no published rate of misreading per context]. Context usually |
+-| rules-tools.ts | 1440 | assumed | Lavrijsen 2015, the hours behind lastsWords) [ASSUMED shape]; [BODY] shows it until it runs out (E30). The same study: |
+-| rules-tools.ts | 1542 | assumed | Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length]. |
+-| rules-tools.ts | 1836 | assumed | the character's birth decade, age 30 when unknown [ASSUMED]. |
+-| rules-tools.ts | 1942 | assumed | [ASSUMED: a percentile read as a log-odds shift]. |
+-| rules-tools.ts | 1948 | assumed | in daily life as the young) [ASSUMED: no shift]. |
+-| rules-tools.ts | 1952 | assumed | character feels fear. Intentions keep their rate [ASSUMED]. Sadness enters nothing: no meta-analytic effect on such |
+-| rules-tools.ts | 2032 | assumed | Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED]. |
+-| rules-tools.ts | 2107 | assumed | there), counts as a witness the helper knows of [ASSUMED: seeing them is believing they witness it]. |
+-| rules-tools.ts | 2311 | assumed | Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex |
+-| rules-tools.ts | 2422 | assumed | A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it. |
+-| rules-tools.ts | 2601 | assumed | fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_k |
+-| rules-tools.ts | 2701 | assumed | load_kg: { type: 'number', description: 'The load, kg (a person\'s mass; twice it for a jump or a drop onto it [ASSUMED])' }, |
++| rules-tools.ts | 1326 | assumed | On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default]. |
++| rules-tools.ts | 1355 | assumed | speak; otherwise one of the other four feelings is heard, each as likely [ASSUMED equal confusions]: the meta-analysis |
++| rules-tools.ts | 1388 | assumed | supports more than one, each is equally likely [ASSUMED: no published rate of misreading per context]. Context usually |
++| rules-tools.ts | 1442 | assumed | Lavrijsen 2015, the hours behind lastsWords) [ASSUMED shape]; [BODY] shows it until it runs out (E30). The same study: |
++| rules-tools.ts | 1544 | assumed | Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length]. |
++| rules-tools.ts | 1838 | assumed | the character's birth decade, age 30 when unknown [ASSUMED]. |
++| rules-tools.ts | 1944 | assumed | [ASSUMED: a percentile read as a log-odds shift]. |
++| rules-tools.ts | 1950 | assumed | in daily life as the young) [ASSUMED: no shift]. |
++| rules-tools.ts | 1954 | assumed | character feels fear. Intentions keep their rate [ASSUMED]. Sadness enters nothing: no meta-analytic effect on such |
++| rules-tools.ts | 2034 | assumed | Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED]. |
++| rules-tools.ts | 2109 | assumed | there), counts as a witness the helper knows of [ASSUMED: seeing them is believing they witness it]. |
++| rules-tools.ts | 2313 | assumed | Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex |
++| rules-tools.ts | 2424 | assumed | A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it. |
++| rules-tools.ts | 2603 | assumed | fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_k |
++| rules-tools.ts | 2703 | assumed | load_kg: { type: 'number', description: 'The load, kg (a person\'s mass; twice it for a jump or a drop onto it [ASSUMED])' }, |
+ | scene-fit.ts | 12 | assumed | /** Hand guns in Europe [ASSUMED: from 1350]: the gunshot's sound and the handgun shot's line of the brief start then. */ |
+ | scene-fit.ts | 28 | assumed | Electric light in homes and offices, the levels vision.ts holds for them [ASSUMED: from the 1880s]; asphalt paving |
+ | scene-fit.ts | 29 | assumed | [ASSUMED: Paris, 1854]. |
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 2caa9e1..7030811 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1084,6 +1084,25 @@ Check: `tests/ui.test.mjs` R34 (modes from calls, older notes and quoted words;
+ 
+ The box keeps boxLines lines' height and scrolls past 60 % of the screen's height [ASSUMED]. The bar's buttons are 44 px or more each way (WCAG 2.5.5).
+ 
++The box's type and scene (2026-11-11 (124); `box.ts` boxFontPx, boxLinesAt, sceneLine; `index.ts` applyLook, showBox; `style.css`). Measured in Chromium at 412 CSS px, the box filled the bottom third of a phone screen, the rest blank, and its plate carried the device's send time.
++
++| Term | Definition |
++|---|---|
++| critical print size | 0.2° of x-height: the smallest print read at full speed; speed holds to 2° (Legge & Bigelow 2011) |
++| farthest reader | a phone held 58 cm away to read a message (Bababekova et al. 2011: 17.5–58 cm, mean 36.2, 129 people) |
++| CSS pixel on a phone | 0.160 mm [ASSUMED: a 6.3-inch 1080 × 2400 screen, 416 ppi, device pixel ratio 2.625] |
++| the box's x-height | 580 mm × tan 0.2° ÷ 0.160 mm = 12.65 px; at x 0.46 em, type of 27.5 px, or the page's when larger (SillyTavern's own x of 8.2 px reaches 0.2° only to 38 cm) |
++| the box's lines | boxLines × the box's size ÷ the page's: 4 at 17.85 px → 6 at 27.5, so a box holds the letters it held |
++| the scene line | place · story time · light (the engine's place, clock and sky), each left out when unknown: what a visual novel's background tells |
++
++| IF | THEN |
++|---|---|
++| the box shows a unit | its type is the box's size; the device's send time is hidden; the scene line stands above the chat |
++| a scroll reaches the box's end | it stays in the box (overscroll-behavior: contain), so a pull at a phone's top does not reload the page |
++| the screen is short (a phone held sideways) | the box stops at 60 % of the height and its lines scroll |
++
++Check: `tests/ui.test.mjs` R41; negative controls BX1–BX5; Chromium (`st-chat.mjs … voice 0 light none` with RULES_STATE): "Recife · Sunday 15 July 1990, 18:20 · nautical twilight" above a box of 27.5 px type, 6 lines.
++
+ Check: `tests/ui.test.mjs` R36 (units by change of voice, the colour of text that is not voiced, the box's rules), R37 (the dark page's colours, key words on their ground), R38 (who says each stretch; the names before quotations leave the text), R39 (cuts, syllables, letters at the pace of speech or of reading, AUTO's wait), R40 (key words, the plate's word, the box's wiring); negative controls RO1–RO4, RP1–RP15; Chromium with SillyTavern's stylesheets (`st-chat.mjs … voice 26`): 26 presses walk the 24 units of 8 messages; speakers Tom, Will, Kyoko (from the reply's name), Mara; "whispering" on the whispered line, "thinking" on the WorkOut line; the long paragraph in 2 boxes; a unit appeared in 1168 to 1181 ms over three runs against 1154 computed; AUTO moved on 231 to 238 ms after a unit had appeared; the log 0 faults in 36 of 36 combinations for each colour set.
+ 
+ **The music (2026-11-11 (118); `rules/music.ts`, `rules/data/feeling-va.ts`, `index.ts` musicNow, playSong, addSongs and drawSongs; the setting "Music", on by default, silent until songs are added).** The player's songs are placed by measurement, as a vowel by its formants, and the song nearest the scene's feelings plays. Voice and music carry emotion in one code: across 104 studies of voices and 41 of music performance the same acoustic changes convey the same emotion (Juslin & Laukka 2003), faster, louder and brighter going with higher activation; mode leads listeners' judgements of happy against sad, then tempo, register, dynamics, articulation and timbre, each adding to the others (Eerola, Friberg & Bresin 2013). The player's picks (2026-11-11): the characters' recorded feelings set the target; songs are measured in the browser as they are added; named sets first, measured areas otherwise.
+diff --git a/docs/progress.md b/docs/progress.md
+index ff33dbc..f17d877 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,14 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-11 (124), Claude
++- The player, after two visual-novel pages and a comparison of them: the replies were passive; they want a better system than the one they have. Done: the box measured as it is on a phone (Chromium, 412 CSS px) and what failed fixed, each fix from a measured cause, not from the pages.
++- Found: in box mode the box filled the bottom third and the rest was blank; its plate carried the device's send time, no time in the story; the type was SillyTavern's x-height, 8.2 CSS px, which on a phone (0.160 mm a CSS pixel) reaches the critical print size of 0.2° (Legge & Bigelow 2011) only out to 38 cm, while people hold phones as far as 58 cm to read a message (Bababekova et al. 2011); the box's scroll could pass to the page behind it.
++- Changed: `box.ts` boxFontPx (the box's type: the page's, or 27.5 px, the x-height of 0.2° at 58 cm) and boxLinesAt (its lines grow with the type, 4 → 6, so a box holds the letters it held); sceneLine (place · story time · light, from the engine); `index.ts` sets both and draws the scene line above the chat; `rules-tools.ts` scenePlace; `style.css` the box's type, the send time hidden in the box, the scroll kept in the box, and the box's height capped at 60 % on a short screen; `st-chat.mjs` takes RULES_STATE.
++- Checked: route 218, frame 202, intent 37, engine 203, plan 60, size 9, ui 90 (R41 new), music 9, voice-body 8, growth 3, sequences 300, all 0 misses. Negative controls BX1–BX5 caught. Chromium: "Recife · Sunday 15 July 1990, 18:20 · nautical twilight" over a box of 27.5 px type in 6 lines, light and dark. Constants list regenerated; prompt audit 12 lines, as before.
++- Not checked: a running SillyTavern on the player's phone; a phone held sideways (the harness keeps a 560 px chat).
++- Next: as (122).
++
+ ## 2026-11-11 (123), Claude
+ - The player, on the question whether to fit "teenage voices": there is no teenager, only a label creating expectations; it has several sources, and a text gives one value (an age) that approaches it probabilistically; work on the implicatures. Read: an age is evidence about hidden causes (growth, puberty timing, hormones); keep those causes per person, draw them once, compute height and voice forward, with no gate at 18.
+ - Changed: new `growth.ts` (Preece & Baines 1978 Model 1 as the share of adult height by age, each person's growth timing timingZ moving the curve's centre θ by its SD; WHO's height shape under 5; the age of peak height velocity; a boy's voice change across his own window around it) and `data/who-growth.ts` (WHO height and BMI for age, L, M, S, 0–19, from the AGD package, built outside the repo); `body-size.ts` and BodySize give a person under 19 their adult height's share at their age and the WHO BMI at their z (BodySize no longer says "adult"); `voice-sound.ts`: the tract grows as the share of adult height to the power 0.842 (boys) or 0.664 (girls) (Vorperian et al. 2011), a girl's folds and a boy's before puberty in proportion to height with a woman's tissue, a boy's moving to a man's across his voice change, the lungs' push scaled to the airways' size; voices from age 5.
+diff --git a/history/review-tests/browser/voice-look/st-chat.mjs b/history/review-tests/browser/voice-look/st-chat.mjs
+index a97e0b2..30e95d7 100644
+--- a/history/review-tests/browser/voice-look/st-chat.mjs
++++ b/history/review-tests/browser/voice-look/st-chat.mjs
+@@ -4,7 +4,8 @@
+ //        [display: flat|bubble|document] [width] [page: on|off] [measure or -] [box: off|voice|message|log] [taps on "next"]
+ //        [page colours: light|dark] [picture: none|large] [typing: off|on]
+ // With the box on, the chat keeps the height of a phone's screen and the picture is of that screen.
+-// With "measure" it prints one line per check and MISS <label> on a fault.
++// With "measure" it prints one line per check and MISS <label> on a fault. RULES_PEOPLE (JSON) sets the engine's people,
++// RULES_STATE (JSON) more of its state (the scene's setting, clock, latitude and longitude).
+ import { createRequire } from 'node:module';
+ import fs from 'node:fs';
+ import path from 'node:path';
+@@ -41,7 +42,7 @@ html, body { height: auto; overflow: visible; } body { background: linear-gradie
+ <div id="extensions_settings2" style="display:none"></div><div id="tpl" style="display:none">${template}</div>
+ <script>
+ window.toastr = { info(){}, warning(){}, success(){} }; window.__h = {};
+-const ctx = { name1: 'Mara', name2: 'Narrator', chatMetadata: ${JSON.stringify(process.env.RULES_PEOPLE ? { rulesEngine: { state: { people: JSON.parse(process.env.RULES_PEOPLE) } } } : {})}, chat: [], extensionSettings: ${JSON.stringify({ 'rules-engine': { page: pageArg !== 'off', pageColours: colours, box: boxArg !== 'off', boxUnit: boxArg === 'message' ? 'message' : 'voice', boxPicture: picture, boxTyping: typingArg === 'on' } })}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
++const ctx = { name1: 'Mara', name2: 'Narrator', chatMetadata: ${JSON.stringify(process.env.RULES_PEOPLE || process.env.RULES_STATE ? { rulesEngine: { state: { people: JSON.parse(process.env.RULES_PEOPLE ?? '{}'), ...JSON.parse(process.env.RULES_STATE ?? '{}') } } } : {})}, chat: [], extensionSettings: ${JSON.stringify({ 'rules-engine': { page: pageArg !== 'off', pageColours: colours, box: boxArg !== 'off', boxUnit: boxArg === 'message' ? 'message' : 'voice', boxPicture: picture, boxTyping: typingArg === 'on' } })}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
+   eventTypes: { MESSAGE_RECEIVED: 'mr', CHAT_COMPLETION_SETTINGS_READY: 'ccsr', TEXT_COMPLETION_SETTINGS_READY: 'tcsr', GENERATION_STARTED: 'gs', MESSAGE_SWIPED: 'ms', CHAT_CHANGED: 'cc', MESSAGE_DELETED: 'md', USER_MESSAGE_RENDERED: 'umr', CHARACTER_MESSAGE_RENDERED: 'cmr', MESSAGE_UPDATED: 'mu', MORE_MESSAGES_LOADED: 'mml' },
+   setExtensionPrompt() {}, saveSettingsDebounced() {}, registerFunctionTool() {}, unregisterFunctionTool() {}, saveMetadata: async () => {}, saveMetadataDebounced() {},
+   renderExtensionTemplateAsync: async () => (await fetch('http://rules.test/ext/settings.html')).text(), POPUP_TYPE: { TEXT: 1, INPUT: 2 }, callGenericPopup: async () => null,
+diff --git a/src/index.js b/src/index.js
+index e7e4c59..7b032e4 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -2,12 +2,12 @@
+ // question pass names the outcomes in doubt and the engine decides them; the narrator gets the brief, the story time,
+ // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
+ import { pulseSelfTest } from './rules/pulse.js';
+-import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, rulesBrief, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, sceneSky, storyYearNow, } from './rules/rules-tools.js';
++import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, rulesBrief, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, sceneSky, scenePlace, storyYearNow, } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading } from './rules/question-pass.js';
+ import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest, marksOf } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+-import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase } from './rules/box.js';
++import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, boxFontPx, boxLinesAt, sceneLine } from './rules/box.js';
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady } from './rules/voice-body.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong } from './rules/music.js';
+@@ -608,6 +608,8 @@ function unitChat() {
+ }
+ /** A unit longer than the box goes on in the next box, cut after a sentence's end (box.ts cutsOf): measured in the message's
+  * own type and width once it is drawn, at boxLines lines. Done once per unit (data-fit); a piece keeps its unit's voice and speaker. */
++/** The box's lines at its type size (applyLook). */
++let boxLinesNow = peek('boxLines');
+ function fitUnits(mes) {
+     const text = mes.querySelector('.mes_text');
+     const units = [...mes.querySelectorAll('.mes_text span.rules-unit:not([data-fit])')];
+@@ -622,10 +624,10 @@ function fitUnits(mes) {
+         const words = unit.textContent ?? '';
+         probe.textContent = words;
+         const lines = Math.round(probe.getBoundingClientRect().height / lh);
+-        if (lines <= peek('boxLines'))
++        if (lines <= boxLinesNow)
+             continue;
+         // The characters that fill the box, in proportion to the lines this unit takes.
+-        const cuts = cutsOf(words, Math.floor(words.length * peek('boxLines') / lines));
++        const cuts = cutsOf(words, Math.floor(words.length * boxLinesNow / lines));
+         for (const cut of cuts.reverse()) {
+             const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
+             let seen = 0, at = null;
+@@ -819,6 +821,12 @@ function showBox() {
+     now?.classList.add('rules-unit-now');
+     showPlate(mes, now);
+     showFigure(mes, now);
++    // Where, when and the light: the scene a visual novel's background shows, from the engine (box.ts sceneLine).
++    const scene = document.getElementById('rules-box-scene');
++    if (scene) {
++        const t = storyTime();
++        scene.textContent = sceneLine(scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label);
++    }
+     const count = document.getElementById('rules-box-count');
+     if (count)
+         count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
+@@ -895,6 +903,10 @@ function buildBox() {
+     button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog)
+         document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
+     form.before(bar);
++    const scene = document.createElement('div');
++    scene.id = 'rules-box-scene';
++    scene.setAttribute('aria-live', 'off');
++    chat.before(scene);
+     // A tap on the box's text is "next"; a tap on anything that acts by itself (a link, a button, the note, an edit) is its own,
+     // and so is a tap that ends a selection of text.
+     chat.addEventListener('click', e => {
+@@ -1100,7 +1112,12 @@ function applyLook() {
+         return;
+     document.body?.classList?.toggle('rules-page', settings().page);
+     document.body?.classList?.toggle('rules-page-dark', settings().page && settings().pageColours === 'dark');
+-    document.body?.style?.setProperty('--rules-box-lines', String(peek('boxLines')));
++    // The box's type: the page's size, or the size the farthest phone reader needs (box.ts boxFontPx); its lines hold the
++    // letters boxLines lines of the page's size hold.
++    const page = (parseFloat(getComputedStyle(document.body).getPropertyValue('--mainFontSize')) || 15) * 1.19, box = boxFontPx(page);
++    boxLinesNow = boxLinesAt(page, box);
++    document.body?.style?.setProperty('--rules-box-lines', String(boxLinesNow));
++    document.body?.style?.setProperty('--rules-box-font', `${Math.round(box * 10) / 10}px`);
+     document.body?.classList?.toggle('rules-distinct', settings().distinct);
+     for (const [name, value] of Object.entries(lookVars()))
+         document.body?.style?.setProperty(`--rules-${name}`, String(value));
+diff --git a/src/index.ts b/src/index.ts
+index 4302bea..07c308a 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -5,13 +5,13 @@ import { pulseSelfTest } from './rules/pulse.js';
+ import {
+     registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat,
+     rulesBrief, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY,
+-    historyCheck, sceneSky, storyYearNow,
++    historyCheck, sceneSky, scenePlace, storyYearNow,
+ } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading, type Chooser, type Asker } from './rules/question-pass.js';
+ import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest, marksOf } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+-import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, type Stretch, type SlotWord } from './rules/box.js';
++import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, type Stretch, type SlotWord, boxFontPx, boxLinesAt, sceneLine } from './rules/box.js';
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady } from './rules/voice-body.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong, type Cues } from './rules/music.js';
+@@ -514,6 +514,8 @@ function unitChat(): void {
+ }
+ /** A unit longer than the box goes on in the next box, cut after a sentence's end (box.ts cutsOf): measured in the message's
+  * own type and width once it is drawn, at boxLines lines. Done once per unit (data-fit); a piece keeps its unit's voice and speaker. */
++/** The box's lines at its type size (applyLook). */
++let boxLinesNow = peek('boxLines');
+ function fitUnits(mes: Element): void {
+     const text = mes.querySelector('.mes_text') as HTMLElement | null;
+     const units = [...mes.querySelectorAll('.mes_text span.rules-unit:not([data-fit])')];
+@@ -527,9 +529,9 @@ function fitUnits(mes: Element): void {
+         const words = unit.textContent ?? '';
+         probe.textContent = words;
+         const lines = Math.round(probe.getBoundingClientRect().height / lh);
+-        if (lines <= peek('boxLines')) continue;
++        if (lines <= boxLinesNow) continue;
+         // The characters that fill the box, in proportion to the lines this unit takes.
+-        const cuts = cutsOf(words, Math.floor(words.length * peek('boxLines') / lines));
++        const cuts = cutsOf(words, Math.floor(words.length * boxLinesNow / lines));
+         for (const cut of cuts.reverse()) {
+             const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
+             let seen = 0, at: Text | null = null;
+@@ -664,6 +666,9 @@ function showBox(): void {
+     now?.classList.add('rules-unit-now');
+     showPlate(mes, now);
+     showFigure(mes, now);
++    // Where, when and the light: the scene a visual novel's background shows, from the engine (box.ts sceneLine).
++    const scene = document.getElementById('rules-box-scene');
++    if (scene) { const t = storyTime(); scene.textContent = sceneLine(scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label); }
+     const count = document.getElementById('rules-box-count');
+     if (count) count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
+     const log = document.getElementById('rules-box-log');
+@@ -708,6 +713,7 @@ function buildBox(): void {
+     button('rules-box-music', '♪', 'Music', () => { const s = settings(); s.musicOn = !s.musicOn; ctx().saveSettingsDebounced(); musicNow(); const box = document.getElementById('rules_engine_music') as HTMLInputElement | null; if (box) box.checked = s.musicOn; });
+     button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog) document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
+     form.before(bar);
++    const scene = document.createElement('div'); scene.id = 'rules-box-scene'; scene.setAttribute('aria-live', 'off'); chat.before(scene);
+     // A tap on the box's text is "next"; a tap on anything that acts by itself (a link, a button, the note, an edit) is its own,
+     // and so is a tap that ends a selection of text.
+     chat.addEventListener('click', e => {
+@@ -858,7 +864,12 @@ function applyLook(): void {
+     if (typeof document === 'undefined') return;
+     document.body?.classList?.toggle('rules-page', settings().page);
+     document.body?.classList?.toggle('rules-page-dark', settings().page && settings().pageColours === 'dark');
+-    document.body?.style?.setProperty('--rules-box-lines', String(peek('boxLines')));
++    // The box's type: the page's size, or the size the farthest phone reader needs (box.ts boxFontPx); its lines hold the
++    // letters boxLines lines of the page's size hold.
++    const page = (parseFloat(getComputedStyle(document.body).getPropertyValue('--mainFontSize')) || 15) * 1.19, box = boxFontPx(page);
++    boxLinesNow = boxLinesAt(page, box);
++    document.body?.style?.setProperty('--rules-box-lines', String(boxLinesNow));
++    document.body?.style?.setProperty('--rules-box-font', `${Math.round(box * 10) / 10}px`);
+     document.body?.classList?.toggle('rules-distinct', settings().distinct);
+     for (const [name, value] of Object.entries(lookVars())) document.body?.style?.setProperty(`--rules-${name}`, String(value));
+     toneLook();
+diff --git a/src/rules/box.js b/src/rules/box.js
+index 8c9a02e..2190de6 100644
+--- a/src/rules/box.js
++++ b/src/rules/box.js
+@@ -24,6 +24,26 @@ def({ id: 'boxReadWpm', value: 260, unit: 'words per minute, silent reading of f
+ // body part, so a run with a noun wins a tie of words.
+ def({ id: 'boxKeyNounWeight', value: 1.5, unit: '× the weight of a matching word that is no noun', status: 'assumed', src: 'a noun names the thing decided; any value above 1 breaks a tie of matching words toward it', range: [1.1, 2], file: 'box.ts' });
+ def({ id: 'boxLines', value: 4, unit: 'lines of text in the box', status: 'assumed', src: "the reference's boxes hold 1–2 lines (the player's screenshots); 4 keeps an ordinary sentence whole at 412 px", range: [3, 6], file: 'box.ts' });
++// The box's type size. Print is read at full speed down to the critical print size, an x-height of about 0.2° for normal
++// vision, and at the same speed up to 2° (Legge & Bigelow 2011, J Vis 11(5):8). Phones are held 17.5–58 cm from the eyes for
++// a text message, 36.2 cm on average (Bababekova, Rosenfield, Hue & Huang 2011, Optom Vis Sci 88:795, 129 people). One CSS
++// pixel of a phone is 0.160 mm [ASSUMED: a 6.3-inch 1080 × 2400 screen at 416 ppi shown at a device pixel ratio of 2.625,
++// 412 CSS pixels across]. So an x-height of 0.2° for the farthest reader, 580 mm × tan 0.2° = 2.02 mm, is 12.7 CSS pixels;
++// SillyTavern's own text (Noto Sans, x 0.547 em of 15 px) is 8.2, 0.2° only to 38 cm. The box keeps the player's size when
++// larger. The box, with room to spare on a phone, takes the floor; the log keeps the player's size.
++def({ id: 'boxCriticalPrintDeg', value: 0.2, unit: '° of x-height, the smallest print read at full speed', status: 'sourced', src: 'critical print size of normal vision (Legge & Bigelow 2011)', file: 'box.ts' });
++def({ id: 'boxFarReadCm', value: 58, unit: 'cm from the eyes, the farthest a phone was held to read', status: 'sourced', src: 'text messages, 129 people: 17.5–58 cm, mean 36.2 (Bababekova et al. 2011)', file: 'box.ts' });
++def({ id: 'cssPxMm', value: 0.160, unit: 'mm per CSS pixel on a phone', status: 'assumed', src: 'a 6.3-inch 1080 × 2400 screen at 416 ppi, device pixel ratio 2.625', range: [0.14, 0.18], file: 'box.ts' });
++/** The x-height (CSS px) that gives the farthest phone reader the critical print size. */
++export const boxMinXPx = () => peek('boxFarReadCm') * 10 * Math.tan(peek('boxCriticalPrintDeg') * Math.PI / 180) / peek('cssPxMm');
++/** The box's font size (CSS px) for a face whose x-height is `xRatio` of its size: the page's, or the floor above. */
++export const boxFontPx = (pagePx, xRatio = 0.46) => Math.max(pagePx, boxMinXPx() / xRatio);
++/** The box's lines at that size: boxLines lines of the page's size hold as many letters as this many of the box's (a line's
++ * letters go as 1 ÷ the size), so a box carries what it carried before. */
++export const boxLinesAt = (pagePx, boxPx) => Math.max(peek('boxLines'), Math.round(peek('boxLines') * boxPx / pagePx));
++/** The scene above the box, as a visual novel's background tells it: where, when, and the light there (the engine's place,
++ * story clock and sky; any of them left out when unknown). */
++export const sceneLine = (place, time, light) => [place, time, light].filter((x) => !!x && !!x.trim()).join(' · ');
+ // The closed word classes (CGEL ch. 5, 7, 3: pronouns, determinatives, prepositions, coordinators and subordinators,
+ // auxiliaries), which never name a person, and the deictic adverbs a sentence can open with. A capitalised word outside them
+ // names a person when it is a given name (Social Security Administration, as frame.ts reads them) or no common English
+diff --git a/src/rules/box.ts b/src/rules/box.ts
+index 59b7e9e..00d3311 100644
+--- a/src/rules/box.ts
++++ b/src/rules/box.ts
+@@ -26,6 +26,28 @@ def({ id: 'boxReadWpm', value: 260, unit: 'words per minute, silent reading of f
+ def({ id: 'boxKeyNounWeight', value: 1.5, unit: '× the weight of a matching word that is no noun', status: 'assumed', src: 'a noun names the thing decided; any value above 1 breaks a tie of matching words toward it', range: [1.1, 2], file: 'box.ts' });
+ def({ id: 'boxLines', value: 4, unit: 'lines of text in the box', status: 'assumed', src: "the reference's boxes hold 1–2 lines (the player's screenshots); 4 keeps an ordinary sentence whole at 412 px", range: [3, 6], file: 'box.ts' });
+ 
++// The box's type size. Print is read at full speed down to the critical print size, an x-height of about 0.2° for normal
++// vision, and at the same speed up to 2° (Legge & Bigelow 2011, J Vis 11(5):8). Phones are held 17.5–58 cm from the eyes for
++// a text message, 36.2 cm on average (Bababekova, Rosenfield, Hue & Huang 2011, Optom Vis Sci 88:795, 129 people). One CSS
++// pixel of a phone is 0.160 mm [ASSUMED: a 6.3-inch 1080 × 2400 screen at 416 ppi shown at a device pixel ratio of 2.625,
++// 412 CSS pixels across]. So an x-height of 0.2° for the farthest reader, 580 mm × tan 0.2° = 2.02 mm, is 12.7 CSS pixels;
++// SillyTavern's own text (Noto Sans, x 0.547 em of 15 px) is 8.2, 0.2° only to 38 cm. The box keeps the player's size when
++// larger. The box, with room to spare on a phone, takes the floor; the log keeps the player's size.
++def({ id: 'boxCriticalPrintDeg', value: 0.2, unit: '° of x-height, the smallest print read at full speed', status: 'sourced', src: 'critical print size of normal vision (Legge & Bigelow 2011)', file: 'box.ts' });
++def({ id: 'boxFarReadCm', value: 58, unit: 'cm from the eyes, the farthest a phone was held to read', status: 'sourced', src: 'text messages, 129 people: 17.5–58 cm, mean 36.2 (Bababekova et al. 2011)', file: 'box.ts' });
++def({ id: 'cssPxMm', value: 0.160, unit: 'mm per CSS pixel on a phone', status: 'assumed', src: 'a 6.3-inch 1080 × 2400 screen at 416 ppi, device pixel ratio 2.625', range: [0.14, 0.18], file: 'box.ts' });
++/** The x-height (CSS px) that gives the farthest phone reader the critical print size. */
++export const boxMinXPx = () => peek('boxFarReadCm') * 10 * Math.tan(peek('boxCriticalPrintDeg') * Math.PI / 180) / peek('cssPxMm');
++/** The box's font size (CSS px) for a face whose x-height is `xRatio` of its size: the page's, or the floor above. */
++export const boxFontPx = (pagePx: number, xRatio = 0.46) => Math.max(pagePx, boxMinXPx() / xRatio);
++/** The box's lines at that size: boxLines lines of the page's size hold as many letters as this many of the box's (a line's
++ * letters go as 1 ÷ the size), so a box carries what it carried before. */
++export const boxLinesAt = (pagePx: number, boxPx: number) => Math.max(peek('boxLines'), Math.round(peek('boxLines') * boxPx / pagePx));
++/** The scene above the box, as a visual novel's background tells it: where, when, and the light there (the engine's place,
++ * story clock and sky; any of them left out when unknown). */
++export const sceneLine = (place: string | null | undefined, time: string | null | undefined, light: string | null | undefined) =>
++    [place, time, light].filter((x): x is string => !!x && !!x.trim()).join(' · ');
++
+ // ------------------------------------------------------------------------------------------------------------- speakers
+ /** One stretch of a paragraph: said (quoted words) or not, its text, and for a said stretch the name the reply wrote before
+  * it ([Mara] "No."), if any. */
+diff --git a/src/rules/rules-tools.js b/src/rules/rules-tools.js
+index c339d7d..7c026b2 100644
+--- a/src/rules/rules-tools.js
++++ b/src/rules/rules-tools.js
+@@ -995,6 +995,8 @@ function perceivedBy(st, actors, before, rng) {
+     }
+     return lines.length ? ` [PERCEIVED] ${lines.join('; ')}.` : '';
+ }
++/** The scene's place as the story named it (the last place a tool was given), or null. */
++export const scenePlace = () => SillyTavern.getContext().chatMetadata ? store().state.setting?.label ?? null : null;
+ /** Natural light at the scene now (index.ts: day and night for the world book), or null. */
+ export function sceneSky(t) {
+     return SillyTavern.getContext().chatMetadata ? skyAt(store().state, t) : null;
+diff --git a/src/rules/rules-tools.ts b/src/rules/rules-tools.ts
+index 2192617..1a8dbde 100644
+--- a/src/rules/rules-tools.ts
++++ b/src/rules/rules-tools.ts
+@@ -924,6 +924,8 @@ function perceivedBy(st: RuleState, actors: { who: string; p: Person; steps: Ste
+     return lines.length ? ` [PERCEIVED] ${lines.join('; ')}.` : '';
+ }
+ 
++/** The scene's place as the story named it (the last place a tool was given), or null. */
++export const scenePlace = (): string | null => SillyTavern.getContext().chatMetadata ? store().state.setting?.label ?? null : null;
+ /** Natural light at the scene now (index.ts: day and night for the world book), or null. */
+ export function sceneSky(t: number): SkyLight | null {
+     return SillyTavern.getContext().chatMetadata ? skyAt(store().state, t) : null;
+diff --git a/style.css b/style.css
+index 9a06fce..cc20466 100644
+--- a/style.css
++++ b/style.css
+@@ -315,7 +315,22 @@ body.rules-box:not(.rules-box-log) #chat { justify-content: flex-end; overflow:
+ body.rules-box:not(.rules-box-log) #chat .mes:not(.rules-now) { display: none; }
+ body.rules-box:not(.rules-box-log) #chat .mes:has(.rules-unit-now) .mes_text > :not(.rules-unit-now):not(:has(.rules-unit-now)) { display: none; }
+ body.rules-box:not(.rules-box-log) #chat .mes:has(.rules-unit-now) .mes_text .rules-unit:not(.rules-unit-now) { display: none; }
+-body.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: calc(var(--rules-box-lines) * 1.7em); max-height: 60vh; overflow-y: auto; cursor: pointer; }
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: min(calc(var(--rules-box-lines) * 1.7em), 60vh); max-height: 60vh; overflow-y: auto; cursor: pointer; }
++/* The box's type (box.ts boxFontPx, index.ts applyLook sets --rules-box-font): the page's size, or the critical print size
++   (0.2° of x-height) for a phone held 58 cm away, the farthest measured, whichever is larger; the log keeps the page's.
++   Its lines (--rules-box-lines) hold the letters the box held at the page's size. A scroll that reaches the box's end stays
++   in the box: it does not pass to the page behind it (on a phone, a pull past the top reloads the page). On a short screen (a
++   phone held sideways) the box stops at 60 % of the height, the cap above, and its lines scroll. */
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { font-size: var(--rules-box-font, 1em); overscroll-behavior: contain; }
++body.rules-box:not(.rules-box-log) #chat { overscroll-behavior: contain; }
++/* The time a message was sent from the player's device is no time in the story: the box leaves it out, and the scene line
++   above the chat (index.ts showBox, box.ts sceneLine) says the story's place, clock and light, what a visual novel's
++   background tells. */
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .timestamp { display: none; }
++#rules-box-scene { display: none; }
++body.rules-box:not(.rules-box-log) #rules-box-scene:not(:empty) { display: block; padding: 0.4em 0.8em; text-align: center; font-variant: small-caps; letter-spacing: 0.04em; font-size: calc(var(--mainFontSize) * 0.95); color: var(--SmartThemeEmColor); background-color: var(--SmartThemeBlurTintColor); border-bottom: 1px solid var(--SmartThemeBorderColor); }
++body.rules-box.rules-page:not(.rules-box-log) #rules-box-scene:not(:empty) { font-family: var(--rules-serif, Georgia, serif); background-color: ivory; color: dimgray; }
++body.rules-box.rules-page.rules-page-dark:not(.rules-box-log) #rules-box-scene:not(:empty) { background-color: black; color: darkgray; }
+ /* [±voiced], the one distinction the units carry: voiced words (quoted: they leave a mouth as sound) take the ink, text that
+    is not voiced a named blue, as the reference sets speech in its text colour and the rest in blue; darkslateblue reads at
+    8.99:1 on ivory, lightskyblue 12.96:1 on the dark page's black (tests/ui.test.mjs R36, R37); a block that is no paragraph (a
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index f40dd41..4ff1767 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -5750,5 +5750,50 @@
+   "replace": ";",
+   "miss": "the voice in the narrator's notes",
+   "test": "voice-body"
++ },
++ {
++  "id": "BX1",
++  "name": "the box takes the reading floor",
++  "file": "src/rules/box.js",
++  "find": "Math\\.max\\(pagePx, boxMinXPx\\(\\) / xRatio\\)",
++  "replace": "pagePx",
++  "miss": "the box's type and the scene line",
++  "test": "ui"
++ },
++ {
++  "id": "BX2",
++  "name": "the box's lines grow with its type",
++  "file": "src/rules/box.js",
++  "find": "Math\\.round\\(peek\\('boxLines'\\) \\* boxPx / pagePx\\)",
++  "replace": "peek('boxLines')",
++  "miss": "the box's type and the scene line",
++  "test": "ui"
++ },
++ {
++  "id": "BX3",
++  "name": "the scene line leaves out what is unknown",
++  "file": "src/rules/box.js",
++  "find": "filter\\(\\(x\\) => !!x && !!x\\.trim\\(\\)\\)",
++  "replace": "filter(() => true)",
++  "miss": "the box's type and the scene line",
++  "test": "ui"
++ },
++ {
++  "id": "BX4",
++  "name": "units cut at the box lines now",
++  "file": "src/index.js",
++  "find": "Math\\.floor\\(words\\.length \\* boxLinesNow / lines\\)",
++  "replace": "Math.floor(words.length * peek('boxLines') / lines)",
++  "miss": "the box's rules and wiring",
++  "test": "ui"
++ },
++ {
++  "id": "BX5",
++  "name": "the box drops the device's clock",
++  "file": "style.css",
++  "find": "\\.mes\\.rules-now \\.timestamp \\{ display: none; \\}",
++  "replace": ".mes.rules-now .timestamp { }",
++  "miss": "the box's rules and wiring",
++  "test": "ui"
+  }
+ ]
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index 26e7e23..d546574 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -547,4 +547,19 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+       && /boxOn\(\) \? SPEAKER_RULE : ''/.test(idx) && /msg\.mes = sp\.text;/.test(idx) && /const s = settings\(\);\s*s\.boxAuto = !s\.boxAuto;/.test(idx)
+       && ['rules_engine_page_colours', 'rules_engine_box_picture', 'rules_engine_box_typing'].every(id => html.includes(`id="${id}"`)), 'the box names, types and moves on as set', '');
+ }
++// R41: the box's type and scene (box.ts boxFontPx, boxLinesAt, sceneLine; style.css; src/index.js): the x-height a phone held
++// 58 cm away needs for the critical print size (0.2°) at 0.160 mm a CSS pixel is 12.65 px, so a face with x 0.46 em is set at
++// 27.5 px unless the page's is larger; the box's lines grow with the size (4 at 17.85 px → 6 at 27.5), so a box holds the same
++// letters; the scene line joins place, story time and light, leaving out what is unknown; the box drops the device's clock,
++// keeps a scroll inside it, and stops at 60 % of a short screen.
++{
++  const B = await import('../src/rules/box.js'), idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
++  const f = B.boxFontPx(17.85), big = B.boxFontPx(30);
++  ok(Math.abs(B.boxMinXPx() - 12.65) < 0.01 && Math.abs(f - 27.51) < 0.02 && big === 30 && B.boxLinesAt(17.85, f) === 6 && B.boxLinesAt(30, 30) === 4
++      && B.sceneLine('Recife', 'Sunday 15 July 1990, 18:20', 'nautical twilight') === 'Recife · Sunday 15 July 1990, 18:20 · nautical twilight' && B.sceneLine(null, 'Day 2, 07:00', '') === 'Day 2, 07:00',
++      "the box's type and the scene line", JSON.stringify([B.boxMinXPx(), f, B.boxLinesAt(17.85, f)]));
++  ok(/\.mes\.rules-now \.mes_text \{ font-size: var\(--rules-box-font, 1em\); overscroll-behavior: contain; \}/.test(css) && /\.mes\.rules-now \.timestamp \{ display: none; \}/.test(css)
++      && /min-height: min\(calc\(var\(--rules-box-lines\) \* 1\.7em\), 60vh\)/.test(css) && /boxLinesNow = boxLinesAt\(page, box\)/.test(idx) && /sceneLine\(scenePlace\(\), t === null \? null : formatStoryTime\(t\)/.test(idx)
++      && /cutsOf\(words, Math\.floor\(words\.length \* boxLinesNow \/ lines\)\)/.test(idx), "the box's rules and wiring", '');
++}
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

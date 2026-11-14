@@ -3,7 +3,9 @@
 // (Key Facts Injection, Xiwei 2026, ICLR workshop on memory for LLM agents). Models answer as if a character knew
 // what was said while they were absent (FANToM, Kim et al. 2023), so knowledge is kept per character in code.
 import type { RuleState, Fact } from './types.js';
+import { def, k } from './constants.js';
 
+const massedMin = () => k('massedDays') * 1440;
 const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 // Facts shown per character and for common knowledge [ASSUMED; the newest are kept].
 export const FACTS_SHOWN = 12;
@@ -24,11 +26,15 @@ export function learn(st: RuleState, text: string, knowers: (string | null | und
     const from = f.from ??= {};
     for (const [k, v] of Object.entries(sources)) if (v && !from[norm(k)]) from[norm(k)] = String(v).trim();
     for (const k of knowers) if (k && !f.knowers.some(x => norm(x) === norm(k))) f.knowers.push(String(k).trim());
-    // Learning it again (told again, seen again, using it) restarts its forgetting clock for those knowers.
+    // Learning it again (told again, seen again, using it) adds an encounter for those knowers (see recalls); a second one
+    // within a day replaces the first.
     const now = st.clock ? st.clock.t + st.clock.add : null;
     if (now !== null) {
-        const at = f.at ??= {}, age = f.ageAt ??= {};
+        const at = f.at ??= {}, age = f.ageAt ??= {}, times = f.times ??= {};
         for (const k of knowers) if (k) {
+            const list = times[norm(k)] ??= at[norm(k)] != null ? [at[norm(k)]] : [];
+            if (list.length && now - list[list.length - 1] < massedMin()) list[list.length - 1] = now; else list.push(now);
+            if (list.length > 50) list.splice(0, list.length - 50);
             at[norm(k)] = now;
             const p = Object.entries(st.people ?? {}).find(([n]) => norm(n) === norm(k))?.[1];
             if (p?.age != null) age[norm(k)] = p.age; else delete age[norm(k)];
@@ -73,12 +79,50 @@ export function recallShare(years: number, age = 30): number {
     return Math.min(1, y1 * years ** -m);
 }
 const draw = (s: string) => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return ((h >>> 0) % 100000) / 100000; };
+/** Whether `who` recalls the fact now: their one fixed draw for it under its recall share (recallStrength). */
 export function recalls(st: RuleState, f: Fact, who: string): boolean {
+    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallStrength(st, f, who);
+}
+/** The share of people like `who` who would recall the fact now (1 for common knowledge and for a fact with no time kept). */
+export function recallStrength(st: RuleState, f: Fact, who: string): number {
     const now = st.clock ? st.clock.t + st.clock.add : null, at = f.at?.[norm(who)];
-    if (now === null || at == null || f.everyone) return true;
+    if (now === null || at == null || f.everyone) return 1;
     // The age that sets the rate is the knower's age when they learned it (Bauer & Larkina group by age at the events).
-    const years = (now - at) / 525960;
-    return draw(`${f.id}|${norm(who)}|${f.text}`) < (f.kind === 'knowledge' ? knowledgeShare(years) : recallShare(years, f.ageAt?.[norm(who)] ?? 30));
+    // Every encounter counts (ACT-R base-level learning, Anderson et al. 2004, Psychol Rev 111:1036): strength = ln Σ t_j^−d
+    // over the times since each encounter, d = 0.5 (the default "over a large range of applications"); the curves above are
+    // for one encounter, so they are read at the single age with the same strength, (Σ t_j^−0.5)^−2. Two encounters a year
+    // apart, read a year after the second, recall like one 4 months old. Encounters less than a day apart count once
+    // [ASSUMED: massed repetition adds little that lasts, the spacing effect].
+    const list = f.times?.[norm(who)]?.length ? f.times[norm(who)] : [at];
+    const sum = list.reduce((s, t) => s + Math.max(1 / 525960, (now - t) / 525960) ** -k('actrDecay'), 0);
+    const years = sum ** (-1 / k('actrDecay'));
+    // Importance (E33): the event curve is fitted to events a person singled out as notable, taken as importance 7 of 10; each
+    // point below runs the clock faster and each above slower, by a factor 2^((7 − importance) ÷ 3) [ASSUMED: form and step],
+    // so a meal (1) fades four times as fast and a death (10) half as fast. Facts with no importance keep the curve as it is.
+    const pace = f.kind === 'knowledge' || f.imp == null ? 1 : 2 ** ((k('notableImportance') - f.imp) / k('importanceDoubling'));
+    return f.kind === 'knowledge' ? knowledgeShare(years) : recallShare(years * pace, f.ageAt?.[norm(who)] ?? 30);
+}
+def({ id: 'actrDecay', value: 0.5, unit: 'power of each encounter\'s decay', status: 'sourced', src: 'ACT-R default d (Anderson et al. 2004, Psychol Rev 111:1036)', range: [0.3, 0.7], file: 'knowledge.ts' });
+def({ id: 'massedDays', value: 1, unit: 'days within which a repeat counts as the same encounter', status: 'assumed', src: 'spacing effect: massed repetition adds little long-term retention', range: [0.04, 3], file: 'knowledge.ts' });
+def({ id: 'notableImportance', value: 7, unit: 'importance 1–10', status: 'assumed', src: 'the importance of the "notable" events of Bauer & Larkina 2016', range: [5, 9], file: 'knowledge.ts' });
+def({ id: 'importanceDoubling', value: 3, unit: 'importance points per doubling of the forgetting time', status: 'assumed', src: 'event importance was the strongest predictor of memory and emotion duration (no slope held)', range: [1.5, 6], file: 'knowledge.ts' });
+
+// Working memory (Cowan 2001, "The magical number 4 in short-term memory", Behav Brain Sci 24:87): what can be held at once
+// is about four chunks; group means of adults 3–5, individual means 2 to 6. A message heard once that lists more separate
+// items (a list of errands, a string of directions) leaves the listener with that many: each person's span drawn once,
+// normal about 4 with SD 1, kept within 2–6 [ASSUMED form; range from Cowan §3.5]. The ones kept are the first and the last
+// (primacy and recency) [ASSUMED]. Items are the parts between commas or semicolons, four or more; "and" alone does not split.
+/** The items of a list-like message, or null when it is not a list of four or more. */
+export function listItems(message: string): string[] | null {
+    const parts = String(message).trim().replace(/[.!?]$/, '').split(/\s*;\s*|\s*,\s*(?:(?:and|then|or|and then)\s+)?/i).map(x => x.trim()).filter(Boolean);
+    return parts.length >= 4 ? parts : null;
+}
+/** What a listener with working-memory `span` keeps of a message heard once: the kept text and how many items fell out. */
+export function heldOfMessage(message: string, span: number): { kept: string; total: number; dropped: number } {
+    const items = listItems(message), n = Math.max(2, Math.min(6, Math.round(span)));
+    if (!items || items.length <= n) return { kept: message, total: items?.length ?? 1, dropped: 0 };
+    const head = Math.ceil(n / 2), tail = n - head, kept = [...items.slice(0, head), ...items.slice(items.length - tail)];
+    return { kept: `${kept.join('; ')} (the rest of the list lost)`, total: items.length, dropped: items.length - n };
 }
 
 export const knows = (st: RuleState, name: string, text: string) => (st.facts ?? []).some(f => norm(f.text) === norm(text) && (f.everyone || f.knowers.some(k => norm(k) === norm(name))));

@@ -1,0 +1,504 @@
+diff --git a/README.md b/README.md
+index 16f0fa6..186d32a 100644
+--- a/README.md
++++ b/README.md
+@@ -50,7 +50,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
+ - Code writes calls for your character's own acts: in "Tom punches Mara" or "I tell Will to wait an hour" the other person's act is read from the scene; "she" in a line written in the third person is your character when the line names no one else she could be. Acts the line says are not done ("I don't hit him", "I almost fall") and out-of-character asides ("(OOC: …)") are not acted on. Typed ›guillemets‹, «guillemets» and „German quotes“ are quotation marks, read as speech like "…", and capitals read as louder on common words only (STOP, NOOOO; NATO and ICU stay as written, and so do the WHO and the IT desk). You can speak to a group as to a person ("I shout to the crew", "I tell the town council"), and to someone named with their looks ("the old blind beggar").
+-- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I sit by the fire for an hour" passes the hour, "I swing my axe at the orc" is a blow, and "I give Will 3 coins" hands three. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
++- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I sit by the fire for an hour" passes the hour, "I swing my axe at the orc" is a blow, and "I give Will 3 coins" hands three. "I fire my pistol at the guard", "I open fire" and "I gun him down" are shots, a handgun's among them; "I fire the cook", "I fire the kiln" and "I hold my fire" are none, and "a shot of whiskey" is a measure. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
+ - A result that ends "Fragile: …" rests on a judged value: within that value's range the outcome comes out otherwise. A room emptying through one door takes a few seconds to work out, the reruns for its judged values included.
+ 
+ License: GPL-3.0 (derived from the Multihog D&D Framework). Third-party data, code and fonts (SIL Open Font License, `fonts/`): `docs/third-party.md`. Your line is read by English grammar as Huddleston & Pullum's *Cambridge Grammar of the English Language* (2002) describes it: "give Tom a kick" is a kick, "I make Tom walk" is Tom's walk, "I fail to climb" is no climb, "him" is the one man named before, "I walk to the market every day" is a habit and no walk now, "Do I walk to the door?" asks, and "give the coin to Tom" hands it over. Before that, the line is read for what you meant: a slip is the word the scene makes likeliest, "again" is your last act, "him back" is whoever just struck you, and a goal you stated fills a later search; each reading is shown under your line. Word meanings come from VerbNet 3.4 (University of Colorado), FrameNet 1.7 (https://framenet.icsi.berkeley.edu; Fillmore & Baker 2010, "A Frame Semantic Approach to Linguistic Analysis", The Oxford Handbook of Linguistic Analysis) and Open English WordNet 2024 (CC BY 4.0).
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 36a3a39..a37eabc 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -981,6 +981,9 @@ IF a whole number stands in brackets ("Tom (35)", "the year (1850)") → THEN it
+ IF a weather verb's subject is not "it" ("I pour Tom a drink", "I blow out the candle") → THEN no Weather (Levin 1993 §57). IF a verb is one of Levin's verbs of killing by a means (§42.2, VerbNet poison-42.2) → THEN its means names the tool: poison Substance, drown BodyEnvironment, strangle, throttle, smother, suffocate, asphyxiate and garrotte BodyChoke, stab and knife BodyStrike. IF VerbNet has a phrasal entry (pick_up) → THEN that entry's sense: "pick up the lantern" is Transfer, no eating. "Take a seat" is Act, "break the silence" Communicate, "force a smile" no effort, "sneak, slip, creep or steal past someone" Act and Look (the one passed the viewer). IF a weapon or a limb is swung or thrust at a person or animal → THEN BodyStrike (Levin §1.3, the conative "at"). IF a hand-over counts in figures ("give Will 3 coins") → THEN the quantity is that number. IF a posture is held for a timed while ("sit by the fire for an hour") → THEN PassTime for that while. IF a clause with its own pronoun subject is joined on after a comma ("ask Tom for the key, and he gives it to me") → THEN the words said end before it. A name the story holds keeps its capital in a line shouted in capitals. Every request to a model leaves with hidden marks as notation (SillyTavern's CHAT_COMPLETION_SETTINGS_READY and TEXT_COMPLETION_SETTINGS_READY carry each one, the summary's raw prompt among them).
+ The world each message ended with is kept in the chat's archive (`rulesEngine.worlds`) as the changes from the world kept before it, whole every 50; a message holds its world's id (`extra.rulesWorld`), and worlds no message reaches go. Check: 120 scripted turns, chat 1.09 → 0.20 MB, metadata 0.44 → 0.64 MB; a world after a mid-chat deletion, a deletion back to reply 20 and a branch at reply 12 equal the worlds kept then.
+ 
++**A shot by every wording, and fire by its object (2026-10-27 (103); `verbs.ts`, `router.ts`).**
++IF a verb or a light verb's noun routes by a FrameNet frame of shooting (Hit_target, Use_firearm, Shoot_projectiles) → THEN the turn is offered both tools the shot route names: BodyStrike (a launcher) and BodyCheck (shot_m, a handgun) (`toolsNamed`; before, the first word only, so "I fire my pistol at the guard", "take a shot at", "take aim" never reached shot_m). IF fire's object (the words before a preposition) is a person or a thing baked or lit and names no weapon or missile → THEN no shot (PropBank's frameset fire: fire.01's object is the gun or projectile, fire.02's the one let go, FrameNet Firing; fire.03 bakes pots, fire.04 ignites; things fired [ASSUMED list]: kiln, oven, stove, furnace, forge, boiler, engine, thrusters, clay, pots, pottery, bricks, glaze). "Fire up" is a start, no shot (a named verb's empty list is its answer). "Open fire", "return fire" and "gun … down" are shots; "hold (my) fire" is no grip. IF a frame noun stands before of and a thing as a measure ("a shot of whiskey": grammar.ts measureOfGoods) → THEN no act. Check: route 172 (11 new lines, each missing on section 37's router); engine N65 task routes "fire the cook", "take a shot of whiskey" → none, "fire the musket at the deer" → BodyStrike.
++
+ ### 7.4 Scoring the question pass
+ 
+ `/rules-eval [n]` sends the first n of 50 scenes (`eval-scenes.ts`; default all) to the State Model as question-pass requests, with a fixed tracker state (two characters, a date in 1850; five scenes carry their own date), and scores the calls: a call counts only when it would run (known tool, required arguments, schema check passed). Each scene lists the calls a correct reading needs and the arguments that decide their outcomes (equal, contains, range, list holds a name, list length); other arguments are free, recording a fact is always allowed, and a scene may allow further tools. Scenes 40–44 need no call.
+diff --git a/docs/progress.md b/docs/progress.md
+index b3bf7a3..63667f0 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,12 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-10-27 (103), Claude Opus 5.5
++- The full negative-control run on section 37's tree caught 423 of 424; Q11e ("a shot") was not, and its trail led to the router reading only the first tool of a shot's route.
++- Changed, reading: "I fire my pistol at the guard", "I take a shot at the guard with my pistol", "I take aim at the deer" and "I aim and fire" offer BodyCheck (a handgun's shot_m) beside BodyStrike; "I open fire on the soldiers", "I return fire" and "I gun him down" are shots; "I fire the cook", "I fire the kiln", "I fire up the generator" and "I hold my fire" are none; "I take a shot of whiskey" is no blow.
++- Checked: route 172, frame 198, intent 37, engine 193, plan 60, size 9 of 9, ui 54, sequences 300, all with 0 misses; the 11 new route lines and 2 of the 4 new task routes miss on section 37's tree (the other two, "fire the kiln" and "fire the musket at the deer", held there already); negative controls: 11 new (RB1–RB11), Q11e retargeted to the pistol line and to a shoot entry naming BodyStrike alone, and the 50 controls on router.js and verbs.js all caught; the other 373 were caught on section 37's tree.
++- Next: several blows in one turn; "I want to X"; "snipe", "pick off", "set fire" and "catch fire" (27 shot lines probed, 22 right).
++
+ ## 2026-10-27 (102), Claude Opus 5.5
+ - The player asked what else; the sixth review's open items and two more corpora of ordinary lines (90 lines) were run.
+ - Changed, reading: "I pour Tom a drink" and "I blow out the candle" are no weather; "I stab Tom" offers no Substance, "I strangle the guard" is a choke, "I drown the rat" an immersion; "I pick up the lantern" no eating; "I light a candle" no treatment; "I draw my sword" a motion; "I take a seat" a motion; "I break the silence" speech; "I force a smile" no effort; "I sneak past the guard" is whether the guard sees; "I swing my axe at the orc" is a blow; "I give Will 3 coins" hands three; "I sit by the fire for an hour" passes the hour (the planner had been skipped and the hour lost); "I ask Tom for the key, and he gives it to me" says only "for the key"; "I SHOUT AT WILL" keeps Will.
+diff --git a/src/rules/router.js b/src/rules/router.js
+index a828ad7..62519cd 100644
+--- a/src/rules/router.js
++++ b/src/rules/router.js
+@@ -5,7 +5,7 @@
+ // The model's tool picker is asked only when no verb maps to a tool.
+ import { stepsFromWords } from './actions.js';
+ import { VERBNET } from './data/verbnet.js';
+-import { lemmas, BEFORE, lightNounTool, frameTool, climbing, creatureAfter } from './verbs.js';
++import { lemmas, BEFORE, lightNounTools, frameTools, climbing, creatureAfter, notAShot, SHOT_TOOLS } from './verbs.js';
+ import { LIGHT_VERBS, lightReading, NEGATIVE_TO, MODALS, PASSIVE_AUX, measureOfGoods, noun, LET_US, vocativeImperative } from './grammar.js';
+ import { GIVEN_NAMES } from './data/given-names.js';
+ import { isWord } from './lexicon.js';
+@@ -66,6 +66,8 @@ const VERB_TOOL = {
+     // Phrasal verbs whose sense is not their verb's (VerbNet files them as entries of their own: pick_up under discover-84, apart
+     // from pick): "pick up the lantern" takes it, no eating (chew-39.2, "pick at"); "blow out the candle" breaks nothing.
+     pick_up: ['Transfer'], blow_out: [],
++    // Firing up a stove or an engine starts it, no shot.
++    fire_up: [],
+     // Lighting a candle or a fire tends no wound (VerbNet files light under remedy-45.7, as "lighten"); drawing a sword, a chair
+     // or near is a motion, no luring or splitting.
+     light: [], draw: ['Act'],
+@@ -98,9 +100,13 @@ export function routeTurn(text, names = []) {
+         // A named verb's tools replace its classes' (VerbNet files climb under motion; a climb is BodyCheck's, not Act's).
+         const named = VERB_TOOL[`${v}_${next}`] ?? VERB_TOOL[v];
+         const byClass = named ?? classes.flatMap(c => CLASS_TOOL[TOP(c)] ?? []);
+-        // No class or named verb names a tool: the verb's FrameNet frame may ("I elude the guards": Chase).
+-        const framed = byClass.length ? null : frameTool(v, after, text);
+-        return classes.length || named || framed ? framed ? [framed] : byClass : null;
++        // Fire with a person or a thing heated as its object is no shot ("fire the cook", "fire the kiln": verbs.ts notAShot).
++        if (v === 'fire' && notAShot(after, text))
++            return [];
++        // No class or named verb names a tool: the verb's FrameNet frame may ("I elude the guards": Chase); a named verb's
++        // empty list is its answer ("fire up the stove").
++        const framed = byClass.length || named ? null : frameTools(v, after, text);
++        return classes.length || named || framed ? framed ?? byClass : null;
+     };
+     // A verb form after be, get or have that is no -ing or -s form is a participle (CGEL ch. 3 §1.4): the passive's or the
+     // perfect's ("I get hit by Tom", "I have walked").
+@@ -172,9 +178,10 @@ export function routeTurn(text, names = []) {
+         // tools ("take the bread": Transfer), a use that could be either both ("give her a ring"), a set phrase none ("give a
+         // damn", "give him a piece of my mind").
+         // A noun FrameNet files in a routed frame decides first ("take a shot at the deer", "take a swing at Tom": verbs.ts).
+-        const framedNoun = LIGHT_VERBS[w] ? lightNounTool(LIGHT_VERBS[w], words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), text) : null;
++        const framedNoun = LIGHT_VERBS[w] ? lightNounTools(LIGHT_VERBS[w], words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), text) : null;
+         if (framedNoun) {
+-            why[framedNoun] ??= w;
++            for (const t of framedNoun)
++                why[t] ??= w;
+             continue;
+         }
+         const reading = LIGHT_VERBS[w] ? lightReading(orig[i], orig.slice(i + 1)) : null;
+@@ -194,9 +201,10 @@ export function routeTurn(text, names = []) {
+         for (const v of lemmas(w)) {
+             // A support verb's noun names the act ("throw a punch", "steal a glance": verbs.ts, from FrameNet); a climbing verb is
+             // BodyCheck's (clamber, scramble: FrameNet Self_motion); a verb VerbNet lacks takes its FrameNet frame's tool.
+-            const after = words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), light = LIGHT_VERBS[w] ? null : lightNounTool(v, after, text);
++            const after = words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), light = LIGHT_VERBS[w] ? null : lightNounTools(v, after, text);
+             if (light) {
+-                why[light] ??= w;
++                for (const t of light)
++                    why[t] ??= w;
+                 break;
+             }
+             // A weather verb reports the weather only with "it" as its subject (Levin 1993 §57: "It rained"); "I pour Tom a drink",
+@@ -283,6 +291,19 @@ export function routeTurn(text, names = []) {
+         why.Act ??= 'past unseen';
+         why.Look ??= 'past unseen';
+     }
++    // Opening or returning fire is shooting (FrameNet fire.n: Shoot_projectiles), and so is gunning someone down; holding fire is
++    // shooting not yet, no grip.
++    const opened = low.match(/\b(?:open|opens|opened|opening|return|returns|returned|returning) fire\b/);
++    if (opened) {
++        drop(/^(?:open|opens|opened|opening|return|returns|returned|returning)$/);
++        for (const t of SHOT_TOOLS)
++            why[t] ??= opened[0];
++    }
++    if (/\bgun(?:s|ned|ning)? (?:[a-z']+ ){0,2}down\b/.test(low))
++        for (const t of SHOT_TOOLS)
++            why[t] ??= 'gun down';
++    if (/\bh(?:old|olds|olding|eld) (?:(?:my|your|his|her|our|their) )?fire\b/.test(low))
++        drop(/^h(?:old|olds|olding|eld)$/);
+     if (!why.BodyTreat && /\b(?:tourniquet|bandage|splint|sutures?|stitches|poultice|salve|compress|dressing|ointment)s?\b/.test(low))
+         why.BodyTreat = 'a dressing';
+     if (why.Communicate)
+diff --git a/src/rules/router.ts b/src/rules/router.ts
+index 70edada..7c7d044 100644
+--- a/src/rules/router.ts
++++ b/src/rules/router.ts
+@@ -5,7 +5,7 @@
+ // The model's tool picker is asked only when no verb maps to a tool.
+ import { stepsFromWords } from './actions.js';
+ import { VERBNET } from './data/verbnet.js';
+-import { lemmas, BEFORE, lightNounTool, frameTool, climbing, creatureAfter } from './verbs.js';
++import { lemmas, BEFORE, lightNounTools, frameTools, climbing, creatureAfter, notAShot, SHOT_TOOLS } from './verbs.js';
+ import { LIGHT_VERBS, lightReading, NEGATIVE_TO, MODALS, PASSIVE_AUX, measureOfGoods, noun, LET_US, vocativeImperative } from './grammar.js';
+ import { GIVEN_NAMES } from './data/given-names.js';
+ import { isWord } from './lexicon.js';
+@@ -67,6 +67,8 @@ const VERB_TOOL: Record<string, string[]> = {
+     // Phrasal verbs whose sense is not their verb's (VerbNet files them as entries of their own: pick_up under discover-84, apart
+     // from pick): "pick up the lantern" takes it, no eating (chew-39.2, "pick at"); "blow out the candle" breaks nothing.
+     pick_up: ['Transfer'], blow_out: [],
++    // Firing up a stove or an engine starts it, no shot.
++    fire_up: [],
+     // Lighting a candle or a fire tends no wound (VerbNet files light under remedy-45.7, as "lighten"); drawing a sword, a chair
+     // or near is a motion, no luring or splitting.
+     light: [], draw: ['Act'],
+@@ -100,9 +102,12 @@ export function routeTurn(text: string, names: string[] = []): Route {
+         // A named verb's tools replace its classes' (VerbNet files climb under motion; a climb is BodyCheck's, not Act's).
+         const named = VERB_TOOL[`${v}_${next}`] ?? VERB_TOOL[v];
+         const byClass = named ?? classes.flatMap(c => CLASS_TOOL[TOP(c)] ?? []);
+-        // No class or named verb names a tool: the verb's FrameNet frame may ("I elude the guards": Chase).
+-        const framed = byClass.length ? null : frameTool(v, after, text);
+-        return classes.length || named || framed ? framed ? [framed] : byClass : null;
++        // Fire with a person or a thing heated as its object is no shot ("fire the cook", "fire the kiln": verbs.ts notAShot).
++        if (v === 'fire' && notAShot(after, text)) return [];
++        // No class or named verb names a tool: the verb's FrameNet frame may ("I elude the guards": Chase); a named verb's
++        // empty list is its answer ("fire up the stove").
++        const framed = byClass.length || named ? null : frameTools(v, after, text);
++        return classes.length || named || framed ? framed ?? byClass : null;
+     };
+     // A verb form after be, get or have that is no -ing or -s form is a participle (CGEL ch. 3 §1.4): the passive's or the
+     // perfect's ("I get hit by Tom", "I have walked").
+@@ -151,8 +156,8 @@ export function routeTurn(text: string, names: string[] = []): Route {
+         // tools ("take the bread": Transfer), a use that could be either both ("give her a ring"), a set phrase none ("give a
+         // damn", "give him a piece of my mind").
+         // A noun FrameNet files in a routed frame decides first ("take a shot at the deer", "take a swing at Tom": verbs.ts).
+-        const framedNoun = LIGHT_VERBS[w] ? lightNounTool(LIGHT_VERBS[w]!, words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), text) : null;
+-        if (framedNoun) { why[framedNoun] ??= w; continue; }
++        const framedNoun = LIGHT_VERBS[w] ? lightNounTools(LIGHT_VERBS[w]!, words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), text) : null;
++        if (framedNoun) { for (const t of framedNoun) why[t] ??= w; continue; }
+         const reading = LIGHT_VERBS[w] ? lightReading(orig[i]!, orig.slice(i + 1)) : null;
+         if (reading && reading.kind !== 'ordinary') {
+             const assoc = reading.kind === 'abstract' || !reading.verb ? [] : toolsOf(reading.verb, '', []) ?? [];
+@@ -167,8 +172,8 @@ export function routeTurn(text: string, names: string[] = []): Route {
+         for (const v of lemmas(w)) {
+             // A support verb's noun names the act ("throw a punch", "steal a glance": verbs.ts, from FrameNet); a climbing verb is
+             // BodyCheck's (clamber, scramble: FrameNet Self_motion); a verb VerbNet lacks takes its FrameNet frame's tool.
+-            const after = words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), light = LIGHT_VERBS[w] ? null : lightNounTool(v, after, text);
+-            if (light) { why[light] ??= w; break; }
++            const after = words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), light = LIGHT_VERBS[w] ? null : lightNounTools(v, after, text);
++            if (light) { for (const t of light) why[t] ??= w; break; }
+             // A weather verb reports the weather only with "it" as its subject (Levin 1993 §57: "It rained"); "I pour Tom a drink",
+             // "I blow on my hands" are no weather.
+             const dummy = prev === 'it' || prev === "it's" || (prev2 === 'it' && /^(?:is|was|will|has|had|be|been)$/.test(prev ?? ''));
+@@ -212,6 +217,12 @@ export function routeTurn(text: string, names: string[] = []): Route {
+     if (/\bbr(?:eak|eaks|oke|eaking) (?:the|an|a|my|his|her|their|our) (?:\w+ )?silence\b/.test(low)) { drop(/^br(?:eak|eaks|oke|eaking)$/); why.Communicate ??= 'break the silence'; }
+     if (/\bforc(?:e|es|ed|ing) (?:a|an|my|his|her|their) (?:\w+ )?(?:smile|grin|laugh|smirk)\b/.test(low)) drop(/^forc(?:e|es|ed|ing)$/);
+     if (/\b(?:sneak|sneaks|sneaked|snuck|sneaking|creep|creeps|crept|creeping|slip|slips|slipped|slipping|steal|steals|stole|stealing) (?:past|by) /.test(low)) { drop(/^(?:sneak|sneaks|sneaked|snuck|sneaking|creep|creeps|crept|creeping|slip|slips|slipped|slipping|steal|steals|stole|stealing)$/); why.Act ??= 'past unseen'; why.Look ??= 'past unseen'; }
++    // Opening or returning fire is shooting (FrameNet fire.n: Shoot_projectiles), and so is gunning someone down; holding fire is
++    // shooting not yet, no grip.
++    const opened = low.match(/\b(?:open|opens|opened|opening|return|returns|returned|returning) fire\b/);
++    if (opened) { drop(/^(?:open|opens|opened|opening|return|returns|returned|returning)$/); for (const t of SHOT_TOOLS) why[t] ??= opened[0]; }
++    if (/\bgun(?:s|ned|ning)? (?:[a-z']+ ){0,2}down\b/.test(low)) for (const t of SHOT_TOOLS) why[t] ??= 'gun down';
++    if (/\bh(?:old|olds|olding|eld) (?:(?:my|your|his|her|our|their) )?fire\b/.test(low)) drop(/^h(?:old|olds|olding|eld)$/);
+     if (!why.BodyTreat && /\b(?:tourniquet|bandage|splint|sutures?|stitches|poultice|salve|compress|dressing|ointment)s?\b/.test(low)) why.BodyTreat = 'a dressing';
+     if (why.Communicate) why.Interpret = 'with Communicate';
+     return { tools: Object.keys(why), why };
+diff --git a/src/rules/verbs.js b/src/rules/verbs.js
+index f407d50..800e7e1 100644
+--- a/src/rules/verbs.js
++++ b/src/rules/verbs.js
+@@ -6,6 +6,7 @@ import { VERBNET } from './data/verbnet.js';
+ import { ROLE_WORDS } from './nouns.js';
+ import { FRAMENET, FRAME_FES } from './data/framenet.js';
+ import { QUOTED } from './quotes.js';
++import { measureOfGoods } from './grammar.js';
+ // Irregular past and participle forms back to the verb (the ones VerbNet's members need most).
+ const IRREGULAR = Object.fromEntries([
+     ['say', 'said'], ['tell', 'told'], ['speak', 'spoke spoken'], ['see', 'saw seen'], ['hear', 'heard'], ['take', 'took taken'],
+@@ -99,6 +100,21 @@ export const creatureAfter = (after, raw) => after.filter(w => !/^(at|on|upon|in
+ const POSITION = /^(fort|forts|fortress|redoubt|town|city|village|hill|ridge|bridge|trench|trenches|position|positions|line|lines|battery|wall|walls|gate|gates|castle|camp|outpost|stronghold|citadel|earthworks|breach|heights|bastion|keep)$/;
+ const positionAfter = (after) => after.slice(0, 4).some(w => POSITION.test(w));
+ const MISSILE = /\b(gun|guns|pistol|revolver|musket|rifle|carbine|bow|longbow|crossbow|cannon|arrow|arrows|bolt|shaft|volley|round|shot|sling)\b/;
++// Fire's object names its sense (PropBank's frameset fire): fire.01's is the gun or the projectile, its target an at-phrase
++// (FrameNet Use_firearm: Firearm, Goal); fire.02's the one let go (FrameNet Firing, VerbNet fire-10.10); fire.03 bakes pots and
++// fire.04 ignites ("steam engines fired by alcohol lamps") [ASSUMED list of things fired in those two senses].
++const HEATED = /^(kilns?|ovens?|stoves?|furnaces?|forges?|boilers?|engines?|thrusters?|clay|pots?|pottery|bricks?|glaze|imagination)$/;
++/** Whether the words after fire or loose make it no shot: their object (the words before a preposition) is a person or a
++ *  thing heated, and names no weapon or missile ("fire the cook", "fire the kiln"; "fire my pistol at him" is a shot). */
++export function notAShot(after, raw) {
++    const np = [];
++    for (const x of after) {
++        if (/^(?:at|on|upon|into|in|with|from|to|toward|towards|and|then|again|twice|once|off|away|back|[,.;:!?])$/.test(x))
++            break;
++        np.push(x);
++    }
++    return np.length > 0 && !MISSILE.test(np.join(' ')) && (np.some(w => HEATED.test(w)) || creatureAfter(np, raw));
++}
+ const WOUND = /\b(wound|wounds|cut|cuts|gash|injury|injuries|burn|burns|bite|fracture|bone|leg|arm|hand|head|foot|bleeding|stump)\b/;
+ const strikeNot = ['bump', 'click', 'dash', 'drum', 'knap', 'rap', 'tamp', 'tap', 'squash', 'squelch', 'pink', 'chip', 'clip', 'ream', 'saw', 'scarify', 'scrape', 'snip', 'rip', 'dig', 'penetrate', 'perforate', 'puncture', 'stick', 'jump', 'bomb', 'bombard', 'raid'];
+ // A shot: BodyStrike for a bow, a crossbow or a thrown weapon; a handgun at a person is BodyCheck's with shot_m (feats.ts).
+@@ -145,7 +161,7 @@ export const TASK_ROUTES = [
+     // Shooting: shoot and fire (throw-17.1), loose (an arrow), aim: at someone, at something, or with a missile weapon named
+     // ("fire the musket"); shooting rapids and firing a kiln are other acts.
+     { to: SHOT, verbs: ['shoot'], when: a => !/^(the )?(rapids|breeze)\b/.test(a.join(' ')) },
+-    { to: SHOT, verbs: ['fire', 'loose', 'aim'], when: (a, raw) => /^(at|on|upon)$/.test(a[0] ?? '') || MISSILE.test(a.slice(0, 5).join(' ')) || creatureAfter(a, raw) },
++    { to: SHOT, verbs: ['fire', 'loose', 'aim'], when: (a, raw) => !notAShot(a, raw) && (/^(at|on|upon)$/.test(a[0] ?? '') || MISSILE.test(a.slice(0, 5).join(' ')) || creatureAfter(a, raw)) },
+     // Blows: hitting, swatting, spanking, poking, attacking, killing and cutting (hit-18.1, swat-18.2, spank-18.3, poke-19,
+     // attack-60.1, murder-42.1, cut-21.1) at a creature, less the members that touch without striking (tap, rap, bump) or work
+     // material (saw, scrape, dig).
+@@ -257,6 +273,10 @@ function nounRoute(words, raw) {
+         const w = words[i], n = w.replace(/s$/, ''), rest = words.slice(i + 1);
+         // A hyphened noun is read whole ("once-over": the words split at the hyphen).
+         const hy = words[i + 1] && raw.toLowerCase().includes(`${w}-${words[i + 1]}`) ? `${w}-${words[i + 1]}` : null;
++        // A noun of measure before of and a thing heads a measure of goods, no act ("take a shot of whiskey": CGEL ch. 5 §3.3, the
++        // quantificational construction; grammar.ts measureOfGoods).
++        if (rest[0] === 'of' && measureOfGoods(`a ${w} ${rest.slice(0, 2).join(' ')}`))
++            continue;
+         const f = (hy ? frameRoute(hy, 'n', words.slice(i + 2), raw) : null) ?? frameRoute(w, 'n', rest, raw) ?? (w !== n ? frameRoute(n, 'n', rest, raw) : null);
+         if (f)
+             return { to: f, by: hy ?? w };
+@@ -270,12 +290,20 @@ function nounRoute(words, raw) {
+ }
+ /** Whether a verb is one of climbing (FrameNet Self_motion's climb, clamber, scramble, shin, scale), BodyCheck's own. */
+ export const climbing = (v) => (FN[`${v}.v`] ?? []).includes('Self_motion');
+-/** For the router (a player's line): the tool a light verb's noun names ("take a look"), or a verb VerbNet lacks names by its
+- * FrameNet frame ("befriend", "elude"); the tool's name only. */
+-export function lightNounTool(verb, after, raw) {
+-    return LIGHT.has(verb) ? nounRoute(after, raw)?.to.split(' ')[0] ?? null : null;
++/** The tools a route names, outside its brackets: a shot is BodyStrike's or, for a handgun, BodyCheck's (SHOT), so it names
++ *  both. */
++export const toolsNamed = (to) => to.replace(/\([^)]*\)/g, '').match(/\b[A-Z][a-z]+(?:[A-Z][a-z]+)*\b/g) ?? [];
++export const SHOT_TOOLS = toolsNamed(SHOT);
++/** For the router (a player's line): the tools a light verb's noun names ("take a look", "take a shot at"), or a verb VerbNet
++ *  lacks names by its FrameNet frame ("befriend", "elude", "fire"); the tools' names only. */
++export function lightNounTools(verb, after, raw) {
++    const r = LIGHT.has(verb) ? nounRoute(after, raw) : null;
++    return r ? toolsNamed(r.to) : null;
++}
++export function frameTools(verb, after, raw) {
++    const to = frameRoute(verb, 'v', after, raw);
++    return to ? toolsNamed(to) : null;
+ }
+-export const frameTool = (verb, after, raw) => frameRoute(verb, 'v', after, raw)?.split(' ')[0] ?? null;
+ export const isKnownVerb = (v) => KNOWN_VERBS.has(v);
+ /** The tool that decides a task, from the task's own verb by its present-day meaning (TASK_ROUTES, from VerbNet), from the
+  * noun a light verb carries ("take a look"), from the verb's FrameNet frame when VerbNet's classes name none, else, when the
+diff --git a/src/rules/verbs.ts b/src/rules/verbs.ts
+index 86e3d7b..cb62381 100644
+--- a/src/rules/verbs.ts
++++ b/src/rules/verbs.ts
+@@ -6,6 +6,7 @@ import { VERBNET } from './data/verbnet.js';
+ import { ROLE_WORDS } from './nouns.js';
+ import { FRAMENET, FRAME_FES } from './data/framenet.js';
+ import { QUOTED } from './quotes.js';
++import { measureOfGoods } from './grammar.js';
+ 
+ // Irregular past and participle forms back to the verb (the ones VerbNet's members need most).
+ const IRREGULAR: Record<string, string> = Object.fromEntries(([
+@@ -84,6 +85,17 @@ export const creatureAfter = (after: string[], raw: string) => after.filter(w =>
+ const POSITION = /^(fort|forts|fortress|redoubt|town|city|village|hill|ridge|bridge|trench|trenches|position|positions|line|lines|battery|wall|walls|gate|gates|castle|camp|outpost|stronghold|citadel|earthworks|breach|heights|bastion|keep)$/;
+ const positionAfter = (after: string[]) => after.slice(0, 4).some(w => POSITION.test(w));
+ const MISSILE = /\b(gun|guns|pistol|revolver|musket|rifle|carbine|bow|longbow|crossbow|cannon|arrow|arrows|bolt|shaft|volley|round|shot|sling)\b/;
++// Fire's object names its sense (PropBank's frameset fire): fire.01's is the gun or the projectile, its target an at-phrase
++// (FrameNet Use_firearm: Firearm, Goal); fire.02's the one let go (FrameNet Firing, VerbNet fire-10.10); fire.03 bakes pots and
++// fire.04 ignites ("steam engines fired by alcohol lamps") [ASSUMED list of things fired in those two senses].
++const HEATED = /^(kilns?|ovens?|stoves?|furnaces?|forges?|boilers?|engines?|thrusters?|clay|pots?|pottery|bricks?|glaze|imagination)$/;
++/** Whether the words after fire or loose make it no shot: their object (the words before a preposition) is a person or a
++ *  thing heated, and names no weapon or missile ("fire the cook", "fire the kiln"; "fire my pistol at him" is a shot). */
++export function notAShot(after: string[], raw: string): boolean {
++    const np: string[] = [];
++    for (const x of after) { if (/^(?:at|on|upon|into|in|with|from|to|toward|towards|and|then|again|twice|once|off|away|back|[,.;:!?])$/.test(x)) break; np.push(x); }
++    return np.length > 0 && !MISSILE.test(np.join(' ')) && (np.some(w => HEATED.test(w)) || creatureAfter(np, raw));
++}
+ const WOUND = /\b(wound|wounds|cut|cuts|gash|injury|injuries|burn|burns|bite|fracture|bone|leg|arm|hand|head|foot|bleeding|stump)\b/;
+ 
+ /** A route: the tool that decides tasks whose own verb is one of `verbs` (lemmas; two-word ones joined by _), when `when`
+@@ -135,7 +147,7 @@ export const TASK_ROUTES: Route[] = [
+     // Shooting: shoot and fire (throw-17.1), loose (an arrow), aim: at someone, at something, or with a missile weapon named
+     // ("fire the musket"); shooting rapids and firing a kiln are other acts.
+     { to: SHOT, verbs: ['shoot'], when: a => !/^(the )?(rapids|breeze)\b/.test(a.join(' ')) },
+-    { to: SHOT, verbs: ['fire', 'loose', 'aim'], when: (a, raw) => /^(at|on|upon)$/.test(a[0] ?? '') || MISSILE.test(a.slice(0, 5).join(' ')) || creatureAfter(a, raw) },
++    { to: SHOT, verbs: ['fire', 'loose', 'aim'], when: (a, raw) => !notAShot(a, raw) && (/^(at|on|upon)$/.test(a[0] ?? '') || MISSILE.test(a.slice(0, 5).join(' ')) || creatureAfter(a, raw)) },
+     // Blows: hitting, swatting, spanking, poking, attacking, killing and cutting (hit-18.1, swat-18.2, spank-18.3, poke-19,
+     // attack-60.1, murder-42.1, cut-21.1) at a creature, less the members that touch without striking (tap, rap, bump) or work
+     // material (saw, scrape, dig).
+@@ -243,6 +255,9 @@ function nounRoute(words: string[], raw: string): { to: string; by: string } | n
+         const w = words[i]!, n = w.replace(/s$/, ''), rest = words.slice(i + 1);
+         // A hyphened noun is read whole ("once-over": the words split at the hyphen).
+         const hy = words[i + 1] && raw.toLowerCase().includes(`${w}-${words[i + 1]}`) ? `${w}-${words[i + 1]}` : null;
++        // A noun of measure before of and a thing heads a measure of goods, no act ("take a shot of whiskey": CGEL ch. 5 §3.3, the
++        // quantificational construction; grammar.ts measureOfGoods).
++        if (rest[0] === 'of' && measureOfGoods(`a ${w} ${rest.slice(0, 2).join(' ')}`)) continue;
+         const f = (hy ? frameRoute(hy, 'n', words.slice(i + 2), raw) : null) ?? frameRoute(w, 'n', rest, raw) ?? (w !== n ? frameRoute(n, 'n', rest, raw) : null);
+         if (f) return { to: f, by: hy ?? w };
+         const l = LIGHT_NOUNS[w] ?? LIGHT_NOUNS[n];
+@@ -253,12 +268,20 @@ function nounRoute(words: string[], raw: string): { to: string; by: string } | n
+ }
+ /** Whether a verb is one of climbing (FrameNet Self_motion's climb, clamber, scramble, shin, scale), BodyCheck's own. */
+ export const climbing = (v: string) => (FN[`${v}.v`] ?? []).includes('Self_motion');
+-/** For the router (a player's line): the tool a light verb's noun names ("take a look"), or a verb VerbNet lacks names by its
+- * FrameNet frame ("befriend", "elude"); the tool's name only. */
+-export function lightNounTool(verb: string, after: string[], raw: string): string | null {
+-    return LIGHT.has(verb) ? nounRoute(after, raw)?.to.split(' ')[0] ?? null : null;
++/** The tools a route names, outside its brackets: a shot is BodyStrike's or, for a handgun, BodyCheck's (SHOT), so it names
++ *  both. */
++export const toolsNamed = (to: string) => to.replace(/\([^)]*\)/g, '').match(/\b[A-Z][a-z]+(?:[A-Z][a-z]+)*\b/g) ?? [];
++export const SHOT_TOOLS = toolsNamed(SHOT);
++/** For the router (a player's line): the tools a light verb's noun names ("take a look", "take a shot at"), or a verb VerbNet
++ *  lacks names by its FrameNet frame ("befriend", "elude", "fire"); the tools' names only. */
++export function lightNounTools(verb: string, after: string[], raw: string): string[] | null {
++    const r = LIGHT.has(verb) ? nounRoute(after, raw) : null;
++    return r ? toolsNamed(r.to) : null;
++}
++export function frameTools(verb: string, after: string[], raw: string): string[] | null {
++    const to = frameRoute(verb, 'v', after, raw);
++    return to ? toolsNamed(to) : null;
+ }
+-export const frameTool = (verb: string, after: string[], raw: string) => frameRoute(verb, 'v', after, raw)?.split(' ')[0] ?? null;
+ export const isKnownVerb = (v: string) => KNOWN_VERBS.has(v);
+ 
+ /** The tool that decides a task, from the task's own verb by its present-day meaning (TASK_ROUTES, from VerbNet), from the
+diff --git a/tests/engine.test.mjs b/tests/engine.test.mjs
+index 688f63b..20f4341 100644
+--- a/tests/engine.test.mjs
++++ b/tests/engine.test.mjs
+@@ -1074,7 +1074,9 @@ fresh(); expect('a climb in Act goes to BodyCheck', String(await run('Act', { wh
+     'have a peek through the keyhole': 'Look', 'get a glimpse of the rider': 'Look', 'befriend the clerk': 'SocialResponse', 'elude the guards': 'Chase', 'dog the thief through the streets': 'Chase',
+     'smother the sentry': 'BodyChoke', 'spear the boar': 'BodyStrike', 'bayonet the sentry': 'BodyStrike', 'throw a punch at the smuggler': 'BodyStrike', 'take a swing at the guard': 'BodyStrike',
+     'take aim at the deer': 'BodyStrike', 'resuscitate the drowned boy': 'BodyTreat', 'invade the village': 'Battle', 'fight for the bridge': 'Battle', 'fight the guard': 'BodyStrike',
+-    'clamber up the wall': null, 'scramble over the fence': null, 'take a nap': null, 'take a step back': null, 'bolt the door': null };
++    'clamber up the wall': null, 'scramble over the fence': null, 'take a nap': null, 'take a step back': null, 'bolt the door': null,
++    // Fire with a person or a thing heated as its object is no shot (verbs.ts notAShot); a shot of whiskey is a measure.
++    'fire the cook': null, 'fire the kiln': null, 'fire the musket at the deer': 'BodyStrike', 'take a shot of whiskey': null };
+   const got = Object.fromEntries(Object.keys(want).map(t => [t, V.taskRoute(t)?.to.split(' ')[0] ?? null]));
+   const wrong = Object.keys(want).filter(t => got[t] !== want[t]).map(t => `${t} → ${got[t]} (${want[t]})`);
+   const feBad = V.FRAME_ROUTES.flatMap(r => Object.keys(r.fe).filter(e => !(e in V.frameElements(r.frame))).map(e => `${r.frame}.${e}`));
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 7ad18ed..25e35de 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -3646,5 +3646,103 @@
+   "find": "\\ \\ \\ \\ \\ \\ \\ \\ id\\ =\\ worlds\\[id\\]\\.base;",
+   "replace": "        id = undefined;",
+   "miss": "replies keep their worlds as changes, rebuilt exactly"
++ },
++ {
++  "id": "RB1",
++  "name": "a shot's route names both its tools",
++  "file": "src/rules/verbs.js",
++  "find": "toolsNamed = \\(to\\) => to\\.replace\\(",
++  "replace": "toolsNamed = (to) => to.split(' ')[0].replace(",
++  "miss": "\"I fire my pistol at the guard.",
++  "test": "route"
++ },
++ {
++  "id": "RB2",
++  "name": "a light verb's shot names both its tools",
++  "file": "src/rules/verbs.js",
++  "find": "return r \\? toolsNamed\\(r\\.to\\) : null;",
++  "replace": "return r ? [r.to.split(' ')[0]] : null;",
++  "miss": "\"I take a shot at the guard with my pistol.",
++  "test": "route"
++ },
++ {
++  "id": "RB3",
++  "name": "fire with a person as its object is no shot",
++  "file": "src/rules/router.js",
++  "find": "if \\(v === 'fire' && notAShot\\(after, text\\)\\)",
++  "replace": "if (false)",
++  "miss": "\"I fire the cook.",
++  "test": "route"
++ },
++ {
++  "id": "RB4",
++  "name": "a kiln fired is heated",
++  "file": "src/rules/verbs.js",
++  "find": "np\\.some\\(w => HEATED\\.test\\(w\\)\\) \\|\\| ",
++  "replace": "",
++  "miss": "\"I fire the kiln.",
++  "test": "route"
++ },
++ {
++  "id": "RB5",
++  "name": "fire up starts a thing",
++  "file": "src/rules/router.js",
++  "find": "    fire_up: \\[\\],",
++  "replace": "",
++  "miss": "\"I fire up the generator.",
++  "test": "route"
++ },
++ {
++  "id": "RB6",
++  "name": "a named verb's empty list is its answer",
++  "file": "src/rules/router.js",
++  "find": "const framed = byClass\\.length \\|\\| named \\? null",
++  "replace": "const framed = byClass.length ? null",
++  "miss": "\"I fire up the generator.",
++  "test": "route"
++ },
++ {
++  "id": "RB7",
++  "name": "opening or returning fire is a shot",
++  "file": "src/rules/router.js",
++  "find": "const opened = low\\.match\\(",
++  "replace": "const opened = null && low.match(",
++  "miss": "\"I open fire on the soldiers.",
++  "test": "route"
++ },
++ {
++  "id": "RB8",
++  "name": "gunning down is a shot",
++  "file": "src/rules/router.js",
++  "find": "if \\(/\\\\bgun\\(\\?:s\\|ned\\|ning\\)\\?",
++  "replace": "if (false && /\\bgun(?:s|ned|ning)?",
++  "miss": "\"I gun him down.",
++  "test": "route"
++ },
++ {
++  "id": "RB9",
++  "name": "holding fire is no grip",
++  "file": "src/rules/router.js",
++  "find": "if \\(/\\\\bh\\(\\?:old\\|olds\\|olding\\|eld\\) \\(\\?:\\(\\?:my",
++  "replace": "if (false && /\\bh(?:old|olds|olding|eld) (?:(?:my",
++  "miss": "\"I hold my fire.",
++  "test": "route"
++ },
++ {
++  "id": "RB10",
++  "name": "a shot of whiskey is a measure",
++  "file": "src/rules/verbs.js",
++  "find": "if \\(rest\\[0\\] === 'of' && measureOfGoods",
++  "replace": "if (false && measureOfGoods",
++  "miss": "\"I take a shot of whiskey.",
++  "test": "route"
++ },
++ {
++  "id": "RB11",
++  "name": "a task firing a person is no shot",
++  "file": "src/rules/verbs.js",
++  "find": "when: \\(a, raw\\) => !notAShot\\(a, raw\\) && ",
++  "replace": "when: (a, raw) => ",
++  "miss": "FrameNet routes"
+  }
+ ]
+diff --git a/tests/route.test.mjs b/tests/route.test.mjs
+index 77e7a27..e14f18d 100644
+--- a/tests/route.test.mjs
++++ b/tests/route.test.mjs
+@@ -36,6 +36,19 @@ const CASES = [
+     ['I shoot the deer with my bow.', ['BodyStrike'], ['Substance']],
+     // A handgun shot is BodyCheck's (shot_m; rules-tools.ts, "A handgun shot → BodyCheck with shot_m").
+     ['I shoot the guard with my pistol.', ['BodyCheck', 'BodyStrike'], ['Substance']],
++    // A shot routed by its FrameNet frame names both tools (verbs.ts SHOT); fire with a person or a thing heated as its object
++    // is no shot (FrameNet Firing; notAShot); the set phrases of fire.
++    ['I fire my pistol at the guard.', ['BodyCheck', 'BodyStrike'], []],
++    ['I take a shot at the guard with my pistol.', ['BodyCheck', 'BodyStrike'], []],
++    ['I fire the cook.', [], ['BodyStrike', 'BodyCheck']],
++    ['I fire the kiln.', [], ['BodyStrike', 'BodyCheck']],
++    ['I fire up the stove.', [], ['BodyStrike', 'BodyCheck']],
++    ['I fire up the generator.', [], ['BodyStrike', 'BodyCheck']],
++    ['I open fire on the soldiers.', ['BodyCheck', 'BodyStrike'], []],
++    ['I return fire.', ['BodyCheck', 'BodyStrike'], ['Transfer', 'Act']],
++    ['I hold my fire.', [], ['HoldOn']],
++    ['I gun him down.', ['BodyCheck', 'BodyStrike'], []],
++    ['I take a shot of whiskey.', [], ['BodyStrike', 'BodyCheck']],
+     ["I don't hit him.", [], ['BodyStrike']],
+     ['I refuse to drink the wine.', [], ['BodyIntake']],
+     ['I pretend to be drunk.', ['SocialResponse'], ['BodyIntake']],

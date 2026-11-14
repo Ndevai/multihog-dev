@@ -78,7 +78,7 @@ def({ id: 'legFractureKN', value: Math.sqrt(3.8 * 9), unit: 'kN axial, median', 
 def({ id: 'legGiveM', value: 0.25, unit: 'm of body travel, knees bending on landing', status: 'assumed', src: 'a bent-knee landing lowers the hips about a quarter metre', range: [0.1, 0.4], file: 'materials.ts' });
 const GROUND_GIVE: Record<string, number> = { stone: 0, paving: 0.005, 'packed earth': 0.02, earth: 0.05, grass: 0.05, sand: 0.1, snow: 0.2, water: 1 };
 export const GROUNDS = Object.keys(GROUND_GIVE);
-def({ id: 'legFractureSigma', value: Math.log(9 / 3.8) / 3, unit: 'log-sd', status: 'fitted', src: '3.8–9 kN as ±1.5 σ', file: 'materials.ts' });
+def({ id: 'legFractureSigma', value: Math.log(9 / 3.8) / 3, unit: 'log-sd', status: 'fitted', src: '3.8–9 kN as ±1.5 σ (range: the span read as ±2 σ to ±1 σ)', range: [Math.log(9 / 3.8) / 4, Math.log(9 / 3.8) / 2], file: 'materials.ts' });
 export function landing(massKg: number, height: number, ground = 'packed earth', stiff = false): { kNPerLeg: number; chance: number } {
     const d = (stiff ? 0.05 : k('legGiveM')) + (GROUND_GIVE[ground] ?? 0.02);
     const kn = massKg * 9.81 * (height + d) / d / 2 / 1000;

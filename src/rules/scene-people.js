@@ -2,21 +2,10 @@
 // people, the cast, capitalized names in the recent text, and roles the text names ("the costermonger", "the man by the
 // fire"). The plan schema lists exactly these as the keys and person values a call can take, so a plan names people and
 // nothing else (a window, a tool's name and a sentence were each taken for a person when keys were free text).
-import { OCCUPATIONS } from './data/census-ew-1881.js';
 import { GEONAMES } from './data/geonames.js';
 import { TITLE } from './frame.js';
-const PERSON_NOUNS = ['man', 'woman', 'boy', 'girl', 'child', 'lad', 'lass', 'stranger', 'figure', 'person', 'owner', 'occupant', 'guard', 'soldier', 'servant',
-    'maid', 'landlord', 'landlady', 'barman', 'barmaid', 'potboy', 'watchman', 'constable', 'policeman', 'sailor', 'priest', 'vicar', 'doctor', 'merchant',
-    'master', 'mistress', 'gentleman', 'lady', 'drover', 'traveller', 'traveler', 'customer', 'clerk', 'porter', 'beggar', 'thief', 'driver', 'coachman'];
-// Trade words from the census's occupation names ("Innkeeper, Hotel Keeper, Publican" → innkeeper, publican).
-// A trade word names a person when it is an agent noun: English forms those with -er, -or, -ist, -man, -ian, -ant, -ess,
-// -ster, -wright, -smith (Marchand 1969, The Categories and Types of Present-Day English Word-Formation). Singular forms only;
-// a place or a thing in a trade's name ("Lodging House Keeper" → house) is no person.
-const AGENT = /(?:er|or|ist|man|ian|ant|ess|ster|wright|smith)$/;
-const TRADES = new Set(OCCUPATIONS.flatMap(o => o.name.toLowerCase().split(/[^a-z]+/)).filter(w => w.length > 4 && AGENT.test(w) && !/(?:ers|ors)$/.test(w) && !/^(other|manufacturer|maker|dealer|worker|labourer|member|officer|order|power|paper|water|silver|leather|rubber|copper|timber|letter|matter|winter|summer|chamber|number|master|upper|lower|outer|inner|under|after|whether|either|neither|corner|border|manor|interior|exterior)$/.test(w)));
-// Animals a scene can hold, which act, hear and see as people do in the tools.
-const ANIMALS = ['dog', 'hound', 'horse', 'mare', 'cat', 'mule', 'donkey', 'ox', 'bull', 'cow', 'goat', 'pig', 'wolf', 'bear', 'rat'];
-const ROLE_WORDS = new Set([...PERSON_NOUNS, ...TRADES, ...ANIMALS, 'priest', 'clerk', 'surgeon', 'midwife', 'groom', 'cook', 'nurse', 'page', 'wife', 'husband', 'widow', 'maidservant']);
+import { ROLE_WORDS } from './nouns.js';
+import { OPENS } from './quotes.js';
 const STOP = new Set(['I', 'The', 'A', 'An', 'He', 'She', 'They', 'We', 'It', 'His', 'Her', 'Their', 'My', 'Our', 'This', 'That', 'There', 'Then', 'When', 'But', 'And',
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
     'September', 'October', 'November', 'December', 'Scenario', 'Cast', 'Street', 'Road', 'Lane', 'Square']);
@@ -48,7 +37,7 @@ export function scenePeople(texts, known = [], max = 24) {
         for (const m of untitled.matchAll(/(?<!\b(?:in|on|at|to|from|near|of|by|into|toward|towards)\s)\b([A-Z][a-z'-]+(?: [A-Z][a-z'-]+)?)\b/g)) {
             // A possessive names its owner ("Tom's table" → Tom).
             const n = m[1].trim().replace(/'s$/, ''), before = untitled.slice(0, m.index).trimEnd();
-            const initial = !before || /[.!?:"“]$/.test(before);
+            const initial = !before || /[.!?:]$/.test(before) || new RegExp(`${OPENS.source}$`).test(before);
             // A place's name is no person ("Saint Petersburg, Nevsky Prospect": the city and its street climbed out of a sledge).
             const folded = n.toLowerCase();
             if (GEONAMES[folded] || /^(?:saint|st|san|santa|sao|new|port|fort|mount|lake|cape|rua|via|rue|calle|piazza|place|nevsky|prospect)\b/i.test(n) || /(?:street|road|lane|prospect|square|bridge|quay|wharf|market|hill|gate|abbey|church|cathedral|palace|castle|hall|house|inn|tavern)$/i.test(n))

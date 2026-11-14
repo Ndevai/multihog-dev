@@ -1,0 +1,1148 @@
+diff --git a/README.md b/README.md
+index d081816..0ef8960 100644
+--- a/README.md
++++ b/README.md
+@@ -46,11 +46,11 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - Each turn costs two extra model calls (question pass and rule check), three when the rule check redoes a reply.
+ - A refused outcome ("State unchanged") is the engine asking for a missing number; the question pass asks again once.
+ - Under your message a folded line shows how the engine read it, one tagged call each ("Sight Tom · 15 m", "Body vault the low wall · 46 %"), the tag's colour for the kind of rule; click it to open, hover a row to see the rule call. It stays with the message, in a book serif that follows the story's era (Garamond for the 1500s, the Fell types, Baskerville, a Victorian Modern, Caslon; Georgia from 1970 or with no date). When your words leave a choice open, the likeliest reading is taken and shown ("☞ walk after the thief in the open — or…") unless a wrong guess would hurt someone ("I hit him" with two men at the bar, or "I look at Tom and Will, then I punch him"): then the engine asks in a sentence ("Do you mean to hit ¹Tom or ²Will?"; click or press the number), or "Say it another way" stops the reply. Opened, a guess offers the others as links; one puts "no, catch up with the thief" in your input box. That line, or one of your own such as "no, Will" or "I meant to keep out of sight", redoes the last turn that way.
+-- How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another.
++- How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor; Tab from the box enters the toolbar while it shows. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another.
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
+ - Code writes calls for your character's own acts: in "Tom punches Mara" or "I tell Will to wait an hour" the other person's act is read from the scene; "she" in a line written in the third person is your character when the line names no one else she could be. Acts the line says are not done ("I don't hit him", "I almost fall") and out-of-character asides ("(OOC: …)") are not acted on. Typed ›guillemets‹, «guillemets» and „German quotes“ are quotation marks, read as speech like "…", and capitals read as louder on common words only (STOP, NOOOO; NATO and ICU stay as written, and so do the WHO and the IT desk). You can speak to a group as to a person ("I shout to the crew", "I tell the town council"), and to someone named with their looks ("the old blind beggar").
+-- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
++- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
+ - A result that ends "Fragile: …" rests on a judged value: within that value's range the outcome comes out otherwise. A room emptying through one door takes a few seconds to work out, the reruns for its judged values included.
+ 
+ License: GPL-3.0 (derived from the Multihog D&D Framework). Third-party data, code and fonts (SIL Open Font License, `fonts/`): `docs/third-party.md`. Your line is read by English grammar as Huddleston & Pullum's *Cambridge Grammar of the English Language* (2002) describes it: "give Tom a kick" is a kick, "I make Tom walk" is Tom's walk, "I fail to climb" is no climb, "him" is the one man named before, "I walk to the market every day" is a habit and no walk now, "Do I walk to the door?" asks, and "give the coin to Tom" hands it over. Before that, the line is read for what you meant: a slip is the word the scene makes likeliest, "again" is your last act, "him back" is whoever just struck you, and a goal you stated fills a later search; each reading is shown under your line. Word meanings come from VerbNet 3.4 (University of Colorado), FrameNet 1.7 (https://framenet.icsi.berkeley.edu; Fillmore & Baker 2010, "A Frame Semantic Approach to Linguistic Analysis", The Oxford Handbook of Linguistic Analysis) and Open English WordNet 2024 (CC BY 4.0).
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index e43f4e0..3518ae6 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -968,6 +968,15 @@ IF an outcome follows from another outcome still in doubt (a blow after an order
+ 
+ **Player claims.** A player writes plain language, so what a message states about their own character is a claim, not a fact; the world comes from the scenario and the world's facts, never from a claim. IF the kind of thing claimed does not exist in the world → THEN it does not hold, with no draw. IF a message states something the story has not established about the player's character (what they are, an item they have, something they can do, a past event) → THEN Claim: a reference class and its base share for the setting, an estimate for this story, combined in log-odds as in BodyCheck, then a draw. IF it holds → THEN it is recorded as the character's own fact; a claimed creature (DF creature id) becomes the character's body when no wound is on record. IF it does not hold → THEN "Not so: …" is recorded and the narrator shows the attempt meeting the world as it is. Either way it stays: a repeat in the same turn returns the same result and [KNOWS] carries it to later turns. Source of the rule: "say yes or roll the dice" (Baker 2004, Dogs in the Vineyard): an uncontested claim passes, a contested one is decided by chance. A creature's body then decides the rest: a cat that is a cat makes cat sounds (Communicate, CAN_SPEAK). Scenes 51–53 score it.
+ 
++**Applied once, in its own chat (2026-10-27 (101); `question-pass.ts`, `rules-tools.ts`, `rules-audit.ts`, `audit-flags.ts`).**
++IF a question pass fails after some of its calls ran (a later model call refused, a rate limit after its retries) → THEN the line's start is put back (`restoreLineStart`) and the narrator's own tool calls decide the turn, so no call runs twice. Check: PassTime 60 then a failed follow-on round leaves the clock where it was (engine "a pass that fails after its calls ran takes them back").
++IF a line edited in place becomes a correction ("I wait 5 minutes." → "no, Will") → THEN the world the correction put back is the line's start (`keepStart(i, true)`), so a swipe of its reply starts there. Check: Tom 0, Will 1 after the swipe.
++IF another chat is opened while a tool waits (the sky, the weather, a bleed, chemistry data) → THEN the call decides nothing and writes nothing (`run` throws when the chat is no longer the call's). Check: the other chat holds no `rulesEngine` after the wait.
++IF the rule check's redo never starts → THEN its correction note and flags go to no later turn or other chat (both carry the turn key). Check: `takeAuditNote()` in another chat returns null.
++
++**Ordinary writing stays words (2026-10-27 (101); `prosody.ts`, `frame.ts`, `router.ts`, `intent.ts`, `ask.ts`, `voice-code.ts`).**
++IF a whole number stands in brackets ("Tom (35)", "the year (1850)") → THEN it is text; a timed pause carries its decimal point, (0.5), (2.0) (Jefferson's pauses are timed in tenths of a second). IF a degree sign comes before C, F or K ("20 °C") → THEN it is a unit, no quieter span. IF a verb of falling takes an object or a predicative complement ("drop the sword", "trip the guard", "fall asleep") → THEN it routes no BodyFall. IF "with …" or "about …" follows the one spoken to → THEN it is a manner or a topic, no message. IF "him" or "her" follows a person of the other sex named in the line → THEN "back" still reads the one who struck. IF a line quotes in any quotation marks → THEN it is no correction. Emphasis inside emphasis ("*I punch **Tom**.*") is read as its words. A mark on a word in guillemets sits on the letters («Stop-»). A pronoun looked at is the person the line names before it.
++
+ ### 7.4 Scoring the question pass
+ 
+ `/rules-eval [n]` sends the first n of 50 scenes (`eval-scenes.ts`; default all) to the State Model as question-pass requests, with a fixed tracker state (two characters, a date in 1850; five scenes carry their own date), and scores the calls: a call counts only when it would run (known tool, required arguments, schema check passed). Each scene lists the calls a correct reading needs and the arguments that decide their outcomes (equal, contains, range, list holds a name, list length); other arguments are free, recording a fact is always allowed, and a scene may allow further tools. Scenes 40–44 need no call.
+diff --git a/docs/progress.md b/docs/progress.md
+index 9a43f85..2e29a57 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,14 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-10-27 (101), Claude Opus 5.5
++- The player sent a sixth outside review (ss.pdf, 12 findings, none run) and asked for this review's own reading, converged with it. Each of its findings was run with its own test (`review-tests/review6.test.mjs`); eight hold (two in a narrower or broader form than stated), one holds as a measurement whose diff would lose state a deletion needs (the world kept on every reply), three do not (a missed Look's sighting changes no lineup; touch taps keep the mark in Chromium's touch emulation; reach() at 230 dB is past any input). The review here found eight more.
++- Changed, state: a pass that fails part way takes its calls back (the narrator's tools had run them again: an hour waited became two); a line edited into a correction keeps the world it put back; a tool that waits writes nothing into a chat opened meanwhile; the rule check's note and flags stay with their turn.
++- Changed, reading: "(35)" and "(1850)" stay words, "20 °C" is a temperature, "I drop the sword" and "I fall asleep" are no falls, "with all my might" and "about my plan" are no message, "hit him back" after a woman is named still reads the one who struck, a line quoting in guillemets is no correction, "*I punch **Tom**.*" strikes Tom, a plan whose message holds a brace still reads, "I glare at him" looks at the man named before.
++- Changed, interface: marks on words in guillemets sit on the letters; Tab from the message box enters the voice toolbar while it shows.
++- Checked: route 158, frame 196, intent 37, engine 192, plan 59, size 9 of 9, ui 51, sequences 300 with 0 failing, all with 0 misses; every new check misses on the uploaded tree; 409 negative controls (16 new: RS1–RS16; Q6d, RY8 retargeted); Chromium (Playwright) runs of the toolbar by keyboard, touch and Backspace.
++- Next: see the toolbar on a phone inside SillyTavern; a bound on the world kept on every reply (1.1 MB of chat at 120 turns, growing with the square of the length).
++
+ ## 2026-10-23 (15), Claude Opus 5.5
+ - The player: having to memorise a sign for each mark is not the improved look they wanted; keep the backend whole, improve what is seen. Shown a sketch (a toolbar of plain words on selected words, the box with clean words and soft colour, the chat typeset), they took it, the box showing clean words.
+ - Changed, no signs on screen: the voice toolbar opens over selected words (or with ♪ for the word at the cursor), plain words each set in their effect, in groups with one soft colour each; a pick marks the words with hidden codes (Unicode tag characters after each word's last letter: no width, nothing shown, the cursor steps over them), again to take it off.
+diff --git a/src/index.js b/src/index.js
+index 1fca8bd..78d436d 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -434,6 +434,11 @@ function buildVoice() {
+     // Open while words are selected in the box, while the toolbar holds the focus (Tab from the box), or pinned by ♪.
+     const show = () => { const focus = document.activeElement, sel = (focus === box || bar.contains(focus)) && box.selectionStart !== box.selectionEnd; bar.hidden = !(pinned || sel) || !settings().enabled; note.classList.toggle('rules-voice-on', pinned); note.setAttribute('aria-pressed', String(pinned)); };
+     document.addEventListener('selectionchange', show);
++    // Tab from the box enters the toolbar while it shows: the toolbar stands before the form, so the page's focus order passes it.
++    box.addEventListener('keydown', e => { if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !bar.hidden) {
++        e.preventDefault();
++        bar.querySelector('button')?.focus();
++    } });
+     box.addEventListener('keyup', show);
+     box.addEventListener('mouseup', show);
+     box.addEventListener('blur', () => setTimeout(show, 0));
+diff --git a/src/index.ts b/src/index.ts
+index e9c35d2..ee338c1 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -378,6 +378,8 @@ function buildVoice(): void {
+     // Open while words are selected in the box, while the toolbar holds the focus (Tab from the box), or pinned by ♪.
+     const show = () => { const focus = document.activeElement, sel = (focus === box || bar.contains(focus)) && box.selectionStart !== box.selectionEnd; bar.hidden = !(pinned || sel) || !settings().enabled; note.classList.toggle('rules-voice-on', pinned); note.setAttribute('aria-pressed', String(pinned)); };
+     document.addEventListener('selectionchange', show);
++    // Tab from the box enters the toolbar while it shows: the toolbar stands before the form, so the page's focus order passes it.
++    box.addEventListener('keydown', e => { if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !bar.hidden) { e.preventDefault(); bar.querySelector('button')?.focus(); } });
+     box.addEventListener('keyup', show); box.addEventListener('mouseup', show); box.addEventListener('blur', () => setTimeout(show, 0)); bar.addEventListener('focusout', () => setTimeout(show, 0));
+     // Backspace and Delete take a marked letter as one character (the browser alone takes one invisible code at a time).
+     document.addEventListener('keydown', e => {
+diff --git a/src/rules/ask.js b/src/rules/ask.js
+index e4a1d8d..1cc5c54 100644
+--- a/src/rules/ask.js
++++ b/src/rules/ask.js
+@@ -14,6 +14,7 @@ import { verbsAt, BEFORE, LOOK_VERBS, BLOW_VERBS, KNOWN_VERBS } from './verbs.js
+ import { wordSex } from './census.js';
+ import { byPlayer } from './frame.js';
+ import { def, k } from './constants.js';
++import { OPENS } from './quotes.js';
+ def({ id: 'askBelowHarm', value: 0.9, unit: 'share the likeliest reading needs to be taken unasked, when a reading harms someone', status: 'assumed', src: 'a judgement in the mixed-initiative rule (Horvitz 1999 gives the form, no values)', range: [0.8, 0.97], file: 'ask.ts' });
+ def({ id: 'askBelowSafe', value: 0.5, unit: 'share the likeliest reading needs to be taken unasked, when none harms anyone', status: 'assumed', src: 'a judgement: the likelier half is taken and shown back', range: [0.4, 0.7], file: 'ask.ts' });
+ def({ id: 'weightLastTarget', value: 2, unit: 'weight added to the person the player acted on last turn', status: 'assumed', src: 'Hugo ranks the object last referred to +1; a judgement on the scale here', range: [1, 3], file: 'ask.ts' });
+@@ -140,7 +141,8 @@ export const correctionLine = (label) => `no, ${label.charAt(0).toLowerCase()}${
+ // its own subject ("No, I don't think Will did it"; "No, Will is lying") is an ordinary line.
+ const CLAUSE = [/^(?:i|you|he|she|it|we|they|this|that|there)\b/i, /^[A-Z][\w'-]*(?: [A-Z][\w'-]*)? (?:is|was|were|are|am|did|does|do|has|had|have|will|would|can|could|should|must|may|might|isn't|wasn't|didn't|doesn't|hasn't|won't|can't|[a-z]+s|[a-z]+ed)\b/];
+ export function correctionOf(line) {
+-    if (/["“”]/.test(line))
++    // Quoted words are speech (quotes.ts: "…", „…“, «…», ›…‹ and the rest): a line that quotes is an ordinary line.
++    if (OPENS.test(line))
+         return null;
+     const m = CORRECTION.exec(line.trim());
+     const rest = (m?.[1] ?? m?.[2] ?? '').trim().replace(/[.!]+$/, '');
+diff --git a/src/rules/ask.ts b/src/rules/ask.ts
+index 2545de7..1659be3 100644
+--- a/src/rules/ask.ts
++++ b/src/rules/ask.ts
+@@ -14,6 +14,7 @@ import { verbsAt, BEFORE, LOOK_VERBS, BLOW_VERBS, KNOWN_VERBS } from './verbs.js
+ import { wordSex } from './census.js';
+ import { byPlayer } from './frame.js';
+ import { def, k } from './constants.js';
++import { OPENS } from './quotes.js';
+ 
+ /** What a reading fixes: a tool the turn must call, a note the planner reads as fixed, an argument set on the player's
+  * calls of a tool. */
+@@ -148,7 +149,8 @@ export const correctionLine = (label: string) => `no, ${label.charAt(0).toLowerC
+ // its own subject ("No, I don't think Will did it"; "No, Will is lying") is an ordinary line.
+ const CLAUSE = [/^(?:i|you|he|she|it|we|they|this|that|there)\b/i, /^[A-Z][\w'-]*(?: [A-Z][\w'-]*)? (?:is|was|were|are|am|did|does|do|has|had|have|will|would|can|could|should|must|may|might|isn't|wasn't|didn't|doesn't|hasn't|won't|can't|[a-z]+s|[a-z]+ed)\b/];
+ export function correctionOf(line: string): string | null {
+-    if (/["“”]/.test(line)) return null;
++    // Quoted words are speech (quotes.ts: "…", „…“, «…», ›…‹ and the rest): a line that quotes is an ordinary line.
++    if (OPENS.test(line)) return null;
+     const m = CORRECTION.exec(line.trim());
+     const rest = (m?.[1] ?? m?.[2] ?? '').trim().replace(/[.!]+$/, '');
+     if (m && !/\bi mean(?:t)?\b/i.test(line) && CLAUSE.some(re => re.test(rest))) return null;
+diff --git a/src/rules/audit-flags.js b/src/rules/audit-flags.js
+index 2f21dcb..c1faace 100644
+--- a/src/rules/audit-flags.js
++++ b/src/rules/audit-flags.js
+@@ -1,3 +1,4 @@
+-let flags = [];
+-export const setFlags = (f) => { flags = f; };
+-export const takeFlags = () => { const f = flags; flags = []; return f; };
++// The turn they were raised for (turn.ts turnKey): a redo that never started leaves them to no other turn or chat.
++let flags = [], forTurn = '';
++export const setFlags = (f, turn = '') => { flags = f; forTurn = turn; };
++export const takeFlags = (turn = '') => { const f = forTurn === turn ? flags : []; flags = []; forTurn = ''; return f; };
+diff --git a/src/rules/audit-flags.ts b/src/rules/audit-flags.ts
+index cb280e7..a245bc5 100644
+--- a/src/rules/audit-flags.ts
++++ b/src/rules/audit-flags.ts
+@@ -1,6 +1,7 @@
+ // The rule check's flags for the reply being redone, read once by the question pass, so each flagged event gets its tool
+ // run before the rewrite (a correction asking the narrator to "call" a tool reached a narrator that calls none).
+ export interface Flag { quote: string; tool: string; problem?: string }
+-let flags: Flag[] = [];
+-export const setFlags = (f: Flag[]) => { flags = f; };
+-export const takeFlags = () => { const f = flags; flags = []; return f; };
++// The turn they were raised for (turn.ts turnKey): a redo that never started leaves them to no other turn or chat.
++let flags: Flag[] = [], forTurn = '';
++export const setFlags = (f: Flag[], turn = '') => { flags = f; forTurn = turn; };
++export const takeFlags = (turn = '') => { const f = forTurn === turn ? flags : []; flags = []; forTurn = ''; return f; };
+diff --git a/src/rules/body-engine.js b/src/rules/body-engine.js
+index a09538d..02c5b9d 100644
+--- a/src/rules/body-engine.js
++++ b/src/rules/body-engine.js
+@@ -2076,12 +2076,14 @@ export function advanceAll(people, minutes, resting = new Set(), rng = Math.rand
+         const events = [];
+         let frac = 1;
+         for (const [who, p] of Object.entries(people)) {
+-            const before = watch(p), lv = levels(p);
++            const before = watch(p), lv = levels(p), ko = p.koLeft;
+             advance(p, 1, resting.has(who), rng, { active: active.has(who), sleeping: sleeping.has(who) });
+             const ev = changes(who, before, watch(p));
++            // A knockout or choke ends when its drawn time runs out, inside the minute (koLeft, minutes).
++            const woke = ko != null && ko > 0 && ko <= 1 && p.koLeft == null ? ko : 1;
+             if (ev.length) {
+                 events.push(...ev);
+-                frac = Math.min(frac, crossing(lv, levels(p)));
++                frac = Math.min(frac, crossing(lv, levels(p)), woke);
+             }
+         }
+         // The event's moment inside the minute: where the first quantity that crossed its threshold crossed it, the quantity taken
+diff --git a/src/rules/body-engine.ts b/src/rules/body-engine.ts
+index c196c49..7342488 100644
+--- a/src/rules/body-engine.ts
++++ b/src/rules/body-engine.ts
+@@ -1682,10 +1682,12 @@ export function advanceAll(people: Record<string, Person>, minutes: number, rest
+         const events: string[] = [];
+         let frac = 1;
+         for (const [who, p] of Object.entries(people)) {
+-            const before = watch(p), lv = levels(p);
++            const before = watch(p), lv = levels(p), ko = p.koLeft;
+             advance(p, 1, resting.has(who), rng, { active: active.has(who), sleeping: sleeping.has(who) });
+             const ev = changes(who, before, watch(p));
+-            if (ev.length) { events.push(...ev); frac = Math.min(frac, crossing(lv, levels(p))); }
++            // A knockout or choke ends when its drawn time runs out, inside the minute (koLeft, minutes).
++            const woke = ko != null && ko > 0 && ko <= 1 && p.koLeft == null ? ko : 1;
++            if (ev.length) { events.push(...ev); frac = Math.min(frac, crossing(lv, levels(p)), woke); }
+         }
+         // The event's moment inside the minute: where the first quantity that crossed its threshold crossed it, the quantity taken
+         // as changing evenly over the minute [ASSUMED]; events with no such quantity count at the minute's end.
+diff --git a/src/rules/frame.js b/src/rules/frame.js
+index 99a6a8d..f9ba0e8 100644
+--- a/src/rules/frame.js
++++ b/src/rules/frame.js
+@@ -292,8 +292,9 @@ function speech(text, player) {
+     const v = (verb?.[1] ?? '').toLowerCase();
+     const effort = /^(whisper|murmur|mutter)/.test(v) ? 'whisper' : /^(shout|yell|scream|bellow)/.test(v) ? 'shout' : /^(call|cr)/.test(v) ? 'loud' : 'normal';
+     const message0 = quoted ?? rest.replace(new RegExp(String.raw `^\s+(?:out\s+)?(?:to|at|with)?\s*(?:${listener.replace(/^the /, '(?:the )?')}|him|her|them)\b`, 'i'), '').replace(/^[\s,]+|[.!?]+$/g, '').trim();
+-    // A place phrase after the listener is where, not what ("call out to Tom across the square").
+-    const message = !quoted && /^(?:across|through|over|from|under|behind|in|into|toward|towards|down|up|along|near|beside|outside|inside|at|on|by|past|around)\b/i.test(message0) ? '' : message0;
++    // A place phrase after the listener is where, not what ("call out to Tom across the square"); so are a manner ("with all my
++    // might") and a topic ("about my plan"): the words said are the planner's to give.
++    const message = !quoted && /^(?:with|without|about|across|through|over|from|under|behind|in|into|toward|towards|down|up|along|near|beside|outside|inside|at|on|by|past|around)\b/i.test(message0) ? '' : message0;
+     // The words end where the next action begins ("ask the costermonger for apples and pay him").
+     const said = message.replace(/,?\s+(?:and|then)\s+(?:then\s+)?([a-z]+)\b.*$/, (all, w) => VERBNET[w] || VERBNET[w.replace(/e?s$/, '')] ? '' : all);
+     return placed(verb?.index ?? text.search(OPENS), { tool: 'Communicate', args: { speaker: player, listener: /^[A-Z]/.test(listener) ? listener : clean(listener), means: 'speech', effort, ...said ? { message: said } : {} } });
+@@ -456,8 +457,10 @@ function perceiving(text, player) {
+     // NP-coordination, "functionally like an NP").
+     const both = target ? new RegExp(String.raw `^${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s+and\s+((?:the\s+)?[A-Z]?[a-z]+)\b`).exec(text.slice(lv.end).replace(/^\s*(?:(?:through|at|into|in|around|over|for|toward|towards|out of)\s+)?/i, '')) : null;
+     const seen = both && (/^[A-Z]/.test(both[1]) && /^[A-Z]/.test(target) || /^the\s/.test(both[1]) && /^the\s/i.test(target)) ? `${target} and ${both[1]}` : target;
++    // "Him" or "her" looked at is the person the grammar finds for it (personFor), else left to the scene ("I glare at him").
++    const at = seen && PRONOUN.test(seen) ? personFor(seen, text, lv.end, player) : seen;
+     if (look)
+-        out.push(placed(lv.at, { tool: 'Look', args: { viewer: player, ...seen ? { target: seen } : {} } }));
++        out.push(placed(lv.at, { tool: 'Look', args: { viewer: player, ...at ? { target: at } : {} } }));
+     return out;
+ }
+ /** The line without out-of-character asides: "(OOC: …)", "[OOC …]", "((OOC …))" and lines that open with "OOC:" are talk to
+@@ -465,7 +468,10 @@ function perceiving(text, player) {
+ /** Markdown emphasis is how a line is set, not its words ("I punch **Tom**", "*Tom walks in.*": in SillyTavern * and _
+  *  mark actions and italics, prosody.ts): a run of one to three * or _ paired around words goes, a _ only at a word's edge,
+  *  so snake_case stays (CommonMark Spec 0.31.2, §6.2, rules 1–4: "foo_bar_" is not emphasis); a lone * stays (2*3). */
+-export const unEmphasis = (text) => text.replace(/(\*{1,3})(?=\S)([^*\n]*?\S)\1/g, '$2').replace(/(?<![\p{L}\p{N}_])(_{1,3})(?=\S)([^_\n]*?\S)\1(?![\p{L}\p{N}_])/gu, '$2');
++// Runs of three, then two, then one: an emphasis inside another ("*I punch **Tom**.*") goes before the one around it, and a
++// run's words neither start nor end with its own sign.
++export const unEmphasis = (text) => [3, 2, 1].reduce((t, n) => t.replace(new RegExp(String.raw `(\*{${n}})(?=[^\s*])([^*\n]*?[^*\s])\1`, 'g'), '$2')
++    .replace(new RegExp(String.raw `(?<![\p{L}\p{N}_])(_{${n}})(?=[^\s_])([^_\n]*?[^_\s])\1(?![\p{L}\p{N}_])`, 'gu'), '$2'), text);
+ export const inStory = (text) => unEmphasis(text).replace(/\(\(?\s*OOC\b[^)]*\)\)?|\[\s*OOC\b[^\]]*\]|^\s*OOC\s*:.*$/gim, ' ').replace(/[ \t]{2,}/g, ' ').trim();
+ /** The words of a verb's object: up to the next joining word, preposition or stop ("the eggs" in "beat the eggs and cook"). */
+ const objectOf = (after) => { const i = after.findIndex(w => /^(?:and|or|but|then|with|in|on|at|to|into|onto|for|from|by|across|over|under|until|while|as|so|[,.;:!?])$/.test(w)); return i < 0 ? after : after.slice(0, i); };
+diff --git a/src/rules/frame.ts b/src/rules/frame.ts
+index 9760694..36ecf10 100644
+--- a/src/rules/frame.ts
++++ b/src/rules/frame.ts
+@@ -232,8 +232,9 @@ function speech(text: string, player: string): Call | null {
+     const v = (verb?.[1] ?? '').toLowerCase();
+     const effort = /^(whisper|murmur|mutter)/.test(v) ? 'whisper' : /^(shout|yell|scream|bellow)/.test(v) ? 'shout' : /^(call|cr)/.test(v) ? 'loud' : 'normal';
+     const message0 = quoted ?? rest.replace(new RegExp(String.raw`^\s+(?:out\s+)?(?:to|at|with)?\s*(?:${listener.replace(/^the /, '(?:the )?')}|him|her|them)\b`, 'i'), '').replace(/^[\s,]+|[.!?]+$/g, '').trim();
+-    // A place phrase after the listener is where, not what ("call out to Tom across the square").
+-    const message = !quoted && /^(?:across|through|over|from|under|behind|in|into|toward|towards|down|up|along|near|beside|outside|inside|at|on|by|past|around)\b/i.test(message0) ? '' : message0;
++    // A place phrase after the listener is where, not what ("call out to Tom across the square"); so are a manner ("with all my
++    // might") and a topic ("about my plan"): the words said are the planner's to give.
++    const message = !quoted && /^(?:with|without|about|across|through|over|from|under|behind|in|into|toward|towards|down|up|along|near|beside|outside|inside|at|on|by|past|around)\b/i.test(message0) ? '' : message0;
+     // The words end where the next action begins ("ask the costermonger for apples and pay him").
+     const said = message.replace(/,?\s+(?:and|then)\s+(?:then\s+)?([a-z]+)\b.*$/, (all, w: string) => VERBNET[w] || VERBNET[w.replace(/e?s$/, '')] ? '' : all);
+     return placed(verb?.index ?? text.search(OPENS), { tool: 'Communicate', args: { speaker: player, listener: /^[A-Z]/.test(listener) ? listener : clean(listener), means: 'speech', effort, ...said ? { message: said } : {} } });
+@@ -370,7 +371,9 @@ function perceiving(text: string, player: string): Call[] {
+     // NP-coordination, "functionally like an NP").
+     const both = target ? new RegExp(String.raw`^${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s+and\s+((?:the\s+)?[A-Z]?[a-z]+)\b`).exec(text.slice(lv!.end).replace(/^\s*(?:(?:through|at|into|in|around|over|for|toward|towards|out of)\s+)?/i, '')) : null;
+     const seen = both && (/^[A-Z]/.test(both[1]!) && /^[A-Z]/.test(target!) || /^the\s/.test(both[1]!) && /^the\s/i.test(target!)) ? `${target} and ${both[1]}` : target;
+-    if (look) out.push(placed(lv!.at, { tool: 'Look', args: { viewer: player, ...seen ? { target: seen } : {} } }));
++    // "Him" or "her" looked at is the person the grammar finds for it (personFor), else left to the scene ("I glare at him").
++    const at = seen && PRONOUN.test(seen) ? personFor(seen, text, lv!.end, player) : seen;
++    if (look) out.push(placed(lv!.at, { tool: 'Look', args: { viewer: player, ...at ? { target: at } : {} } }));
+     return out;
+ }
+ /** The line without out-of-character asides: "(OOC: …)", "[OOC …]", "((OOC …))" and lines that open with "OOC:" are talk to
+@@ -378,7 +381,10 @@ function perceiving(text: string, player: string): Call[] {
+ /** Markdown emphasis is how a line is set, not its words ("I punch **Tom**", "*Tom walks in.*": in SillyTavern * and _
+  *  mark actions and italics, prosody.ts): a run of one to three * or _ paired around words goes, a _ only at a word's edge,
+  *  so snake_case stays (CommonMark Spec 0.31.2, §6.2, rules 1–4: "foo_bar_" is not emphasis); a lone * stays (2*3). */
+-export const unEmphasis = (text: string) => text.replace(/(\*{1,3})(?=\S)([^*\n]*?\S)\1/g, '$2').replace(/(?<![\p{L}\p{N}_])(_{1,3})(?=\S)([^_\n]*?\S)\1(?![\p{L}\p{N}_])/gu, '$2');
++// Runs of three, then two, then one: an emphasis inside another ("*I punch **Tom**.*") goes before the one around it, and a
++// run's words neither start nor end with its own sign.
++export const unEmphasis = (text: string) => [3, 2, 1].reduce((t, n) => t.replace(new RegExp(String.raw`(\*{${n}})(?=[^\s*])([^*\n]*?[^*\s])\1`, 'g'), '$2')
++    .replace(new RegExp(String.raw`(?<![\p{L}\p{N}_])(_{${n}})(?=[^\s_])([^_\n]*?[^_\s])\1(?![\p{L}\p{N}_])`, 'gu'), '$2'), text);
+ export const inStory = (text: string) => unEmphasis(text).replace(/\(\(?\s*OOC\b[^)]*\)\)?|\[\s*OOC\b[^\]]*\]|^\s*OOC\s*:.*$/gim, ' ').replace(/[ \t]{2,}/g, ' ').trim();
+ /** The words of a verb's object: up to the next joining word, preposition or stop ("the eggs" in "beat the eggs and cook"). */
+ const objectOf = (after: string[]) => { const i = after.findIndex(w => /^(?:and|or|but|then|with|in|on|at|to|into|onto|for|from|by|across|over|under|until|while|as|so|[,.;:!?])$/.test(w)); return i < 0 ? after : after.slice(0, i); };
+diff --git a/src/rules/intent.js b/src/rules/intent.js
+index f935287..f2d7043 100644
+--- a/src/rules/intent.js
++++ b/src/rules/intent.js
+@@ -195,8 +195,10 @@ function pronouns(text, sit, changes, open) {
+         if (!lemmas(verb.toLowerCase()).some(v => VERBNET[v]))
+             return all;
+         const before = text.slice(0, at);
+-        // Named before it in the line: the frame reader settles it (frame.ts personFor).
+-        if (sit.people.some(p => p.name !== sit.player && new RegExp(String.raw `\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\b`, 'i').test(before)))
++        // Named before it in the line, one whose sex fits the pronoun (or is not known): the frame reader settles it (frame.ts
++        // personFor). A woman named before "him" leaves him open ("I nod to Ann and hit him back").
++        const want = /^her$/i.test(pro) ? 'female' : 'male', sexOf = (p) => p.sex ?? wordSex(p.name.toLowerCase());
++        if (sit.people.some(p => p.name !== sit.player && (!sexOf(p) || sexOf(p) === want) && new RegExp(String.raw `\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\b`, 'i').test(before)))
+             return all;
+         if (back) {
+             const who = returnedTo(sit);
+diff --git a/src/rules/intent.ts b/src/rules/intent.ts
+index 209542e..788ee26 100644
+--- a/src/rules/intent.ts
++++ b/src/rules/intent.ts
+@@ -179,8 +179,10 @@ function pronouns(text: string, sit: Situation, changes: Change[], open: Open[])
+     return text.replace(/\b([a-z]+)\s+(?:(?:at|to|with|toward|towards|after)\s+)?(him|her)\b(\s+back\b)?/gi, (all, verb: string, pro: string, back: string | undefined, at: number) => {
+         if (!lemmas(verb.toLowerCase()).some(v => VERBNET[v])) return all;
+         const before = text.slice(0, at);
+-        // Named before it in the line: the frame reader settles it (frame.ts personFor).
+-        if (sit.people.some(p => p.name !== sit.player && new RegExp(String.raw`\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\b`, 'i').test(before))) return all;
++        // Named before it in the line, one whose sex fits the pronoun (or is not known): the frame reader settles it (frame.ts
++        // personFor). A woman named before "him" leaves him open ("I nod to Ann and hit him back").
++        const want = /^her$/i.test(pro) ? 'female' : 'male', sexOf = (p: { name: string; sex?: string | null }) => p.sex ?? wordSex(p.name.toLowerCase());
++        if (sit.people.some(p => p.name !== sit.player && (!sexOf(p) || sexOf(p) === want) && new RegExp(String.raw`\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\b`, 'i').test(before))) return all;
+         if (back) {
+             const who = returnedTo(sit);
+             if (who) { changes.push({ from: `${pro} back`, to: `${who} back`, why: `${who} did it to you last ("back": in return)`, p: 0.95 }); return all.replace(new RegExp(String.raw`\b${pro}\b`), who); }
+diff --git a/src/rules/prosody.js b/src/rules/prosody.js
+index cd02c16..5bb121f 100644
+--- a/src/rules/prosody.js
++++ b/src/rules/prosody.js
+@@ -61,8 +61,9 @@ export function readProsody(line) {
+     // A word a dash or an ellipsis joins to a VoQS opener is a word of its own ('"Wait—{W not now W}"').
+     const raws = text.split(/\s+/).filter(Boolean).flatMap(r => { const m = GLUED_OPENER.exec(r); return m ? [m[1], m[2]] : [r]; });
+     for (const [i, raw] of raws.entries()) {
+-        // Pauses and breaths stand alone, after or before a word.
+-        const pause = /^\((\d*\.\d+|\d+|\.)\)([,.;:!?]*)$/.exec(raw);
++        // Pauses and breaths stand alone, after or before a word. A timed pause is written in seconds with its decimal point,
++        // (0.5), (2.0); a whole number in brackets is ordinary writing ("Tom (35)", "the year (1850)", "items (1) and (2)").
++        const pause = /^\((\d*\.\d+|\.)\)([,.;:!?]*)$/.exec(raw);
+         if (pause) {
+             const last = words.at(-1);
+             if (last) {
+@@ -109,7 +110,8 @@ export function readProsody(line) {
+         w = w.slice(lead.length);
+         for (;;) {
+             const c = w.charAt(0);
+-            if (LEAD[c] && w.length > 1) {
++            // A degree sign before C, F or K is a temperature's unit ("20 °C"), no quieter span.
++            if (LEAD[c] && w.length > 1 && !(c === '°' && /^°[CFK](?!\p{L})/u.test(w))) {
+                 open.add(LEAD[c]);
+                 w = w.slice(1);
+                 marked = true;
+diff --git a/src/rules/prosody.ts b/src/rules/prosody.ts
+index bf6addb..34c51be 100644
+--- a/src/rules/prosody.ts
++++ b/src/rules/prosody.ts
+@@ -67,8 +67,9 @@ export function readProsody(line: string): Prosody {
+     // A word a dash or an ellipsis joins to a VoQS opener is a word of its own ('"Wait—{W not now W}"').
+     const raws = text.split(/\s+/).filter(Boolean).flatMap(r => { const m = GLUED_OPENER.exec(r); return m ? [m[1]!, m[2]!] : [r]; });
+     for (const [i, raw] of raws.entries()) {
+-        // Pauses and breaths stand alone, after or before a word.
+-        const pause = /^\((\d*\.\d+|\d+|\.)\)([,.;:!?]*)$/.exec(raw);
++        // Pauses and breaths stand alone, after or before a word. A timed pause is written in seconds with its decimal point,
++        // (0.5), (2.0); a whole number in brackets is ordinary writing ("Tom (35)", "the year (1850)", "items (1) and (2)").
++        const pause = /^\((\d*\.\d+|\.)\)([,.;:!?]*)$/.exec(raw);
+         if (pause) { const last = words.at(-1); if (last) { last.pause = (last.pause ?? 0) + (pause[1] === '.' ? 0.1 : Number(pause[1])); last.word += pause[2] ?? ''; } marked = true; continue; }
+         if (/^[.·]h{2,}$/i.test(raw)) { pendingIn = true; marked = true; continue; }
+         if (/^h{2,}[,.;:!?]*$/i.test(raw)) { words.at(-1)?.marks.push('outbreath'); marked = true; continue; }
+@@ -86,7 +87,8 @@ export function readProsody(line: string): Prosody {
+         w = w.slice(lead.length);
+         for (;;) {
+             const c = w.charAt(0);
+-            if (LEAD[c] && w.length > 1) { open.add(LEAD[c]); w = w.slice(1); marked = true; continue; }
++            // A degree sign before C, F or K is a temperature's unit ("20 °C"), no quieter span.
++            if (LEAD[c] && w.length > 1 && !(c === '°' && /^°[CFK](?!\p{L})/u.test(w))) { open.add(LEAD[c]); w = w.slice(1); marked = true; continue; }
+             if (c === '↑' || c === '↓') { marks.add(c === '↑' ? 'up' : 'down'); w = w.slice(1); marked = true; continue; }
+             if (c === 'ˈ') { marks.add('stress'); w = w.slice(1); marked = true; continue; }
+             break;
+diff --git a/src/rules/question-pass.js b/src/rules/question-pass.js
+index 9b69039..3c01edd 100644
+--- a/src/rules/question-pass.js
++++ b/src/rules/question-pass.js
+@@ -163,8 +163,18 @@ export function rawPlan(text) {
+     const starts = [...s.matchAll(/\{\s*"calls"/g)].map(m => m.index).reverse();
+     for (const at of starts) {
+         let depth = 0, end = -1;
+-        for (let i = at; i < s.length && end < 0; i++) {
+-            if (s[i] === '{')
++        // Braces inside a JSON string are text (a message quoting ":}" or a whispered "{W …"), not the object's own.
++        for (let i = at, str = false; i < s.length && end < 0; i++) {
++            if (str) {
++                if (s[i] === '\\')
++                    i++;
++                else if (s[i] === '"')
++                    str = false;
++                continue;
++            }
++            if (s[i] === '"')
++                str = true;
++            else if (s[i] === '{')
+                 depth++;
+             else if (s[i] === '}' && --depth === 0)
+                 end = i;
+@@ -258,7 +268,24 @@ export let GUIDED = false;
+ export const setGuided = (v) => { GUIDED = v; };
+ // Under constrained decoding the answer is the JSON plan alone; the model's reasoning carries the questions.
+ const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":[{"question":"follow-on question","tool":"the tool that answers it"}],"need":["ToolName"]}; a plan with zero calls is {"calls":{}}.');
++// How many calls of the running pass have run, for a pass that fails part way (runQuestionPass below).
++let RAN = 0;
++/** The pass, run once; a pass that fails after some of its calls ran takes them back, so the narrator's own tool calls decide
++ *  the turn (README: function calling is used when the question pass fails) and no call runs twice. */
+ export async function runQuestionPass(chat, sendRaw, tracker = '', choose, ask) {
++    const meta = SillyTavern.getContext().chatMetadata;
++    RAN = 0;
++    try {
++        return await passOnce(chat, sendRaw, tracker, choose, ask);
++    }
++    catch (e) {
++        const c = SillyTavern.getContext(), at = (c.chat ?? []).map((m, i) => m.is_user ? i : -1).filter(i => i >= 0).pop();
++        if (RAN && at != null && c.chatMetadata === meta)
++            restoreLineStart(at);
++        throw e;
++    }
++}
++async function passOnce(chat, sendRaw, tracker = '', choose, ask) {
+     const planTools = { current: undefined, people: [], actors: [], require: [] };
+     // Every wait (the model, the player's answer, the data) ends the pass when another chat was opened meanwhile, before a
+     // tool writes this turn into that chat.
+@@ -297,6 +324,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose, ask)
+         clearDraws();
+         const result = String(await REGISTRY.get(c.tool).exec(c.args));
+         results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) });
++        RAN++;
+         markUsed(c, result);
+     } };
+     let calls, time = null, present;
+@@ -332,7 +360,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose, ask)
+             setStoryTime(time);
+         await runAll(calls);
+         // A rewrite after the rule check: each flagged event gets its tool run now, from the results so far.
+-        const flags = takeFlags().filter(f => REGISTRY.has(f.tool));
++        const flags = takeFlags(turn).filter(f => REGISTRY.has(f.tool));
+         if (flags.length && calls.length < MAX_CALLS) {
+             await held(Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]));
+             const tools = new Set(flags.map(f => f.tool));
+@@ -378,7 +406,7 @@ export async function runQuestionPass(chat, sendRaw, tracker = '', choose, ask)
+         // again for it starts there whichever order the line joined the chat in, and after later lines are deleted
+         // (rules-tools.ts restoreLineStart).
+         if (lineAt != null)
+-            keepStart(lineAt);
++            keepStart(lineAt, !!corrFix);
+         // The player's marks on their line (prosody.ts): read by code, then taken off, so the verbs, names and things are read
+         // from the words alone.
+         // The toolbar's marks are read from their codes (kept in `voiced` once the line is notated for the model); a line
+diff --git a/src/rules/question-pass.ts b/src/rules/question-pass.ts
+index 2c623dc..f885dfc 100644
+--- a/src/rules/question-pass.ts
++++ b/src/rules/question-pass.ts
+@@ -169,8 +169,11 @@ export function rawPlan(text: unknown): Plan {
+     const starts = [...s.matchAll(/\{\s*"calls"/g)].map(m => m.index!).reverse();
+     for (const at of starts) {
+         let depth = 0, end = -1;
+-        for (let i = at; i < s.length && end < 0; i++) {
+-            if (s[i] === '{') depth++;
++        // Braces inside a JSON string are text (a message quoting ":}" or a whispered "{W …"), not the object's own.
++        for (let i = at, str = false; i < s.length && end < 0; i++) {
++            if (str) { if (s[i] === '\\') i++; else if (s[i] === '"') str = false; continue; }
++            if (s[i] === '"') str = true;
++            else if (s[i] === '{') depth++;
+             else if (s[i] === '}' && --depth === 0) end = i;
+         }
+         if (end < 0) continue;
+@@ -274,7 +277,21 @@ export let GUIDED = false;
+ export const setGuided = (v: boolean) => { GUIDED = v; };
+ // Under constrained decoding the answer is the JSON plan alone; the model's reasoning carries the questions.
+ const GUIDED_SYSTEM = () => QUESTION_SYSTEM.replace(/First write QUESTIONS:[^\n]*$/, 'Write the plan as the JSON {"calls":{"ToolName":{"person or thing it is about":{...arguments}}},"then":[{"question":"follow-on question","tool":"the tool that answers it"}],"need":["ToolName"]}; a plan with zero calls is {"calls":{}}.');
++// How many calls of the running pass have run, for a pass that fails part way (runQuestionPass below).
++let RAN = 0;
++/** The pass, run once; a pass that fails after some of its calls ran takes them back, so the narrator's own tool calls decide
++ *  the turn (README: function calling is used when the question pass fails) and no call runs twice. */
+ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser, ask?: Asker): Promise<typeof READ> {
++    const meta = SillyTavern.getContext().chatMetadata;
++    RAN = 0;
++    try { return await passOnce(chat, sendRaw, tracker, choose, ask); }
++    catch (e) {
++        const c = SillyTavern.getContext(), at = (c.chat ?? []).map((m, i) => m.is_user ? i : -1).filter(i => i >= 0).pop();
++        if (RAN && at != null && c.chatMetadata === meta) restoreLineStart(at);
++        throw e;
++    }
++}
++async function passOnce(chat: STMessage[], sendRaw: Send, tracker = '', choose?: Chooser, ask?: Asker): Promise<typeof READ> {
+     const planTools = { current: undefined as Set<string> | undefined, people: [] as string[], actors: [] as string[], require: [] as string[] };
+     // Every wait (the model, the player's answer, the data) ends the pass when another chat was opened meanwhile, before a
+     // tool writes this turn into that chat.
+@@ -293,7 +310,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker
+     // The tool and subject of each call that has run this turn and stands (a refused call leaves its key open).
+     const used = new Map<string, Set<string>>(), usedKeys = () => used;
+     const markUsed = (c: Call, result: string) => { const k = subjectOf(c.tool); if (!k || REFUSED.test(result)) return; (used.get(c.tool) ?? used.set(c.tool, new Set()).get(c.tool)!).add(String(c.args[k] ?? c.args.question ?? '')); };
+-    const runAll = async (list: Call[]) => { for (const c of list) { await held(Promise.resolve()); clearDraws(); const result = String(await REGISTRY.get(c.tool)!.exec(c.args as Args)); results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) }); markUsed(c, result); } };
++    const runAll = async (list: Call[]) => { for (const c of list) { await held(Promise.resolve()); clearDraws(); const result = String(await REGISTRY.get(c.tool)!.exec(c.args as Args)); results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) }); RAN++; markUsed(c, result); } };
+     let calls: Call[], time: number | null = null, present: string[] | undefined;
+     // A pass that has run for this place in the chat (the same line, or the line edited in place) is redone from the line's
+     // start: a swipe's state may hold the calls (the follow-up generation after the narrator's tools saved it with their
+@@ -316,7 +333,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker
+         if (time !== null && storyTime() === null) setStoryTime(time);
+         await runAll(calls);
+         // A rewrite after the rule check: each flagged event gets its tool run now, from the results so far.
+-        const flags = takeFlags().filter(f => REGISTRY.has(f.tool));
++        const flags = takeFlags(turn).filter(f => REGISTRY.has(f.tool));
+         if (flags.length && calls.length < MAX_CALLS) {
+             await held(Promise.all([loadThings(), loadColex(), loadLanguageYears(), loadChat(), loadPopulation()]));
+             const tools = new Set(flags.map(f => f.tool));
+@@ -357,7 +374,7 @@ export async function runQuestionPass(chat: STMessage[], sendRaw: Send, tracker
+         // The line's first pass keeps on it the world the line starts from (a correction's: the world put back), so a pass run
+         // again for it starts there whichever order the line joined the chat in, and after later lines are deleted
+         // (rules-tools.ts restoreLineStart).
+-        if (lineAt != null) keepStart(lineAt);
++        if (lineAt != null) keepStart(lineAt, !!corrFix);
+         // The player's marks on their line (prosody.ts): read by code, then taken off, so the verbs, names and things are read
+         // from the words alone.
+         // The toolbar's marks are read from their codes (kept in `voiced` once the line is notated for the model); a line
+diff --git a/src/rules/router.js b/src/rules/router.js
+index 9d5a605..ba30c0e 100644
+--- a/src/rules/router.js
++++ b/src/rules/router.js
+@@ -174,6 +174,12 @@ export function routeTurn(text, names = []) {
+             if (reading.kind !== 'ambiguous')
+                 continue;
+         }
++        // A verb of falling with an object moves the object ("drop the sword", "slip the note into his pocket", "trip the guard"),
++        // and with a predicative complement it changes a state ("fall asleep", "fall silent", "fall in love": fall as a
++        // complex-intransitive verb, CGEL ch. 4 §5): no fall of the speaker's body.
++        if (lemmas(w).some(v => VERB_TOOL[v]?.[0] === 'BodyFall') && (/^(?:the|a|an|my|his|her|their|our|your|its|this|that|these|those|him|them|it|some)$/.test(words[i + 1] ?? '')
++            || /^(?:asleep|silent|quiet|still|ill|sick|short|prey|victim)$/.test(words[i + 1] ?? '') || (words[i + 1] === 'in' && words[i + 2] === 'love')))
++            continue;
+         for (const v of lemmas(w)) {
+             // A support verb's noun names the act ("throw a punch", "steal a glance": verbs.ts, from FrameNet); a climbing verb is
+             // BodyCheck's (clamber, scramble: FrameNet Self_motion); a verb VerbNet lacks takes its FrameNet frame's tool.
+diff --git a/src/rules/router.ts b/src/rules/router.ts
+index 8d8638d..85d8eaa 100644
+--- a/src/rules/router.ts
++++ b/src/rules/router.ts
+@@ -148,6 +148,11 @@ export function routeTurn(text: string, names: string[] = []): Route {
+             for (const t of assoc) why[t] ??= w;
+             if (reading.kind !== 'ambiguous') continue;
+         }
++        // A verb of falling with an object moves the object ("drop the sword", "slip the note into his pocket", "trip the guard"),
++        // and with a predicative complement it changes a state ("fall asleep", "fall silent", "fall in love": fall as a
++        // complex-intransitive verb, CGEL ch. 4 §5): no fall of the speaker's body.
++        if (lemmas(w).some(v => VERB_TOOL[v]?.[0] === 'BodyFall') && (/^(?:the|a|an|my|his|her|their|our|your|its|this|that|these|those|him|them|it|some)$/.test(words[i + 1] ?? '')
++            || /^(?:asleep|silent|quiet|still|ill|sick|short|prey|victim)$/.test(words[i + 1] ?? '') || (words[i + 1] === 'in' && words[i + 2] === 'love'))) continue;
+         for (const v of lemmas(w)) {
+             // A support verb's noun names the act ("throw a punch", "steal a glance": verbs.ts, from FrameNet); a climbing verb is
+             // BodyCheck's (clamber, scramble: FrameNet Self_motion); a verb VerbNet lacks takes its FrameNet frame's tool.
+diff --git a/src/rules/rules-audit.js b/src/rules/rules-audit.js
+index 1458ce0..e76f347 100644
+--- a/src/rules/rules-audit.js
++++ b/src/rules/rules-audit.js
+@@ -62,7 +62,8 @@ let pending = null;
+ export function takeAuditNote() {
+     const p = pending;
+     pending = null;
+-    if (!p)
++    // The note belongs to the turn it was made for: a redo that never started gives it to no later turn or other chat.
++    if (!p || p.turn !== turnKey(SillyTavern.getContext().chat))
+         return null;
+     const r = askedResults(), missed = (tool) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result, askedArgs()[r.indexOf(x)])); };
+     const events = p.events.filter(e => !missed(e.tool));
+@@ -105,8 +106,8 @@ export async function onRulesAuditMessage(messageId, deps) {
+     const tries = ctx.chatMetadata.rulesAuditRetries?.turn === key ? ctx.chatMetadata.rulesAuditRetries.count : 0;
+     if (tries < MAX_RETRIES) {
+         ctx.chatMetadata.rulesAuditRetries = { turn: key, count: tries + 1 };
+-        pending = { events, decided: askedResults().length > 0 };
+-        setFlags(events.filter(e => e.tool !== 'KNOWS'));
++        pending = { events, decided: askedResults().length > 0, turn: key };
++        setFlags(events.filter(e => e.tool !== 'KNOWS'), key);
+         deps.generate('swipe');
+     }
+     else {
+diff --git a/src/rules/rules-audit.ts b/src/rules/rules-audit.ts
+index c427c5a..f012321 100644
+--- a/src/rules/rules-audit.ts
++++ b/src/rules/rules-audit.ts
+@@ -65,14 +65,15 @@ export function turnResults(ctx: STContext): TurnResult[] {
+         .concat(askedResults());
+ }
+ 
+-let pending: { events: AuditEvent[]; decided: boolean } | null = null;
++let pending: { events: AuditEvent[]; decided: boolean; turn: string } | null = null;
+ 
+ /** Interceptor, after the question pass: the correction for the reply being redone, once. A flagged event whose tool now
+  *  returned a miss (a sound not heard) is left out of the note: the rewrite then has no reason to name it. */
+ export function takeAuditNote() {
+     const p = pending;
+     pending = null;
+-    if (!p) return null;
++    // The note belongs to the turn it was made for: a redo that never started gives it to no later turn or other chat.
++    if (!p || p.turn !== turnKey(SillyTavern.getContext().chat)) return null;
+     const r = askedResults(), missed = (tool: string) => { const of = r.filter(x => x.tool === tool); return of.length > 0 && of.every(x => isMiss(x.tool, x.result, askedArgs()[r.indexOf(x)])); };
+     const events = p.events.filter(e => !missed(e.tool));
+     return events.length ? correctionNote(events, p.decided) : null;
+@@ -108,8 +109,8 @@ export async function onRulesAuditMessage(messageId: number, deps: AuditDeps): P
+     const tries = ctx.chatMetadata.rulesAuditRetries?.turn === key ? ctx.chatMetadata.rulesAuditRetries.count : 0;
+     if (tries < MAX_RETRIES) {
+         ctx.chatMetadata.rulesAuditRetries = { turn: key, count: tries + 1 };
+-        pending = { events, decided: askedResults().length > 0 };
+-        setFlags(events.filter(e => e.tool !== 'KNOWS'));
++        pending = { events, decided: askedResults().length > 0, turn: key };
++        setFlags(events.filter(e => e.tool !== 'KNOWS'), key);
+         deps.generate('swipe');
+     } else {
+         deps.toast(`Rule check: ${events.length} event(s) in this reply have no engine result: ${events.map(e => `"${e.quote}"`).join('; ')}`);
+diff --git a/src/rules/rules-tools.js b/src/rules/rules-tools.js
+index 230172e..6b16b58 100644
+--- a/src/rules/rules-tools.js
++++ b/src/rules/rules-tools.js
+@@ -105,10 +105,11 @@ function save() {
+ }
+ const startOf = (m) => m?.extra?.rulesStart;
+ /** Keeps on the player's line at chat index `i` the world now, as the world it starts from (its first pass is about to run;
+- * a correction's, once the world is put back). A line edited in place keeps the start it has. */
+-export function keepStart(i) {
++ * a correction's, once the world is put back). A line edited in place keeps the start it has, unless `put` (a correction
++ * put the world back before the line it corrects: that world is the line's start now). */
++export function keepStart(i, put = false) {
+     const m = SillyTavern.getContext().chat?.[i];
+-    if (!m || startOf(m))
++    if (!m || (startOf(m) && !put))
+         return;
+     const s = store();
+     m.extra ??= {};
+@@ -400,7 +401,12 @@ function remember(name, a, out) { const k = decisionKey(name, a); if (k && typeo
+ // draws, same result; /rules-log shows them.
+ export let LAST_DRAWS = [];
+ export const clearDraws = () => { LAST_DRAWS = []; };
++// The chat a running call belongs to: a call whose action waited (weather, sky, bleeding, chemistry data) writes nothing once
++// another chat is open.
++let CALLING = null;
+ function run(fn) {
++    if (CALLING && SillyTavern.getContext().chatMetadata !== CALLING)
++        throw new Error('[Rules engine] another chat was opened while a tool waited; nothing was decided');
+     const s = store();
+     s.calls = (s.calls || 0) + 1;
+     const seeded = seededRng(`${s.salt}:${lineOf(turnKey(SillyTavern.getContext().chat))}:${s.calls}`), draws = [];
+@@ -952,6 +958,16 @@ export function registerRulesTools(enabled) {
+     // The action's argument type comes from the schema the model is given.
+     const tool = (name, description, properties, required, action) => {
+         const exec = async (raw) => {
++            const was = CALLING;
++            CALLING = SillyTavern.getContext().chatMetadata;
++            try {
++                return await execIn(raw);
++            }
++            finally {
++                CALLING = was;
++            }
++        };
++        const execIn = async (raw) => {
+             // Arguments are checked against the schema at the boundary; a call with errors runs nothing and says what to fix.
+             const { args, errors } = checkArgs(properties, required, name === 'Act' ? prepareAct(raw ?? {}) : raw ?? {});
+             if (errors.length)
+diff --git a/src/rules/rules-tools.ts b/src/rules/rules-tools.ts
+index 713a9e0..4b6d6bb 100644
+--- a/src/rules/rules-tools.ts
++++ b/src/rules/rules-tools.ts
+@@ -139,10 +139,11 @@ function save() {
+ type Start = { state: RuleState; calls: number; n?: number };
+ const startOf = (m: STMessage | undefined) => m?.extra?.rulesStart as Start | undefined;
+ /** Keeps on the player's line at chat index `i` the world now, as the world it starts from (its first pass is about to run;
+- * a correction's, once the world is put back). A line edited in place keeps the start it has. */
+-export function keepStart(i: number): void {
++ * a correction's, once the world is put back). A line edited in place keeps the start it has, unless `put` (a correction
++ * put the world back before the line it corrects: that world is the line's start now). */
++export function keepStart(i: number, put = false): void {
+     const m = SillyTavern.getContext().chat?.[i];
+-    if (!m || startOf(m)) return;
++    if (!m || (startOf(m) && !put)) return;
+     const s = store();
+     m.extra ??= {};
+     m.extra.rulesStart = { state: structuredClone(s.state), calls: s.calls ?? 0, n: s.history?.n ?? 0 } satisfies Start;
+@@ -388,7 +389,11 @@ function remember(name: ToolName, a: Args, out: unknown) { const k = decisionKey
+ // draws, same result; /rules-log shows them.
+ export let LAST_DRAWS: number[] = [];
+ export const clearDraws = () => { LAST_DRAWS = []; };
++// The chat a running call belongs to: a call whose action waited (weather, sky, bleeding, chemistry data) writes nothing once
++// another chat is open.
++let CALLING: unknown = null;
+ function run<T>(fn: (st: RuleState, rng: Rng) => T): T {
++    if (CALLING && SillyTavern.getContext().chatMetadata !== CALLING) throw new Error('[Rules engine] another chat was opened while a tool waited; nothing was decided');
+     const s = store();
+     s.calls = (s.calls || 0) + 1;
+     const seeded = seededRng(`${s.salt}:${lineOf(turnKey(SillyTavern.getContext().chat))}:${s.calls}`), draws: number[] = [];
+@@ -902,6 +907,11 @@ export function registerRulesTools(enabled: boolean): void {
+     const tool = <const Ps extends Props, const Req extends readonly (keyof Ps & string)[]>(name: ToolName, description: string, properties: Ps,
+         required: Req, action: (a: ArgsOf<Ps, Req[number]>) => unknown) => {
+         const exec = async (raw: Args) => {
++            const was = CALLING;
++            CALLING = SillyTavern.getContext().chatMetadata;
++            try { return await execIn(raw); } finally { CALLING = was; }
++        };
++        const execIn = async (raw: Args) => {
+             // Arguments are checked against the schema at the boundary; a call with errors runs nothing and says what to fix.
+             const { args, errors } = checkArgs(properties, required, name === 'Act' ? prepareAct(raw ?? {}) : raw ?? {});
+             if (errors.length) return `${name} waits: fix and call again: ${errors.join('; ')}.`;
+diff --git a/src/rules/voice-code.js b/src/rules/voice-code.js
+index 2612fac..736a57d 100644
+--- a/src/rules/voice-code.js
++++ b/src/rules/voice-code.js
+@@ -18,6 +18,9 @@ export const visible = (t) => t.replace(RUN, '');
+  *  model to read, and it shows nothing, so a card, a fact or a reply could carry one unseen. Every way out to a model takes
+  *  them out: the engine's own requests (send.ts), the narrator's prompt and the tools' results. */
+ export const untagged = (t) => t.replace(/[\u{E0000}-\u{E007F}]/gu, '');
++/** A word's signs before and after its letters: quotation marks of every pair quotes.ts reads, brackets, and the dashes and
++ * ellipsis after it; the marks' signs go on the letters between. */
++export const WORD_PARTS = /^(["“„‚'‘(\[«»‹›]*)(.*?)([,.;:!?"”“'’)\]»«›‹—–…]*)$/su;
+ /** The text's words (runs without white space), each with its visible form and the codes its hidden blocks hold. */
+ export function tokens(t) {
+     return [...t.matchAll(/\S+/g)].map(m => {
+@@ -105,7 +108,7 @@ export function toNotation(t) {
+         for (const c of k.codes)
+             if (LINE.test(c) && !feeling)
+                 feeling = c.slice(2);
+-        const m = /^(["“'(]*)(.*?)([,.;:!?"”')]*)$/u.exec(k.word);
++        const m = WORD_PARTS.exec(k.word);
+         let lead = m[1] ?? '', core = m[2] ?? '', tail = m[3] ?? '';
+         if (!core) {
+             out += k.word;
+@@ -177,7 +180,7 @@ export function typeset(t) {
+             out.push({ text: FEELING_LY[f.slice(2)] ?? f.slice(2), add: 'feeling' }, { text: ' ' });
+         if (marks.includes('inbreath'))
+             out.push({ text: 'inhales', add: 'inhales' }, { text: ' ' });
+-        const m = /^(["“'(]*)(.*?)([,.;:!?"”')]*)$/u.exec(k.word);
++        const m = WORD_PARTS.exec(k.word);
+         if (m[1])
+             out.push({ text: m[1] });
+         out.push({ text: m[2] ?? '', marks: marks.filter(x => x !== 'inbreath' && x !== 'outbreath') });
+diff --git a/src/rules/voice-code.ts b/src/rules/voice-code.ts
+index 820f732..99aaf98 100644
+--- a/src/rules/voice-code.ts
++++ b/src/rules/voice-code.ts
+@@ -30,6 +30,9 @@ export const visible = (t: string) => t.replace(RUN, '');
+ export const untagged = (t: string) => t.replace(/[\u{E0000}-\u{E007F}]/gu, '');
+ 
+ export interface Token { start: number; end: number; text: string; word: string; codes: string[] }
++/** A word's signs before and after its letters: quotation marks of every pair quotes.ts reads, brackets, and the dashes and
++ * ellipsis after it; the marks' signs go on the letters between. */
++export const WORD_PARTS = /^(["“„‚'‘(\[«»‹›]*)(.*?)([,.;:!?"”“'’)\]»«›‹—–…]*)$/su;
+ /** The text's words (runs without white space), each with its visible form and the codes its hidden blocks hold. */
+ export function tokens(t: string): Token[] {
+     return [...t.matchAll(/\S+/g)].map(m => {
+@@ -90,7 +93,7 @@ export function toNotation(t: string): string {
+         out += t.slice(cursor, k.start).replace(RUN, ''); cursor = k.end;
+         const has = (c: string) => k.codes.includes(c), prev = (c: string) => i > 0 && ks[i - 1]!.codes.includes(c) && t.slice(ks[i - 1]!.end, k.start).indexOf('\n') < 0, next = (c: string) => i < ks.length - 1 && ks[i + 1]!.codes.includes(c) && t.slice(k.end, ks[i + 1]!.start).indexOf('\n') < 0;
+         for (const c of k.codes) if (LINE.test(c) && !feeling) feeling = c.slice(2);
+-        const m = /^(["“'(]*)(.*?)([,.;:!?"”')]*)$/u.exec(k.word)!;
++        const m = WORD_PARTS.exec(k.word)!;
+         let lead = m[1] ?? '', core = m[2] ?? '', tail = m[3] ?? '';
+         if (!core) { out += k.word; return; }
+         let open = '', close = '';
+@@ -140,7 +143,7 @@ export function typeset(t: string): Seg[] {
+         const f = k.codes.find(c => LINE.test(c)), p = k.codes.find(c => /^p/.test(c));
+         if (f) out.push({ text: FEELING_LY[f.slice(2) as Feeling] ?? f.slice(2), add: 'feeling' }, { text: ' ' });
+         if (marks.includes('inbreath')) out.push({ text: 'inhales', add: 'inhales' }, { text: ' ' });
+-        const m = /^(["“'(]*)(.*?)([,.;:!?"”')]*)$/u.exec(k.word)!;
++        const m = WORD_PARTS.exec(k.word)!;
+         if (m[1]) out.push({ text: m[1] });
+         out.push({ text: m[2] ?? '', marks: marks.filter(x => x !== 'inbreath' && x !== 'outbreath') });
+         if (marks.includes('cut')) out.push({ text: '—', add: 'cut' });
+diff --git a/src/ui.js b/src/ui.js
+index 7910cb7..aed41f6 100644
+--- a/src/ui.js
++++ b/src/ui.js
+@@ -22,7 +22,7 @@
+ // (the default effect; Johnson & Goldstein 2003, Science 302:1338).
+ import { correctionLine } from './rules/ask.js';
+ import { kindOf } from './rules/reading.js';
+-import { tokens, typeset, CODE } from './rules/voice-code.js';
++import { tokens, typeset, CODE, WORD_PARTS } from './rules/voice-code.js';
+ export function eraOf(year) {
+     if (year == null)
+         return 'now';
+@@ -220,7 +220,7 @@ export function mirrorParts(text) {
+         if (k.start > cursor)
+             out.push({ text: text.slice(cursor, k.start) });
+         // The colour under the word's letters: its quotation marks and punctuation stay plain.
+-        const m = /^(["“'(]*)(.*?)([,.;:!?"”')]*)$/su.exec(k.text);
++        const m = WORD_PARTS.exec(k.text);
+         if (m[1])
+             out.push({ text: m[1] });
+         out.push({ text: m[2] ?? '', family: look.family, title: look.title });
+diff --git a/src/ui.ts b/src/ui.ts
+index 2702ce2..c21b5ae 100644
+--- a/src/ui.ts
++++ b/src/ui.ts
+@@ -22,7 +22,7 @@
+ // (the default effect; Johnson & Goldstein 2003, Science 302:1338).
+ import { correctionLine } from './rules/ask.js';
+ import { kindOf, type Kind } from './rules/reading.js';
+-import { tokens, typeset, CODE } from './rules/voice-code.js';
++import { tokens, typeset, CODE, WORD_PARTS } from './rules/voice-code.js';
+ import type { Mark } from './rules/prosody.js';
+ 
+ export interface Taken { label: string; others: string[] }
+@@ -233,7 +233,7 @@ export function mirrorParts(text: string): { text: string; family?: Family; titl
+         if (!look) continue;
+         if (k.start > cursor) out.push({ text: text.slice(cursor, k.start) });
+         // The colour under the word's letters: its quotation marks and punctuation stay plain.
+-        const m = /^(["“'(]*)(.*?)([,.;:!?"”')]*)$/su.exec(k.text)!;
++        const m = WORD_PARTS.exec(k.text)!;
+         if (m[1]) out.push({ text: m[1] });
+         out.push({ text: m[2] ?? '', family: look.family, title: look.title });
+         if (m[3]) out.push({ text: m[3] });
+diff --git a/tests/engine.test.mjs b/tests/engine.test.mjs
+index 7fad745..1b15203 100644
+--- a/tests/engine.test.mjs
++++ b/tests/engine.test.mjs
+@@ -1676,11 +1676,18 @@ for (const who of ['Mara', 'Ash']) {
+   ctx.chat.splice(1, 2); T.syncRulesToChat(); await line('no, Will', hit); reply('Jack hits Will.');
+   const wounds = who => ctx.chatMetadata.rulesEngine.state.people[who].wounds?.length ?? 0;
+   if (T.storyTime() !== 610 || wounds('Tom') || !wounds('Will')) { miss++; console.log(`MISS a correction after a deletion in mid-chat corrects the line before from its start: ${T.storyTime()} (610), Tom ${wounds('Tom')} wounds, Will ${wounds('Will')}`); }
+-  // A line whose pass stopped after its calls ran (the model did not answer the next round) runs once when sent again.
++  // A line whose pass stopped after its calls ran (the model did not answer the next round) takes them back, so the narrator's
++  // own tool calls decide the turn once.
+   fresh(); T.setStoryTime(600); ctx.name1 = 'Mara'; ctx.chat = [{ is_user: false, mes: 'Mara sits by the fire.', swipe_id: 0 }];
+   let asks = 0;
+   const fails = async () => { if (++asks <= 2) return '{"calls":{"Act":{"Mara":{"action":"hums a tune"}}},"then":["Does anyone hear the tune?"]}'; throw new Error('the model did not answer'); };
+-  await line('I wait 7 minutes and hum a tune.', fails).catch(() => {}); const failed = T.storyTime();
++  await line('I wait 7 minutes and hum a tune.', fails).catch(() => {});
++  if (T.storyTime() !== 600) { miss++; console.log(`MISS a pass that fails after its calls ran takes them back: ${T.storyTime()} (600)`); }
++  // One stopped because another chat was opened keeps them in its own chat, and runs once when sent again there.
++  fresh(); T.setStoryTime(600); ctx.name1 = 'Mara'; ctx.chat = [{ is_user: false, mes: 'Mara sits by the fire.', swipe_id: 0 }];
++  const home = ctx.chatMetadata; asks = 0;
++  const away = async () => { if (++asks <= 2) return '{"calls":{"Act":{"Mara":{"action":"hums a tune"}}},"then":["Does anyone hear the tune?"]}'; ctx.chatMetadata = {}; return '{"calls":{}}'; };
++  await line('I wait 7 minutes and hum a tune.', away).catch(() => {}); ctx.chatMetadata = home; const failed = T.storyTime();
+   T.onRulesGenerationStarted('normal'); await Q.runQuestionPass(ctx.chat, none, '', undefined, async () => null);
+   ctx.name1 = undefined;
+   if (failed !== 607 || T.storyTime() !== 607) { miss++; console.log(`MISS a line whose pass failed after its calls ran runs once when sent again: ${failed}, then ${T.storyTime()} (607)`); }
+@@ -1763,5 +1770,54 @@ for (const who of ['Mara', 'Ash']) {
+   const two = ['I look at Tom and Will, then I punch him.', 'Tom and Will stand there. I punch him.'].filter(t => asked(t) !== 'Punch Tom,Punch Will');
+   if (two.length || asked('I look at Tom and Ann. I punch him.') || asked('I look at Tom. I punch him.')) { miss++; console.log(`MISS him with two named in the line is asked: ${two.join(' | ')}; ${asked('I look at Tom and Ann. I punch him.')}`); }
+ }
+-console.log(`187 checks, ${miss} miss(es)`);
++// A line edited in place into a correction ("I wait 5 minutes." → "no, Will") keeps the world the correction put back as its
++// start, so a swipe of its reply does not bring the corrected blow back.
++{
++  fresh(); ctx.name1 = 'Jack'; for (const who of ['Tom', 'Will']) await run('NewCharacter', { who, sex: 'male', age: 30 });
++  const hit = async () => JSON.stringify({ calls: [{ tool: 'BodyStrike', args: { attacker: 'Jack', who: 'Tom', attack: 'punch' } }] });
++  ctx.chat = [{ is_user: false, name: 'Narrator', mes: 'Tom and Will stand at the bar.' }];
++  T.onRulesGenerationStarted('normal'); ctx.chat.push({ is_user: true, mes: 'I hit him.' });
++  await Q.runQuestionPass(ctx.chat, hit, '', undefined, async (q, o) => o.find(x => /Tom/.test(x)));
++  ctx.chat.push({ is_user: false, name: 'Narrator', mes: 'Jack hits Tom.', swipe_id: 0 }); T.onRulesMessageReceived(2);
++  T.onRulesGenerationStarted('normal'); ctx.chat.push({ is_user: true, mes: 'I wait 5 minutes.' });
++  await Q.runQuestionPass(ctx.chat, async () => '{"calls":{}}', '', undefined, async () => null);
++  ctx.chat[3].mes = 'no, Will';
++  T.onRulesGenerationStarted('normal'); await Q.runQuestionPass(ctx.chat, hit, '', undefined, async () => null);
++  ctx.chat.push({ is_user: false, name: 'Narrator', mes: 'Jack hits Will.', swipe_id: 0 }); T.onRulesMessageReceived(4);
++  T.onRulesGenerationStarted('swipe'); await Q.runQuestionPass(ctx.chat.slice(0, -1), hit, '', undefined, async () => null);
++  ctx.name1 = undefined;
++  const w = who => ctx.chatMetadata.rulesEngine.state.people[who].wounds?.length ?? 0;
++  if (w('Tom') !== 0 || w('Will') !== 1) { miss++; console.log(`MISS a line edited into a correction keeps the world it put back: Tom ${w('Tom')}, Will ${w('Will')}`); }
++}
++// A tool that waits (the day's sky, the weather, a bleed, chemistry data) writes nothing into a chat opened during the wait.
++{
++  const C = await import('../src/rules/clock.js');
++  const inner = globalThis.fetch; let hold = false, release; const gate = new Promise(r => { release = r; });
++  globalThis.fetch = async (u, o) => /^https?:/.test(String(u)) ? (hold && await gate, { ok: false, status: 503, json: async () => null, text: async () => '' }) : inner(u, o);
++  fresh(); await run('NewCharacter', { who: 'Wit', sex: 'female', age: 30 });
++  T.setStoryTime(C.parseStoryTime('1990-07-15 21:00')); T.setScenePosition(51.5, -0.12); await new Promise(r => setTimeout(r, 10));
++  hold = true;
++  const p = run('Look', { viewer: 'Wit', kind: 'a person', distance_m: 20, target: 'a man' });
++  await new Promise(r => setTimeout(r, 10));
++  const other = {}; ctx.chatMetadata = other; ctx.chat = [{ is_user: true, mes: 'another chat' }];
++  release(); await p.catch(() => {}); globalThis.fetch = inner;
++  if (other.rulesEngine) { miss++; console.log(`MISS a waiting tool writes nothing into another chat: ${JSON.stringify(Object.keys(other.rulesEngine.state?.people ?? {}))}`); }
++}
++// The rule check's note and flags belong to the turn they were made for: a redo that never started gives them to no other chat.
++{
++  const RA = await import('../src/rules/rules-audit.js'), AF = await import('../src/rules/audit-flags.js');
++  ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'I climb the wall.' }, { is_user: false, mes: 'Mara scales the wall.', swipe_id: 0 }];
++  await RA.onRulesAuditMessage(1, { send: async () => '{"events":[{"quote":"Mara scales the wall","tool":"BodyCheck","problem":"unbacked"}]}', ownsChat: () => true, generate: () => {}, toast: () => {} });
++  ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'Hello there.' }];
++  const note = RA.takeAuditNote(), flags = AF.takeFlags('1:x');
++  if (note || flags.length) { miss++; console.log(`MISS a rule-check note stays with its turn: ${note}; flags ${JSON.stringify(flags)}`); }
++}
++// PassTime stops at the second a knocked-out or choked person comes to (koLeft 0.3 min: 18 s), as at other thresholds.
++{
++  fresh(); await run('NewCharacter', { who: 'Kit', sex: 'male', age: 30 });
++  Object.assign(ctx.chatMetadata.rulesEngine.state.people.Kit, { unconscious: 'choked', koLeft: 0.3 });
++  const out = String(await run('PassTime', { minutes: 5 }));
++  if (!/after 0 min 18 s of 5 minutes: Kit comes to/.test(out)) { miss++; console.log(`MISS PassTime stops when a person comes to: ${out.slice(0, 120)}`); }
++}
++console.log(`192 checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/frame.test.mjs b/tests/frame.test.mjs
+index a1835f8..182e3cb 100644
+--- a/tests/frame.test.mjs
++++ b/tests/frame.test.mjs
+@@ -306,5 +306,24 @@ if (!framedCalls('I walk for an hour.', 'Mara').covered.has('Act')) { miss++; co
+   const wrong = QUOTES.filter(t => said(t) !== 'Run away!' || framedCalls(t, 'Mara').calls.some(c => c.tool === 'Act'));
+   if (wrong.length) { miss++; console.log(`MISS quoted words in any quotation marks: ${wrong.map(t => `${t} → ${said(t)}`).join(' | ')}`); }
+ }
+-console.log(`${CASES.length + 18} checks, ${miss} miss(es)`);
++// A manner or a topic after the one spoken to is no message ("with all my might", "about my plan"): a fact Tom learned read
++// "with all my might".
++{
++  const msg = t => framedCalls(t, 'Mara').calls.find(c => c.tool === 'Communicate')?.args.message;
++  const bad = ['I shout to Tom with all my might.', 'I tell Tom about my plan.'].filter(t => msg(t) !== undefined);
++  if (bad.length || msg('I tell Tom the IT desk is on the 2nd floor.') !== 'the IT desk is on the 2nd floor') { miss++; console.log(`MISS a manner or a topic is no message: ${bad.map(t => `${t} → ${msg(t)}`).join(' | ')}`); }
++}
++// An emphasis inside another is read as the words ("*I punch **Tom**.*" struck no one); a lone * stays (2*3).
++{
++  const { unEmphasis } = await import('../src/rules/frame.js');
++  const who = framedCalls('*I punch **Tom**.*', 'Mara').calls.find(c => c.tool === 'BodyStrike')?.args.who, lone = unEmphasis('I pay 2*3 coins and *smile*.');
++  if (who !== 'Tom' || lone !== 'I pay 2*3 coins and smile.') { miss++; console.log(`MISS emphasis inside emphasis: who ${who}; ${lone}`); }
++}
++// "Him" looked at is the man the line names before it ("Tom laughs at me. I glare at him."), not the word "him".
++{
++  const t = l => framedCalls(l, 'Mara').calls.find(c => c.tool === 'Look')?.args.target;
++  const got = [t('Tom laughs at me. I glare at him.'), t('I glare at him.')];
++  if (got[0] !== 'Tom' || got[1] !== undefined) { miss++; console.log(`MISS a pronoun looked at is its person: ${JSON.stringify(got)}`); }
++}
++console.log(`${CASES.length + 21} checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/intent.test.mjs b/tests/intent.test.mjs
+index 49e5bb7..9e0cf8d 100644
+--- a/tests/intent.test.mjs
++++ b/tests/intent.test.mjs
+@@ -70,5 +70,10 @@ if (I.statedGoal(['I want to find the thief.', 'I walk to the market.']) !== 'th
+   const wrong = SLIPS.filter(([t, want]) => I.understand(t, sit).text !== want);
+   if (wrong.length) { miss++; console.log(`MISS slips outside quotes only: ${wrong.map(([t]) => `${t} → ${I.understand(t, sit).text}`).join(' | ')}`); }
+ }
+-console.log(`${READ.length + WHO.length + 3} checks, ${miss} miss(es)`);
++// A woman named before "him back" leaves him to the one who struck ("I nod to Ann and hit him back").
++{
++  const t = I.understand('I nod to Ann and hit him back.', { player: 'Mara', people: [...people, { name: 'Ann', sex: 'female' }], narration: ['Will laughs. Tom shoves you hard.'], earlier: [], lastCalls: [] }).text;
++  if (t !== 'I nod to Ann and hit Tom back.') { miss++; console.log(`MISS a woman named before him back: ${t}`); }
++}
++console.log(`${READ.length + WHO.length + 4} checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0;
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 8f16ca6..18f89a0 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -1384,8 +1384,8 @@
+   "id": "Q6d",
+   "name": "a place is no message",
+   "file": "src/rules/frame.js",
+-  "find": "const message = !quoted && /\\^\\(\\?:across",
+-  "replace": "const message = false && /^(?:across",
++  "find": "const message = !quoted && /\\^\\(\\?:with\\|without\\|about\\|across",
++  "replace": "const message = false && /^(?:with|without|about|across",
+   "miss": "\"I call out to Tom across the square.",
+   "test": "frame"
+  },
+@@ -3014,8 +3014,8 @@
+   "id": "RY8",
+   "name": "the line's first pass keeps its start on it",
+   "file": "src/rules/question-pass.js",
+-  "find": "if\\ \\(lineAt\\ !=\\ null\\)\\\n\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ keepStart\\(lineAt\\);",
+-  "replace": "if (false)\n            keepStart(lineAt);",
++  "find": "if\\ \\(lineAt\\ !=\\ null\\)\\\n\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ keepStart\\(lineAt,\\ !!corrFix\\);",
++  "replace": "if (false)\n            keepStart(lineAt, !!corrFix);",
+   "miss": "a correction keeps its world after a later line is deleted"
+  },
+  {
+@@ -3375,5 +3375,143 @@
+   "replace": "|| /^[\"“]/.test(w);",
+   "miss": "speech in any quotes",
+   "test": "ui"
++ },
++ {
++  "id": "RS1",
++  "name": "a correction put back keeps that world as its line's start",
++  "file": "src/rules/question-pass.js",
++  "find": "keepStart\\(lineAt,\\ !!corrFix\\);",
++  "replace": "keepStart(lineAt);",
++  "miss": "a line edited into a correction keeps the world it put back"
++ },
++ {
++  "id": "RS2",
++  "name": "a pass that fails after its calls ran takes them back",
++  "file": "src/rules/question-pass.js",
++  "find": "if\\ \\(RAN\\ \\&\\&\\ at\\ !=\\ null\\ \\&\\&\\ c\\.chatMetadata\\ ===\\ meta\\)",
++  "replace": "if (false)",
++  "miss": "a pass that fails after its calls ran takes them back"
++ },
++ {
++  "id": "RS3",
++  "name": "a tool that waited writes nothing once another chat is open",
++  "file": "src/rules/rules-tools.js",
++  "find": "if\\ \\(CALLING\\ \\&\\&\\ SillyTavern\\.getContext\\(\\)\\.chatMetadata\\ !==\\ CALLING\\)",
++  "replace": "if (false)",
++  "miss": "a waiting tool writes nothing into another chat"
++ },
++ {
++  "id": "RS4",
++  "name": "the rule check's note goes to its own turn only",
++  "file": "src/rules/rules-audit.js",
++  "find": "if\\ \\(!p\\ \\|\\|\\ p\\.turn\\ !==\\ turnKey\\(SillyTavern\\.getContext\\(\\)\\.chat\\)\\)",
++  "replace": "if (!p)",
++  "miss": "a rule-check note stays with its turn"
++ },
++ {
++  "id": "RS5",
++  "name": "the rule check's flags go to their own turn only",
++  "file": "src/rules/audit-flags.js",
++  "find": "forTurn\\ ===\\ turn\\ \\?\\ flags\\ :\\ \\[\\]",
++  "replace": "flags",
++  "miss": "a rule-check note stays with its turn"
++ },
++ {
++  "id": "RS6",
++  "name": "a line quoting in any quotation marks is no correction",
++  "file": "src/rules/ask.js",
++  "find": "if\\ \\(OPENS\\.test\\(line\\)\\)",
++  "replace": "if (/[\"“”]/.test(line))",
++  "miss": "a line that quotes is no correction",
++  "test": "ui"
++ },
++ {
++  "id": "RS7",
++  "name": "a manner or a topic after the listener is no message",
++  "file": "src/rules/frame.js",
++  "find": "\\(\\?:with\\|without\\|about\\|across\\|",
++  "replace": "(?:across|",
++  "miss": "a manner or a topic is no message",
++  "test": "frame"
++ },
++ {
++  "id": "RS8",
++  "name": "emphasis runs are read longest first",
++  "file": "src/rules/frame.js",
++  "find": "\\[3,\\ 2,\\ 1\\]\\.reduce",
++  "replace": "[1, 2, 3].reduce",
++  "miss": "emphasis inside emphasis",
++  "test": "frame"
++ },
++ {
++  "id": "RS9",
++  "name": "a whole number in brackets is no timed pause",
++  "file": "src/rules/prosody.js",
++  "find": "/\\^\\\\\\(\\(\\\\d\\*\\\\\\.\\\\d\\+\\|\\\\\\.\\)\\\\\\)\\(\\[,\\.;:!\\?\\]\\*\\)\\$/",
++  "replace": "/^\\((\\d*\\.\\d+|\\d+|\\.)\\)([,.;:!?]*)$/",
++  "miss": "numbers in brackets and temperatures stay words",
++  "test": "ui"
++ },
++ {
++  "id": "RS10",
++  "name": "a degree sign before C, F or K is a unit",
++  "file": "src/rules/prosody.js",
++  "find": "if\\ \\(LEAD\\[c\\]\\ \\&\\&\\ w\\.length\\ >\\ 1\\ \\&\\&\\ !\\(c\\ ===\\ '°'\\ \\&\\&\\ /\\^°\\[CFK\\]\\(\\?!\\\\p\\{L\\}\\)/u\\.test\\(w\\)\\)\\)",
++  "replace": "if (LEAD[c] && w.length > 1)",
++  "miss": "numbers in brackets and temperatures stay words",
++  "test": "ui"
++ },
++ {
++  "id": "RS11",
++  "name": "only a person of the pronoun's sex named before it settles him or her",
++  "file": "src/rules/intent.js",
++  "find": "\\(!sexOf\\(p\\)\\ \\|\\|\\ sexOf\\(p\\)\\ ===\\ want\\)\\ \\&\\&\\ new\\ RegExp",
++  "replace": "new RegExp",
++  "miss": "a woman named before him back",
++  "test": "intent"
++ },
++ {
++  "id": "RS12",
++  "name": "a verb of falling with an object or a state complement is no fall",
++  "file": "src/rules/router.js",
++  "find": "VERB_TOOL\\[v\\]\\?\\.\\[0\\]\\ ===\\ 'BodyFall'\\)\\ \\&\\&\\ \\(",
++  "replace": "VERB_TOOL[v]?.[0] === 'BodyFall') && false && (",
++  "miss": "a fall verb with an object is no fall",
++  "test": "route"
++ },
++ {
++  "id": "RS13",
++  "name": "a mark goes on the letters inside any quotation marks and before a dash",
++  "file": "src/rules/voice-code.js",
++  "find": "export\\ const\\ WORD_PARTS\\ =\\ /\\^\\(\\[\"“„‚'‘\\(\\\\\\[«»‹›\\]\\*\\)\\(\\.\\*\\?\\)\\(\\[,\\.;:!\\?\"”“'’\\)\\\\\\]»«›‹—–…\\]\\*\\)\\$/su;",
++  "replace": "export const WORD_PARTS = /^([\"“'(]*)(.*?)([,.;:!?\"”')]*)$/su;",
++  "miss": "marks on the letters inside guillemets",
++  "test": "ui"
++ },
++ {
++  "id": "RS14",
++  "name": "PassTime stops at the second a person comes to",
++  "file": "src/rules/body-engine.js",
++  "find": "frac\\ =\\ Math\\.min\\(frac,\\ crossing\\(lv,\\ levels\\(p\\)\\),\\ woke\\);",
++  "replace": "frac = Math.min(frac, crossing(lv, levels(p)));",
++  "miss": "PassTime stops when a person comes to"
++ },
++ {
++  "id": "RS15",
++  "name": "braces inside a JSON string of the plan are text",
++  "file": "src/rules/question-pass.js",
++  "find": "\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ if\\ \\(s\\[i\\]\\ ===\\ '\"'\\)\\\n\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ str\\ =\\ true;",
++  "replace": "            if (false)\n                str = true;",
++  "miss": "a brace inside a message is text",
++  "test": "plan"
++ },
++ {
++  "id": "RS16",
++  "name": "a pronoun looked at is the person the grammar finds for it",
++  "file": "src/rules/frame.js",
++  "find": "const\\ at\\ =\\ seen\\ \\&\\&\\ PRONOUN\\.test\\(seen\\)\\ \\?\\ personFor\\(seen,\\ text,\\ lv\\.end,\\ player\\)\\ :\\ seen;",
++  "replace": "const at = seen;",
++  "miss": "a pronoun looked at is its person",
++  "test": "frame"
+  }
+ ]
+diff --git a/tests/plan.test.mjs b/tests/plan.test.mjs
+index b60a0df..3d0bdc5 100644
+--- a/tests/plan.test.mjs
++++ b/tests/plan.test.mjs
+@@ -81,5 +81,10 @@ const k7 = P.callsFromKeyed({ Price: { 'other good': { question: 'price of goods
+ check('other good read back with no item', k7[0].args.good === 'vodka' && !('item' in k7[0].args), k7);
+ check('places are no people', !SP.scenePeople(['Saint Petersburg, Nevsky Prospect, 2 February 1861.'], ['Pyotr']).some(n => /Petersburg|Prospect/.test(n)), null);
+ check('a blow keyed by who strikes it', P.subjectOf('BodyStrike') === 'attacker' && P.callsFromKeyed({ BodyStrike: { Jack: { who: 'the sailor', attack: 'punch' } } })[0].args.attacker === 'Jack', null);
+-console.log(`58 checks, ${miss} miss(es)`);
++// A brace inside a message is text: the plan still reads ("a smile :}", a whispered "{W meet me").
++{
++  const got = ['a smile :}', '{W meet me'].map(m => Q.rawPlan(`QUESTIONS\n1. Does Tom hear?\n{"calls":{"Communicate":{"Mara":{"listener":"Tom","message":${JSON.stringify(m)}}}}}`).calls[0]?.args.message);
++  if (got[0] !== 'a smile :}' || got[1] !== '{W meet me') { miss++; console.log(`MISS a brace inside a message is text: ${JSON.stringify(got)}`); }
++}
++console.log(`59 checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/route.test.mjs b/tests/route.test.mjs
+index 9a1766c..747d104 100644
+--- a/tests/route.test.mjs
++++ b/tests/route.test.mjs
+@@ -184,5 +184,11 @@ if ('steps' in notWalked) { miss++; console.log(`MISS undone walk "I don't walk
+   const wrong = GUILLEMETS.filter(t => { const r = routeTurn(t).tools; return !r.includes('Communicate') || r.includes('BodyCheck'); });
+   if (wrong.length) { miss++; console.log(`MISS quoted words in guillemets are speech: ${wrong.map(t => `${t} → ${routeTurn(t).tools}`).join(' | ')}`); }
+ }
+-console.log(`${CASES.length + DISTANCES.length + PACES.length + SPOTS.length + 5} checks, ${miss} miss(es)`);
++// A verb of falling with an object or a state complement is no fall of the body ("I drop the sword", "I fall asleep").
++{
++  const wrong = ['I drop the sword.', 'I slip the note into his pocket.', 'I trip the guard.', 'I fall asleep.', 'I fall silent.', 'I fall in love with Ann.'].filter(t => routeTurn(t).tools.includes('BodyFall'));
++  const kept = ['I drop down from the wall.', 'I slip on the ice.', 'I fall into the river.'].filter(t => !routeTurn(t).tools.includes('BodyFall'));
++  if (wrong.length || kept.length) { miss++; console.log(`MISS a fall verb with an object is no fall: ${wrong.join(' | ')}; falls lost: ${kept.join(' | ')}`); }
++}
++console.log(`${CASES.length + DISTANCES.length + PACES.length + SPOTS.length + 6} checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index 6809f12..4c3ec7e 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -297,4 +297,17 @@ ok(vv?.rows[0]?.tag === 'Voice' && vv.rows[0].kind === 'speech' && vv.rows[0].te
+ const mv = U.noteView({ acts: [], things: [], meant: ['punhc → punch', 'him back → Tom back'] }, true);
+ ok(mv?.meant === 'punhc → punch; him back → Tom back', 'the line as meant on the note', JSON.stringify(mv));
+ 
++// Ordinary writing stays words: a whole number in brackets ("Tom (35)", "the year (1850)") and a temperature ("20 °C").
++{
++  const plainOnes = ['John Smith (35) checks items (1) and (2).', 'The year (1850) was cold.', 'It is 20 °C outside.', 'Set the oven to 180 °C, Tom.', 'It is -5 °F.'];
++  const read = plainOnes.filter(l => { const x = P.readProsody(l); return x.marked || x.plain !== l; });
++  ok(!read.length && P.readProsody('Wait (0.5) what?').words[0]?.pause === 0.5 && P.readProsody('The °old° man.').words[1]?.marks.includes('quiet'), 'numbers in brackets and temperatures stay words', read.map(l => `${l} → ${P.deliveryOf(P.readProsody(l))}`).join(' | '));
++}
++// A mark on a word in guillemets or before a dash sits on its letters: «Stop-», the underline under Stop only.
++{
++  const r = VC.markWords('«Stop»', 1, 5, 'cut'), t = '«Stop»'.slice(0, r.from) + r.insert + '«Stop»'.slice(r.to), parts = U.mirrorParts(t);
++  ok(VC.toNotation(t) === '«Stop-»' && parts[0]?.text === '«' && !parts[0]?.family && VC.typeset(t).map(x => x.text).join('') === '«Stop—»', 'marks on the letters inside guillemets', `${VC.toNotation(t)} ${JSON.stringify(parts.map(p => p.text))}`);
++}
++// A line that quotes, in any quotation marks, is no correction ("No, Will, ›run!‹" is said to Will).
++ok(['No, Will, ›run!‹', 'No, Will «stop»', 'No, Will "stop"'].every(l => A.correctionOf(l) === null) && A.correctionOf('no, Will') === 'Will', 'a line that quotes is no correction', ['No, Will, ›run!‹', 'No, Will «stop»'].map(l => A.correctionOf(l)).join(' | '));
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

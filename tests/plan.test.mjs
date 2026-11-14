@@ -81,5 +81,16 @@ const k7 = P.callsFromKeyed({ Price: { 'other good': { question: 'price of goods
 check('other good read back with no item', k7[0].args.good === 'vodka' && !('item' in k7[0].args), k7);
 check('places are no people', !SP.scenePeople(['Saint Petersburg, Nevsky Prospect, 2 February 1861.'], ['Pyotr']).some(n => /Petersburg|Prospect/.test(n)), null);
 check('a blow keyed by who strikes it', P.subjectOf('BodyStrike') === 'attacker' && P.callsFromKeyed({ BodyStrike: { Jack: { who: 'the sailor', attack: 'punch' } } })[0].args.attacker === 'Jack', null);
-console.log(`58 checks, ${miss} miss(es)`);
-process.exit(miss ? 1 : 0);
+// A brace inside a message is text: the plan still reads ("a smile :}", a whispered "{W meet me").
+{
+  const got = ['a smile :}', '{W meet me'].map(m => Q.rawPlan(`QUESTIONS\n1. Does Tom hear?\n{"calls":{"Communicate":{"Mara":{"listener":"Tom","message":${JSON.stringify(m)}}}}}`).calls[0]?.args.message);
+  if (got[0] !== 'a smile :}' || got[1] !== '{W meet me') { miss++; console.log(`MISS a brace inside a message is text: ${JSON.stringify(got)}`); }
+}
+// The world book's draft reads as the plan does: a brace inside a value is text.
+{
+  const W = await import('../src/rules/world.js');
+  const e = W.parseEntry('Here: {"what":"a door marked {sealed","kind":"event"}'), f = W.parseEntry('{"what":"orcs who grin :}","kind":"people"}');
+  if (e?.what !== 'a door marked {sealed' || f?.what !== 'orcs who grin :}') { miss++; console.log(`MISS a brace inside a world-book value is text: ${JSON.stringify([e, f])}`); }
+}
+console.log(`60 checks, ${miss} miss(es)`);
+process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

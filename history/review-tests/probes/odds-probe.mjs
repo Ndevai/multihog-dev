@@ -1,0 +1,14 @@
+const O = await import('/home/claude/work/src/rules/sense-odds.js');
+const F = await import('/home/claude/work/src/rules/frame.js');
+const line = 'I charge the cook.', after = ['the', 'cook', '.'];
+const show = (label, cues) => { O.setSceneCues(cues); const o = O.senseOdds('charge', after, line); const f = F.framedCalls(line, 'Mara').calls.map(c => c.tool); console.log(label.padEnd(44), o.map(x => `${x.tools.join('+') || '∅'} ${Math.round(x.p * 100)}%`).join(' · '), '| code drafts:', f.join(' ') || '—'); };
+const base = { words: line.split(' '), recentTools: [], held: [], earlier: [] };
+show('no cues', base);
+show('Mara holds a sword', { ...base, held: ['sword'] });
+show('a blow just before', { ...base, recentTools: ['BodyStrike'] });
+show('sword + blow just before', { ...base, held: ['sword'], recentTools: ['BodyStrike'] });
+show('sword + blow + "attack" said before', { ...base, held: ['sword'], recentTools: ['BodyStrike'], words: [...base.words, 'sudden', 'attack', 'battle'] });
+show('the tavern bill: "price", "lunch" said', { ...base, words: [...base.words, 'price', 'lunch', 'amount'] });
+show('earlier "I charge the cook two shillings" (Price)', { ...base, earlier: [{ verb: 'charge', head: 'cook', tools: ['Price', 'Transfer'] }] });
+show('earlier Price, now sword + blow', { ...base, held: ['sword'], recentTools: ['BodyStrike'], earlier: [{ verb: 'charge', head: 'cook', tools: ['Price'] }] });
+O.setSceneCues(null);

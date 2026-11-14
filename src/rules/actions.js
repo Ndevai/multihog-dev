@@ -9,6 +9,9 @@ import { def, k as kc } from './constants.js';
 import { walkSpeedKmh } from './work.js';
 import { walkFromMap } from './map.js';
 import { topSpeedKmh } from './body-engine.js';
+import { NOT_DONE, NEGATIVE_TO, NEGATIVE_GERUND, TWO_WAY, NOT_FACTUAL, PERCEPTION_VERB, CONDITIONAL, notNow, QUESTION_INVERSION, SENSING, LET_US, walkEnd } from './grammar.js';
+import { VERBNET } from './data/verbnet.js';
+import { QUOTED } from './quotes.js';
 export const TMU_S = 0.036;
 // MTM-1 body motions, TMU: bend, stoop or kneel on one knee 29.0; arise 31.9; kneel on both knees 69.4; arise 76.7; sit
 // 34.7; stand from sitting 43.4; turn body 45–90° (case I) 18.6; sidestep under 30 cm 17.0; walk 15.0 per pace. Hand: reach
@@ -133,9 +136,9 @@ export function act(st, who, p, steps, country) {
             // A run or a sprint goes at a share of the runner's own top speed (body-engine topSpeedKmh: flying 20 m sprint
             // times by sex and age); a sprint holds top speed for its first sprintHold_m, then runs.
             const top = s.pace === 'run' || s.pace === 'sprint' ? topSpeedKmh(p) / 3.6 * crowdFactor(s.crowd_per_m2) : 0;
-            const v = top ? (s.pace === 'sprint' ? top : top * kc('runFactor')) : walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2) * (s.pace === 'creep' ? kc('creepFactor') : 1);
+            const v = top ? (s.pace === 'sprint' ? top : top * kc('runFactor')) : walkSpeedKmh(p, s.grade_pct ?? 0, 'road', s.load_kg ?? 0, country) / 3.6 * crowdFactor(s.crowd_per_m2) * (s.pace === 'creep' ? kc('creepFactor') : s.pace === 'brisk' ? briskShare(p) : 1);
             t = s.pace === 'sprint' && d > kc('sprintHold_m') ? kc('sprintHold_m') / top + (d - kc('sprintHold_m')) / (top * kc('runFactor')) : d / v;
-            what = `${s.pace === 'run' ? 'runs' : s.pace === 'sprint' ? 'sprints' : s.pace === 'creep' ? 'creeps' : 'walks'} ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : fromMap ? ' (from the map)' : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
+            what = `${s.pace === 'run' ? 'runs' : s.pace === 'sprint' ? 'sprints' : s.pace === 'creep' ? 'creeps' : s.pace === 'brisk' ? 'hurries' : 'walks'} ${Math.round(d * 10) / 10} m from ${p.at} to ${s.to}${via ? ` (via ${via.path.slice(1, -1).join(', ')})` : fromMap ? ' (from the map)' : ''} at ${v.toFixed(2)} m/s${(s.crowd_per_m2 ?? 0) > 0.54 ? ` (crowd ${s.crowd_per_m2} per m²)` : ''}${known != null && s.distance_m != null && s.distance_m !== known ? ` (recorded distance ${known} m kept; ${s.distance_m} m ignored)` : ''}`;
             p.at = s.to;
         }
         else if (s.do === 'stairs_up' || s.do === 'stairs_down') {
@@ -195,13 +198,13 @@ export function act(st, who, p, steps, country) {
  *  github.com/zebrr/Thing-Sandbox): every actor's steps are timed on one clock; the span lasts as long as the slowest; the
  *  merged timeline says who finishes what first. */
 export function actTogether(st, actors, country) {
-    const backup = structuredClone({ links: st.links, at: actors.map(a => a.p.at) });
+    const backup = structuredClone({ links: st.links, at: actors.map(a => a.p.at), posture: actors.map(a => a.p.posture) });
     const runs = [];
     for (const a of actors) {
         const r = act(st, a.who, a.p, a.steps, country(a.p));
         if ('error' in r) {
             st.links = backup.links;
-            actors.forEach((x, i) => { x.p.at = backup.at[i]; });
+            actors.forEach((x, i) => { x.p.at = backup.at[i]; x.p.posture = backup.posture[i]; });
             return { error: `${a.who}: ${r.error}` };
         }
         runs.push({ who: a.who, ...r });
@@ -214,11 +217,24 @@ export function actTogether(st, actors, country) {
     return { seconds, text: `${lines.join('. ')}. Timeline: ${tl.join('; ')}` };
 }
 def({ id: 'creepFactor', value: 0.5, unit: '× walking speed', status: 'assumed', src: 'stealthy walking is slower than ordinary walking (no measured value held)', range: [0.3, 0.7], file: 'actions.ts' });
-def({ id: 'runFactor', value: 0.45, unit: '× own top speed', status: 'assumed', src: 'a steady run at about 45 % of sprint speed: 11 km/h for a man of 24.8 km/h top speed (no measured share held)', range: [0.35, 0.6], file: 'actions.ts' });
+def({ id: 'runFactor', value: 0.46, unit: '× own top speed', status: 'fitted', src: 'a run at the speed runners choose: free-living runners chose the speed that costs them least energy per metre, 2.65 m/s for women and 3.35 m/s for men among healthy young adults (Selinger, Hicks, Jackson, Wall-Scheffler, Chang & Delp 2022, Current Biology 32:2309–2315, as reported by Popular Science; the paper\'s own pages could not be read), over the engine\'s mean top speed at 25 (body-engine topSpeedKmh: 5.79 and 7.27 m/s): 0.457 and 0.461', range: [0.4, 0.55], file: 'actions.ts' });
+// Walking as fast as one can without running ("hurry", "rush"): Bohannon 1997 (Age Ageing 26:15, 230 healthy adults over
+// 7.62 m, Table 4, cm/s, read in full from the academia.edu copy), maximum over comfortable speed by sex and decade, 20s to
+// 70s; the 20s' share under 20, the 70s' from 80.
+const BRISK = {
+    male: [[139.3, 253.3], [145.8, 245.6], [146.2, 246.2], [139.3, 206.9], [135.9, 193.3], [133.0, 207.9]],
+    female: [[140.7, 246.7], [141.5, 234.2], [139.1, 212.3], [139.5, 201.0], [129.6, 177.4], [127.2, 174.9]],
+};
+export function briskShare(p) {
+    const rows = BRISK[p.sex ?? ''] ?? BRISK.male.map((m, i) => [(m[0] + BRISK.female[i][0]) / 2, (m[1] + BRISK.female[i][1]) / 2]);
+    const [comfortable, max] = rows[Math.max(0, Math.min(5, Math.floor(((p.age ?? 30) - 20) / 10)))];
+    return max / comfortable;
+}
 def({ id: 'sprintHold_m', value: 100, unit: 'm', status: 'assumed', src: 'untrained adults hold top speed for about 100 m before slowing (no measured value held)', range: [60, 200], file: 'actions.ts' });
 // An action written in plain words, as steps: each recognized verb in its order in the text gives the motion it names.
-// Walking verbs need a distance (the one thing words cannot give); the spot walked to is the phrase after onto / into / to /
-// out of, else "outside".
+// Walking verbs need a distance (the one thing words cannot give); the spot walked to is where the grammar of the walk's
+// prepositions puts its end (grammar.ts walkEnd: goal, source, path, direction; CGEL ch. 8 §4.3).
+const isVerbLemma = (w) => !!VERBNET[w];
 const WORD_STEPS = [
     [/\b(sit|sits|sat|sitting)\b/, () => [{ do: 'sit' }]],
     [/\b(stand|stands|stood|standing|getting up|get up|gets up|got up|rise|rises|rose)\b/, () => [{ do: 'stand' }]],
@@ -227,19 +243,16 @@ const WORD_STEPS = [
     [/\b(turn|turns|turned)\b/, () => [{ do: 'turn' }]],
     [/\b(pick|picks|picked) up\b|\b(grab|grabs|grabbed|grasp|grasps)\b/, () => [{ do: 'reach' }, { do: 'grasp' }]],
     [/\b(reach|reaches|reached)\b/, () => [{ do: 'reach' }]],
-    [/\b(go|goes|going|went|walk|walks|walking|walked|step|steps|stepping|stepped|cross|crosses|crossing|crossed|leave|leaves|leaving|enter|enters|entering|entered|exit|exits|exiting|exited|head|heads|heading|headed|come|comes|coming|came|move|moves|moving|moved|carry|carries|carrying|carried|bring|brings|bringing|brought|fetch|fetches|fetching|fetched|run|runs|running|ran|hurry|hurries|hurried|stroll|strolls|strolled|stride|strides|strode|wander|wanders|wandered|dash|dashes|dashed|return|returns|returned|creep|creeps|creeping|crept|sneak|sneaks|sneaking|sneaked|snuck|tiptoe|tiptoes|tiptoed|crawl|crawls|crawled|steal|steals|stole|slip|slips|slipped|edge|edges|edged)\b/, (who, rest, d) => {
+    [/\b(go|goes|going|went|walk|walks|walking|walked|step|steps|stepping|stepped|cross|crosses|crossing|crossed|leave|leaves|leaving|enter|enters|entering|entered|exit|exits|exiting|exited|head|heads|heading|headed|come|comes|coming|came|move|moves|moving|moved|carry|carries|carrying|carried|bring|brings|bringing|brought|fetch|fetches|fetching|fetched|run|runs|running|ran|jog|jogs|jogging|jogged|sprint|sprints|sprinting|sprinted|hurry|hurries|hurrying|hurried|rush|rushes|rushing|rushed|hasten|hastens|hastening|hastened|stroll|strolls|strolled|stride|strides|strode|wander|wanders|wandered|dash|dashes|dashed|return|returns|returned|creep|creeps|creeping|crept|sneak|sneaks|sneaking|sneaked|snuck|tiptoe|tiptoes|tiptoed|crawl|crawls|crawled|steal|steals|stole|slip|slips|slipped|edge|edges|edged)\b/, (who, rest, d, before = '') => {
             if (d == null || !(d > 0))
                 return 'Walking needs distance_m (the distance from the scene).';
-            const end = '(?:[,.;]| and | then |$)';
             // The spot keeps the text's own capitals ("Tom's table"): matched on the lower-case text, read from the original.
-            const to = rest.match(new RegExp(`\\b(?:onto|into|to|towards?)\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim()
-                ?? rest.match(new RegExp(`\\bacross\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim()
-                ?? rest.match(/\b(home|back)\b/)?.[1]
-                ?? rest.match(new RegExp(`\\b(?:at|by|beside|near)\\s+(?:the\\s+|a\\s+)?(.+?)${end}`))?.[1]?.trim()
-                ?? rest.match(new RegExp(`\\bout of\\s+(?:the\\s+)?(.+?)${end}`))?.[1]?.trim().replace(/^/, 'outside ');
-            // Creeping, sneaking, tiptoeing, crawling: a slower pace.
-            const slow = /^(creep|crept|sneak|snuck|tiptoe|crawl|steal|stole)/.test(rest);
-            return [{ do: 'walk_to', to: to || `outside, near where ${who} stood`, distance_m: d, ...slow ? { pace: 'creep' } : {} }];
+            const to = walkEnd(rest, d, who, before, isVerbLemma);
+            // The verb's pace: creeping, sneaking, tiptoeing, crawling slower; hurrying, rushing, hastening as fast as one walks;
+            // running and jogging a run; sprinting and dashing a sprint [ASSUMED: dash as a sprint, hurry as the fastest walk];
+            // the rest a walk.
+            const pace = /^(creep|crept|sneak|snuck|tiptoe|crawl|steal|stole)/.test(rest) ? 'creep' : /^(hurr|rush|hasten)/.test(rest) ? 'brisk' : /^(sprint|dash)/.test(rest) ? 'sprint' : /^(run|ran|jog)/.test(rest) ? 'run' : null;
+            return [{ do: 'walk_to', to, distance_m: d, ...pace ? { pace } : {} }];
         }],
 ];
 /** The words an Act's action can begin with, as a pattern: a motion or posture verb the action reader times (WORD_STEPS),
@@ -253,7 +266,8 @@ export const MOTION_START = `^(${[...new Set([...WORD_STEPS.flatMap(([re]) => re
 const UNIT = [[/^(?:m|metres?|meters?)$/, 1], [/^(?:yds?|yards?)$/, 0.9144], [/^(?:ft|feet|foot)$/, 0.3048], [/^(?:mi|miles?)$/, 1609.344], [/^(?:km|kilometres?|kilometers?)$/, 1000]];
 const NUM = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, hundred: 100, 'a hundred': 100, 'half a': 0.5, 'a quarter of a': 0.25 };
 export function distanceIn(text) {
-    const m = text.toLowerCase().match(/\b((?:\d+(?:[.,]\d+)?)|half a|a quarter of a|a hundred|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty|fifty|sixty|hundred)(?:\s+(hundred|thousand))?\s*(m|metres?|meters?|yds?|yards?|ft|feet|foot|mi|miles?|km|kilometres?|kilometers?)\b/);
+    // A number in figures may touch its unit ("50m"); a number in words is a word of its own ("a mile", not the "a m" of "I am").
+    const m = text.toLowerCase().match(/\b((?:\d+(?:[.,]\d+)?)(?=(?:\s+(?:hundred|thousand))?\s*(?:m|metres?|meters?|yds?|yards?|ft|feet|foot|mi|miles?|km|kilometres?|kilometers?)\b)|(?:half a|a quarter of a|a hundred|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty|fifty|sixty|hundred)(?=(?:\s+(?:hundred|thousand))?\s+(?:m|metres?|meters?|yds?|yards?|ft|feet|foot|mi|miles?|km|kilometres?|kilometers?)\b))(?:\s+(hundred|thousand))?\s*(m|metres?|meters?|yds?|yards?|ft|feet|foot|mi|miles?|km|kilometres?|kilometers?)\b/);
     if (!m)
         return null;
     let n = /\d/.test(m[1]) ? Number(m[1].replace(',', '.')) : NUM[m[1]];
@@ -262,16 +276,68 @@ export function distanceIn(text) {
     const u = UNIT.find(([re]) => re.test(m[3]));
     return u && n > 0 ? Math.round(n * u[1] * 10) / 10 : null;
 }
+// An act the line says is not done, in its own clause, by the grammar's negators (grammar.ts: CGEL ch. 9 — not, n't, never,
+// no longer, cannot; avoid, decline, fail, forget, neglect, omit, refrain; keep, prevent, stop, prohibit, ban, hinder … from;
+// without; too … to; almost, nearly, practically — and refuse, Karttunen 2012): "I don't hit him", "I fail to climb the wall",
+// "I refrain from hitting him", "I almost fall". A two-way implicative under negation says the act was done ("I didn't
+// forget to lock the door").
+const NOT_DONE_RE = new RegExp(NOT_DONE, 'i'), NEG_TO_RE = new RegExp(String.raw `\b${NEGATIVE_TO}\s+to\s+$`, 'i'), NEG_GER_RE = new RegExp(NEGATIVE_GERUND, 'i'), NOT_FACTUAL_RE = new RegExp(NOT_FACTUAL, 'i');
+// An act under a modal of possibility, necessity or volition is not said to be done, nor one in a sentence with a condition
+// (grammar.ts: CGEL ch. 3 §9.1, ch. 8 §14): "I could hit him", "Can I climb the wall?", "I hit Tom if he moves". "I can see
+// the rider" is seen. Nor is an act the words put at another time than now — a habit, a past or future time, used to, about
+// to (grammar.ts notNow: CGEL ch. 3 §4.2, ch. 8 §§6.2, 9) — an act asked about (a question, CGEL ch. 10 §2, §4.7.2), nor one
+// proposed (let's, ch. 10 §9.3.2).
+export function undone(text, at) {
+    // Quoted words are blanked to the same length, so positions in the line stay where they are.
+    const plain = text.replace(QUOTED, q => ','.padEnd(q.length, ' '));
+    const sentence = plain.slice(0, at).split(/[.!?;]/).pop() + plain.slice(at).split(/[.!?;]/)[0];
+    if (CONDITIONAL.test(sentence))
+        return true;
+    if (notNow(text, at))
+        return true;
+    const head = plain.slice(0, at).split(/[,.;:!?]|\b(?:and|but|then)\b/).pop() ?? '';
+    const verb = /^[a-z]+(?: out)?/i.exec(plain.slice(at))?.[0].toLowerCase() ?? '';
+    if (NOT_FACTUAL_RE.test(head) && !(/\b(?:can|could)\s+$/i.test(head) && PERCEPTION_VERB.test(verb)))
+        return true;
+    // A question: an auxiliary before the subject ("Can I climb the wall?", "Do I walk to the door?") or a question mark ending
+    // the sentence — save one of perception, which the look or the listening answers ("Do I see anyone?").
+    if ((QUESTION_INVERSION.test(head) || plain.slice(at).match(/[.!?;]/)?.[0] === '?') && !SENSING.test(verb))
+        return true;
+    if (LET_US.test(plain.slice(0, at)))
+        return true;
+    if (NOT_DONE_RE.test(head))
+        return true;
+    const m = NEG_TO_RE.exec(head) ?? NEG_GER_RE.exec(head);
+    if (!m)
+        return false;
+    return !(TWO_WAY.test(m[0].trim()) && NOT_DONE_RE.test(head.slice(0, m.index)));
+}
+/** The first place a verb pattern stands in the text where the words do not say the act is not done ("I refuse to run, and
+ *  walk 10 m": the walk, not the run). */
+const doneMatch = (t, re) => [...t.matchAll(new RegExp(re.source, re.flags.replace('g', '') + 'g'))].find(m => !undone(t, m.index));
+/** Where the first motion or posture verb the action reader knows, said as done, stands in the text, or -1. */
+export function motionAt(text) {
+    const t = text.toLowerCase(), at = WORD_STEPS.map(([re]) => doneMatch(t, re)?.index ?? -1).filter(i => i >= 0);
+    return at.length ? Math.min(...at) : -1;
+}
+// A leg of a walk: a distance and where it goes ("5 m to the door", "then 10 m to the gate").
+const LEG = /\b(?:\d+(?:[.,]\d+)?(?:\s+(?:hundred|thousand))?\s*|(?:half a|a quarter of a|a hundred|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty|fifty|sixty|hundred)(?:\s+(?:hundred|thousand))?\s+)(?:m|metres?|meters?|yds?|yards?|ft|feet|foot|mi|miles?|km|kilometres?|kilometers?)\s+(?:back\s+)?(?:to|towards?|onto|into|across)\s+(?:the\s+)?(.+?)(?=[,.;]| and | then |$)/gi;
+/** The legs of a walk the words give each with its own distance and end; one or none means a single walk. */
+export function legsIn(text) {
+    // Each leg's end by the same grammar as a whole walk's (grammar.ts walkEnd): "5 m towards the door" ends short of the door.
+    return [...text.matchAll(LEG)].map(m => { const d = distanceIn(m[0]) ?? 0; return { distance_m: d, to: d > 0 ? walkEnd(m[0].toLowerCase(), d, 'the walker', '', isVerbLemma) : m[1].trim() }; }).filter(l => l.distance_m > 0);
+}
 export function stepsFromWords(text, who, distance) {
     distance ??= distanceIn(text) ?? undefined;
     const t = text.toLowerCase(), found = [];
     const orig = (low) => { if (!low)
         return low; const i = t.indexOf(low); return i >= 0 ? text.slice(i, i + low.length) : low; };
     for (const [re, make] of WORD_STEPS) {
-        const m = t.match(re);
+        // A verb the words say is not done gives no step ("I don't run. I walk 10 m to the door." walks).
+        const m = doneMatch(t, re);
         if (!m || m.index == null)
             continue;
-        const r = make(who, t.slice(m.index), distance);
+        const r = make(who, t.slice(m.index), distance, t.slice(0, m.index));
         if (Array.isArray(r))
             for (const s of r)
                 if (s.to)
@@ -281,12 +347,15 @@ export function stepsFromWords(text, who, distance) {
         found.push({ at: m.index, steps: r });
     }
     // A distance given with words whose verb is unknown ("drops down into the garden and slips to the hedge", 8 m) is a move of
-    // that distance to the place named.
-    if (!found.length && distance != null && distance > 0) {
+    // that distance to the place named; a climb, jump or swim is BodyCheck's, never a walk ("jumps to the next roof, 2 m").
+    // A known verb the words say is not done ("I don't walk 10 m to the door") is no move of unknown kind either.
+    if (!found.length && distance != null && distance > 0 && !WORD_STEPS.some(([re]) => re.test(t)) && !/\b(?:climb|jump|leap|vault|scal(?:e|es|ed|ing)\b|swim|swam|clamber|scrambl)/i.test(text)) {
         const to = text.match(/\b(?:onto|into|to|towards?)\s+(?:the\s+)?(.+?)(?:[,.;]| and | then |$)/i)?.[1]?.trim();
         return { steps: [{ do: 'walk_to', to: to || `a spot ${Math.round(distance)} m from where ${who} stood`, distance_m: distance }] };
     }
     if (!found.length)
         return { error: `No motion recognized in "${text}": give steps.` };
-    return { steps: found.sort((a, b) => a.at - b.at).flatMap(f => f.steps) };
+    // Two legs or more, each with its distance and end: one walk per leg, at the verb's pace.
+    const legs = legsIn(text);
+    return { steps: found.sort((a, b) => a.at - b.at).flatMap(f => f.steps).flatMap(s => s.do === 'walk_to' && legs.length > 1 ? legs.map(l => ({ ...s, ...l })) : [s]) };
 }

@@ -5,6 +5,7 @@ import type { Creature, CreatureAttack, Part, Layer, Material, Weapon, WeaponAtt
 import { randomSublocation, shareOf } from './sublocations.js';
 import type { Side } from './sublocations.js';
 import type { Rng } from '../types.js';
+import { def, k } from '../constants.js';
 
 /** What meets the layers: contact area, penetration, edge and material (penetrate reads these). */
 export interface Striker { name: string; contact: number; bluntContact?: number; penetration: number; edge: boolean; mat: Material; piercing?: boolean }
@@ -31,13 +32,13 @@ export const STYLES: Record<Style, number> = { normal: 1, quick: 0.5, heavy: 1.5
 const Q = 1;
 // Blunt test on rigid tissue (STRUCTURAL, not FUNCTIONAL) × this factor. Fit (docs/df-body-engine.md §4.6): a
 // Professional 70 kg human's punch breaks the skull on 0.153 % of landed head punches (27 facial fractures, 301 bouts).
-export const RIGID_BLUNT_FACTOR = 19.985;
+def({ id: 'rigidBluntFactor', value: 19.985, unit: '× blunt threshold on rigid tissue', status: 'fitted', src: 'a Professional 70 kg punch breaks the skull on 0.153 % of landed head punches (27 in 17,701); range: the factor at the ends of that share\'s 95 % interval (Wilson), 0.10–0.22 %', range: [19.675, 20.318], file: 'df/combat.ts' });
 // Momentum × this factor for natural cutting attacks (bites, scratches, gores). Fit (docs/df-body-engine.md §4.7): a dog's
 // bite to a human forearm breaks the skin on 87.4 % of bites (475 ED-treated adult dog bites, Morzycki 2019).
-export const NATURAL_EDGE_FACTOR = 2.243;
+def({ id: 'naturalEdgeFactor', value: 2.243, unit: '× momentum of a natural cut', status: 'fitted', src: 'a dog bite breaks the skin on 87.4 % of 475 bites (Morzycki 2019); range: the factor at the ends of the unbroken share\'s 95 % interval (Wilson), 9.9–16.0 %', range: [2.14, 2.35], file: 'df/combat.ts' });
 // Share of the striking part's contact area a natural cutting attack crushes with once it stops cutting. Fit (§4.7):
 // 2 % of those dog bites fracture bone (Morzycki 2019).
-export const CRUSH_AREA_SHARE = 0.232;
+def({ id: 'crushAreaShare', value: 0.232, unit: 'share of contact area', status: 'fitted', src: 'a dog bite fractures bone on 2 % of 475 bites (Morzycki 2019), by simulation (4000 bites to the lower arm or hand: 1.88 %); range: the share that gives each end of that rate\'s 95 % interval (Wilson), 3.83 % and 1.15 %, by the same simulation', range: [0.227, 0.235], file: 'df/combat.ts' });
 
 export const skillFactor = (level: string | undefined) => 1 + Math.min(Math.max(0, SKILL_LEVELS.indexOf(level ?? '')), 14) / 14;
 export const partSize = (c: Creature, part: Part, iSize: number) => iSize * part.relsize / (c.relTotal ?? 1);
@@ -71,7 +72,7 @@ export function bodyWeapon(c: Creature, attack: CreatureAttack, iSize: number, w
             size: partSize(c, base, iSize), density: partDensity(c, base),
             contact: attack.contactPerc / 100 * area(partSize(c, tip, iSize)),
             // a cutting attack that stops cutting crushes with the whole striking part (jaw, paw) [ASSUMED]
-            bluntContact: attack.edge ? attack.contactPerc / 100 * area(partSize(c, base, iSize)) * CRUSH_AREA_SHARE : undefined,
+            bluntContact: attack.edge ? attack.contactPerc / 100 * area(partSize(c, base, iSize)) * k('crushAreaShare') : undefined,
             penetration: attack.penetrationPerc, edge: attack.edge, velocity: attack.velocity / 1000, mat: mat || {}, natural: true,
         };
     }
@@ -132,7 +133,7 @@ export function shot(launcher: Weapon, am: Ammo, mat: Material): Shot {
 /** M = Skill × Size × Str × Vel ÷ (10⁶ × (1 + i_Size ÷ (w_density × w_size))) × style × prone. */
 export function momentum(c: Creature, iSize: number, w: StrikeWeapon, { skill, style = 'normal', prone = false }: { skill?: string; style?: Style; prone?: boolean } = {}): number {
     return skillFactor(skill) * c.size * c.strength * w.velocity / (1e6 * (1 + iSize / (w.density * w.size)))
-        * (STYLES[style] ?? 1) * (prone ? 2 : 1) * (w.natural && w.edge ? NATURAL_EDGE_FACTOR : 1);
+        * (STYLES[style] ?? 1) * (prone ? 2 : 1) * (w.natural && w.edge ? k('naturalEdgeFactor') : 1);
 }
 
 /**
@@ -189,7 +190,7 @@ export function penetrate(c: Creature, struck: Part, iSize: number, w: Striker, 
             if (M <= 0) return;
             const flags = tissueOf(c, layer)?.flags || [];
             const rigid = flags.includes('STRUCTURAL') && !flags.includes('FUNCTIONAL');
-            tested.push({ part, layer, result: test(materialOf(c, layer), A, Q, rigid ? RIGID_BLUNT_FACTOR : 1, Ab) });
+            tested.push({ part, layer, result: test(materialOf(c, layer), A, Q, rigid ? k('rigidBluntFactor') : 1, Ab) });
         }
     };
     visit(struck);

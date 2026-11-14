@@ -4,15 +4,16 @@ import { weaponOf, metalOf, armorOf, customGearOf, gearMaterialOf, ammoOf } from
 import { sublocationsOf, randomHitPart } from './df/sublocations.js';
 import { hearingShift, inRange, hearingOf, bandShift } from './hearing.js';
 import { landing } from './materials.js';
-import { reach, hearSound, SOUNDS, BAND_HZ, SPEECH_SPL, classOf, soundSpeed, type Way } from './acoustics.js';
-import { see, acuityOf } from './vision.js';
+import { reach, hearSound, SOUNDS, BAND_HZ, classOf, soundSpeed, type Way } from './acoustics.js';
+import { see, acuityOf, ageAcuity } from './vision.js';
 import { grip, gripNorm } from './strength.js';
 import { endothermMinute } from './thermal/endotherm.js';
 import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { foodEnergy } from './substance.js';
 import { drugMinute, drugStatus } from './drugs.js';
-import { def, k } from './constants.js';
+import { def, k, reaches } from './constants.js';
+import { drmRow, drmLine } from './mood.js';
 import { worldHasMagic } from './world.js';
 import type { Creature, Part, Layer, Tissue } from './df/raws.js';
 import type { StrikeWeapon, Shot, WornItem, Portion, Style } from './df/combat.js';
@@ -22,6 +23,7 @@ import { equivalentAltitude, pressureTorr, aerobicFactor, amsChance, haceChance,
 import type { Clothing } from './thermal/exposure.js';
 import type { Effort } from './acoustics.js';
 import { relatedShare } from './intelligibility.js';
+import { kindRoute } from './verbs.js';
 import { pulseWound } from './pulse.js';
 import { thermalCapable, thermalMinute, coreStage, clothingClo, BODY_WIND, immersion, limbCold, forceFactor, speedFactor, NERVE_PER_C, handSkin, fineFactor, burnDose, contactTemp, burnedTBSA } from './thermal/exposure.js';
 
@@ -271,6 +273,7 @@ function endDay(net: Net) {
 
 export function advance(p: Person, minutes: number, resting: boolean, rng: Rng = Math.random, { active = false, sleeping = false } = {}): void {
     if (p.dead) return;
+    if (p.clockMin != null) p.clockMin += minutes;
     const net = p.net;
     const c = creatureOf(p);
     const needs = !c || c.blood;
@@ -278,12 +281,22 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
     const n = p.needs;
     const waterDeath = n.waterDeath ??= 15 + 5 * rng();
     const foodDeath = n.foodDeath ??= 40 + 20 * rng();
-    // A knockout lasts until story time passes (its length is OPEN-81).
-    if (minutes > 0 && (p.unconscious === 'knocked out' || p.unconscious === 'choked')) p.unconscious = null;
+    // A knockout or a choke lasts its drawn time (koLeft, minutes; none on record: it ends now, as before); a knockout then
+    // leaves the person concussed, and the concussion fades (concussedMin counts from waking).
+    if (minutes > 0 && (p.unconscious === 'knocked out' || p.unconscious === 'choked')) {
+        p.koLeft = (p.koLeft ?? 0) - minutes;
+        if (p.koLeft <= 0) { if (p.unconscious === 'knocked out') p.concussedMin = Math.max(0, -p.koLeft); p.unconscious = null; delete p.koLeft; }
+    } else if (minutes > 0 && p.concussedMin != null) {
+        p.concussedMin += minutes;
+        if (concussionRisk(p) < 1.01) delete p.concussedMin;
+    }
+    // Feelings run their drawn time (Appraise).
+    if (minutes > 0 && p.feelings?.length) { p.feelings = p.feelings.map(f => ({ ...f, left: f.left - minutes })).filter(f => f.left > 0); if (!p.feelings.length) delete p.feelings; }
     for (let t = 0; t < minutes; t++) {
         checkDeath(p);
         drugMinute(p);
-        if (p.apnea != null && ++p.apnea >= APNEA_DEATH()) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
+        if (p.drowning && !p.env?.water) { resolveDrowning(p, rng); if (p.dead) return; }
+        if (p.apnea != null && ++p.apnea >= (p.drowning ? Math.max(1, DROWN_FATAL_MIN - (p.underS ?? 0) / 60) : APNEA_DEATH())) { p.dead = p.drowning ? 'drowning' : 'suffocation'; return; }
         altitudeMinute(p, rng);
         // Smoke breathed in: inhalation injury, +17 on the burn score (Osler et al. 2010) once any burn exists.
         if (p.env?.smoke && !p.inhalation && !has(p, 'NOBREATHE')) { p.inhalation = true; burnRisk(p, rng); }
@@ -323,7 +336,9 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
         }
         if (needs) {
             n.waterL += heat ? heat.waterL : WATER_L_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
-            n.kcal += heat ? heat.kcal : p.workMet ? p.workMet * 1.163 * p.mass * 60 / 4184 : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
+            let spent = heat ? heat.kcal : p.workMet ? p.workMet * 1.163 * p.mass * 60 / 4184 : KCAL_DAY[active ? 'active' : 'rest'] * kleiber(p) / DAY_MIN;
+            if ((n.surplus ?? 0) > 0) { const take = Math.min(n.surplus!, spent); n.surplus! -= take; spent -= take; }
+            n.kcal += spent;
             if (sleeping) {
                 if (n.slept === 0) n.debt = Math.max(0, (n.debt ?? 0) + n.awake / 60 - CRITICAL_WAKE_H);
                 n.slept += 1;
@@ -338,16 +353,35 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
             // et al. 2021, Front Physiol 12:719788), unless held afloat by something.
             const w = p.env?.water, inWater = w && !w.afloat && thermalCapable(p.species);
             const met = p.workMet ?? (inWater ? (w!.swimming ? 6.0 : 7.5) : active ? 3.5 : null);
+            // Time on task (§6.3 work): minutes of work since the last break of 15 min or more, and since the last sleep. A task is
+            // any activity at 1.5 MET or more (the Compendium's line between sedentary and light activity: desk work counts,
+            // sitting quietly does not), unless the character is listed at rest or the activity is a break by its kind (eating,
+            // relaxing, socializing, watching TV, intimacy, from the activity's words) [ASSUMED].
+            const breakKind = /^(eating|relaxing|socializing|watching TV|intimate relations)$/.test(drmRow(p.doing)?.label ?? '');
+            const taskMet = resting || breakKind ? null : met ?? (p.env?.met != null && p.env.met >= 1.5 ? p.env.met : null);
+            if (taskMet && !sleeping) { n.onTask = (n.onTask ?? 0) + 1; n.duty = (n.duty ?? 0) + 1; n.restRun = 0; }
+            else { n.restRun = (n.restRun ?? 0) + 1; if (n.restRun >= k('breakMin')) n.onTask = 0; if (sleeping && n.slept >= SLEEP_WAKE_END_MIN) n.duty = 0; }
             if (met && !sleeping && !has(p, 'NOEXERT')) { n.work = (n.work ?? 0) + 1 / 60 / mawtHours(relativeLoad(met, p, () => gauss(rng))); if (n.work >= 1) p.exhausted = true; }
             else if ((n.work ?? 0) > 0) {
                 n.work = Math.max(0, n.work! - (n.kcal < KCAL_DAY.rest * kleiber(p) ? 0.05 : 0.02) / 60);
                 if (n.work <= 0.9) p.exhausted = false;
             }
-            if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ELIM_PER_MIN);
+            // A drink reaches the blood over the next hour (absorption, below), then leaves at the elimination rate.
+            if ((n.gut ?? 0) > 1e-6) { const take = n.gut! * (1 - Math.exp(-((n.sinceMeal ?? Infinity) < k('fedWindowMin') ? k('absorbFedPerMin') : k('absorbFastPerMin')))); n.gut! -= take; n.alcohol = (n.alcohol ?? 0) + take; }
+            else if (n.gut) delete n.gut;
+            n.sinceMeal = (n.sinceMeal ?? Infinity) + 1;
+            // Eliminated faster just after a meal: 0.015–0.020 %/h fed against 0.015 fasted (Jones 2010), the middle of that range.
+            if (n.alcohol) n.alcohol = Math.max(0, n.alcohol - ((n.sinceMeal ?? Infinity) < k('fedWindowMin') ? ELIM_FED_PER_MIN : ELIM_PER_MIN));
             if (has(p, 'NO_DRINK')) n.waterL = 0;
             if (has(p, 'NO_EAT')) n.kcal = 0;
             if (n.waterL / p.mass * 100 >= waterDeath) { p.dead = 'dehydration'; return; }
             if (n.kcal >= foodDeath * KCAL_DAY.rest * kleiber(p)) { p.dead = 'starvation'; return; }
+            settleMass(p);
+            if (p.stores && n.kcal > 0) {
+                const st0 = p.stores as { lethalBmi?: number }; st0.lethalBmi ??= lethalBmi(p, rng);
+                const ht = (p.heightCm ?? (p.sex === 'female' ? 162.6 : 175.5)) / 100;
+                if (p.mass / ht ** 2 <= st0.lethalBmi) { p.dead = 'starvation'; return; }
+            }
         }
         // Limb arteries: the flow Pulse computed for this minute (pulse.ts), while its track lasts; then each such wound keeps
         // its share of Pulse's last flow under the engine's rules.
@@ -427,10 +461,16 @@ function fallBase(height: number, soft: boolean, headFirst: boolean): number {
     const chances: number[] = [0, ...FALL_ROWS.map(r => r[1]), 1];
     let row = FALL_ROWS.filter(([h]) => height >= h).length;
     if (height > FALL_ROWS.at(-1)![0]) row = chances.length - 1;
-    const shifted = headFirst ? Math.min(row + 1, chances.length - 1) : soft ? Math.max(row - 1, 0) : row;
-    if (shifted > 0) return chances[shifted];
-    if (row > 0 || height < 6) return 0;
-    return FALL_ROWS[0][1] * (height - 6) / (FALL_ROWS[0][0] - 6);
+    // Rule 576: head first, one row deadlier; soft ground, one row less deadly; both, the row itself.
+    const shifted = Math.min(Math.max(row + (headFirst ? 1 : 0) - (soft ? 1 : 0), 0), chances.length - 1);
+    if (row > 0 && shifted > 0) return chances[shifted];
+    // Below the first row the deaths lie on the line from 0 % at 6 m, where a row is one storey, 3.6 m (the rows' spacing)
+    // [ASSUMED]: head first counts one storey higher, up to the first row (a head-first fall from 1.5 m is not one from 12 m);
+    // soft ground one storey lower.
+    const storey = FALL_ROWS[1][0] - FALL_ROWS[0][0];
+    const h = Math.min(height + (headFirst ? storey : 0) - (soft ? storey : 0), FALL_ROWS[0][0]);
+    if (h < 6) return 0;
+    return FALL_ROWS[0][1] * (h - 6) / (FALL_ROWS[0][0] - 6);
 }
 
 export function fall(p: Person, height: number, opts: { soft?: boolean; headFirst?: boolean; age?: number; ground?: string; stiff?: boolean } = {}, rng: Rng = Math.random): string {
@@ -523,14 +563,24 @@ const SWIM_COLD_C = 14;
 // Head under water: breath held for N(24.3, 11.4) s, then water is breathed in (maximal breath-hold on immersion in 11 °C
 // water, 32 subjects, 24.0 ± 6.7 and 24.7 ± 14.6 s; Barwood et al. 2006, Aviat Space Environ Med 77:1136); from then on the
 // not-breathing rule: unconscious, dead after 5 min.
-const BREATH_HOLD_S = [24.3, 11.4];
+// Breath held on going under, by water temperature (Hayward et al. 1984, as given in Survival in Cold Waters, a report prepared
+// for Transport Canada): 19, 24, 28 and 38 s in water of 5, 10, 15 and 25 °C, linear between, held at 5 and 25 °C [ASSUMED]
+// (Barwood et al. 2006 found 24.3 s at 11 °C; Cheung et al. 2001 39.8 s at 25 °C); spread 11.4 ÷ 24.3 = 47 % of the mean
+// (Barwood's SD) [ASSUMED for every temperature]. Before, the 11 °C value held for warm water too.
+const HOLD_BY_C: [number, number][] = [[5, 19], [10, 24], [15, 28], [25, 38]];
+export function breathHoldMeanS(waterC: number): number {
+    const t = Math.max(5, Math.min(25, waterC)), i = Math.min(HOLD_BY_C.length - 2, HOLD_BY_C.findIndex(([c], j) => t >= c && t <= HOLD_BY_C[j + 1][0]));
+    const [c0, s0] = HOLD_BY_C[i], [c1, s1] = HOLD_BY_C[i + 1];
+    return s0 + (s1 - s0) * (t - c0) / (c1 - c0);
+}
+def({ id: 'breathHoldCv', value: 11.4 / 24.3, unit: 'SD ÷ mean of the breath held on going under', status: 'assumed', src: "Barwood et al. 2006's spread at 11 °C (24.3 ± 11.4 s) taken for every temperature", range: [0.28, 0.6], file: 'body-engine.ts' });
 /** An attack as BodyStrike gives it: what strikes, where, and the scene facts that decide whether it lands. */
 export interface StrikeInput {
     part?: string; attack?: string; weapon?: string; material?: string; launcher?: string; armor?: (string | GearSpec)[];
     skill?: string; style?: Style; prone?: boolean; species?: string; mass?: number; landed?: boolean; under_fire?: boolean;
     distance_m?: number; approach_speed?: number; intent_visible?: boolean; awake?: boolean; facing?: boolean;
-    from?: 'front' | 'back' | 'left' | 'right'; lit?: boolean; noise_sound?: string; noise_db?: number; noise_khz?: number;
-    sense_range_m?: number; means?: string;
+    from?: 'front' | 'back' | 'left' | 'right'; lit?: boolean; noise_sound?: string; noise_db?: number; noise_khz?: number; background?: string; background_db?: number; lux?: number;
+    sense_range_m?: number; means?: string; defender_expert?: boolean;
 }
 /** Worn or held gear: a DF item name with material, or custom gear with what it covers. */
 export interface GearSpec {
@@ -544,9 +594,8 @@ function water(p: Person, rng: Rng) {
     // Other creatures: DF SWIMS_INNATE, AQUATIC or AMPHIBIOUS keep the head up; the rest go under unless afloat [RAW flags].
     const c = creatureOf(p), human = thermalCapable(p.species);
     if (!human && !c?.flags?.some(f => ['SWIMS_INNATE', 'SWIMS_LEARNED', 'AQUATIC', 'AMPHIBIOUS'].includes(f))) p.swimFailed = true;
-    // Can this person swim at all: 46 % of US adults can do all five water-safety skills (jump in over the head, surface and
-    // float or tread 1 min, turn and find the exit, swim 25 yards, get out; American Red Cross survey, 2014), drawn once unless
-    // the story says (BodyEnvironment `swimmer`). A non-swimmer in deep water goes under unless afloat.
+    // Can this person swim at all: drawn once by BodyEnvironment from their sex and country (swimShare, below) unless the story
+    // says (`swimmer`); with neither known, 46 % (the US five-skills share). A non-swimmer in deep water goes under unless afloat.
     if (human) { p.canSwim ??= rng() < 0.46; if (!p.canSwim && w.deep !== false) p.swimFailed = true; }
     if (human && w.swimming && w.tc <= SWIM_COLD_C) {
         w.swimMin = (w.swimMin ?? 0) + 1;
@@ -558,13 +607,37 @@ function water(p: Person, rng: Rng) {
     if (human && p.exhausted && !w.afloat) p.swimFailed = true;
     const under = w.segs[0] || (p.swimFailed && !w.afloat) || (p.unconscious && !w.afloat);
     if (under && p.apnea == null) {
-        p.breathHold ??= Math.max(5, BREATH_HOLD_S[0] + BREATH_HOLD_S[1] * gauss(rng));
+        { const m = breathHoldMeanS(w.tc); p.breathHold ??= Math.max(5, m * (1 + k('breathHoldCv') * gauss(rng))); }
         p.underS = (p.underS ?? 0) + 60;
         if (p.underS >= p.breathHold) { p.apnea = 0; p.drowning = true; p.unconscious = 'drowning'; }
     } else if (!under) {
+        if (p.drowning) resolveDrowning(p, rng);
         p.underS = 0; p.breathHold = null;
-        if (p.drowning) { p.apnea = null; p.drowning = false; p.unconscious ??= 'near-drowning'; }
     }
+}
+
+// A drowning person brought out of the water (or the head back above it): whether they come through with a sound mind, by the
+// time under water (ILCOR 2020 drowning CoSTR, Bierens et al., pooled cohorts): submerged under 5–6 min, 943 of 1,075 (87.7 %)
+// had a good neurological outcome; longer, 139 of 1,238 (11.2 %); under 10 min 787 of 1,019 (77.2 %), longer 36 of 962
+// (3.7 %); past 25 min invariably fatal (Quan et al. 2016). By band: to 5.5 min 87.7 %, 5.5–10 min 18.7 %, 10–25 min 3.7 %,
+// past 25 none. The 5.5–10 band is derived: the longer-than-5.5 group read as half 5.5–10 and half past 10, x = 2 × 11.2 −
+// 3.7, a judgement registered as drownMidGood; a quarter to three quarters in 5.5–10 gives 33.7 % to 13.7 %, its range. The two splits come from
+// different pools of cohorts (1,075 + 1,238 = 2,313 people against 1,019 + 962 = 1,981, and 1,019 under 10 min against 1,075
+// under 5.5 min), so one cannot be subtracted from the other. No difference with water
+// temperature or age was found (same reviews). The rest are taken as dead [ASSUMED: the few who live with severe brain injury
+// counted with them].
+// Other creatures take the human bands [ASSUMED]; a check: of 25 dogs and 3 cats brought to hospital after freshwater submersion,
+// 64 % lived to discharge, all the cats died (Heffner et al. 2008, J Am Vet Med Assoc 232:244), between the human 88 % and 19 %. Time under water = the breath held before the first gasp + the minutes not breathing.
+export const DROWN_FATAL_MIN = 25;
+def({ id: 'drownMidGood', value: 2 * 0.112 - 0.037, unit: 'share with a good outcome after 5.5–10 min under water', status: 'assumed', src: 'ILCOR 2020 drowning CoSTR pooled cohorts: 11.2 % past 5–6 min, 3.7 % past 10 min; the past-5.5 group read as half 5.5–10 and half past 10; range: a quarter to three quarters in 5.5–10', range: [0.137, 0.337], file: 'body-engine.ts' });
+export function drownedGoodOutcome(minutesUnder: number): number {
+    return minutesUnder <= 5.5 ? 0.877 : minutesUnder <= 10 ? k('drownMidGood') : minutesUnder <= DROWN_FATAL_MIN ? 0.037 : 0;
+}
+function resolveDrowning(p: Person, rng: Rng): void {
+    const under = (p.underS ?? 0) / 60 + (p.apnea ?? 0);
+    p.underS = 0; p.breathHold = null;
+    if (rng() < drownedGoodOutcome(under)) { p.apnea = null; p.drowning = false; p.unconscious = 'near-drowning, breathing again'; }
+    else p.dead = 'drowning';
 }
 
 /** Venom course (§5.2): neurotoxic → breathing stops at collapse (not-breathing rule); haemotoxic → shock, then death. */
@@ -590,7 +663,8 @@ function venomMinute(p: Person) {
 /** Altitude (§6.6): AMS and oedema rolled after the first night (12 h) at a new altitude; sudden arrival above 18 000 ft
  * (aircraft, magic) → unconscious once the time of useful consciousness runs out. */
 // Carbon monoxide (§6.8). Uptake: Coburn-Forster-Kane equation, d[COHb]/dt = Vco/Vb + PICO/(B Vb) − [COHb] PcO2/(M B Vb [O2Hb]),
-// B = 1/DL + PL/VA; DL 30 mL/min/mmHg, PL 713 mmHg, M 218, PcO2 100 mmHg, Vco 0.007 mL/min, O2 capacity 0.207 mL/mL, blood
+// B = 1/DL + PL/VA; DL 30 mL/min/mmHg (Coburn et al. 1965, J Clin Invest 44:1899, measured 20.5–32), PL 713 mmHg, M 218 (the
+// later Haldane constant; Coburn took 250), PcO2 100 mmHg, Vco 0.007 mL/min (their normal 0.42 mL/h), O2 capacity 0.207 mL/mL, blood
 // volume as §5, VA 6000 mL/min × METs × (mass ÷ 70 kg)^0.75 (ventilation follows metabolic rate, Kleiber) [ASSUMED scaling]; PICO = ppm × (PB − 47). With no CO in the air, COHb falls with the
 // half-life 320 min on room air, 80 on 100 % oxygen, 23 hyperbaric (Wikipedia, Carbon monoxide poisoning). Unconscious at
 // 30 % ("30 % COHb is considered severe"; fits 800 ppm "insensible within 2 hours": 97 min), dead at 40 % (fits 3200 ppm
@@ -616,11 +690,13 @@ function altitudeMinute(p: Person, rng: Rng) {
     const a = p.altitude;
     if (!a || has(p, 'NOBREATHE')) return;
     a.min = (a.min ?? 0) + 1;
-    // Acclimatization (§6.6): risk follows the gain over the acclimatized altitude, which starts at 2500 m and rises 457 m
-    // (1500 ft) per day spent above it, up to the current altitude (WMS pace, StatPearls NBK560677) [ASSUMED].
+    // Acclimatization (§6.6): risk follows the gain over the acclimatized altitude, which starts at 2500 m and rises 500 m
+    // per day spent above it, up to the current altitude: the Wilderness Medical Society's safe pace, sleeping elevation up by no
+    // more than 500 m a day above 3000 m (Luks et al. 2019, Wilderness Environ Med 30:S3; StatPearls NBK560677 gives 1500 ft)
+    // [ASSUMED: the safe pace taken as the pace of acclimatization].
     p.acclim ??= 2500;
     a.acc0 ??= p.acclim;
-    if (a.m > p.acclim && a.min % DAY_MIN === 0) p.acclim = Math.min(a.m, p.acclim + 457);
+    if (a.m > p.acclim && a.min % DAY_MIN === 0) p.acclim = Math.min(a.m, p.acclim + 500);
     if (a.min === 12 * 60 && a.ams == null) {
         const eff = a.m - a.acc0 + 2500;
         a.ams = rng() < amsChance(eff);
@@ -671,7 +747,8 @@ export function setEnvironment(p: Person, env: EnvInput | null): void {
         water: env.water_c != null && env.immersed?.length ? { tc: env.water_c, speed: env.water_speed_ms ?? 0, segs: immersion(env.immersed), suit: !!env.immersion_suit,
             swimming: !!env.swimming, afloat: !!env.afloat, deep: env.deep_water !== false } : null };
     if (env.swimmer != null) p.canSwim = !!env.swimmer;
-    if (!p.env!.water) { p.swimFailed = false; p.underS = 0; p.breathHold = null; if (p.drowning) { p.apnea = null; p.drowning = false; p.unconscious ??= 'near-drowning'; } }
+    // A drowning person taken out stays not breathing until the next minute decides how they come through (resolveDrowning).
+    if (!p.env!.water) { p.swimFailed = false; if (!p.drowning) { p.underS = 0; p.breathHold = null; } }
     if (p.thermal) { p.thermal.bareDose = 0; }
     // Low oxygen (fire, sealed room, gas displacing air): the altitude with the same inspired oxygen pressure, entered suddenly
     // (§6.6 rules apply; hypoxic air and altitude are equivalent by inspired PO2) [ASSUMED equivalence].
@@ -687,13 +764,18 @@ export function setEnvironment(p: Person, env: EnvInput | null): void {
 export function status(who: string, p: Person): string {
     if (p.dead) return `${who}: dead (${p.dead}).`;
     const out: string[] = [];
-    if (p.apnea != null) out.push(`${who}: breath stopped, unconscious; dies in ${APNEA_DEATH() - p.apnea} min`);
+    if (p.apnea != null && p.drowning) { const m = (p.underS ?? 0) / 60 + p.apnea; out.push(`${who}: drowning, under water ${Math.round(m)} min, not breathing; brought out now, ${Math.round(drownedGoodOutcome(m + 1) * 100)} % come through with a sound mind`); }
+    else if (p.apnea != null) out.push(`${who}: breath stopped, unconscious; dies in ${APNEA_DEATH() - p.apnea} min`);
     else if (p.unconscious) out.push(`${who}: unconscious (${p.unconscious})`);
+    if (!p.unconscious && p.concussedMin != null) { const m = p.concussedMin, ago = m < 1 ? 'just now' : m < 90 ? `${Math.round(m)} min ago` : `${Math.round(m / 60)} h ago`; out.push(`${who}: concussed (knocked out, came to ${ago}): dazed, slow, may not recall the blow`); }
+    if (p.feelings?.length) out.push(`${who} still feels ${p.feelings.map(f => f.about ? `${f.type} (${f.about})` : f.type).join(', ')}`);
+    // The typical mood of the activity, while the character is awake and at it (asleep or unconscious: none).
+    { const d = p.doing && !p.unconscious && !(p.needs?.slept) ? drmRow(p.doing) : null; if (d) out.push(drmLine(who, d)); }
     const f = lossFraction(p);
     const c = creatureOf(p);
     const v = p.pulseLast;
-    const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} % (Pulse)` : null;
-    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): bloodless`);
+    const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} %` : null;
+    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L${p.lost > 0 ? ` (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]})` : ''}` : `${who} (${c?.name ?? p.species}): bloodless`);
     if (p.deathIn !== null) out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
     if (p.red > 0 || p.lost > 0) out.push(`aerobic capacity ${Math.round(vo2avail(p) / vo2max(p) * 100)} % (altitude and missing red cells)`);
     for (const w of p.wounds) {
@@ -722,13 +804,18 @@ export function status(who: string, p: Person): string {
     if (p.needs) {
         const nd = p.needs, pct = nd.waterL / p.mass * 100, hours = wakeHours(p);
         if (pct >= 2) out.push(`water lost ${round(nd.waterL, 1)} L (${round(pct)} % of body mass${pct >= 8 ? ': weak, dizzy, faint; heavy exertion fails' : pct >= 5 ? ': headache, irritable, light-headed' : ': thirsty'})`);
-        if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)`);
-        if (hours >= 10) out.push(`awake ${round(nd.awake / 60)} h${(nd.debt ?? 0) >= 1 ? ` plus ${round(nd.debt ?? 0)} h of sleep debt` : ''}: performs like blood alcohol ${round(awakeBac(hours), 3)} %${(nd.debt ?? 0) >= 1 ? '; feels less sleepy than that (sleepiness rises little under chronic restriction)' : ''}`);
-        if ((nd.alcohol ?? 0) > 0) out.push(`blood alcohol ${round(nd.alcohol ?? 0, 3)} %`);
+        if (nd.kcal >= KCAL_DAY.rest * kleiber(p)) out.push(`food deficit ${Math.round(nd.kcal)} kcal (${round(nd.kcal / (KCAL_DAY.rest * kleiber(p)), 1)} days without food at rest)${p.stores && p.stores.mass0 - p.mass >= 0.5 ? `; weighs ${round(p.mass, 1)} kg, ${round(p.stores.mass0 - p.mass, 1)} kg down` : ''}`);
+        if (nd.kcal < KCAL_DAY.rest * kleiber(p) && p.stores && p.mass - p.stores.mass0 >= 0.5) out.push(`weighs ${round(p.mass, 1)} kg, ${round(p.mass - p.stores.mass0, 1)} kg up`);
+        // Felt sleepiness follows the hours awake now, not the debt (it rises little under chronic restriction, Van Dongen 2003).
+        const clockH = p.clockMin != null ? hourOfDay(p.clockMin) : null, perf = clockH != null ? clockAwakeBac(hours, clockH) : awakeBac(hours);
+        const kss = clockH != null ? Math.round(sleepinessKss(nd.awake / 60, clockH)) : null;
+        if (clockH != null ? perf > 0 || (kss ?? 0) >= 6 : hours >= 10) out.push(`awake ${round(nd.awake / 60)} h${(nd.debt ?? 0) >= 1 ? ` plus ${round(nd.debt ?? 0)} h of sleep debt` : ''}: performs like blood alcohol ${round(perf, 3)} %${kss != null ? `; feels ${KSS_WORDS[kss - 1]} (KSS ${kss})` : ''}${(nd.debt ?? 0) >= 1 ? '; feels less sleepy than the debt makes them (sleepiness rises little under chronic restriction)' : ''}`);
+        if ((nd.alcohol ?? 0) > 0 || (nd.gut ?? 0) > 0.001) out.push(`blood alcohol ${round(nd.alcohol ?? 0, 3)} %${(nd.gut ?? 0) > 0.001 ? `, rising: ${round(nd.gut!, 3)} % more still being absorbed` : ''}`);
     }
     if ((p.needs?.work ?? 0) > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs!.work! * 100)} % of what can be kept up`);
     if ((p.heatStroke?.min ?? 0) >= 30) out.push(`heat stroke uncooled for 30 min: about ${p.heatStroke!.exertional ? '1 in 4' : '2 in 3'} die within days`);
-    if (p.burnDeath) out.push(`burned ${burnedTBSA(p)} % of body surface: about ${Math.round(p.burnDeath.p * 100)} % of such patients die within 2 weeks`);
+    // The engine draws whether the burns kill (advance: fatal, deathMin); the line gives their extent, no chance.
+    if (p.burnDeath) out.push(`burned ${burnedTBSA(p)} % of body surface`);
     if (p.co) out.push(`carboxyhaemoglobin ${Math.round(p.co.hb * 100)} %${p.co.hb >= 0.3 ? ' (unconscious)' : p.co.hb >= 0.1 ? ' (headache, dizziness, nausea)' : ''}; unconscious at 30 %, dead at 40 %`);
     if (p.peritonitis) out.push(`gut opened (peritonitis): belly pain, fever${p.peritonitis.repaired ? '; repaired by laparotomy' : '; without surgery about 9 in 10 die within a week'}`);
     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
@@ -760,7 +847,19 @@ export function status(who: string, p: Person): string {
 // Knockout: a blunt blow to a HEAD part knocks out when the momentum reaching the head's tissue (after armour) is at least
 // this value. Fit (docs/df-body-engine.md §6.1): a Professional 70 kg punch knocks out on 0.743 % of landed head punches
 // (97 KOs in 222 BKFC 2022 bouts). Without breathing: death after 5 min (Merck Manual, respiratory arrest).
-const KO_MOMENTUM = 158.0;
+def({ id: 'koMomentum', value: 158.0, unit: 'momentum at the head', status: 'fitted', src: 'a Professional 70 kg punch knocks out on 0.743 % of landed head punches (97 KOs, BKFC 2022); range: the threshold at the ends of that share\'s 95 % interval (Wilson), 0.59–0.89 %', range: [156.3, 159.7], file: 'body-engine.ts' });
+// How long a knockout or a choke keeps a person out, and the concussion after a knockout (docs/credibility-edits.md E22). No
+// published distribution of the length was found (OPEN-81): lognormal with a stated median and spread [ASSUMED]. After a
+// knockout the person is awake but impaired for hours and not fully alert for days (a ringside doctor's account: J H Fleming,
+// WBA convention 2006): tasks that need alertness carry an odds factor of failing that halves over a stated time [ASSUMED].
+def({ id: 'koMedianMin', value: 1, unit: 'min', status: 'assumed', src: 'median time unconscious after a knockout; no published distribution found (OPEN-81); "consciousness is typically regained spontaneously within a few minutes or less" (Hånell & Rostami 2020, Front Neurol 11:570566, a review; no measured times)', range: [0.2, 10], file: 'body-engine.ts' });
+def({ id: 'chokeMedianMin', value: 0.3, unit: 'min', status: 'assumed', src: 'median time unconscious after a choke is released; no published distribution found', range: [0.1, 1], file: 'body-engine.ts' });
+def({ id: 'unconsciousSdLog', value: 0.8, unit: 'SD of ln minutes', status: 'assumed', src: 'spread of the time unconscious', range: [0.4, 1.2], file: 'body-engine.ts' });
+def({ id: 'concussionOdds', value: 3, unit: 'odds ratio of failing a task that needs alertness, on waking', status: 'assumed', src: 'impaired consciousness for hours after a knockout (Fleming 2006, WBA)', range: [1.5, 6], file: 'body-engine.ts' });
+def({ id: 'concussionHalfH', value: 12, unit: 'h', status: 'assumed', src: 'not fully alert for a few days after a knockout (Fleming 2006, WBA)', range: [4, 48], file: 'body-engine.ts' });
+const outFor = (median: number, rng: Rng) => median * Math.exp(k('unconsciousSdLog') * gauss(rng));
+/** Odds factor of failing a task that needs alertness, from a concussion (1 without one). */
+export const concussionRisk = (p: Person) => p.concussedMin == null ? 1 : 1 + (k('concussionOdds') - 1) * 0.5 ** (p.concussedMin / 60 / k('concussionHalfH'));
 // Chokes: unconscious after 6.2–10.5 s of a locked hold on the neck (by choke type; mean 9.0 s, 81 chokes on fully resisting
 // trained fighters, Int J Perf Anal Sport 2020); held 5 min → dead (no gas exchange, as apneaDeathMin).
 const CHOKE_LOC_S = [6.2, 10.5];
@@ -786,17 +885,109 @@ const KCAL_DAY = { rest: 1400, active: 2400 };
 const SLEEP_WAKE_END_MIN = 60, CRITICAL_WAKE_H = 15.84, SLEEP_NEED_H = 8.16;
 // Other body masses scale water and energy use by (mass ÷ 70 kg)^0.75 (Kleiber's metabolic scaling law).
 const kleiber = (p: Person) => (p.mass / 70) ** 0.75;
-// Alertness: impairment as blood-alcohol level = drinking (Widmark: grams ÷ (0.68 × body g) × 100, eliminated 0.015 %/h, the
+// Alertness: impairment as blood-alcohol level = drinking (grams through the body's water, below; eliminated 0.015 %/h, the
 // population mean for moderate drinkers; range 0.010–0.035 %/h, 0.015–0.020 fed, 0.025–0.035 in alcoholics: Jones 2010,
 // Forensic Sci Int 200:1)
 // + hours awake. Odds of failing × the crash odds ratio exp(40.7 × BAC^1.345), the curve through NHTSA 2015 (Compton & Berning,
 // case-control) adjusted odds ratios 2.07 at 0.05 % and 3.93 at 0.08 %, and 1 at 0.
-const WIDMARK_R = 0.68, ELIM_PER_MIN = 0.015 / 60;
+const WIDMARK_R = 0.68, ELIM_PER_MIN = 0.015 / 60, ELIM_FED_PER_MIN = 0.0175 / 60;
+// A person's dose spreads through their own body water rather than a fixed share of mass: total body water, L, from 458 men
+// and 265 women measured by dilution (Watson, Watson & Batt 1980, Am J Clin Nutr 33:27): men 2.447 − 0.09516 age + 0.1074
+// height cm + 0.3362 kg (SD 3.76 L), women −2.097 + 0.1069 height + 0.2466 kg (SD 3.60 L; age adds nothing in women). Blood
+// is 80 % water, so BAC g/100 mL = grams × 0.8 ÷ (TBW L × 10) (Watson et al. 1981, J Stud Alcohol 42:547). Height unknown:
+// the ANSUR II median of the sex (175.5, 162.6 cm); age unknown: 25. Other species keep Widmark's 0.68 of mass.
+def({ id: 'bloodWater', value: 0.8, unit: 'share of blood that is water', status: 'sourced', src: 'Watson, Watson & Batt 1981, J Stud Alcohol 42:547 (BAC from total body water)', range: [0.78, 0.82], file: 'body-engine.ts' });
+/** Total body water, L (Watson 1980 for a human; 0.68 × mass for others). */
+export function bodyWaterL(p: Pick<Person, 'mass'> & { species?: string; sex?: string; age?: number; heightCm?: number }): number {
+    if (p.species && !/^human$/i.test(p.species)) return WIDMARK_R * p.mass;
+    const f = p.sex === 'female', ht = p.heightCm ?? (f ? 162.6 : 175.5), age = p.age ?? 25;
+    const tbw = f ? -2.097 + 0.1069 * ht + 0.2466 * p.mass : 2.447 - 0.09516 * age + 0.1074 * ht + 0.3362 * p.mass;
+    return Math.max(0.3 * p.mass, tbw);
+}
+// Absorption (Jones 1991, J Forensic Sci Soc 31:429: two beers, peak blood alcohol at a mean 41 min on an empty stomach, 32 min
+// with a meal and about 25 % lower: 32 → 24 and 37 → 28 mg/100 mL; and Jones, Jönsson & Neri 1991, J Forensic Sci 36:376: the
+// peak within 45 min in 77 % and within 60 min of the end of drinking in 92 % of 152 fasted men). First-order absorption from
+// the stomach, eliminated at 0.015 %/h meanwhile: empty stomach k = 0.062 per min (half absorbed in 11 min); with a meal k =
+// 0.078 and 76 % of the dose reaching the blood (fitted to the two profiles with the dose free) [FITTED]. A meal is food of 200
+// kcal or more within the hour before or with the drink [ASSUMED].
+def({ id: 'absorbFastPerMin', value: 0.062, unit: '1/min, alcohol absorption on an empty stomach', status: 'fitted', src: 'Jones 1991: peak at a mean 41 min fasted', range: [0.04, 0.1], file: 'body-engine.ts' });
+def({ id: 'absorbFedPerMin', value: 0.078, unit: '1/min, alcohol absorption after a meal', status: 'fitted', src: 'Jones 1991: peak at a mean 32 min with food, 25 % lower', range: [0.05, 0.12], file: 'body-engine.ts' });
+def({ id: 'fedBioavailable', value: 0.76, unit: 'share of a drink reaching the blood after a meal', status: 'fitted', src: 'Jones 1991: peak 25 % lower with food', range: [0.65, 0.9], file: 'body-engine.ts' });
+def({ id: 'mealKcal', value: 200, unit: 'kcal of food (net of the drink) that makes a meal for absorption', status: 'assumed', src: 'the fed-state studies served full meals; a snack is taken as not slowing the stomach', range: [100, 400], file: 'body-engine.ts' });
+def({ id: 'fedWindowMin', value: 60, unit: 'min after a meal that the stomach counts as fed', status: 'assumed', src: 'a meal empties from the stomach over a few hours; the studies drank with or just after it', range: [30, 180], file: 'body-engine.ts' });
+/** Blood alcohol, g/100 mL, that `grams` of alcohol raise in this person once absorbed. */
+export const bacOfGrams = (p: Parameters<typeof bodyWaterL>[0], grams: number) => grams * k('bloodWater') / (bodyWaterL(p) * 10);
 export const crashRisk = (bac: number) => Math.exp(40.7 * Math.max(0, bac) ** 1.345);
-export const impairmentBac = (p: Person) => (p.needs?.alcohol || 0) + awakeBac(wakeHours(p));
+export const impairmentBac = (p: Person) => (p.needs?.alcohol || 0) + (p.clockMin != null ? clockAwakeBac(wakeHours(p), hourOfDay(p.clockMin)) : awakeBac(wakeHours(p)));
+// Time on task (Tucker, Folkard, Lombardi & Macdonald 2003, Occup Environ Med 60:433, as modelled by Folkard & Lombardi 2006,
+// Am J Ind Med 49:953): within a spell of work between breaks of 15 minutes, the risk of an incident rose about linearly and
+// had doubled by the last 30 minutes of a 2-hour spell: odds of failing × (1 + minutes ÷ 105), held past 2 h [ASSUMED]; over
+// the day's work, 10-hour shifts carried 13.0 % more risk than 8-hour ones and 12-hour shifts 27.5 % more: × 1.275^((hours −
+// 8) ÷ 4) past 8 hours worked since the last sleep [ASSUMED: the shift-length risk applied hour by hour].
+def({ id: 'breakMin', value: 15, unit: 'min of rest that ends a spell of work', status: 'sourced', src: 'Tucker et al. 2003, 15-minute breaks after each 2 h', range: [10, 30], file: 'body-engine.ts' });
+def({ id: 'workDoublingMin', value: 105, unit: 'min on a task by which the odds of failing double', status: 'fitted', src: 'doubled by the last 30 minutes of a 2-hour spell (Tucker et al. 2003)', range: [90, 120], file: 'body-engine.ts' });
+export const workRisk = (p: Person) => {
+    const n = p.needs;
+    if (!n) return 1;
+    const spell = 1 + Math.min(120, n.onTask ?? 0) / k('workDoublingMin'), day = (n.duty ?? 0) / 60 > 8 ? 1.275 ** (((n.duty ?? 0) / 60 - 8) / 4) : 1;
+    return spell * day;
+};
+// Dehydration and the mind (Wittbrodt & Millard-Stafford 2018, Med Sci Sports Exerc 50:2360, 33 studies): with more than 2 %
+// of body mass lost, performance fell by ES −0.28 overall, attention −0.52, motor coordination −0.40; at 2 % or less −0.14.
+// Odds of failing × e^(1.81 × |ES|) (Chinn 2000's conversion of a standardized difference to log odds): attention tasks take
+// the attention ES, hand tasks the motor ES, from 1 % lost [ASSUMED onset]. Hunger is left out on purpose: across 222 effect
+// sizes and 3,484 people, fasted and fed did not differ (g = 0.02; Bamberg et al. 2025, Psychol Bull); nor is pain an input:
+// induced pain slowed alerting by 9 ms and left other attention unchanged (meta-analysis, J Pain Res 12, 2019).
+// Heat and cold of the surroundings (Pilcher, Nadler & Busch 2002, Ergonomics 45:682, 22 studies, 515 effect sizes): against
+// neutral rooms, performance fell by d = 0.382 at WBGT 32.22 °C or more, 0.189 at 26.67–32.22, 0.197 at 10–18.33 °C and 0.356 at
+// 10 °C or less (21.11–26.61: 0.02, left out). Odds of failing an alertness task × e^(1.81 d) (Chinn 2000). WBGT in the shade
+// from air temperature and humidity: 0.567 T + 0.393 e + 3.94, e the vapour pressure in hPa (Australian Bureau of Meteorology's
+// approximation). The cold bands are air temperatures, and taken to apply to people dressed under 1 clo on average, as the
+// studies' subjects were [ASSUMED]; in the water the body's own cooling rules stand instead.
+export function climateRisk(p: Person): number {
+    const e = p.env;
+    if (!e || e.water) return 1;
+    const ta = e.tdb, vp = (e.rh ?? 50) / 100 * 6.105 * Math.exp(17.27 * ta / (237.7 + ta)), wbgt = 0.567 * ta + 0.393 * vp + 3.94;
+    const clo = Array.isArray(e.clo) && e.clo.length ? e.clo.reduce((s, c) => s + c, 0) / e.clo.length : 0;
+    const d = wbgt >= 32.22 ? 0.382 : wbgt >= 26.67 ? 0.189 : clo < 1 ? (ta <= 10 ? 0.356 : ta <= 18.33 ? 0.197 : 0) : 0;
+    return Math.exp(1.81 * d);
+}
+def({ id: 'thirstOnsetPct', value: 1, unit: '% of body mass lost as water from which the mind is slowed', status: 'assumed', src: 'the meta-analysis pools losses of 2 % or less; its smallest losses were about 1 %', range: [0.5, 2], file: 'body-engine.ts' });
+export function thirstRisk(p: Person, kind: 'attention' | 'motor'): number {
+    const pct = p.needs ? p.needs.waterL / p.mass * 100 : 0;
+    if (!reaches('thirstOnsetPct', pct)) return 1;
+    const es = pct > 2 ? (kind === 'attention' ? 0.52 : 0.40) : 0.14;
+    return Math.exp(1.81 * es);
+}
+
 /** Hours awake now plus sleep debt carried from short nights. */
 export const wakeHours = (p: Person) => (p.needs?.awake || 0) / 60 + (p.needs?.debt || 0);
 export const awakeBac = (h: number) => Math.max(0, 0.05 + (h - 17) * 0.05 / 7);
+// Alertness by the clock (docs/df-body-engine.md §6.3 sleep): the three-process model of Åkerstedt & Folkard with the
+// parameters validated on 136 aircrew (Ingre et al. 2014, PLoS ONE 9:e108679): alertness = S + C (1–21 scale; 7 = the
+// sleepiness threshold), S = 2.4 + (14 − 2.4)·e^(−0.0353 h) after h hours awake from a full night, C = 2.5·cos(π(t − 16.8)/12)
+// at clock hour t; felt sleepiness KSS = 9.68 − 0.46 × alertness (their best model, S + C, residual SD 1.42). The 12-h term
+// and sleep inertia are left out: neither improved the fit there. Performance as blood alcohol keeps the Dawson & Reid
+// protocol that set awakeBac (awake from 08:00: 0.05 % at 17 h, 0.10 % at 24 h): BAC = κ(A* − alertness), κ and A* solved
+// from those two points [FITTED], so the protocol is reproduced and the clock moves it. The body clock is taken as set to the
+// local clock (no jet lag). Clock unknown: awakeBac stands.
+def({ id: 'tpmDecay', value: 0.0353, unit: '1/h, fall of alertness S while awake', status: 'sourced', src: 'Ingre et al. 2014, PLoS ONE 9:e108679 (three-process model)', range: [0.03, 0.04], file: 'body-engine.ts' });
+def({ id: 'tpmAmp', value: 2.5, unit: 'alertness units, circadian amplitude', status: 'sourced', src: 'Ingre et al. 2014 (three-process model, C)', range: [1.5, 3.5], file: 'body-engine.ts' });
+def({ id: 'tpmPhase', value: 16.8, unit: 'clock hour of peak alertness', status: 'sourced', src: 'Ingre et al. 2014 default (their aircrew data put it near 15 h)', range: [15, 18], file: 'body-engine.ts' });
+const tpmS = (h: number) => 2.4 + (14 - 2.4) * Math.exp(-k('tpmDecay') * Math.max(0, h));
+const tpmC = (clockH: number) => k('tpmAmp') * Math.cos(Math.PI * (clockH - k('tpmPhase')) / 12);
+/** Three-process alertness (1–21) after `h` hours awake at clock hour `clockH`. */
+export const alertness = (h: number, clockH: number) => tpmS(h) + tpmC(clockH);
+/** Hour of the day (0–24) of a story minute. */
+export const hourOfDay = (min: number) => ((min / 60) % 24 + 24) % 24;
+/** Performance as blood alcohol, % (0 when rested), after `h` hours awake (plus debt) at clock hour `clockH`. */
+export function clockAwakeBac(h: number, clockH: number): number {
+    const a17 = alertness(17, 1), a24 = alertness(24, 8), kappa = 0.05 / (a17 - a24);
+    return Math.max(0, kappa * (a17 + 0.05 / kappa - alertness(h, clockH)));
+}
+/** Felt sleepiness on the Karolinska scale (1 extremely alert … 7 sleepy, some effort to keep awake … 9 fighting sleep). */
+export const sleepinessKss = (h: number, clockH: number) => Math.min(9, Math.max(1, 9.68 - 0.46 * alertness(h, clockH)));
+const KSS_WORDS = ['extremely alert', 'very alert', 'alert', 'rather alert', 'neither alert nor sleepy', 'some signs of sleepiness', 'sleepy, no effort to keep awake', 'sleepy, some effort to keep awake', 'very sleepy, fighting sleep'];
 // Flight speed of a shot: 47.23 m/s, a 102 g arrow from a 144 lbf yew self bow (Stretton et al. 2010), for every launcher.
 const SHOT_MPS = 47.23;
 const SHOT_HC = [101, 95, 89, 83, 77, 71, 65, 59, 53];
@@ -851,6 +1042,11 @@ const NERVE_MPS = 49;                                  // Chen 2016 AANEM: media
 const SYNAPSE_S = 0.0007;                              // More & Donelan 2018
 const twitch = (mass: number) => 0.0043 * mass ** 0.21 + 0.0176 * mass ** 0.20; // More & Donelan 2018: electromechanical + force generation
 const RT_CV = 36.42 / 297;                              // Petri 2020 spread
+// An expert of a combat sport responds faster to an opponent's move: experts against non-experts, response time Hedges'
+// g = −0.91 (95 % CI −1.08 to −0.73; Zhang, Piras, Chen, Kong & Wang 2022, Front Psychol 13:961960, random effects, combat
+// sports). An expert defender's reaction is that many of the engine's reaction SDs (RT_CV) faster [ASSUMED: the gap to the
+// untrained at least that of experts to novices].
+def({ id: 'expertRtSd', value: 0.91, unit: 'reaction SDs faster for an expert defender', status: 'assumed', src: 'experts against non-experts of combat sports, response time g = −0.91 (Zhang et al. 2022), taken against the untrained', range: [0.73, 1.08], file: 'body-engine.ts' });
 // Simple reaction time by age and sex (Der & Deary 2006, Psychol Aging 21:62, Table 1, 7,130 adults 18–94): the table's
 // Box–Cox polynomial y = b0 + b1 a + b2 a² + b3 a³ + man × (bs + b4 a + b5 a²), a = age − 44.9, inverted as ms = (1 + λy)^(1/λ),
 // λ = −1.65. Gives men 277, 281, 290, 324, 399 ms and women 295, 294, 301, 344, 462 ms at ages 18, 30, 45, 65, 80; held
@@ -862,7 +1058,6 @@ const rtMs = (age: number, sex: string) => { const a = Math.max(18, Math.min(85,
 export const reactionFactor = (p: Person | null | undefined) => p?.age == null ? 1 : rtMs(p.age, p.sex ?? 'male') / rtMs(30, 'male');
 const LIMB_MOVE_S = 0.242;                              // VencesBrito 2011 karate punch: moving a limb (block)
 const BODY_MOVE_S = 0.715;                              // Wakatsuki & Yamada 2020: reactive side-step movement time (dodge)
-const HEAR_DB = 25;                                     // WHO: normal hearing threshold at or below 25 dB
 const WAKE_DB = 55, WAKE_MAX_S = 21;                    // young adults: all woke to a 55 dBA alarm within 21 s
 const WAKE_MIN_S = 1.59;                                // Oudiette 2023: median response time from N2 sleep
 const INERTIA_SPEED = 0.79;                             // Newman 2013: response speed 79 % right after waking
@@ -871,9 +1066,11 @@ const EXP_MOVE = 0.15;    // Heglund & Taylor 1988: stride period ∝ M^0.150–
 const EXP_LENGTH = 1 / 3; // geometric similarity
 const size = (mass: number | null | undefined, exp: number) => ((mass || REF_MASS) / REF_MASS) ** exp;
 
+/** How far a body of `mass` kg reaches with an arm, m: the 70 kg functional reach scaled by length (geometric similarity). */
+export const reachOf = (mass?: number | null) => REACH_M * size(mass, EXP_LENGTH);
 /** Seconds from the start of the attack to impact, or null when the attacker never comes within reach. */
 function impactTime(a: StrikeInput, rng: Rng): Timing | null {
-    const reach = REACH_M * size(a.mass, EXP_LENGTH);
+    const reach = reachOf(a.mass);
     const dist = a.distance_m ?? reach;
     const approach = dist <= reach ? 0 : (a.approach_speed ?? 0) > 0 ? (dist - reach) / a.approach_speed! : null;
     if (approach === null) return null;
@@ -896,7 +1093,7 @@ function defenceDone(a: StrikeInput, t: Timing, defender: Person | null, rng: Rn
     const nerve = Math.max(1, (body.nerve_mps ?? NERVE_MPS) - NERVE_PER_C * limbCold(defender, 'arm'));
     const motor = SYNAPSE_S + (body.limb_m ?? REACH_M * size(m, EXP_LENGTH)) / nerve + twitch(m);
     const rt = (channel: 'sight' | 'hearing') => ((body.sense_s?.[channel] ?? SENSE_S[channel]) + (body.decide_s ?? DECIDE_S) + motor)
-        * reactionFactor(defender) * Math.max(0.5, 1 + RT_CV * gauss(rng));
+        * reactionFactor(defender) * (a.defender_expert ? 1 - k('expertRtSd') * RT_CV : 1) * Math.max(0.5, 1 + RT_CV * gauss(rng));
     const done: number[] = [];
     const perceive = (from: number, reaction: number) => done.push(Math.max(from, intentFrom) + reaction);
     // Sense organs. Human monocular field 107° temporal, 60° nasal (Rönne 1915): a blow from the side (90°) is seen only by
@@ -908,12 +1105,16 @@ function defenceDone(a: StrikeInput, t: Timing, defender: Person | null, rng: Rn
     const dir = a.from ?? (a.facing === false ? 'back' : 'front');
     const sideFlag = dir === 'left' ? 'LEFT' : dir === 'right' ? 'RIGHT' : undefined;
     const eyeSees = (e: { flags: string[] }) => sideFlag ? e.flags.includes(sideFlag) || !e.flags.some(f => f === 'LEFT' || f === 'RIGHT') : a.facing !== false;
-    const sees = a.lit !== false && dir !== 'back' && eyes.some(eyeSees);
+    // Light (E13): with `lux` (the sky or the room, when the story did not say whether it is lit) the target sees the attacker
+    // with the chance of noticing a person-sized target (vision.ts, 0.5 m) at the starting distance, one draw.
+    const sees = a.lit !== false && dir !== 'back' && eyes.some(eyeSees) && (a.lit === true || a.lux == null || rng() < see({ size: 0.5, distance: Math.max(0.5, dist), light: a.lux }).detect);
     // A named sound source (Listen presets) at the attack's starting distance gives the level by spherical spreading.
     const db = a.noise_sound && SOUNDS[classOf(SOUNDS, a.noise_sound) ?? ''] != null ? SOUNDS[classOf(SOUNDS, a.noise_sound)!] - 20 * Math.log10(Math.max(1, a.distance_m ?? 1)) : a.noise_db || 0, level = db - hearingShift(defender?.species) - (earsOk < ears.length ? 3 : 0);
     const audible = earsOk > 0 && inRange(defender?.species, db, a.noise_khz);
     if (awake && sees) perceive(0, rt('sight'));
-    if (awake && audible && level > HEAR_DB) perceive(0, rt('hearing'));
+    // Hearing the attacker over the background (E18): the band rule of Listen at the target (level at 1 m, the species and
+    // one-ear shifts already taken off), heard with the chance Φ(margin ÷ σ), one draw (before: any level above 25 dB).
+    if (awake && audible && rng() < hearSound({ spl: level, distance: 1, noise: a.background ?? 'quiet room (25 dB)', noiseDb: a.background_db ?? null }).p) perceive(0, rt('hearing'));
     if (!awake && audible && level >= WAKE_DB) {
         const woke = WAKE_MIN_S + rng() * (WAKE_MAX_S - WAKE_MIN_S);
         // Once awake the target sees or hears like anyone awake, slowed by sleep inertia.
@@ -1110,8 +1311,8 @@ export function strike(target: Person, a: StrikeInput, attacker: Person | null =
         if (v) { v.symptoms = symptoms(ac).filter(e => !(immune[e.kind] && has(target, immune[e.kind]))); v.part = part.name; target.venom = v; }
     }
     checkDeath(target);
-    const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && r.first.M >= KO_MOMENTUM;
-    if (ko && !target.unconscious && !has(target, 'NOSTUN')) target.unconscious = 'knocked out';
+    const ko = !target.dead && part.flags.includes('HEAD') && !r.first.edged && reaches('koMomentum', r.first.M);
+    if (ko && !target.unconscious && !has(target, 'NOSTUN')) { target.unconscious = 'knocked out'; target.koLeft = outFor(k('koMedianMin'), rng); }
     const parts = [...new Set(r.tested.map(t => t.part))];
     const layers = parts.map((pt: Part) => `${pt.name}: ${r.tested.filter(t => t.part === pt).map(t => `${t.layer.tissue.toLowerCase()} ${t.result}`).join(', ')}`).join('; ');
     const wounds = made.length ? ` Wound${made.length > 1 ? 's' : ''} ${made.map(x => x.id).join(', ')}.` : ' No wound.';
@@ -1133,18 +1334,78 @@ export function choke(p: Person, seconds: number, holder: Person | null = null, 
     const s = Math.max(0, Number(seconds) || 0);
     const at = between(rng, CHOKE_LOC_S as [number, number]);
     if (s >= APNEA_DEATH() * 60) { p.dead = 'strangulation'; return `Choke held ${s} s: dead (strangulation).`; }
-    if (s >= at) { p.unconscious = 'choked'; return `Choke held ${s} s: unconscious at ${round(at)} s.`; }
+    if (s >= at) { p.unconscious = 'choked'; p.koLeft = outFor(k('chokeMedianMin'), rng); return `Choke held ${s} s: unconscious at ${round(at)} s.`; }
     return `Choke held ${s} s: still conscious (would black out at ${round(at)} s).`;
+}
+
+// Weight follows the food deficit (Hall et al. 2011, Lancet 378:826; Hall 2010, Am J Physiol Endocrinol Metab 298:E449). The
+// deficit is drawn first from glycogen: 500 g at 4.18 kcal/g, each gram held with 2.7 g of water (Hall 2010 Table 1), so the
+// first 2,090 kcal take 1.85 kg [ASSUMED order: in fact it runs down over the first day or two alongside fat]. Past that, of
+// each kg lost the share 10.4 ÷ (10.4 + fat kg) is lean (Forbes's curve, as Hall 2008 used it, Int J Obes 32:573), at 7.6 MJ/kg
+// for lean and 39.5 MJ/kg for fat (Hall 2008): a lean person loses more weight per kcal and more of it muscle. Fat at the start
+// from BMI, age and sex: % = 1.39 BMI + 0.16 age − 10.34 (men) − 9 (Jackson et al. 2002, Int J Obes 26:789, the equation Hall
+// 2010 used). Eating restores glycogen first (refeeding refills it within a day), then fat and lean by the same partition at the
+// same densities; food beyond the day's need is kept as a surplus that later spending draws on first, and while it stands the
+// body gains by the same path [ASSUMED: Hall's small synthesis costs, 0.18 kcal/g fat and 0.86 kcal/g protein, left out].
+// Humans only. Starvation also kills at the body's own limit: men die at a BMI of about 13 (CV 8.7 %), women about 11 (CV
+// 14 %), drawn once per person (Henry 2001, Nutrition Bulletin 26:205, as summarised by ENN Field Exchange 15), whichever
+// comes first with the deficit clock (40–60 resting days).
+def({ id: 'glycogenG', value: 500, unit: 'g of body glycogen when fed', status: 'sourced', src: 'Hall 2010, Am J Physiol Endocrinol Metab 298:E449, Table 1', range: [300, 700], file: 'body-engine.ts' });
+def({ id: 'forbesC', value: 10.4, unit: 'kg (lean share of weight change = C ÷ (C + fat kg))', status: 'sourced', src: 'Forbes 1987, as used by Hall 2008, Int J Obes 32:573', range: [8, 13], file: 'body-engine.ts' });
+const RHO_LEAN = 7.6e3 / 4.184, RHO_FAT = 39.5e3 / 4.184, RHO_GLY = 4.18, H2O_GLY = 2.7;
+/** Fat mass, kg, of an adult from mass, height, age and sex (Jackson et al. 2002). */
+export function fatKgOf(p: { mass: number; sex?: string; age?: number; heightCm?: number }): number {
+    const f = p.sex === 'female', ht = (p.heightCm ?? (f ? 162.6 : 175.5)) / 100, bmi = p.mass / ht ** 2;
+    const pct = Math.min(60, Math.max(3, 1.39 * bmi + 0.16 * (p.age ?? 25) - (f ? 0 : 10.34) - 9));
+    return p.mass * pct / 100;
+}
+/** The BMI at which this person dies of starvation, drawn once (Henry 2001). */
+export function lethalBmi(p: Person, rng: Rng): number {
+    const f = p.sex === 'female', m = f ? 11 : 13, cv = f ? 0.14 : 0.087;
+    return (p.stores as { lethalBmi?: number } | undefined)?.lethalBmi ?? Math.max(8, m * (1 + cv * gauss(rng)));
+}
+/** Moves body mass to match the energy balance on record: the deficit less any surplus (see above). */
+export function settleMass(p: Person): void {
+    const n = p.needs;
+    if (!n || (p.species && !/^human$/i.test(p.species))) return;
+    const net = n.kcal - (n.surplus ?? 0);
+    if (!p.stores) { if (Math.abs(net) < 1e-9) return; p.stores = { mass0: p.mass, fatKg: fatKgOf(p), glycogenG: k('glycogenG'), applied: 0 }; }
+    const s = p.stores;
+    const d = net - s.applied;
+    if (Math.abs(d) < 1e-9) return;
+    s.applied = net;
+    const g0 = k('glycogenG');
+    // Glycogen moves first both ways; past it, fat and lean.
+    const glyStep = (kcal: number) => {
+        const g = Math.max(-s.glycogenG, Math.min(g0 - s.glycogenG, -kcal / RHO_GLY));
+        s.glycogenG += g; p.mass += g * (1 + H2O_GLY) / 1000; return kcal + g * RHO_GLY;
+    };
+    let left = glyStep(d);
+    for (let i = 0; i < 400 && Math.abs(left) > 1e-6; i++) {
+        const lean = k('forbesC') / (k('forbesC') + Math.max(0.5, s.fatKg)), rho = lean * RHO_LEAN + (1 - lean) * RHO_FAT;
+        const kg = Math.sign(left) * Math.min(Math.abs(left), 500) / rho;
+        p.mass -= kg; s.fatKg = Math.max(0.5, s.fatKg - (1 - lean) * kg); left -= kg * rho;
+    }
+    if (Math.abs(net) < 1e-6 && s.glycogenG >= g0 - 1e-6 && Math.abs(p.mass - s.mass0) < 0.05) { p.mass = s.mass0; delete p.stores; }
 }
 
 /** Drinking and eating: water in L, food energy (kcal, or from its composition, §6.19; alcohol 7 kcal/g), taken off the
  * deficits (never below 0). Returns a note when the stated energy contradicts the composition. */
 export function intake(p: Person, a: { water_l?: number; food_kcal?: number; alcohol_g?: number; food_g?: number; carb_g?: number; protein_g?: number; fat_g?: number } = {}): string | null {
     p.needs ??= { waterL: 0, kcal: 0, awake: 0, slept: 0, waterDeath: null, foodDeath: null };
-    p.needs.alcohol = (p.needs.alcohol || 0) + Math.max(0, Number(a.alcohol_g) || 0) / (WIDMARK_R * p.mass * 1000) * 100;
+    // The drink goes to the stomach, to be absorbed over the next hour (advance); with a meal, less of it reaches the blood.
+    // A meal is food, not the drink's own energy (7 kcal per g of alcohol).
+    const meal = reaches('mealKcal', (foodEnergy(a).kcal ?? 0) - 7 * Math.max(0, Number(a.alcohol_g) || 0));
+    if (meal) p.needs.sinceMeal = 0;
+    const dose = bacOfGrams(p, Math.max(0, Number(a.alcohol_g) || 0));
+    if (dose > 0) p.needs.gut = (p.needs.gut ?? 0) + dose * ((p.needs.sinceMeal ?? Infinity) < k('fedWindowMin') ? k('fedBioavailable') : 1);
     p.needs.waterL = Math.max(0, p.needs.waterL - Math.max(0, Number(a.water_l) || 0));
     const e = foodEnergy(a);
+    // Food beyond the deficit is kept as a surplus (settleMass).
+    const extra = Math.max(0, e.kcal - p.needs.kcal);
     p.needs.kcal = Math.max(0, p.needs.kcal - e.kcal);
+    if (extra > 0) p.needs.surplus = (p.needs.surplus ?? 0) + extra;
+    settleMass(p);
     return e.note;
 }
 
@@ -1159,15 +1420,15 @@ function earOf(l: Person, lc: Creature) {
 
 /** Whether `vs` sees a target of smallest dimension `size_m` at `distance_m` (§6.2): one roll against the Johnson
  * probabilities; returns the deepest level reached (identified ⊂ recognized ⊂ detected). */
-export function look(vs: string, v: Person, { size_m = 0.5, distance_m = 10, light = 'daylight' as string | number, lightLabel = null as string | null, visibility_m = 20000 } = {}, rng: Rng = Math.random): string {
+export function look(vs: string, v: Person, { size_m = 0.5, distance_m = 10, light = 'daylight' as string | number, lightLabel = null as string | null, visibility_m = 20000, contrast = 1, seconds = 0, contrastLabel = null as string | null } = {}, rng: Rng = Math.random): string {
     const vc = creatureOf(v);
     if (!vc) return 'Creature data is still loading.';
     if (v.dead || v.unconscious) return `${vs} is ${v.dead ? 'dead' : 'unconscious'}.`;
     const eyes = vc.parts.filter(x => x.flags.includes('SIGHT'));
     if (eyes.length && !eyes.some(worksFn(v, vc))) return `${vs} is blind (eyes out of action).`;
-    const r = see({ size: size_m, distance: distance_m, light, visibility: visibility_m, acuityFactor: acuityOf(v.species) });
+    const r = see({ size: size_m, distance: distance_m, light, visibility: visibility_m, contrast, seconds, acuityFactor: acuityOf(v.species) * (!v.species || /^human$/i.test(v.species) ? ageAcuity(v.age) : 1) });
     const u = rng();
-    const what = `${size_m} m target at ${distance_m} m, ${lightLabel ?? light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}`;
+    const what = `${size_m} m target at ${distance_m} m, ${lightLabel ?? light}${visibility_m < 20000 ? `, visibility ${visibility_m} m` : ''}${contrastLabel ? `, ${contrastLabel}` : ''}${seconds >= 12 ? `, ${Math.round(seconds)} s of looking` : ''}`;
     const level = u < r.identify ? 'identifies it (can tell which individual or exact kind)' : u < r.recognize ? 'recognizes what kind of thing it is (a person, a horse); which one stays unclear'
         : u < r.detect ? 'notices something there; what it is stays unclear' : 'misses it';
     return `${vs} ${level} (${what}).`;
@@ -1213,7 +1474,7 @@ export function holdLoad(who: string, p: Person, { load_kg = null as number | nu
 const HUMAN_RUN: Record<string, { mean: number; sd: number }> = { female: { mean: 20.0, sd: 2.2 }, male: { mean: 24.8, sd: 2.6 } };
 // Age: World Masters Athletics 100 m age factors (2023 edition, five-year table): the best time at an age is the open best ÷
 // the factor, so speed scales with it; 1 up to 35, linear between the listed ages. The sample's mean age 43 is the base
-// [ASSUMED: untrained people decline with age as the age records do]; under 18 has no factor here.
+// [ASSUMED: untrained people decline with age as the age records do]; under 18, childSpeedShare below.
 const AGES = [35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110];
 const AGE_100M: Record<string, number[]> = {
     female: [1, .9810, .9441, .9080, .8726, .8379, .8038, .7705, .7377, .7040, .6590, .6011, .5302, .4464, .3497, .2400],
@@ -1238,10 +1499,49 @@ export function topSpeedKmh(p: Person, rng: Rng = Math.random): number {
         // authors not on record). BMI stands for body fat [ASSUMED]: speed z = −0.5 BMI z + √0.75 × own draw, when BMI z is known.
         p.runZ ??= Math.max(-3, Math.min(3, p.bmiZ == null ? gauss(rng) : -0.5 * p.bmiZ + Math.sqrt(0.75) * gauss(rng)));
         const n = HUMAN_RUN[p.sex ?? ''] ?? { mean: (20.0 + 24.8) / 2, sd: (2.2 + 2.6) / 2 };
-        const age = p.age != null && p.age >= 18 ? ageFactor(p.sex ?? '', p.age) / ageFactor(p.sex ?? '', 43) : 1;
+        // Under 18: the 18-year-old's speed × the measured share of it at that age (childSpeedShare); before, a child ran as fast
+        // as the 43-year-old the norms are set at.
+        const age = p.age != null && p.age >= 18 ? ageFactor(p.sex ?? '', p.age) / ageFactor(p.sex ?? '', 43)
+            : p.age != null ? ageFactor(p.sex ?? '', 18) / ageFactor(p.sex ?? '', 43) * childSpeedShare(p.age) : 1;
         return Math.max(3, (n.mean + p.runZ * n.sd) * age) * st;
     }
     return 8775 / Math.min(...g.map(x => x.max)) * st;
+}
+
+// Top running speed of children and adolescents: boys' peak speed in a 100 m sprint, 117 German schoolboys (Bleeker & Siener
+// 2025, Front Sports Act Living 7:1701476, Table): 22.55, 23.64, 26.70, 28.37, 29.70 km/h at mean ages 10.9, 12.6, 14.5, 16.5,
+// 18.2; as shares of the 18.2-year-old's, 0.759, 0.796, 0.899, 0.955, 1. Girls take the same shares of their own adult speed
+// [ASSUMED: no girls' series found]; below 10.9 the share falls on with the slope between 10.9 and 12.6 (0.022 a year), held at
+// age 3 [ASSUMED extrapolation].
+const CHILD_RUN: [number, number][] = [[10.9, 22.55 / 29.70], [12.6, 23.64 / 29.70], [14.5, 26.70 / 29.70], [16.5, 28.37 / 29.70], [18.2, 1]];
+export function childSpeedShare(age: number): number {
+    const a = Math.max(3, age);
+    if (a >= 18.2) return 1;
+    if (a <= CHILD_RUN[0][0]) { const [a0, s0] = CHILD_RUN[0], [a1, s1] = CHILD_RUN[1]; return s0 - (s1 - s0) / (a1 - a0) * (a0 - a); }
+    const i = CHILD_RUN.findIndex(([x], j) => a >= x && a <= CHILD_RUN[j + 1][0]);
+    const [x0, y0] = CHILD_RUN[i], [x1, y1] = CHILD_RUN[i + 1];
+    return y0 + (y1 - y0) * (a - x0) / (x1 - x0);
+}
+
+// Who can swim (World Risk Poll 2019, Lloyd's Register Foundation and Gallup, over 150,000 people aged 15 and over in 142
+// countries, "Are you able to swim without any assistance at all?", as reported by Gallup 2021): worldwide men 57 %, women 32 %;
+// men and women in Northern and Western Europe 89 and 85 %, Australia and New Zealand 90 and 85, Central Asia 79 and 31, Latin
+// America and the Caribbean 71 and 33. Saying so is more than doing it: of the 80 % of US adults who said they could swim, 56 %
+// could do all five water-safety skills (American Red Cross 2014), so each share × 0.56 [ASSUMED: the US ratio everywhere];
+// the US itself 46 % (both skills surveys). Countries outside those regions take the world's shares; the poll is of 2019 and
+// earlier centuries take it too [ASSUMED].
+const SWIM_REGION: [RegExp, number, number][] = [
+    [/^(united kingdom|england|scotland|wales|ireland|france|germany|netherlands|belgium|luxembourg|switzerland|austria|denmark|norway|sweden|finland|iceland)/i, 0.89, 0.85],
+    [/^(australia|new zealand)/i, 0.90, 0.85],
+    [/^(kazakhstan|kyrgyzstan|tajikistan|turkmenistan|uzbekistan)/i, 0.79, 0.31],
+    [/^(mexico|guatemala|honduras|el salvador|nicaragua|costa rica|panama|cuba|haiti|dominican republic|jamaica|trinidad|colombia|venezuela|ecuador|peru|bolivia|brazil|paraguay|uruguay|argentina|chile)/i, 0.71, 0.33],
+];
+def({ id: 'swimSkillsShare', value: 0.56, unit: 'share of those who say they can swim who can do the five water-safety skills', status: 'assumed', src: 'the US figure (American Red Cross 2014) taken for every country', range: [0.4, 0.75], file: 'body-engine.ts' });
+export function swimShare(sex?: string | null, country?: string | null): number {
+    const c = String(country ?? '').trim();
+    if (/^united states/i.test(c)) return 0.46;
+    const r = SWIM_REGION.find(([re]) => re.test(c)), [m, w] = r ? [r[1], r[2]] : [0.57, 0.32];
+    return k('swimSkillsShare') * (sex === 'female' ? w : sex === 'male' ? m : (m + w) / 2);
 }
 
 /** A chase over open ground: does the pursuer catch the one fleeing, starting `gap_m` apart, both at full speed? */
@@ -1253,8 +1553,17 @@ export function chase(pn: string, pursuer: Person, fn: string, fleeing: Person, 
     return `${pn} catches ${fn} after ${round(gap_m / (vp - vf), 1)} s, ${round(vp * gap_m / (vp - vf))} m run: ${pn} is faster${lame(fleeing)}.`;
 }
 
+/** Chance that `l` hears a sound of `spl` dB at 1 m from `distance` m over `noiseDb` (their ears and species), 0 when deaf. */
+export function hearChance(l: Person, { spl, distance, barrier = 'none', noiseDb = 25 }: { spl: number; distance: number; barrier?: string; noiseDb?: number }): number {
+    const lc = creatureOf(l);
+    if (!lc || l.dead || l.unconscious) return 0;
+    const ear = earOf(l, lc);
+    if (ear.ears && !ear.earsOk) return 0;
+    return hearSound({ spl, distance, barrier, noiseDb, ...ear, air: l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined }).p;
+}
+
 /** Whether `ls` hears a sound (preset `sound` or `spl_db` at 1 m) at `distance` m (§6.2). */
-export function listen(ls: string, l: Person, { sound = undefined as string | undefined, spl_db = null as number | null, distance = 1, noise = 'quiet room (25 dB)', barrier = 'none', way = undefined as Way | undefined } = {}): string {
+export function listen(ls: string, l: Person, { sound = undefined as string | undefined, spl_db = null as number | null, distance = 1, noise = 'quiet room (25 dB)', noise_db = null as number | null, barrier = 'none', way = undefined as Way | undefined } = {}, rng?: Rng): string {
     const lc = creatureOf(l);
     if (!lc) return 'Creature data is still loading.';
     if (l.dead || l.unconscious) return `${ls} is ${l.dead ? 'dead' : 'unconscious'}.`;
@@ -1263,10 +1572,12 @@ export function listen(ls: string, l: Person, { sound = undefined as string | un
     const ear = earOf(l, lc);
     if (ear.ears && !ear.earsOk) return `${ls} is deaf (ears out of action).`;
     const air = l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined;
-    const r = hearSound({ spl, distance, barrier, noise, ...ear, air, way });
+    const r = hearSound({ spl, distance, barrier, noise, noiseDb: noise_db, ...ear, air, way });
     const what = `${sound ?? `${spl} dB at 1 m`} at ${distance} m, ${noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
-    console.debug?.('[Rules engine]', ls, `margin ${r.margin} dB`);
-    return r.audible ? `${ls} hears it${distance >= 170 ? `, ${Math.round(distance / soundSpeed(l.env?.tdb ?? 10) * 10) / 10} s after it is made` : ''} (${what}).` : `${ls} misses it: too faint over the background (${what}).`;
+    console.debug?.('[Rules engine]', ls, `margin ${r.margin} dB, chance of hearing ${r.p}`);
+    // With a draw (the tool passes the engine's seeded one) the chance is Φ(margin ÷ σ); without, the margin's sign decides.
+    const heard = rng ? rng() < r.p : r.audible;
+    return heard ? `${ls} hears it${distance >= 170 ? `, ${Math.round(distance / soundSpeed(l.env?.tdb ?? 10) * 10) / 10} s after it is made` : ''} (${what}).` : `${ls} misses it: too faint over the background (${what}).`;
 }
 
 export interface MessageInput {
@@ -1296,7 +1607,7 @@ export function communicate(sp: string, s: Person, ls: string, l: Person, { mean
     if (anyWorks(l, lc, flag('HEAR')) === false) return `${ls} is deaf to it (ears out of action).`;
     // Distance, background noise and walls (§4.3 Speech Intelligibility Index): one working ear of two hears 3 dB worse
     // (binaural summation); bands outside the species' 60-dB range are not heard.
-    const r = reach({ effort, spl: louder_db && !/whisper/.test(effort) ? SPEECH_SPL[effort] + louder_db : null, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc), air: l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined, way });
+    const r = reach({ effort, raise: /whisper/.test(effort) ? 0 : louder_db, distance, barrier, noise, noiseDb: noise_db, ...earOf(l, lc), air: l.env ? { tC: l.env.tdb, rh: l.env.rh } : undefined, way });
     l.heard = { from: sp, snr: r.snr, whisper: /whisper/.test(effort) };
     const where = `${/whisper/.test(effort) ? effort : `${effort} voice`} at ${distance} m, ${noise_db ?? noise}${barrier !== 'none' ? `, through ${barrier}` : ''}`;
     if (!r.audible) return `${ls} goes on as before; ${sp}'s voice is lost in the background (${where}).`;
@@ -1374,10 +1685,12 @@ export function advanceAll(people: Record<string, Person>, minutes: number, rest
         const events: string[] = [];
         let frac = 1;
         for (const [who, p] of Object.entries(people)) {
-            const before = watch(p), lv = levels(p);
+            const before = watch(p), lv = levels(p), ko = p.koLeft;
             advance(p, 1, resting.has(who), rng, { active: active.has(who), sleeping: sleeping.has(who) });
             const ev = changes(who, before, watch(p));
-            if (ev.length) { events.push(...ev); frac = Math.min(frac, crossing(lv, levels(p))); }
+            // A knockout or choke ends when its drawn time runs out, inside the minute (koLeft, minutes).
+            const woke = ko != null && ko > 0 && ko <= 1 && p.koLeft == null ? ko : 1;
+            if (ev.length) { events.push(...ev); frac = Math.min(frac, crossing(lv, levels(p)), woke); }
         }
         // The event's moment inside the minute: where the first quantity that crossed its threshold crossed it, the quantity taken
         // as changing evenly over the minute [ASSUMED]; events with no such quantity count at the minute's end.
@@ -1412,11 +1725,26 @@ function normInv(p: number): number {
 
 /** A BodyCheck task: the success share, abilities used, exertion and conditions. */
 export interface Task {
-    task?: string; share?: number | string; uses?: string[]; exertion?: 'none' | 'light' | 'heavy'; on_feet?: boolean; timed?: boolean; fine?: boolean; override?: boolean;
+    task?: string; task_kind?: string; share?: number | string; uses?: string[]; exertion?: 'none' | 'light' | 'heavy'; on_feet?: boolean; timed?: boolean; fine?: boolean; override?: boolean;
 }
 type Odds = { chance: number; limit?: string };
+/** A factor on the odds of failing a BodyCheck: it applies to tasks that use what it acts on, multiplies the odds of failing
+ * by `risk`, and is named in the result once it passes `shows`. Every factor sits in this one list, so a new one is applied,
+ * explained and tested (tests/engine.test.mjs N51 sets up each by its id) in one place. */
+export interface OddsFactor { id: string; applies: (uses: string[], fine: boolean) => boolean; risk: (p: Person) => number; shows: number; name: (p: Person) => string }
+const onAlert = (uses: string[]) => uses.includes('alertness');
+export const ODDS_FACTORS: OddsFactor[] = [
+    // Drink and time awake, as the blood alcohol that impairs alike (crashRisk, impairmentBac).
+    { id: 'impairment', applies: onAlert, risk: p => crashRisk(impairmentBac(p)), shows: 1.005, name: () => 'impaired alertness' },
+    { id: 'concussion', applies: onAlert, risk: p => concussionRisk(p), shows: 1.005, name: () => 'impaired alertness after a concussion' },
+    { id: 'work', applies: onAlert, risk: p => workRisk(p), shows: 1.05, name: () => 'hours on the task' },
+    { id: 'thirst-attention', applies: onAlert, risk: p => thirstRisk(p, 'attention'), shows: 1, name: () => 'dehydration' },
+    // Motor effects of dehydration on hand work that is not an attention task (Wittbrodt & Millard-Stafford 2018).
+    { id: 'thirst-motor', applies: (uses, fine) => fine || (uses.includes('grasp') && !onAlert(uses)), risk: p => thirstRisk(p, 'motor'), shows: 1, name: () => 'dehydration' },
+    { id: 'climate', applies: onAlert, risk: p => climateRisk(p), shows: 1.01, name: p => p.env && p.env.tdb > 20 ? 'the heat' : 'the cold' },
+];
 /** Chance of success and the ability that limits it. Non-force abilities between 0 and 1 change nothing yet (OPEN-66). */
-function checkOdds(p: Person, { share, uses = [], exertion = 'none', on_feet = false, timed = false, fine = false }: Task): Odds {
+export function checkOdds(p: Person, { share, uses = [], exertion = 'none', on_feet = false, timed = false, fine = false }: Task): Odds {
     if (p.dead) return { chance: 0 };
     if (p.unconscious) return { chance: 0, limit: `unconscious (${p.unconscious})` };
     if (exertion === 'heavy' && p.needs && p.needs.waterL / p.mass * 100 >= 8) return { chance: 0, limit: 'dehydration' };
@@ -1448,15 +1776,20 @@ function checkOdds(p: Person, { share, uses = [], exertion = 'none', on_feet = f
     const lacking = uses.find(u => u in FUNCTIONS && !(u in scores));
     if (lacking) return { chance: 0, limit: `lacking ${lacking}` };
     const used = uses.filter((u): u is Key => u in scores);
-    const risk = uses.includes('alertness') ? crashRisk(impairmentBac(p)) : 1;
+    // The odds factors that apply, multiplied (ODDS_FACTORS).
+    const acting = ODDS_FACTORS.filter(f => f.applies(uses, fine)).map(f => ({ f, r: f.risk(p) }));
+    const risk = acting.reduce((x, a) => x * a.r, 1);
     const zero = used.find(u => scores[u] === 0);
     if (zero) return { chance: 0, limit: `${zero} out of action` };
     for (const k of ['thinking', 'aerobic'] as const) if (k in scores) used.push(k);
     const force = used.filter(u => FORCE_SCORES.includes(u) || u === 'thinking' || u === 'aerobic').sort((x, y) => scores[x]! - scores[y]!)[0];
     const s = force ? scores[force]! : 1;
     const base = Math.max(0, Math.min(1, Number(share) || 0));
+    // Named: each factor past its threshold; when only their product passes, the largest of them.
+    const shown = acting.filter(a => a.r > a.f.shows), top = [...acting].sort((x, y) => y.r - x.r)[0];
+    const why = [...new Set((shown.length ? shown : top ? [top] : []).map(a => a.f.name(p)))].join('; ');
     const alert = (r: number, limit?: string): Odds => risk > 1.005
-        ? { chance: r >= 1 ? 1 : r / (r + (1 - r) * risk), limit: [limit, 'impaired alertness'].filter(Boolean).join('; ') }
+        ? { chance: r >= 1 ? 1 : r / (r + (1 - r) * risk), limit: [limit, why].filter(Boolean).join('; ') }
         : { chance: r, limit };
     const demand = 1 - normInv(Math.min(0.999, base)) * CAPACITY_CV;
     const out = s >= 1 || base === 0 ? alert(base) : alert(normCdf((s - demand) / (s * CAPACITY_CV)), `reduced ${force}`);
@@ -1474,21 +1807,11 @@ function checkOdds(p: Person, { share, uses = [], exertion = 'none', on_feet = f
 
 export const checkChance = (p: Person, task: Task) => checkOdds(p, task).chance;
 
-// Tasks a specialist tool decides from data (§7.1): BodyCheck refuses them so the narrator's `share` estimate is not used.
-const ROUTES: [RegExp, string][] = [[/\b(hear|hears|heard|listen|overhear|noise)\b/i, 'Listen (sounds) or Communicate (speech)'],
-    [/\b(see|sees|spot|spots|notice|notices|recogni[sz]e|identify|sight)\b/i, 'Look'],
-    [/\b(swim|swims|drown|tread water)\b/i, 'BodyEnvironment (immersed, swimming, swimmer)'],
-    [/\b(hang|hangs|hold on|holding on|carry|carries|grip)\b/i, 'HoldOn'],
-    [/\b(chase|outrun|catch up|run away|flee|escape on foot)\b/i, 'Chase'],
-    [/\b(lie|lying|deceive|bluff|believe)\b/i, 'SocialResponse (a statement that might be a lie)'],
-    [/\b(shoot|shot|arrow|bolt|aim)\b/i, 'BodyStrike (launcher, skill, distance_m)'],
-    [/\b(tourniquet|stop the bleeding|bleed)\b/i, 'BodyTreat (stop_bleeding, training)'],
-    [/\b(attracted|interested in|ask (him|her|them) out|date)\b/i, 'SocialResponse (a brief first meeting)'],
-    [/\b(battle|assault|storm(s|ing)? the|take the (fort|town|hill|bridge|trench|position))\b/i, 'Battle (attackers, defenders, year)']];
-
+// Tasks a specialist tool decides from data (§7.1): BodyCheck refuses them so the narrator's `share` estimate is not used; the
+// tool is read from the task's own verb by its meaning, else from words naming that tool's question (verbs.ts, taskRoute).
 export function check(p: Person, task: Task, rng: Rng = Math.random): string {
-    const route = ROUTES.find(([re]) => re.test(task.task ?? ''));
-    if (route && !task.override) return `${task.task}: decided by ${route[1]}; call that tool. (For a different task, call BodyCheck again with override: true.)`;
+    const route = kindRoute(task.task ?? '', task.task_kind, !!task.override);
+    if (route) return route;
     const { chance, limit } = checkOdds(p, task);
     const ok = rng() < chance;
     console.debug?.('[Rules engine]', task.task, `chance ${round(chance * 100, 2)} %`);

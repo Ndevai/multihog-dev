@@ -1,0 +1,92 @@
+verbs with competing readings, a thing as object: 408, leading reading changed by the state alone: 40
+verbs with competing readings, a person as object: 480, leading reading changed by the state alone: 50
+I accept the coin.	no state: tie	coin in hand: none	no coin: tie
+I buy the coin.	no state: tie	coin in hand: none	no coin: tie
+I trust the coin.	no state: tie	coin in hand: tie	no coin: none
+I allow the coin.	no state: tie	coin in hand: tie	no coin: none
+I let the coin.	no state: tie	coin in hand: tie	no coin: none
+I receive the coin.	no state: tie	coin in hand: none	no coin: tie
+I smite the cook.	no state: tie	same spot: tie	apart: none
+I issue the coin.	no state: tie	coin in hand: tie	no coin: none
+I steal the coin.	no state: tie	coin in hand: none	no coin: tie
+I forgo the coin.	no state: tie	coin in hand: tie	no coin: none
+I bargain the cook.	no state: tie	same spot: tie	apart: none
+I clash the cook.	no state: tie	same spot: tie	apart: none
+I collide the cook.	no state: tie	same spot: tie	apart: none
+I battle the cook.	no state: tie	same spot: tie	apart: none
+I box the cook.	no state: tie	same spot: tie	apart: none
+I combat the cook.	no state: tie	same spot: tie	apart: none
+I debate the cook.	no state: tie	same spot: tie	apart: none
+I fight the cook.	no state: tie	same spot: tie	apart: none
+I get the coin.	no state: tie	coin in hand: none	no coin: tie
+I leave the coin.	no state: tie	coin in hand: tie	no coin: none
+I hawk the coin.	no state: tie	coin in hand: tie	no coin: none
+I kick the cook.	no state: tie	same spot: tie	apart: Act
+I hold the cook.	no state: tie	same spot: tie	apart: none
+I reach the coin.	no state: tie	coin in hand: Act	no coin: tie
+I smash the cook.	no state: tie	same spot: tie	apart: none
+I give the coin.	no state: tie	coin in hand: tie	no coin: none
+I hammer the cook.	no state: tie	same spot: tie	apart: none
+I pound the cook.	no state: tie	same spot: tie	apart: none
+I hit the cook.	no state: tie	same spot: tie	apart: Act
+I bang the cook.	no state: tie	same spot: tie	apart: none
+I bump the cook.	no state: tie	same spot: tie	apart: none
+I rap the cook.	no state: tie	same spot: tie	apart: none
+I squash the cook.	no state: tie	same spot: tie	apart: none
+I gain the coin.	no state: tie	coin in hand: none	no coin: tie
+I nudge the cook.	no state: tie	same spot: tie	apart: Act
+I pull the coin.	no state: tie	coin in hand: none	no coin: tie
+I tug the cook.	no state: tie	same spot: tie	apart: Act
+I yank the cook.	no state: tie	same spot: tie	apart: Act
+I heave the cook.	no state: tie	same spot: tie	apart: Act
+I shove the cook.	no state: tie	same spot: tie	apart: Act
+I thrust the cook.	no state: tie	same spot: tie	apart: Act
+I nick the coin.	no state: tie	coin in hand: none	no coin: tie
+I punch the cook.	no state: tie	same spot: tie	apart: none
+I advance the coin.	no state: tie	coin in hand: tie	no coin: none
+I grasp the cook.	no state: tie	same spot: tie	apart: none
+I sequester the coin.	no state: tie	coin in hand: none	no coin: tie
+I handle the cook.	no state: tie	same spot: tie	apart: none
+I consume the coin.	no state: tie	coin in hand: tie	no coin: BodyIntake
+I misspend the coin.	no state: tie	coin in hand: tie	no coin: PassTime
+I spend the coin.	no state: tie	coin in hand: tie	no coin: PassTime
+I waste the coin.	no state: tie	coin in hand: tie	no coin: PassTime
+I bound the cook.	no state: tie	same spot: tie	apart: Act
+I ring the cook.	no state: tie	same spot: tie	apart: Communicate
+I resign the coin.	no state: tie	coin in hand: tie	no coin: none
+I proffer the coin.	no state: tie	coin in hand: tie	no coin: none
+I beat the cook.	no state: tie	same spot: tie	apart: none
+I find the coin.	no state: tie	coin in hand: none	no coin: tie
+I gather the coin.	no state: tie	coin in hand: none	no coin: tie
+I earn the coin.	no state: tie	coin in hand: Price	no coin: tie
+I fetch the coin.	no state: tie	coin in hand: Price	no coin: tie
+I guarantee the coin.	no state: tie	coin in hand: tie	no coin: none
+I secure the coin.	no state: tie	coin in hand: none	no coin: tie
+I provide the coin.	no state: tie	coin in hand: tie	no coin: none
+I present the coin.	no state: tie	coin in hand: tie	no coin: none
+I offer the coin.	no state: tie	coin in hand: tie	no coin: none
+I phone the coin.	no state: tie	coin in hand: Communicate	no coin: tie
+I win the coin.	no state: tie	coin in hand: none	no coin: tie
+I render the coin.	no state: tie	coin in hand: tie	no coin: none
+I collect the coin.	no state: tie	coin in hand: none	no coin: tie
+I blast the cook.	no state: tie	same spot: tie	apart: BodyTreat
+I bop the cook.	no state: tie	same spot: tie	apart: Act
+I dash the cook.	no state: tie	same spot: tie	apart: Act
+I stomp the cook.	no state: tie	same spot: tie	apart: Act
+I tap the cook.	no state: tie	same spot: tie	apart: Look
+I grab the cook.	no state: tie	same spot: tie	apart: Transfer
+I bite the cook.	no state: tie	same spot: tie	apart: none
+I whip the cook.	no state: tie	same spot: tie	apart: none
+I belt the cook.	no state: tie	same spot: tie	apart: none
+I knife the cook.	no state: tie	same spot: tie	apart: none
+I press the cook.	no state: tie	same spot: tie	apart: Communicate+SocialResponse
+I sling the cook.	no state: tie	same spot: tie	apart: Act
+I lift the coin.	no state: tie	coin in hand: none	no coin: tie
+I grope the cook.	no state: tie	same spot: tie	apart: Look
+I paw the cook.	no state: tie	same spot: tie	apart: Look
+I whisk the cook.	no state: tie	same spot: tie	apart: none
+I rustle the coin.	no state: tie	coin in hand: none	no coin: tie
+I flog the cook.	no state: tie	same spot: tie	apart: Transfer
+I pinch the cook.	no state: tie	same spot: tie	apart: Transfer
+I swipe the cook.	no state: tie	same spot: tie	apart: Transfer
+I prod the cook.	no state: tie	same spot: tie	apart: Communicate+SocialResponse

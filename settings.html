@@ -9,6 +9,27 @@
             <label class="checkbox_label"><input type="checkbox" id="rules_engine_question_pass" /><span>Question pass: before each reply, a model call names the outcomes in doubt and the engine decides them first</span></label>
             <label class="checkbox_label"><input type="checkbox" id="rules_engine_rule_check" /><span>Rule check: after each reply, a model call compares it with the engine's results and redoes it once when it bends one</span></label>
             <label class="checkbox_label"><input type="checkbox" id="rules_engine_structured" /><span>Structured replies: the narrator writes one passage per decided result plus scenery, and names what is left open for the next turn; the reply is shown as prose</span></label>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_page" /><span>Dialogue page: the chat is set as a light page, black on ivory, in a book serif that follows the story's era, with room between the lines for the voice marks and no letter shadow, whatever the theme. Off, messages keep the theme's look</span></label>
+            <label for="rules_engine_page_colours"><small>Page colours</small></label>
+            <select id="rules_engine_page_colours" class="text_pole"><option value="light">light: black on ivory, text that is not said in dark blue</option><option value="dark">dark: white on black, text that is not said in light blue, key words in gold</option></select>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box" /><span>Text box: one thing on screen at a time, in a box at the foot of the chat under the name of who says it. Tap the text or press → for the next, ‹ or ← to go back, "Auto" to move on by itself, "Log" for the whole chat. Off, the chat scrolls</span></label>
+            <label for="rules_engine_box_unit"><small>A box holds</small></label>
+            <select id="rules_engine_box_unit" class="text_pole"><option value="voice">said words, or the text between them (a new box at each quotation; a long stretch goes on in the next box)</option><option value="message">a whole message</option></select>
+            <label for="rules_engine_box_picture"><small>The speaker's picture</small></label>
+            <select id="rules_engine_box_picture" class="text_pole"><option value="none">none: the name plate only</option><option value="large">large, above the box (the character card's picture)</option></select>
+            <label for="rules_engine_box_look"><small>The box's look</small></label>
+            <select id="rules_engine_box_look" class="text_pole"><option value="night">night: a dark framed panel under a pink name tag</option><option value="page">page: the page's own look</option></select>
+            <label for="rules_engine_box_voice"><small>Voices</small></label>
+            <select id="rules_engine_box_voice" class="text_pole"><option value="natural">natural: each voice computed from the speaker's body (needs voices/averaged-person.bin; downloads 165 MB once)</option><option value="robotic">robotic: each speaker's own computed voice (eSpeak)</option><option value="blips">blips: a tone a syllable in their voice</option><option value="off">off</option></select>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box_typing" /><span>Letters appear one by one: said words at the speaker's pace, other text at reading pace. A tap shows the rest at once</span></label>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_music" /><span>Music: your songs, each measured when you add it (tempo, loudness, brightness, key). The song nearest the feelings in the scene plays, and it stays while the scene stays in its area. A song's set names a character (their theme while their feeling leads the scene) or a place (while your character is there)</span></label>
+            <label for="rules_engine_music_volume"><small>Music volume</small></label>
+            <input type="range" id="rules_engine_music_volume" min="0" max="100" step="1" />
+            <div class="flex-container alignItemsCenter"><input type="file" id="rules_engine_music_files" accept="audio/*" multiple hidden /><button type="button" class="menu_button" id="rules_engine_music_add">Add songs</button><small id="rules_engine_music_status" aria-live="polite"></small></div>
+            <small id="rules_engine_music_now" aria-live="polite"></small>
+            <div id="rules_engine_music_list"></div>
+            <div id="rules_engine_music_areas"></div>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_distinct" /><span>Multiple distinctions: your marked lines show each part of the voice in a place of its own (above a word a thin stroke for its pitch; heavier letters for louder, paler for softer; under the words a wavy rule for creaky, dots for breathy, a broken rule for whispered; wider gaps for slower, a lean for faster, narrow letters for falsetto; the feeling's colour at the line's edge); off: the lighter look</span></label>
             <label for="rules_engine_profile"><small>Connection for the question pass and rule check</small></label>
             <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
             <label for="rules_engine_max_tokens"><small>Reply length for those calls, tokens (empty: the connection's own)</small></label>

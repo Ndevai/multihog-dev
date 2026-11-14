@@ -138,7 +138,7 @@ for (const [si, story] of chosen) {
         // The narrator gets what SillyTavern gives it: the brief, the story state, [KNOWS], [DECIDED], and the chat so far.
         const N = await import('../src/rules/narration.js'), Kn = await import('../src/rules/knowledge.js'), F = await import('../src/rules/audit-flags.js');
         const narrate = async (note = '') => {
-            const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.RULES_BRIEF, timeBlock(), B.bodyBlock(B.trackedPeople()), T.possessionsInjection(), T.knowledgeInjection(), Q.decidedInjection(), note].filter(Boolean).join('\n\n');
+            const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.rulesBrief(), timeBlock(), B.bodyBlock(B.trackedPeople()), T.possessionsInjection(), T.knowledgeInjection(), Q.decidedInjection(), note].filter(Boolean).join('\n\n');
             const history = ctx.chat.slice(0, -1).map(m => `${m.is_user ? 'PLAYER' : 'NARRATOR'}: ${m.mes}`).join('\n\n');
             const raw = await send(`${NARRATOR}\n\n${cast}\n\n${inj}${Q.GUIDED ? `\n\n${N.NARRATION_RULE}` : ''}`, `${history ? `${history}\n\n` : ''}PLAYER: ${turn.player}`, Q.GUIDED ? { schema: N.narrationSchema(Q.decidedResults().length) } : {});
             const nar = N.readNarration(raw), text = nar ? N.proseOf(nar) : raw;

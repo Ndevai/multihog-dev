@@ -1,0 +1,819 @@
+diff --git a/README.md b/README.md
+index 449b357..b2426b0 100644
+--- a/README.md
++++ b/README.md
+@@ -49,6 +49,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor; Tab from the box enters the toolbar while it shows. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another.
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
++- For people placed on the map, a blow, a choke hold, a pistol shot, a chase, a look, speech and a sound take their distance and walls from the map, not from the reply's words: a punch thrown across the room falls short and says which walk closes the gap, and a wall with every door shut stops a blow or a shot.
+ - Code writes calls for your character's own acts: in "Tom punches Mara" or "I tell Will to wait an hour" the other person's act is read from the scene; "she" in a line written in the third person is your character when the line names no one else she could be. Acts the line says are not done ("I don't hit him", "I almost fall") and out-of-character asides ("(OOC: …)") are not acted on. Typed ›guillemets‹, «guillemets» and „German quotes“ are quotation marks, read as speech like "…", and capitals read as louder on common words only (STOP, NOOOO; NATO and ICU stay as written, and so do the WHO and the IT desk). You can speak to a group as to a person ("I shout to the crew", "I tell the town council"), and to someone named with their looks ("the old blind beggar").
+ - A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I sit by the fire for an hour" passes the hour, "I swing my axe at the orc" is a blow, and "I give Will 3 coins" hands three. "I fire my pistol at the guard", "I open fire" and "I gun him down" are shots, a handgun's among them; "I fire the cook", "I fire the kiln" and "I hold my fire" are none, and "a shot of whiskey" is a measure. The models are shown only the options a scene can hold: an 1850 scene is offered no sneakers, antibiotics or spells, and the narrator gets the tools your line needs. Results reach the narrator as what happened and why, without sound levels, status tags or chances. A verb is read by what its object is: "I charge the cook two shillings" is a price, "I hold a meeting" is no grip, "I cut the cook" cannot break him like a plank, and "I charge the cook" is left to the scene, which weighs it: a sword in your hand, a fight going on, the words around it and how "charge" was meant earlier in the chat each make one reading likelier. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
+ - The tools a turn is offered follow the scene as well as your verbs: smoke in the hallway, a freezing lake, a desert at noon, a camp at 4,500 m, a sentry on gravel, a guard who shouted, a pan on the fire each add the tool that decides them. Sneaking, riding, crafts, riddles, sums, feelings, names, trust, a faint, clothes taken off, your character's own claims ("I am a cat", "she pulls a revolver from her coat") and a thing that cuts ("a shard slices her palm") route to their tools; reading a map, smelling or tasting route nothing. A shelf asked to hold your weight, someone else's feelings asked about ("does the guard like me"), tiptoeing, and a purse the narrator has your character slide into her sleeve each reach the tool that decides or records them.
+diff --git a/docs/constants.md b/docs/constants.md
+index 81aa3c3..c4f9670 100644
+--- a/docs/constants.md
++++ b/docs/constants.md
+@@ -136,7 +136,7 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ 
+ ## Assumptions not yet registered
+ 
+-335 tags written only in comments (326 assumed, 9 raw); each is a candidate for the registry above.
++338 tags written only in comments (329 assumed, 9 raw); each is a candidate for the registry above.
+ 
+ | File | Line | Kind | Text |
+ |---|---|---|---|
+@@ -193,26 +193,26 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | body-engine.ts | 938 | assumed | the attention ES, hand tasks the motor ES, from 1 % lost [ASSUMED onset]. Hunger is left out on purpose: across 222 effect |
+ | body-engine.ts | 946 | assumed | studies' subjects were [ASSUMED]; in the water the body's own cooling rules stand instead. |
+ | body-engine.ts | 1053 | assumed | below 18 and above 85, where the cubic runs toward the transform's pole (women 567 ms at 85, 833 at 90) [ASSUMED cut]. Scales the reaction ÷ a man of  |
+-| body-engine.ts | 1304 | assumed | Venom enters when the bite breaks the skin, cut or smashed (§5.2) [ASSUMED: DF fangs rarely cut by the edge test]. |
+-| body-engine.ts | 1341 | assumed | first 2,090 kcal take 1.85 kg [ASSUMED order: in fact it runs down over the first day or two alongside fat]. Past that, of |
+-| body-engine.ts | 1347 | assumed | body gains by the same path [ASSUMED: Hall's small synthesis costs, 0.18 kcal/g fat and 0.86 kcal/g protein, left out]. |
+-| body-engine.ts | 1466 | raw | Running speed (§6.7): the creature's fastest DF walking gait [RAW]; DF gait value v (ticks per 100 tiles) → km/h = 8775 ÷ v, |
+-| body-engine.ts | 1468 | assumed | 125 → 70). × the share of working legs (stance) [ASSUMED proportional]; no legs → 0. |
+-| body-engine.ts | 1475 | assumed | [ASSUMED: untrained people decline with age as the age records do]; under 18, childSpeedShare below. |
+-| body-engine.ts | 1497 | assumed | authors not on record). BMI stands for body fat [ASSUMED]: speed z = −0.5 BMI z + √0.75 × own draw, when BMI z is known. |
+-| body-engine.ts | 1512 | assumed | [ASSUMED: no girls' series found]; below 10.9 the share falls on with the slope between 10.9 and 12.6 (0.022 a year), held at |
+-| body-engine.ts | 1513 | assumed | age 3 [ASSUMED extrapolation]. |
+-| body-engine.ts | 1528 | assumed | could do all five water-safety skills (American Red Cross 2014), so each share × 0.56 [ASSUMED: the US ratio everywhere]; |
+-| body-engine.ts | 1530 | assumed | earlier centuries take it too [ASSUMED]. |
+-| body-engine.ts | 1624 | assumed | Share of key words → plain words (bands [ASSUMED]): the narrator gets how much of the message carries, not a figure. |
+-| body-engine.ts | 1694 | assumed | as changing evenly over the minute [ASSUMED]; events with no such quantity count at the minute's end. |
+-| body-engine.ts | 1758 | assumed | as a capacity with the force spread [ASSUMED]. |
+-| body-engine.ts | 1761 | assumed | in activity (Maggiorini et al. 1998) → heavy exertion fails [ASSUMED]. |
+-| body-engine.ts | 1763 | assumed | Peritonitis: abdominal rigidity and pain on movement (its defining signs) → heavy exertion fails [ASSUMED]. |
+-| body-engine.ts | 1769 | assumed | heat stroke is defined by nervous-system dysfunction (disorientation): attention tasks fail [ASSUMED from the definition]. |
+-| body-engine.ts | 1771 | assumed | Hypothermia II is defined by impaired consciousness (Swiss staging, Brown et al. 2012): attention tasks fail [ASSUMED]. |
+-| body-engine.ts | 1796 | raw | DF paralysis syndrome (giant cave spider): the body cannot move [RAW CE_PARALYSIS]. |
+-| body-engine.ts | 1799 | assumed | DIZZINESS: "occasional fainting and a general slowdown" → checks on feet fail [ASSUMED]. |
++| body-engine.ts | 1306 | assumed | Venom enters when the bite breaks the skin, cut or smashed (§5.2) [ASSUMED: DF fangs rarely cut by the edge test]. |
++| body-engine.ts | 1343 | assumed | first 2,090 kcal take 1.85 kg [ASSUMED order: in fact it runs down over the first day or two alongside fat]. Past that, of |
++| body-engine.ts | 1349 | assumed | body gains by the same path [ASSUMED: Hall's small synthesis costs, 0.18 kcal/g fat and 0.86 kcal/g protein, left out]. |
++| body-engine.ts | 1468 | raw | Running speed (§6.7): the creature's fastest DF walking gait [RAW]; DF gait value v (ticks per 100 tiles) → km/h = 8775 ÷ v, |
++| body-engine.ts | 1470 | assumed | 125 → 70). × the share of working legs (stance) [ASSUMED proportional]; no legs → 0. |
++| body-engine.ts | 1477 | assumed | [ASSUMED: untrained people decline with age as the age records do]; under 18, childSpeedShare below. |
++| body-engine.ts | 1499 | assumed | authors not on record). BMI stands for body fat [ASSUMED]: speed z = −0.5 BMI z + √0.75 × own draw, when BMI z is known. |
++| body-engine.ts | 1514 | assumed | [ASSUMED: no girls' series found]; below 10.9 the share falls on with the slope between 10.9 and 12.6 (0.022 a year), held at |
++| body-engine.ts | 1515 | assumed | age 3 [ASSUMED extrapolation]. |
++| body-engine.ts | 1530 | assumed | could do all five water-safety skills (American Red Cross 2014), so each share × 0.56 [ASSUMED: the US ratio everywhere]; |
++| body-engine.ts | 1532 | assumed | earlier centuries take it too [ASSUMED]. |
++| body-engine.ts | 1626 | assumed | Share of key words → plain words (bands [ASSUMED]): the narrator gets how much of the message carries, not a figure. |
++| body-engine.ts | 1696 | assumed | as changing evenly over the minute [ASSUMED]; events with no such quantity count at the minute's end. |
++| body-engine.ts | 1760 | assumed | as a capacity with the force spread [ASSUMED]. |
++| body-engine.ts | 1763 | assumed | in activity (Maggiorini et al. 1998) → heavy exertion fails [ASSUMED]. |
++| body-engine.ts | 1765 | assumed | Peritonitis: abdominal rigidity and pain on movement (its defining signs) → heavy exertion fails [ASSUMED]. |
++| body-engine.ts | 1771 | assumed | heat stroke is defined by nervous-system dysfunction (disorientation): attention tasks fail [ASSUMED from the definition]. |
++| body-engine.ts | 1773 | assumed | Hypothermia II is defined by impaired consciousness (Swiss staging, Brown et al. 2012): attention tasks fail [ASSUMED]. |
++| body-engine.ts | 1798 | raw | DF paralysis syndrome (giant cave spider): the body cannot move [RAW CE_PARALYSIS]. |
++| body-engine.ts | 1801 | assumed | DIZZINESS: "occasional fainting and a general slowdown" → checks on feet fail [ASSUMED]. |
+ | body-size.ts | 10 | assumed | CV around the country mean [ASSUMED: lognormal shape]; height and BMI are drawn independently, as the NCD-RisC height |
+ | body-size.ts | 20 | assumed | Linear between tabled years; outside the table the nearest year [ASSUMED]. |
+ | body-size.ts | 38 | assumed | 40 or younger; Nutrients 2023, PMC10649148), linear and continued past 80 [ASSUMED]. The mass stays the young height's, so |
+@@ -238,6 +238,7 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | crowd.ts | 73 | assumed | Start spread evenly over the room, about a metre apart where it fits [ASSUMED start]. |
+ | crowd.ts | 103 | assumed | people in a doorway for ever; ±40 N per 4 ms step [ASSUMED size]. |
+ | crowd.ts | 145 | assumed | averaged over about a second [ASSUMED: a passing shove is not a crush]. |
++| cue-tools.ts | 45 | assumed | Someone after the runner [ASSUMED cues]: VerbNet's chase-51.6 (chase, follow, pursue, tail, track, trail), or someone who has |
+ | data/buss.ts | 4 | raw | image) by script, docs/data/buss1981_appendix3_endorsement.csv [RAW: OCR; 10 act texts are cut off]. |
+ | data/materials.ts | 1 | raw | What things are made of (docs/df-body-engine.md §6.23). Per material: rho density kg/m³; E Young's modulus GPa (wood: along the grain, static bending) |
+ | data/materials.ts | 420 | raw | "rope": "breaking load ≈ 900 lbf × C² (C = circumference, inches), the manila rule of thumb [RAW]", |
+@@ -259,11 +260,11 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | grammar.ts | 59 | assumed | coordinator, a subordinator, an adverbial particle or punctuation starts what follows the head [ASSUMED list of them]. |
+ | grammar.ts | 78 | assumed | object unless a to phrase follows ("give her money", but "give her purse to Tom") [ASSUMED: the grammar allows both]. |
+ | grammar.ts | 126 | assumed | "have" before a participle is the perfect's auxiliary, no light verb ("I have given him a kiss") [ASSUMED: -ed, -en and these irregular participles]. |
+-| grammar.ts | 239 | assumed | of the future are, in a player's line, the act about to be done [ASSUMED for roleplay]. The modal idioms would rather and had |
+-| grammar.ts | 277 | assumed | upon, among, amid, despite, until, like and beside [ASSUMED: the central prepositions that sample leaves out]. |
+-| grammar.ts | 317 | assumed | Left out [ASSUMED]: constantly, continually, intermittently, occasionally, periodically, repeatedly, sporadically, now |
+-| grammar.ts | 331 | assumed | adjunct is read as the story's own tense, a turn written in the past [ASSUMED for roleplay]. |
+-| grammar.ts | 366 | assumed | perception is answered by what the senses give, so the look or the listening still runs ("Do I see anyone?") [ASSUMED]. |
++| grammar.ts | 241 | assumed | of the future are, in a player's line, the act about to be done [ASSUMED for roleplay]. The modal idioms would rather and had |
++| grammar.ts | 279 | assumed | upon, among, amid, despite, until, like and beside [ASSUMED: the central prepositions that sample leaves out]. |
++| grammar.ts | 319 | assumed | Left out [ASSUMED]: constantly, continually, intermittently, occasionally, periodically, repeatedly, sporadically, now |
++| grammar.ts | 333 | assumed | adjunct is read as the story's own tense, a turn written in the past [ASSUMED for roleplay]. |
++| grammar.ts | 368 | assumed | perception is answered by what the senses give, so the look or the listening still runs ("Do I see anyone?") [ASSUMED]. |
+ | hearing.ts | 29 | assumed | pond turtles [ASSUMED]); bullfrog 100 Hz–2.5 kHz (for DF frogs and toads [ASSUMED]). |
+ | intelligibility.ts | 12 | raw | Table 4 although §3.3 and §4.2 say those listeners were excluded; the printed values are used [RAW]. |
+ | intent.ts | 141 | assumed | [ASSUMED for English roleplay lines]. |
+@@ -323,7 +324,7 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | pulse.ts | 115 | assumed | clock then runs ahead by those minutes [ASSUMED: up to PULSE_MAX_MIN]). |
+ | question-pass.ts | 47 | assumed | Calls run per turn, at most [ASSUMED]; scene messages shown and their length. |
+ | question-pass.ts | 49 | assumed | Enums longer than this are shown as free text; the tool then names the valid values in its reply [ASSUMED]. |
+-| question-pass.ts | 564 | assumed | share is an ordinary personal item's [ASSUMED: more than half of people in such a scene carry one]. |
++| question-pass.ts | 566 | assumed | share is an ordinary personal item's [ASSUMED: more than half of people in such a scene carry one]. |
+ | reanalysis.ts | 19 | assumed | const LAG_DAYS = 6; // ERA5 reaches Open-Meteo about 5 days late [Open-Meteo docs]; one day of margin [ASSUMED] |
+ | reanalysis.ts | 103 | assumed | is the day's precipitation as snow at 10 mm of snow per mm of water when the day's mean is at or below 1.0 °C [ASSUMED]; |
+ | roman.ts | 7 | assumed | tone numbers stay as written (Chao digits). Lost on the way [ASSUMED for readability]: dental, retracted and syllabic |
+@@ -344,33 +345,35 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | rooms.ts | 134 | assumed | Breathing: VO2 = METs × 3.5 mL/kg/min; CO2 out = 0.85 × VO2 (respiratory exchange ratio of a mixed diet [ASSUMED]). |
+ | rooms.ts | 161 | assumed | ΔT at least 1 K [ASSUMED: drafts and body heat keep air moving through an open door]. Each minute the two rooms swap that |
+ | router.ts | 4 | assumed | open (hearing apart from seeing, a price, physical effort, a fall), so those take named verbs (VERB_TOOL) [ASSUMED lists]. |
+-| router.ts | 51 | assumed | holds buy with take), effort, a fall, flight, care of a wound [ASSUMED lists]. */ |
+-| router.ts | 217 | assumed | Phrases that name another act than their verb [ASSUMED lists]: a breath taken or caught is breathing, no taking; a breath |
++| router.ts | 56 | assumed | holds buy with take), effort, a fall, flight, care of a wound [ASSUMED lists]. */ |
++| router.ts | 334 | assumed | Phrases that name another act than their verb [ASSUMED lists]: a breath taken or caught is breathing, no taking; a breath |
++| router.ts | 361 | assumed | army"), a cramp [ASSUMED pattern lists]. |
++| router.ts | 392 | assumed | listener checks [ASSUMED]. |
+ | rules-tools.ts | 123 | assumed | most content words with them (stems of 4 letters or more), with a few everyday names [ASSUMED list]. The list goes to the |
+-| rules-tools.ts | 313 | assumed | const WORLD_CHAIN = 50; // [ASSUMED: reading a world applies at most 50 diffs, a few milliseconds] |
+-| rules-tools.ts | 498 | assumed | calibrate (Lin, Hilton & Evans 2022, TMLR); band values [ASSUMED]. A bare number is still read. Models prefer options by |
+-| rules-tools.ts | 514 | assumed | A recorded fact the claim names: most of its words (≥ 60 % of the longer one's, [ASSUMED]) in common. |
+-| rules-tools.ts | 712 | assumed | [ASSUMED typical values from absorption tables]. |
+-| rules-tools.ts | 851 | assumed | taken at that light per kg burnt [ASSUMED]; the room's illuminance is the flames' flux over its surfaces, raised by the |
+-| rules-tools.ts | 852 | assumed | light the surfaces send back, 1 ÷ (1 − ρ) with ρ = 0.3 [ASSUMED integrating-room approximation]; daylight indoors is 1.5 % |
+-| rules-tools.ts | 870 | assumed | 2019: a diffuse room, checked on 50–540 people, stated valid from about 30). Used from 10 people [ASSUMED extension]. |
+-| rules-tools.ts | 883 | assumed | actors' footsteps (64 dB at 1 m on gravel or sand, the Listen preset; creeping −10 dB, running +6, sprinting +8 [ASSUMED]) |
+-| rules-tools.ts | 885 | assumed | room and outdoors, with no open doorway [ASSUMED, as Communicate]; and sees them in the same room or outdoors with the light there (one glance at a |
+-| rules-tools.ts | 1305 | assumed | On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default]. |
+-| rules-tools.ts | 1332 | assumed | speak; otherwise one of the other four feelings is heard, each as likely [ASSUMED equal confusions]: the meta-analysis |
+-| rules-tools.ts | 1365 | assumed | supports more than one, each is equally likely [ASSUMED: no published rate of misreading per context]. Context usually |
+-| rules-tools.ts | 1419 | assumed | Lavrijsen 2015, the hours behind lastsWords) [ASSUMED shape]; [BODY] shows it until it runs out (E30). The same study: |
+-| rules-tools.ts | 1521 | assumed | Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length]. |
+-| rules-tools.ts | 1801 | assumed | the character's birth decade, age 30 when unknown [ASSUMED]. |
+-| rules-tools.ts | 1907 | assumed | [ASSUMED: a percentile read as a log-odds shift]. |
+-| rules-tools.ts | 1913 | assumed | in daily life as the young) [ASSUMED: no shift]. |
+-| rules-tools.ts | 1917 | assumed | character feels fear. Intentions keep their rate [ASSUMED]. Sadness enters nothing: no meta-analytic effect on such |
+-| rules-tools.ts | 1989 | assumed | Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED]. |
+-| rules-tools.ts | 2063 | assumed | there), counts as a witness the helper knows of [ASSUMED: seeing them is believing they witness it]. |
+-| rules-tools.ts | 2264 | assumed | Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex |
+-| rules-tools.ts | 2371 | assumed | A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it. |
+-| rules-tools.ts | 2550 | assumed | fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_k |
+-| rules-tools.ts | 2650 | assumed | load_kg: { type: 'number', description: 'The load, kg (a person\'s mass; twice it for a jump or a drop onto it [ASSUMED])' }, |
++| rules-tools.ts | 314 | assumed | const WORLD_CHAIN = 50; // [ASSUMED: reading a world applies at most 50 diffs, a few milliseconds] |
++| rules-tools.ts | 499 | assumed | calibrate (Lin, Hilton & Evans 2022, TMLR); band values [ASSUMED]. A bare number is still read. Models prefer options by |
++| rules-tools.ts | 515 | assumed | A recorded fact the claim names: most of its words (≥ 60 % of the longer one's, [ASSUMED]) in common. |
++| rules-tools.ts | 713 | assumed | [ASSUMED typical values from absorption tables]. |
++| rules-tools.ts | 861 | assumed | taken at that light per kg burnt [ASSUMED]; the room's illuminance is the flames' flux over its surfaces, raised by the |
++| rules-tools.ts | 862 | assumed | light the surfaces send back, 1 ÷ (1 − ρ) with ρ = 0.3 [ASSUMED integrating-room approximation]; daylight indoors is 1.5 % |
++| rules-tools.ts | 880 | assumed | 2019: a diffuse room, checked on 50–540 people, stated valid from about 30). Used from 10 people [ASSUMED extension]. |
++| rules-tools.ts | 893 | assumed | actors' footsteps (64 dB at 1 m on gravel or sand, the Listen preset; creeping −10 dB, running +6, sprinting +8 [ASSUMED]) |
++| rules-tools.ts | 895 | assumed | room and outdoors, with no open doorway [ASSUMED, as Communicate]; and sees them in the same room or outdoors with the light there (one glance at a |
++| rules-tools.ts | 1323 | assumed | On the map: distance from the two spots; different rooms with no open doorway between → a plaster wall [ASSUMED default]. |
++| rules-tools.ts | 1352 | assumed | speak; otherwise one of the other four feelings is heard, each as likely [ASSUMED equal confusions]: the meta-analysis |
++| rules-tools.ts | 1385 | assumed | supports more than one, each is equally likely [ASSUMED: no published rate of misreading per context]. Context usually |
++| rules-tools.ts | 1439 | assumed | Lavrijsen 2015, the hours behind lastsWords) [ASSUMED shape]; [BODY] shows it until it runs out (E30). The same study: |
++| rules-tools.ts | 1541 | assumed | Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length]. |
++| rules-tools.ts | 1821 | assumed | the character's birth decade, age 30 when unknown [ASSUMED]. |
++| rules-tools.ts | 1927 | assumed | [ASSUMED: a percentile read as a log-odds shift]. |
++| rules-tools.ts | 1933 | assumed | in daily life as the young) [ASSUMED: no shift]. |
++| rules-tools.ts | 1937 | assumed | character feels fear. Intentions keep their rate [ASSUMED]. Sadness enters nothing: no meta-analytic effect on such |
++| rules-tools.ts | 2017 | assumed | Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED]. |
++| rules-tools.ts | 2092 | assumed | there), counts as a witness the helper knows of [ASSUMED: seeing them is believing they witness it]. |
++| rules-tools.ts | 2296 | assumed | Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex |
++| rules-tools.ts | 2407 | assumed | A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it. |
++| rules-tools.ts | 2586 | assumed | fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_k |
++| rules-tools.ts | 2686 | assumed | load_kg: { type: 'number', description: 'The load, kg (a person\'s mass; twice it for a jump or a drop onto it [ASSUMED])' }, |
+ | scene-fit.ts | 12 | assumed | /** Hand guns in Europe [ASSUMED: from 1350]: the gunshot's sound and the handgun shot's line of the brief start then. */ |
+ | scene-fit.ts | 28 | assumed | Electric light in homes and offices, the levels vision.ts holds for them [ASSUMED: from the 1880s]; asphalt paving |
+ | scene-fit.ts | 29 | assumed | [ASSUMED: Paris, 1854]. |
+@@ -445,13 +448,13 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | venom.ts | 22 | assumed | Giant forms and animal people use the base species' venom, yield × their DF body size ÷ the base's [ASSUMED isometric]. |
+ | venom.ts | 24 | assumed | Spread: ln(max ÷ mean) ÷ 2.326; a species without a mean takes the rattlesnake spread [ASSUMED]. |
+ | venom.ts | 30 | assumed | Haemotoxic deaths: shock and death times observed in a bushmaster case, used for both vipers [ASSUMED]. |
+-| verbs.ts | 73 | assumed | files only under searching and assessing (35.2, 34.1) [ASSUMED lists]. |
+-| verbs.ts | 84 | assumed | A defended position: what armies take (Battle) [ASSUMED list]. |
+-| verbs.ts | 90 | assumed | fire.04 ignites ("steam engines fired by alcohol lamps") [ASSUMED list of things fired in those two senses]. |
+-| verbs.ts | 103 | assumed | class also holds other acts (escape-51.1 holds climb and go; carry-11.4 holds push and pull) [ASSUMED selection]. */ |
+-| verbs.ts | 162 | assumed | task's own verb, words further on ("climb the wall to see over it") route nothing [ASSUMED list]. |
+-| verbs.ts | 182 | assumed | and burn) [ASSUMED selection]. |
+-| verbs.ts | 249 | assumed | swing at", "take aim") [ASSUMED list]. |
++| verbs.ts | 85 | assumed | files only under searching and assessing (35.2, 34.1) [ASSUMED lists]. |
++| verbs.ts | 96 | assumed | A defended position: what armies take (Battle) [ASSUMED list]. |
++| verbs.ts | 105 | assumed | fire.04 ignites ("steam engines fired by alcohol lamps") [ASSUMED list of things fired in those two senses]. |
++| verbs.ts | 118 | assumed | class also holds other acts (escape-51.1 holds climb and go; carry-11.4 holds push and pull) [ASSUMED selection]. */ |
++| verbs.ts | 177 | assumed | task's own verb, words further on ("climb the wall to see over it") route nothing [ASSUMED list]. |
++| verbs.ts | 197 | assumed | and burn) [ASSUMED selection]. |
++| verbs.ts | 266 | assumed | swing at", "take aim") [ASSUMED list]. |
+ | vision.ts | 4 | assumed | diffuse reflectance ρ = 0.2 [ASSUMED]. |
+ | vision.ts | 14 | assumed | brightness; below 3.6′ threshold × area held constant (Ricco's law, the trend of Blackwell's Fig. 12) [ASSUMED]; the 3.6′ |
+ | vision.ts | 15 | assumed | value at 100 fL, missing, is the 10 fL value [ASSUMED Weber region]. The target's smallest dimension is its diameter |
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 4ddd4e4..b330159 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -840,6 +840,8 @@ Positions: `be_at` records a spot ("John's house: front door"); `walk_to` needs
+ 
+ Tool Layout (`map.ts`): spots get a position (x, y in metres on the scene's plan, floor number) and rooms an outline (corners, floor, ceiling height). From the plan: room floor area (shoelace) and volume, used by Room when not given; a spot's room (stated, or the outline that contains it), so people at a spot inside a room breathe its air; walking between placed spots with no recorded distance = straight line × 1.2 [ASSUMED route factor, registered 1.0–1.5; Boeing 2019 (arXiv 1708.00836) measures walking networks as more direct than driving ones, with no single figure], plus a storey of stairs (16 steps) per floor [ASSUMED]; Communicate and Look take the distance between two placed people, and people in different rooms with no open doorway between hear through a plaster wall [ASSUMED default] and cannot see each other. Law: a recorded walking distance is never shorter than the straight line between placed spots (storey height 2.8 m [ASSUMED]). Check (harness): kitchen 12 m², parlour 20 m², bedroom upstairs 16 m²; John at the stove, Mary in the armchair 7.3 m away: through the wall almost no words; with the doorway open every word, and she can see him; stove → bed upstairs 11 s (stairs 8.6 s + 2.7 m); a 3 m distance to the armchair refused (6.6 m straight line).
+ 
++**Where people stand is the state's (2026-10-28 (111); `rules-tools.ts` placed, `body-engine.ts` reachOf).** When both people stand at spots on the map, the distance and any wall between them come from the map, not from the call: BodyStrike's distance (before: within reach by default, so a punch landed between people placed 6 m apart; a given distance was used as given), and a shut wall between stops the blow; BodyChoke needs the holder within reach (0.88 m at 70 kg, FAA 2006-08 functional reach, men's 50th percentile, scaled by body length ∝ mass^1/3) and says where both stand; BodyCheck's handgun `shot_m` toward a tracked `shot_at`, and its wall; Chase's `gap_m`; Communicate's and Look's distance (this section already said they take it; before, a given figure replaced the map's); Listen's new `source_who`, which sets the distance and, through a shut wall, a plaster wall [ASSUMED default, as for Communicate]. A given figure that differs is ignored and named in the result ("map distance 6 m kept; 0.5 m ignored"), as Act keeps a recorded walk and BodyFall the height stood at. A blow out of reach names both spots and the Act that closes the distance. Check (harness, `tests/engine.test.mjs`): Mara at the bar, Tom at the hearth 6 m away: a punch given 0.5 m stays out of reach (6 m); Ned on the stool 0.5 m away: in reach; the cook in the larder, a wall with no doorway between: no blow, no shot, a voice through plaster at 9.5 m; a shot at Ned given at 300 m (0.0 % to hit) is taken at the map's 0.5 m (99.6 % at 1 m, feats.ts) and hits; a chase given 20 m runs from the map's 6 m. Controls RJ1–RJ11.
++
+ ### 6.21 History and memory
+ 
+ World history as diffs (`world-log.ts`; borrowed from the plan → diff → validate → apply cycle of Huang, Li & Fang 2026, "Orchestrated Reality", arXiv 2606.16014): every tool call that changes the state stores the paths it changed and their new values, with the tool, its arguments, its random draws and the message it belongs to; setting the time is stored the same way. The last 400 changes are kept (older ones folded into the base). A swipe drops the rewritten message's changes with its state. Swiping back to an earlier swipe (no generation runs) takes the turn's changes as the later swipe made them out of the record and adds one entry, "swipe shown", holding what the swipe shown changed in the turn, so the replay rebuilds the world shown; the turns before keep their entries (2026-10-26 (99), R31). `/rules-replay` replays the changes on the base and says whether they rebuild the current state exactly; a difference means something changed the world outside the tools (check, harness: 6 changes replay exactly; setting a body mass by hand is caught at people.John.mass).
+diff --git a/docs/progress.md b/docs/progress.md
+index 8bbedc6..06a6c57 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,13 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-10-28 (111), Claude Opus 5.5
++- The player asked for the scene's state to decide, not the words ("words are a lossy output"). Changed: when both people stand at spots on the map, a blow, a choke hold, a handgun shot, a chase, a look, speech and a sound take their distance, and a shut wall between, from the map (`rules-tools.ts` placed). Before, BodyStrike defaulted to "within reach", so a punch landed between people placed 6 m apart; Communicate and Look used a given distance over the map's; a given figure that differs is now ignored and named. A hold needs the holder within reach (0.88 m at 70 kg, `body-engine.ts` reachOf); Listen takes `source_who`.
++- Tried and not kept: the state choosing a verb's sense (VerbNet 3.4 pre-states, roles bound from each frame's syntax, 270 classes; SayCan's product of the words' and the state's chances). With the words fixed it changed the leading reading of 40 of 408 verbs with a thing as object and 50 of 480 with a person, and the changes were wrong: "I give the coin" with no coin went to "give off", "I steal the coin" holding one to "steal into", "I punch the cook" across the room to punching a shape. A failed precondition makes the act impossible or needs an earlier act; it does not make another sense likelier, and VerbNet leaves most alternatives' preconditions unstated, so they won by default. The scripts are in the bundle (`review-tests/probes/sec45-state-senses/`).
++- Checked: route 218, frame 202, intent 37, engine 202 (1 new), plan 60, size 9, ui 54, sequences 300, all 0 misses; negative controls RJ1–RJ11 caught; prompt audit unchanged.
++- Found: BodyStrike's `prone` input is never read by `strike()`.
++- Next: Transfer between two placed people apart (a hand-over needs reach, unless thrown or sent); a target's recorded posture for strike (once `prone` is read); the offering fitted on the player's own chats.
++
+ ## 2026-10-28 (110), Claude Opus 5.5
+ - "Continue": the open items of (109). Changed: a thing that holds, bears or supports a weight, or gives way, offers Break ("does the shelf hold Mara's weight"); someone else's feeling asked about offers SocialResponse as well as Appraise ("whether Elias liked her"), and the router now knows the player's own character ("How does Mara feel" stays Appraise); tiptoe, creep and prowl offer BodyCheck (Merriam-Webster names their stealth, WordNet does not); a thing slid into one's own sleeve, coat or bag is taken (Transfer); the narrator's acts offer the tools that record them (a narrated theft offers Transfer, a narrated drink BodyIntake), a hand-over only by giving, stealing or seizing a physical thing; "how much does the ferryman charge" asks a price; "whether" opens a clause's subject; reading to a crowd is speech.
+ - Checked: route 218 (9 new), frame 202, intent 37, engine 201 (1 new), plan 60, size 9, ui 54, sequences 300, all 0 misses. Eval sample, play's step: tools the first round cannot call 2 → 0, extra tools offered 56 → 56. A third held-out set (46 lines, first run): offered 35 of 38 (25 on (109)'s tree, 4 on (108)'s), routed without the tool 1 (6, 12), lines that must not get a tool clean 8 of 8 (8, 6); its three misses then fixed (37, 1, 8; the one left reads "whether the baker trusts strangers" as Trust). Corpus: 1 routing changed ("creep across the lawn" adds BodyCheck). Negative controls RH1–RH16 caught; every route and frame control in the repository (264) and the 105 engine, plan and sequences controls on the files touched caught, three of section 43's (RG7, RG61, RG62) after their patterns were matched to this pass's code.
+diff --git a/src/rules/body-engine.js b/src/rules/body-engine.js
+index bad3835..2184982 100644
+--- a/src/rules/body-engine.js
++++ b/src/rules/body-engine.js
+@@ -1365,9 +1365,11 @@ const INERTIA_SPEED = 0.79; // Newman 2013: response speed 79 % right after waki
+ const EXP_MOVE = 0.15; // Heglund & Taylor 1988: stride period ∝ M^0.150–0.156
+ const EXP_LENGTH = 1 / 3; // geometric similarity
+ const size = (mass, exp) => ((mass || REF_MASS) / REF_MASS) ** exp;
++/** How far a body of `mass` kg reaches with an arm, m: the 70 kg functional reach scaled by length (geometric similarity). */
++export const reachOf = (mass) => REACH_M * size(mass, EXP_LENGTH);
+ /** Seconds from the start of the attack to impact, or null when the attacker never comes within reach. */
+ function impactTime(a, rng) {
+-    const reach = REACH_M * size(a.mass, EXP_LENGTH);
++    const reach = reachOf(a.mass);
+     const dist = a.distance_m ?? reach;
+     const approach = dist <= reach ? 0 : (a.approach_speed ?? 0) > 0 ? (dist - reach) / a.approach_speed : null;
+     if (approach === null)
+diff --git a/src/rules/body-engine.ts b/src/rules/body-engine.ts
+index 0eaec1f..fd1cd8d 100644
+--- a/src/rules/body-engine.ts
++++ b/src/rules/body-engine.ts
+@@ -1066,9 +1066,11 @@ const EXP_MOVE = 0.15;    // Heglund & Taylor 1988: stride period ∝ M^0.150–
+ const EXP_LENGTH = 1 / 3; // geometric similarity
+ const size = (mass: number | null | undefined, exp: number) => ((mass || REF_MASS) / REF_MASS) ** exp;
+ 
++/** How far a body of `mass` kg reaches with an arm, m: the 70 kg functional reach scaled by length (geometric similarity). */
++export const reachOf = (mass?: number | null) => REACH_M * size(mass, EXP_LENGTH);
+ /** Seconds from the start of the attack to impact, or null when the attacker never comes within reach. */
+ function impactTime(a: StrikeInput, rng: Rng): Timing | null {
+-    const reach = REACH_M * size(a.mass, EXP_LENGTH);
++    const reach = reachOf(a.mass);
+     const dist = a.distance_m ?? reach;
+     const approach = dist <= reach ? 0 : (a.approach_speed ?? 0) > 0 ? (dist - reach) / a.approach_speed! : null;
+     if (approach === null) return null;
+diff --git a/src/rules/rules-tools.js b/src/rules/rules-tools.js
+index 3ce09ed..d5a53d8 100644
+--- a/src/rules/rules-tools.js
++++ b/src/rules/rules-tools.js
+@@ -24,7 +24,7 @@ import { pigment } from './pigment.js';
+ import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, levelZ, stateShare, settingRatio, matchPastAct, pastActShare, pastActTrait } from './acts.js';
+ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES, deathCause } from './disease.js';
+ import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
+-import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, checkChance, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, swimShare, contactBurn, listen, look, holdLoad, chase, hearChance, topSpeedKmh } from './body-engine.js';
++import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, reachOf, check, checkChance, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, swimShare, contactBurn, listen, look, holdLoad, chase, hearChance, topSpeedKmh } from './body-engine.js';
+ import { thermalCapable } from './thermal/exposure.js';
+ import { actTogether, honest, stepsFromWords, MOTION_START } from './actions.js';
+ import { see, LIGHT, adaptedLux, DRESSED, AGAINST, figureContrast, diffuseShare } from './vision.js';
+@@ -788,6 +788,16 @@ function between(st, a, b) {
+     const d = straight(st.map, a.at, b.at);
+     return { d: d == null ? null : Math.round(d * 10) / 10, ra, rb, open };
+ }
++/** Two people's places on the map, for a tool that also takes a distance from the model: the map's distance is the record and
++ *  is kept (as Act keeps a recorded walk and BodyFall the height stood at), and `note` names a given distance it replaced;
++ *  `wall` names the rooms when a wall with every doorway shut stands between. Null when either is off the map. */
++function placed(st, a, b, given) {
++    const geo = between(st, a, b);
++    if (!geo || geo.d == null)
++        return null;
++    const g = Number(given), note = given != null && Number.isFinite(g) && Math.round(g * 10) / 10 !== geo.d ? ` (map distance ${geo.d} m kept; ${g} m ignored)` : '';
++    return { d: geo.d, wall: geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? `${geo.ra} and ${geo.rb}, every doorway shut` : null, same: geo.ra === geo.rb, note };
++}
+ /** The first sentence of b that a does not contain (the changed outcome). */
+ const firstDiff = (a, b) => { const sa = new Set(a.split(/(?<=[.;])\s+/).map(x => x.replace(/-?\d+(\.\d+)?/g, '#'))); return b.split(/(?<=[.;])\s+/).find(x => !sa.has(x.replace(/-?\d+(\.\d+)?/g, '#')))?.slice(0, 160) ?? b.slice(0, 160); };
+ /** Minutes as "49 min 23 s" (whole minutes shown bare). */
+@@ -1246,7 +1256,7 @@ export function registerRulesTools(enabled) {
+         background: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the target, which can cover the attacker\'s sound. Default quiet room.' },
+         under_fire: { type: 'boolean', description: 'For a shot: the shooter is being shot at.' },
+         noise_khz: { type: 'number', description: 'Main pitch of that sound in kHz, when it is a tone (whistle, ultrasonic call). Default: broadband noise.' },
+-        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Default: within reach.' },
++        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Default: from where both stand on the map, else within reach.' },
+         approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
+         sense_range_m: { type: 'number', description: 'Range of a sense beyond sight and hearing that the target has (from its species or [WORLD]) and that detects an approaching attacker, m.' },
+         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
+@@ -1259,7 +1269,12 @@ export function registerRulesTools(enabled) {
+         const asp = speciesOf(a.attacker_species || ta.species);
+         if (!asp)
+             return noSpecies(a.attacker_species || ta.species);
+-        const { weapon, launcher, material, skill, style, prone, from, awake, facing, lit, noise_db, noise_sound, background, under_fire, noise_khz, distance_m, approach_speed, sense_range_m, intent_visible, defender_expert } = a;
++        const { weapon, launcher, material, skill, style, prone, from, awake, facing, lit, noise_db, noise_sound, background, under_fire, noise_khz, approach_speed, sense_range_m, intent_visible, defender_expert } = a;
++        // Where both stand is the state's: the map's distance replaces a given one, and a shut wall between stops the attack.
++        const map = attacker ? placed(st, attacker, p, a.distance_m) : null;
++        if (map?.wall)
++            return `A wall stands between ${a.attacker} and ${a.who}: ${map.wall}. State unchanged.`;
++        const distance_m = map ? map.d : a.distance_m;
+         const scene = { weapon, launcher, material, skill, style: style, prone, from, awake, facing, lit, noise_db, noise_sound, background,
+             under_fire, noise_khz, distance_m, approach_speed, sense_range_m, intent_visible, defender_expert };
+         if (lit === undefined) {
+@@ -1274,7 +1289,8 @@ export function registerRulesTools(enabled) {
+         }
+         const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || ta.mass, armor: a.target_armor,
+             ...Object.fromEntries(Object.entries(scene).filter(([, v]) => v !== undefined)) }, attacker, rng);
+-        return `${out} ${status(a.who, p)}`;
++        const short = map && / stays out of reach /.test(out) ? ` On the map ${a.attacker} stands at ${attacker.at} and ${a.who} at ${p.at}: an Act walk_to "${p.at}" closes the distance first, or approach_speed makes it a charge.` : '';
++        return `${out}${map?.note ?? ''}${short} ${status(a.who, p)}`;
+     }));
+     tool('BodyChoke', 'Resolve a choke or strangling hold on the neck once the hold is locked, before narrating its effect.', {
+         who: str('Character choked'),
+@@ -1285,6 +1301,10 @@ export function registerRulesTools(enabled) {
+         if (!p)
+             return error;
+         const holder = a.holder && st.people?.[a.holder] ? st.people[a.holder] : null;
++        // A hold needs the holder's arms on the neck: on the map, the two stand within the holder's reach (0.88 m at 70 kg).
++        const map = holder ? placed(st, holder, p, undefined) : null;
++        if (map && (map.wall || map.d > reachOf(holder.mass)))
++            return `${a.holder} stands at ${holder.at} and ${a.who} at ${p.at}, ${map.wall ? `a wall between (${map.wall})` : `${map.d} m apart on the map`}: no hold. An Act walk_to "${p.at}" brings ${a.holder} there first. State unchanged.`;
+         return `${choke(p, a.seconds, holder, rng)} ${status(a.who, p)}`;
+     }));
+     tool('BodyEnvironment', 'Set the air, water and clothing characters are in whenever they enter a different climate, go into or out of water, the weather changes, or they change clothes; PassTime then works out body temperature, sweating, hypothermia, heat stroke and frostbite. clear = back to unrecorded (comfortable) conditions.', {
+@@ -1412,7 +1432,7 @@ export function registerRulesTools(enabled) {
+         listener: str('Character receiving it'),
+         means: { type: 'string', enum: ['speech', 'gesture'] },
+         lit: { type: 'boolean', description: 'Enough light to see a gesture. Default true.' },
+-        distance_m: { type: 'number', description: 'Distance between them, m. Default 1.' },
++        distance_m: { type: 'number', description: 'Distance between them, m. Default: from where both stand on the map, else 1.' },
+         effort: { type: 'string', enum: ['whisper', 'normal', 'raised', 'loud', 'shout'], description: 'Vocal effort. Default normal.' },
+         feeling: { type: 'string', enum: ['intense anger', 'intense affection'], description: 'When the speaker voices a strong feeling: it raises the voice within the chosen effort' },
+         voice_feeling: { type: 'string', enum: FEELINGS, description: 'The feeling the speaker\'s voice carries, when the player\'s marks or the story give one: the listener may hear another' },
+@@ -1452,9 +1472,12 @@ export function registerRulesTools(enabled) {
+         // A gesture is made out when the listener recognizes a hand-sized shape (0.088 m, ANSUR II) at the distance in the light
+         // there, one draw (E13), unless the story says whether it is lit.
+         const L = a.means === 'gesture' && a.lit === undefined ? lightAt(st, l.p, storyNow(st)) : null;
+-        const lit = a.lit ?? (L ? rng() < see({ size: 0.088, distance: a.distance_m ?? geo?.d ?? 1, light: L.lux }).recognize : true);
++        const map = placed(st, s.p, l.p, a.distance_m), distance = map?.d ?? a.distance_m ?? 1;
++        const lit = a.lit ?? (L ? rng() < see({ size: 0.088, distance, light: L.lux }).recognize : true);
+         const crowd = crowdDb(st, l.p);
+-        let out = communicate(a.speaker, s.p, a.listener, l.p, { way: wayFor(st, l.p, a, geo ? geo.ra === geo.rb : (!a.barrier || a.barrier === 'none')), means: a.means, lit, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room (25 dB)', ...crowd == null ? {} : { noise_db: sumDb(NOISE[a.noise ?? 'quiet room (25 dB)'] ?? 25, crowd) }, barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: a.feeling ? FEELING_DB[a.feeling] : 0, brazil: /brazil/i.test(st.setting?.country ?? '') });
++        let out = communicate(a.speaker, s.p, a.listener, l.p, { way: wayFor(st, l.p, a, geo ? geo.ra === geo.rb : (!a.barrier || a.barrier === 'none')), means: a.means, lit, languages: langs, distance, effort, noise: a.noise ?? 'quiet room (25 dB)', ...crowd == null ? {} : { noise_db: sumDb(NOISE[a.noise ?? 'quiet room (25 dB)'] ?? 25, crowd) }, barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: a.feeling ? FEELING_DB[a.feeling] : 0, brazil: /brazil/i.test(st.setting?.country ?? '') });
++        if (map?.note)
++            out = out.replace(/\.?$/, `${map.note}.`);
+         // Bystanders on the map overhear (E21): each tracked person awake there, other than the two, is a listener at their own
+         // distance from the speaker, through a wall between a room and another or the outdoors with no open doorway [ASSUMED, as
+         // for footsteps], over the
+@@ -2172,19 +2195,28 @@ export function registerRulesTools(enabled) {
+         sound: { type: 'string', enum: Object.keys(SOUNDS) },
+         spl_db: { type: 'number', description: 'Loudness at 1 m, dB SPL, for a sound outside the classes in the list (from a published measurement)' },
+         distance_m: { type: 'number', description: 'Distance from the sound, m' },
++        source_who: str('The character making the sound, when it is one: code takes the distance and any wall from where both stand on the map'),
+         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
+         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
+         tone_hz: { type: 'number', description: 'For a tonal sound (a bell, a whistle, a horn): its pitch, Hz (a church bell 300–600, a whistle 2000–3000)' },
+         ...WAY_PROPS,
+         reveals: str('The fact itself, as the scene holds it, set before the outcome: one sentence with its people, act and place as the scene names them; learned only if heard'),
+-    }, ['listener', 'distance_m', 'sound'], a => run((st, rng) => {
++    }, ['listener', 'sound'], a => run((st, rng) => {
+         if (asQuestion(a.reveals))
+             return REVEALS_FACT;
+         const l = who(st, a.listener, a.listener_species);
+         if (!l.p)
+             return l.error;
+         const crowd = crowdDb(st, l.p), noise = a.noise ?? 'quiet room (25 dB)';
+-        const out = listen(a.listener, l.p, { way: wayFor(st, l.p, a, !a.barrier || a.barrier === 'none'), sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: crowd == null ? noise : `${noise} with the room's talk`, noise_db: crowd == null ? null : sumDb(NOISE[noise] ?? 25, crowd), barrier: a.barrier ?? 'none' }, rng);
++        // A source on the map: its distance is kept over a given one; a shut wall between is a plaster wall [ASSUMED default, as
++        // for Communicate].
++        const src = a.source_who ? st.people?.[String(a.source_who)] : undefined, map = src ? placed(st, l.p, src, a.distance_m) : null;
++        const distance = map?.d ?? a.distance_m;
++        if (distance == null)
++            return 'Give distance_m (or place both on the map with Layout and give source_who). State unchanged.';
++        const barrier = a.barrier ?? (map?.wall ? 'plaster wall' : 'none');
++        const heard = listen(a.listener, l.p, { way: wayFor(st, l.p, a, map ? map.same && barrier === 'none' : barrier === 'none'), sound: a.sound, spl_db: a.spl_db ?? null, distance: map ? Math.max(1, distance) : distance, noise: crowd == null ? noise : `${noise} with the room's talk`, noise_db: crowd == null ? null : sumDb(NOISE[noise] ?? 25, crowd), barrier }, rng);
++        const out = map?.note ? heard.replace(/\.?$/, `${map.note}.`) : heard;
+         return / hears it /.test(out) && a.reveals ? `${out} ${a.listener} now knows: ${learnt(st, a.reveals, a.listener, KNOWN_HOW[1])}` : out;
+     }));
+     tool('Look', 'Decide whether a character sees something at a distance (a person, an animal, a vehicle) before narrating it. Code rolls notice / recognize / identify from size, distance, light and visibility.', {
+@@ -2193,7 +2225,7 @@ export function registerRulesTools(enabled) {
+         target: str('What might be seen, a few words'),
+         kind: { type: 'string', enum: SIZE_KINDS, description: 'What the target is, by meaning: the nearest kind in the list. Code takes its size from it.' },
+         size_m: { type: 'number', description: 'For kind "something else": the smallest visible dimension of the target, m' },
+-        distance_m: { type: 'number', description: 'Distance, m; Layout gives it when viewer and target_who are both placed' },
++        distance_m: { type: 'number', description: 'Distance, m; the map gives it when viewer and target_who are both placed, and its distance is kept' },
+         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Set for an overcast sky or artificial light; code takes daylight, twilight, moonlight and starlight from the date, hour and latitude.' },
+         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
+         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
+@@ -2219,10 +2251,10 @@ export function registerRulesTools(enabled) {
+             const v = who(st, a.viewer, a.viewer_species);
+             if (!v.p)
+                 return v.error;
+-            const tp = a.target_who ? st.people?.[a.target_who] : undefined, geo = tp ? between(st, v.p, tp) : null;
+-            if (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open)
+-                return `A wall stands between ${a.viewer} and ${a.target}: ${geo.ra} and ${geo.rb}, every doorway shut.`;
+-            const dist = a.distance_m ?? geo?.d ?? null;
++            const tp = a.target_who ? st.people?.[a.target_who] : undefined, map = tp ? placed(st, v.p, tp, a.distance_m) : null;
++            if (map?.wall)
++                return `A wall stands between ${a.viewer} and ${a.target}: ${map.wall}.`;
++            const dist = map?.d ?? a.distance_m ?? null;
+             if (dist == null)
+                 return 'Give distance_m (or place both on the map with Layout and give target_who). State unchanged.';
+             if (Number.isFinite(a.latitude))
+@@ -2249,7 +2281,8 @@ export function registerRulesTools(enabled) {
+                 if (id || !was?.identified)
+                     seen[String(a.target_who)] = { t: t ?? null, identified: id, ...(v.p.feelings?.some(f => f.type === 'fear') ? { stressed: true } : {}), ...(a.weapon_in_view ? { weapon: true } : {}) };
+             }
+-            return / identifies it /.test(out) && a.reveals ? `${out} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : out;
++            const said = map?.note ? out.replace(/\.?$/, `${map.note}.`) : out;
++            return / identifies it /.test(out) && a.reveals ? `${said} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : said;
+         });
+     });
+     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
+@@ -2507,17 +2540,20 @@ export function registerRulesTools(enabled) {
+     tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their top speeds (each human\'s drawn once from untrained adults of their sex, scaled by age; other creatures from their species) and leg injuries.', {
+         pursuer: str('Character chasing'), pursuer_species: str('Pursuer\'s species, when the engine has no record of them yet.'),
+         fleeing: str('Character running away'), fleeing_species: str('Fleeing character\'s species, when the engine has no record of them yet.'),
+-        gap_m: { type: 'number', description: 'Head start, m' },
++        gap_m: { type: 'number', description: 'Head start, m. Default: from where both stand on the map, and the map\'s distance is kept' },
+         pursuer_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human pursuer missing from the engine\'s records' },
+         fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing, missing from the engine\'s records' },
+         pursuer_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The pursuer\'s build, when the story states it (BodySize draws it otherwise)' },
+         fleeing_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The fleeing character\'s build, when the story states it (BodySize draws it otherwise)' },
+         pursuer_age: { type: 'number', description: 'For a human pursuer missing from the engine\'s records, years' },
+         fleeing_age: { type: 'number', description: 'For a human fleeing, missing from the engine\'s records, years' },
+-    }, ['pursuer', 'fleeing', 'gap_m'], a => run((st, rng) => {
++    }, ['pursuer', 'fleeing'], a => run((st, rng) => {
+         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
+         if (!p.p || !f.p)
+             return p.error || f.error;
++        const map = placed(st, p.p, f.p, a.gap_m), gap = map?.d ?? a.gap_m;
++        if (gap == null)
++            return 'Give gap_m (or place both on the map with Layout). State unchanged.';
+         if (a.pursuer_sex)
+             p.p.sex ??= a.pursuer_sex;
+         if (a.fleeing_sex)
+@@ -2529,7 +2565,8 @@ export function registerRulesTools(enabled) {
+         for (const [q, b] of [[p.p, a.pursuer_build], [f.p, a.fleeing_build]])
+             if (b && q.bmiZ == null)
+                 q.bmiZ = bmiZOf(BUILDS[b], q.sex, st.setting?.country, storyYear(st));
+-        return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m, rng);
++        const out = chase(a.pursuer, p.p, a.fleeing, f.p, gap, rng);
++        return map?.note ? `${out}${map.note}` : out;
+     }));
+     tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character new to the story (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
+         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
+@@ -2666,8 +2703,13 @@ export function registerRulesTools(enabled) {
+         // hands and alertness, so drink, lost sleep, injuries and the dark of the eyes all bear on it.
+         if (Number(a.shot_m) > 0 && (a.share == null || a.base_share == null)) {
+             const tgt = a.shot_at ? st.people?.[String(a.shot_at)] : undefined;
+-            const chance = handgunHitChance(Number(a.shot_m), tgt?.mass ?? 80, !!a.under_fire);
+-            return check(w.p, { task: a.task, share: chance, uses: ['alertness', 'grasp', 'sight'], override: true }, rng);
++            // Shooter and target on the map: the map's distance is kept, and a shut wall between stops the shot.
++            const map = tgt ? placed(st, w.p, tgt, a.shot_m) : null;
++            if (map?.wall)
++                return `A wall stands between ${a.who} and ${a.shot_at}: ${map.wall}. State unchanged.`;
++            const chance = handgunHitChance(map ? Math.max(1, map.d) : Number(a.shot_m), tgt?.mass ?? 80, !!a.under_fire);
++            const out = check(w.p, { task: a.task, share: chance, uses: ['alertness', 'grasp', 'sight'], override: true }, rng);
++            return map?.note ? `${out}${map.note}` : out;
+         }
+         const childJump = Number(a.gap_m) > 0 && w.p.age != null && w.p.age < JUMP_MIN_AGE;
+         if (childJump && (a.share == null || a.base_share == null))
+diff --git a/src/rules/rules-tools.ts b/src/rules/rules-tools.ts
+index ab6e8d4..ce49477 100644
+--- a/src/rules/rules-tools.ts
++++ b/src/rules/rules-tools.ts
+@@ -28,7 +28,7 @@ import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, l
+ import type { Trait } from './acts.js';
+ import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES, deathCause } from './disease.js';
+ import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
+-import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, check, checkChance, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, swimShare, contactBurn, listen, look, holdLoad, chase, hearChance, topSpeedKmh } from './body-engine.js';
++import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, reachOf, check, checkChance, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, swimShare, contactBurn, listen, look, holdLoad, chase, hearChance, topSpeedKmh } from './body-engine.js';
+ import { thermalCapable } from './thermal/exposure.js';
+ import { actTogether, honest, stepsFromWords, MOTION_START, type Step } from './actions.js';
+ import { see, LIGHT, adaptedLux, DRESSED, AGAINST, figureContrast, diffuseShare } from './vision.js';
+@@ -738,6 +738,15 @@ function between(st: RuleState, a: Person, b: Person): { d: number | null; ra: s
+     const d = straight(st.map, a.at, b.at);
+     return { d: d == null ? null : Math.round(d * 10) / 10, ra, rb, open };
+ }
++/** Two people's places on the map, for a tool that also takes a distance from the model: the map's distance is the record and
++ *  is kept (as Act keeps a recorded walk and BodyFall the height stood at), and `note` names a given distance it replaced;
++ *  `wall` names the rooms when a wall with every doorway shut stands between. Null when either is off the map. */
++function placed(st: RuleState, a: Person, b: Person, given: unknown): { d: number; wall: string | null; same: boolean; note: string } | null {
++    const geo = between(st, a, b);
++    if (!geo || geo.d == null) return null;
++    const g = Number(given), note = given != null && Number.isFinite(g) && Math.round(g * 10) / 10 !== geo.d ? ` (map distance ${geo.d} m kept; ${g} m ignored)` : '';
++    return { d: geo.d, wall: geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? `${geo.ra} and ${geo.rb}, every doorway shut` : null, same: geo.ra === geo.rb, note };
++}
+ 
+ /** The first sentence of b that a does not contain (the changed outcome). */
+ const firstDiff = (a: string, b: string) => { const sa = new Set(a.split(/(?<=[.;])\s+/).map(x => x.replace(/-?\d+(\.\d+)?/g, '#'))); return b.split(/(?<=[.;])\s+/).find(x => !sa.has(x.replace(/-?\d+(\.\d+)?/g, '#')))?.slice(0, 160) ?? b.slice(0, 160); };
+@@ -1147,7 +1156,7 @@ export function registerRulesTools(enabled: boolean): void {
+         background: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the target, which can cover the attacker\'s sound. Default quiet room.' },
+         under_fire: { type: 'boolean', description: 'For a shot: the shooter is being shot at.' },
+         noise_khz: { type: 'number', description: 'Main pitch of that sound in kHz, when it is a tone (whistle, ultrasonic call). Default: broadband noise.' },
+-        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Default: within reach.' },
++        distance_m: { type: 'number', description: 'Distance between attacker and target when the attack starts. Default: from where both stand on the map, else within reach.' },
+         approach_speed: { type: 'number', description: 'Attacker\'s speed in m/s while closing the distance.' },
+         sense_range_m: { type: 'number', description: 'Range of a sense beyond sight and hearing that the target has (from its species or [WORLD]) and that detects an approaching attacker, m.' },
+         intent_visible: { type: 'boolean', description: 'The approach itself shows an attack is coming (charging, weapon raised). False when the attacker looks harmless until the strike starts. Default false.' },
+@@ -1158,15 +1167,20 @@ export function registerRulesTools(enabled: boolean): void {
+         const ta = attacker || !a.attacker ? {} : recorded(a.attacker);
+         const asp = speciesOf(a.attacker_species || ta.species);
+         if (!asp) return noSpecies(a.attacker_species || ta.species);
+-        const { weapon, launcher, material, skill, style, prone, from, awake, facing, lit, noise_db, noise_sound, background, under_fire, noise_khz, distance_m,
++        const { weapon, launcher, material, skill, style, prone, from, awake, facing, lit, noise_db, noise_sound, background, under_fire, noise_khz,
+             approach_speed, sense_range_m, intent_visible, defender_expert } = a;
++        // Where both stand is the state's: the map's distance replaces a given one, and a shut wall between stops the attack.
++        const map = attacker ? placed(st, attacker, p, a.distance_m) : null;
++        if (map?.wall) return `A wall stands between ${a.attacker} and ${a.who}: ${map.wall}. State unchanged.`;
++        const distance_m = map ? map.d : a.distance_m;
+         const scene: StrikeInput = { weapon, launcher, material, skill, style: style as StrikeInput['style'], prone, from, awake, facing, lit, noise_db, noise_sound, background,
+             under_fire, noise_khz, distance_m, approach_speed, sense_range_m, intent_visible, defender_expert };
+         if (lit === undefined) { const L = lightAt(st, p, storyNow(st)); if (L) scene.lux = L.lux; }
+         { const c = crowdDb(st, p); if (c != null) scene.background_db = sumDb(NOISE[background ?? 'quiet room (25 dB)'] ?? 25, c); }
+         const out = strike(p, { part: a.part, attack: a.attack, species: asp, mass: Number(a.attacker_mass_kg) || ta.mass, armor: a.target_armor as GearSpec[] | undefined,
+             ...Object.fromEntries(Object.entries(scene).filter(([, v]) => v !== undefined)) }, attacker, rng);
+-        return `${out} ${status(a.who, p)}`;
++        const short = map && / stays out of reach /.test(out) ? ` On the map ${a.attacker} stands at ${attacker!.at} and ${a.who} at ${p.at}: an Act walk_to "${p.at}" closes the distance first, or approach_speed makes it a charge.` : '';
++        return `${out}${map?.note ?? ''}${short} ${status(a.who, p)}`;
+     }));
+ 
+     tool('BodyChoke', 'Resolve a choke or strangling hold on the neck once the hold is locked, before narrating its effect.', {
+@@ -1177,6 +1191,9 @@ export function registerRulesTools(enabled: boolean): void {
+         const { p, error } = who(st, a.who);
+         if (!p) return error;
+         const holder = a.holder && st.people?.[a.holder] ? st.people[a.holder] : null;
++        // A hold needs the holder's arms on the neck: on the map, the two stand within the holder's reach (0.88 m at 70 kg).
++        const map = holder ? placed(st, holder, p, undefined) : null;
++        if (map && (map.wall || map.d > reachOf(holder!.mass))) return `${a.holder} stands at ${holder!.at} and ${a.who} at ${p.at}, ${map.wall ? `a wall between (${map.wall})` : `${map.d} m apart on the map`}: no hold. An Act walk_to "${p.at}" brings ${a.holder} there first. State unchanged.`;
+         return `${choke(p, a.seconds, holder, rng)} ${status(a.who, p)}`;
+     }));
+ 
+@@ -1277,7 +1294,7 @@ export function registerRulesTools(enabled: boolean): void {
+         listener: str('Character receiving it'),
+         means: { type: 'string', enum: ['speech', 'gesture'] },
+         lit: { type: 'boolean', description: 'Enough light to see a gesture. Default true.' },
+-        distance_m: { type: 'number', description: 'Distance between them, m. Default 1.' },
++        distance_m: { type: 'number', description: 'Distance between them, m. Default: from where both stand on the map, else 1.' },
+         effort: { type: 'string', enum: ['whisper', 'normal', 'raised', 'loud', 'shout'], description: 'Vocal effort. Default normal.' },
+         feeling: { type: 'string', enum: ['intense anger', 'intense affection'], description: 'When the speaker voices a strong feeling: it raises the voice within the chosen effort' },
+         voice_feeling: { type: 'string', enum: FEELINGS, description: 'The feeling the speaker\'s voice carries, when the player\'s marks or the story give one: the listener may hear another' },
+@@ -1308,9 +1325,11 @@ export function registerRulesTools(enabled: boolean): void {
+         // A gesture is made out when the listener recognizes a hand-sized shape (0.088 m, ANSUR II) at the distance in the light
+         // there, one draw (E13), unless the story says whether it is lit.
+         const L = a.means === 'gesture' && a.lit === undefined ? lightAt(st, l.p, storyNow(st)) : null;
+-        const lit = a.lit ?? (L ? rng() < see({ size: 0.088, distance: a.distance_m ?? geo?.d ?? 1, light: L.lux }).recognize : true);
++        const map = placed(st, s.p, l.p, a.distance_m), distance = map?.d ?? a.distance_m ?? 1;
++        const lit = a.lit ?? (L ? rng() < see({ size: 0.088, distance, light: L.lux }).recognize : true);
+         const crowd = crowdDb(st, l.p);
+-        let out = communicate(a.speaker, s.p, a.listener, l.p, { way: wayFor(st, l.p, a, geo ? geo.ra === geo.rb : (!a.barrier || a.barrier === 'none')), means: a.means, lit, languages: langs, distance: a.distance_m ?? geo?.d ?? 1, effort, noise: a.noise ?? 'quiet room (25 dB)', ...crowd == null ? {} : { noise_db: sumDb(NOISE[a.noise ?? 'quiet room (25 dB)'] ?? 25, crowd) }, barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: a.feeling ? FEELING_DB[a.feeling] : 0, brazil: /brazil/i.test(st.setting?.country ?? '') });
++        let out = communicate(a.speaker, s.p, a.listener, l.p, { way: wayFor(st, l.p, a, geo ? geo.ra === geo.rb : (!a.barrier || a.barrier === 'none')), means: a.means, lit, languages: langs, distance, effort, noise: a.noise ?? 'quiet room (25 dB)', ...crowd == null ? {} : { noise_db: sumDb(NOISE[a.noise ?? 'quiet room (25 dB)'] ?? 25, crowd) }, barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: a.feeling ? FEELING_DB[a.feeling] : 0, brazil: /brazil/i.test(st.setting?.country ?? '') });
++        if (map?.note) out = out.replace(/\.?$/, `${map.note}.`);
+         // Bystanders on the map overhear (E21): each tracked person awake there, other than the two, is a listener at their own
+         // distance from the speaker, through a wall between a room and another or the outdoors with no open doorway [ASSUMED, as
+         // for footsteps], over the
+@@ -1943,17 +1962,25 @@ export function registerRulesTools(enabled: boolean): void {
+         sound: { type: 'string', enum: Object.keys(SOUNDS) },
+         spl_db: { type: 'number', description: 'Loudness at 1 m, dB SPL, for a sound outside the classes in the list (from a published measurement)' },
+         distance_m: { type: 'number', description: 'Distance from the sound, m' },
++        source_who: str('The character making the sound, when it is one: code takes the distance and any wall from where both stand on the map'),
+         noise: { type: 'string', enum: Object.keys(NOISE), description: 'Background sound at the listener. Default quiet room.' },
+         barrier: { type: 'string', enum: Object.keys(BARRIER), description: 'What lies between. Default none.' },
+         tone_hz: { type: 'number', description: 'For a tonal sound (a bell, a whistle, a horn): its pitch, Hz (a church bell 300–600, a whistle 2000–3000)' },
+         ...WAY_PROPS,
+         reveals: str('The fact itself, as the scene holds it, set before the outcome: one sentence with its people, act and place as the scene names them; learned only if heard'),
+-    }, ['listener', 'distance_m', 'sound'], a => run((st, rng) => {
++    }, ['listener', 'sound'], a => run((st, rng) => {
+         if (asQuestion(a.reveals)) return REVEALS_FACT;
+         const l = who(st, a.listener, a.listener_species);
+         if (!l.p) return l.error;
+         const crowd = crowdDb(st, l.p), noise = a.noise ?? 'quiet room (25 dB)';
+-        const out = listen(a.listener, l.p, { way: wayFor(st, l.p, a, !a.barrier || a.barrier === 'none'), sound: a.sound, spl_db: a.spl_db ?? null, distance: a.distance_m, noise: crowd == null ? noise : `${noise} with the room's talk`, noise_db: crowd == null ? null : sumDb(NOISE[noise] ?? 25, crowd), barrier: a.barrier ?? 'none' }, rng);
++        // A source on the map: its distance is kept over a given one; a shut wall between is a plaster wall [ASSUMED default, as
++        // for Communicate].
++        const src = a.source_who ? st.people?.[String(a.source_who)] : undefined, map = src ? placed(st, l.p, src, a.distance_m) : null;
++        const distance = map?.d ?? a.distance_m;
++        if (distance == null) return 'Give distance_m (or place both on the map with Layout and give source_who). State unchanged.';
++        const barrier = a.barrier ?? (map?.wall ? 'plaster wall' : 'none');
++        const heard = listen(a.listener, l.p, { way: wayFor(st, l.p, a, map ? map.same && barrier === 'none' : barrier === 'none'), sound: a.sound, spl_db: a.spl_db ?? null, distance: map ? Math.max(1, distance) : distance, noise: crowd == null ? noise : `${noise} with the room's talk`, noise_db: crowd == null ? null : sumDb(NOISE[noise] ?? 25, crowd), barrier }, rng);
++        const out = map?.note ? heard.replace(/\.?$/, `${map.note}.`) : heard;
+         return / hears it /.test(out) && a.reveals ? `${out} ${a.listener} now knows: ${learnt(st, a.reveals, a.listener, KNOWN_HOW[1])}` : out;
+     }));
+ 
+@@ -1963,7 +1990,7 @@ export function registerRulesTools(enabled: boolean): void {
+         target: str('What might be seen, a few words'),
+         kind: { type: 'string', enum: SIZE_KINDS, description: 'What the target is, by meaning: the nearest kind in the list. Code takes its size from it.' },
+         size_m: { type: 'number', description: 'For kind "something else": the smallest visible dimension of the target, m' },
+-        distance_m: { type: 'number', description: 'Distance, m; Layout gives it when viewer and target_who are both placed' },
++        distance_m: { type: 'number', description: 'Distance, m; the map gives it when viewer and target_who are both placed, and its distance is kept' },
+         light: { type: 'string', enum: ['overcast day', 'dim street or public lighting', 'living room', 'office'], description: 'Set for an overcast sky or artificial light; code takes daylight, twilight, moonlight and starlight from the date, hour and latitude.' },
+         latitude: { type: 'number', description: 'Latitude of the place, degrees (north +, south −), when the story moves to a new region. Kept for later calls.' },
+         visibility_m: { type: 'number', description: 'Meteorological visibility, m (clear air 20000; haze 5000; mist 2000; fog 500; thick fog 50)' },
+@@ -1982,9 +2009,9 @@ export function registerRulesTools(enabled: boolean): void {
+         if (!(Number(a.size_m) > 0)) return `Give size_m: the smallest dimension of ${a.target ?? 'what is seen'}, m. State unchanged.`;
+         const v = who(st, a.viewer, a.viewer_species);
+         if (!v.p) return v.error;
+-        const tp = a.target_who ? st.people?.[a.target_who] : undefined, geo = tp ? between(st, v.p, tp) : null;
+-        if (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open) return `A wall stands between ${a.viewer} and ${a.target}: ${geo.ra} and ${geo.rb}, every doorway shut.`;
+-        const dist = a.distance_m ?? geo?.d ?? null;
++        const tp = a.target_who ? st.people?.[a.target_who] : undefined, map = tp ? placed(st, v.p, tp, a.distance_m) : null;
++        if (map?.wall) return `A wall stands between ${a.viewer} and ${a.target}: ${map.wall}.`;
++        const dist = map?.d ?? a.distance_m ?? null;
+         if (dist == null) return 'Give distance_m (or place both on the map with Layout and give target_who). State unchanged.';
+         if (Number.isFinite(a.latitude)) st.latitude = a.latitude;
+         // Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED].
+@@ -2006,7 +2033,8 @@ export function registerRulesTools(enabled: boolean): void {
+         // A closer look later replaces a vaguer one; the latest look at the face counts.
+         if (a.target_who) { const seen = ((st.sightings ??= {})[String(a.viewer)] ??= {}), was = seen[String(a.target_who)], id = / identifies it /.test(out);
+             if (id || !was?.identified) seen[String(a.target_who)] = { t: t ?? null, identified: id, ...(v.p.feelings?.some(f => f.type === 'fear') ? { stressed: true } : {}), ...(a.weapon_in_view ? { weapon: true } : {}) }; }
+-        return / identifies it /.test(out) && a.reveals ? `${out} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : out;
++        const said = map?.note ? out.replace(/\.?$/, `${map.note}.`) : out;
++        return / identifies it /.test(out) && a.reveals ? `${said} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : said;
+     }); });
+ 
+     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
+@@ -2226,22 +2254,25 @@ export function registerRulesTools(enabled: boolean): void {
+     tool('Chase', 'Decide whether a pursuer catches someone running away over open ground, from their top speeds (each human\'s drawn once from untrained adults of their sex, scaled by age; other creatures from their species) and leg injuries.', {
+         pursuer: str('Character chasing'), pursuer_species: str('Pursuer\'s species, when the engine has no record of them yet.'),
+         fleeing: str('Character running away'), fleeing_species: str('Fleeing character\'s species, when the engine has no record of them yet.'),
+-        gap_m: { type: 'number', description: 'Head start, m' },
++        gap_m: { type: 'number', description: 'Head start, m. Default: from where both stand on the map, and the map\'s distance is kept' },
+         pursuer_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human pursuer missing from the engine\'s records' },
+         fleeing_sex: { type: 'string', enum: ['male', 'female'], description: 'For a human fleeing, missing from the engine\'s records' },
+         pursuer_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The pursuer\'s build, when the story states it (BodySize draws it otherwise)' },
+         fleeing_build: { type: 'string', enum: Object.keys(BUILDS), description: 'The fleeing character\'s build, when the story states it (BodySize draws it otherwise)' },
+         pursuer_age: { type: 'number', description: 'For a human pursuer missing from the engine\'s records, years' },
+         fleeing_age: { type: 'number', description: 'For a human fleeing, missing from the engine\'s records, years' },
+-    }, ['pursuer', 'fleeing', 'gap_m'], a => run((st, rng) => {
++    }, ['pursuer', 'fleeing'], a => run((st, rng) => {
+         const p = who(st, a.pursuer, a.pursuer_species), f = who(st, a.fleeing, a.fleeing_species);
+         if (!p.p || !f.p) return p.error || f.error;
++        const map = placed(st, p.p, f.p, a.gap_m), gap = map?.d ?? a.gap_m;
++        if (gap == null) return 'Give gap_m (or place both on the map with Layout). State unchanged.';
+         if (a.pursuer_sex) p.p.sex ??= a.pursuer_sex;
+         if (a.fleeing_sex) f.p.sex ??= a.fleeing_sex;
+         if (Number.isFinite(a.pursuer_age)) p.p.age ??= a.pursuer_age;
+         if (Number.isFinite(a.fleeing_age)) f.p.age ??= a.fleeing_age;
+         for (const [q, b] of [[p.p, a.pursuer_build], [f.p, a.fleeing_build]] as const) if (b && q.bmiZ == null) q.bmiZ = bmiZOf(BUILDS[b], q.sex, st.setting?.country, storyYear(st));
+-        return chase(a.pursuer, p.p, a.fleeing, f.p, a.gap_m, rng);
++        const out = chase(a.pursuer, p.p, a.fleeing, f.p, gap, rng);
++        return map?.note ? `${out}${map.note}` : out;
+     }));
+ 
+     tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character new to the story (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
+@@ -2355,8 +2386,12 @@ export function registerRulesTools(enabled: boolean): void {
+         // hands and alertness, so drink, lost sleep, injuries and the dark of the eyes all bear on it.
+         if (Number(a.shot_m) > 0 && (a.share == null || a.base_share == null)) {
+             const tgt = a.shot_at ? st.people?.[String(a.shot_at)] : undefined;
+-            const chance = handgunHitChance(Number(a.shot_m), tgt?.mass ?? 80, !!a.under_fire);
+-            return check(w.p, { task: a.task, share: chance, uses: ['alertness', 'grasp', 'sight'], override: true }, rng);
++            // Shooter and target on the map: the map's distance is kept, and a shut wall between stops the shot.
++            const map = tgt ? placed(st, w.p, tgt, a.shot_m) : null;
++            if (map?.wall) return `A wall stands between ${a.who} and ${a.shot_at}: ${map.wall}. State unchanged.`;
++            const chance = handgunHitChance(map ? Math.max(1, map.d) : Number(a.shot_m), tgt?.mass ?? 80, !!a.under_fire);
++            const out = check(w.p, { task: a.task, share: chance, uses: ['alertness', 'grasp', 'sight'], override: true }, rng);
++            return map?.note ? `${out}${map.note}` : out;
+         }
+         const childJump = Number(a.gap_m) > 0 && w.p.age != null && w.p.age < JUMP_MIN_AGE;
+         if (childJump && (a.share == null || a.base_share == null)) return `The jump norms start at age 20; for ${a.who}, aged ${w.p.age}, give base_share and share.`;
+diff --git a/tests/engine.test.mjs b/tests/engine.test.mjs
+index 9bc9697..541c667 100644
+--- a/tests/engine.test.mjs
++++ b/tests/engine.test.mjs
+@@ -1959,5 +1959,40 @@ for (const who of ['Mara', 'Ash']) {
+   fresh(); await runEval(send, [EVAL_SCENES.find(x => x.id === 43)]);
+   if (routed !== 0 || picks !== 1) { miss++; console.log(`MISS the eval offers tools as play does: picker asked ${routed} time(s) on a routed line, ${picks - routed} on a line with no verb routed`); }
+ }
+-console.log(`201 checks, ${miss} miss(es)`);
++// Where people stand is the state's (rules-tools.ts placed): the map's distance is kept over a given one, a shut wall stops a
++// blow, a hold needs the holder's reach, and a source on the map sets a sound's distance and wall.
++{
++  const LV = 'on the level, stairs or a change of posture';
++  fresh();
++  await run('Layout', { spots: [{ spot: 'bar', x_m: 1, y_m: 1, room: 'taproom' }, { spot: 'stool', x_m: 1.5, y_m: 1, room: 'taproom' }, { spot: 'hearth', x_m: 7, y_m: 1, room: 'taproom' }, { spot: 'larder', x_m: 11, y_m: 1, room: 'larder' }],
++    rooms: [{ room: 'taproom', corners: [[0, 0], [9, 0], [9, 4], [0, 4]] }, { room: 'larder', corners: [[9, 0], [13, 0], [13, 4], [9, 4]] }] });
++  for (const [w, at] of [['Mara', 'bar'], ['Ned', 'stool'], ['Tom', 'hearth'], ['Cook', 'larder']]) await run('Act', { level: LV, who: w, steps: [{ do: 'be_at', to: at }] });
++  const far = String(await run('BodyStrike', { who: 'Tom', attacker: 'Mara', attack: 'punch' }));
++  const told = String(await run('BodyStrike', { who: 'Tom', attacker: 'Mara', attack: 'punch', distance_m: 0.5 }));
++  const nearBy = String(await run('BodyStrike', { who: 'Ned', attacker: 'Mara', attack: 'punch' }));
++  const walled = String(await run('BodyStrike', { who: 'Cook', attacker: 'Mara', attack: 'punch' }));
++  const hold = String(await run('BodyChoke', { who: 'Tom', holder: 'Mara', seconds: 5 })), holdNear = String(await run('BodyChoke', { who: 'Ned', holder: 'Mara', seconds: 5 }));
++  const seen = String(await run('Look', { viewer: 'Mara', kind: 'a person', target: 'Tom', target_who: 'Tom', distance_m: 2 }));
++  const spoken = String(await run('Communicate', { speaker: 'Mara', listener: 'Tom', means: 'speech', message: 'Come here.', distance_m: 1 }));
++  const heard = String(await run('Listen', { listener: 'Ned', sound: 'quiet conversation (50 dB at 1 m)', source_who: 'Cook' }));
++  // A handgun shot at 1 m hits 99.6 % of the time, at 300 m 0.0 % (feats.ts handgunHitChance): the map's 0.5 m decides it.
++  const shot = String(await run('BodyCheck', { task_kind: OWN_KIND, who: 'Mara', task: 'shoot Ned', shot_m: 300, shot_at: 'Ned' }));
++  const shotWall = String(await run('BodyCheck', { task_kind: OWN_KIND, who: 'Mara', task: 'shoot the cook', shot_m: 3, shot_at: 'Cook' }));
++  ctx.chat[0].mes = 'chase at 6 m'; const chase6 = String(await run('Chase', { pursuer: 'Mara', fleeing: 'Tom', fleeing_age: 85, gap_m: 6 }));
++  ctx.chat[0].mes = 'chase at 20 m'; const chase20 = String(await run('Chase', { pursuer: 'Mara', fleeing: 'Tom', gap_m: 20 }));
++  const bad = [
++    !/stays out of reach \(6 m\)/.test(far) || !/On the map Mara stands at bar and Tom at hearth/.test(far) ? `far: ${far}` : '',
++    !/map distance 6 m kept; 0\.5 m ignored/.test(told) || !/stays out of reach/.test(told) ? `told: ${told}` : '',
++    /stays out of reach|map distance/.test(nearBy) ? `near: ${nearBy}` : '',
++    !/^A wall stands between Mara and Cook: taproom and larder/.test(walled) ? `walled: ${walled}` : '',
++    !/6 m apart on the map: no hold/.test(hold) || /no hold/.test(holdNear) ? `hold: ${hold} | ${holdNear}` : '',
++    !/target at 6 m.*map distance 6 m kept; 2 m ignored/.test(seen) ? `look: ${seen}` : '',
++    !/voice at 6 m.*map distance 6 m kept; 1 m ignored/.test(spoken) ? `speech: ${spoken}` : '',
++    !/at 9\.5 m.*through plaster wall/.test(heard) ? `listen: ${heard}` : '',
++    !/SUCCESS/.test(shot) || !/map distance 0\.5 m kept; 300 m ignored/.test(shot) || !/^A wall stands between Mara and Cook/.test(shotWall) ? `shot: ${shot} | ${shotWall}` : '',
++    !/catches Tom after/.test(chase6) || chase20 !== `${chase6} (map distance 6 m kept; 20 m ignored)` ? `chase: ${chase6} | ${chase20}` : '',
++  ].filter(Boolean);
++  if (bad.length) { miss++; console.log(`MISS where people stand is the state's:\n  ${bad.join('\n  ')}`); }
++}
++console.log(`202 checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 30f6c8c..6aecb74 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -4787,5 +4787,104 @@
+   "replace": "[s.context], [], cast[0]",
+   "miss": "the narrator's acts offer their recording tools",
+   "test": "engine"
++ },
++ {
++  "id": "RJ1",
++  "name": "BodyStrike keeps the map's distance",
++  "file": "src/rules/rules-tools.js",
++  "find": "const distance_m = map \\? map\\.d : a\\.distance_m;",
++  "replace": "const distance_m = a.distance_m;",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ2",
++  "name": "a shut wall stops a blow",
++  "file": "src/rules/rules-tools.js",
++  "find": "if \\(map\\?\\.wall\\)\\s*return `A wall stands between \\$\\{a\\.attacker\\}",
++  "replace": "if (false) return `A wall stands between ${a.attacker}",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ3",
++  "name": "a hold needs the holder's reach",
++  "file": "src/rules/rules-tools.js",
++  "find": "if \\(map && \\(map\\.wall \\|\\| map\\.d > reachOf\\(holder\\.mass\\)\\)\\)",
++  "replace": "if (false)",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ4",
++  "name": "Communicate keeps the map's distance",
++  "file": "src/rules/rules-tools.js",
++  "find": "distance = map\\?\\.d \\?\\? a\\.distance_m \\?\\? 1;",
++  "replace": "distance = a.distance_m ?? map?.d ?? 1;",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ5",
++  "name": "Look keeps the map's distance",
++  "file": "src/rules/rules-tools.js",
++  "find": "const dist = map\\?\\.d \\?\\? a\\.distance_m \\?\\? null;",
++  "replace": "const dist = a.distance_m ?? map?.d ?? null;",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ6",
++  "name": "Listen takes a placed source's distance",
++  "file": "src/rules/rules-tools.js",
++  "find": "const distance = map\\?\\.d \\?\\? a\\.distance_m;",
++  "replace": "const distance = a.distance_m ?? 9;",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ7",
++  "name": "Listen takes a placed source's wall",
++  "file": "src/rules/rules-tools.js",
++  "find": "const barrier = a\\.barrier \\?\\? \\(map\\?\\.wall \\? 'plaster wall' : 'none'\\);",
++  "replace": "const barrier = a.barrier ?? 'none';",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ8",
++  "name": "the map's distance replaces a given one",
++  "file": "src/rules/rules-tools.js",
++  "find": "Math\\.round\\(g \\* 10\\) / 10 !== geo\\.d \\?",
++  "replace": "false ?",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ9",
++  "name": "a handgun shot keeps the map's distance",
++  "file": "src/rules/rules-tools.js",
++  "find": "handgunHitChance\\(map \\? Math\\.max\\(1, map\\.d\\) : Number\\(a\\.shot_m\\)",
++  "replace": "handgunHitChance(Number(a.shot_m)",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ10",
++  "name": "a shut wall stops a handgun shot",
++  "file": "src/rules/rules-tools.js",
++  "find": "if \\(map\\?\\.wall\\)\\s*return `A wall stands between \\$\\{a\\.who\\} and \\$\\{a\\.shot_at\\}",
++  "replace": "if (false) return `A wall stands between ${a.who} and ${a.shot_at}",
++  "miss": "where people stand is the state's",
++  "test": "engine"
++ },
++ {
++  "id": "RJ11",
++  "name": "Chase keeps the map's distance",
++  "file": "src/rules/rules-tools.js",
++  "find": "gap = map\\?\\.d \\?\\? a\\.gap_m;",
++  "replace": "gap = a.gap_m ?? map?.d;",
++  "miss": "where people stand is the state's",
++  "test": "engine"
+  }
+ ]

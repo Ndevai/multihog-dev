@@ -2,7 +2,8 @@
 // recall), whether the arguments that decide each outcome are right, and whether it stays quiet when nothing is in doubt.
 // A call counts as made only when it would run: known tool, required arguments present, arguments passing the schema check.
 import { QUESTION_SYSTEM, questionPrompt, rawCalls, pickTools } from './question-pass.js';
-import { REGISTRY } from './rules-tools.js';
+import { REGISTRY, fittedTool } from './rules-tools.js';
+import { routedTools } from './router.js';
 import { checkArgs } from './tool-schema.js';
 import { EVAL_SCENES, EVAL_TRACKER, type Check, type EvalScene } from './eval-scenes.js';
 
@@ -72,12 +73,19 @@ export async function runEval(send: (system: string, user: string) => Promise<st
         if (stopped()) { scenes = scenes.slice(0, i); break; }
         const chat: STMessage[] = [{ name: 'NARRATOR', mes: s.context }, { is_user: true, name: 'PLAYER', mes: s.player }];
         let text = '', failedRequest = false;
-        // The same two steps as play: the tool-picking call, then the question call with full arguments for the picked tools
-        // only (before 2026-10-19 the eval showed every tool in full, about 15,000 tokens, which play never does).
+        // The same two steps as play: the tools the router and the scene's words offer, or the tool-picking call when the router
+        // finds no verb, then the question call with full arguments for those tools only (before 2026-10-19 the eval showed every
+        // tool in full, about 15,000 tokens, which play never does; before 2026-10-27 it always asked the picker, which play asks
+        // only when nothing routes).
         let only: Set<string> | undefined;
-        try { only = await pickTools(chat, send) ?? undefined; text = await send(QUESTION_SYSTEM, questionPrompt(chat, '', s.tracker ?? EVAL_TRACKER, only)); } catch (e) { failedRequest = true; console.warn('[Rules eval] scene', s.id, e); }
+        const tracker = s.tracker ?? EVAL_TRACKER, cast = [...(EVAL_TRACKER.match(/\[CAST\]([\s\S]*?)\[\/CAST\]/)?.[1] ?? '').matchAll(/^([A-Z][a-z]+)\b/gm)].map(m => m[1]!);
+        try {
+            // The tracker's first cast member is the player's character.
+            only = routedTools(s.player, n => !!fittedTool(n), cast, [s.context], [s.context], cast[0] ?? '') ?? await pickTools(chat, send) ?? undefined;
+            text = await send(QUESTION_SYSTEM, questionPrompt(chat, '', tracker, only));
+        } catch (e) { failedRequest = true; console.warn('[Rules eval] scene', s.id, e); }
         const r = scoreScene(s, rawCalls(text));
-        if (only) for (const e of s.expect) if (!only.has(e.tool)) r.failed.unshift(`picking step left out ${e.tool}`);
+        if (only) for (const e of s.expect) if (!only.has(e.tool)) r.failed.unshift(`the offered tools left out ${e.tool}`);
         if (failedRequest) r.invalid.push('request failed');
         else if (!/"calls"/.test(text)) r.invalid.push('no JSON with "calls"');
         results.push(r);

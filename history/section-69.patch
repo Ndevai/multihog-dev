@@ -1,0 +1,585 @@
+diff --git a/docs/constants.md b/docs/constants.md
+index c5d6c15..652a2f6 100644
+--- a/docs/constants.md
++++ b/docs/constants.md
+@@ -423,16 +423,16 @@ Assumed and fitted ones carry a range; a call that uses them is rerun at both en
+ | rules-tools.ts | 1388 | assumed | supports more than one, each is equally likely [ASSUMED: no published rate of misreading per context]. Context usually |
+ | rules-tools.ts | 1442 | assumed | Lavrijsen 2015, the hours behind lastsWords) [ASSUMED shape]; [BODY] shows it until it runs out (E30). The same study: |
+ | rules-tools.ts | 1546 | assumed | Under a tenth of a day, in hours of a 10-hour working day [ASSUMED day length]. |
+-| rules-tools.ts | 1840 | assumed | the character's birth decade, age 30 when unknown [ASSUMED]. |
+-| rules-tools.ts | 1946 | assumed | [ASSUMED: a percentile read as a log-odds shift]. |
+-| rules-tools.ts | 1952 | assumed | in daily life as the young) [ASSUMED: no shift]. |
+-| rules-tools.ts | 1956 | assumed | character feels fear. Intentions keep their rate [ASSUMED]. Sadness enters nothing: no meta-analytic effect on such |
+-| rules-tools.ts | 2036 | assumed | Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED]. |
+-| rules-tools.ts | 2111 | assumed | there), counts as a witness the helper knows of [ASSUMED: seeing them is believing they witness it]. |
+-| rules-tools.ts | 2315 | assumed | Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex |
+-| rules-tools.ts | 2426 | assumed | A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it. |
+-| rules-tools.ts | 2605 | assumed | fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_k |
+-| rules-tools.ts | 2705 | assumed | load_kg: { type: 'number', description: 'The load, kg (a person\'s mass; twice it for a jump or a drop onto it [ASSUMED])' }, |
++| rules-tools.ts | 1844 | assumed | the character's birth decade, age 30 when unknown [ASSUMED]. |
++| rules-tools.ts | 1950 | assumed | [ASSUMED: a percentile read as a log-odds shift]. |
++| rules-tools.ts | 1956 | assumed | in daily life as the young) [ASSUMED: no shift]. |
++| rules-tools.ts | 1960 | assumed | character feels fear. Intentions keep their rate [ASSUMED]. Sadness enters nothing: no meta-analytic effect on such |
++| rules-tools.ts | 2040 | assumed | Story dates (dd/mm/yyyy) parse to minutes from year 1; a bare "Day N" count stays below 146 097 days (400 years) [ASSUMED]. |
++| rules-tools.ts | 2115 | assumed | there), counts as a witness the helper knows of [ASSUMED: seeing them is believing they witness it]. |
++| rules-tools.ts | 2319 | assumed | Outside England and Wales around 1881 (±40 years [ASSUMED]) the census does not describe the people: age and sex |
++| rules-tools.ts | 2430 | assumed | A failed climb ends where the grip went: a height drawn evenly over the climb [ASSUMED], and the fall from it. |
++| rules-tools.ts | 2609 | assumed | fires.push({ fuel: c.n, kgh: f.kg_per_hour, C: pct('C', 12.011), H: pct('H', 1.008), O: pct('O', 15.999), coEF: f.co_g_per_kg ?? 0, note: f.co_g_per_k |
++| rules-tools.ts | 2709 | assumed | load_kg: { type: 'number', description: 'The load, kg (a person\'s mass; twice it for a jump or a drop onto it [ASSUMED])' }, |
+ | scene-fit.ts | 12 | assumed | /** Hand guns in Europe [ASSUMED: from 1350]: the gunshot's sound and the handgun shot's line of the brief start then. */ |
+ | scene-fit.ts | 28 | assumed | Electric light in homes and offices, the levels vision.ts holds for them [ASSUMED: from the 1880s]; asphalt paving |
+ | scene-fit.ts | 29 | assumed | [ASSUMED: Paris, 1854]. |
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 66fd2f7..63f985c 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1107,6 +1107,8 @@ The natural voice (2026-11-12 (132), Pocket TTS; since (138) computed from the b
+ 
+ Feelings in the voice (2026-11-13 (139); `averaged-person.ts` bodyRecording's emotion, `emotion.ts` VOCAL_FAMILY and voiceFeelingTouched, `index.ts` feelingOf, Appraise). A said line is spoken with a feeling: one the narrator's voice mark names in it (prosody.ts, full strength), else the speaker's newest feeling still running (Appraise), its OCC type heard as one of Juslin & Laukka's five vocal families (2003; anger, fear, happiness, sadness, tenderness; the table follows the OCC groups [ASSUMED]: the nearest family by Warriner et al.'s valence, arousal and dominance agrees for 10 of the 22 types and puts distress nearest anger), at its strength (1 when the event is central to a goal, standard or taste, 0.5 when it touches one: voiceFeelingTouched, assumed; Appraise now keeps it). Each family is an averaged person made like the neutral one, from the same 16 EARS speakers' emotional free speech (anger, fear, amusement, sadness, adoration; middle 10 s, fetched by byte ranges from EARS's release archives), each take's melody measured from that speaker's own neutral session so the rise or fall is kept, then aligned frame by frame to the neutral file with each frame's local duration (voices/emotion-<family>.bin, 1.15 MB each, handed to the player: CC BY-NC). The voice moves from neutral toward the family by the strength: each frame's duration, melody, envelope (ln) and aperiodicity. Measured before Pocket TTS's copy (the woman of 30, full strength, against neutral): anger +7.6 semitones and +5.8 dB above 1 kHz; happiness +4.9, range +1.4; fear +2.9, range −0.9; sadness +0.9, range −1.9, 11 % longer; tenderness +0.4, range −2.4, 7 % longer; half strength about half. Juslin & Laukka's cues: anger and happiness high and varied, fear high and narrow, sadness and tenderness narrow and slow, as here; sadness here is not lower in pitch, and fear and happiness not faster. After the copy: anger +8.4, happiness +7.0, fear +3.3, sadness +1.7 with the range 6.3 narrower, tenderness +1.5 with the range 5.5 narrower. Pocket TTS keeps an emotion it copies: from two EARS speakers' recordings, the copies' pitch shifts follow the recordings' (anger +16.7 against +14.4 semitones, disgust +13.0 against +13.9), and so does the high-frequency energy; one take of 30 failed (fear −9.3 against +4.2), which the 16-speaker average dilutes. The real extension in the stand-in: angry Tom's line 8.6 semitones above his neutral line and 6.1 dB brighter above 1 kHz, typing within 18 ms of the sound; the first line waits 11.8 s while the voices load. Check: voice-body V13; negative controls EM1–EM6, AP5; emotions-woman.wav.
+ 
++Speaking habits (2026-11-13 (140); `pocket.ts` HABITS and habitsOf, `averaged-person.ts` pauseFrames, BodySize's spanZ, pauseZ, breathZ). Each person draws, once, their melody range, time in pauses and breathiness against their sex, from the spread between 96 native English EARS speakers measured on one minute of each of two free monologues (the two minutes' disagreement taken out): melody range men 8.31 st (SD 1.31), women 8.96 (2.35); pause share (Praat's silences, −25 dB, 0.15 s or more) men 0.393 (0.071), women 0.417 (0.098); breathiness (WORLD aperiodicity 0.5–3 kHz) −28.5 and −30.0 dB (SD 1.03 both); nearly independent of each other and of height and age (|r| ≤ 0.19). The voice scales the melody, lengthens or shortens the pause frames by the pause share's odds, and shifts the aperiodicity. Check: voice-body V14; negative controls HB1–HB3.
++
+ Heard height of a child (2026-11-12 (133); `voice-body.ts` speakingFactsOf). Someone whose height the story has not set but whose sex it has is heard as the mean adult of that sex grown to the share of adult height their age gives (growth.ts heightShare with their own timing): a girl of 11 at 142.2 cm, 12 at 149.4, 14 at 160.8, an adult at 163.8; until (133) every such person, a child included, was heard at the adult's height. Check: voice-body V11; negative control VB18.
+ 
+ Children's pace (2026-11-12 (136); `voice-body.ts` childRate). A child's syllables a second are the adult's × the median articulation rate at their age over adults' 3.6 (Mahr, Rathouz & Hustad 2021, 570 children in sentence repetition: 2.7 at 36 months, 3.3 at 96, adult-like by about 10): 0.75 at 3, 0.82 at 5, 0.92 at 8, 1 from 10; the adult age trend (−0.079 % a year, measured from 16 to 69) from 16 only (until (136) it ran below 16 and made children faster). Check: voice-body V12; negative controls VB19, VB20.
+diff --git a/docs/progress.md b/docs/progress.md
+index 7a202ca..fe1883b 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,11 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-13 (140), Claude
++- Changed: each person's speaking habits (melody range, pauses, breathiness) drawn once from the spread measured between 96 EARS speakers on two minutes of free speech each, applied in the reshape; BodySize draws them, the voice draws the same from the salt where never made.
++- Checked: voice-body 15 (V14 new); negative controls HB1–HB3; all suites.
++- Next: the player's ear on how distinct characters now sound.
++
+ ## 2026-11-13 (139), Claude
+ - The player: go with emotion next; they will not test on Termux for now.
+ - Changed: the natural voice carries feelings: `averaged-person.ts` (emotion files with each frame's duration; bodyRecording blends neutral toward a family by the strength), `emotion.ts` VOCAL_FAMILY (the 22 OCC types in Juslin & Laukka's five) and voiceFeelingTouched (registered), Appraise keeps each feeling's strength, `index.ts` feelingOf (a voice mark's feeling first, else the speaker's newest) and the five files loaded from voices/, `voice-worker.ts` the families; five files made here and handed over (history/review-tests/causal-voice: fetch_emo.py with zipranges.py, build_emo.py, write_emo.py).
+diff --git a/history/review-tests/causal-voice/fetch_minutes.py b/history/review-tests/causal-voice/fetch_minutes.py
+new file mode 100644
+index 0000000..30a4d1a
+--- /dev/null
++++ b/history/review-tests/causal-voice/fetch_minutes.py
+@@ -0,0 +1,15 @@
++# One minute from the middle of each of two free monologues (freeform_speech_01 and _02) per native English EARS speaker.
++import sys, os, json, numpy as np, soundfile as sf
++sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
++from zipranges import RangeZip, read_pcm_slice
++meta = json.load(open('ears/speaker_statistics.json')); os.makedirs('minutes', exist_ok=True)
++for sid, m in sorted(meta.items()):
++    if m['native language'] not in ('american english', 'british english') or m['gender'] not in ('male', 'female'): continue
++    if all(os.path.exists(f'minutes/{sid}_{k}.wav') for k in ('01', '02')): continue
++    try:
++        z = RangeZip(f'https://github.com/facebookresearch/ears_dataset/releases/download/dataset/{sid}.zip')
++        for k in ('01', '02'):
++            name = f'{sid}/freeform_speech_{k}.wav'; x, fs, fmt = read_pcm_slice(z, name, 0, 0.01); bps = fs * fmt[0] // 8; dur = z.members[name][2] / bps
++            x, fs, fmt = read_pcm_slice(z, name, max(0, dur / 2 - 30), 60); sf.write(f'minutes/{sid}_{k}.wav', x, fs, subtype='PCM_16')
++        print(sid, 'ok', flush=True)
++    except Exception as ex: print(sid, 'failed', ex, flush=True)
+diff --git a/history/review-tests/causal-voice/habits2.py b/history/review-tests/causal-voice/habits2.py
+new file mode 100644
+index 0000000..ac38685
+--- /dev/null
++++ b/history/review-tests/causal-voice/habits2.py
+@@ -0,0 +1,48 @@
++# Speaking habits on one minute from each of two free monologues per native English EARS speaker: melody range (Praat two-pass
++# pitch, 5-95 %, semitones), pause share (silences of 150 ms or more, 35 dB under the minute's loudest, over the speech's span),
++# breathiness (WORLD D4C aperiodicity, mean dB 500-3000 Hz over voiced frames; DIO + StoneMask pitch for speed). A person's
++# habit is the mean of the two minutes; the spread between people with the minutes' disagreement taken out:
++# var(true) = var(mean) - var(minute 1 - minute 2) / 4. Within each sex; the habits' correlations with each other, height, age.
++import json, glob, numpy as np, soundfile as sf, parselmouth as pm, warnings, scipy.signal as S
++warnings.filterwarnings('ignore'); import pyworld as pw
++meta = json.load(open('ears/speaker_statistics.json'))
++H = {"< 5'": 57.5, "5' - 5'3": 61.5, "5'4 - 5'7": 65.5, "5'8 - 5'11": 69.5, "6' - 6'3": 73.5}
++A = {'18-25': 21.5, '26-35': 30.5, '36-45': 40.5, '46-55': 50.5, '56-65': 60.5, '66-75': 70.5}
++def habits(x, fs):
++    s = pm.Sound(x, fs); f1 = s.to_pitch_ac(pitch_floor=60, pitch_ceiling=700).selected_array['frequency']; f1 = f1[f1 > 0]
++    f = s.to_pitch_ac(pitch_floor=max(40, 0.75 * np.percentile(f1, 25)), pitch_ceiling=1.5 * np.percentile(f1, 75)).selected_array['frequency']; f = f[f > 0]
++    span = 12 * np.log2(np.percentile(f, 95) / np.percentile(f, 5))
++    # Pauses by Praat's own silence finder (To TextGrid (silences): threshold -25 dB under the loudest point, its default, as De
++    # Jong & Wempe 2009's speech-rate script also takes it; silences of 0.15 s or more, Mahr et al. 2021's floor; sounding 0.1 s),
++    # over the span from the first sounding stretch to the last.
++    from parselmouth.praat import call
++    tg = call(s, 'To TextGrid (silences)', 100, 0.0, -25.0, 0.15, 0.1, 'silent', 'sounding')
++    iv = [(call(tg, 'Get start time of interval', 1, i), call(tg, 'Get end time of interval', 1, i), call(tg, 'Get label of interval', 1, i)) for i in range(1, call(tg, 'Get number of intervals', 1) + 1)]
++    snd = [v for v in iv if v[2] == 'sounding']; t0, t1 = snd[0][0], snd[-1][1]
++    pause = sum(max(0.0, min(b, t1) - max(a, t0)) for a, b, l in iv if l == 'silent')
++    seg = [t1 - t0]
++    y = S.resample_poly(x, 1, 2) if fs == 48000 else S.resample_poly(x, 24000, fs); y = np.ascontiguousarray(y, dtype=np.float64)
++    f0, t = pw.dio(y, 24000, f0_floor=60, f0_ceil=600, frame_period=5.0); f0 = pw.stonemask(y, f0, t, 24000); ap = pw.d4c(y, f0, t, 24000)
++    band = slice(int(500 / 24000 * 1024), int(3000 / 24000 * 1024)); v = f0 > 0
++    return span, pause / seg[0], float(np.mean(20 * np.log10(np.maximum(ap[v][:, band], 1e-3))))
++rows = []
++for sid, m in sorted(meta.items()):
++    fs1, fs2 = f'minutes/{sid}_01.wav', f'minutes/{sid}_02.wav'
++    try: x1, r1 = sf.read(fs1); x2, r2 = sf.read(fs2)
++    except Exception: continue
++    a, b = habits(x1, r1), habits(x2, r2)
++    rows.append({'id': sid, 'sex': m['gender'], 'height': H.get(m['height'], np.nan) * 2.54, 'age': A.get(m['age'], np.nan), 'a': a, 'b': b}); print(sid, [round(v, 3) for v in a], [round(v, 3) for v in b], flush=True)
++json.dump(rows, open('habits2.json', 'w'))
++names = ['melody range (st)', 'pause share', 'breathiness (dB)']; summary = {}
++for sex in ('male', 'female'):
++    R = [r for r in rows if r['sex'] == sex]
++    for k, nm in enumerate(names):
++        Mn = np.array([(r['a'][k] + r['b'][k]) / 2 for r in R]); D = np.array([r['a'][k] - r['b'][k] for r in R])
++        tr = max(0.0, Mn.var(ddof=1) - D.var(ddof=1) / 4); summary.setdefault(sex, {})[nm] = {'mean': float(Mn.mean()), 'sd': float(np.sqrt(tr)), 'raw': float(Mn.std(ddof=1)), 'noise': float(np.sqrt(D.var(ddof=1) / 4)), 'n': len(R), 'r12': float(np.corrcoef([r['a'][k] for r in R], [r['b'][k] for r in R])[0, 1])}
++        d = summary[sex][nm]; print(f"{sex:6s} {nm:18s} mean {d['mean']:7.3f}  SD between people {d['sd']:6.3f} (raw {d['raw']:.3f}, noise {d['noise']:.3f}; minute-to-minute r {d['r12']:.2f})  n={d['n']}")
++X = np.array([[(r['a'][k] + r['b'][k]) / 2 for k in range(3)] for r in rows]); sx = np.array([r['sex'] == 'male' for r in rows]); ht = np.array([r['height'] for r in rows]); ag = np.array([r['age'] for r in rows])
++for s_ in (True, False): X[sx == s_] -= X[sx == s_].mean(0)
++ok = ~np.isnan(ht) & ~np.isnan(ag)
++print('within sex: range~pause %.2f range~breath %.2f pause~breath %.2f' % (np.corrcoef(X[:, 0], X[:, 1])[0, 1], np.corrcoef(X[:, 0], X[:, 2])[0, 1], np.corrcoef(X[:, 1], X[:, 2])[0, 1]))
++for k, nm in enumerate(names): print(f'  {nm:18s} ~ height {np.corrcoef(X[ok, k], ht[ok])[0, 1]:+.2f}  ~ age {np.corrcoef(X[ok, k], ag[ok])[0, 1]:+.2f}')
++json.dump(summary, open('habits2-summary.json', 'w'), indent=1)
+diff --git a/history/review-tests/causal-voice/zipranges.py b/history/review-tests/causal-voice/zipranges.py
+index 046f77a..c932695 100644
+--- a/history/review-tests/causal-voice/zipranges.py
++++ b/history/review-tests/causal-voice/zipranges.py
+@@ -33,3 +33,25 @@ if __name__ == '__main__':
+     z = RangeZip('https://github.com/facebookresearch/ears_dataset/releases/download/dataset/p002.zip')
+     emo = sorted(n for n in z.members if 'emo_' in n and 'freeform' in n)
+     print(len(z.members), 'members;', len(emo), 'emotional free speech:', [(n, round(z.members[n][2] / 1e6, 1)) for n in emo[:6]])
++
++def read_pcm_slice(z, name, start_s, seconds):
++    """A stored (uncompressed) WAV member's samples from start_s for `seconds`, by range: its header, then only those bytes."""
++    import numpy as np
++    meth, csize, usize, off = z.members[name]
++    if meth != 0: raise ValueError('compressed member')
++    h = z.get(off, off + 29); nl, el = struct.unpack('<HH', h[26:30]); base = off + 30 + nl + el
++    head = z.get(base, base + 4095); p = 12; fmt = None
++    while p + 8 <= len(head):
++        cid, size = head[p:p + 4], struct.unpack('<I', head[p + 4:p + 8])[0]
++        if cid == b'fmt ': fmt = struct.unpack('<HHIIHH', head[p + 8:p + 24])
++        if cid == b'data': data0 = base + p + 8; break
++        p += 8 + size + (size & 1)
++    tag, ch, fs, bits = fmt[0], fmt[1], fmt[2], fmt[5]; bpf = ch * bits // 8
++    a = data0 + int(start_s * fs) * bpf; b = a + int(seconds * fs) * bpf - 1; raw = z.get(a, b)
++    if tag == 3 or (tag == 0xFFFE and bits == 32 and False): x = np.frombuffer(raw, dtype='<f4').astype(np.float64)
++    elif bits == 16: x = np.frombuffer(raw, dtype='<i2').astype(np.float64) / 32768
++    elif bits == 24:
++        u = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3).astype(np.int32); v = u[:, 0] | (u[:, 1] << 8) | (u[:, 2] << 16); v = np.where(v >= 1 << 23, v - (1 << 24), v); x = v.astype(np.float64) / (1 << 23)
++    elif bits == 32: x = np.frombuffer(raw, dtype='<i4').astype(np.float64) / 2 ** 31
++    else: raise ValueError(f'{bits}-bit')
++    return (x.reshape(-1, ch).mean(1) if ch > 1 else x), fs, (bits, tag)
+diff --git a/src/index.js b/src/index.js
+index 45ed7e8..afa725d 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -11,7 +11,7 @@ import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait,
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady, voiceHarmonics, speakingFactsOf } from './rules/voice-body.js';
+ import { speechVoice, speechVoiceFile, speechTimes, scaleTimes } from './rules/speech.js';
+-import { POCKET_MODEL, bodyTarget, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
++import { POCKET_MODEL, bodyTarget, habitsOf, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
+ import { blipPlan, BLIP_RAMP_S } from './rules/blips.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong } from './rules/music.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -24,7 +24,7 @@ import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM } from './r
+ import { removeWithDescendants, outcomeLine, bornIn } from './rules/counterfactual.js';
+ import { firstYear, earlier, loadChat } from './rules/history.js';
+ import { loadPopulation } from './rules/population.js';
+-import { seededRng } from './rules/body-engine.js';
++import { seededRng, gauss } from './rules/body-engine.js';
+ import { loadColex } from './rules/colex.js';
+ import { loadLanguageYears } from './rules/languages.js';
+ import { loadThings } from './rules/things.js';
+@@ -863,7 +863,7 @@ function makeBodyVoice(voice, body, emotion = null) {
+     let made = voicesMade.get(voice);
+     if (!made) {
+         made = (async () => {
+-            const key = `encoding:averaged-person:2:${voice}`, kept = await storedModel(key);
++            const key = `encoding:averaged-person:3:${voice}`, kept = await storedModel(key);
+             if (kept) {
+                 const r = await askWorker({ type: 'voice', voice, embedding: new Float32Array(kept) });
+                 if (!r.error)
+@@ -889,7 +889,10 @@ function naturalJob(unit) {
+     const facts = speakingFactsOf(p), v = voiceOf({ ...facts, language: facts.language ?? 'english' }), text = spokenText(unit.textContent ?? '');
+     if (!v.f0Hz || !v.tractCm || !/\p{L}/u.test(text))
+         return null;
+-    const body = bodyTarget(v.f0Hz, v.tractCm, v.sylPerS), base = `${body.f0}|${body.tractCm}|${body.sylPerS}`;
++    // The person's habits: their own draws (BodySize), or the same draws from the chat's salt and the name where never made.
++    const draw = (k) => gauss(seededRng(`${saltOf()}:${k}:${who}`));
++    const habits = habitsOf(p.sex, p.spanZ ?? draw('span'), p.pauseZ ?? draw('pause'), p.breathZ ?? draw('breath'));
++    const body = { ...bodyTarget(v.f0Hz, v.tractCm, v.sylPerS), ...habits }, base = `${body.f0}|${body.tractCm}|${body.sylPerS}|${habits.span}|${habits.pause}|${habits.breathDb}`;
+     // The feeling is read once the voices have loaded (the families' files known); the line waits for it.
+     const key = `${base}|${text}|${p.feelings?.map(f => `${f.type}:${f.strength ?? ''}`).join(',') ?? ''}|${unit.querySelector('[data-feeling]')?.getAttribute('data-feeling') ?? ''}`;
+     let job = voiceCache.get(key), voice = base;
+diff --git a/src/index.ts b/src/index.ts
+index 5ea24fc..23c29d7 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -15,7 +15,7 @@ import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait,
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady, voiceHarmonics, speakingFactsOf } from './rules/voice-body.js';
+ import { speechVoice, speechVoiceFile, speechTimes, scaleTimes } from './rules/speech.js';
+-import { POCKET_MODEL, bodyTarget, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
++import { POCKET_MODEL, bodyTarget, habitsOf, freeCacheLength, spokenText, pocketJob } from './rules/pocket.js';
+ import { blipPlan, BLIP_RAMP_S } from './rules/blips.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong, type Cues } from './rules/music.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -29,7 +29,7 @@ import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM, type Entry
+ import { removeWithDescendants, outcomeLine, bornIn, type Outcome } from './rules/counterfactual.js';
+ import { firstYear, earlier, loadChat } from './rules/history.js';
+ import { loadPopulation } from './rules/population.js';
+-import { seededRng } from './rules/body-engine.js';
++import { seededRng, gauss } from './rules/body-engine.js';
+ import { loadColex } from './rules/colex.js';
+ import { loadLanguageYears } from './rules/languages.js';
+ import { loadThings } from './rules/things.js';
+@@ -708,11 +708,11 @@ function feelingOf(unit: Element, p: Person): { family: string; w: number } | nu
+ }
+ /** A body's voice in the worker: the averaged person spoken with the body's causes (and a feeling, where one is heard), encoded;
+  * the encoding kept in IndexedDB. */
+-function makeBodyVoice(voice: string, body: { f0: number; tractCm: number; sylPerS: number }, emotion: { family: string; w: number } | null = null): Promise<void> {
++function makeBodyVoice(voice: string, body: { f0: number; tractCm: number; sylPerS: number; span?: number; pause?: number; breathDb?: number }, emotion: { family: string; w: number } | null = null): Promise<void> {
+     let made = voicesMade.get(voice);
+     if (!made) {
+         made = (async () => {
+-            const key = `encoding:averaged-person:2:${voice}`, kept = await storedModel(key);
++            const key = `encoding:averaged-person:3:${voice}`, kept = await storedModel(key);
+             if (kept) { const r = await askWorker({ type: 'voice', voice, embedding: new Float32Array(kept) }); if (!r.error) return; }
+             const r = await askWorker({ type: 'voice', voice, body, ...emotion ? { emotion } : {} });
+             if (r.error || !r.embedding) throw new Error(r.error ?? 'no encoding');
+@@ -731,7 +731,10 @@ function naturalJob(unit: Element): { key: string; job: Promise<Float32Array | n
+     // The line is English (the model's language): its pace is English's for someone whose language the story has not set.
+     const facts = speakingFactsOf(p), v = voiceOf({ ...facts, language: facts.language ?? 'english' }), text = spokenText(unit.textContent ?? '');
+     if (!v.f0Hz || !v.tractCm || !/\p{L}/u.test(text)) return null;
+-    const body = bodyTarget(v.f0Hz, v.tractCm, v.sylPerS), base = `${body.f0}|${body.tractCm}|${body.sylPerS}`;
++    // The person's habits: their own draws (BodySize), or the same draws from the chat's salt and the name where never made.
++    const draw = (k: string) => gauss(seededRng(`${saltOf()}:${k}:${who}`));
++    const habits = habitsOf(p.sex, p.spanZ ?? draw('span'), p.pauseZ ?? draw('pause'), p.breathZ ?? draw('breath'));
++    const body = { ...bodyTarget(v.f0Hz, v.tractCm, v.sylPerS), ...habits }, base = `${body.f0}|${body.tractCm}|${body.sylPerS}|${habits.span}|${habits.pause}|${habits.breathDb}`;
+     // The feeling is read once the voices have loaded (the families' files known); the line waits for it.
+     const key = `${base}|${text}|${p.feelings?.map(f => `${f.type}:${f.strength ?? ''}`).join(',') ?? ''}|${unit.querySelector('[data-feeling]')?.getAttribute('data-feeling') ?? ''}`;
+     let job = voiceCache.get(key), voice = base;
+diff --git a/src/rules/averaged-person.js b/src/rules/averaged-person.js
+index c89dc3e..e2c6574 100644
+--- a/src/rules/averaged-person.js
++++ b/src/rules/averaged-person.js
+@@ -39,6 +39,37 @@ export function aperiodicityRow(p, s) {
+     }
+     return a;
+ }
++const pauseCache = new WeakMap();
++/** The averaged person's pause frames: unvoiced, 25 dB or more under its loudest frame (the envelope's power), in a run of 30
++ * frames (150 ms) or more, as the habits were measured (Praat's silence threshold, Mahr et al. 2021's pause floor). */
++export function pauseFrames(p) {
++    let out = pauseCache.get(p);
++    if (out)
++        return out;
++    const db = new Float64Array(p.frames);
++    for (let f = 0; f < p.frames; f++) {
++        let pw = 0;
++        for (let b = 0; b < p.envBins; b++)
++            pw += Math.exp(2 * p.env[f * p.envBins + b] / 1000);
++        db[f] = 10 * Math.log10(pw + 1e-30);
++    }
++    const top = Math.max(...db), quiet = (f) => !p.voiced[f] && db[f] < top - 25;
++    out = new Uint8Array(p.frames);
++    for (let f = 0; f < p.frames;) {
++        if (!quiet(f)) {
++            f++;
++            continue;
++        }
++        let g = f;
++        while (g < p.frames && quiet(g))
++            g++;
++        if (g - f >= 30)
++            out.fill(1, f, g);
++        f = g;
++    }
++    pauseCache.set(p, out);
++    return out;
++}
+ /** The averaged person's movement spoken by a body: frames repeated or skipped to the body's pace, the melody about the body's
+  * pitch, the envelope read at f × (the body's tract ÷ the averaged person's), so a tract k times shorter puts every resonance k
+  * times higher (F ∝ 1 ÷ L, a tube's resonances), the aperiodicity as it was. With a feeling (`emotion`: a family's file aligned
+@@ -47,9 +78,9 @@ export function aperiodicityRow(p, s) {
+  * aperiodicity, its voicing (voiced past halfway). */
+ export function bodyRecording(p, t, seed = 1, emotion) {
+     const e = emotion?.e && emotion.e.frames === p.frames ? emotion.e : null, w = e ? Math.max(0, Math.min(1, emotion.w)) : 0;
+-    const start = new Float64Array(p.frames + 1);
++    const start = new Float64Array(p.frames + 1), pauses = t.pause != null && t.pause !== 1 ? pauseFrames(p) : null;
+     for (let i = 0; i < p.frames; i++)
+-        start[i + 1] = start[i] + (e?.dur ? (1 - w) + w * e.dur[i] : 1);
++        start[i + 1] = start[i] + (e?.dur ? (1 - w) + w * e.dur[i] : 1) * (pauses?.[i] ? t.pause : 1);
+     const stretch = p.own.sylPerS / t.sylPerS, T = Math.max(2, Math.round(start[p.frames] * stretch)), k = t.tractCm / p.own.tractCm;
+     const f0 = new Float64Array(T), sp = [], ap = [];
+     for (let i = 0, s = 0; i < T; i++) {
+@@ -57,7 +88,7 @@ export function bodyRecording(p, t, seed = 1, emotion) {
+         while (s < p.frames - 1 && start[s + 1] <= at)
+             s++;
+         const voiced = e ? (1 - w) * p.voiced[s] + w * e.voiced[s] > 0.5 : p.voiced[s] === 1, mel = e ? (1 - w) * p.melody[s] + w * e.melody[s] : p.melody[s];
+-        f0[i] = voiced ? Math.exp(mel + Math.log(t.f0)) : 0;
++        f0[i] = voiced ? Math.exp(mel * (t.span ?? 1) + Math.log(t.f0)) : 0;
+         const en = envelopeRow(p, s, k), an = aperiodicityRow(p, s);
+         if (e && w > 0) {
+             const ee = envelopeRow(e, s, k), ae = aperiodicityRow(e, s);
+@@ -66,6 +97,11 @@ export function bodyRecording(p, t, seed = 1, emotion) {
+                 an[b] = (1 - w) * an[b] + w * ae[b];
+             }
+         }
++        if (voiced && t.breathDb) {
++            const g = 10 ** (t.breathDb / 20);
++            for (let b = 0; b < an.length; b++)
++                an[b] = Math.min(0.999, an[b] * g);
++        }
+         sp.push(en);
+         ap.push(an);
+     }
+diff --git a/src/rules/averaged-person.ts b/src/rules/averaged-person.ts
+index 868c046..2820d74 100644
+--- a/src/rules/averaged-person.ts
++++ b/src/rules/averaged-person.ts
+@@ -46,8 +46,29 @@ export function aperiodicityRow(p: AveragedPerson, s: number): Float64Array {
+     }
+     return a;
+ }
+-/** The body a recording is made for: pitch (Hz) and tract (cm) on the averaged person's scale (free speech), pace. */
+-export interface BodyTarget { f0: number; tractCm: number; sylPerS: number }
++/** The body a recording is made for: pitch (Hz) and tract (cm) on the averaged person's scale (free speech), pace; and the
++ * person's habits (pocket.ts habitsOf): their melody range as a factor, their time in pauses as a factor, their breathiness
++ * as a shift of the aperiodicity (dB). */
++export interface BodyTarget { f0: number; tractCm: number; sylPerS: number; span?: number; pause?: number; breathDb?: number }
++const pauseCache = new WeakMap<AveragedPerson, Uint8Array>();
++/** The averaged person's pause frames: unvoiced, 25 dB or more under its loudest frame (the envelope's power), in a run of 30
++ * frames (150 ms) or more, as the habits were measured (Praat's silence threshold, Mahr et al. 2021's pause floor). */
++export function pauseFrames(p: AveragedPerson): Uint8Array {
++    let out = pauseCache.get(p);
++    if (out) return out;
++    const db = new Float64Array(p.frames);
++    for (let f = 0; f < p.frames; f++) { let pw = 0; for (let b = 0; b < p.envBins; b++) pw += Math.exp(2 * p.env[f * p.envBins + b]! / 1000); db[f] = 10 * Math.log10(pw + 1e-30); }
++    const top = Math.max(...db), quiet = (f: number) => !p.voiced[f] && db[f]! < top - 25;
++    out = new Uint8Array(p.frames);
++    for (let f = 0; f < p.frames;) {
++        if (!quiet(f)) { f++; continue; }
++        let g = f; while (g < p.frames && quiet(g)) g++;
++        if (g - f >= 30) out.fill(1, f, g);
++        f = g;
++    }
++    pauseCache.set(p, out);
++    return out;
++}
+ /** The averaged person's movement spoken by a body: frames repeated or skipped to the body's pace, the melody about the body's
+  * pitch, the envelope read at f × (the body's tract ÷ the averaged person's), so a tract k times shorter puts every resonance k
+  * times higher (F ∝ 1 ÷ L, a tube's resonances), the aperiodicity as it was. With a feeling (`emotion`: a family's file aligned
+@@ -56,20 +77,21 @@ export interface BodyTarget { f0: number; tractCm: number; sylPerS: number }
+  * aperiodicity, its voicing (voiced past halfway). */
+ export function bodyRecording(p: AveragedPerson, t: BodyTarget, seed = 1, emotion?: { e: AveragedPerson; w: number }): Float32Array {
+     const e = emotion?.e && emotion.e.frames === p.frames ? emotion.e : null, w = e ? Math.max(0, Math.min(1, emotion!.w)) : 0;
+-    const start = new Float64Array(p.frames + 1);
+-    for (let i = 0; i < p.frames; i++) start[i + 1] = start[i]! + (e?.dur ? (1 - w) + w * e.dur[i]! : 1);
++    const start = new Float64Array(p.frames + 1), pauses = t.pause != null && t.pause !== 1 ? pauseFrames(p) : null;
++    for (let i = 0; i < p.frames; i++) start[i + 1] = start[i]! + (e?.dur ? (1 - w) + w * e.dur[i]! : 1) * (pauses?.[i] ? t.pause! : 1);
+     const stretch = p.own.sylPerS / t.sylPerS, T = Math.max(2, Math.round(start[p.frames]! * stretch)), k = t.tractCm / p.own.tractCm;
+     const f0 = new Float64Array(T), sp: Float64Array[] = [], ap: Float64Array[] = [];
+     for (let i = 0, s = 0; i < T; i++) {
+         const at = i / stretch;
+         while (s < p.frames - 1 && start[s + 1]! <= at) s++;
+         const voiced = e ? (1 - w) * p.voiced[s]! + w * e.voiced[s]! > 0.5 : p.voiced[s] === 1, mel = e ? (1 - w) * p.melody[s]! + w * e.melody[s]! : p.melody[s]!;
+-        f0[i] = voiced ? Math.exp(mel + Math.log(t.f0)) : 0;
++        f0[i] = voiced ? Math.exp(mel * (t.span ?? 1) + Math.log(t.f0)) : 0;
+         const en = envelopeRow(p, s, k), an = aperiodicityRow(p, s);
+         if (e && w > 0) {
+             const ee = envelopeRow(e, s, k), ae = aperiodicityRow(e, s);
+             for (let b = 0; b < en.length; b++) { en[b] = en[b]! ** (1 - w) * ee[b]! ** w; an[b] = (1 - w) * an[b]! + w * ae[b]!; }
+         }
++        if (voiced && t.breathDb) { const g = 10 ** (t.breathDb / 20); for (let b = 0; b < an.length; b++) an[b] = Math.min(0.999, an[b]! * g); }
+         sp.push(en); ap.push(an);
+     }
+     const y = synthesize(f0, sp, ap, p.fftSize, p.framePeriodMs, p.fs, Math.round(T * p.framePeriodMs * p.fs / 1000), seed);
+diff --git a/src/rules/pocket.js b/src/rules/pocket.js
+index 123858f..fecdb6b 100644
+--- a/src/rules/pocket.js
++++ b/src/rules/pocket.js
+@@ -127,6 +127,30 @@ export function bodyTarget(f0Hz, tractCm, sylPerS) {
+     const c = onCopiesScale(f0Hz, tractCm);
+     return { f0: Math.round(c.f0 * peek('speechRegister') * 10) / 10, tractCm: Math.round(c.tract * 100) / 100, sylPerS: Math.round(sylPerS * 100) / 100 };
+ }
++// ------------------------------------------------------------------------------------------------------------ the habits
++// Speaking habits that differ between people of the same body and feeling, measured on one minute from each of two free
++// monologues of 96 native English EARS speakers (history/review-tests/causal-voice/habits2.py): melody range (Praat, 5-95 %,
++// semitones), the share of time in pauses (150 ms or more, Mahr et al. 2021's floor), breathiness (WORLD's aperiodicity, 500-3000 Hz, voiced).
++// A person's habit is the mean of their two minutes; the spread between people is with the two minutes' disagreement taken
++// out (var(true) = var(mean) - var(difference) / 4), within each sex. Filled from the measurement: HABITS.
++// Measured (n = 38 men, 58 women): melody range men 8.31 (SD between people 1.31; raw 1.54, noise 0.81, the two minutes r 0.58),
++// women 8.96 (2.35; r 0.70); pause share men 0.393 (0.071; r 0.49), women 0.417 (0.098; r 0.63); breathiness men -28.5 dB
++// (1.03; r 0.89), women -30.0 (1.03; r 0.82). The habits are nearly independent of each other (|r| 0.19 at most, within sex)
++// and of height and age (|r| 0.12 at most), so they are drawn apart. Pauses by Praat's silence finder (To TextGrid
++// (silences), -25 dB under the loudest point, its default, as De Jong & Wempe 2009 take it; 0.15 s or more).
++export const HABITS = {
++    male: { span: { mean: 8.31, sd: 1.31 }, pause: { mean: 0.393, sd: 0.071 }, breath: { mean: -28.5, sd: 1.03 } },
++    female: { span: { mean: 8.96, sd: 2.35 }, pause: { mean: 0.417, sd: 0.098 }, breath: { mean: -30.0, sd: 1.03 } },
++};
++/** A person's habits from their draws (standard normal, against people of their sex): the melody range as a factor of the
++ * averaged person's, the time in pauses as a factor (the odds of the person's pause share over the odds of their sex's mean),
++ * and the breathiness as a shift (dB). An unknown sex takes the two sexes' mean. */
++export function habitsOf(sex, spanZ = 0, pauseZ = 0, breathZ = 0) {
++    const m = /^m/i.test(sex ?? ''), f = /^(f|w)/i.test(sex ?? ''), pick = (k) => m ? HABITS.male[k] : f ? HABITS.female[k] : { mean: (HABITS.male[k].mean + HABITS.female[k].mean) / 2, sd: (HABITS.male[k].sd + HABITS.female[k].sd) / 2 };
++    const sp = pick('span'), pa = pick('pause'), br = pick('breath'), odds = (p) => p / (1 - p);
++    const share = Math.min(0.6, Math.max(0.01, pa.mean + pa.sd * pauseZ));
++    return { span: Math.round(Math.max(0.3, 1 + spanZ * sp.sd / sp.mean) * 100) / 100, pause: Math.round(odds(share) / odds(pa.mean) * 100) / 100, breathDb: Math.round(br.sd * breathZ * 10) / 10 };
++}
+ /** The networks and their settings: the export's English bundle (english_2026-04) at a fixed revision, int8 where it exists
+  * (163 MB in all), 24 kHz, temperature 0.7 (the export's default). */
+ export const POCKET_MODEL = {
+diff --git a/src/rules/pocket.ts b/src/rules/pocket.ts
+index 106327a..9c116eb 100644
+--- a/src/rules/pocket.ts
++++ b/src/rules/pocket.ts
+@@ -98,6 +98,31 @@ export function bodyTarget(f0Hz: number, tractCm: number, sylPerS: number): { f0
+     const c = onCopiesScale(f0Hz, tractCm);
+     return { f0: Math.round(c.f0 * peek('speechRegister') * 10) / 10, tractCm: Math.round(c.tract * 100) / 100, sylPerS: Math.round(sylPerS * 100) / 100 };
+ }
++// ------------------------------------------------------------------------------------------------------------ the habits
++// Speaking habits that differ between people of the same body and feeling, measured on one minute from each of two free
++// monologues of 96 native English EARS speakers (history/review-tests/causal-voice/habits2.py): melody range (Praat, 5-95 %,
++// semitones), the share of time in pauses (150 ms or more, Mahr et al. 2021's floor), breathiness (WORLD's aperiodicity, 500-3000 Hz, voiced).
++// A person's habit is the mean of their two minutes; the spread between people is with the two minutes' disagreement taken
++// out (var(true) = var(mean) - var(difference) / 4), within each sex. Filled from the measurement: HABITS.
++// Measured (n = 38 men, 58 women): melody range men 8.31 (SD between people 1.31; raw 1.54, noise 0.81, the two minutes r 0.58),
++// women 8.96 (2.35; r 0.70); pause share men 0.393 (0.071; r 0.49), women 0.417 (0.098; r 0.63); breathiness men -28.5 dB
++// (1.03; r 0.89), women -30.0 (1.03; r 0.82). The habits are nearly independent of each other (|r| 0.19 at most, within sex)
++// and of height and age (|r| 0.12 at most), so they are drawn apart. Pauses by Praat's silence finder (To TextGrid
++// (silences), -25 dB under the loudest point, its default, as De Jong & Wempe 2009 take it; 0.15 s or more).
++export const HABITS = {
++    male: { span: { mean: 8.31, sd: 1.31 }, pause: { mean: 0.393, sd: 0.071 }, breath: { mean: -28.5, sd: 1.03 } },
++    female: { span: { mean: 8.96, sd: 2.35 }, pause: { mean: 0.417, sd: 0.098 }, breath: { mean: -30.0, sd: 1.03 } },
++} as const;
++/** A person's habits from their draws (standard normal, against people of their sex): the melody range as a factor of the
++ * averaged person's, the time in pauses as a factor (the odds of the person's pause share over the odds of their sex's mean),
++ * and the breathiness as a shift (dB). An unknown sex takes the two sexes' mean. */
++export function habitsOf(sex: string | undefined, spanZ = 0, pauseZ = 0, breathZ = 0): { span: number; pause: number; breathDb: number } {
++    const m = /^m/i.test(sex ?? ''), f = /^(f|w)/i.test(sex ?? ''), pick = (k: keyof typeof HABITS.male) => m ? HABITS.male[k] : f ? HABITS.female[k] : { mean: (HABITS.male[k].mean + HABITS.female[k].mean) / 2, sd: (HABITS.male[k].sd + HABITS.female[k].sd) / 2 };
++    const sp = pick('span'), pa = pick('pause'), br = pick('breath'), odds = (p: number) => p / (1 - p);
++    const share = Math.min(0.6, Math.max(0.01, pa.mean + pa.sd * pauseZ));
++    return { span: Math.round(Math.max(0.3, 1 + spanZ * sp.sd / sp.mean) * 100) / 100, pause: Math.round(odds(share) / odds(pa.mean) * 100) / 100, breathDb: Math.round(br.sd * breathZ * 10) / 10 };
++}
++
+ /** The networks and their settings: the export's English bundle (english_2026-04) at a fixed revision, int8 where it exists
+  * (163 MB in all), 24 kHz, temperature 0.7 (the export's default). */
+ export const POCKET_MODEL = {
+diff --git a/src/rules/rules-tools.js b/src/rules/rules-tools.js
+index 789faaa..3f014fc 100644
+--- a/src/rules/rules-tools.js
++++ b/src/rules/rules-tools.js
+@@ -1801,6 +1801,10 @@ export function registerRulesTools(enabled) {
+         // The folds' habitual stretch and the tract's size (voice-sound.ts), the causes the voice is computed from.
+         p.stretchZ ??= gauss(seededRng(`${store().salt}:stretch:${a.who}`));
+         p.tractZ ??= gauss(seededRng(`${store().salt}:tract:${a.who}`));
++        // The person's speaking habits (pocket.ts HABITS): melody range, time in pauses, breathiness, each from a stream of its own.
++        p.spanZ ??= gauss(seededRng(`${store().salt}:span:${a.who}`));
++        p.pauseZ ??= gauss(seededRng(`${store().salt}:pause:${a.who}`));
++        p.breathZ ??= gauss(seededRng(`${store().salt}:breath:${a.who}`));
+         const col = pigment(country, rng), looks = [col.eyes && `${col.eyes} eyes`, col.hair && `${col.hair} hair`].filter(Boolean).join(', ');
+         return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg${looks ? `, ${looks}` : ''}.`;
+     }));
+diff --git a/src/rules/rules-tools.ts b/src/rules/rules-tools.ts
+index 71bfb99..b5ce419 100644
+--- a/src/rules/rules-tools.ts
++++ b/src/rules/rules-tools.ts
+@@ -1608,6 +1608,10 @@ export function registerRulesTools(enabled: boolean): void {
+         // The folds' habitual stretch and the tract's size (voice-sound.ts), the causes the voice is computed from.
+         p.stretchZ ??= gauss(seededRng(`${store().salt}:stretch:${a.who}`));
+         p.tractZ ??= gauss(seededRng(`${store().salt}:tract:${a.who}`));
++        // The person's speaking habits (pocket.ts HABITS): melody range, time in pauses, breathiness, each from a stream of its own.
++        p.spanZ ??= gauss(seededRng(`${store().salt}:span:${a.who}`));
++        p.pauseZ ??= gauss(seededRng(`${store().salt}:pause:${a.who}`));
++        p.breathZ ??= gauss(seededRng(`${store().salt}:breath:${a.who}`));
+         const col = pigment(country, rng), looks = [col.eyes && `${col.eyes} eyes`, col.hair && `${col.hair} hair`].filter(Boolean).join(', ');
+         return `${a.who}: ${Math.round(r.heightCm)} cm, ${p.mass} kg${looks ? `, ${looks}` : ''}.`;
+     }));
+diff --git a/src/rules/types.ts b/src/rules/types.ts
+index a0caeb8..f6b0088 100644
+--- a/src/rules/types.ts
++++ b/src/rules/types.ts
+@@ -131,6 +131,11 @@ export interface Person {
+      *  BodySize first places them, each from a random stream of its own. */
+     stretchZ?: number;
+     tractZ?: number;
++    /** The person's speaking habits against people of their sex (pocket.ts HABITS): melody range, time in pauses, breathiness;
++     *  standard normal draws, made once (BodySize), or drawn from the chat's salt and the name where never made. */
++    spanZ?: number;
++    pauseZ?: number;
++    breathZ?: number;
+     /** The timing of the person's growth against their sex (growth.ts: the centre of their growth spurt), a z-score drawn once
+      *  when BodySize first places them, from a stream of its own. */
+     timingZ?: number;
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 7b4598a..62488ec 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -6218,5 +6218,32 @@
+   "replace": "distress: 'anger'",
+   "miss": "feelings in the voice",
+   "test": "voice-body"
++ },
++ {
++  "id": "HB1",
++  "name": "melody range applied",
++  "file": "src/rules/averaged-person.js",
++  "find": "Math\\.exp\\(mel\\ \\*\\ \\(t\\.span\\ \\?\\?\\ 1\\)\\ \\+\\ Math\\.log\\(t\\.f0\\)\\)",
++  "replace": "Math.exp(mel + Math.log(t.f0))",
++  "miss": "speaking habits",
++  "test": "voice-body"
++ },
++ {
++  "id": "HB2",
++  "name": "pause odds over the sex's mean",
++  "file": "src/rules/pocket.js",
++  "find": "odds\\(share\\)\\ /\\ odds\\(pa\\.mean\\)",
++  "replace": "share / pa.mean",
++  "miss": "speaking habits",
++  "test": "voice-body"
++ },
++ {
++  "id": "HB3",
++  "name": "habits drawn in BodySize",
++  "file": "src/rules/rules-tools.js",
++  "find": "p\\.spanZ\\ \\?\\?=\\ gauss\\(seededRng\\(`\\$\\{store\\(\\)\\.salt\\}:span:\\$\\{a\\.who\\}`\\)\\);",
++  "replace": "",
++  "miss": "speaking habits",
++  "test": "voice-body"
+  }
+ ]
+diff --git a/tests/voice-body.test.mjs b/tests/voice-body.test.mjs
+index 51b79bb..ce8033d 100644
+--- a/tests/voice-body.test.mjs
++++ b/tests/voice-body.test.mjs
+@@ -228,4 +228,34 @@ const near = (a, b, d) => Math.abs(a - b) <= d;
+       && /bodyRecording\(person, m\.body, 1, e && m\.emotion \? \{ e, w: m\.emotion\.w \} : undefined\)/.test(wk),
+       'feelings in the voice', JSON.stringify([r0.length, rz.length, r1.length, rh.length, lag(r0, 20000, 22000, 100, 220), lag(r1, 60000, 62000, 50, 110), same]));
+ }
++// V14: each person's speaking habits (pocket.ts habitsOf; averaged-person.ts bodyRecording; BodySize's draws; src/index.js
++// naturalJob): a person at their sex's mean changes nothing; one SD up widens the melody by the spread over the mean, lengthens
++// the pauses by the odds of the higher pause share and adds the breathiness SD; a doubled pause time lengthens only the pause
++// frames (40 quiet frames of 5 ms: 40 × 120 samples more at the averaged person's own pace); half the melody range turns an
++// octave leap into half an octave (period 160 → 113 samples); BodySize draws the habits once, and the voice draws the same
++// from the salt and the name where they were never made.
++{
++  const A = await import('../src/rules/averaged-person.js'), P = await import('../src/rules/pocket.js'), fs = await import('node:fs'), root = new URL('..', import.meta.url).pathname;
++  const idx = fs.readFileSync(`${root}/src/index.js`, 'utf8'), tools = fs.readFileSync(`${root}/src/rules/rules-tools.js`, 'utf8');
++  const F = 400, EB = 257, AB = 65;
++  // 400 frames: frames 100-139 unvoiced and silent (a pause), frames 200-399 an octave up.
++  const head = new TextEncoder().encode(JSON.stringify({ fs: 24000, framePeriodMs: 5, fftSize: 1024, frames: F, envBins: EB, apBins: AB, own: { f0: 150, tractCm: 17, sylPerS: 5 } }));
++  const buf = new ArrayBuffer(8 + head.length + F + 4 * F + 2 * F * EB + F * AB), u8 = new Uint8Array(buf), dv = new DataView(buf);
++  u8.set([82, 86, 65, 80]); dv.setUint32(4, head.length, true); u8.set(head, 8);
++  let o = 8 + head.length; for (let f = 0; f < F; f++) u8[o + f] = f >= 100 && f < 140 ? 0 : 1; o += F;
++  for (let f = 0; f < F; f++) dv.setFloat32(o + 4 * f, f >= 200 ? Math.log(2) : 0, true); o += 4 * F;
++  for (let f = 0; f < F; f++) for (let b = 0; b < EB; b++) dv.setInt16(o + 2 * (f * EB + b), f >= 100 && f < 140 ? -20000 : b === 20 ? 0 : -4000, true);
++  o += 2 * F * EB; u8.fill(240, o, o + F * AB);
++  const p = A.parseAveragedPerson(buf), body = { f0: 150, tractCm: 17, sylPerS: 5 };
++  const lag = (y, a, b, lo, hi) => { let best = 0, bl = 0; for (let L = lo; L <= hi; L++) { let s = 0; for (let i = a; i < b; i++) s += y[i] * y[i + L]; if (s > best) { best = s; bl = L; } } return bl; };
++  const r0 = A.bodyRecording(p, body), rp = A.bodyRecording(p, { ...body, pause: 2 }), rs = A.bodyRecording(p, { ...body, span: 0.5 });
++  const pauses = A.pauseFrames(p).reduce((s, v) => s + v, 0), mean = P.habitsOf('male'), up = P.habitsOf('female', 1, 1, 1), H = P.HABITS.female;
++  const odds = q => q / (1 - q);
++  ok(JSON.stringify(mean) === '{"span":1,"pause":1,"breathDb":0}' && Math.abs(up.span - (1 + H.span.sd / H.span.mean)) < 0.006
++      && Math.abs(up.pause - odds(H.pause.mean + H.pause.sd) / odds(H.pause.mean)) < 0.006 && Math.abs(up.breathDb - H.breath.sd) < 0.06
++      && pauses === 40 && rp.length - r0.length === 40 * 120 && lag(r0, 30000, 32000, 50, 110) === 80 && lag(rs, 30000, 32000, 90, 140) === 113
++      && /p\.spanZ \?\?= gauss\(seededRng\(`\$\{store\(\)\.salt\}:span:\$\{a\.who\}`\)\);/.test(tools) && /p\.breathZ \?\?= gauss/.test(tools)
++      && /habitsOf\(p\.sex, p\.spanZ \?\? draw\('span'\), p\.pauseZ \?\? draw\('pause'\), p\.breathZ \?\? draw\('breath'\)\)/.test(idx),
++      'speaking habits', JSON.stringify([mean, up, pauses, rp.length - r0.length, lag(r0, 30000, 32000, 50, 110), lag(rs, 30000, 32000, 90, 140)]));
++}
+ console.log(`voice-body: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0;

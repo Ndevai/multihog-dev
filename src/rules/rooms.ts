@@ -27,7 +27,9 @@ def({ id: 'ventFlow', value: 0.5, unit: 'kg/s per m^2.5', status: 'sourced', src
 export interface Fire { fuel: string; kgh: number; C: number; H: number; O: number; coEF: number; note: string; lhv?: number }
 export interface Room { m3: number; ach: number; co: number; co2: number; o2: number; out: { co: number; co2: number }; air_c: number; fires: Fire[];
     /** Fire heat (§6.22): height m, floor m², wall lining, an opening (door or window), minutes since the fire began, hot layer °C, layer interface height m. */
-    h?: number; floor?: number; lining?: string; vent?: { m2: number; h: number } | null; fireMin?: number; hot?: number; layer?: number; base_c?: number }
+    h?: number; floor?: number; lining?: string; vent?: { m2: number; h: number } | null; fireMin?: number; hot?: number; layer?: number; base_c?: number;
+    /** People in the room besides the tracked characters (Room `people`): their talk is the room's noise. */
+    crowd?: number }
 
 // Heat of a room fire (§6.22). Heat release Q (kW) = fuel burnt per second × its lower heating value (§6.19, from its elements
 // and water) [ASSUMED: complete heat release]. With an opening: hot-layer temperature rise by McCaffrey, Quintiere & Harkleroad
@@ -74,9 +76,8 @@ export function heatMinute(r: Room): void {
 /** The fire's heat into a person in the room. */
 export function feelHeat(r: Room, p: Person): void {
     if (!p.env) return;
-    const q = p as Person & { fireHeat?: boolean };
-    if (r.hot == null) { if (q.fireHeat) { p.env.tdb = p.env.tr = r.air_c; q.fireHeat = false; } return; }
-    q.fireHeat = true;
+    if (r.hot == null) { if (p.fireHeat) { p.env.tdb = p.env.tr = r.air_c; p.fireHeat = false; } return; }
+    p.fireHeat = true;
     const head = p.env.posture === 'lying' ? 0.3 : k('headStanding'), T0 = r.base_c ?? r.air_c;
     const inLayer = r.layer != null && head >= r.layer;
     p.env.tdb = inLayer ? r.hot : T0;

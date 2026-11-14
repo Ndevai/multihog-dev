@@ -1,3 +1,4 @@
+import { def, k } from './constants.js';
 export function psat(r, T) {
     const v = r.vp;
     if (!v)
@@ -32,19 +33,20 @@ const bisect = (f, lo = 120, hi = 700) => {
 // Derived vs measured flash point over the 257 compounds with both (tools/check-chem.mjs): 236 with a boiling point above 25 °C, median |error| 4.1 K, 90 % within 15.4 K; the derived
 // value a median FLASH_SHIFT K below the measured one (closed-cup apparatus ignites a little above the limit temperature);
 // the shift is added to derived values [fitted here].
+def({ id: 'flashShift', value: 2.5, unit: 'K added to a derived flash point', status: 'fitted', src: 'median of measured minus derived flash points over 236 compounds boiling above 25 °C (tools/check-chem.mjs); range: its bootstrap 95 % interval', range: [2.0, 2.9], file: 'vapour.ts' });
 export const FLASH_SHIFT = 2.5;
 /** Flash point (K) from vapour pressure and lower limit; null without both. Measured value preferred by callers. */
 export function derivedFlash(r) {
     if (r.LFL == null || !(r.LFL > 0 && r.LFL < 1) || !r.vp)
         return null;
     const t = bisect(T => (psat(r, T) ?? NaN) - r.LFL * 101325);
-    return t == null ? null : t + FLASH_SHIFT;
+    return t == null ? null : t + k('flashShift');
 }
 // ---- UNIFAC ----
 let UF = null;
 let ufLoading = null;
 export function loadUnifac() {
-    ufLoading ??= fetch(new URL('../../rules/unifac.json', import.meta.url)).then(r => r.json()).then(d => { UF = d; });
+    ufLoading ??= fetch(new URL('../../rules/unifac.json', import.meta.url)).then(r => r.json()).then(d => { UF = d; }).catch(e => { ufLoading = null; throw e; });
     return ufLoading;
 }
 /** Activity coefficients of the parts (mole fractions x, groups per part {subgroup id: count}) at T K; null when a group pair

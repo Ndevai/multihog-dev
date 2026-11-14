@@ -1,0 +1,4 @@
+const dir = process.argv[2];
+const R = await import(dir + '/src/rules/router.js'), F = await import(dir + '/src/rules/frame.js');
+const L = ['I throw the cook.', 'I throw the cook out.', 'I throw the cook a coin.', 'I throw the cook down the stairs.', 'I throw myself at the cook.', 'I throw a party for the cook.', 'I throw a punch at the cook.', 'I throw the cook off the scent.', "I throw the cook's knife away.", 'I throw a stone at the cook.', 'I fire the cook.', 'I fire at the cook.', 'I charge the cook.', 'I charge the cook a shilling.', 'I strike the cook.', 'I strike a deal with the cook.', 'I cut the cook.', 'I cut the cook a slice of bread.', 'I hit the cook.', 'I hit the cook up for money.'];
+for (const l of L) { const r = R.routeTurn(l), f = F.framedCalls(l, 'Mara').calls.map(c => c.tool); console.log(l.padEnd(36), (Object.keys(r.why).join(' ') || '∅').padEnd(34), f.length ? 'code drafts: ' + f.join(' ') : ''); }

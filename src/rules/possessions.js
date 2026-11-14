@@ -87,12 +87,16 @@ function pay(st, from, to, pence, how) {
     // change [ASSUMED]. Change they cannot make leaves the payment undone: the story decides what follows (the payer waits,
     // pays exact, or the trader keeps the rest), as a choice or a social response.
     const owed = Math.round((sum - pence) * 4) / 4;
+    let pick = null;
     if (owed > 0 && to && st.accounted?.includes(to)) {
-        const till = holding(st, to).flatMap(x => { const c = coinOf(x.item); return c ? Array.from({ length: x.qty }, () => c[1]) : []; }).sort((p, q) => q - p);
+        const till = holding(st, to).flatMap(x => { const c = coinOf(x.item); return c ? Array.from({ length: x.qty }, () => ({ d: c[1], name: c[2] })) : []; }).sort((p, q) => q.d - p.d);
         let left = owed;
-        for (const d of till)
-            if (left + 1e-9 >= d)
-                left = Math.round((left - d) * 4) / 4;
+        pick = [];
+        for (const c of till)
+            if (left + 1e-9 >= c.d) {
+                left = Math.round((left - c.d) * 4) / 4;
+                pick.push(c);
+            }
         if (left > 1e-9)
             return `${to} has no coins on record to give ${owed} d change for ${used.map(c => c.name).join(', ')}. State unchanged.`;
     }
@@ -105,20 +109,33 @@ function pay(st, from, to, pence, how) {
     }
     let change = Math.round((sum - pence) * 4) / 4;
     const back = [];
-    for (const [, d, name] of [...COIN_D].sort((p, q) => q[1] - p[1]))
-        while (change + 1e-9 >= d && d <= 240) {
-            change -= d;
-            give(st, from, name);
-            back.push(name);
-            if (to) {
-                const t = holding(st, to).find(x => x.item === name);
-                if (t) {
-                    t.qty -= 1;
-                    if (!t.qty)
-                        holding(st, to).splice(holding(st, to).indexOf(t), 1);
+    const takeFromReceiver = (name) => { if (!to)
+        return; const t = holding(st, to).find(x => coinOf(x.item)?.[2] === name); if (t) {
+        t.qty -= 1;
+        if (!t.qty)
+            holding(st, to).splice(holding(st, to).indexOf(t), 1);
+    } };
+    if (pick)
+        for (const c of pick) {
+            give(st, from, c.name);
+            back.push(c.name);
+            takeFromReceiver(c.name);
+        }
+    else
+        for (const [, d, name] of [...COIN_D].sort((p, q) => q[1] - p[1]))
+            while (change + 1e-9 >= d && d <= 240) {
+                change -= d;
+                give(st, from, name);
+                back.push(name);
+                if (to) {
+                    const t = holding(st, to).find(x => x.item === name);
+                    if (t) {
+                        t.qty -= 1;
+                        if (!t.qty)
+                            holding(st, to).splice(holding(st, to).indexOf(t), 1);
+                    }
                 }
             }
-        }
     return `${pence} d ${how} from ${from}${to ? ` to ${to}` : ''}: ${used.map(c => c.name).join(', ')}${back.length ? `, change ${back.join(', ')}` : ''}. Recorded.`;
 }
 export function transfer(st, a) {

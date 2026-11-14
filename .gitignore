@@ -4,3 +4,6 @@ play-result.txt
 story-result*.txt
 answers-cache.jsonl
 probe-result.txt
+
+# The averaged person for the natural voice: CC BY-NC (EARS), kept out of the repository (voices/README.md).
+voices/*.bin

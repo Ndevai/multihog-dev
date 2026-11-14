@@ -59,7 +59,14 @@ export function walkSpeedKmh(p, gradePct = 0, terrain = 'dirt road', loadKg = 0,
         throw new Error(`Unknown terrain "${terrain}". Known: ${Object.keys(TERRAIN).join(', ')}.`);
     const age = p.age ?? 35, sex = p.sex ?? 'male', G = gradePct / 100, Ls = (loadKg || 0) / p.mass;
     const pace = country && PACE_S[country] ? PACE_MEAN_S / PACE_S[country] : 1;
-    const level = GAIT[sex === 'female' ? 'female' : 'male'][Math.max(0, Math.min(6, Math.floor(age / 10) - 2))] / 100 * pace;
+    // The decade means stand at the decade's middle (25, 35, … 85) and the speed runs linearly between them [ASSUMED], so it
+    // does not step at a tenth birthday. A walker taller or shorter than the median moves as √(height ÷ median height):
+    // pendulum walking at one Froude number, v = √(Fr g L) with leg length ∝ height (the walk–run change sits at one Froude
+    // number across sizes, about 0.45–0.5; J Exp Biol 200:821) [ASSUMED: the gait samples stand at the ANSUR II medians,
+    // 175.5 cm men, 162.6 cm women].
+    const g = GAIT[sex === 'female' ? 'female' : 'male'], x = Math.max(0, Math.min(6, (age - 25) / 10)), i = Math.min(5, Math.floor(x));
+    const tall = p.heightCm ? Math.sqrt(p.heightCm / (sex === 'female' ? 162.6 : 175.5)) : 1;
+    const level = (g[i] + (g[i + 1] - g[i]) * (x - i)) / 100 * tall * pace;
     const want = level * cheapestMs(sex, Ls, 0, eta) / cheapestMs(sex, 0, 0, 1);
     const rl = Math.log(26.12 / hours) / 4.81, sustain = (1 + rl * (Math.max(10.5, vo2avail(p)) / 3.5 - 1)) * 1.163;
     const cap = Math.max(walkWkg(sex, 0, level, 0, 1), sustain);

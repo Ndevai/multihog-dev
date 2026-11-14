@@ -284,7 +284,7 @@ export function jobackGroups(m) {
 let JOB = null;
 let loading = null;
 export function loadJoback() {
-    loading ??= fetch(new URL('../../rules/joback.json', import.meta.url)).then(r => r.json()).then(d => { JOB = d; });
+    loading ??= fetch(new URL('../../rules/joback.json', import.meta.url)).then(r => r.json()).then(d => { JOB = d; }).catch(e => { loading = null; throw e; });
     return loading;
 }
 export const jobackLoaded = () => JOB !== null;

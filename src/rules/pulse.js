@@ -7,6 +7,8 @@ async function rpc(op, ...args) {
         worker ??= Object.assign(new Worker(new URL('worker.mjs', BASE), { type: 'module' }), {
             onmessage: ({ data }) => { const w = waiting.get(data.id); waiting.delete(data.id); if (w)
                 data.error ? w[1](new Error(data.error)) : w[0](data.v); },
+            onerror: (ev) => { const err = new Error(ev.message || 'Pulse worker failed'); for (const [, [, no]] of waiting)
+                no(err); waiting.clear(); worker = null; },
         });
         const id = ++seq;
         return new Promise((ok, no) => { waiting.set(id, [ok, no]); worker.postMessage({ id, op, args }); });

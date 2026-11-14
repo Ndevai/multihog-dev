@@ -1,0 +1,406 @@
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 5dbbd83..c0caaef 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1105,6 +1105,10 @@ The robotic voice (2026-11-12 (130), named "speech" until (131); `speech.ts`, `i
+ 
+ The natural voice (2026-11-12 (132), replacing (131)'s Piper voice; `pocket.ts`, `data/ears-voices.ts`, `data/pocket-tokenizer.ts`, `index.ts` loadNatural, makeEarsVoice, naturalJob, playNatural, `voice-worker.ts`). The player heard Piper's audiobook voices as unlike people in real life; of six clips, the two in which Pocket TTS copied people talking freely were "by far" the closest. Pocket TTS (Kyutai 2026, 100M parameters; the ONNX export KevinAHM/pocket-tts-onnx, english_2026-04, int8 where it exists, 165 MB, CC BY 4.0) copies a voice from a 10 s recording, its way of talking included. The recordings: EARS (Richter et al. 2024), 107 adults recorded in an anechoic room, each with sex, age band, height band and first language; Kyutai's cleaned copy of the middle 10 s of each one's first free monologue, fetched at play time (CC BY-NC 4.0, never in the repo). The catalogue, measured outside the repo in Praat: each copy saying "The north wind and the sun…" (28 syllables), its median pitch (To Pitch (ac), two passes: De Looze & Hirst 2008), its tract from the formant spacing over F1–F4 (Burg, ceiling 5000 Hz for men, 5500 for women; Reby & McComb 2003), its syllables a second. 95 kept: 9 whose first language is not English or not given (the accent comes with the copy), and 3 whose copy's pitch lies more than ln 0.2 from their own recording's (p011, p027, p076: the copy is not faithful) left out. Free speech is lower than the isolated words the engine's voice is fitted to: copies' medians men 105.4 Hz and 18.92 cm, women 171.5 Hz and 16.78 cm, against Hillenbrand et al.'s 130.9 and 220.1 Hz, 17.79 and 15.80 cm; a computed voice is put on the copies' scale by the line through the two sexes' means (ln f0 and tract), then the nearest copy chosen: (Δ ln f0 ÷ 0.166)² + (Δ tract ÷ 0.767 cm)² + (Δ age ÷ 15 years)² (the SDs: the copies' own, the mean of the sexes'; earsAgeStep assumed). Within each sex, the EARS speakers' height tells little of their voice: tract r = 0.33 (men, copies) and 0.0 (women), ln f0 r = −0.13 and −0.23 (recordings), so sex and age carry most of who is heard. The text: the model's own SentencePiece unigram tokenizer, in TypeScript (the same ids as the original on 5,004 sentences of this repo's docs); quotation marks dropped; the export's preparation (a capital, a full stop) and split (sentences, joined within 50 tokens). The loop (voice-worker.ts, the export's own): the recording at 24 kHz (resampled by a Hann-windowed sinc) → Mimi encoder → after the model's start-of-voice vector, read once into the language model's memory; per line: text conditioner → language model, then frame by frame the flow network's latent from noise of variance 0.7 (the export's default), until the end-of-speech logit passes −4 and 3 frames more (5 for four words or fewer); Mimi decoder → 24 kHz. The language model's memory is sized to the line (the export fixes 1,000 frames; 256 gives the same output to the last bit), its declared length freed in the downloaded bytes (03 08 E8 07 → 03 12 01 63, same length). The networks and each recording's encoding are kept in IndexedDB. The voice keeps the recording's own pace; the typing is stretched to the sound. Whispers, narration and untracked people stay silent. Checked: the browser's output against the export's Python loop at temperature 0: the same length, spectra within 4.0 dB (band correlation 0.943), closer than the Python loop on 1 thread against 4 (6.1 dB, 0.856); in Chromium, desktop CPU, one thread: networks ready in 7.6 s, a voice copied in 5.0 s, a 3 s line made in 3.5 s; the real extension in the SillyTavern stand-in: Tom's first line heard 8.9 s after it was reached (the one-time load and copy), its typing ending 36 ms from the sound's end. Tom (136.4 Hz, 17.9 cm, 35): p102; a woman of 30, 164 cm: p012; a girl of 11: p068 (a woman of 18–25: the corpus is adults); a man of 70: p097. Check: voice-body V10; negative controls NV7–NV11, PK1–PK13; free-speech-voices.wav.
+ 
++Heard height of a child (2026-11-12 (133); `voice-body.ts` speakingFactsOf). Someone whose height the story has not set but whose sex it has is heard as the mean adult of that sex grown to the share of adult height their age gives (growth.ts heightShare with their own timing): a girl of 11 at 142.2 cm, 12 at 149.4, 14 at 160.8, an adult at 163.8; until (133) every such person, a child included, was heard at the adult's height. Check: voice-body V11; negative control VB18.
++
++The causal voice (2026-11-12 (133), prototypes, not in the extension). The player: age, sex and a recorded person are labels; a voice is what the body's causes make, any combination of them a voice. Two builds from the same bodies, compared by ear (history/review-tests/causal-voice): A, the movement of speech (rhythm, melody, articulation) averaged over 16 speakers' Pocket TTS copies (WORLD analysis, envelopes on one tract length, DTW, mean), spoken with the body's pitch level, tract and pace: pitch within 1.4 % of the target and tract within 0.4 cm for all four bodies (Praat); B, VocalTractLab's physics (3D tract, tube acoustics, geometric glottis) with eSpeak's phonemes at the body's pace, the tract grown to the body's growth state and scaled to the engine's tract (exact to 0.01 cm), the glottis's rest length, thickness and f0 the engine's. The parameters a voice is made of, in both: fold length, thickness and resting pitch; the speech register's pitch level; tract length (and in B its proportions by growth state and puberty); pace. Not derived in either: the movement itself (B's melody is a rule, A's an average), breath and roughness from tissue, aging tissue.
++
+ Voice blips (2026-11-12 (129); `blips.ts`, `voice-body.ts` voiceHarmonics, `index.ts` playBlips). As a said stretch types in the box, each syllable sounds a tone in the speaker's own voice: their resting pitch from the simulated folds, harmonic k at 1 ÷ k (the glottal source's −12 dB an octave and the lips' radiation +6: Fant 1960) × their own tract's |U lips ÷ U glottis| there, up to 5 kHz, as one periodic wave per voice. Syllables (box.ts syllables) spread evenly over the time a word's letters appear, each sounding blipVowelShare 0.5 of it [ASSUMED], with 5 ms ramps [ASSUMED], at blipLevel 0.25 × the music's volume [ASSUMED], with the setting Voices on blips (since (130); before, while the music was on). Narration and thought are no sound and stay silent; a whisper is voiceless and stays silent; a speaker without a computed voice (no height or sex, or the run not finished) stays silent. Check: Tom (180 cm) at 136 Hz, strongest at harmonics 3–4 (409–546 Hz) round his F1 of 483 Hz; a girl of 11 at 245 Hz; voice-blips.wav. Check: voice-body V8; negative controls BL1–BL4.
+ 
+ The first-meeting card, the date badge and the menu in the box (2026-11-12 (127); `box.ts` cardRole, sceneBadge; `index.ts` showBox, showCard; `style.css`). From twelve games' boxes (Let's Play Archive screenshots: 999, Danganronpa and V3, Doki Doki Literature Club, Phoenix Wright, Ghost Trick, Hatoful Boyfriend, Corpse Party, Virtue's Last Reward, Steins;Gate, Policenauts), the player picked three. The card: the first time the box reaches a character's first line in the chat, going on, a pink band with a white stripe crosses the screen with their picture (their character card's, when there is one), their trade as the story gave it (NewCharacter now keeps it as occupation) or else their age and noun ("16-year-old girl"), and their name; the next tap, key or Next takes it away and the line types; once per character per session. The badge: the night look's scene line as a corner badge, the clock large over the date and the place with its light. The menu: Back, the count, Next, Auto, music and Log as words along the frame's bottom edge (44 px targets), at layer 31 above SillyTavern's chat (30), whose box would otherwise take their taps. Whole-screen narration was left open: the player would take it only if the model could not call it at will. Since (128) the card shows only for a character with a SillyTavern character card of their own (the player: else every passer-by would get one), and the night panel is see-through (74 % at the top, 82 % at the foot: the least at which light sky blue reads at 4.5:1 over white; the trial's 55 % gave 2.4:1) inside white corner brackets instead of a full frame. Check: R42, R43; negative controls BX11, BX13–BX15.
+diff --git a/docs/progress.md b/docs/progress.md
+index d5b7a23..d97d228 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,12 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-12 (133), Claude
++- The player: picking the nearest of 95 recorded people, with age matched as a label, is a lookup; age and sex are labels for states of a body, and a voice is what the body's causes make, any combination a voice. They asked for both a neural build driven by the body and a physics build, compared by ear.
++- Changed: `voice-body.ts` speakingFactsOf: a child of unset height is heard at their age's grown height (was the adult's); two prototypes in `history/review-tests/causal-voice/` (A: speech movement averaged over 16 speakers, the body's pitch, tract and pace imposed through WORLD; B: VocalTractLab with the body's grown, scaled tract and its folds, eSpeak's phonemes at the body's pace), and a patch to VocalTractLab's backend (its anatomy change emptied every vowel and consonant shape; its speaker writer broke its own file).
++- Checked: all suites 0 misses (voice-body 12, V11 new); negative control VB18 caught; A's pitch within 1.4 % and tract within 0.4 cm of each body's target; B's tract equal to the engine's (17.90, 14.41, 15.60, 15.80 cm) and pitch within 2.4 %; a sound file of four bodies in both builds.
++- Next: the player's ear decides which build goes into the extension (A: the averaging and WORLD in the browser; B: VocalTractLab compiled to WebAssembly); then breath and roughness from the folds' closure, and the movement layer.
++
+ ## 2026-11-12 (132), Claude
+ - The player: Piper's voice still did not sound like people in real life. Six clips compared: the two where Pocket TTS copied people talking freely (EARS, Expresso) were "by far" the closest. SillyTavern runs in Termux on their phone, so the voice runs in the browser.
+ - Changed: the natural voice is now Pocket TTS (Kyutai; the ONNX export by KevinAHM, 165 MB, CC BY 4.0) copying the EARS speaker nearest each body's voice: new `pocket.ts` (the model's own tokenizer in TypeScript, text preparation and split, WAV reading, resampling, the memory-length patch, the choice of speaker on the copies' scale), `data/ears-voices.ts` (95 speakers, each copy's pitch, tract and pace measured in Praat), `data/pocket-tokenizer.ts`; `voice-worker.ts` rewritten (the export's loop: encoder, language model with a memory sized to the line, flow, decoder); `index.ts` (networks and each recording's encoding kept in IndexedDB; recordings fetched from Kyutai's copy of EARS); Piper's catalogue and code removed; earsAgeStep registered; the SillyTavern stand-in (st-chat.mjs) routes outside URLs, takes settings and records the voice heard.
+diff --git a/history/review-tests/causal-voice/README.md b/history/review-tests/causal-voice/README.md
+new file mode 100644
+index 0000000..4775fc2
+--- /dev/null
++++ b/history/review-tests/causal-voice/README.md
+@@ -0,0 +1,19 @@
++# Causal voice: two prototypes compared by ear (docs/progress.md (133))
++
++The player: a voice is computed from the body's causes, not chosen from recorded people or matched by age and sex labels.
++Both builds take the same bodies (`bodies.json` from `voice-body.ts`: pitch, tract, pace, fold length and thickness, growth
++share, puberty) and say the same line. Neither is in the extension yet; the player picks by ear.
++
++- `build_a.py`: the movement of speech (rhythm, melody, articulation) of 16 EARS speakers' Pocket TTS copies of the line,
++  each analysed by WORLD (Morise et al. 2016; pyworld), envelopes put on one tract length, aligned (DTW) and averaged; the
++  body then sets the pitch level, the formant scale (tract length, measured on the averaged voice) and the pace.
++- `build_b.py` with `vtl_child.py`: VocalTractLab 2.4.2 (Birkholz; vocaltractlab-cython 0.0.17, GPL-3.0) speaks eSpeak NG's
++  phonemes and times at the body's pace; its reference speaker (JD3) is grown along VocalTractLab's growth curves to the
++  body's growth state (the age at which an average-timed person has the body's share of adult height; a male's larynx and
++  pharynx by his puberty's progress), every length then scaled so the neutral vowel's formant spacing equals the engine's
++  tract; the glottis's rest length, thickness and f0 come from the engine's folds. One step per process: the API's close
++  call crashes.
++- `vocaltractlab-reference-shapes.patch`: two fixes to VocalTractLab's backend needed for an anatomy change through the API:
++  the anatomy adaptation transformed shapes from an empty reference tract (now the loaded speaker), and the speaker writer
++  wrote `<glottis_models` without its `>`. (Its writer also drops the tract parameters' `unit` attribute, which its reader
++  needs; `vtl_child.py` puts them back.) Built with g++ from the sdist's sources and swapped into the installed package.
+diff --git a/history/review-tests/causal-voice/build_a.py b/history/review-tests/causal-voice/build_a.py
+new file mode 100644
+index 0000000..706fbc5
+--- /dev/null
++++ b/history/review-tests/causal-voice/build_a.py
+@@ -0,0 +1,91 @@
++# Build A: the movement (rhythm, melody, articulation) of 16 EARS speakers' copies of one line, averaged; the body's causes
++# set what the movement is spoken with: pitch level (folds), formant scale (tract length), pace (syllables a second).
++# Usage: python build_a.py <bodies.json> <out dir> <text> <syllables>
++import sys, json, warnings, numpy as np, onnxruntime as ort, soundfile as sf
++warnings.filterwarnings('ignore')
++import pyworld as pw
++sys.path.insert(0, 'onnx-src'); import pocket_tts_onnx as P
++bodies_file, out_dir, text, syl = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
++class C(P.PocketTTSOnnx):
++    def _model_file(self, stem):
++        n = super()._model_file(stem); return n.replace('.onnx', '_dyn.onnx') if stem == 'flow_lm_main' else n
++    def _make_session_options(self):
++        o = ort.SessionOptions(); o.intra_op_num_threads = 4; o.log_severity_level = 3; return o
++    def _init_state(self, manifest):
++        st = super()._init_state(manifest)
++        if manifest is self.flow_state_manifest:
++            for e in manifest:
++                if 1000 in e['shape']: st[e['input_name']] = self._make_filled_array([512 if d == 1000 else d for d in e['shape']], self._numpy_dtype(e['dtype']), e['fill'])
++        return st
++FS, FP = 24000, 5.0
++cat = json.load(open('ears_praat.json'))
++men = sorted(k for k, v in cat.items() if v['meta']['gender'] == 'male' and v['meta']['native language'] == 'american english')
++women = sorted(k for k, v in cat.items() if v['meta']['gender'] == 'female' and v['meta']['native language'] == 'american english')
++pick = men[::max(1, len(men) // 8)][:8] + women[::max(1, len(women) // 8)][:8]
++m = C(models_dir='onnx', language='english_2026-04', temperature=0.7)
++def analyse(a):
++    a = a.astype(np.float64); f0, t = pw.harvest(a, FS, f0_floor=60, f0_ceil=600, frame_period=FP)
++    return f0, pw.cheaptrick(a, f0, t, FS), pw.d4c(a, f0, t, FS)
++def warp(sp, k):
++    # The envelope of a tract k times as long: every frequency f takes the value the old envelope had at f * k.
++    n = sp.shape[1]; f = np.arange(n); src = np.clip(f * k, 0, n - 1)
++    return np.exp(np.array([np.interp(src, f, np.log(row + 1e-12)) for row in sp]))
++def dtw(a, b):
++    # Path matching each frame of a to frames of b (Euclidean distance, steps (1,1), (1,0), (0,1)).
++    D = np.sqrt(((a[:, None, :] - b[None, :, :]) ** 2).sum(-1)); n, k = D.shape; acc = np.full((n + 1, k + 1), np.inf); acc[0, 0] = 0
++    for i in range(1, n + 1):
++        row = acc[i]; prev = acc[i - 1]; d = D[i - 1]
++        for j in range(1, k + 1): row[j] = d[j - 1] + min(prev[j - 1], prev[j], row[j - 1])
++    i, j, path = n, k, []
++    while i > 0 and j > 0:
++        path.append((i - 1, j - 1)); s = np.argmin([acc[i - 1, j - 1], acc[i - 1, j], acc[i, j - 1]])
++        if s == 0: i, j = i - 1, j - 1
++        elif s == 1: i -= 1
++        else: j -= 1
++    m_ = {}
++    for a_, b_ in path: m_.setdefault(a_, []).append(b_)
++    return np.array([np.mean(m_[r]) for r in range(n)])
++# 1. Each speaker's copy, analysed, its envelope put on the group's mean tract.
++takes = []
++for sid in pick:
++    np.random.seed(7); a = m.generate(text, np.load(f'ears_out/{sid}.npy'))
++    i = np.nonzero(np.abs(a) > 0.01 * np.abs(a).max())[0]; a = a[max(0, i[0] - 1200): i[-1] + 1200]
++    f0, sp, ap = analyse(a); takes.append({'id': sid, 'f0': f0, 'sp': sp, 'ap': ap, 'L': cat[sid]['copy']['tract']})
++Lref = float(np.mean([t['L'] for t in takes]))
++for t in takes:
++    t['spn'] = warp(t['sp'], Lref / t['L'])
++    v = t['f0'] > 0; t['dev'] = np.where(v, np.log(np.maximum(t['f0'], 1)) - np.log(t['f0'][v]).mean(), 0.0)
++    t['feat'] = pw.code_spectral_envelope(t['spn'], FS, 30)[:, 1:]
++# 2. Aligned to the first take, averaged frame by frame: time, envelope (log), breath, voicing (majority), melody (ln f0).
++ref = takes[0]; n = len(ref['f0']); maps = [np.arange(n, dtype=float)] + [dtw(ref['feat'], t['feat']) for t in takes[1:]]
++def at(t, mp, key):
++    idx = np.clip(np.round(mp).astype(int), 0, len(t[key]) - 1); return t[key][idx]
++env = np.exp(np.mean([np.log(at(t, mp, 'spn') + 1e-12) for t, mp in zip(takes, maps)], 0))
++ap = np.mean([at(t, mp, 'ap') for t, mp in zip(takes, maps)], 0)
++vo = np.mean([at(t, mp, 'f0') > 0 for t, mp in zip(takes, maps)], 0) > 0.5
++devs = np.array([at(t, mp, 'dev') for t, mp in zip(takes, maps)]); vs = np.array([at(t, mp, 'f0') > 0 for t, mp in zip(takes, maps)])
++dev = np.where(vs.sum(0) > 0, (devs * vs).sum(0) / np.maximum(vs.sum(0), 1), 0.0)
++time = np.mean([mp * [1, ] * 1 for mp in maps], 0); time = np.maximum.accumulate(time + np.arange(n) * 1e-6)
++# On a uniform grid along the averaged time.
++grid = np.arange(0, time[-1], 1.0); pos = np.interp(grid, time, np.arange(n)); k = np.round(pos).astype(int)
++env, ap, vo, dev = env[k], ap[k], vo[k], dev[k]
++speech_s = (len(grid) * FP) / 1000; avg_rate = syl / speech_s
++print('group:', pick, 'mean tract', round(Lref, 2), 'averaged pace', round(avg_rate, 2), 'syll/s')
++# The averaged voice's own tract, measured as the catalogue was (Praat, Burg, F1-F4 spacing): the warp starts from it.
++import parselmouth as pm
++y0 = pw.synthesize(np.ascontiguousarray(np.where(vo, np.exp(dev + np.log(140.0)), 0.0)), np.ascontiguousarray(env), np.ascontiguousarray(ap), FS, FP)
++snd = pm.Sound(y0, FS); pt = snd.to_pitch_ac(pitch_floor=60, pitch_ceiling=400); fm = snd.to_formant_burg(time_step=0.01, max_number_of_formants=5, maximum_formant=5250)
++dfs = []
++for t, v in zip(pt.xs(), pt.selected_array['frequency']):
++    F = [fm.get_value_at_time(i, t) for i in (1, 2, 3, 4)]
++    if v > 0 and not any(np.isnan(F)): x = np.array([0.5, 1.5, 2.5, 3.5]); dfs.append(float(np.dot(x, F) / np.dot(x, x)))
++Lref = 35300 / (2 * float(np.median(dfs))); print('averaged voice measures', round(Lref, 2), 'cm')
++# 3. The body: pitch level from its folds (on free speech's register), formants from its tract, pace from its rate.
++bodies = json.load(open(bodies_file))
++for name, b in bodies.items():
++    L, f0b, rate = b['copies']['tract'], b['copies']['f0'], b['sylPerS']
++    stretch = avg_rate / rate; T = int(round(len(grid) * stretch)); src = np.clip(np.round(np.arange(T) / stretch).astype(int), 0, len(grid) - 1)
++    sp_b = warp(env[src], L / Lref); f0_b = np.where(vo[src], np.exp(dev[src] + np.log(f0b)), 0.0)
++    y = pw.synthesize(np.ascontiguousarray(f0_b), np.ascontiguousarray(sp_b), np.ascontiguousarray(ap[src]), FS, FP)
++    y = y / np.abs(y).max() * 0.9; sf.write(f'{out_dir}/A-{name}.wav', y, FS, subtype='PCM_16')
++    print(name, 'f0', round(f0b, 1), 'tract', round(L, 2), 'rate', rate, '->', round(len(y) / FS, 2), 's')
+diff --git a/history/review-tests/causal-voice/build_b.py b/history/review-tests/causal-voice/build_b.py
+new file mode 100644
+index 0000000..25f9edf
+--- /dev/null
++++ b/history/review-tests/causal-voice/build_b.py
+@@ -0,0 +1,62 @@
++# Build B: physics all the way. VocalTractLab (Birkholz; 3D vocal tract, tube acoustics, geometric glottis) speaks eSpeak's
++# phonemes at each body's pace; the body's causes set the tract's anatomy (the reference speaker grown along VocalTractLab's
++# growth curves to the body's growth state, a male's larynx and pharynx by his puberty's progress, then every length scaled
++# so the neutral vowel's formant spacing gives the engine's tract length), the folds' rest length, thickness and pitch.
++import sys, json, subprocess, re, numpy as np
++from math import exp
++S = '/tmp/claude-0/-home-user/26640b87-f889-5042-96a2-8de1ebfc8fbc/scratchpad'; V = f'{S}/vtl'; W = f'{V}/work'
++bodies, phones = json.load(open(f'{S}/bodies.json')), json.load(open(f'{S}/phones.json'))
++def child(*a):
++    r = subprocess.run([f'{V}/venv/bin/python', '-I', f'{V}/vtl_child.py', *map(str, a)], capture_output=True, text=True, cwd=W)
++    line = [l for l in r.stdout.splitlines() if l.startswith('RESULT ')]
++    if not line: raise RuntimeError(r.stdout[-500:] + r.stderr[-800:])
++    return json.loads(line[-1][7:])
++V1 = {'iː': 'i', 'i': 'i', 'ɪ': 'I', 'ᵻ': 'I', 'ɛ': 'E', 'æ': 'a', 'ɑː': 'a', 'ɑ': 'a', 'ʌ': '6', 'ɔː': 'O', 'ɔ': 'O', 'ʊ': 'U',
++      'uː': 'u', 'u': 'u', 'ə': '@', 'ɚ': '6', 'ɜː': '9', 'ɝ': '9', 'aɪ': 'aI', 'aʊ': 'aU', 'ɔɪ': 'OY', 'ɐ': '6'}
++V2 = {'eɪ': ('e', 'I'), 'oʊ': ('o', 'U'), 'ɪɹ': ('I', '6'), 'ɛɹ': ('E', '6'), 'ɑːɹ': ('a', '6'), 'ɔːɹ': ('O', '6'), 'ʊɹ': ('U', '6'), 'əl': ('@', 'l'), 'iə': ('i', '@')}
++C = {'p': 'p', 'b': 'b', 't': 't', 'd': 'd', 'k': 'k', 'g': 'g', 'ɡ': 'g', 'f': 'f', 'v': 'v', 's': 's', 'z': 'z', 'h': 'h', 'm': 'm',
++     'n': 'n', 'l': 'l', 'j': 'j', 'ʃ': 'S', 'ʒ': 'Z', 'tʃ': 'tS', 'dʒ': 'dZ', 'θ': 'T', 'ð': 'D', 'ŋ': 'N', 'w': 'U', 'ɹ': '6', 'r': '6', 'ɾ': 'd', 'ʔ': ''}
++VOWELS = set(V1.values()) | {'e', 'o', 'I', 'U', '6', '@'}
++def segments(ph, end_ms):
++    out = [('', 0.08, False)]
++    for k, (p, t) in enumerate(ph):
++        d = max(0.03, ((ph[k + 1][1] if k + 1 < len(ph) else end_ms) - t) / 1000); stressed = 'ˈ' in p; q = p.replace('ˈ', '').replace('ˌ', '')
++        if not q: out.append(('', d, False)); continue
++        if q in V2: a, b = V2[q]; out += [(a, d * 0.6, stressed), (b, d * 0.4, False)]; continue
++        name = V1.get(q, C.get(q))
++        if name is None: print('unmapped', q); name = '@'
++        out.append((name, d, stressed and q in V1))
++    return out + [('', 0.1, False)]
++def share(male, t):
++    p = {True: (174.6, 162.9, 0.1124, 1.2397, 14.60), False: (163.4, 152.7, 0.1320, 1.1785, 12.49)}[male]
++    return 1 - 2 * (1 - p[1] / p[0]) / (exp(p[2] * (t - p[4])) + exp(p[3] * (t - p[4])))
++LENGTHS = list(range(11))   # every anatomy parameter but the fold length (11) and the oral-pharyngeal angle (12)
++ref = f'{V}/JD3.orig.speaker'
++for name, b in bodies.items():
++    t = 1.0
++    while t < 25 and share(b['male'], t) < b['share'] - 1e-4: t += 0.01
++    g = child('ages', ref, t); fem, mal = np.array(g['fem']), np.array(g['mal']); P = b['puberty'] if b['male'] else 0.0
++    an = fem + (mal - fem) * P; an[11] = min(2.0, max(0.5, b['foldCm']))
++    target = 35300 / (2 * b['tract']); spk = f'{W}/{name}.speaker'; s = 1.0
++    for _ in range(4):
++        a2 = an.copy(); a2[LENGTHS] *= s; child('anatomy', ref, json.dumps(list(a2)), spk); sp = child('measure', spk)['spacing']; s *= sp / target
++    a2 = an.copy(); a2[LENGTHS] *= s; child('anatomy', ref, json.dumps(list(a2)), spk); m = child('measure', spk)
++    # The folds: rest length from the engine; rest thickness in proportion to the engine's against the mean man's (0.30 cm,
++    # VocalTractLab's 0.45 for its man); rest f0 the engine's resting pitch.
++    x = open(spk).read()
++    def setp(x, pname, val):
++        return re.sub(rf'(<param index="\d+" name="{pname}"[^>]*?neutral=")[^"]*(")', rf'\g<1>{val:.6f}\g<2>', x, count=1)
++    x = setp(x, 'RL', min(2.0, max(0.5, b['foldCm']))); x = setp(x, 'RT', min(1.0, max(0.3, 0.45 * b['foldThicknessCm'] / 0.30))); x = setp(x, 'RF0', b['f0'])
++    open(spk, 'w').write(x)
++    seg = segments(phones[name]['phones'], phones[name]['endMs'])
++    with open(f'{W}/{name}.seg', 'w') as fh:
++        for sg in seg: fh.write(f'name = {sg[0]}; duration_s = {sg[1]:.6f};\n')
++    # The pitch: free speech's level for this body (as in Build A); stressed vowels 2 st up, a 3 st fall on a vowel before a
++    # pause [ASSUMED: neither build has a motor model of intonation; Build A takes its melody from 16 speakers instead].
++    base = 12 * np.log2(b['copies']['f0']); gs = []
++    for k, sg in enumerate(seg):
++        up = 2.0 if sg[2] else 0.0; fall = -3.0 if (sg[0] in VOWELS and k + 1 < len(seg) and seg[k + 1][0] == '') else 0.0
++        gs.append(f'      <gesture value="{base + up + fall:.3f}" slope="0.000000" duration_s="{sg[1]:.6f}" time_constant_s="0.030000" neutral="0" />')
++    json.dump(gs, open(f'{W}/{name}.f0.json', 'w'))
++    r = child('synth', spk, f'{W}/{name}.seg', f'{W}/{name}.ges', f'{W}/B-{name}.wav', f'{W}/{name}.f0.json')
++    print(f"{name:8s} growth state = typical {t:5.2f} y, length scale {s:.3f}: neutral formants {[round(p) for p in m['peaks']]}, tract {35300 / (2 * m['spacing']):.2f} cm (engine {b['tract']}); folds {b['foldCm']:.2f} cm; {r['samples'] / 44100:.2f} s", flush=True)
+diff --git a/history/review-tests/causal-voice/vocaltractlab-reference-shapes.patch b/history/review-tests/causal-voice/vocaltractlab-reference-shapes.patch
+new file mode 100644
+index 0000000..335e3bb
+--- /dev/null
++++ b/history/review-tests/causal-voice/vocaltractlab-reference-shapes.patch
+@@ -0,0 +1,38 @@
++diff -ru orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp
++--- orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp	2026-06-14 21:19:31.000000000 +0000
+++++ src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp	2026-11-12 13:50:24.026886239 +0000
++@@ -165,6 +165,9 @@
++     return 1;
++   }
++ 
+++  // Patched: the anatomy adaptation transforms the shapes of this speaker.
+++  AnatomyParams::setReference(*vocalTract);
+++
++   // ****************************************************************
++   // Init the object for the time domain simulation.
++   // ****************************************************************
++diff -ru orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp
++--- orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp	2026-06-14 21:19:31.000000000 +0000
+++++ src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp	2026-11-12 13:50:24.027311717 +0000
++@@ -83,7 +83,7 @@
++ 
++     xml << *vocalTract;
++ 
++-    xml << "<glottis_models" << std::endl;
+++    xml << "<glottis_models>" << std::endl;
++ 
++     for (size_t i = 0; i < glottisModels.size(); ++i)
++     {
++diff -ru orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h
++--- orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h	2026-06-14 21:19:31.000000000 +0000
+++++ src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h	2026-11-12 13:50:24.026043922 +0000
++@@ -39,6 +39,9 @@
++   // **************************************************************************
++ 
++ public:
+++  // Patched (2026-11-12): the API sets the reference tract to the loaded speaker, so adapted shapes come from it.
+++  static void setReference(const VocalTract &t) { *referenceVocalTract = t; }
+++
++   enum AnatomyParameters
++   {
++     LIP_WIDTH,
+diff --git a/history/review-tests/causal-voice/vtl_child.py b/history/review-tests/causal-voice/vtl_child.py
+new file mode 100644
+index 0000000..610d178
+--- /dev/null
++++ b/history/review-tests/causal-voice/vtl_child.py
+@@ -0,0 +1,37 @@
++# One VocalTractLab step per process (its close call crashes): the speaker to load is copied over the package's bundled one
++# before import (the package loads that file on import), and the process ends without closing.
++import sys, os, json, shutil, numpy as np
++mode, spk = sys.argv[1], sys.argv[2]
++PKG = os.path.join(os.path.dirname(os.path.dirname(os.__file__)), 'site-packages', 'vocaltractlab_cython') if False else None
++import importlib.util
++spec = importlib.util.find_spec('vocaltractlab_cython'); res = os.path.join(os.path.dirname(spec.origin), 'resources', 'JD3.speaker')
++shutil.copy(spk, res)
++import vocaltractlab_cython as vc
++shutil.copy(os.path.join(os.path.dirname(__file__), 'JD3.orig.speaker'), res)
++def spacing():
++    st = vc.get_shape('@', 'tract'); tf = vc.tract_state_to_transfer_function(st, n_spectrum_samples=8192)
++    mag = np.array(tf['magnitude_spectrum']); f = np.arange(len(mag)) * 44100 / 8192
++    pk = [f[i] for i in range(2, len(mag) - 2) if mag[i] > mag[i - 1] and mag[i] > mag[i + 1] and f[i] > 150][:3]
++    x = np.array([0.5, 1.5, 2.5]); return float(np.dot(x, pk) / np.dot(x, x)), pk
++out = {}
++if mode == 'ages':                       # anatomy of the reference grown to t years, female and male curves
++    t = float(sys.argv[3]); vc.set_anatomy_from_age(int(round(t * 12)), False); out['fem'] = list(vc.get_anatomy_params())
++    vc.set_anatomy_from_age(int(round(t * 12)), True); out['mal'] = list(vc.get_anatomy_params())
++elif mode == 'anatomy':                  # set the given anatomy on the reference, save it
++    vc.set_anatomy_params(np.array(json.loads(sys.argv[3]), dtype=float)); vc.save_speaker(sys.argv[4])
++    # VocalTractLab's writer drops each tract parameter's unit, and its reader then crashes: the units put back from the original.
++    import re
++    o = open(os.path.join(os.path.dirname(__file__), 'JD3.orig.speaker')).read(); x = open(sys.argv[4]).read()
++    units = dict(re.findall(r'<param index="\d+"\s+name="(\w+)"\s+description="[^"]*"\s+unit="([^"]*)"', o[:o.index('<shapes>')]))
++    x = re.sub(r'(<param index="\d+"\s+)name="(\w+)"(\s+)description="([^"]*)"\s+(?=min=)', lambda m: f'{m.group(1)}name="{m.group(2)}"{m.group(3)}description="{m.group(4)}" unit="{units.get(m.group(2), "")}" ', x)
++    open(sys.argv[4], 'w').write(x)
++elif mode == 'measure':                  # the neutral vowel's formant spacing
++    out['spacing'], out['peaks'] = spacing()
++elif mode == 'synth':                    # segments -> gestures (pitch tier replaced) -> audio
++    seg, ges, wav, f0json = sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
++    vc.phoneme_file_to_gesture_file(seg, ges)
++    import re
++    gs = json.load(open(f0json)); g = open(ges).read()
++    g = re.sub(r'(<gesture_sequence type="f0-gestures"[^>]*>).*?(</gesture_sequence>)', lambda m: m.group(1) + '\n' + '\n'.join(gs) + '\n    ' + m.group(2), g, flags=re.S)
++    open(ges, 'w').write(g); a = vc.gesture_file_to_audio(ges, wav); out['samples'] = int(len(a))
++print('RESULT ' + json.dumps(out), flush=True); os._exit(0)
+diff --git a/src/rules/voice-body.js b/src/rules/voice-body.js
+index 3ff196d..3361578 100644
+--- a/src/rules/voice-body.js
++++ b/src/rules/voice-body.js
+@@ -7,6 +7,7 @@
+ // Mathews & Tukey 1978, JASA 63:1535), so the cause is what is kept.
+ import { def, peek } from './constants.js';
+ import { INFO_RATE } from './data/info-rate.js';
++import { heightShare } from './growth.js';
+ import { tractCmOf, formantsOfBody, speakerOfBody, restingVoiceNow, restingVoiceOf, restingTract, transferAt, HEIGHT } from './voice-sound.js';
+ import { harmonicAmps } from './blips.js';
+ export { foldMmOf } from './voice-sound.js';
+@@ -62,11 +63,15 @@ export function voiceOf(f) {
+     return out;
+ }
+ /** The facts a person is heard with: their own, or, for someone whose height the story has not set but whose sex it has, the
+- * mean adult of that sex (voice-sound.ts HEIGHT) [ASSUMED: heard as the average body until BodySize places them]; the
+- * narrator's notes keep only what is known (voiceFactsOf). */
++ * mean adult of that sex (voice-sound.ts HEIGHT) grown to the share of adult height their age gives (growth.ts heightShare,
++ * their own growth timing) [ASSUMED: heard as the average body until BodySize places them]; the narrator's notes keep only
++ * what is known (voiceFactsOf). Until (133) a child of unset height was heard at the adult's height. */
+ export const speakingFactsOf = (p) => {
+     const f = voiceFactsOf(p), male = /^m/i.test(p.sex ?? ''), known = /^(m|f|w)/i.test(p.sex ?? '');
+-    return f.heightCm || !known ? f : { ...f, heightCm: HEIGHT[male ? 'male' : 'female'].mean, age: f.age ?? 30 };
++    if (f.heightCm || !known)
++        return f;
++    const age = f.age ?? 30;
++    return { ...f, heightCm: HEIGHT[male ? 'male' : 'female'].mean * heightShare(male, age, p.timingZ ?? 0), age };
+ };
+ /** Every tracked person's resting voice, run (voice-sound.ts) and kept for the session: as the notes know them and as heard. */
+ export const voicesReady = (people) => Promise.all(Object.values(people || {}).filter(p => !p.dead).flatMap(p => [voiceFactsOf(p), speakingFactsOf(p)]).map(causesOf).filter((c) => !!c).map(restingVoiceOf));
+diff --git a/src/rules/voice-body.ts b/src/rules/voice-body.ts
+index da0b00e..23220da 100644
+--- a/src/rules/voice-body.ts
++++ b/src/rules/voice-body.ts
+@@ -7,6 +7,7 @@
+ // Mathews & Tukey 1978, JASA 63:1535), so the cause is what is kept.
+ import { def, peek } from './constants.js';
+ import { INFO_RATE } from './data/info-rate.js';
++import { heightShare } from './growth.js';
+ import { tractCmOf, formantsOfBody, speakerOfBody, restingVoiceNow, restingVoiceOf, restingTract, transferAt, HEIGHT, type BodyCauses } from './voice-sound.js';
+ import { harmonicAmps } from './blips.js';
+ import type { Person } from './types.js';
+@@ -73,11 +74,14 @@ export function voiceOf(f: VoiceFacts): Voice {
+     return out;
+ }
+ /** The facts a person is heard with: their own, or, for someone whose height the story has not set but whose sex it has, the
+- * mean adult of that sex (voice-sound.ts HEIGHT) [ASSUMED: heard as the average body until BodySize places them]; the
+- * narrator's notes keep only what is known (voiceFactsOf). */
++ * mean adult of that sex (voice-sound.ts HEIGHT) grown to the share of adult height their age gives (growth.ts heightShare,
++ * their own growth timing) [ASSUMED: heard as the average body until BodySize places them]; the narrator's notes keep only
++ * what is known (voiceFactsOf). Until (133) a child of unset height was heard at the adult's height. */
+ export const speakingFactsOf = (p: Person): VoiceFacts => {
+     const f = voiceFactsOf(p), male = /^m/i.test(p.sex ?? ''), known = /^(m|f|w)/i.test(p.sex ?? '');
+-    return f.heightCm || !known ? f : { ...f, heightCm: HEIGHT[male ? 'male' : 'female'].mean, age: f.age ?? 30 };
++    if (f.heightCm || !known) return f;
++    const age = f.age ?? 30;
++    return { ...f, heightCm: HEIGHT[male ? 'male' : 'female'].mean * heightShare(male, age, p.timingZ ?? 0), age };
+ };
+ /** Every tracked person's resting voice, run (voice-sound.ts) and kept for the session: as the notes know them and as heard. */
+ export const voicesReady = (people: Record<string, Person> | null | undefined) =>
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 818f558..6a67725 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -6110,5 +6110,14 @@
+   "replace": "if (r.eos > 4 && eosAt < 0)",
+   "miss": "the natural voice",
+   "test": "voice-body"
++ },
++ {
++  "id": "VB18",
++  "name": "a child's unset height from growth",
++  "file": "src/rules/voice-body.js",
++  "find": "heightCm:\\ HEIGHT\\[male\\ \\?\\ 'male'\\ :\\ 'female'\\]\\.mean\\ \\*\\ heightShare\\(male,\\ age,\\ p\\.timingZ\\ \\?\\?\\ 0\\)",
++  "replace": "heightCm: HEIGHT[male ? 'male' : 'female'].mean",
++  "miss": "a child's unset height grows with age",
++  "test": "voice-body"
+  }
+ ]
+diff --git a/tests/voice-body.test.mjs b/tests/voice-body.test.mjs
+index 491f8ce..899437d 100644
+--- a/tests/voice-body.test.mjs
++++ b/tests/voice-body.test.mjs
+@@ -169,4 +169,12 @@ const near = (a, b, d) => Math.abs(a - b) <= d;
+       && /if \(r\.eos > -4 && eosAt < 0\)\s*eosAt = step;/.test(wk) && /normal\(LATENT, Math\.sqrt\(temperature\)\)/.test(wk) && /x\[i\] \+= flow\[i\];/.test(wk) && /ort\.env\.wasm\.numThreads = 1;/.test(wk),
+       'the natural voice', JSON.stringify([tok, P.pocketChunks(long).length, Array.from(w.samples), err, freed, diff, c, picks]));
+ }
++// V11: a child whose height the story has not set is heard at the height their age's growth gives (the adult mean × the share
++// of adult height: a girl of 11 at 142.2 cm, of 12 at 149.4, of 14 at 160.8), so her voice changes year by year (tract 14.4,
++// 14.9, 15.6 cm); an adult of unset height stays at the adult mean (163.8 cm).
++{
++  const hs = [11, 12, 14, 30].map(age => V.speakingFactsOf({ species: 'human', sex: 'female', age }).heightCm.toFixed(1));
++  const tr = [11, 12, 14].map(age => V.voiceOf(V.speakingFactsOf({ species: 'human', sex: 'female', age })).tractCm);
++  ok(JSON.stringify(hs) === '["142.2","149.4","160.8","163.8"]' && JSON.stringify(tr) === '[14.4,14.9,15.6]', "a child's unset height grows with age", JSON.stringify([hs, tr]));
++}
+ console.log(`voice-body: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0;

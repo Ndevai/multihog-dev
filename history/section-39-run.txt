@@ -1,0 +1,209 @@
+# Section 39 runs (2026-10-27). Tree: section 38 (c256a36) → section 39 (3cc0471).
+
+## npm test on section 39's tree
+172 checks, 0 miss(es)
+198 checks, 0 miss(es)
+37 checks, 0 miss(es)
+196 checks, 0 miss(es)
+60 checks, 0 miss(es)
+size: 9 of 9
+ui: 54 of 54
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## tests/engine.test.mjs (section 39's) on section 38's tree
+MISS tool words fit the scene: in 1300 gunshot, welder, NameCharacter, SARS, Battle:, movies, dorm lounge, after surgery, halfpenny, living room, an asphalt road, condemn outright, homosexuality, handgun, antibiotics, hyperbaric, Midazolam, Propofol, bra+panty, sneakers, panty hose, "Battle", magic; 1990 lacks ; NameCharacter dropped in Brazil false; magic shown with a magic world true
+MISS the narrator's tools fit the line and the scene: RollTheDice, BodyWound, BodyStrike, BodyChoke, BodyEnvironment, BodyIntake, Communicate, Interpret, Appraise, Price, PlaceProfile, NameCharacter, BodySize, Disease, Battle, Substance, Weather, Choose, RecordFact, Claim, Transfer, WorkOut, Sickness, Listen, Look, SocialResponse, Trust, HoldOn, Chase, NewCharacter, BodyCheck, BodyTreat, BodyConta
+MISS a condemned act is named in the scene's words: "SocialResponse waits: fix and call again: act: choose from claiming government benefits one has no right to | avoiding a fare on public transport | stealing property | cheating on taxes given the chance | accepting a bribe in the course of one's duties | homosexuality | prostitution | abortion | divorce | sex before marriage | suicide | euthanas
+196 checks, 3 miss(es)
+
+## What the planner and the narrator read, six lines by year (review-tests/probes/scene-words.mjs): section 38
+[
+ {
+  "year": 1300,
+  "planner_tokens_per_line": 4088,
+  "narrator_tokens_per_line": 23180,
+  "brief_tokens": 1019,
+  "planner_words": "abortion, adamantine, aircraft, antibiotics, antivenom, bus driver, car exhaust, df creature, euthanasia, giant wolf, homosexuality, hyperbaric, john's house, lyon, milkman, phone, police, rue de rivoli, telepathy, transfuse, welder",
+  "narrator_words": "abortion, adamantine, aircraft, aluminium, antibiotics, antivenom, asphalt, bra+panty, bus driver, car exhaust, cartridge, df creature, dorm lounge, dragon, elevator, euthanasia, football game, giant wolf, gypsum, homosexuality, hyperbaric, john's house, ketamine, loot, lyon, midazolam, milkman, movies, panty hose, phone, pistol, police, propane, propofol, revolver, rue de rivoli, sars, sneakers, t-shirt, telepathy, transfuse, welder",
+  "brief_words": "castspell, loot, dwarf fortress, elves, goblins, sètï"
+ },
+ {
+  "year": 1850,
+  "planner_tokens_per_line": 4088,
+  "narrator_tokens_per_line": 23180,
+  "brief_tokens": 1019,
+  "planner_words": "abortion, adamantine, aircraft, antibiotics, antivenom, bus driver, car exhaust, df creature, euthanasia, giant wolf, homosexuality, hyperbaric, john's house, lyon, milkman, phone, police, rue de rivoli, telepathy, transfuse, welder",
+  "narrator_words": "abortion, adamantine, aircraft, aluminium, antibiotics, antivenom, asphalt, bra+panty, bus driver, car exhaust, cartridge, df creature, dorm lounge, dragon, elevator, euthanasia, football game, giant wolf, gypsum, homosexuality, hyperbaric, john's house, ketamine, loot, lyon, midazolam, milkman, movies, panty hose, phone, pistol, police, propane, propofol, revolver, rue de rivoli, sars, sneakers, t-shirt, telepathy, transfuse, welder",
+  "brief_words": "castspell, loot, dwarf fortress, elves, goblins, sètï"
+ },
+ {
+  "year": 1990,
+  "planner_tokens_per_line": 4088,
+  "narrator_tokens_per_line": 23180,
+  "brief_tokens": 1019,
+  "planner_words": "abortion, adamantine, aircraft, antibiotics, antivenom, bus driver, car exhaust, df creature, euthanasia, giant wolf, homosexuality, hyperbaric, john's house, lyon, milkman, phone, police, rue de rivoli, telepathy, transfuse, welder",
+  "narrator_words": "abortion, adamantine, aircraft, aluminium, antibiotics, antivenom, asphalt, bra+panty, bus driver, car exhaust, cartridge, df creature, dorm lounge, dragon, elevator, euthanasia, football game, giant wolf, gypsum, homosexuality, hyperbaric, john's house, ketamine, loot, lyon, midazolam, milkman, movies, panty hose, phone, pistol, police, propane, propofol, revolver, rue de rivoli, sars, sneakers, t-shirt, telepathy, transfuse, welder",
+  "brief_words": "castspell, loot, dwarf fortress, elves, goblins, sètï"
+ }
+]
+
+## The same on section 39
+[
+ {
+  "year": 1300,
+  "planner_tokens_per_line": 3568,
+  "narrator_tokens_per_line": 2723,
+  "brief_tokens": 943,
+  "planner_words": "",
+  "narrator_words": "",
+  "brief_words": ""
+ },
+ {
+  "year": 1850,
+  "planner_tokens_per_line": 3612,
+  "narrator_tokens_per_line": 2726,
+  "brief_tokens": 982,
+  "planner_words": "",
+  "narrator_words": "",
+  "brief_words": ""
+ },
+ {
+  "year": 1990,
+  "planner_tokens_per_line": 3669,
+  "narrator_tokens_per_line": 2882,
+  "brief_tokens": 991,
+  "planner_words": "antibiotics, antivenom, hyperbaric, transfuse",
+  "narrator_words": "antibiotics, antivenom, bra+panty, hyperbaric, panty hose, sneakers, t-shirt, transfuse",
+  "brief_words": ""
+ }
+]
+
+## tools/prompt-audit.mjs on section 39
+Modern examples (3):
+AUDIT_SYSTEM: List each event in the reply that the engine governs and that no engine result backs, or that contradicts an engine result.
+AUDIT_SYSTEM: An event is backed when an engine result of the matching tool describes it.
+Claim.situation options: class | date | bus | family dinner | park | church | job interview | sidewalk | movies | bar | elevator | restroom | own room | dorm lounge | football game
+
+Defined against something (6):
+Appraise.about options: an event that affects them | an event that affects someone else | the prospect of an event | a hoped-for or feared event that came true or did not | their own action | someone else's action | a person
+Claim.marital options: never married | married now or before
+SocialResponse.emergency options: not an emergency | victim in danger | attacker present
+SocialResponse.requester options: ordinary clothes | uniform without authority (a tradesman's or a porter's) | uniform of authority (a guard's)
+NewCharacter.named_as options: a man | a woman | a boy | a girl | a child | a person, sex not named | several people
+BodyFall.slip: A slip or trip on level ground (ice, a wet floor): the body goes down from its own height, not onto the feet;
+
+## Negative controls on the files this pass touched: shard A
+N07 caught trust (33 s)
+N08 caught misinfo (31 s)
+N09 caught Eisner (31 s)
+N13 caught WVS (33 s)
+N15 caught water (31 s)
+N17 caught list (30 s)
+N20 caught choose (31 s)
+N21 caught feats (36 s)
+N22 caught conform (31 s)
+N26 caught lineup (30 s)
+N27 caught fear (29 s)
+N28 caught lineupf (31 s)
+N29 caught sighting (31 s)
+N31 caught favours (32 s)
+N35 caught ally (31 s)
+N36 caught day (30 s)
+N37 caught fates (30 s)
+N41 caught lightseen (30 s)
+N42 caught liejudge (31 s)
+N43 caught contrast (31 s)
+N45 caught students (31 s)
+N52 caught tradesex (36 s)
+N60 caught fixed choice (31 s)
+N60b caught player asked (32 s)
+N64 caught correction restores (36 s)
+N64b caught correction fixed (33 s)
+N66b caught swipe told (31 s)
+N67 caught taken kept (32 s)
+N67b caught taken others (31 s)
+V5 caught across cultures (32 s)
+V6 caught marks applied (38 s)
+V7 caught marks off for reading (34 s)
+V8 caught narrator told (34 s)
+H6 caught pass reads unseen marks (33 s)
+R1 caught regenerate without a reply (33 s)
+R2 caught delete back to the greeting (31 s)
+R4 caught chat opened during the pass (30 s)
+R5 caught marks read from the codes (37 s)
+R6 caught third-person line routed (31 s)
+R8 caught one Lombard rise (35 s)
+R12 caught voice button from the keyboard (0 s)
+R15 caught swipe after a function call (31 s)
+R20 caught say it another way takes the line back (0 s)
+PL1 caught Price keyed by the listed goods (1 s)
+PL2 caught a description is not a person (1 s)
+Q1 caught bystanders overhear (33 s)
+Q1b caught a wall between a room and outdoors (36 s)
+Q4 caught an out-of-character line (35 s)
+I16 caught the turn reads the line as meant (30 s)
+I17 caught the planner is told the line as meant (31 s)
+RV1 caught a pass run again for its place starts from the line's start (empty Send) (36 s)
+RV2 caught a pass run again for its place starts from the line's start (swipe, tools off) (38 s)
+RV5 caught code reads earlier lines as typed, not as notation (31 s)
+RV6 caught a written time is read from the words (32 s)
+RV13 caught the check's answer is written only on the swipe it read (32 s)
+55 of 55 controls caught.
+
+## Shard B
+RV14 caught no rewrite once the player has written on (34 s)
+RV15 caught a slip's injury share is read as a judgement (32 s)
+RW1 caught swiping back records what the swipe shown changed (32 s)
+RW2 caught swiping back takes the other swipe's changes out (33 s)
+RW4 caught a regenerate without a reply takes the snapshot with the line in first (38 s)
+RW5 caught a deleted line takes its pass with it (36 s)
+RW6 caught the prompts carry the notation whoever calls (30 s)
+RX1 caught a line keeps the world its pass left (31 s)
+RX2 caught a deletion restores the last message of any kind that holds a world (31 s)
+RX3 caught the greeting and a tool call keep their world when a generation starts from them (30 s)
+RX5 caught a line whose pass ran is started again (35 s)
+RX6 caught a line starts from the world the message before it ended with (31 s)
+RX7 caught a deletion cuts the record to what it held then (32 s)
+RX8 caught a deletion leaves a record that rebuilds the world (21 s)
+RX9 caught a start put back leaves a record that rebuilds the world (a line started again, a rewrite, a correction) (19 s)
+RY1 caught a line's pass run again starts from the start the line keeps (31 s)
+RY2 caught a correction redone after a later line is deleted is the correction it was (30 s)
+RY3 caught a swipe of a reply right after a line starts from the line's start (30 s)
+RY4 caught a swipe of a reply after tool calls starts from the last tool message's world (31 s)
+RY5 caught a swipe shown keeps the record from its line's start (32 s)
+RY6 caught a correction puts back the start its line keeps (31 s)
+RY7 caught a start put back cuts the record to the changes it held (30 s)
+RY8 caught the line's first pass keeps its start on it (31 s)
+RY9 caught a line that keeps a start starts there when its pass runs again (a pass that failed after its calls) (31 s)
+RY10 caught old player lines let go of their worlds (32 s)
+RY11 caught replies keep their worlds when old lines let go (32 s)
+RY12 caught a chat saved by version 100 starts a line again from the engine's lineStart (32 s)
+RY13 caught a world-book line is read without its hidden marks (0 s)
+RY26 caught a correction reads the pass the line before keeps (38 s)
+RZ1 caught a line's kept pass follows its words, not its place (32 s)
+RZ2 caught a correction reads the line before it in SillyTavern's chat (32 s)
+RZ3 caught draws follow the line's words, not its place (31 s)
+RZ4 caught old replies keep the shown swipe's world only (34 s)
+RZ5 caught old replies keep the shown swipe's record count only (34 s)
+RZ9 caught a tool's result carries no tag character (33 s)
+RZ11 caught the narrator's prompt carries no tag character (0 s)
+RS1 caught a correction put back keeps that world as its line's start (33 s)
+RS2 caught a pass that fails after its calls ran takes them back (32 s)
+RS3 caught a tool that waited writes nothing once another chat is open (32 s)
+RS4 caught the rule check's note goes to its own turn only (43 s)
+RA14 caught replies keep their worlds in the archive, by id (32 s)
+RA15 caught the archive keeps the bases of every world a message reaches (30 s)
+RC1 caught an option is shown from its first year (37 s)
+RC2 caught an argument is shown in its years (33 s)
+RC3 caught a tool is shown in its years and its country (36 s)
+RC4 caught a world without magic is shown no adamantine (31 s)
+RC5 caught a market is shown in the years its data cover (47 s)
+RC6 caught a coin is shown while it circulates (35 s)
+RC7 caught the planner's catalogue is the scene's (32 s)
+RC8 caught the plan schema is the scene's (32 s)
+RC9 caught the brief tells of handguns from their year (31 s)
+RC10 caught the narrator is offered the line's tools (33 s)
+RC11 caught the narrator reads the scene's arguments (32 s)
+RC12 caught an act's everyday name is read (27 s)
+RC13 caught a scene's country keeps its own fit (31 s)
+55 of 55 controls caught.

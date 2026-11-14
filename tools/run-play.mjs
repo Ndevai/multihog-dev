@@ -49,7 +49,7 @@ for (const [i, sc] of PLAY.slice(0, n).entries()) {
     // The narrator, with what SillyTavern would add, then the rule check on its reply.
     let reply = '', events = [];
     try {
-        const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.RULES_BRIEF, timeBlock(), B.bodyBlock(B.trackedPeople()), Q.decidedInjection()].filter(Boolean).join('\n\n');
+        const inj = [T.questionPassRan() ? T.RULES_BRIEF_DECIDED : T.rulesBrief(), timeBlock(), B.bodyBlock(B.trackedPeople()), Q.decidedInjection()].filter(Boolean).join('\n\n');
         reply = await send(`${NARRATOR}\n\n${cast}\n\n${inj}`, sc.player);
         const now = T.storyTime();
         events = A.parseAudit(await send(Q.GUIDED ? A.AUDIT_GUIDED : A.AUDIT_SYSTEM, A.buildAuditPrompt(reply, results, '', now === null ? '' : C.formatStoryTime(now)), Q.GUIDED ? { schema: A.auditSchema() } : {})) ?? [];

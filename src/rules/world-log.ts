@@ -6,7 +6,9 @@ import type { RuleState } from './types.js';
 
 export type Op = { p: (string | number)[]; v?: unknown; del?: true };
 export interface Entry { n: number; msg: number; tool: string; args: unknown; draws: number[]; ops: Op[] }
-export interface History { base: RuleState; log: Entry[]; n: number }
+/** baseMsg: the latest message whose changes the base holds (entries folded into it past KEEP_ENTRIES); baseN: the number of
+ * the latest entry folded into it. */
+export interface History { base: RuleState; log: Entry[]; n: number; baseMsg?: number; baseN?: number }
 export const KEEP_ENTRIES = 400;
 
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null;
@@ -14,7 +16,8 @@ const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object
 export function diff(a: unknown, b: unknown, p: (string | number)[] = [], out: Op[] = []): Op[] {
     if (Object.is(a, b)) return out;
     if (!isObj(a) || !isObj(b) || Array.isArray(a) !== Array.isArray(b)) { out.push({ p, v: structuredClone(b) }); return out; }
-    if (Array.isArray(a) && Array.isArray(b) && a.length !== b.length) { out.push({ p, v: structuredClone(b) }); return out; }
+    // A shorter array is stored whole; a longer one by its changed and added items (an appended fact is one op).
+    if (Array.isArray(a) && Array.isArray(b) && a.length > b.length) { out.push({ p, v: structuredClone(b) }); return out; }
     const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
     for (const k of keys) {
         const ka = Array.isArray(a) ? Number(k) : k;
@@ -39,13 +42,25 @@ export function apply(st: RuleState, ops: Op[]): RuleState {
 export function record(h: History, e: Omit<Entry, 'n'>): void {
     if (!e.ops.length) return;
     h.log.push({ ...e, n: ++h.n });
-    while (h.log.length > KEEP_ENTRIES) { const old = h.log.shift()!; h.base = apply(h.base, old.ops); }
+    while (h.log.length > KEEP_ENTRIES) { const old = h.log.shift()!; h.base = apply(h.base, old.ops); h.baseMsg = Math.max(h.baseMsg ?? -1, old.msg); h.baseN = old.n; }
 }
-/** A swipe rewrites message `msg`: its calls leave the history. */
-export function truncate(h: History, msg: number): void { h.log = h.log.filter(e => e.msg < msg); }
+/** A swipe rewrites message `msg`: its calls leave the history. When the base already holds changes from `msg` on (a
+ * deletion back past the folded entries), the base starts again from `state`, the world as restored, with an empty log, so
+ * the replay rebuilds it. */
+export function truncate(h: History, msg: number, state?: RuleState): void {
+    if (state && h.baseMsg != null && h.baseMsg >= msg) { h.base = structuredClone(state); h.log = []; h.baseMsg = msg - 1; return; }
+    h.log = h.log.filter(e => e.msg < msg);
+}
+/** The record as it stood when it held `n` entries in all: the later ones go. When the base already holds a later one (folded
+ * past KEEP_ENTRIES), the base starts again from `state`, the world as restored, with an empty log. */
+export function truncateTo(h: History, n: number, state?: RuleState): void {
+    if (state && (h.baseN ?? 0) > n) { h.base = structuredClone(state); h.log = []; h.baseN = h.n; return; }
+    h.log = h.log.filter(e => e.n <= n);
+}
+/** The world the record rebuilds: the log replayed on the base. */
+export const rebuilt = (h: History): RuleState => h.log.reduce((s, e) => apply(s, e.ops), structuredClone(h.base));
 /** Replays the log on the base; null when it rebuilds `state` exactly, else the first differing paths. */
 export function verify(h: History, state: RuleState): string | null {
-    const replayed = h.log.reduce((s, e) => apply(s, e.ops), structuredClone(h.base));
-    const d = diff(replayed, state);
+    const d = diff(rebuilt(h), state);
     return d.length ? d.slice(0, 5).map(o => o.p.join('.')).join(', ') : null;
 }

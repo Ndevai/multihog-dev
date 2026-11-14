@@ -1,0 +1,1132 @@
+diff --git a/README.md b/README.md
+index 1e9305a..79134a6 100644
+--- a/README.md
++++ b/README.md
+@@ -47,6 +47,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - A refused outcome ("State unchanged") is the engine asking for a missing number; the question pass asks again once.
+ - Under your message a folded line shows how the engine read it, one tagged call each ("Sight Tom · 15 m", "Body vault the low wall · 46 %"), the tag's colour for the kind of rule; click it to open, hover a row to see the rule call. It stays with the message, in a book serif that follows the story's era (Garamond for the 1500s, the Fell types, Baskerville, a Victorian Modern, Caslon; Georgia from 1970 or with no date). When your words leave a choice open, the likeliest reading is taken and shown ("☞ walk after the thief in the open — or…") unless a wrong guess would hurt someone ("I hit him" with two men at the bar, or "I look at Tom and Will, then I punch him"): then the engine asks in a sentence ("Do you mean to hit ¹Tom or ²Will?"; click or press the number), or "Say it another way" stops the reply. Opened, a guess offers the others as links; one puts "no, catch up with the thief" in your input box. That line, or one of your own such as "no, Will" or "I meant to keep out of sight", redoes the last turn that way.
+ - How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor; Tab from the box enters the toolbar while it shows. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another. With **Multiple distinctions** on (the default), each part of the voice has a place of its own in the chat: a thin stroke above a word for its pitch (a rise-fall and a fall-rise differ), heavier letters for louder and paler ones for softer, a wavy rule under creaky words, dots under breathy ones and a broken rule under whispered ones, wider gaps for slower and a lean for faster, a drawn-out vowel written again ("Nooo"), narrow letters for falsetto, and the feeling's colour at the line's edge. Every line keeps the story's line spacing. Hover a marked word to read its marks with their sizes ("louder (about 6 dB above your normal voice)"). Turn it off in the settings for the lighter look.
++- The chat is a page of its own: with **Dialogue page** on (the default), messages are set black on ivory in a book serif that follows the story's era, with no letter shadow and room between the lines for the voice marks, whatever your theme; quoted words keep the text colour, as in print. After your name a word says what your character is doing in the line: SPEAKING when the line holds said words (a speech call, or words in quotation marks), THINKING when your character works something out; hover it for the call it rests on. Off, messages keep the theme's look and the word stays.
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
+ - Water below 0 °C is not ice by its temperature alone: the Substance lookup decides whether it freezes from how much there is, what is in it and how long it has been cold, so a cloud droplet at −1 °C stays liquid, a bucket freezes, and water touching frost freezes at once.
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 3f0a271..0b4b4b2 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -998,6 +998,43 @@ Rules of the drawing:
+ 
+ The order of the pitch marks is also kept for the models: the notation writes the arrows as placed (↑↓ a rise-fall, ↓↑ a fall-rise; before, always ↑↓), and the delivery names the tune's shape ("rise-fall on never"), not a meaning, so the context decides what it does (a final rise is a question, a continuation or a check; the fall-rise's uses: Ward & Hirschberg 1985, Language 61:747). Check: tests/ui.test.mjs R31 (the order in the notation, the delivery and the chat; the stress mark, the drawn-out vowel and the feeling's name), R32 (the sizes are the sound's and follow its order; the palest ink at 4.5:1 on every theme; no blur, hollow letter, hue or added height in the stylesheet; the feeling colours legible and apart), R33 (the vowel written again, a pause's dots, the gap's tempo, the run, the hover text), RL1–RL4, RM1–RM15; `history/review-tests/browser/voice-look/` (measure.mjs: line height, overlap, blur and hollow letters measured in Chromium; specimen.mjs and toolbar.mjs: the sheets) [drawn with SillyTavern's theme variables and message type written from memory of its stylesheet; not yet seen inside SillyTavern].
+ 
++**The dialogue page and the name plate (2026-11-11 (115); `style.css` body.rules-page and .rules-mode, `reading.ts` modeOf, `ui.ts` modesOf, platesOf and drawModes, `index.ts` drawNotes and toneLook, the setting "Dialogue page", on by default).** The chat is set as a page of its own, and each of the player's lines says in one English word what the character is doing in it.
++
++The name plate. After the player's name stands the line's mode, so the plate reads as a clause: "Mara speaking", "Mara thinking". The mode is the primitive act of a call the engine made for the line (the coverage map of §11; Schank 1975):
++
++| IF the line holds | THEN the plate says | Primitive act | Hover text |
++|---|---|---|---|
++| a Communicate call by speech (`means` other than gesture) | speaking | SPEAK: the voice makes sounds | the call in words ("Mara whispers to Tom: …") |
++| words in quotation marks and no such call | speaking | SPEAK (`quotes.ts`: what is said in quoted words is speech) | Said: “…” |
++| a WorkOut call | thinking | MBUILD: something new worked out from what is known | the call in words, with the kind of problem (one of `thinking.ts` PROBLEMS) |
++| any other call, or none | no word | the call's kind is in the note under the line | |
++
++A line with both shows both, speaking first. "Aloud" and "to oneself" are no modes: who hears a spoken line follows from its level at each ear (`acoustics.ts`). A Communicate by gesture makes no sound, so it is no speaking. A note kept before modes were recorded gives them from the tool each call names; a line edited since its reading keeps what its own words show. The word carries the mode; its box repeats it without a hue: filled for speaking, an outline for thinking [ASSUMED]. WorkOut is filed under the mind's kind (before: the body's), so its row in the note reads "Mind".
++
++The page. Inside each message SillyTavern's own theme variables are set again, so its rules and this extension's notes and marks read them there:
++
++| Variable | On the page | Why |
++|---|---|---|
++| text, quoted words, underlined words | black | the quotation marks and the rule tell them apart, as in print; hue is left to the feeling |
++| italics, the notes and the words the typesetting adds | dimgray | 5.44:1 on the ground |
++| ground of the message, of both speakers | ivory | black on it reads at 20.81:1 |
++| hairlines | silver | |
++| letter shadow | transparent | no mark has a blurred edge |
++
++The colours are CSS's named colours (CSS Color 4), so the block reads as English and is changed by writing another name. Type: the era's book serif (the chat carries the era's class, as the notes do). Print size is the x-height (Legge & Bigelow 2011, J Vis 11(5):8), so the page keeps the one set in SillyTavern: the x of its Noto Sans stands 0.547 em tall (measured in Chromium at 1000 px), the serifs are held at 0.46, so the size is 0.547 ÷ 0.46 = 1.19 times SillyTavern's. Line height 1.7 [ASSUMED] against SillyTavern's 1.53 (0.5 rem over a 15 px size). On the page the tone is light, so the kind and feeling colours take their light values. A pause's sign does not break from the word it follows.
++
++Measured with SillyTavern's own stylesheets and message template (release branch, commit 06bde93; `history/review-tests/browser/voice-look/st-chat.mjs`; 5 shipped themes and a light one × flat, bubble and document display × 412 and 800 px, 7 messages, 5 of them the player's):
++
++| | The page | The theme's look (page off) |
++|---|---|---|
++| combinations with a fault | 0 of 36 | 32 of 36 |
++| letter shadow under a marked word | none | 3 of 5 shipped themes: 1, 2 and 5 px |
++| lowest contrast of a marked or added word | 5.44:1 (an added word in dimgray; a whispered word 11.65:1) | 2.95:1 (a whispered word in the theme's quote colour, Azure); under 4.5:1 on 5 of the 6 themes in one display or more |
++| a pitch stroke and the line above | 0.14 em apart or more | 0.07 em apart at most; at 412 px the stroke lies in the letters of the line above (18 of 18 combinations at that width) |
++| every line at one height | yes | yes |
++
++Check: `tests/ui.test.mjs` R34 (modes from calls, older notes and quoted words; plates by the line as it stands) and R35 (the page's inks at 4.5:1 or more, its type, the modes without a hue); U7 and R32 hold the kind and feeling colours on the page's ground; negative controls RN1–RN8.
++
+ | Step | Source |
+ |---|---|
+ | questions answered apart from the draft, before writing | Chain-of-Verification (Dhuliawala et al. 2023, arXiv 2309.11495): factored verification beat joint; list precision 0.17 → 0.36, biography FactScore 55.9 → 71.4 (LLaMA 65B); a model defends an outcome it has already written (Zhang et al. 2023) |
+@@ -1167,9 +1204,9 @@ What these show:
+ | EXPEL | push out of the body | Sickness (sea crossing, after surgery); Disease (food poisoning) |
+ | ATRANS | transfer possession | Transfer (record); SocialResponse, Choose, Look, HoldOn, BodyStrike, Price (whether and at what cost) |
+ | MTRANS | pass information | Communicate, RecordFact |
+-| MBUILD | work something out | WorkOut |
++| MBUILD | work something out | WorkOut (the name plate's "thinking") |
+ | ATTEND | perceive | Look, Listen |
+-| SPEAK | make sounds | Communicate |
++| SPEAK | make sounds | Communicate (by speech: the name plate's "speaking") |
+ 
+ **Names.** IF a tool names a character in other case or spacing than the record ("mara ") → THEN it is the recorded character. IF a name of 4 or more letters differs by one letter from a recorded one ("Mary" with Mara on record) and the call gives no species → THEN the call returns an error naming the recorded character, so a misspelling cannot split one body into two. A call that gives a species starts a separate character. Labels that differ only in a number (stranger 1, stranger 2) are separate characters.
+ 
+diff --git a/docs/progress.md b/docs/progress.md
+index 840072c..0219c33 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,17 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-11 (115), Claude
++- The player judged the look of (114) by its two specimens: the one in SillyTavern's dark type read as a debugging view, the light serif one "much better"; the cause named was SillyTavern's own stylesheet, "plain and inefficient for handling multiple information". The "speaking" and "thinking" of the eight points are the tags a visual novel's text box sets beside the speaker's name. The request: narrow down what to do, carry as much as possible in English words, a few lines of code.
++- Measured first, with SillyTavern's own stylesheets and message template (release branch, commit 06bde93, read as files; `history/review-tests/browser/voice-look/st-chat.mjs`), 5 shipped themes and a light one × 3 displays × 412 and 800 px: the look of (114) has a fault in 32 of 36 combinations. Three shipped themes cast a shadow of 1, 2 and 5 px under every letter; the theme's quote colour times a whisper's paler ink reads at 2.95:1 to 4.34:1 on 5 of the 6 themes; at SillyTavern's line height (1.53) a pitch stroke lies 0.07 em from the line above at most, and in its letters at 412 px. The player's cause holds.
++- Changed, the page: a setting, "Dialogue page", on by default (`style.css` body.rules-page). Inside each message SillyTavern's own theme variables are set again, as named colours: black text, quoted and underlined words, dimgray asides, an ivory ground, no letter shadow. Its rules and the extension's notes and marks read them there. Type: the era's book serif at 1.19 times SillyTavern's size (the same x-height: 0.547 em of its Noto Sans over the serifs' 0.46), line height 1.7. The name stands in small capitals over a hairline. On the page the tone is light, so kind and feeling colours take their light values.
++- Changed, the name plate: after the player's name one word says what the character is doing in the line, so the plate reads "Mara speaking" or "Mara thinking" (`reading.ts` modeOf, `ui.ts` modesOf, platesOf, drawModes). The word is the primitive act of a call made for the line (the coverage map of `docs/df-body-engine.md` §11): a Communicate by speech, or words in quotation marks, is speaking; a WorkOut is thinking; hover shows the call. Filled box for speaking, outline for thinking, no hue. It shows in every look.
++- Fixed on the way: WorkOut was filed under the body's kind, so a riddle's note read "Body"; it reads "Mind", and the call is said in words ("Mara works out the riddle on the door (a riddle or trick that needs a new view), 60 s"). A pause's dots broke onto the next line, away from their word; they stay with it.
++- Checked: route 218, frame 202, intent 37, engine 203, plan 60, size 9, ui 77 (8 new: R34, R35), sequences 300, all 0 misses. Chromium with SillyTavern's stylesheets: the page 0 faults in 36 of 36 combinations, every line at one height, no word over the next, no letter shadow, lowest contrast of a marked or added word 5.44:1 (black on ivory 20.81:1), a pitch stroke 0.14 em or more from the line above. Negative controls RN1–RN8 caught, and all 86 on `ui.js`, `index.js`, `style.css`, `reading.js`, `voice.js`, `voice-code.js`, `prosody.js`. Prompt audit unchanged. TypeScript 5.6.3, the pinned one.
++- Not checked: the look in a running SillyTavern (its dependencies could not be installed in this session; its stylesheets and template were read as files, its scripts not run). The player's own theme or custom CSS, if it sets `.mes` rules with `!important`, can still win over the page.
++- Seen and left: the era's serifs ship in one weight, so on the page a softer word shows by its size and ink and a louder one by a drawn bold; a face with a weight axis would carry both.
++- Next, for the player to decide. (1) Thought words as a mark of the toolbar: words formed without sound, so no level reaches any ear, set in one named colour (teal reads at 4.5:1 or more on ivory); today "thinking" is the act of a whole line. (2) The narrator's lines: a plate and marks for what other characters say needs the narrator to give who speaks and how; structured replies already give one passage per decided result. (3) From (114): the feeling setting the sound's quantities itself; a font with a weight axis; degrees for a mark.
++
+ ## 2026-11-10 (114), Claude (session configured for claude-fable-5-2)
+ - The player reported the multiple-distinctions look of (113) as worse than the lighter one: the blue pitch line too salient, the new blur worse than the old, several sizing errors. With it came eight points for a notation that maximizes how fast a line is taken in: colour and speed, what "fast" is measured against, a deeper layer under feelings, the logic of intensity steps, how much redundancy, thinking against speaking, a physical layer in place of labels, and words that mimic the sound.
+ - Measured first (Chromium, 13 specimen lines): 11 lines changed their line height by 1 to 9.75 px of 23, one word lay 2.2 px over the comma after it, 17 words were hollow, 10 blurred; the lighter look grew 10 lines by 1 to 5 px.
+diff --git a/history/review-tests/browser/voice-look/README.md b/history/review-tests/browser/voice-look/README.md
+index d6ea10e..0608dcb 100644
+--- a/history/review-tests/browser/voice-look/README.md
++++ b/history/review-tests/browser/voice-look/README.md
+@@ -7,6 +7,7 @@ Scripts for section 47 (`docs/progress.md` (114)). Each takes the repository roo
+ | `measure.mjs <root> [distinct or plain] [font] [width]` | sets the 13 lines of `lines.json` and reports, per line: whether it keeps the story's line height, words drawn over the next, blurred and hollow letters, the pitch stroke's colour; prints `MISS <label>` on a fault |
+ | `specimen.mjs <root> <out.png> [look] [font] [dark or light] [width]` | draws the same lines as a sheet |
+ | `toolbar.mjs <root> <out.png> [font]` | loads `src/index.js` with a stand-in SillyTavern and draws the toolbar and one chat line |
++| `st-chat.mjs <root> <SillyTavern checkout> <out.png or -> [theme] [flat, bubble or document] [width] [page on or off] [measure]` | section 48 (`docs/progress.md` (115)): draws a chat of 7 messages with SillyTavern's own stylesheets and message template, read from a checkout as files (none of its scripts run), the extension loaded through `src/index.js` with a stand-in context; with `measure` it reports, per message: every line at one height, words drawn over the next, a pause away from its word, a pitch stroke in the line above, letter shadows, each text's contrast on what lies behind it; prints `MISS <label>` on a fault |
+ | `palette-css.mjs <root>` | the feeling colours of `style.css`: sRGB, contrast on each shipped theme, pairwise CIELUV distances for normal colour vision, a deuteranope and a protanope |
+ 
+-`themes.mjs` holds the shipped themes as `tests/ui.test.mjs` lists them. Playwright with Chromium is needed (`require('playwright')`).
++`themes.mjs` holds the shipped themes as `tests/ui.test.mjs` lists them; `st-chat.mjs` reads them from the checkout (`default/content/themes`). Playwright with Chromium is needed (`require('playwright')`).
+diff --git a/history/review-tests/browser/voice-look/st-chat.mjs b/history/review-tests/browser/voice-look/st-chat.mjs
+new file mode 100644
+index 0000000..42ac042
+--- /dev/null
++++ b/history/review-tests/browser/voice-look/st-chat.mjs
+@@ -0,0 +1,182 @@
++// A chat drawn with SillyTavern's own stylesheets and message template (read from a checkout of SillyTavern as files; none of
++// its scripts run) and the extension loaded through its own index.js with a stand-in context, as toolbar.mjs does.
++// Usage: node st-chat.mjs <repo root> <SillyTavern checkout> <out.png> [theme: a file name in default/content/themes, or light]
++//        [display: flat|bubble|document] [width] [page: on|off] [measure]
++// With "measure" it prints one line per check and MISS <label> on a fault.
++import { createRequire } from 'node:module';
++import fs from 'node:fs';
++import path from 'node:path';
++const { chromium } = createRequire(import.meta.url)('playwright');
++const [root, st, out, themeName = 'Dark Lite', display = 'flat', width = '412', pageArg = 'on', measure = ''] = process.argv.slice(2);
++const pub = path.join(st, 'public');
++const types = { '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.html': 'text/html', '.png': 'image/png', '.svg': 'image/svg+xml' };
++
++// SillyTavern's page: the stylesheets its index.html links, in its order, and its message template.
++const index = fs.readFileSync(path.join(pub, 'index.html'), 'utf8');
++const sheets = [...index.matchAll(/<link\b[^>]*>/g)].map(m => m[0]).filter(l => /rel="stylesheet"/.test(l)).map(l => /href="([^"]+)"/.exec(l)?.[1]).filter(Boolean);
++const template = index.slice(index.indexOf('<div id="message_template"'), index.indexOf('<div id="group_avatars_template"'));
++// A shipped theme as power-user.js applies it: the colours as variables on the root, the display settings as classes on the body.
++// "light" is no shipped theme: SillyTavern's variables set to a light page, as tests/ui.test.mjs lists it.
++const LIGHT = { main_text_color: 'rgba(30, 30, 30, 1)', italics_text_color: 'rgba(110, 110, 110, 1)', underline_text_color: 'rgba(60, 120, 90, 1)', quote_text_color: 'rgba(150, 80, 10, 1)', blur_tint_color: 'rgba(243, 241, 234, 1)',
++    chat_tint_color: 'rgba(243, 241, 234, 1)', user_mes_blur_tint_color: 'rgba(255, 255, 255, 0.5)', bot_mes_blur_tint_color: 'rgba(255, 255, 255, 0.5)', shadow_color: 'rgba(0, 0, 0, 0)', border_color: 'rgba(0, 0, 0, 0.2)', shadow_width: 0, blur_strength: 0, font_scale: 1, noShadows: true, timestamps_enabled: true };
++const theme = themeName === 'light' ? LIGHT : JSON.parse(fs.readFileSync(path.join(st, 'default/content/themes', `${themeName}.json`), 'utf8'));
++const vars = { '--SmartThemeBodyColor': theme.main_text_color, '--SmartThemeEmColor': theme.italics_text_color, '--SmartThemeUnderlineColor': theme.underline_text_color, '--SmartThemeQuoteColor': theme.quote_text_color,
++    '--SmartThemeBlurTintColor': theme.blur_tint_color, '--SmartThemeChatTintColor': theme.chat_tint_color, '--SmartThemeUserMesBlurTintColor': theme.user_mes_blur_tint_color, '--SmartThemeBotMesBlurTintColor': theme.bot_mes_blur_tint_color,
++    '--SmartThemeShadowColor': theme.shadow_color, '--SmartThemeBorderColor': theme.border_color, '--fontScale': theme.font_scale ?? 1, '--blurStrength': theme.blur_strength ?? 10, '--shadowWidth': theme.shadow_width ?? 2 };
++const classes = [theme.noShadows ? 'noShadows' : '', theme.fast_ui_mode ? 'no-blur' : '', display === 'bubble' ? 'bubblechat' : display === 'document' ? 'documentstyle' : '', theme.timer_enabled ? '' : 'no-timer',
++    theme.timestamps_enabled === false ? 'no-timestamps' : '', theme.mesIDDisplay_enabled ? '' : 'no-mesIDDisplay', theme.message_token_count_enabled ? '' : 'no-tokenCount', theme.hideChatAvatars_enabled ? 'hideChatAvatars' : ''].filter(Boolean).join(' ');
++// The chat stands in the page's flow, so one screenshot holds all of it; a grey wallpaper stands behind a see-through chat tint.
++const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="http://rules.test/st/">
++${sheets.map(h => `<link rel="stylesheet" href="${h}">`).join('\n')}
++<link rel="stylesheet" href="http://rules.test/ext/style.css">
++<style>:root { ${Object.entries(vars).map(([k, v]) => `${k}: ${v};`).join(' ')} }
++html, body { height: auto; overflow: visible; } body { background: linear-gradient(160deg, #3b4252, #20242c); }
++#sheld { position: static; height: auto; max-height: none; margin: 0 auto; width: min(100vw, 800px); max-width: 100vw; } #chat { max-height: none; overflow: visible; }
++#form_sheld { position: static; } #send_textarea { min-height: 2.6em; }</style></head><body class="${classes}">
++<div id="sheld"><div id="chat"></div>
++<div id="form_sheld"><form id="send_form" class="no-connection"><div id="nonQRFormItems"><div id="leftSendForm" class="alignContentCenter"><div id="options_button" class="fa-solid fa-bars interactable" tabindex="0"></div></div>
++<textarea id="send_textarea" name="text" class="mdHotkeys" placeholder="Type a message"></textarea><div id="rightSendForm" class="alignContentCenter"><div id="send_but" class="fa-solid fa-paper-plane interactable" tabindex="0"></div></div></div></form></div></div>
++<div id="extensions_settings2" style="display:none"></div><div id="tpl" style="display:none">${template}</div>
++<script>
++window.toastr = { info(){}, warning(){}, success(){} }; window.__h = {};
++const ctx = { name1: 'Mara', chatMetadata: {}, chat: [], extensionSettings: ${JSON.stringify(pageArg === 'off' ? { 'rules-engine': { page: false } } : {})}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
++  eventTypes: { MESSAGE_RECEIVED: 'mr', CHAT_COMPLETION_SETTINGS_READY: 'ccsr', TEXT_COMPLETION_SETTINGS_READY: 'tcsr', GENERATION_STARTED: 'gs', MESSAGE_SWIPED: 'ms', CHAT_CHANGED: 'cc', MESSAGE_DELETED: 'md', USER_MESSAGE_RENDERED: 'umr', CHARACTER_MESSAGE_RENDERED: 'cmr', MESSAGE_UPDATED: 'mu', MORE_MESSAGES_LOADED: 'mml' },
++  setExtensionPrompt() {}, saveSettingsDebounced() {}, registerFunctionTool() {}, unregisterFunctionTool() {}, saveMetadata: async () => {}, saveMetadataDebounced() {},
++  renderExtensionTemplateAsync: async () => (await fetch('http://rules.test/ext/settings.html')).text(), POPUP_TYPE: { TEXT: 1, INPUT: 2 }, callGenericPopup: async () => null,
++  getCurrentChatId: () => 'c1', characters: [], writeExtensionField: async () => {}, generate: async () => {} };
++window.SillyTavern = { getContext: () => ctx };
++window.__ready = import('http://rules.test/ext/src/index.js').then(() => new Promise(r => { const t = setInterval(() => { if (document.getElementById('rules-voice')) { clearInterval(t); r(true); } }, 50); }));
++</script></body></html>`;
++
++const browser = await chromium.launch();
++const page = await (await browser.newContext({ viewport: { width: Number(width), height: 900 }, deviceScaleFactor: measure ? 1 : 2 })).newPage();
++const errs = [];
++page.on('pageerror', e => errs.push(String(e)));
++page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
++await page.route('http://rules.test/**', route => {
++    const u = decodeURIComponent(new URL(route.request().url()).pathname);
++    if (u === '/__page.html') return route.fulfill({ status: 200, contentType: 'text/html', body: html });
++    const [base, rel] = u.startsWith('/ext/') ? [root, u.slice(5)] : u.startsWith('/st/') ? [pub, u.slice(4)] : [null, ''];
++    const f = base ? path.join(base, rel) : '';
++    // Of SillyTavern only stylesheets, fonts and pictures are served: its scripts stay unread.
++    if (!base || !f.startsWith(base) || (base === pub && path.extname(f) === '.js') || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status: 404, body: '' });
++    return route.fulfill({ status: 200, contentType: types[path.extname(f)] ?? 'application/octet-stream', body: fs.readFileSync(f) });
++});
++await page.goto('http://rules.test/__page.html');
++await page.evaluate(() => window.__ready);
++const info = await page.evaluate(async () => {
++    const VC = await import('http://rules.test/ext/src/rules/voice-code.js'), U = await import('http://rules.test/ext/src/ui.js'), R = await import('http://rules.test/ext/src/rules/reading.js');
++    // A line's marks: [words, mark] pairs, set as the toolbar sets them on a selection (specimen.mjs).
++    const mark = (t, pairs) => {
++        for (const [w, id] of pairs) {
++            const i = VC.visible(t).indexOf(w), cps = [...t];
++            if (i < 0) throw new Error(`no "${w}"`);
++            const isTag = c => { const p = c.codePointAt(0); return p >= 0xE0020 && p <= 0xE007F; };
++            const rawAt = n => { let r = 0, s = 0; for (const c of cps) { if (!isTag(c)) { if (s === n) break; s += c.length; } r += c.length; } return r; };
++            const r = VC.markWords(t, rawAt(i), rawAt(i + w.length), id);
++            t = t.slice(0, r.from) + r.insert + t.slice(r.to);
++        }
++        return t;
++    };
++    const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
++    // A message's text as SillyTavern's formatting writes it: paragraphs, quoted words in <q>, *words* in <em>.
++    const format = t => t.split('\n\n').map(p => `<p>${esc(p).replace(/"[^"]*"/g, q => `<q>${q}</q>`).replace(/\*([^*]+)\*/g, '<em>$1</em>')}</p>`).join('');
++    const note = calls => ({ acts: R.readingItems(calls, 'Mara'), things: [] });
++    const lines = [
++        { name: 'Narrator', t: 'The tavern door bangs shut behind you. Tom looks up from the dice and pushes a stool out with his boot. "You are late," he says, *not quite smiling*. "Sit. Will has been counting the same six coins since noon."\n\nWill does not look up. A candle gutters between them, and past the back door someone drags a crate over stone.' },
++        { user: true, t: mark('I lean in close to Tom. "They are right behind that door. Do not make a sound."', [['I', 'feeling:fear'], ['"They are right behind that door. Do not make a sound."', 'whisper'], ['Do not make a sound."', 'slow'], ['right', 'stress']]),
++            calls: [{ tool: 'Communicate', args: { speaker: 'Mara', listener: 'Tom', means: 'speech', effort: 'whisper', message: 'They are right behind that door. Do not make a sound.' } }] },
++        { name: 'Narrator', t: 'Tom\'s hand stops over the dice. He hears you: the whisper carries the half metre between you and no further. "How many?" he breathes.' },
++        { user: true, t: 'Mara tries to work out the riddle chalked on the door before the guard comes back.',
++            calls: [{ tool: 'WorkOut', args: { who: 'Mara', problem: 'the riddle chalked on the door', kind: 'a riddle or trick that needs a new view', seconds: 60 } }] },
++        { user: true, t: mark('I stand up. "Get out of my house, right now, before I throw you out myself. No. Not one more word."', [['I', 'feeling:anger'], ['right now', 'loud'], ['now', 'up'], ['now', 'down'], ['myself', 'stress'], ['No', 'stretch'], ['house', 'pause'], ['Not one more word', 'creaky'], ['word', 'down']]),
++            calls: [{ tool: 'Communicate', args: { speaker: 'Mara', listener: 'Tom', means: 'speech', effort: 'loud', message: 'Get out of my house, right now, before I throw you out myself.' } }, { tool: 'Act', args: { who: 'Mara', action: 'stands up' } }] },
++        { user: true, t: 'I walk to the back door and listen for a while before I open it.', calls: [{ tool: 'Listen', args: { listener: 'Mara', sound: 'steps behind the door', distance_m: 2 } }] },
++        { name: 'Narrator', html: '<p>Nothing moves. On the door someone has chalked:</p><blockquote><p>What has keys but opens no locks?</p></blockquote><p>Below it, <u>underlined twice</u>, a tally: <code>IIII II</code>, and <strong>one word</strong> rubbed out.</p>' },
++    ];
++    const chat = document.getElementById('chat'), c = window.SillyTavern.getContext();
++    lines.forEach((l, i) => {
++        const mes = document.querySelector('#tpl .mes').cloneNode(true);
++        mes.setAttribute('mesid', String(i)); mes.setAttribute('ch_name', l.user ? 'Mara' : l.name); mes.setAttribute('is_user', String(!!l.user)); mes.setAttribute('is_system', 'false');
++        mes.querySelector('.name_text').textContent = l.user ? 'Mara' : l.name; mes.querySelector('.timestamp').textContent = 'November 11, 2026 9:41 AM';
++        mes.querySelector('.avatar img').src = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50"><rect width="50" height="50" fill="${l.user ? '#7a6a58' : '#56677a'}"/><circle cx="25" cy="20" r="9" fill="#ddd"/><rect x="9" y="33" width="32" height="20" rx="10" fill="#ddd"/></svg>`)}`;
++        mes.querySelector('.mes_text').innerHTML = l.html ?? format(l.t);
++        if (i === lines.length - 1) mes.classList.add('last_mes');
++        chat.appendChild(mes);
++        c.chat.push({ is_user: !!l.user, name: l.user ? 'Mara' : l.name, mes: l.t ?? '', ...l.calls ? { extra: { [U.NOTE_KEY]: { ...note(l.calls), line: l.t } } } : {} });
++    });
++    for (const f of window.__h['cc'] ?? []) f();
++    await document.fonts.ready;
++    return { body: document.body.className, tone: document.body.getAttribute('data-rules-tone'), font: getComputedStyle(document.querySelector('.mes_text')).fontFamily.slice(0, 60) };
++});
++await page.waitForTimeout(200);
++if (measure) {
++    // What the look has to hold inside SillyTavern's own type: every line of a message at one height, no word drawn over the
++    // next, no letter shadow or blur on a marked word, each text at 4.5:1 or more on what lies behind it (WCAG 1.4.3).
++    const faults = await page.evaluate(() => {
++        const out = [], px = v => parseFloat(v) || 0;
++        // A colour as sRGB with its alpha, whatever notation the computed style gives it in (rgb, oklch, color-mix): painted on a
++        // canvas and read back.
++        const cv = Object.assign(document.createElement('canvas'), { width: 1, height: 1 }).getContext('2d', { willReadFrequently: true });
++        const rgba = s => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = '#000'; cv.fillStyle = s; cv.fillRect(0, 0, 1, 1); const d = cv.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2], d[3] / 255]; };
++        const lum = c => { const f = x => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
++        const over = (t, b) => [0, 1, 2].map(i => t[i] * t[3] + b[i] * (1 - t[3]));
++        // What lies behind an element: its ancestors' background colours laid over each other, over the wallpaper's mean grey.
++        const behind = e => { const stack = []; for (let n = e; n && n.nodeType === 1; n = n.parentElement) { const b = rgba(getComputedStyle(n).backgroundColor); if (b[3] > 0) stack.push(b); } return stack.reverse().reduce((bg, t) => over(t, bg), [45, 51, 63]); };
++        const inkOf = e => { let o = 1; for (let n = e; n && n.nodeType === 1; n = n.parentElement) o *= px(getComputedStyle(n).opacity) || 1; const c = rgba(getComputedStyle(e).color); return [c[0], c[1], c[2], c[3] * o]; };
++        const contrast = e => { const bg = behind(e), fg = over(inkOf(e), bg), [a, b] = [lum(fg), lum(bg)].sort((x, y) => y - x); return (a + 0.05) / (b + 0.05); };
++        let lowest = 99, lowestAt = '', lowestMark = 99;
++        const strokes = [];
++        for (const mes of document.querySelectorAll('#chat .mes')) {
++            const id = mes.getAttribute('mesid');
++            for (const p of mes.querySelectorAll('.mes_text > p')) {
++                // Line heights: the distance between the tops of the line boxes of the paragraph's own text.
++                const lh = px(getComputedStyle(p).lineHeight), r = document.createRange(), tops = new Set();
++                const walk = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
++                for (let n = walk.nextNode(); n; n = walk.nextNode()) { if (n.parentElement.closest('.rules-v, .rules-v-add, .rules-run')) continue; r.selectNodeContents(n); for (const b of r.getClientRects()) tops.add(Math.round(b.top * 4) / 4); }
++                const ys = [...tops].sort((a, b) => a - b), gaps = ys.slice(1).map((y, i) => y - ys[i]).filter(g => g > lh / 2);
++                // A line of marked words only has no text of its own to measure: the gap over it is a whole number of lines.
++                const bad = gaps.filter(g => Math.abs(g - lh * Math.round(g / lh)) > 0.5);
++                if (bad.length) out.push(`MISS line height: message ${id}, ${bad.map(g => g.toFixed(2)).join(' ')} px against ${lh} px`);
++            }
++            // A pitch stroke lies in the room between the lines: it stays clear of the letters of the line above.
++            for (const w of mes.querySelectorAll('.rules-v[data-pitch]')) {
++                const a = w.getBoundingClientRect(), em = px(getComputedStyle(w).fontSize), top = a.top - (0.03 + (px(getComputedStyle(document.body).getPropertyValue('--rules-pitch-rise')) || 0.3)) * em;
++                const r = document.createRange(), walk = document.createTreeWalker(w.closest('p'), NodeFilter.SHOW_TEXT);
++                let over = 0, room = 99;
++                for (let n = walk.nextNode(); n; n = walk.nextNode()) { r.selectNodeContents(n); for (const b of r.getClientRects()) if (b.bottom <= a.top + 1 && b.right > a.left && b.left < a.right && b.bottom > a.top - 3 * em) { over = Math.max(over, b.bottom - top); room = Math.min(room, top - b.bottom); } }
++                if (over > 0.5) out.push(`MISS stroke in the line above: "${w.textContent}" in message ${id} by ${over.toFixed(1)} px`);
++                else if (room < 99) strokes.push(room / em);
++            }
++            // A pause's sign follows its word on the word's own line.
++            for (const d of mes.querySelectorAll('.rules-v-add-micro, .rules-v-add-pause, .rules-v-add-rest')) {
++                const b = [...d.getClientRects()].pop(), r = document.createRange();
++                if (!b) continue;
++                // The nearest thing before it that is drawn (the other look's sign for the same pause is not).
++                let prev = d.previousSibling, last;
++                for (; prev; prev = prev.previousSibling) { r.selectNodeContents(prev); last = [...r.getClientRects()].pop(); if (last) break; }
++                if (last && Math.abs(last.bottom - b.bottom) > last.height / 2) out.push(`MISS pause away from its word: after "${prev.textContent.slice(-12)}" in message ${id}`);
++            }
++            for (const w of mes.querySelectorAll('.rules-v')) {
++                const a = w.getBoundingClientRect(), n = w.nextSibling, s = getComputedStyle(w);
++                if (n && n.nodeType === 3 && n.nodeValue.trim()) { const r = document.createRange(); r.setStart(n, 0); r.setEnd(n, 1); const b = r.getBoundingClientRect(); if (b.top < a.bottom - 2 && b.bottom > a.top + 2 && b.left < a.right - 1.5) out.push(`MISS over the next: "${w.textContent}" in message ${id} by ${(a.right - b.left).toFixed(1)} px`); }
++                if (s.textShadow !== 'none' && !/rgba\([^)]*, 0\)/.test(s.textShadow)) out.push(`MISS letter shadow: "${w.textContent}" in message ${id}: ${s.textShadow}`);
++                if (s.filter !== 'none') out.push(`MISS blur: "${w.textContent}" in message ${id}`);
++            }
++            for (const e of mes.querySelectorAll('.name_text, .timestamp, .mes_text p, .mes_text q, .mes_text em, .mes_text u, .mes_text code, .mes_text blockquote p, .rules-v, .rules-v-add, .rules-run, .rules-mode, .rules-reading, .rules-tag, .rules-reading-taken')) {
++                if (!e.textContent.trim() || !e.getClientRects().length) continue;
++                const k = contrast(e);
++                if (k < lowest) { lowest = k; lowestAt = `${e.className || e.tagName.toLowerCase()} in message ${id}`; }
++                if (/\brules-(v|run)\b/.test(e.className)) lowestMark = Math.min(lowestMark, k);
++                if (k < 4.5) out.push(`MISS contrast: ${e.className || e.tagName.toLowerCase()} "${e.textContent.trim().slice(0, 24)}" in message ${id}, ${k.toFixed(2)}:1`);
++            }
++        }
++        out.unshift(`lowest contrast ${lowest.toFixed(2)}:1 (${lowestAt}), of a marked word ${lowestMark.toFixed(2)}:1${strokes.length ? `; least room over a pitch stroke ${Math.min(...strokes).toFixed(2)} em` : ''}`);
++        return out;
++    });
++    console.log(`${themeName}, ${display}, ${width} px, page ${pageArg}: ${faults.filter(f => f.startsWith('MISS')).length} miss(es); ${faults[0]}`);
++    for (const f of faults.slice(1)) console.log(`  ${f}`);
++}
++if (out && out !== '-') await page.screenshot({ path: out, fullPage: true });
++console.log(out, JSON.stringify(info), errs.join(' | ') || 'no page errors');
++await browser.close();
+diff --git a/history/section-48-run.txt b/history/section-48-run.txt
+new file mode 100644
+index 0000000..815499e
+--- /dev/null
++++ b/history/section-48-run.txt
+@@ -0,0 +1,202 @@
++# Section 48 run (the uploaded tree of (114) against this tree; 2026-11-11)
++
++## Tests (the steps of npm test; tsc Version 5.6.3)
++route: 218 checks, 0 miss(es)
++frame: 202 checks, 0 miss(es)
++intent: 37 checks, 0 miss(es)
++engine: 203 checks, 0 miss(es)
++plan: 60 checks, 0 miss(es)
++size: 9 of 9
++ui: 77 of 77
++sequences: 300 run, 0 distinct failing sequence(s)
++
++## Negative controls (every control on ui.js, index.js, style.css, reading.js, voice.js, voice-code.js, prosody.js)
++N62 caught who acts in a call (13 s)
++U1 caught others latest (0 s)
++U1b caught actor left out (0 s)
++U1c caught hover detail (0 s)
++U2 caught note as text (0 s)
++U3 caught edited line (0 s)
++U4 caught no default (0 s)
++U4b caught choices alike (0 s)
++U4c caught number keys (0 s)
++U4d caught shared words (0 s)
++U6 caught era bands (0 s)
++U7 caught kind contrast (0 s)
++U7b caught tone (0 s)
++U8 caught reserved name (0 s)
++V1 caught capitals loud (0 s)
++V2 caught abbreviations (0 s)
++V3 caught closer needs opener (0 s)
++V4 caught pi to five (0 s)
++V4b caught pi in engine (13 s)
++H1 caught toggle off (0 s)
++H2 caught marks kept on backspace (0 s)
++H3 caught layer holds the text (0 s)
++H4 caught chat classes (0 s)
++H5 caught one feeling (0 s)
++R10 caught signs after a quotation mark (0 s)
++R10b caught one colon is writing (0 s)
++R11 caught Backspace in quotes (0 s)
++R12 caught voice button from the keyboard (0 s)
++R20 caught say it another way takes the line back (0 s)
++R21 caught guillemets are quotes (0 s)
++R21b caught capitals on common words (0 s)
++R21c caught suspended hyphen (0 s)
++I18 caught the note shows the line as meant (0 s)
++RV7 caught Backspace: a word left with no letter loses its marks (0 s)
++RV8 caught Delete: a word left with no letter loses its marks (0 s)
++RV9 caught a dash may cling to a VoQS opener (0 s)
++RV10 caught a word a dash joins to a VoQS opener is a word of its own (0 s)
++RV11 caught a dash may cling to a VoQS closer (0 s)
++RW7 caught a pause titled by its length (0 s)
++RW8 caught a pause's length kept for its title (0 s)
++RW9 caught capitals after a determiner are an abbreviation (0 s)
++RW10 caught LA, DC, HR, PR and ER are abbreviations (0 s)
++RW11 caught the typesetting's added words are not selected (0 s)
++RY13 caught a world-book line is read without its hidden marks (0 s)
++RY18 caught abbreviations that are nouns stay after a determiner (0 s)
++RY19 caught AIDS and SIM stay as written (0 s)
++RY20 caught a hyphen before a colon is a face, not a cut-off (0 s)
++RZ10 caught every character of the Tags block is taken out (13 s)
++RZ11 caught the narrator's prompt carries no tag character (0 s)
++RZ21 caught speech in any quotation marks is the speech whose loudness counts (0 s)
++RZ22 caught a quote left open runs to the line's end (0 s)
++RZ23 caught a cut-off before a closing quotation mark or bracket (0 s)
++RZ24 caught a word opening any quotation marks starts a sentence (0 s)
++RS9 caught a whole number in brackets is no timed pause (0 s)
++RS10 caught a degree sign before C, F or K is a unit (0 s)
++RS13 caught a mark goes on the letters inside any quotation marks and before a dash (0 s)
++RA10 caught every request to a model leaves with notation (0 s)
++RA11 caught a shouted name keeps its capital (0 s)
++RA12 caught a feeling keeps the selection (0 s)
++RL1 caught pitch order in the notation (0 s)
++RL2 caught pitch order in the delivery (0 s)
++RL3 caught pitch order in the chat (0 s)
++RL4 caught stress mark in the chat (0 s)
++RM1 caught a louder word's level is the raised voice's (0 s)
++RM2 caught faster with slower keeps the speaker's own rate (0 s)
++RM3 caught the look's sizes come from the sound (0 s)
++RM4 caught further time is 1 ÷ rate − 1 (0 s)
++RM5 caught the palest ink keeps 4.5:1 (0 s)
++RM6 caught the pitch stroke takes the word's own colour (0 s)
++RM7 caught a breathy word keeps a sharp edge (0 s)
++RM8 caught a word with a pitch stroke adds no height to its line (0 s)
++RM9 caught a feeling's colour reads on the theme (0 s)
++RM10 caught two feelings' colours stay apart (0 s)
++RM11 caught a drawn-out vowel is written again (0 s)
++RM12 caught a pause's dots count its silence (0 s)
++RM13 caught the space between two slower words takes the tempo (0 s)
++RM14 caught words that share a phonation stand in one run (0 s)
++RM15 caught a mark's quantity on hover (0 s)
++RN1 caught a gesture is no speaking (0 s)
++RN2 caught working something out is the mind's (0 s)
++RN3 caught quoted words are said (0 s)
++RN4 caught an edited line keeps what its own words show (0 s)
++RN5 caught the mode's call on hover (0 s)
++RN6 caught the page's aside ink reads on its ground (0 s)
++RN7 caught the page keeps SillyTavern's x-height (0 s)
++RN8 caught a pause stays by its word (0 s)
++86 of 86 controls caught.
++
++## Prompt audit
++unchanged: the output of tools/prompt-audit.mjs is the same on both trees (12 lines)
++
++## The chat in Chromium with SillyTavern's own stylesheets and message template
++SillyTavern release branch, commit 06bde939fb1e9c4c8d8641d810f0a916b5bce127 (2026-09-14), read as files; none of its scripts run.
++node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - <theme> <display> <width> <page> measure
++7 messages, 5 of them the player's; "light" is no shipped theme (SillyTavern's variables set to a light page, as tests/ui.test.mjs lists it).
++
++### The dialogue page (36 combinations)
++Dark Lite, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark Lite, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark Lite, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark Lite, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark Lite, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark Lite, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Azure, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Azure, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Azure, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Azure, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Azure, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Azure, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Cappuccino, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Cappuccino, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Cappuccino, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Cappuccino, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Cappuccino, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Cappuccino, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Celestial Macaron, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Celestial Macaron, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Celestial Macaron, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Celestial Macaron, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Celestial Macaron, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Celestial Macaron, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark V 1.0, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark V 1.0, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark V 1.0, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark V 1.0, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark V 1.0, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark V 1.0, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++light, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++light, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++light, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++light, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++light, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++light, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++
++### The theme's look, page off (36 combinations; the MISS lines counted by kind below)
++Dark Lite, flat, 412 px, page off: 1 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
++Dark Lite, flat, 800 px, page off: 0 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
++Dark Lite, bubble, 412 px, page off: 14 miss(es); lowest contrast 4.34:1 (rules-run rules-run-whisper in message 1), of a marked word 4.34:1; least room over a pitch stroke 0.07 em
++Dark Lite, bubble, 800 px, page off: 13 miss(es); lowest contrast 4.34:1 (rules-run rules-run-whisper in message 1), of a marked word 4.34:1; least room over a pitch stroke 0.07 em
++Dark Lite, document, 412 px, page off: 1 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
++Dark Lite, document, 800 px, page off: 0 miss(es); lowest contrast 4.55:1 (rules-run rules-run-whisper in message 1), of a marked word 4.55:1; least room over a pitch stroke 0.07 em
++Azure, flat, 412 px, page off: 56 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
++Azure, flat, 800 px, page off: 55 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
++Azure, bubble, 412 px, page off: 53 miss(es); lowest contrast 3.03:1 (rules-run rules-run-whisper in message 1), of a marked word 3.03:1; least room over a pitch stroke 0.07 em
++Azure, bubble, 800 px, page off: 52 miss(es); lowest contrast 3.03:1 (rules-run rules-run-whisper in message 1), of a marked word 3.03:1; least room over a pitch stroke 0.07 em
++Azure, document, 412 px, page off: 49 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
++Azure, document, 800 px, page off: 48 miss(es); lowest contrast 2.95:1 (rules-run rules-run-whisper in message 1), of a marked word 2.95:1; least room over a pitch stroke 0.07 em
++Cappuccino, flat, 412 px, page off: 49 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
++Cappuccino, flat, 800 px, page off: 48 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
++Cappuccino, bubble, 412 px, page off: 33 miss(es); lowest contrast 3.59:1 (rules-run rules-run-whisper in message 1), of a marked word 3.59:1; least room over a pitch stroke 0.07 em
++Cappuccino, bubble, 800 px, page off: 32 miss(es); lowest contrast 3.59:1 (rules-run rules-run-whisper in message 1), of a marked word 3.59:1; least room over a pitch stroke 0.07 em
++Cappuccino, document, 412 px, page off: 49 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
++Cappuccino, document, 800 px, page off: 48 miss(es); lowest contrast 3.14:1 (rules-run rules-run-whisper in message 1), of a marked word 3.14:1; least room over a pitch stroke 0.07 em
++Celestial Macaron, flat, 412 px, page off: 1 miss(es); lowest contrast 5.00:1 (timestamp in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
++Celestial Macaron, flat, 800 px, page off: 0 miss(es); lowest contrast 5.00:1 (timestamp in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
++Celestial Macaron, bubble, 412 px, page off: 10 miss(es); lowest contrast 3.89:1 (timestamp in message 1), of a marked word 3.93:1; least room over a pitch stroke 0.07 em
++Celestial Macaron, bubble, 800 px, page off: 9 miss(es); lowest contrast 3.89:1 (timestamp in message 1), of a marked word 3.93:1; least room over a pitch stroke 0.07 em
++Celestial Macaron, document, 412 px, page off: 1 miss(es); lowest contrast 5.59:1 (em in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
++Celestial Macaron, document, 800 px, page off: 0 miss(es); lowest contrast 5.59:1 (em in message 0), of a marked word 5.59:1; least room over a pitch stroke 0.07 em
++Dark V 1.0, flat, 412 px, page off: 20 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
++Dark V 1.0, flat, 800 px, page off: 19 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
++Dark V 1.0, bubble, 412 px, page off: 20 miss(es); lowest contrast 5.11:1 (em in message 0), of a marked word 5.11:1; least room over a pitch stroke 0.07 em
++Dark V 1.0, bubble, 800 px, page off: 19 miss(es); lowest contrast 5.11:1 (em in message 0), of a marked word 5.11:1; least room over a pitch stroke 0.07 em
++Dark V 1.0, document, 412 px, page off: 20 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
++Dark V 1.0, document, 800 px, page off: 19 miss(es); lowest contrast 5.02:1 (em in message 0), of a marked word 5.02:1; least room over a pitch stroke 0.07 em
++light, flat, 412 px, page off: 14 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
++light, flat, 800 px, page off: 13 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
++light, bubble, 412 px, page off: 14 miss(es); lowest contrast 3.69:1 (rules-run rules-run-whisper in message 1), of a marked word 3.69:1; least room over a pitch stroke 0.07 em
++light, bubble, 800 px, page off: 13 miss(es); lowest contrast 3.69:1 (rules-run rules-run-whisper in message 1), of a marked word 3.69:1; least room over a pitch stroke 0.07 em
++light, document, 412 px, page off: 14 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
++light, document, 800 px, page off: 13 miss(es); lowest contrast 3.54:1 (rules-run rules-run-whisper in message 1), of a marked word 3.54:1; least room over a pitch stroke 0.07 em
++
++MISS lines by kind, page off:
++    460 contrast
++    342 letter shadow
++     18 stroke in the line above
++
++Letter shadows found, page off (computed text-shadow of a marked word):
++    114 rgb(0, 0, 0) 0px 0px 5px
++    114 rgba(0, 0, 0, 0.3) 0px 0px 1px
++    114 rgba(0, 0, 0, 0.9) 0px 0px 2px
++
++### The pause check misses without its fix
++style.css without ".rules-v-add-micro, .rules-v-add-pause, .rules-v-add-rest { white-space: nowrap; }", Dark Lite, flat, 412 px, page on:
++  MISS pause away from its word: after "," in message 4
++
++### Measured for the page's type
++x-height of SillyTavern's Noto Sans (public/webfonts/NotoSans/NotoSans-Regular.woff2 and -Medium.woff2), the letter x drawn at 1000 px in Chromium: 0.546875 em each
++contrast on ivory (WCAG relative luminance): black 20.81, dimgray 5.44, a whispered word (black at 0.78) 11.65, a softer word (black at 0.88) 16.44, teal 4.73
+diff --git a/settings.html b/settings.html
+index 0d7eb3a..97f7379 100644
+--- a/settings.html
++++ b/settings.html
+@@ -9,6 +9,7 @@
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_question_pass" /><span>Question pass: before each reply, a model call names the outcomes in doubt and the engine decides them first</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_rule_check" /><span>Rule check: after each reply, a model call compares it with the engine's results and redoes it once when it bends one</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_structured" /><span>Structured replies: the narrator writes one passage per decided result plus scenery, and names what is left open for the next turn; the reply is shown as prose</span></label>
++            <label class="checkbox_label"><input type="checkbox" id="rules_engine_page" /><span>Dialogue page: the chat is set as a light page, black on ivory, in a book serif that follows the story's era, with room between the lines for the voice marks and no letter shadow, whatever the theme. Off, messages keep the theme's look</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_distinct" /><span>Multiple distinctions: your marked lines show each part of the voice in a place of its own (above a word a thin stroke for its pitch; heavier letters for louder, paler for softer; under the words a wavy rule for creaky, dots for breathy, a broken rule for whispered; wider gaps for slower, a lean for faster, narrow letters for falsetto; the feeling's colour at the line's edge); off: the lighter look</span></label>
+             <label for="rules_engine_profile"><small>Connection for the question pass and rule check</small></label>
+             <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
+diff --git a/src/index.js b/src/index.js
+index 2ede54f..5073e3c 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -4,7 +4,7 @@
+ import { pulseSelfTest } from './rules/pulse.js';
+ import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, rulesBrief, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, sceneSky, storyYearNow, } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading } from './rules/question-pass.js';
+-import { noteView, notesOf, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
++import { noteView, notesOf, platesOf, drawModes, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -25,7 +25,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
+ const IN_CHAT = 1, SYSTEM = 0;
+ // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
+ const DEPTH = 1;
+-const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, profile: '', maxTokens: 0, effort: 'low' };
++const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, profile: '', maxTokens: 0, effort: 'low' };
+ const ctx = () => SillyTavern.getContext();
+ const toastr = globalThis.toastr;
+ function settings() {
+@@ -354,16 +354,20 @@ function fillInput(text) {
+ function drawNotes() {
+     if (typeof document === 'undefined')
+         return;
+-    document.querySelectorAll('#chat .rules-reading').forEach(e => e.remove());
++    document.querySelectorAll('#chat .rules-reading, #chat .rules-modes').forEach(e => e.remove());
+     if (!settings().enabled)
+         return;
+-    // The story's era sets the type; the theme's text colour, light or dark, sets the share each kind's colour takes.
+-    const look = { era: eraOf(storyYearNow()), tone: toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor')) };
++    // The story's era sets the type; the tone of what the text stands on, light or dark, sets the share each kind's colour takes.
++    const look = { era: eraOf(storyYearNow()), tone: toneNow() };
+     for (const { index, view } of notesOf(ctx().chat ?? [])) {
+         const at = document.querySelector(`#chat .mes[mesid="${index}"] .mes_text`);
+         if (at)
+             at.after(drawNote(document, view, look, fillInput));
+     }
++    // The name plate of each player's line: after the name, what the character is doing in it (ui.ts modesOf).
++    for (const { index, modes } of platesOf(ctx().chat ?? [])) {
++        document.querySelector(`#chat .mes[mesid="${index}"] .name_text`)?.after(drawModes(document, modes));
++    }
+ }
+ // How a line is said, marked without signs (src/rules/voice-code.ts, src/ui.ts): select words in the message box and a toolbar
+ // of plain words appears above it (the ♪ button by the box opens it for the word at the cursor); a pick marks the words with
+@@ -534,22 +538,36 @@ function typesetChat() {
+     }
+     toneLook();
+ }
+-/** The look of marked lines: the multiple-distinctions look while the setting is on (style.css, body.rules-distinct), its
+- * sizes set from the sound of each mark (ui.ts lookVars), so the stylesheet draws the engine's quantities. */
++/** The look of the chat: the dialogue page while its setting is on (style.css, body.rules-page), and for marked lines the
++ * multiple-distinctions look while its setting is on (body.rules-distinct), its sizes set from the sound of each mark (ui.ts
++ * lookVars), so the stylesheet draws the engine's quantities. */
+ function applyLook() {
+     if (typeof document === 'undefined')
+         return;
++    document.body?.classList?.toggle('rules-page', settings().page);
+     document.body?.classList?.toggle('rules-distinct', settings().distinct);
+     for (const [name, value] of Object.entries(lookVars()))
+         document.body?.style?.setProperty(`--rules-${name}`, String(value));
+     toneLook();
+ }
+-/** The theme's tone, light text or dark, for the feeling colours' lightness (style.css, body[data-rules-tone]); read again
+- * whenever the chat is drawn, as the player can change the theme. */
++/** The tone of what the chat's text stands on: light on the dialogue page, whose ground is its own; off the page the theme's,
++ * read from its text colour (light text is a dark theme). */
++const toneNow = () => settings().page ? 'light' : toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor'));
++/** The tone, for the feeling colours' lightness (style.css, body[data-rules-tone]), and on the dialogue page the story's era on
++ * the chat, for its type (style.css, .rules-era-…); both read again whenever the chat is drawn, as the player can change the
++ * theme and the story's time moves. */
+ function toneLook() {
+     if (typeof document === 'undefined' || !document.body?.setAttribute)
+         return;
+-    document.body.setAttribute('data-rules-tone', toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor')));
++    document.body.setAttribute('data-rules-tone', toneNow());
++    const chat = document.getElementById('chat');
++    if (!chat)
++        return;
++    for (const c of [...chat.classList])
++        if (c.startsWith('rules-era-'))
++            chat.classList.remove(c);
++    if (settings().page)
++        chat.classList.add(`rules-era-${eraOf(storyYearNow())}`);
+ }
+ function registerTimeCommand() {
+     const c = ctx();
+@@ -597,6 +615,9 @@ async function buildSettings() {
+         bind('rules_engine_suggest', 'suggest');
+     if (document.getElementById('rules_engine_distinct'))
+         bind('rules_engine_distinct', 'distinct', applyLook);
++    // The notes are drawn again with the page: their kind colours take the tone of what they stand on.
++    if (document.getElementById('rules_engine_page'))
++        bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); });
+     const profile = document.getElementById('rules_engine_profile');
+     const profiles = ctx().extensionSettings.connectionManager?.profiles ?? [];
+     for (const p of profiles)
+diff --git a/src/index.ts b/src/index.ts
+index 620d11b..0f312d8 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -8,7 +8,7 @@ import {
+     historyCheck, sceneSky, storyYearNow,
+ } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading, type Chooser, type Asker } from './rules/question-pass.js';
+-import { noteView, notesOf, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
++import { noteView, notesOf, platesOf, drawModes, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -33,8 +33,9 @@ const DEPTH = 1;
+ 
+ // distinct: the multiple-distinctions look for marked lines (style.css, body.rules-distinct), each voice dimension in a visual
+ // channel of its own; off, the lighter look.
+-interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; profile: string; maxTokens: number; effort: string }
+-const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, profile: '', maxTokens: 0, effort: 'low' };
++// page: the chat set as a light page in the story's book serif, whatever the theme (style.css, body.rules-page); off, the theme's look.
++interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; page: boolean; profile: string; maxTokens: number; effort: string }
++const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, profile: '', maxTokens: 0, effort: 'low' };
+ 
+ interface Ctx {
+     chat: STMessage[]; chatMetadata: Record<string, any>; extensionSettings: Record<string, any>;
+@@ -320,14 +321,18 @@ function fillInput(text: string): void {
+ }
+ function drawNotes(): void {
+     if (typeof document === 'undefined') return;
+-    document.querySelectorAll('#chat .rules-reading').forEach(e => e.remove());
++    document.querySelectorAll('#chat .rules-reading, #chat .rules-modes').forEach(e => e.remove());
+     if (!settings().enabled) return;
+-    // The story's era sets the type; the theme's text colour, light or dark, sets the share each kind's colour takes.
+-    const look = { era: eraOf(storyYearNow()), tone: toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor')) };
++    // The story's era sets the type; the tone of what the text stands on, light or dark, sets the share each kind's colour takes.
++    const look = { era: eraOf(storyYearNow()), tone: toneNow() };
+     for (const { index, view } of notesOf(ctx().chat ?? [])) {
+         const at = document.querySelector(`#chat .mes[mesid="${index}"] .mes_text`);
+         if (at) at.after(drawNote(document as unknown as Doc, view, look, fillInput) as unknown as Node);
+     }
++    // The name plate of each player's line: after the name, what the character is doing in it (ui.ts modesOf).
++    for (const { index, modes } of platesOf(ctx().chat ?? [])) {
++        document.querySelector(`#chat .mes[mesid="${index}"] .name_text`)?.after(drawModes(document as unknown as Doc, modes) as unknown as Node);
++    }
+ }
+ 
+ // How a line is said, marked without signs (src/rules/voice-code.ts, src/ui.ts): select words in the message box and a toolbar
+@@ -439,19 +444,29 @@ function typesetChat(): void {
+     toneLook();
+ }
+ 
+-/** The look of marked lines: the multiple-distinctions look while the setting is on (style.css, body.rules-distinct), its
+- * sizes set from the sound of each mark (ui.ts lookVars), so the stylesheet draws the engine's quantities. */
++/** The look of the chat: the dialogue page while its setting is on (style.css, body.rules-page), and for marked lines the
++ * multiple-distinctions look while its setting is on (body.rules-distinct), its sizes set from the sound of each mark (ui.ts
++ * lookVars), so the stylesheet draws the engine's quantities. */
+ function applyLook(): void {
+     if (typeof document === 'undefined') return;
++    document.body?.classList?.toggle('rules-page', settings().page);
+     document.body?.classList?.toggle('rules-distinct', settings().distinct);
+     for (const [name, value] of Object.entries(lookVars())) document.body?.style?.setProperty(`--rules-${name}`, String(value));
+     toneLook();
+ }
+-/** The theme's tone, light text or dark, for the feeling colours' lightness (style.css, body[data-rules-tone]); read again
+- * whenever the chat is drawn, as the player can change the theme. */
++/** The tone of what the chat's text stands on: light on the dialogue page, whose ground is its own; off the page the theme's,
++ * read from its text colour (light text is a dark theme). */
++const toneNow = () => settings().page ? 'light' : toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor'));
++/** The tone, for the feeling colours' lightness (style.css, body[data-rules-tone]), and on the dialogue page the story's era on
++ * the chat, for its type (style.css, .rules-era-…); both read again whenever the chat is drawn, as the player can change the
++ * theme and the story's time moves. */
+ function toneLook(): void {
+     if (typeof document === 'undefined' || !document.body?.setAttribute) return;
+-    document.body.setAttribute('data-rules-tone', toneOf(getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor')));
++    document.body.setAttribute('data-rules-tone', toneNow());
++    const chat = document.getElementById('chat');
++    if (!chat) return;
++    for (const c of [...chat.classList]) if (c.startsWith('rules-era-')) chat.classList.remove(c);
++    if (settings().page) chat.classList.add(`rules-era-${eraOf(storyYearNow())}`);
+ }
+ 
+ function registerTimeCommand(): void {
+@@ -485,7 +500,7 @@ async function buildSettings(): Promise<void> {
+     const html = await ctx().renderExtensionTemplateAsync(`third-party/${folder()}`, 'settings');
+     document.getElementById('extensions_settings2')?.insertAdjacentHTML('beforeend', html);
+     const s = settings();
+-    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured' | 'suggest' | 'distinct', after?: () => void) => {
++    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured' | 'suggest' | 'distinct' | 'page', after?: () => void) => {
+         const el = document.getElementById(id) as HTMLInputElement;
+         el.checked = s[key];
+         el.addEventListener('change', () => { settings()[key] = el.checked; ctx().saveSettingsDebounced(); after?.(); });
+@@ -496,6 +511,8 @@ async function buildSettings(): Promise<void> {
+     if (document.getElementById('rules_engine_structured')) bind('rules_engine_structured', 'structured');
+     if (document.getElementById('rules_engine_suggest')) bind('rules_engine_suggest', 'suggest');
+     if (document.getElementById('rules_engine_distinct')) bind('rules_engine_distinct', 'distinct', applyLook);
++    // The notes are drawn again with the page: their kind colours take the tone of what they stand on.
++    if (document.getElementById('rules_engine_page')) bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); });
+     const profile = document.getElementById('rules_engine_profile') as HTMLSelectElement;
+     const profiles: { id: string; name: string }[] = ctx().extensionSettings.connectionManager?.profiles ?? [];
+     for (const p of profiles) profile.add(new Option(p.name, p.id));
+diff --git a/src/rules/reading.js b/src/rules/reading.js
+index 203b470..1441885 100644
+--- a/src/rules/reading.js
++++ b/src/rules/reading.js
+@@ -29,6 +29,7 @@ export function readingOf(c) {
+         case 'BodyCheck': return `${s(a.who)} tries to ${cut(s(a.task), 56)}${a.share ? ` (${s(a.share).replace(/^(\d+)%.*$/, '$1 %')} of such tries succeed)` : ''}${a.task_kind && a.task_kind !== OWN_KIND ? `, as ${s(a.task_kind)}` : ''}`;
+         case 'Chase': return `${s(a.pursuer)} runs after ${s(a.fleeing)}${typeof a.gap_m === 'number' ? `, ${a.gap_m} m behind` : ''}`;
+         case 'HoldOn': return `${s(a.who)} holds on${typeof a.load_kg === 'number' ? ` under ${a.load_kg} kg` : ''}`;
++        case 'WorkOut': return `${s(a.who)} works out ${cut(s(a.problem), 40)}${a.kind ? ` (${s(a.kind)})` : ''}${typeof a.seconds === 'number' ? `, ${a.seconds} s` : ''}`;
+         case 'SocialResponse': return `${s(a.who)} answers ${s(a.speaker) || s(a.requester_name) || 'the moment'}: ${cut(s(a.situation), 48)}`;
+         default: {
+             const parts = Object.entries(a).filter(([, v]) => typeof v === 'string' || typeof v === 'number').slice(0, 2).map(([, v]) => cut(s(v), 32));
+@@ -45,12 +46,13 @@ export function detailOf(c) {
+ const KIND = {
+     Look: 'sight', Listen: 'sound', Communicate: 'speech', Interpret: 'speech', SocialResponse: 'speech',
+     BodyStrike: 'body', BodyCheck: 'body', BodyWound: 'body', BodyTreat: 'body', BodyChoke: 'body', BodyFall: 'body', HoldOn: 'body', BodyIntake: 'body',
+-    BodyEnvironment: 'body', BodyContact: 'body', BodyStatus: 'body', BodySize: 'body', Sickness: 'body', Disease: 'body', Dose: 'body', WorkOut: 'body', Battle: 'body',
++    BodyEnvironment: 'body', BodyContact: 'body', BodyStatus: 'body', BodySize: 'body', Sickness: 'body', Disease: 'body', Dose: 'body', Battle: 'body',
+     Act: 'move', Chase: 'move', Room: 'move', Layout: 'move', PlaceProfile: 'move',
+-    Trust: 'mind', Claim: 'mind', RecordFact: 'mind', Choose: 'mind', RollTheDice: 'mind', CastSpell: 'mind', NewCharacter: 'mind', NameCharacter: 'mind',
++    WorkOut: 'mind', Trust: 'mind', Claim: 'mind', RecordFact: 'mind', Choose: 'mind', RollTheDice: 'mind', CastSpell: 'mind', NewCharacter: 'mind', NameCharacter: 'mind',
+     PassTime: 'time', Weather: 'time', Transfer: 'thing', Price: 'thing', Appraise: 'thing', Break: 'thing', Substance: 'thing',
+ };
+ export const kindOf = (tool) => KIND[tool] ?? 'mind';
++export const modeOf = (c) => c.tool === 'Communicate' && c.args.means !== 'gesture' ? 'speaking' : c.tool === 'WorkOut' ? 'thinking' : undefined;
+ /** The call in the fewest words that still decide it, for the note's line after its tag: the player's character, who makes
+  * every call the note shows, is left out, and the tag says the kind of act. */
+ const WORD = { whisper: 'whisper', normal: 'say', loud: 'call', shout: 'shout' };
+@@ -67,15 +69,16 @@ export function briefOf(c, player) {
+         case 'Transfer': return `${s(a.item)} → ${s(a.to)}`;
+         case 'BodyCheck': return `${cut(s(a.task), 48)}${a.share ? ` · ${s(a.share).replace(/^(\d+)%.*$/, '$1 %')}` : ''}`;
+         case 'HoldOn': return `holding on${typeof a.load_kg === 'number' ? ` · ${a.load_kg} kg` : ''}`;
++        case 'WorkOut': return `${cut(s(a.problem), 40)}${typeof a.seconds === 'number' ? ` · ${a.seconds} s` : ''}`;
+         case 'SocialResponse': return `${s(a.speaker) || s(a.requester_name) ? `${s(a.speaker) || s(a.requester_name)}: ` : ''}${cut(s(a.situation), 40)}`;
+         default: return Object.entries(a).filter(([k, v]) => (typeof v === 'string' || typeof v === 'number') && v !== player && k !== 'who').slice(0, 2).map(([, v]) => cut(s(v), 32)).join(' · ');
+     }
+ }
+-/** The lines for the player's calls this turn, at most four, each with its call for the hover text, its kind and its brief
+- * form. */
++/** The lines for the player's calls this turn, at most four, each with its call for the hover text, its kind, its brief
++ * form and, for speaking and thinking, its mode. */
+ export function readingItems(calls, player) {
+     if (!player)
+         return [];
+-    return calls.filter(c => byPlayer(c, player)).slice(0, 4).map(c => ({ text: readingOf(c), detail: detailOf(c), kind: kindOf(c.tool), brief: briefOf(c, player) }));
++    return calls.filter(c => byPlayer(c, player)).slice(0, 4).map(c => { const mode = modeOf(c); return { text: readingOf(c), detail: detailOf(c), kind: kindOf(c.tool), brief: briefOf(c, player), ...mode ? { mode } : {} }; });
+ }
+ export const readingLines = (calls, player) => readingItems(calls, player).map(i => i.text);
+diff --git a/src/rules/reading.ts b/src/rules/reading.ts
+index 3c1169f..fd4ecd0 100644
+--- a/src/rules/reading.ts
++++ b/src/rules/reading.ts
+@@ -32,6 +32,7 @@ export function readingOf(c: Call): string {
+         case 'BodyCheck': return `${s(a.who)} tries to ${cut(s(a.task), 56)}${a.share ? ` (${s(a.share).replace(/^(\d+)%.*$/, '$1 %')} of such tries succeed)` : ''}${a.task_kind && a.task_kind !== OWN_KIND ? `, as ${s(a.task_kind)}` : ''}`;
+         case 'Chase': return `${s(a.pursuer)} runs after ${s(a.fleeing)}${typeof a.gap_m === 'number' ? `, ${a.gap_m} m behind` : ''}`;
+         case 'HoldOn': return `${s(a.who)} holds on${typeof a.load_kg === 'number' ? ` under ${a.load_kg} kg` : ''}`;
++        case 'WorkOut': return `${s(a.who)} works out ${cut(s(a.problem), 40)}${a.kind ? ` (${s(a.kind)})` : ''}${typeof a.seconds === 'number' ? `, ${a.seconds} s` : ''}`;
+         case 'SocialResponse': return `${s(a.who)} answers ${s(a.speaker) || s(a.requester_name) || 'the moment'}: ${cut(s(a.situation), 48)}`;
+         default: {
+             const parts = Object.entries(a).filter(([, v]) => typeof v === 'string' || typeof v === 'number').slice(0, 2).map(([, v]) => cut(s(v), 32));
+@@ -52,12 +53,19 @@ export type Kind = 'sight' | 'sound' | 'speech' | 'body' | 'move' | 'mind' | 'ti
+ const KIND: Record<string, Kind> = {
+     Look: 'sight', Listen: 'sound', Communicate: 'speech', Interpret: 'speech', SocialResponse: 'speech',
+     BodyStrike: 'body', BodyCheck: 'body', BodyWound: 'body', BodyTreat: 'body', BodyChoke: 'body', BodyFall: 'body', HoldOn: 'body', BodyIntake: 'body',
+-    BodyEnvironment: 'body', BodyContact: 'body', BodyStatus: 'body', BodySize: 'body', Sickness: 'body', Disease: 'body', Dose: 'body', WorkOut: 'body', Battle: 'body',
++    BodyEnvironment: 'body', BodyContact: 'body', BodyStatus: 'body', BodySize: 'body', Sickness: 'body', Disease: 'body', Dose: 'body', Battle: 'body',
+     Act: 'move', Chase: 'move', Room: 'move', Layout: 'move', PlaceProfile: 'move',
+-    Trust: 'mind', Claim: 'mind', RecordFact: 'mind', Choose: 'mind', RollTheDice: 'mind', CastSpell: 'mind', NewCharacter: 'mind', NameCharacter: 'mind',
++    WorkOut: 'mind', Trust: 'mind', Claim: 'mind', RecordFact: 'mind', Choose: 'mind', RollTheDice: 'mind', CastSpell: 'mind', NewCharacter: 'mind', NameCharacter: 'mind',
+     PassTime: 'time', Weather: 'time', Transfer: 'thing', Price: 'thing', Appraise: 'thing', Break: 'thing', Substance: 'thing',
+ };
+ export const kindOf = (tool: string): Kind => KIND[tool] ?? 'mind';
++/** What the player's character is doing in a call, in the one word the line's name plate shows (src/ui.ts modesOf): the call's
++ * primitive act in the coverage map (docs/df-body-engine.md §11; Schank 1975, Conceptual Information Processing). SPEAK, the
++ * voice making sounds: a Communicate by speech is 'speaking', whoever hears it (acoustics.ts decides that from the level at each
++ * ear). MBUILD, something worked out from what is known: a WorkOut is 'thinking'; no sound leaves the head. A word names what
++ * the body does, so "aloud" and "to oneself" are results of the level, never modes. */
++export type Mode = 'speaking' | 'thinking';
++export const modeOf = (c: Call): Mode | undefined => c.tool === 'Communicate' && c.args.means !== 'gesture' ? 'speaking' : c.tool === 'WorkOut' ? 'thinking' : undefined;
+ /** The call in the fewest words that still decide it, for the note's line after its tag: the player's character, who makes
+  * every call the note shows, is left out, and the tag says the kind of act. */
+ const WORD: Record<string, string> = { whisper: 'whisper', normal: 'say', loud: 'call', shout: 'shout' };
+@@ -74,15 +82,16 @@ export function briefOf(c: Call, player: string): string {
+         case 'Transfer': return `${s(a.item)} → ${s(a.to)}`;
+         case 'BodyCheck': return `${cut(s(a.task), 48)}${a.share ? ` · ${s(a.share).replace(/^(\d+)%.*$/, '$1 %')}` : ''}`;
+         case 'HoldOn': return `holding on${typeof a.load_kg === 'number' ? ` · ${a.load_kg} kg` : ''}`;
++        case 'WorkOut': return `${cut(s(a.problem), 40)}${typeof a.seconds === 'number' ? ` · ${a.seconds} s` : ''}`;
+         case 'SocialResponse': return `${s(a.speaker) || s(a.requester_name) ? `${s(a.speaker) || s(a.requester_name)}: ` : ''}${cut(s(a.situation), 40)}`;
+         default: return Object.entries(a).filter(([k, v]) => (typeof v === 'string' || typeof v === 'number') && v !== player && k !== 'who').slice(0, 2).map(([, v]) => cut(s(v), 32)).join(' · ');
+     }
+ }
+-export interface ReadingItem { text: string; detail: string; kind?: Kind; brief?: string }
+-/** The lines for the player's calls this turn, at most four, each with its call for the hover text, its kind and its brief
+- * form. */
++export interface ReadingItem { text: string; detail: string; kind?: Kind; brief?: string; mode?: Mode }
++/** The lines for the player's calls this turn, at most four, each with its call for the hover text, its kind, its brief
++ * form and, for speaking and thinking, its mode. */
+ export function readingItems(calls: Call[], player: string | null): ReadingItem[] {
+     if (!player) return [];
+-    return calls.filter(c => byPlayer(c, player)).slice(0, 4).map(c => ({ text: readingOf(c), detail: detailOf(c), kind: kindOf(c.tool), brief: briefOf(c, player) }));
++    return calls.filter(c => byPlayer(c, player)).slice(0, 4).map(c => { const mode = modeOf(c); return { text: readingOf(c), detail: detailOf(c), kind: kindOf(c.tool), brief: briefOf(c, player), ...mode ? { mode } : {} }; });
+ }
+ export const readingLines = (calls: Call[], player: string | null): string[] => readingItems(calls, player).map(i => i.text);
+diff --git a/src/ui.js b/src/ui.js
+index f72363b..35acb2d 100644
+--- a/src/ui.js
++++ b/src/ui.js
+@@ -22,7 +22,8 @@
+ // (the default effect; Johnson & Goldstein 2003, Science 302:1338).
+ import { correctionLine } from './rules/ask.js';
+ import { kindOf } from './rules/reading.js';
+-import { tokens, typeset, CODE, WORD_PARTS } from './rules/voice-code.js';
++import { quotedWords } from './rules/quotes.js';
++import { tokens, typeset, visible, CODE, WORD_PARTS } from './rules/voice-code.js';
+ import { soundOf, loudnessRatio, pauseBeats, quantityOf, HELD_BEATS } from './rules/voice.js';
+ import { peek } from './rules/constants.js';
+ export function eraOf(year) {
+@@ -92,6 +93,39 @@ export function notesOf(chat) {
+         return view ? [{ index: i, view }] : [];
+     });
+ }
++/** A line's modes, speaking before thinking, each once. Speaking: a call that makes sounds with the voice, or words in
++ * quotation marks (rules/quotes.ts: what is said in them is speech), also on a line no call was made for. Thinking: a call
++ * that works something out. A note kept before modes were recorded names each call's tool in `detail`. */
++export function modesOf(note, line) {
++    const of = (a) => a.mode ?? (/^Communicate: /.test(a.detail) && !/\bmeans gesture\b/.test(a.detail) ? 'speaking' : /^WorkOut: /.test(a.detail) ? 'thinking' : undefined);
++    const call = (m) => note?.acts.find(a => of(a) === m), said = quotedWords(visible(line));
++    const speaking = call('speaking'), thinking = call('thinking');
++    return [...speaking ? [{ mode: 'speaking', title: speaking.text }] : said ? [{ mode: 'speaking', title: `Said: “${said}”` }] : [],
++        ...thinking ? [{ mode: 'thinking', title: thinking.text }] : []];
++}
++/** The modes of each player's line in the chat; a line edited since its reading keeps only what its own words show. */
++export function platesOf(chat) {
++    return chat.flatMap((m, i) => {
++        if (!m?.is_user)
++            return [];
++        const held = m.extra?.[NOTE_KEY];
++        const modes = modesOf(held && (held.line == null || held.line === m.mes) ? held : null, String(m.mes ?? ''));
++        return modes.length ? [{ index: i, modes }] : [];
++    });
++}
++/** The modes as an element for the name plate: one word each, set as text, the call it rests on as its hover text. */
++export function drawModes(doc, modes) {
++    const box = doc.createElement('span');
++    box.className = 'rules-modes';
++    for (const m of modes) {
++        const e = doc.createElement('span');
++        e.className = `rules-mode rules-mode-${m.mode}`;
++        e.textContent = m.mode;
++        e.title = m.title;
++        box.appendChild(e);
++    }
++    return box;
++}
+ /** The note as an element: a <details> folded to one line (the guess and the tagged calls), opened to a line per call and the
+  * other readings as linked words, each handing its correction to `fill`. Every text is set as text. */
+ export function drawNote(doc, v, look, fill) {
+diff --git a/src/ui.ts b/src/ui.ts
+index 8dd2724..937f7d7 100644
+--- a/src/ui.ts
++++ b/src/ui.ts
+@@ -21,14 +21,15 @@
+ // sentence with its choices linked, nothing focused or highlighted in advance: a choice shown pre-chosen is picked more often
+ // (the default effect; Johnson & Goldstein 2003, Science 302:1338).
+ import { correctionLine } from './rules/ask.js';
+-import { kindOf, type Kind } from './rules/reading.js';
+-import { tokens, typeset, CODE, WORD_PARTS } from './rules/voice-code.js';
++import { kindOf, type Kind, type Mode } from './rules/reading.js';
++import { quotedWords } from './rules/quotes.js';
++import { tokens, typeset, visible, CODE, WORD_PARTS } from './rules/voice-code.js';
+ import type { Mark } from './rules/prosody.js';
+ import { soundOf, loudnessRatio, pauseBeats, quantityOf, HELD_BEATS } from './rules/voice.js';
+ import { peek } from './rules/constants.js';
+ 
+ export interface Taken { label: string; others: string[] }
+-export interface Act { text: string; detail: string; kind?: Kind; brief?: string }
++export interface Act { text: string; detail: string; kind?: Kind; brief?: string; mode?: Mode }
+ /** The note on one player's line; `line` is the text it read, so a line edited since shows no note. */
+ export interface ReadingNote { redone?: string | null; taken?: Taken | null; meant?: string[]; acts: Act[]; things: string[]; line?: string; voice?: string | null }
+ 
+@@ -108,6 +109,36 @@ export function notesOf(chat: Msg[]): { index: number; view: NoteView }[] {
+     });
+ }
+ 
++// The name plate: after the player's name, what their character is doing in the line, in one English word, so the plate
++// reads as a clause ("Mara speaking", "Mara thinking"), as a visual novel's text box names the speaker and tags the line. The
++// word is the call's primitive act (rules/reading.ts modeOf): it states what the engine decided, and the call is its hover text.
++export interface PlateMode { mode: Mode; title: string }
++/** A line's modes, speaking before thinking, each once. Speaking: a call that makes sounds with the voice, or words in
++ * quotation marks (rules/quotes.ts: what is said in them is speech), also on a line no call was made for. Thinking: a call
++ * that works something out. A note kept before modes were recorded names each call's tool in `detail`. */
++export function modesOf(note: ReadingNote | null | undefined, line: string): PlateMode[] {
++    const of = (a: Act): Mode | undefined => a.mode ?? (/^Communicate: /.test(a.detail) && !/\bmeans gesture\b/.test(a.detail) ? 'speaking' : /^WorkOut: /.test(a.detail) ? 'thinking' : undefined);
++    const call = (m: Mode) => note?.acts.find(a => of(a) === m), said = quotedWords(visible(line));
++    const speaking = call('speaking'), thinking = call('thinking');
++    return [...speaking ? [{ mode: 'speaking' as const, title: speaking.text }] : said ? [{ mode: 'speaking' as const, title: `Said: “${said}”` }] : [],
++        ...thinking ? [{ mode: 'thinking' as const, title: thinking.text }] : []];
++}
++/** The modes of each player's line in the chat; a line edited since its reading keeps only what its own words show. */
++export function platesOf(chat: Msg[]): { index: number; modes: PlateMode[] }[] {
++    return chat.flatMap((m, i) => {
++        if (!m?.is_user) return [];
++        const held = m.extra?.[NOTE_KEY] as ReadingNote | undefined;
++        const modes = modesOf(held && (held.line == null || held.line === m.mes) ? held : null, String(m.mes ?? ''));
++        return modes.length ? [{ index: i, modes }] : [];
++    });
++}
++/** The modes as an element for the name plate: one word each, set as text, the call it rests on as its hover text. */
++export function drawModes(doc: Doc, modes: PlateMode[]): El {
++    const box = doc.createElement('span'); box.className = 'rules-modes';
++    for (const m of modes) { const e = doc.createElement('span'); e.className = `rules-mode rules-mode-${m.mode}`; e.textContent = m.mode; e.title = m.title; box.appendChild(e); }
++    return box;
++}
++
+ /** The parts of a document the note uses (a browser's, or a test's stand-in). */
+ export interface Doc { createElement(tag: string): El; createTextNode(t: string): El }
+ export interface El {
+diff --git a/style.css b/style.css
+index cc30797..9e473b5 100644
+--- a/style.css
++++ b/style.css
+@@ -157,6 +157,8 @@
+ .rules-v-add-feeling { font-style: italic; font-size: 0.86em; line-height: 0; color: var(--SmartThemeQuoteColor); }
+ .rules-v-add-ha { font-size: 0.6em; line-height: 0; vertical-align: super; color: color-mix(in srgb, #E69F00 50%, var(--SmartThemeBodyColor)); }
+ .rules-v-add-micro, .rules-v-add-pause { letter-spacing: 0.1em; }
++/* A pause's sign stays on the line of the word it follows: the space before it does not break. */
++.rules-v-add-micro, .rules-v-add-pause, .rules-v-add-rest { white-space: nowrap; }
+ [title].rules-v { cursor: help; }
+ 
+ /* The multiple-distinctions look (setting "Multiple distinctions", on by default: body.rules-distinct). Each part of the
+@@ -246,3 +248,44 @@ body.rules-distinct[data-rules-tone="light"] [data-feeling="sadness"], body.rule
+ body.rules-distinct[data-rules-tone="light"] [data-feeling="tenderness"], body.rules-distinct[data-rules-tone="light"] [data-rules-feeling="tenderness"] { --rules-felt: oklch(0.54 0.07 0); }
+ body.rules-distinct .rules-v-add-feeling[data-feeling], body.rules-distinct .rules-v-feel[data-feeling] { color: var(--rules-felt); }
+ body.rules-distinct .mes_text[data-rules-feeling] { border-left: 2px solid var(--rules-felt); padding-left: 0.6em; margin-left: calc(-0.6em - 2px); }
++
++/* The dialogue page (setting "Dialogue page", on by default: body.rules-page): the chat set as a light page in the story's
++   book serif, whatever the theme. SillyTavern's stylesheet gives a message's colours to its markup (one each for quoted
++   words, italics and underlined words: public/style.css .mes_text q, em, u), lays a shadow under every letter
++   (* { text-shadow }) and sets the lines 0.5rem apart. Measured with its stylesheet and its five shipped themes
++   (history/review-tests/browser/voice-look/st-chat.mjs): three themes cast a shadow of 1 to 5 px under each marked word, a
++   whispered word in quotation marks reads at 2.95:1 to 4.34:1, and at 412 px a pitch stroke lies in the letters of the line
++   above. The page sets SillyTavern's own theme variables again inside each message: its rules, and this file's notes and
++   marks, read them there, so no rule of theirs is restated. The colours are CSS's named colours (CSS Color 4, named
++   colours), so the block reads as English and is changed by writing another name: black on ivory, dimgray for asides (WCAG
++   1.4.3 asks 4.5:1; tests/ui.test.mjs R35 holds each ink, and U7 and R32 each kind and feeling colour, on the page's ground).
++   Quoted and underlined words take the ink: the quotation marks and the rule already tell them apart, as in print, and hue
++   is left to the feeling. */
++body.rules-page #chat .mes {
++    --SmartThemeBodyColor: black; --SmartThemeQuoteColor: black; --SmartThemeUnderlineColor: black; --SmartThemeEmColor: dimgray;
++    --SmartThemeBlurTintColor: ivory; --SmartThemeBotMesBlurTintColor: ivory; --SmartThemeUserMesBlurTintColor: ivory;
++    --SmartThemeBorderColor: silver; --SmartThemeShadowColor: transparent;
++    background-color: ivory;
++}
++/* Without bubbles the messages lie edge to edge: the chat behind them is the same sheet. */
++body.rules-page:not(.bubblechat) #chat { background-color: ivory; }
++/* The page's type: the era's serif (index.ts sets the era's class on the chat), the name plate included. Print size is the
++   x-height (Legge & Bigelow 2011, J Vis 11(5):8), so the page keeps the one the player set in SillyTavern: the x of its Noto
++   Sans stands 0.547 em tall (public/webfonts/NotoSans, drawn at 1000 px in Chromium), the serifs are held at 0.46
++   (font-size-adjust, as the notes are), so the size is 0.547 ÷ 0.46 = 1.19 times SillyTavern's. Line height 1.7 [ASSUMED]:
++   at it a pitch stroke keeps 0.14 em or more from the letters of the line above (st-chat.mjs, 412 and 800 px) and lies
++   nearer its own word, 0.03 em over it; at SillyTavern's own 1.53 the stroke lies in the line above. */
++body.rules-page #chat .mes_block { font-family: var(--rules-serif, Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif); font-variant-numeric: var(--rules-nums, normal); }
++body.rules-page #chat .mes_text { font-size: calc(var(--mainFontSize) * 1.19); font-size-adjust: 0.46; font-weight: 400; line-height: 1.7; }
++/* The name plate: the name in small capitals, as a play's text sets its speakers, over a hairline. */
++body.rules-page #chat .ch_name { border-bottom: 1px solid var(--SmartThemeBorderColor); padding-bottom: 0.15em; }
++body.rules-page #chat .name_text { font-variant: small-caps; letter-spacing: 0.04em; }
++
++/* The modes on the name plate (src/ui.ts drawModes), in every look: after the name, one word for what the character is doing
++   in the line, so the plate reads as a clause ("Mara speaking"). The word carries the mode; its box repeats it without a hue:
++   filled for speaking, the act that leaves the body as sound, an outline for thinking, the act that stays in the head
++   [ASSUMED]. The filled box is the text colour with black or white letters by the tone (index.ts sets body[data-rules-tone]). */
++.rules-modes { display: inline-flex; gap: 0.35em; align-self: center; }
++.rules-mode { padding: 0.25em 0.5em 0.2em; border: 1px solid var(--SmartThemeBodyColor); border-radius: 2px; font-size: calc(var(--mainFontSize) * 0.66); font-weight: 700; font-variant: normal; line-height: 1; letter-spacing: 0.09em; text-transform: uppercase; color: var(--SmartThemeBodyColor); cursor: help; }
++.rules-mode-speaking { background-color: var(--SmartThemeBodyColor); color: black; }
++body[data-rules-tone="light"] .rules-mode-speaking { color: white; }
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index a6d1e5e..48f872d 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -5129,5 +5129,77 @@
+   "replace": "const q = '';",
+   "miss": "a mark's quantity on hover",
+   "test": "ui"
++ },
++ {
++  "id": "RN1",
++  "name": "a gesture is no speaking",
++  "file": "src/rules/reading.js",
++  "find": "c\\.args\\.means !== 'gesture'",
++  "replace": "true",
++  "miss": "a call's mode is its primitive act",
++  "test": "ui"
++ },
++ {
++  "id": "RN2",
++  "name": "working something out is the mind's",
++  "file": "src/rules/reading.js",
++  "find": "WorkOut: 'mind', ",
++  "replace": "WorkOut: 'body', ",
++  "miss": "working something out is the mind's, said in words",
++  "test": "ui"
++ },
++ {
++  "id": "RN3",
++  "name": "quoted words are said",
++  "file": "src/ui.js",
++  "find": "said = quotedWords\\(visible\\(line\\)\\)",
++  "replace": "said = undefined",
++  "miss": "modes from the calls, an older note and quoted words",
++  "test": "ui"
++ },
++ {
++  "id": "RN4",
++  "name": "an edited line keeps what its own words show",
++  "file": "src/ui.js",
++  "find": "held && \\(held\\.line == null \\|\\| held\\.line === m\\.mes\\) \\? held : null",
++  "replace": "held ?? null",
++  "miss": "plates on the player's lines, by the line as it stands",
++  "test": "ui"
++ },
++ {
++  "id": "RN5",
++  "name": "the mode's call on hover",
++  "file": "src/ui.js",
++  "find": "e\\.title = m\\.title;",
++  "replace": "",
++  "miss": "modes drawn as words, the call on hover",
++  "test": "ui"
++ },
++ {
++  "id": "RN6",
++  "name": "the page's aside ink reads on its ground",
++  "file": "style.css",
++  "find": "--SmartThemeEmColor: dimgray;",
++  "replace": "--SmartThemeEmColor: silver;",
++  "miss": "the page's inks on its ground",
++  "test": "ui"
++ },
++ {
++  "id": "RN7",
++  "name": "the page keeps SillyTavern's x-height",
++  "file": "style.css",
++  "find": "\\* 1\\.19\\); font-size-adjust",
++  "replace": "* 1); font-size-adjust",
++  "miss": "the page's type",
++  "test": "ui"
++ },
++ {
++  "id": "RN8",
++  "name": "a pause stays by its word",
++  "file": "style.css",
++  "find": "\\.rules-v-add-micro, \\.rules-v-add-pause, \\.rules-v-add-rest \\{ white-space: nowrap; \\}",
++  "replace": "",
++  "miss": "the modes take no hue; a pause stays by its word",
++  "test": "ui"
+  }
+ ]
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index 9942b7b..31ac621 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -118,6 +118,12 @@ const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q -
+ const THEMES = { dark: [['Azure', 'rgba(171, 198, 223, 1)', 'rgba(23, 23, 23, 0)', 'rgba(0, 28, 174, 0.2)'], ['Cappuccino', 'rgba(235, 235, 235, 1)', 'rgba(50, 45, 50, 0.75)', 'rgba(34, 30, 32, 0.75)'],
+     ['Celestial Macaron', 'rgba(229, 175, 162, 1)', 'rgba(18, 26, 40, 0.9)', 'rgba(51, 67, 90, 0.7)'], ['Dark Lite', 'rgba(220, 220, 210, 1)', 'rgba(23, 23, 23, 1)', 'rgba(30, 30, 30, 0.9)'],
+     ['Dark V 1.0', 'rgba(207, 207, 197, 1)', 'rgba(29, 33, 40, 0.9)', 'rgba(29, 33, 40, 0.9)']], light: [['light', 'rgba(30, 30, 30, 1)', 'rgba(243, 241, 234, 1)', 'rgba(255, 255, 255, 0.5)']] };
++// The dialogue page is one more light ground (style.css, body.rules-page): its inks and its ground are named colours (CSS
++// Color 4, named colours), set as SillyTavern's theme variables inside each message, so U7 and R32 hold on it as on a theme.
++const NAMED = { black: [0, 0, 0], white: [255, 255, 255], ivory: [255, 255, 240], dimgray: [105, 105, 105], silver: [192, 192, 192] };
++const pageBlock = /body\.rules-page #chat \.mes \{([^}]*)\}/.exec(css)?.[1] ?? '';
++const pageInk = k => NAMED[new RegExp(`--SmartTheme${k}: (\\w+);`).exec(pageBlock)?.[1] ?? ''], pageGround = NAMED[/background-color: (\w+);/.exec(pageBlock)?.[1] ?? ''];
++if (pageInk('BodyColor') && pageGround) THEMES.light.push(['the dialogue page', `rgba(${pageInk('BodyColor').join(', ')}, 1)`, `rgba(${pageGround.join(', ')}, 1)`, `rgba(${pageGround.join(', ')}, 1)`]);
+ const OKABE_ITO = ['#56B4E9', '#009E73', '#D55E00', '#E69F00', '#CC79A7', '#F0E442', '#0072B2'];
+ const shares = [...css.matchAll(/\[data-tone="(dark|light)"\] \.rules-k-(\w+) \{ color: color-mix\(in srgb, (#[0-9A-F]{6}) (\d+)%, var\(--SmartThemeBodyColor\)\); \}/g)];
+ const low = [];
+@@ -421,4 +427,44 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+       && title('Stop', 'slow') === 'slower (about 0.6 times your own pace)' && title('Stop', 'up') === 'rises (about 6 semitones up)' && title('Stop', 'stress') === 'stressed', "a mark's quantity on hover",
+       JSON.stringify(['loud', 'whisper', 'fast', 'slow', 'up', 'stress'].map(id => title('Stop', id))));
+ }
++// R34: the name plate says what the player's character is doing in the line, in one word after their name. The word is the
++// call's primitive act (reading.ts modeOf; docs/df-body-engine.md §11): speaking for sounds made with the voice, thinking for
++// something worked out, nothing for any other act; quoted words are said (quotes.ts), with a call or without; a note kept
++// before modes were recorded gives them from its calls; a line edited since its reading keeps what its own words show.
++{
++  const say = { tool: 'Communicate', args: { speaker: 'Ann', listener: 'Tom', means: 'speech', effort: 'whisper', message: 'Go' } }, think = { tool: 'WorkOut', args: { who: 'Ann', problem: 'the riddle on the door', kind: 'a riddle or trick that needs a new view', seconds: 60 } };
++  const modes = [say, { ...say, args: { ...say.args, means: 'gesture' } }, { tool: 'Communicate', args: { speaker: 'Ann', listener: 'Tom' } }, think, { tool: 'Look', args: { viewer: 'Ann' } }, { tool: 'Listen', args: { listener: 'Ann' } }, { tool: 'Interpret', args: { listener: 'Ann' } }].map(R.modeOf);
++  ok(JSON.stringify(modes) === JSON.stringify(['speaking', undefined, 'speaking', 'thinking', undefined, undefined, undefined]), 'a call\'s mode is its primitive act', JSON.stringify(modes));
++  const items = R.readingItems([think, say, { tool: 'Act', args: { who: 'Ann', action: 'stands up' } }], 'Ann');
++  ok(R.kindOf('WorkOut') === 'mind' && items.map(i => i.mode).join() === 'thinking,speaking,' && items[0].text === 'Ann works out the riddle on the door (a riddle or trick that needs a new view), 60 s' && items[0].brief === 'the riddle on the door · 60 s'
++      && U.noteView({ acts: items, things: [] }, true).rows[0].tag === 'Mind', 'working something out is the mind\'s, said in words', JSON.stringify(items[0]));
++  const names = (note, line) => U.modesOf(note, line).map(m => `${m.mode}: ${m.title}`);
++  const old = { acts: [{ text: 'Ann says to Tom', detail: 'Communicate: speaker Ann, listener Tom, means speech' }, { text: 'Ann waves', detail: 'Communicate: speaker Ann, listener Tom, means gesture' }, { text: 'Ann works it out', detail: 'WorkOut: who Ann' }], things: [] };
++  ok(JSON.stringify(names({ acts: items, things: [] }, 'x')) === JSON.stringify(['speaking: Ann whispers to Tom: "Go"', 'thinking: Ann works out the riddle on the door (a riddle or trick that needs a new view), 60 s'])
++      && JSON.stringify(names(old, 'x')) === JSON.stringify(['speaking: Ann says to Tom', 'thinking: Ann works it out']) && names({ acts: [old.acts[1]], things: [] }, 'I wave').length === 0
++      && JSON.stringify(names(null, `I nod. "Follow${VC.block(['L'])} me," I say.`)) === JSON.stringify(['speaking: Said: “Follow me,”']) && names(null, 'I walk to the door.').length === 0 && names(null, "the guards' door").length === 0,
++      'modes from the calls, an older note and quoted words', JSON.stringify([names({ acts: items, things: [] }, 'x'), names(old, 'x'), names(null, 'I nod. "Follow me," I say.')]));
++  const chat = [{ is_user: false, mes: '"Halt," he says.' }, { is_user: true, mes: 'I think it over.', extra: { [U.NOTE_KEY]: { acts: [items[0]], things: [], line: 'I think it over.' } } },
++      { is_user: true, mes: 'I walk on.', extra: { [U.NOTE_KEY]: { acts: [items[1]], things: [], line: 'I tell Tom to go.' } } }, { is_user: true, mes: 'I climb.' }, { is_user: true, mes: '"Wait!"' }];
++  const plates = U.platesOf(chat).map(p => `${p.index}:${p.modes.map(m => m.mode).join('+')}`);
++  ok(plates.join() === '1:thinking,4:speaking', 'plates on the player\'s lines, by the line as it stands', plates.join());
++  const box = U.drawModes(doc, U.modesOf({ acts: items, things: [] }, 'x'));
++  ok(box.className === 'rules-modes' && box.children.map(c => `${c.tag}.${c.className}:${c.textContent}`).join('|') === 'span.rules-mode rules-mode-speaking:speaking|span.rules-mode rules-mode-thinking:thinking'
++      && box.children[0].title === 'Ann whispers to Tom: "Go"' && htmlSet === 0, 'modes drawn as words, the call on hover', box.children.map(c => `${c.className}:${c.textContent}:${c.title}`).join('|'));
++}
++// R35: the dialogue page (style.css, body.rules-page): SillyTavern's theme variables set again inside each message, as named
++// colours; each ink reads at 4.5:1 or more on the page's ground (WCAG 1.4.3), the ground is every message's and the letter
++// shadow is none; the type keeps SillyTavern's x-height (0.547 em of its Noto Sans over the serifs' 0.46) and its lines stand
++// further apart than SillyTavern's (0.5rem over a 15 px size: 1.53); the modes take no hue; a pause's sign does not break
++// from its word.
++{
++  const inks = ['BodyColor', 'QuoteColor', 'UnderlineColor', 'EmColor'].map(k => [k, pageInk(k)]), low = inks.filter(([, c]) => !c || !pageGround || contrast(c, pageGround) < 4.5).map(([k, c]) => `${k} ${c && pageGround ? contrast(c, pageGround).toFixed(2) : 'no named colour'}`);
++  ok(!low.length && ['BlurTintColor', 'BotMesBlurTintColor', 'UserMesBlurTintColor'].every(k => pageInk(k)?.join() === pageGround?.join()) && /--SmartThemeShadowColor: transparent;/.test(pageBlock) && !/#[0-9A-Fa-f]{3,6}|rgb|oklch/.test(pageBlock)
++      && THEMES.light.some(t => t[0] === 'the dialogue page'), 'the page\'s inks on its ground', `${low.join('; ')} | ${pageBlock.replace(/\s+/g, ' ').slice(0, 200)}`);
++  const type = /body\.rules-page #chat \.mes_text \{ font-size: calc\(var\(--mainFontSize\) \* ([\d.]+)\); font-size-adjust: ([\d.]+); font-weight: 400; line-height: ([\d.]+); \}/.exec(css);
++  ok(type && Number(type[1]) === Math.round(0.547 / Number(type[2]) * 100) / 100 && Number(type[2]) === 0.46 && Number(type[3]) > (15 + 8) / 15 && Number(type[3]) <= 1.8, 'the page\'s type', type?.slice(1).join(' '));
++  const mode = css.split('.rules-modes {')[1] ?? '';
++  ok(/\.rules-mode-speaking \{ background-color: var\(--SmartThemeBodyColor\); color: black; \}/.test(mode) && /body\[data-rules-tone="light"\] \.rules-mode-speaking \{ color: white; \}/.test(mode) && !/#[0-9A-Fa-f]{3,6}|rgb|oklch|color-mix/.test(mode)
++      && /\.rules-v-add-micro, \.rules-v-add-pause, \.rules-v-add-rest \{ white-space: nowrap; \}/.test(css), 'the modes take no hue; a pause stays by its word', mode.slice(0, 160));
++}
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

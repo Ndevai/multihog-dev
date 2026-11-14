@@ -1,6 +1,7 @@
 // Emotion type from the appraisal of what happened (docs/df-body-engine.md §6.13): the 22 emotion types of Ortony, Clore &
 // Collins 1988, The Cognitive Structure of Emotions (the OCC model), each with its type specification, the words that
 // name it (tokens) and what makes it stronger (variables affecting intensity), from the book's type definitions.
+import { def } from './constants.js';
 export const ABOUT = ['an event that affects them', 'an event that affects someone else', 'the prospect of an event',
     'a hoped-for or feared event that came true or did not', 'their own action', "someone else's action", 'a person or thing they encounter'];
 
@@ -30,6 +31,24 @@ export const TYPES: Record<string, { words: string; stronger: string }> = {
     disliking: T('dislike, aversion, disgust, revulsion, hate, loathe', 'the more unappealing and the more familiar'),
 };
 
+// The voice a feeling is heard in: Juslin & Laukka's five vocal families (2003, Psychol Bull 129:770; prosody.ts), each OCC type
+// placed by its group in the OCC model [ASSUMED mapping]: well-being (joy happiness, distress sadness), fortunes of others
+// (happy-for and gloating happiness, sorry-for tenderness, resentment anger), prospects (hope, satisfaction happiness; fear,
+// fears-confirmed fear; relief tenderness; disappointment sadness), attribution (pride happiness, self-reproach sadness,
+// appreciation tenderness, reproach anger), compounds (gratification happiness, gratitude tenderness, anger anger, remorse
+// sadness), attraction (liking tenderness, disliking anger). The nearest family by Warriner et al.'s valence, arousal and
+// dominance (the words the types are named by, data/feeling-va.ts's rule) agrees for 10 of the 22; it puts distress nearest
+// anger and disappointment nearest fear, against the types' meaning.
+// A feeling's strength in the voice: 1 when the event is central to a goal, standard or taste, the value below when it only
+// touches one [ASSUMED: OCC's intensity in the two steps Appraise takes it].
+def({ id: 'voiceFeelingTouched', value: 0.5, unit: "share of the way from neutral to a family's voice for a feeling that touches a goal", status: 'assumed', src: "half of a central feeling's", range: [0.25, 0.75], file: 'emotion.ts' });
+export const VOCAL_FAMILY: Record<string, 'anger' | 'fear' | 'happiness' | 'sadness' | 'tenderness'> = {
+    joy: 'happiness', distress: 'sadness', 'happy-for': 'happiness', 'sorry-for': 'tenderness', resentment: 'anger', gloating: 'happiness',
+    hope: 'happiness', fear: 'fear', satisfaction: 'happiness', 'fears-confirmed': 'fear', relief: 'tenderness', disappointment: 'sadness',
+    pride: 'happiness', 'self-reproach': 'sadness', appreciation: 'tenderness', reproach: 'anger', gratitude: 'tenderness', anger: 'anger',
+    gratification: 'happiness', remorse: 'sadness', liking: 'tenderness', disliking: 'anger',
+};
+
 // How long an emotion lasts before it first returns to baseline: median hours over 233 high-school students' recalled episodes of 27
 // emotions (Verduyn & Lavrijsen 2015, Motiv Emot 39:119, Fig. 1 bottom left). Each OCC type takes the measured emotion
 // nearest in meaning [mapping ASSUMED]; types without one (gloating, liking) are left out. The emotion lasts longer the
@@ -56,7 +75,7 @@ export function lastsWords(type: string, word?: string): string {
 }
 
 // Below threshold no emotion arises; above it, intensity sets the word (OCC ch. 4 pp. 81–84, ch. 9 p. 185) [3 levels ASSUMED].
-export const MATTERS = ['not at all', 'somewhat', 'a great deal'];
+export const MATTERS = ['nothing at stake', 'a goal, standard or taste is touched', 'a goal, standard or taste is central'];
 
 export interface Appraisal { about: string; good?: boolean; wants?: boolean; cameTrue?: boolean; praiseworthy?: boolean; result?: 'good' | 'bad' | 'none'; appealing?: boolean }
 /**

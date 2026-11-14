@@ -1,0 +1,520 @@
+diff --git a/README.md b/README.md
+index 49ae53a..9f33913 100644
+--- a/README.md
++++ b/README.md
+@@ -50,6 +50,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - The chat is a page of its own: with **Dialogue page** on (the default), messages are set black on ivory in a book serif that follows the story's era, with no letter shadow and room between the lines for the voice marks, whatever your theme; quoted words keep the text colour, as in print. After your name a word says what your character is doing in the line: SPEAKING when the line holds said words (a speech call, or words in quotation marks), THINKING when your character works something out; hover it for the call it rests on. Off, messages keep the theme's look and the word stays.
+ - In the text box, the type is large enough to read at full speed with the phone at arm's length (0.2° of letter height at 58 cm), and a line above the chat says where and when the scene is and its light ("Recife · Sunday 15 July 1990, 18:20 · nautical twilight") instead of your device's clock; scrolling the box no longer pulls the page behind it.
+ - The text box has a visual novel's look by default ("The box's look: night"): a dark framed panel under a pink name tag, white spoken words and light blue narration, the buttons as small pills under it, and a blinking ▼ when the line has finished appearing. "page" keeps the page's own look.
++- The first time a character speaks, a card crosses the screen with their name and trade (or age), as visual novels introduce people; the story's time and place sit in a badge in the corner, and the box's buttons are words along its bottom edge.
+ - One thing on screen at a time: with **Text box** on (the default), the chat shows one box at the foot of the screen under the name of whoever says it. A new box starts wherever said words begin or end, and a long stretch goes on in the next box. Said words are black (white on the dark page) with SPEAKING, or WHISPERING, at the plate's right; everything else is blue and belongs to your character, with THINKING when you work something out. Letters appear one by one, said words at the speaker's pace and the rest at reading pace; a tap shows the rest at once, then the next box. "Auto" moves on by itself once a box has been read, ‹ or ← goes back, and "Log" shows the whole chat. The narrator names who says each quotation, so the plate can show it; in your own lines, the person acting just before a quotation says it.
+ - Words that name what the engine decided are marked in gold, as important words are in yellow in a visual novel. **Page colours** offers the light page or a dark one (white, light blue and gold on black), and **The speaker's picture** can show the character card's picture large above the box.
+ - **Music**: add your own songs in the settings. Each is measured as you add it (tempo, loudness, brightness, key), and the song nearest the feelings in the scene plays: your line marked sad brings a calm song in a minor key, a character's joy a lively one in a major key. Give a song a set named after a character or a place, and it becomes their theme. When several feelings are in the scene, the strongest counts 90% and the newest 10%. A song stays while the scene stays in its area, unless another song is clearly nearer, and the next one fades in over 4 seconds. The ♪ button turns the music on and off.
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index ba144fa..7125f11 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1101,6 +1101,8 @@ The box's type and scene (2026-11-11 (124); `box.ts` boxFontPx, boxLinesAt, scen
+ | a scroll reaches the box's end | it stays in the box (overscroll-behavior: contain), so a pull at a phone's top does not reload the page |
+ | the screen is short (a phone held sideways) | the box stops at 60 % of the height and its lines scroll |
+ 
++The first-meeting card, the date badge and the menu in the box (2026-11-12 (127); `box.ts` cardRole, sceneBadge; `index.ts` showBox, showCard; `style.css`). From twelve games' boxes (Let's Play Archive screenshots: 999, Danganronpa and V3, Doki Doki Literature Club, Phoenix Wright, Ghost Trick, Hatoful Boyfriend, Corpse Party, Virtue's Last Reward, Steins;Gate, Policenauts), the player picked three. The card: the first time the box reaches a character's first line in the chat, going on, a pink band with a white stripe crosses the screen with their picture (their character card's, when there is one), their trade as the story gave it (NewCharacter now keeps it as occupation) or else their age and noun ("16-year-old girl"), and their name; the next tap, key or Next takes it away and the line types; once per character per session. The badge: the night look's scene line as a corner badge, the clock large over the date and the place with its light. The menu: Back, the count, Next, Auto, music and Log as words along the frame's bottom edge (44 px targets), at layer 31 above SillyTavern's chat (30), whose box would otherwise take their taps. Whole-screen narration was left open: the player would take it only if the model could not call it at will. Check: R43; negative controls BX11, BX13, BX14.
++
+ The box's night look (2026-11-11 (126); `style.css` body.rules-box-night, `index.ts` showBox, toneNow, settings "The box's look"). Three trial looks were drawn on a phone (night, paper, quiet); the player picked night ("a mile better; the pink name tag fits"). It is the default: a dark panel (rgba(18, 20, 34, 0.92) to rgba(8, 9, 16, 0.96)) framed in white under an angled pink name tag (#e0336a, white, 19 px bold), the dark page's colours inside (white said words, light sky blue the rest, gold key words; the tone reads dark while it shows), the message's menu and pencil left to the log, the bar's buttons as pills under the frame (44 px), a blinking ▼ once the stretch has all appeared (still for reduced motion), the scene line and count on dark pills. Contrast over a white background showing through: white 14.8:1, light sky blue 8.6:1; the tag's white on pink 4.3:1, large type (WCAG 2 asks 3:1). "page" keeps the page's own look. Check: R42; negative controls BX7–BX10.
+ 
+ Pauses in speech (2026-11-11 (125); `box.ts` pauseMs, revealTimes): said words stop for 500 ms after a sentence end (. ! ? …) and 167 ms after a clause mark (, ; : — –), divided by the speaker's pace against the unmarked 5 syllables/s: the medium mode of silent pauses in read speech, near 500 ms (Campione & Véronis 2002), and the clause pause's share of the sentence pause, 0.2 ÷ 0.6 (Strangert 1991). Before, every syllable followed the last with no stop: "Sit. Will has been counting the same six coins since noon. Go on, sit down." appeared in 3.2 s, now in 4.4 s, with the stops where a speaker makes them. Not yet: lengthening before a boundary, stress, and the spread of pause lengths. Check: R39; negative control BX6.
+diff --git a/docs/progress.md b/docs/progress.md
+index 9413ad3..09f0994 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,12 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-12 (127), Claude
++- The player wanted inspiration from existing visual novels. Fetched: text boxes from twelve games' Let's Plays (Let's Play Archive), laid out with what makes each distinct. Picked: the first-meeting card (Danganronpa), the date badge in a corner (Hatoful Boyfriend), the menu inside the box (Doki Doki Literature Club); torn between a see-through panel and corner brackets (drawn side by side, with both, for their pick); whole-screen narration only if the model could not invoke it at will (left open).
++- Changed: `box.ts` cardRole, sceneBadge; `index.ts` showCard, hideCard, the badge's three parts, the card before a character's first line; `rules-tools.ts` NewCharacter keeps the person's trade (occupation); `types.ts`; `style.css` the card, the badge, the menu (layer 31: SillyTavern's chat at 30 took its taps in the first render).
++- Checked: ui 94 (R43 new); negative controls BX1–BX5, BX7–BX11, BX13, BX14 caught; Chromium renders of the card, the badge and menu, narration, and the three panels.
++- Next: the player's pick of panel.
++
+ ## 2026-11-11 (126), Claude
+ - The player: they meant the box was ugly, not lifeless in its timing; many visual novels have a better interface. Three trial looks were drawn on a phone with real CSS (night, paper, quiet); they picked night: "a mile better; the pink name tag fits".
+ - Changed: setting "The box's look" (night by default, or page); `style.css` the night look (dark framed panel, angled pink tag, the dark page's colours inside, menu and pencil left to the log, pill buttons, ▼ once the stretch has appeared, scene line and count on dark pills); `index.ts` the body class, the dark tone while it shows, a typing class for the ▼; `settings.html`; `st-chat.mjs` takes RULES_EXTRA_CSS and RULES_BODY_CLASS for trial looks.
+diff --git a/src/index.js b/src/index.js
+index eb3ef61..1b85005 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -7,7 +7,7 @@ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided,
+ import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest, marksOf } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+-import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, boxFontPx, boxLinesAt, sceneLine } from './rules/box.js';
++import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, boxFontPx, boxLinesAt, sceneLine, sceneBadge, cardRole } from './rules/box.js';
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady } from './rules/voice-body.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong } from './rules/music.js';
+@@ -828,8 +828,11 @@ function showBox() {
+     // Where, when and the light: the scene a visual novel's background shows, from the engine (box.ts sceneLine).
+     const scene = document.getElementById('rules-box-scene');
+     if (scene) {
+-        const t = storyTime();
+-        scene.textContent = sceneLine(scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label);
++        const t = storyTime(), args = [scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label];
++        const line = sceneLine(...args), b = sceneBadge(...args);
++        // Three lines for the night look's corner badge (clock, date, where); the page look runs them on one line.
++        scene.replaceChildren(...line ? ['clock', 'date', 'where'].filter(k => b[k]).map(k => { const e = document.createElement('span'); e.className = `rules-scene-${k}`; e.textContent = b[k]; return e; }) : []);
++        scene.setAttribute('aria-label', line);
+     }
+     const count = document.getElementById('rules-box-count');
+     if (count)
+@@ -842,6 +845,18 @@ function showBox() {
+     document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
+     // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
+     const key = `${boxAt.mes}:${unit}:${units.length}`;
++    // The first time the box reaches a character's first line in the chat, going on, a card names them before it (as visual
++    // novels introduce a person); the line types once the card is tapped away.
++    const who = now?.getAttribute('data-who') ?? '';
++    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metShown.has(who)
++        && document.querySelector(`#chat .rules-unit[data-who="${CSS.escape(who)}"]`) === now) {
++        metShown.add(who);
++        showCard(who, mes);
++        stopTyping();
++        clearTimeout(autoTimer);
++        stepDir = 0;
++        return;
++    }
+     if (!boxLog && now && key !== shownKey) {
+         if (stepDir === -1) {
+             stopTyping();
+@@ -854,11 +869,54 @@ function showBox() {
+         shownKey = now ? key : '';
+     stepDir = 0;
+ }
++/** Characters whose first-meeting card was shown in this chat's session. */
++const metShown = new Set();
++/** The first-meeting card: the person's picture, their trade or age (box.ts cardRole), their name; a tap, the next key or
++ * the next button takes it away and the line goes on. */
++function showCard(who, mes) {
++    let card = document.getElementById('rules-box-card');
++    if (!card) {
++        card = document.createElement('div');
++        card.id = 'rules-box-card';
++        card.setAttribute('role', 'dialog');
++        card.addEventListener('click', e => { e.stopPropagation(); hideCard(); });
++        (document.getElementById('sheld') ?? document.body).appendChild(card);
++    }
++    const src = avatarOf(who, mes), role = cardRole(trackedPeople()[who]);
++    const face = document.createElement('img');
++    face.className = 'rules-card-face';
++    face.alt = '';
++    if (src)
++        face.src = src;
++    else
++        face.hidden = true;
++    const band = document.createElement('div');
++    band.className = 'rules-card-band';
++    const r = document.createElement('span');
++    r.className = 'rules-card-role';
++    r.textContent = role;
++    const n = document.createElement('span');
++    n.className = 'rules-card-name';
++    n.textContent = who;
++    band.append(face, r, n);
++    card.replaceChildren(band);
++    card.setAttribute('aria-label', `${who}${role ? `, ${role}` : ''}`);
++    document.body.classList.add('rules-card-on');
++}
++function hideCard() {
++    if (!document.body.classList.contains('rules-card-on'))
++        return false;
++    document.body.classList.remove('rules-card-on');
++    showBox();
++    return true;
++}
+ /** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. Going on while
+  * a unit still appears shows the rest of it first. */
+ function stepBox(d) {
+     if (!boxOn() || boxLog || !boxAt)
+         return;
++    if (d === 1 && hideCard())
++        return;
+     if (d === 1 && finishTyping())
+         return;
+     const all = [...document.querySelectorAll('#chat .mes')], i = all.findIndex(m => m.getAttribute('mesid') === boxAt.mes);
+@@ -1389,7 +1447,7 @@ function wireEvents() {
+         if (e)
+             on(e, () => { void voicesReady(trackedPeople()).then(() => { if (boxOn())
+                 showBox(); }).catch(err => console.warn('[Rules engine] voice skipped:', err)); });
+-    on(ev.CHAT_CHANGED, () => { if (live())
++    on(ev.CHAT_CHANGED, () => { metShown.clear(); document.body.classList.remove('rules-card-on'); if (live())
+         syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
+     on(ev.MESSAGE_DELETED, () => { if (live())
+         syncRulesToChat(); drawNotes(); showBox(); });
+diff --git a/src/index.ts b/src/index.ts
+index d9b3bd6..b6a8936 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -11,7 +11,7 @@ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided,
+ import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest, marksOf } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+-import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, type Stretch, type SlotWord, boxFontPx, boxLinesAt, sceneLine } from './rules/box.js';
++import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, type Stretch, type SlotWord, boxFontPx, boxLinesAt, sceneLine, sceneBadge, cardRole } from './rules/box.js';
+ import { peek } from './rules/constants.js';
+ import { voiceOf, voiceLine, voiceFactsOf, voicesReady } from './rules/voice-body.js';
+ import { measureSong, songPoints, areasOf, areaWords, sceneTarget, chooseSong, type Cues } from './rules/music.js';
+@@ -670,7 +670,13 @@ function showBox(): void {
+     showFigure(mes, now);
+     // Where, when and the light: the scene a visual novel's background shows, from the engine (box.ts sceneLine).
+     const scene = document.getElementById('rules-box-scene');
+-    if (scene) { const t = storyTime(); scene.textContent = sceneLine(scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label); }
++    if (scene) {
++        const t = storyTime(), args = [scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label] as const;
++        const line = sceneLine(...args), b = sceneBadge(...args);
++        // Three lines for the night look's corner badge (clock, date, where); the page look runs them on one line.
++        scene.replaceChildren(...line ? (['clock', 'date', 'where'] as const).filter(k => b[k]).map(k => { const e = document.createElement('span'); e.className = `rules-scene-${k}`; e.textContent = b[k]; return e; }) : []);
++        scene.setAttribute('aria-label', line);
++    }
+     const count = document.getElementById('rules-box-count');
+     if (count) count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
+     const log = document.getElementById('rules-box-log');
+@@ -678,14 +684,46 @@ function showBox(): void {
+     document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
+     // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
+     const key = `${boxAt.mes}:${unit}:${units.length}`;
++    // The first time the box reaches a character's first line in the chat, going on, a card names them before it (as visual
++    // novels introduce a person); the line types once the card is tapped away.
++    const who = now?.getAttribute('data-who') ?? '';
++    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metShown.has(who)
++        && document.querySelector(`#chat .rules-unit[data-who="${CSS.escape(who)}"]`) === now) {
++        metShown.add(who); showCard(who, mes); stopTyping(); clearTimeout(autoTimer); stepDir = 0; return;
++    }
+     if (!boxLog && now && key !== shownKey) { if (stepDir === -1) { stopTyping(); clearTimeout(autoTimer); } else typeUnit(now); }
+     if (!boxLog) shownKey = now ? key : '';
+     stepDir = 0;
+ }
++/** Characters whose first-meeting card was shown in this chat's session. */
++const metShown = new Set<string>();
++/** The first-meeting card: the person's picture, their trade or age (box.ts cardRole), their name; a tap, the next key or
++ * the next button takes it away and the line goes on. */
++function showCard(who: string, mes: Element): void {
++    let card = document.getElementById('rules-box-card');
++    if (!card) {
++        card = document.createElement('div'); card.id = 'rules-box-card'; card.setAttribute('role', 'dialog');
++        card.addEventListener('click', e => { e.stopPropagation(); hideCard(); });
++        (document.getElementById('sheld') ?? document.body).appendChild(card);
++    }
++    const src = avatarOf(who, mes), role = cardRole(trackedPeople()[who]);
++    const face = document.createElement('img'); face.className = 'rules-card-face'; face.alt = ''; if (src) face.src = src; else face.hidden = true;
++    const band = document.createElement('div'); band.className = 'rules-card-band';
++    const r = document.createElement('span'); r.className = 'rules-card-role'; r.textContent = role;
++    const n = document.createElement('span'); n.className = 'rules-card-name'; n.textContent = who;
++    band.append(face, r, n); card.replaceChildren(band); card.setAttribute('aria-label', `${who}${role ? `, ${role}` : ''}`);
++    document.body.classList.add('rules-card-on');
++}
++function hideCard(): boolean {
++    if (!document.body.classList.contains('rules-card-on')) return false;
++    document.body.classList.remove('rules-card-on'); showBox();
++    return true;
++}
+ /** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. Going on while
+  * a unit still appears shows the rest of it first. */
+ function stepBox(d: 1 | -1): void {
+     if (!boxOn() || boxLog || !boxAt) return;
++    if (d === 1 && hideCard()) return;
+     if (d === 1 && finishTyping()) return;
+     const all = [...document.querySelectorAll('#chat .mes')], i = all.findIndex(m => m.getAttribute('mesid') === boxAt!.mes);
+     if (i < 0) return;
+@@ -1069,7 +1107,7 @@ function wireEvents(): void {
+     for (const e of [ev.CHAT_CHANGED, ev.USER_MESSAGE_RENDERED, ev.MESSAGE_RECEIVED]) if (e) on(e, () => { try { musicNow(); } catch (err) { console.warn('[Rules engine] music skipped:', err); } });
+     // The tracked people's voices are simulated in the background from the chat's opening, and the plates redrawn once known.
+     for (const e of [ev.CHAT_CHANGED, ev.MESSAGE_RECEIVED]) if (e) on(e, () => { void voicesReady(trackedPeople()).then(() => { if (boxOn()) showBox(); }).catch(err => console.warn('[Rules engine] voice skipped:', err)); });
+-    on(ev.CHAT_CHANGED, () => { if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
++    on(ev.CHAT_CHANGED, () => { metShown.clear(); document.body.classList.remove('rules-card-on'); if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
+     on(ev.MESSAGE_DELETED, () => { if (live()) syncRulesToChat(); drawNotes(); showBox(); });
+     // The reading notes follow the chat as it is drawn: a new or re-drawn message, older messages loaded, an edit (a line
+     // edited since its reading shows no note, ui.ts notesOf).
+diff --git a/src/rules/box.js b/src/rules/box.js
+index a49a178..2173e80 100644
+--- a/src/rules/box.js
++++ b/src/rules/box.js
+@@ -41,6 +41,24 @@ export const boxFontPx = (pagePx, xRatio = 0.46) => Math.max(pagePx, boxMinXPx()
+ /** The box's lines at that size: boxLines lines of the page's size hold as many letters as this many of the box's (a line's
+  * letters go as 1 ÷ the size), so a box carries what it carried before. */
+ export const boxLinesAt = (pagePx, boxPx) => Math.max(peek('boxLines'), Math.round(peek('boxLines') * boxPx / pagePx));
++/** The scene as a badge's three lines: the clock, the date, and where with its light (the story clock's "Sunday 15 July 1990,
++ * 18:20" or "Day 2, 07:00" split at its last comma). */
++export function sceneBadge(place, time, light) {
++    const t = String(time ?? ''), at = t.lastIndexOf(', ');
++    return { clock: at < 0 ? t : t.slice(at + 2), date: at < 0 ? '' : t.slice(0, at), where: [place, light].filter((x) => !!x && !!x.trim()).join(' · ') };
++}
++/** The first-meeting card's line under the name: the person's trade as the story gave it, else their age and what the words for
++ * them fix ("17-year-old girl"), else nothing. */
++export function cardRole(p) {
++    if (!p)
++        return '';
++    if (p.occupation)
++        return p.occupation;
++    if (p.age == null)
++        return '';
++    const noun = p.age < 18 ? (p.sex === 'female' ? 'girl' : p.sex === 'male' ? 'boy' : 'child') : p.sex === 'female' ? 'woman' : p.sex === 'male' ? 'man' : 'adult';
++    return `${Math.floor(p.age)}-year-old ${noun}`;
++}
+ /** The scene above the box, as a visual novel's background tells it: where, when, and the light there (the engine's place,
+  * story clock and sky; any of them left out when unknown). */
+ export const sceneLine = (place, time, light) => [place, time, light].filter((x) => !!x && !!x.trim()).join(' · ');
+diff --git a/src/rules/box.ts b/src/rules/box.ts
+index 597ca1e..2e923fb 100644
+--- a/src/rules/box.ts
++++ b/src/rules/box.ts
+@@ -43,6 +43,21 @@ export const boxFontPx = (pagePx: number, xRatio = 0.46) => Math.max(pagePx, box
+ /** The box's lines at that size: boxLines lines of the page's size hold as many letters as this many of the box's (a line's
+  * letters go as 1 ÷ the size), so a box carries what it carried before. */
+ export const boxLinesAt = (pagePx: number, boxPx: number) => Math.max(peek('boxLines'), Math.round(peek('boxLines') * boxPx / pagePx));
++/** The scene as a badge's three lines: the clock, the date, and where with its light (the story clock's "Sunday 15 July 1990,
++ * 18:20" or "Day 2, 07:00" split at its last comma). */
++export function sceneBadge(place: string | null | undefined, time: string | null | undefined, light: string | null | undefined): { clock: string; date: string; where: string } {
++    const t = String(time ?? ''), at = t.lastIndexOf(', ');
++    return { clock: at < 0 ? t : t.slice(at + 2), date: at < 0 ? '' : t.slice(0, at), where: [place, light].filter((x): x is string => !!x && !!x.trim()).join(' · ') };
++}
++/** The first-meeting card's line under the name: the person's trade as the story gave it, else their age and what the words for
++ * them fix ("17-year-old girl"), else nothing. */
++export function cardRole(p: { occupation?: string; age?: number; sex?: string } | undefined): string {
++    if (!p) return '';
++    if (p.occupation) return p.occupation;
++    if (p.age == null) return '';
++    const noun = p.age < 18 ? (p.sex === 'female' ? 'girl' : p.sex === 'male' ? 'boy' : 'child') : p.sex === 'female' ? 'woman' : p.sex === 'male' ? 'man' : 'adult';
++    return `${Math.floor(p.age)}-year-old ${noun}`;
++}
+ /** The scene above the box, as a visual novel's background tells it: where, when, and the light there (the engine's place,
+  * story clock and sky; any of them left out when unknown). */
+ export const sceneLine = (place: string | null | undefined, time: string | null | undefined, light: string | null | undefined) =>
+diff --git a/src/rules/rules-tools.js b/src/rules/rules-tools.js
+index 7c026b2..e999ff3 100644
+--- a/src/rules/rules-tools.js
++++ b/src/rules/rules-tools.js
+@@ -2606,7 +2606,7 @@ export function registerRulesTools(enabled) {
+         if (typeof a.age === 'number' && a.age >= 0) {
+             const { p } = who(st, a.who), age = Math.round(a.age), sex = a.sex ?? null;
+             if (p)
+-                Object.assign(p, { age, ...sex ? { sex } : {} });
++                Object.assign(p, { age, ...sex ? { sex } : {}, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+             const noun = !sex ? (age < 18 ? 'child' : 'adult') : age < 18 ? (sex === 'female' ? 'girl' : 'boy') : sex === 'female' ? 'woman' : 'man';
+             return `${a.who}: ${aYears(age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (as the story states).`;
+         }
+@@ -2650,7 +2650,7 @@ export function registerRulesTools(enabled) {
+             if (!('error' in r)) {
+                 const { p } = who(st, a.who);
+                 if (p)
+-                    Object.assign(p, { age: r.age, sex: r.sex });
++                    Object.assign(p, { age: r.age, sex: r.sex, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+                 const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+                 return `${a.who}: ${aYears(r.age)}-year-old ${noun}; occupation: ${a.occupation} (age and sex drawn from the 1881 census of England and Wales among its ${r.occupation}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
+             }
+@@ -2666,7 +2666,7 @@ export function registerRulesTools(enabled) {
+         if (local) {
+             const { p } = who(st, a.who);
+             if (p)
+-                Object.assign(p, { age: local.age, sex: local.sex });
++                Object.assign(p, { age: local.age, sex: local.sex, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+             const noun = local.age < 18 ? (local.sex === 'female' ? 'girl' : 'boy') : local.sex === 'female' ? 'woman' : 'man';
+             const work = a.occupation ? null : strangerWork(c, local.sex, local.age, y, rng);
+             const job = a.occupation ? `; occupation: ${a.occupation}` : local.age < 15 ? '; a child' : !work ? '' : !work.works ? '; outside paid work' : work.group ? `; works, among ${work.group} (the narrator names the job)` : '; works';
+@@ -2686,7 +2686,7 @@ export function registerRulesTools(enabled) {
+             return r.error;
+         const { p } = who(st, a.who);
+         if (p)
+-            Object.assign(p, { age: r.age, sex: r.sex });
++            Object.assign(p, { age: r.age, sex: r.sex, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+         const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+         if (!english)
+             return `${a.who}: ${aYears(r.age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (age and sex drawn from the 1881 census of England and Wales${a.occupation ? ', among its people of that occupation' : ''}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
+diff --git a/src/rules/rules-tools.ts b/src/rules/rules-tools.ts
+index 1a8dbde..83779c1 100644
+--- a/src/rules/rules-tools.ts
++++ b/src/rules/rules-tools.ts
+@@ -2306,7 +2306,7 @@ export function registerRulesTools(enabled: boolean): void {
+         // A person the story describes (the cast's "her brother Will, 12") keeps the stated age and sex; nothing is drawn.
+         if (typeof a.age === 'number' && a.age >= 0) {
+             const { p } = who(st, a.who), age = Math.round(a.age), sex = a.sex ?? null;
+-            if (p) Object.assign(p, { age, ...sex ? { sex } : {} });
++            if (p) Object.assign(p, { age, ...sex ? { sex } : {}, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+             const noun = !sex ? (age < 18 ? 'child' : 'adult') : age < 18 ? (sex === 'female' ? 'girl' : 'boy') : sex === 'female' ? 'woman' : 'man';
+             return `${a.who}: ${aYears(age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (as the story states).`;
+         }
+@@ -2337,7 +2337,7 @@ export function registerRulesTools(enabled: boolean): void {
+             const r = drawPerson({ sex: a.sex ?? null, occupation: a.occupation, minAge: Number(a.min_age) || 0 }, rng);
+             if (!('error' in r)) {
+                 const { p } = who(st, a.who);
+-                if (p) Object.assign(p, { age: r.age, sex: r.sex });
++                if (p) Object.assign(p, { age: r.age, sex: r.sex, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+                 const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+                 return `${a.who}: ${aYears(r.age)}-year-old ${noun}; occupation: ${a.occupation} (age and sex drawn from the 1881 census of England and Wales among its ${r.occupation}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
+             }
+@@ -2350,7 +2350,7 @@ export function registerRulesTools(enabled: boolean): void {
+         }
+         if (local) {
+             const { p } = who(st, a.who);
+-            if (p) Object.assign(p, { age: local.age, sex: local.sex });
++            if (p) Object.assign(p, { age: local.age, sex: local.sex, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+             const noun = local.age < 18 ? (local.sex === 'female' ? 'girl' : 'boy') : local.sex === 'female' ? 'woman' : 'man';
+             const work = a.occupation ? null : strangerWork(c, local.sex, local.age, y, rng);
+             const job = a.occupation ? `; occupation: ${a.occupation}` : local.age < 15 ? '; a child' : !work ? '' : !work.works ? '; outside paid work' : work.group ? `; works, among ${work.group} (the narrator names the job)` : '; works';
+@@ -2367,7 +2367,7 @@ export function registerRulesTools(enabled: boolean): void {
+         if ('error' in r && !english) r = drawPerson({ sex: a.sex ?? null, occupation: null, minAge: a.occupation ? Math.max(15, Number(a.min_age) || 0) : Number(a.min_age) || 0 }, rng);
+         if ('error' in r) return r.error;
+         const { p } = who(st, a.who);
+-        if (p) Object.assign(p, { age: r.age, sex: r.sex });
++        if (p) Object.assign(p, { age: r.age, sex: r.sex, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+         const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
+         if (!english) return `${a.who}: ${aYears(r.age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (age and sex drawn from the 1881 census of England and Wales${a.occupation ? ', among its people of that occupation' : ''}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
+         return `${a.who}: ${aYears(r.age)}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child' : 'occupation unlisted in the census'}; born in ${r.born}.`;
+diff --git a/src/rules/types.ts b/src/rules/types.ts
+index 478e21b..cc1d320 100644
+--- a/src/rules/types.ts
++++ b/src/rules/types.ts
+@@ -134,6 +134,8 @@ export interface Person {
+     /** The timing of the person's growth against their sex (growth.ts: the centre of their growth spurt), a z-score drawn once
+      *  when BodySize first places them, from a stream of its own. */
+     timingZ?: number;
++    /** The trade the story or NewCharacter gave the person, as named (the first-meeting card shows it). */
++    occupation?: string;
+     /** Body stores spent by the food deficit (body-engine.ts settleMass): mass before the deficit, fat and glycogen left, the
+      * deficit already taken from them (kcal). */
+     stores?: { mass0: number; fatKg: number; glycogenG: number; applied: number; lethalBmi?: number };
+diff --git a/style.css b/style.css
+index 3a4238a..687b17b 100644
+--- a/style.css
++++ b/style.css
+@@ -392,7 +392,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now {
+     --SmartThemeBodyColor: white; --SmartThemeQuoteColor: white; --SmartThemeUnderlineColor: white; --SmartThemeEmColor: darkgray;
+     --SmartThemeBlurTintColor: black; --SmartThemeBotMesBlurTintColor: black; --SmartThemeUserMesBlurTintColor: black;
+     --SmartThemeBorderColor: dimgray; --SmartThemeShadowColor: transparent;
+-    position: relative; width: auto; box-sizing: border-box; margin: 34px 12px 10px; padding: 26px 18px 30px; overflow: visible;
++    position: relative; width: calc(100% - 24px); align-self: center; box-sizing: border-box; margin: 34px 12px 10px; padding: 26px 18px 30px; overflow: visible;
+     background: linear-gradient(180deg, rgba(18, 20, 34, 0.92), rgba(8, 9, 16, 0.96)); border: 2px solid rgba(255, 255, 255, 0.9); border-radius: 4px;
+     box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.55);
+ }
+@@ -414,3 +414,42 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { background:
+ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count { flex: 0 0 auto; padding: 0.35em 0.7em; border-radius: 1em; background: rgba(8, 9, 16, 0.72); color: white; }
+ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { min-width: 44px; min-height: 44px; padding: 0 12px; font: 600 12px/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 22px; background: rgba(10, 10, 18, 0.85); color: white; border: 1.5px solid rgba(255, 255, 255, 0.75); }
+ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pressed="true"] { background: #e0336a; border-color: #e0336a; }
++
++/* The scene's three parts (index.ts showBox: clock, date, where with its light) on one line in the page look; in the night
++   look a badge in the chat's top corner, the clock large over the date and the place, as some visual novels keep the day in a
++   corner (the player's pick from twelve games' boxes, 2026-11-12). */
++#rules-box-scene > span + span::before { content: ' · '; }
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene:not(:empty) {
++    display: flex; flex-direction: column; align-items: flex-start; width: fit-content; margin: 10px 0 0 12px; padding: 0.45em 0.9em 0.5em;
++    text-align: left; font-variant: normal; letter-spacing: 0; border-left: 4px solid #e0336a; border-radius: 0 8px 8px 0;
++}
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene > span + span::before { content: none; }
++body.rules-box-night.rules-box:not(.rules-box-log) .rules-scene-clock { font: 700 24px/1.1 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
++body.rules-box-night.rules-box:not(.rules-box-log) .rules-scene-date { font-size: 14px; }
++body.rules-box-night.rules-box:not(.rules-box-log) .rules-scene-where { font-size: 13px; font-variant: small-caps; letter-spacing: 0.04em; opacity: 0.85; }
++/* The menu inside the box (night look): Back, the count, Next, Auto, music and Log as small words along the frame's bottom
++   edge, as Doki Doki Literature Club sets its menu; each word keeps a 44 px target (WCAG 2.5.5) and the one that is on turns
++   pink. The ▼ stands above them. SillyTavern stacks the chat at layer 30, so the menu stands at 31 to take its taps. */
++body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now { padding-bottom: 62px; margin-bottom: 0; }
++body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now::after { bottom: 52px; }
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { position: relative; z-index: 31; margin: -56px 24px 16px; gap: 0; }
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count { margin-right: auto; padding: 0; background: transparent; font-size: 12px; opacity: 0.7; }
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { min-width: 44px; padding: 0 8px; background: transparent; border: 0; border-radius: 0; color: rgba(255, 255, 255, 0.85); }
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pressed="true"] { background: transparent; color: #ff5c8f; }
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus { outline: none; box-shadow: none; }
++body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus-visible { outline: 2px solid #ff5c8f; outline-offset: -8px; }
++/* The first-meeting card (index.ts showCard): a full-width band across the screen, the person's picture at its left, their
++   trade or age over their name on a white stripe, as visual novels introduce a character the first time they appear (the
++   player's pick, 2026-11-12, from Danganronpa's cards). It covers SillyTavern's chat column (#sheld, placed absolutely) above
++   the chat's layer 30. A tap, Next or the next key takes it away. */
++#rules-box-card { display: none; }
++body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { display: flex; position: absolute; inset: 0; z-index: 40; align-items: center; background: rgba(0, 0, 0, 0.5); cursor: pointer; }
++#rules-box-card .rules-card-band {
++    position: relative; box-sizing: border-box; width: 100%; min-height: 180px; padding: 34px 18px 30px 44%; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px;
++    background: linear-gradient(-7deg, transparent 40%, rgba(255, 255, 255, 0.96) 40%, rgba(255, 255, 255, 0.96) 66%, transparent 66%), linear-gradient(135deg, #e0336a, #8e1240);
++    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); overflow: visible;
++}
++#rules-box-card .rules-card-band:has(.rules-card-face[hidden]) { padding-left: 18px; }
++#rules-box-card .rules-card-face { position: absolute; left: 4%; bottom: 0; width: 38%; height: 240px; object-fit: cover; object-position: top; border: 3px solid white; border-bottom: 0; }
++#rules-box-card .rules-card-role { font: italic 600 19px/1.2 var(--rules-serif, Georgia, serif); color: #8e1240; }
++#rules-box-card .rules-card-name { font: italic 800 34px/1.1 system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; color: #111; }
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 7098f6b..34d03df 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -5773,8 +5773,8 @@
+   "id": "BX3",
+   "name": "the scene line leaves out what is unknown",
+   "file": "src/rules/box.js",
+-  "find": "filter\\(\\(x\\) => !!x && !!x\\.trim\\(\\)\\)",
+-  "replace": "filter(() => true)",
++  "find": "\\[place, time, light\\]\\.filter\\(\\(x\\) => !!x && !!x\\.trim\\(\\)\\)",
++  "replace": "[place, time, light].filter(() => true)",
+   "miss": "the box's type and the scene line",
+   "test": "ui"
+  },
+@@ -5840,5 +5840,32 @@
+   "replace": "body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now {\n    --rules-unused: white;",
+   "miss": "the night look's colours and parts",
+   "test": "ui"
++ },
++ {
++  "id": "BX11",
++  "name": "the card names the trade first",
++  "file": "src/rules/box.js",
++  "find": "if \\(p\\.occupation\\)\n        return p\\.occupation;",
++  "replace": "",
++  "miss": "the card's line and the badge's parts",
++  "test": "ui"
++ },
++ {
++  "id": "BX13",
++  "name": "the next step takes the card away first",
++  "file": "src/index.js",
++  "find": "if \\(d === 1 && hideCard\\(\\)\\)",
++  "replace": "if (false && hideCard())",
++  "miss": "the card once, the menu above the chat",
++  "test": "ui"
++ },
++ {
++  "id": "BX14",
++  "name": "the menu above the chat layer",
++  "file": "style.css",
++  "find": "#rules-box-bar \\{ position: relative; z-index: 31;",
++  "replace": "#rules-box-bar { position: relative; z-index: 3;",
++  "miss": "the card once, the menu above the chat",
++  "test": "ui"
+  }
+ ]
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index ff37cd8..6095548 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -560,7 +560,7 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+       && B.sceneLine('Recife', 'Sunday 15 July 1990, 18:20', 'nautical twilight') === 'Recife · Sunday 15 July 1990, 18:20 · nautical twilight' && B.sceneLine(null, 'Day 2, 07:00', '') === 'Day 2, 07:00',
+       "the box's type and the scene line", JSON.stringify([B.boxMinXPx(), f, B.boxLinesAt(17.85, f)]));
+   ok(/\.mes\.rules-now \.mes_text \{ font-size: var\(--rules-box-font, 1em\); overscroll-behavior: contain; \}/.test(css) && /\.mes\.rules-now \.timestamp \{ display: none; \}/.test(css)
+-      && /min-height: min\(calc\(var\(--rules-box-lines\) \* 1\.7em\), 60vh\)/.test(css) && /boxLinesNow = boxLinesAt\(page, box\)/.test(idx) && /sceneLine\(scenePlace\(\), t === null \? null : formatStoryTime\(t\)/.test(idx)
++      && /min-height: min\(calc\(var\(--rules-box-lines\) \* 1\.7em\), 60vh\)/.test(css) && /boxLinesNow = boxLinesAt\(page, box\)/.test(idx) && /args = \[scenePlace\(\), t === null \? null : formatStoryTime\(t\), t === null \? null : sceneSky\(t\)\?\.label\]/.test(idx) && /sceneLine\(\.\.\.args\)/.test(idx)
+       && /cutsOf\(words, Math\.floor\(words\.length \* boxLinesNow \/ lines\)\)/.test(idx), "the box's rules and wiring", '');
+ }
+ // R42: the box's night look (style.css body.rules-box-night; src/index.js; settings.html), the player's pick of three: on by
+@@ -582,4 +582,18 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+       && has(`${night} #rules-box-scene:not(:empty) { width: fit-content;`) && /#rules-box-count \{ flex: 0 0 auto; padding: 0\.35em 0\.7em; border-radius: 1em; background: rgba\(8, 9, 16, 0\.72\)/.test(css),
+       "the night look's colours and parts", JSON.stringify([contrast([255, 255, 255], panel), contrast(sky, panel), contrast([255, 255, 255], hex('#e0336a'))]));
+ }
++// R43: the first-meeting card, the date badge and the menu inside the box (box.ts cardRole, sceneBadge; src/index.js showBox,
++// showCard; style.css): the card's line is the trade the story gave, else age and noun; it shows once per character, at their
++// first line in the chat going forward, and the next step takes it away before going on; the badge splits the story clock at
++// its last comma; the menu stands above SillyTavern's chat layer (30) so its taps reach it.
++{
++  const B = await import('../src/rules/box.js'), idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
++  const badge = B.sceneBadge('Recife', 'Sunday 15 July 1990, 18:20', 'nautical twilight'), day = B.sceneBadge(null, 'Day 2, 07:00', null);
++  ok(B.cardRole({ occupation: 'innkeeper', age: 34, sex: 'male' }) === 'innkeeper' && B.cardRole({ age: 16.4, sex: 'female' }) === '16-year-old girl' && B.cardRole({ age: 40 }) === '40-year-old adult' && B.cardRole(undefined) === ''
++      && JSON.stringify(badge) === JSON.stringify({ clock: '18:20', date: 'Sunday 15 July 1990', where: 'Recife · nautical twilight' }) && JSON.stringify(day) === JSON.stringify({ clock: '07:00', date: 'Day 2', where: '' }),
++      "the card's line and the badge's parts", JSON.stringify([badge, day]));
++  ok(/!metShown\.has\(who\)\s*&& document\.querySelector\(`#chat \.rules-unit\[data-who="\$\{CSS\.escape\(who\)\}"\]`\) === now\)/.test(idx) && /stepDir !== -1/.test(idx) && /if \(d === 1 && hideCard\(\)\)\s*return;/.test(idx) && /metShown\.clear\(\)/.test(idx)
++      && /#rules-box-bar \{ position: relative; z-index: 31;/.test(css) && /body\.rules-box\.rules-card-on:not\(\.rules-box-log\) #rules-box-card \{ display: flex; position: absolute; inset: 0; z-index: 40;/.test(css),
++      'the card once, the menu above the chat', '');
++}
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

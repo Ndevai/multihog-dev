@@ -1,1 +1,2 @@
-Read AGENTS.md first; it holds the project rules.
+@AGENTS.md
+@.claude/skills/exact-voice/SKILL.md

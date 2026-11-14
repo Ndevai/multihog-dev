@@ -1,0 +1,74 @@
+# Section 51 run (the tree of section 50 against this tree; 2026-11-11)
+
+## Tests (the steps of npm test; tsc Version 5.6.3)
+route: 218 checks, 0 miss(es)
+frame: 202 checks, 0 miss(es)
+intent: 37 checks, 0 miss(es)
+engine: 203 checks, 0 miss(es)
+plan: 60 checks, 0 miss(es)
+size: 9 of 9
+ui: 88 of 88
+music: 9 of 9
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## Negative controls (every control on index.js, style.css, music.js)
+U7 caught kind contrast (0 s)
+U8 caught reserved name (0 s)
+R12 caught voice button from the keyboard (0 s)
+R20 caught say it another way takes the line back (0 s)
+RW11 caught the typesetting's added words are not selected (0 s)
+RY13 caught a world-book line is read without its hidden marks (0 s)
+RZ11 caught the narrator's prompt carries no tag character (0 s)
+RM6 caught the pitch stroke takes the word's own colour (0 s)
+RM7 caught a breathy word keeps a sharp edge (0 s)
+RM8 caught a word with a pitch stroke adds no height to its line (0 s)
+RM9 caught a feeling's colour reads on the theme (0 s)
+RM10 caught two feelings' colours stay apart (0 s)
+RN6 caught the page's aside ink reads on its ground (0 s)
+RN7 caught the page keeps SillyTavern's x-height (0 s)
+RN8 caught a pause stays by its word (0 s)
+RO3 caught text that is not voiced reads on the page (0 s)
+RO4 caught the box has no picture (0 s)
+RP10 caught text not said reads on the dark page (0 s)
+RP11 caught a key word reads on its gold ground (0 s)
+RP12 caught the narrator names each speaker while the box is on (0 s)
+RP13 caught Auto toggles one settings object (0 s)
+RP14 caught the plate names the stretch's speaker in the box (0 s)
+RQ1 caught K-weighting's shelf gains 4 dB (5 s)
+RQ2 caught the relative gate leaves out blocks 10 LU under the rest (5 s)
+RQ3 caught the onset envelope is read at 250 Hz (5 s)
+RQ4 caught key profiles turn with the tonic (5 s)
+RQ5 caught the key's lowest pitch keeps a bin within half a semitone (5 s)
+RQ6 caught silent frames take no part in brightness (4 s)
+RQ7 caught major is more pleasant (4 s)
+RQ8 caught four areas at least (5 s)
+RQ9 caught the song playing stays in its area (5 s)
+RQ10 caught a set named after the one whose feeling leads (5 s)
+RQ11 caught the farthest feeling leads the scene (5 s)
+RQ12 caught songs cross equal-power (5 s)
+RQ13 caught the settings keep one object (5 s)
+35 of 35 controls caught.
+
+## Tempo of synthetic songs (a chord, a burst of noise on each beat), sample rate, true → measured BPM
+22050 150->150.8  22050 146->144.9  22050 140->140.1  22050 120->119.8  22050 90->89.7  22050 66->66.2  44100 150->150.1  44100 146->146.3  44100 140->139.8  44100 120->120.1  44100 90->90.1  44100 66->66.1
+
+## Chromium: node history/review-tests/browser/music/flow.mjs <root>
+added 4 songs in 2361 ms; uploaded: user/files/rules-song-<time>-Calm-minor.wav, user/files/rules-song-<time>-Calm-major.wav, user/files/rules-song-<time>-Intense-minor.wav, user/files/rules-song-<time>-Intense-major.wav
+  Calm minor: 66.1 BPM · -35 LUFS · 0.3 kHz · A minor · calm, minor
+  Calm major: 69.9 BPM · -34.9 LUFS · 0.3 kHz · C major · calm, major
+  Intense minor: 150 BPM · -16.9 LUFS · 0.4 kHz · E minor · intense, minor
+  Intense major: 146.2 BPM · -16.9 LUFS · 0.4 kHz · D major · intense, major
+  areas: calm, major | intense, minor | calm, minor | intense, major
+no feeling: Playing: Calm major (calm, major)
+Mara's line marked sad: Playing: Calm minor (calm, minor)
+Tom's joy: Playing: Intense major (intense, major)
+Tom's joy, "Calm major" in Tom's set: Playing: Calm major (calm, major)
+after the crossfade: Intense-major.wav paused at volume 0.00, 4.0 s; Calm-major.wav playing at volume 0.60, 4.5 s
+removed one: 3 files kept, 3 songs listed
+no page errors no warnings
+
+## Prompt audit
+node tools/prompt-audit.mjs: unchanged from section 50
+
+## Constants
+docs/constants.md: 142 constants (4 new: musicSilenceDbfs, musicChromaHighHz, musicAreaDivisor, musicCrossfadeS), 339 unregistered tags (1 new: the equal weights of the activation cues)

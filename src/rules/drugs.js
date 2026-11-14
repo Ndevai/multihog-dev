@@ -5,7 +5,7 @@ export const PULSE_KG = 77.1;
 const COLS = ['hr', 'map', 'sys', 'dia', 'rr', 'spo2', 'tv', 'sed', 'nmb', 'paco2'];
 let TABLE = null, loading = null;
 export function loadDrugs() {
-    loading ??= fetch(new URL('../../rules/pulse/drugs.json', import.meta.url)).then(r => r.json()).then(d => { TABLE = d.drugs; });
+    loading ??= fetch(new URL('../../rules/pulse/drugs.json', import.meta.url)).then(r => r.json()).then(d => { TABLE = d.drugs; }).catch(e => { loading = null; throw e; });
     return loading;
 }
 export const drugKeys = () => Object.keys(TABLE ?? {});
@@ -30,7 +30,7 @@ export function startDose(p, key, mg) {
     const a = t.runs[i], b = t.runs[Math.min(i + 1, t.runs.length - 1)], n = Math.min(a.length, b.length);
     const rows = Array.from({ length: n }, (_, m) => a[m].map((x, j) => held || f === 0 ? x : x + (b[m][j] - x) * f));
     p.drug = { key, mg, rows, t: 0 };
-    return { note: `${key.replace(':', ' ')} ${mg} mg (${eff.toFixed(0)} mg for the 77 kg model)${held ? `, held at the largest run (${t.mg[t.mg.length - 1]} mg)` : ''}` };
+    return { note: `${key.replace(':', ' ')} ${mg} mg${held ? `; its effects are those of ${t.mg[t.mg.length - 1]} mg, the largest dose modelled` : ''}` };
 }
 /** One minute of the dose's course; called from the body's minute. */
 export function drugMinute(p) {
@@ -74,5 +74,5 @@ export function drugStatus(p) {
     const r = q.drugLast;
     if (!q.drug || !r)
         return null;
-    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', motionless (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''} (Pulse)`;
+    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', motionless (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''}`;
 }

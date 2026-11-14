@@ -1,4 +1,5 @@
 import { retryInfo, retryDelay } from './rules/retry.js';
+import { untagged } from './rules/voice-code.js';
 // The model setting of each Chat Completion source (SillyTavern public/scripts/openai.js, oai_settings).
 const MODEL_KEYS = {
     openai: 'openai_model', claude: 'claude_model', makersuite: 'google_model', vertexai: 'vertexai_model', openrouter: 'openrouter_model',
@@ -68,6 +69,9 @@ async function sendOnce(system, user, opts = {}) {
 /** One model call, retried as Simulation Blackboard's retry.js decides (src/rules/retry.ts): a rate limit or a server error
  *  waits (the server's Retry-After, at most 20 s while a player waits) and asks again, up to 2 times; anything else fails at once. */
 export async function sendModel(system, user, opts = {}) {
+    // No hidden tag character goes out (voice-code.ts untagged): a card, a fact or a reply in the prompt could carry one.
+    system = untagged(system);
+    user = untagged(user);
     for (let attempt = 0;; attempt++) {
         try {
             return await sendOnce(system, user, opts);

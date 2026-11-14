@@ -1,0 +1,122 @@
+BodyCheck	+	The boy leaps over the stream.
+BodyCheck	+	I spring onto the wagon.
+BodyCheck	+	Mara swims to the far bank.
+BodyCheck	+	I pry the shutter open with my knife.
+BodyCheck	+	Tom jimmies the cellar door.
+BodyCheck	+	I sneak into the kitchen.
+BodyCheck	+	The girl slinks behind the curtain.
+BodyCheck	+	Mara skulks along the hedge.
+BodyCheck	+	I ride the pony to the mill.
+BodyCheck	+	Tom gallops across the meadow.
+BodyCheck	+	I mend the fishing net.
+BodyCheck	+	Mara repairs the broken cart.
+BodyCheck	+	I carve a whistle from the reed.
+BodyCheck	+	Tom forges a horseshoe.
+BodyCheck	+	The smith shoes the mare.
+BodyCheck	+	I sew a patch onto my coat.
+BodyCheck	+	Mara knits a scarf.
+BodyCheck	+	I balance the tray on one hand.
+WorkOut	+	I try to figure out the code on the lock.
+WorkOut	+	Mara decodes the letter.
+WorkOut	+	Tom solves the puzzle box.
+WorkOut	+	I calculate the cost of the trip.
+WorkOut	+	Mara deduces who stole the ring.
+WorkOut	+	I work out the answer.
+WorkOut	+	Tom devises a way across the gorge.
+WorkOut	+	Does Mara remember to bring the key?
+WorkOut	+	I forget to close the gate.
+WorkOut	+	Mara stares at the riddle on the wall.
+WorkOut	+	I add the numbers in my head.
+Listen	+	Does Mara notice the creak of the floorboards?
+Listen	+	I sense someone behind me.
+Listen	+	Tom detects a faint knock.
+Listen	+	Can the guard hear the clatter?
+Listen	+	A bell rings in the distance. Does Tom hear it?
+Look	+	Does the sentry notice Mara?
+Look	+	I spot a rider on the hill.
+Appraise	+	How does Tom feel about the betrayal?
+Appraise	+	Mara feels guilty about the lie.
+Appraise	+	I fear the dark woods.
+Appraise	+	Tom loves his sister.
+Appraise	+	Mara worries about her father.
+Appraise	+	How do I feel after the funeral?
+Price	+	What does a blacksmith earn here?
+Price	+	The baker charges me a penny.
+NameCharacter	+	I ask the clerk his name.
+NameCharacter	+	What's the boy's name?
+NameCharacter	+	I glance at the nurse's name badge.
+Disease	+	Will Tom catch the flu?
+Disease	+	Mara caught smallpox as a child.
+Disease	+	When do the symptoms start?
+Choose	+	What does the merchant do?
+Choose	+	Does the thief run or fight?
+Choose	+	Which door does the guard open?
+Claim	+	I am a werewolf.
+Mara	+	Mara is actually a princess.
+Claim	+	I'm an experienced sailor.
+Claim	+	Mara takes a pistol out of her bag.
+Claim	+	I pull a knife from my boot.
+Claim	+	Mara knows how to pick locks.
+Claim	+	I speak fluent French.
+Claim	+	I grew up in Lisbon.
+Claim	+	Mara used to work as a nurse.
+Claim	+	Mara faints from the heat.
+Claim	+	I trip and twist my ankle.
+Trust	+	Can Mara trust the stranger?
+Trust	+	I confide in my sister.
+Trust	+	Tom betrays Mara to the guards.
+HoldOn	+	I hang from the window ledge.
+HoldOn	+	Mara lugs the sack to the barn.
+HoldOn	+	Tom carries the crate by its handles.
+HoldOn	+	I cling to the mast.
+Chase	+	The thief flees into the crowd.
+Chase	+	I run from the soldiers.
+Chase	+	Mara runs away from the dog.
+Chase	+	The guards catch Mara.
+Chase	+	I escape from the guards.
+Break	+	I step onto the old plank.
+Break	+	Mara swings from the frayed rope.
+Break	+	Tom yanks on the rusty chain.
+BodyChoke	+	Tom chokes the bandit.
+BodyChoke	+	I strangle the guard.
+BodyWound	+	A falling tile cuts my scalp.
+BodyWound	+	The knife slips and slices my thumb.
+BodyStrike	+	Mara swings her heavy oak staff at the thief.
+BodyStrike	+	The bandit punches Tom.
+BodyStrike	+	A wolf bites Tom's arm.
+Battle	+	The cavalry charges the ridge.
+Battle	+	We storm the castle at dawn.
+BodyEnvironment	+	I take off my wet boots.
+BodyEnvironment	+	Mara puts on her wool coat.
+BodyEnvironment	+	Tom drags himself out of the river.
+BodyEnvironment	+	I swim across the lake.
+Substance	+	Does the oil catch fire?
+Dose	+	The nurse injects Mara with ketamine.
+SocialResponse	+	Mara: "I never touched your purse."
+SocialResponse	+	I lie to the guard about my name.
+SocialResponse	+	I tell the clerk I was at home all day.
+SocialResponse	+	Mara watches what the guard does.
+Communicate	+	I read the note to Tom.
+Communicate	+	I read the letter aloud.
+-	-	I read the letter.
+-	-	I sniff the stew.
+-	-	I taste the wine.
+-	-	I hang the lantern on the hook.
+-	-	I hang my coat on the peg.
+-	-	I catch the ball.
+-	-	I catch a fish.
+-	-	I fix my hair.
+-	-	I take the road to the north.
+-	-	Mara picks an apple.
+-	-	The bread rolls off the table.
+-	-	I walk to the bar.
+-	-	I sit on the bench.
+-	-	I carry the boy to the cart.
+-	-	The meal costs a shilling.
+-	-	I wait a couple of minutes.
+-	-	I feel the wall for a latch.
+-	-	Mara watches the sunset.
+-	-	I tell Tom to wait.
+-	-	"Pass the bread, please," I say.
+-	-	I am a little tired.
+-	-	I change the bandage.

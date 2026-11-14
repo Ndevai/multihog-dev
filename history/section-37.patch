@@ -1,0 +1,1314 @@
+diff --git a/README.md b/README.md
+index 0ef8960..16f0fa6 100644
+--- a/README.md
++++ b/README.md
+@@ -50,7 +50,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
+ - Code writes calls for your character's own acts: in "Tom punches Mara" or "I tell Will to wait an hour" the other person's act is read from the scene; "she" in a line written in the third person is your character when the line names no one else she could be. Acts the line says are not done ("I don't hit him", "I almost fall") and out-of-character asides ("(OOC: …)") are not acted on. Typed ›guillemets‹, «guillemets» and „German quotes“ are quotation marks, read as speech like "…", and capitals read as louder on common words only (STOP, NOOOO; NATO and ICU stay as written, and so do the WHO and the IT desk). You can speak to a group as to a person ("I shout to the crew", "I tell the town council"), and to someone named with their looks ("the old blind beggar").
+-- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
++- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I sit by the fire for an hour" passes the hour, "I swing my axe at the orc" is a blow, and "I give Will 3 coins" hands three. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
+ - A result that ends "Fragile: …" rests on a judged value: within that value's range the outcome comes out otherwise. A room emptying through one door takes a few seconds to work out, the reruns for its judged values included.
+ 
+ License: GPL-3.0 (derived from the Multihog D&D Framework). Third-party data, code and fonts (SIL Open Font License, `fonts/`): `docs/third-party.md`. Your line is read by English grammar as Huddleston & Pullum's *Cambridge Grammar of the English Language* (2002) describes it: "give Tom a kick" is a kick, "I make Tom walk" is Tom's walk, "I fail to climb" is no climb, "him" is the one man named before, "I walk to the market every day" is a habit and no walk now, "Do I walk to the door?" asks, and "give the coin to Tom" hands it over. Before that, the line is read for what you meant: a slip is the word the scene makes likeliest, "again" is your last act, "him back" is whoever just struck you, and a goal you stated fills a later search; each reading is shown under your line. Word meanings come from VerbNet 3.4 (University of Colorado), FrameNet 1.7 (https://framenet.icsi.berkeley.edu; Fillmore & Baker 2010, "A Frame Semantic Approach to Linguistic Analysis", The Oxford Handbook of Linguistic Analysis) and Open English WordNet 2024 (CC BY 4.0).
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 3518ae6..36a3a39 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -977,6 +977,10 @@ IF the rule check's redo never starts → THEN its correction note and flags go
+ **Ordinary writing stays words (2026-10-27 (101); `prosody.ts`, `frame.ts`, `router.ts`, `intent.ts`, `ask.ts`, `voice-code.ts`).**
+ IF a whole number stands in brackets ("Tom (35)", "the year (1850)") → THEN it is text; a timed pause carries its decimal point, (0.5), (2.0) (Jefferson's pauses are timed in tenths of a second). IF a degree sign comes before C, F or K ("20 °C") → THEN it is a unit, no quieter span. IF a verb of falling takes an object or a predicative complement ("drop the sword", "trip the guard", "fall asleep") → THEN it routes no BodyFall. IF "with …" or "about …" follows the one spoken to → THEN it is a manner or a topic, no message. IF "him" or "her" follows a person of the other sex named in the line → THEN "back" still reads the one who struck. IF a line quotes in any quotation marks → THEN it is no correction. Emphasis inside emphasis ("*I punch **Tom**.*") is read as its words. A mark on a word in guillemets sits on the letters («Stop-»). A pronoun looked at is the person the line names before it.
+ 
++**Verbs by the sense their line gives, and the world kept per reply (2026-10-27 (102); `router.ts`, `grammar.ts`, `frame.ts`, `prosody.ts`, `voice-code.ts`, `json-text.ts`, `rules-tools.ts`, `index.ts`).**
++IF a weather verb's subject is not "it" ("I pour Tom a drink", "I blow out the candle") → THEN no Weather (Levin 1993 §57). IF a verb is one of Levin's verbs of killing by a means (§42.2, VerbNet poison-42.2) → THEN its means names the tool: poison Substance, drown BodyEnvironment, strangle, throttle, smother, suffocate, asphyxiate and garrotte BodyChoke, stab and knife BodyStrike. IF VerbNet has a phrasal entry (pick_up) → THEN that entry's sense: "pick up the lantern" is Transfer, no eating. "Take a seat" is Act, "break the silence" Communicate, "force a smile" no effort, "sneak, slip, creep or steal past someone" Act and Look (the one passed the viewer). IF a weapon or a limb is swung or thrust at a person or animal → THEN BodyStrike (Levin §1.3, the conative "at"). IF a hand-over counts in figures ("give Will 3 coins") → THEN the quantity is that number. IF a posture is held for a timed while ("sit by the fire for an hour") → THEN PassTime for that while. IF a clause with its own pronoun subject is joined on after a comma ("ask Tom for the key, and he gives it to me") → THEN the words said end before it. A name the story holds keeps its capital in a line shouted in capitals. Every request to a model leaves with hidden marks as notation (SillyTavern's CHAT_COMPLETION_SETTINGS_READY and TEXT_COMPLETION_SETTINGS_READY carry each one, the summary's raw prompt among them).
++The world each message ended with is kept in the chat's archive (`rulesEngine.worlds`) as the changes from the world kept before it, whole every 50; a message holds its world's id (`extra.rulesWorld`), and worlds no message reaches go. Check: 120 scripted turns, chat 1.09 → 0.20 MB, metadata 0.44 → 0.64 MB; a world after a mid-chat deletion, a deletion back to reply 20 and a branch at reply 12 equal the worlds kept then.
++
+ ### 7.4 Scoring the question pass
+ 
+ `/rules-eval [n]` sends the first n of 50 scenes (`eval-scenes.ts`; default all) to the State Model as question-pass requests, with a fixed tracker state (two characters, a date in 1850; five scenes carry their own date), and scores the calls: a call counts only when it would run (known tool, required arguments, schema check passed). Each scene lists the calls a correct reading needs and the arguments that decide their outcomes (equal, contains, range, list holds a name, list length); other arguments are free, recording a fact is always allowed, and a scene may allow further tools. Scenes 40–44 need no call.
+diff --git a/docs/progress.md b/docs/progress.md
+index 2e29a57..b3bf7a3 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,15 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-10-27 (102), Claude Opus 5.5
++- The player asked what else; the sixth review's open items and two more corpora of ordinary lines (90 lines) were run.
++- Changed, reading: "I pour Tom a drink" and "I blow out the candle" are no weather; "I stab Tom" offers no Substance, "I strangle the guard" is a choke, "I drown the rat" an immersion; "I pick up the lantern" no eating; "I light a candle" no treatment; "I draw my sword" a motion; "I take a seat" a motion; "I break the silence" speech; "I force a smile" no effort; "I sneak past the guard" is whether the guard sees; "I swing my axe at the orc" is a blow; "I give Will 3 coins" hands three; "I sit by the fire for an hour" passes the hour (the planner had been skipped and the hour lost); "I ask Tom for the key, and he gives it to me" says only "for the key"; "I SHOUT AT WILL" keeps Will.
++- Changed, text to models: every request leaves with hidden marks as notation, whoever built it (the summary's raw prompt read the saved chat with them).
++- Changed, interface: a feeling mark keeps the words the player selected; the world book's draft reads braces inside its values.
++- Changed, state: each reply's world is kept as the changes from the one before it in an archive in the chat's metadata (a whole world every 50), so the saved chat grows with what changes, not with the world's size per reply.
++- Checked: route 160, frame 198, intent 37, engine 193, plan 60, size 9 of 9, ui 54, sequences 300, all with 0 misses; every new check misses on section 36's tree; 424 negative controls caught (15 new: RA1–RA15; RS15 and H6 retargeted; Q11e retargeted to "I shoot the guard with my pistol": with the poison route gone, its bow line passed without the shoot entry); random sequences 3,000 × 40 on seeds 11 and 12, 0 failing.
++- Next: several blows in one turn ("I punch Tom and Will", "I hit the guard twice": the plan holds one BodyStrike per attacker); the player's choice on "I want to X".
++
+ ## 2026-10-27 (101), Claude Opus 5.5
+ - The player sent a sixth outside review (ss.pdf, 12 findings, none run) and asked for this review's own reading, converged with it. Each of its findings was run with its own test (`review-tests/review6.test.mjs`); eight hold (two in a narrower or broader form than stated), one holds as a measurement whose diff would lose state a deletion needs (the world kept on every reply), three do not (a missed Look's sighting changes no lineup; touch taps keep the mark in Chromium's touch emulation; reach() at 230 dB is past any input). The review here found eight more.
+ - Changed, state: a pass that fails part way takes its calls back (the narrator's tools had run them again: an hour waited became two); a line edited into a correction keeps the world it put back; a tool that waits writes nothing into a chat opened meanwhile; the rule check's note and flags stay with their turn.
+diff --git a/src/index.js b/src/index.js
+index 78d436d..077d756 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -5,7 +5,7 @@ import { pulseSelfTest } from './rules/pulse.js';
+ import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, RULES_BRIEF, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, sceneSky, storyYearNow, } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading } from './rules/question-pass.js';
+ import { noteView, notesOf, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, NOTE_KEY } from './ui.js';
+-import { markWords, keyDelete, hasHidden, notateChat, visible, untagged } from './rules/voice-code.js';
++import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+ import { registerRulesEvalCommand } from './rules/eval.js';
+@@ -631,6 +631,11 @@ function wireEvents() {
+     if (ev.CHAT_COMPLETION_SETTINGS_READY)
+         on(ev.CHAT_COMPLETION_SETTINGS_READY, (data) => { if (live())
+             addReplySchema(data); });
++    // Every request to a model leaves with the player's hidden marks as notation, whoever built it: the interceptor notates the
++    // reply's own chat, and an extension's raw prompt (the summary's "raw" builder) reads the lines as saved.
++    for (const e of [ev.CHAT_COMPLETION_SETTINGS_READY, ev.TEXT_COMPLETION_SETTINGS_READY])
++        if (e)
++            on(e, (data) => notateRequest(data));
+     on(ev.GENERATION_STARTED, (type) => { if (live())
+         onRulesGenerationStarted(type); });
+     on(ev.MESSAGE_RECEIVED, (id) => { if (live())
+diff --git a/src/index.ts b/src/index.ts
+index ee338c1..1f20cb7 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -9,7 +9,7 @@ import {
+ } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading, type Chooser, type Asker } from './rules/question-pass.js';
+ import { noteView, notesOf, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
+-import { markWords, keyDelete, hasHidden, notateChat, visible, untagged } from './rules/voice-code.js';
++import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+ import { registerRulesEvalCommand } from './rules/eval.js';
+@@ -528,6 +528,9 @@ function wireEvents(): void {
+     // First of the reply's handlers: the rule check and the saved state read the prose.
+     on(ev.MESSAGE_RECEIVED, (id: number) => { if (live()) readReply(id); });
+     if (ev.CHAT_COMPLETION_SETTINGS_READY) on(ev.CHAT_COMPLETION_SETTINGS_READY, (data: Record<string, unknown>) => { if (live()) addReplySchema(data); });
++    // Every request to a model leaves with the player's hidden marks as notation, whoever built it: the interceptor notates the
++    // reply's own chat, and an extension's raw prompt (the summary's "raw" builder) reads the lines as saved.
++    for (const e of [ev.CHAT_COMPLETION_SETTINGS_READY, ev.TEXT_COMPLETION_SETTINGS_READY]) if (e) on(e, (data: { messages?: unknown; prompt?: unknown }) => notateRequest(data));
+     on(ev.GENERATION_STARTED, (type: string) => { if (live()) onRulesGenerationStarted(type); });
+     on(ev.MESSAGE_RECEIVED, (id: number) => { if (live()) onRulesMessageReceived(id); });
+     on(ev.MESSAGE_RECEIVED, async (id: number) => {
+diff --git a/src/rules/frame.js b/src/rules/frame.js
+index f9ba0e8..84c7983 100644
+--- a/src/rules/frame.js
++++ b/src/rules/frame.js
+@@ -296,7 +296,10 @@ function speech(text, player) {
+     // might") and a topic ("about my plan"): the words said are the planner's to give.
+     const message = !quoted && /^(?:with|without|about|across|through|over|from|under|behind|in|into|toward|towards|down|up|along|near|beside|outside|inside|at|on|by|past|around)\b/i.test(message0) ? '' : message0;
+     // The words end where the next action begins ("ask the costermonger for apples and pay him").
+-    const said = message.replace(/,?\s+(?:and|then)\s+(?:then\s+)?([a-z]+)\b.*$/, (all, w) => VERBNET[w] || VERBNET[w.replace(/e?s$/, '')] ? '' : all);
++    // So do they where a clause with its own pronoun subject is joined on after a comma ("ask Tom for the key, and he gives it to
++    // me"); a name after "and" may be part of the words ("tell Will that Tom and Ann left").
++    const said = message.replace(/,?\s+(?:and|then)\s+(?:then\s+)?([a-z]+)\b.*$/, (all, w) => VERBNET[w] || VERBNET[w.replace(/e?s$/, '')] ? '' : all)
++        .replace(/,\s+(?:and|then|but)\s+(?:then\s+)?(?:he|she|they|we)\s+([a-z]+)\b.*$/, (all, w) => lemmas(w).some(v => VERBNET[v]) ? '' : all);
+     return placed(verb?.index ?? text.search(OPENS), { tool: 'Communicate', args: { speaker: player, listener: /^[A-Z]/.test(listener) ? listener : clean(listener), means: 'speech', effort, ...said ? { message: said } : {} } });
+ }
+ /** Act: the player's motion in their own words, with the distance the words give. A walk the words give no distance for
+@@ -319,7 +322,9 @@ function motion(text, player) {
+ const UNITS = { minute: 1, minutes: 1, hour: 60, hours: 60, day: 1440, days: 1440 };
+ const COUNT = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'half an': 0.5, 'a quarter of an': 0.25 };
+ function waiting(text, player) {
+-    const m = text.match(/\b(wait|waits|waited|sleep|sleeps|slept|rest|rests|rested|stay|stays|stayed|linger|lingers|lingered)\b(?:\s+(?!for\b)[a-z']+){0,5}?\s+(?:for\s+)?(\d+(?:\.\d+)?|half an|a quarter of an|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty)\s+(minutes?|hours?|days?)\b/i);
++    // A posture held or a place kept for a timed while is a wait too ("I sit by the fire for an hour": a for-phrase gives the
++    // duration of a state or an activity, CGEL ch. 3 §3.2.3, as for walkingFor below).
++    const m = text.match(/\b(wait|waits|waited|sleep|sleeps|slept|rest|rests|rested|stay|stays|stayed|linger|lingers|lingered|sit|sits|sat|stand|stands|stood|lie|lies|lay|kneel|kneels|knelt|crouch|crouches|crouched|hide|hides|hid|remain|remains|remained)\b(?:\s+(?!for\b)[a-z']+){0,5}?\s+(?:for\s+)?(\d+(?:\.\d+)?|half an|a quarter of an|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty)\s+(minutes?|hours?|days?)\b/i);
+     if (!m || !own(text, m.index, player))
+         return null;
+     const n = /\d/.test(m[2]) ? Number(m[2]) : COUNT[m[2].toLowerCase()];
+diff --git a/src/rules/frame.ts b/src/rules/frame.ts
+index 36ecf10..ef0d1f5 100644
+--- a/src/rules/frame.ts
++++ b/src/rules/frame.ts
+@@ -236,7 +236,10 @@ function speech(text: string, player: string): Call | null {
+     // might") and a topic ("about my plan"): the words said are the planner's to give.
+     const message = !quoted && /^(?:with|without|about|across|through|over|from|under|behind|in|into|toward|towards|down|up|along|near|beside|outside|inside|at|on|by|past|around)\b/i.test(message0) ? '' : message0;
+     // The words end where the next action begins ("ask the costermonger for apples and pay him").
+-    const said = message.replace(/,?\s+(?:and|then)\s+(?:then\s+)?([a-z]+)\b.*$/, (all, w: string) => VERBNET[w] || VERBNET[w.replace(/e?s$/, '')] ? '' : all);
++    // So do they where a clause with its own pronoun subject is joined on after a comma ("ask Tom for the key, and he gives it to
++    // me"); a name after "and" may be part of the words ("tell Will that Tom and Ann left").
++    const said = message.replace(/,?\s+(?:and|then)\s+(?:then\s+)?([a-z]+)\b.*$/, (all, w: string) => VERBNET[w] || VERBNET[w.replace(/e?s$/, '')] ? '' : all)
++        .replace(/,\s+(?:and|then|but)\s+(?:then\s+)?(?:he|she|they|we)\s+([a-z]+)\b.*$/, (all: string, w: string) => lemmas(w).some(v => VERBNET[v]) ? '' : all);
+     return placed(verb?.index ?? text.search(OPENS), { tool: 'Communicate', args: { speaker: player, listener: /^[A-Z]/.test(listener) ? listener : clean(listener), means: 'speech', effort, ...said ? { message: said } : {} } });
+ }
+ 
+@@ -260,7 +263,9 @@ function motion(text: string, player: string): Call | null {
+ const UNITS: Record<string, number> = { minute: 1, minutes: 1, hour: 60, hours: 60, day: 1440, days: 1440 };
+ const COUNT: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'half an': 0.5, 'a quarter of an': 0.25 };
+ function waiting(text: string, player: string): Call | null {
+-    const m = text.match(/\b(wait|waits|waited|sleep|sleeps|slept|rest|rests|rested|stay|stays|stayed|linger|lingers|lingered)\b(?:\s+(?!for\b)[a-z']+){0,5}?\s+(?:for\s+)?(\d+(?:\.\d+)?|half an|a quarter of an|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty)\s+(minutes?|hours?|days?)\b/i);
++    // A posture held or a place kept for a timed while is a wait too ("I sit by the fire for an hour": a for-phrase gives the
++    // duration of a state or an activity, CGEL ch. 3 §3.2.3, as for walkingFor below).
++    const m = text.match(/\b(wait|waits|waited|sleep|sleeps|slept|rest|rests|rested|stay|stays|stayed|linger|lingers|lingered|sit|sits|sat|stand|stands|stood|lie|lies|lay|kneel|kneels|knelt|crouch|crouches|crouched|hide|hides|hid|remain|remains|remained)\b(?:\s+(?!for\b)[a-z']+){0,5}?\s+(?:for\s+)?(\d+(?:\.\d+)?|half an|a quarter of an|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|thirty|forty)\s+(minutes?|hours?|days?)\b/i);
+     if (!m || !own(text, m.index!, player)) return null;
+     const n = /\d/.test(m[2]) ? Number(m[2]) : COUNT[m[2].toLowerCase()];
+     const minutes = Math.round(n * UNITS[m[3].toLowerCase()]);
+diff --git a/src/rules/grammar.js b/src/rules/grammar.js
+index ba4aacc..f4370e7 100644
+--- a/src/rules/grammar.js
++++ b/src/rules/grammar.js
+@@ -49,7 +49,9 @@ const CGEL_LIGHT = {
+ // verb of the same sense.
+ let IDIOMS = null;
+ const idioms = () => IDIOMS ??= new Map(LIGHT_IDIOMS.split('|').map(e => e.split('=')));
+-const DET = /^(?:a|an|another|one|two|three|four|five|six|some|any|no|the|this|that|these|those|my|his|her|their|our|your|its)$/;
++// A numeral in figures counts as one in words ("give Will 3 coins" as "give Will three coins": a cardinal numeral is a
++// determinative in CGEL ch. 5).
++const DET = /^(?:a|an|another|one|two|three|four|five|six|some|any|no|the|this|that|these|those|my|his|her|their|our|your|its|\d{1,4})$/;
+ const INDEFINITE = /^(?:a|an|another|one|two|three|four|five|six|some|any|no)$/;
+ // Where a noun phrase ends (CGEL ch. 5: pre-head dependents, the head, then post-head dependents): a preposition, a
+ // coordinator, a subordinator, an adverbial particle or punctuation starts what follows the head [ASSUMED list of them].
+@@ -122,7 +124,7 @@ export function phrasesAfter(toks, ditransitive) {
+         if (low(k) === 'to')
+             to = recipientAt(toks, k + 1);
+     }
+-    return { recipient, ...to ? { to } : {}, det, head: low(j - 1), item, quantity: NUMBER[det] ?? 1, of, end };
++    return { recipient, ...to ? { to } : {}, det, head: low(j - 1), item, quantity: NUMBER[det] ?? (/^\d+$/.test(det) ? Number(det) : 1), of, end };
+ }
+ /** The person or animal a to phrase's NP starting at k names: an accusative pronoun, a name (with its title), or a determiner,
+  *  up to two pre-head words and a noun of a person, an animal or a group (WordNet's first senses: p, n, h, g). */
+diff --git a/src/rules/grammar.ts b/src/rules/grammar.ts
+index b3ac43e..2f7f5b5 100644
+--- a/src/rules/grammar.ts
++++ b/src/rules/grammar.ts
+@@ -51,7 +51,9 @@ const CGEL_LIGHT: Record<string, Record<string, string>> = {
+ let IDIOMS: Map<string, string> | null = null;
+ const idioms = () => IDIOMS ??= new Map(LIGHT_IDIOMS.split('|').map(e => e.split('=') as [string, string]));
+ 
+-const DET = /^(?:a|an|another|one|two|three|four|five|six|some|any|no|the|this|that|these|those|my|his|her|their|our|your|its)$/;
++// A numeral in figures counts as one in words ("give Will 3 coins" as "give Will three coins": a cardinal numeral is a
++// determinative in CGEL ch. 5).
++const DET = /^(?:a|an|another|one|two|three|four|five|six|some|any|no|the|this|that|these|those|my|his|her|their|our|your|its|\d{1,4})$/;
+ const INDEFINITE = /^(?:a|an|another|one|two|three|four|five|six|some|any|no)$/;
+ // Where a noun phrase ends (CGEL ch. 5: pre-head dependents, the head, then post-head dependents): a preposition, a
+ // coordinator, a subordinator, an adverbial particle or punctuation starts what follows the head [ASSUMED list of them].
+@@ -96,7 +98,7 @@ export function phrasesAfter(toks: string[], ditransitive: boolean): Object | nu
+         let k = end; if (/^(?:back|over|across|along|up)$/i.test(toks[k] ?? '')) k++;
+         if (low(k) === 'to') to = recipientAt(toks, k + 1);
+     }
+-    return { recipient, ...to ? { to } : {}, det, head: low(j - 1), item, quantity: NUMBER[det] ?? 1, of, end };
++    return { recipient, ...to ? { to } : {}, det, head: low(j - 1), item, quantity: NUMBER[det] ?? (/^\d+$/.test(det) ? Number(det) : 1), of, end };
+ }
+ /** The person or animal a to phrase's NP starting at k names: an accusative pronoun, a name (with its title), or a determiner,
+  *  up to two pre-head words and a noun of a person, an animal or a group (WordNet's first senses: p, n, h, g). */
+diff --git a/src/rules/json-text.js b/src/rules/json-text.js
+new file mode 100644
+index 0000000..3eda65c
+--- /dev/null
++++ b/src/rules/json-text.js
+@@ -0,0 +1,22 @@
++// A JSON object inside a model's text: where it ends, braces inside its strings read as text (a message quoting ":}", a
++// whispered "{W …" from the notation).
++/** The index of the brace that closes the object opening at `at`, or -1 when it does not close. */
++export function objectEnd(s, at) {
++    let depth = 0;
++    for (let i = at, str = false; i < s.length; i++) {
++        if (str) {
++            if (s[i] === '\\')
++                i++;
++            else if (s[i] === '"')
++                str = false;
++            continue;
++        }
++        if (s[i] === '"')
++            str = true;
++        else if (s[i] === '{')
++            depth++;
++        else if (s[i] === '}' && --depth === 0)
++            return i;
++    }
++    return -1;
++}
+diff --git a/src/rules/json-text.ts b/src/rules/json-text.ts
+new file mode 100644
+index 0000000..0a06e4d
+--- /dev/null
++++ b/src/rules/json-text.ts
+@@ -0,0 +1,14 @@
++// A JSON object inside a model's text: where it ends, braces inside its strings read as text (a message quoting ":}", a
++// whispered "{W …" from the notation).
++
++/** The index of the brace that closes the object opening at `at`, or -1 when it does not close. */
++export function objectEnd(s: string, at: number): number {
++    let depth = 0;
++    for (let i = at, str = false; i < s.length; i++) {
++        if (str) { if (s[i] === '\\') i++; else if (s[i] === '"') str = false; continue; }
++        if (s[i] === '"') str = true;
++        else if (s[i] === '{') depth++;
++        else if (s[i] === '}' && --depth === 0) return i;
++    }
++    return -1;
++}
+diff --git a/src/rules/prosody.js b/src/rules/prosody.js
+index 5bb121f..4410647 100644
+--- a/src/rules/prosody.js
++++ b/src/rules/prosody.js
+@@ -48,7 +48,9 @@ const LEAD = { '°': 'quiet', '☺': 'smile' };
+ const TRAIL = { '°': 'quiet', '☺': 'smile' };
+ /** The marks on a line: each word with its marks and the pause after it, the feeling a ((…)) names, other ((…))
+  * descriptions, and the line without its marks (for reading its verbs and names). */
+-export function readProsody(line) {
++export function readProsody(line, names = []) {
++    // The story's people, by the words of their names: a name in capitals is louder and still a name ("I SHOUT AT WILL").
++    const nameWords = new Set(names.flatMap(n => n.toLowerCase().split(/\s+/)).filter(w => w && w !== 'the'));
+     const notes = [];
+     let feeling;
+     // ((…)): a feeling, or a description kept as a note.
+@@ -173,7 +175,7 @@ export function readProsody(line) {
+             // Lower case for reading, the first letter kept where a sentence starts.
+             const starts = !words.length || new RegExp(`[.!?](?:${CLOSES}|')?$`).test(words.at(-1).word) || new RegExp(`^${OPENS.source}`).test(w);
+             w = w.replace(/\p{L}+/gu, s => s.toLowerCase());
+-            if (starts)
++            if (starts || nameWords.has(letters.toLowerCase()))
+                 w = w.replace(/\p{L}/u, c => c.toUpperCase());
+         }
+         if (pendingIn) {
+diff --git a/src/rules/prosody.ts b/src/rules/prosody.ts
+index 34c51be..f3a7592 100644
+--- a/src/rules/prosody.ts
++++ b/src/rules/prosody.ts
+@@ -57,7 +57,9 @@ const TRAIL: Record<string, Mark> = { '°': 'quiet', '☺': 'smile' };
+ 
+ /** The marks on a line: each word with its marks and the pause after it, the feeling a ((…)) names, other ((…))
+  * descriptions, and the line without its marks (for reading its verbs and names). */
+-export function readProsody(line: string): Prosody {
++export function readProsody(line: string, names: string[] = []): Prosody {
++    // The story's people, by the words of their names: a name in capitals is louder and still a name ("I SHOUT AT WILL").
++    const nameWords = new Set(names.flatMap(n => n.toLowerCase().split(/\s+/)).filter(w => w && w !== 'the'));
+     const notes: string[] = [];
+     let feeling: Feeling | undefined;
+     // ((…)): a feeling, or a description kept as a note.
+@@ -119,7 +121,7 @@ export function readProsody(line: string): Prosody {
+             // Lower case for reading, the first letter kept where a sentence starts.
+             const starts = !words.length || new RegExp(`[.!?](?:${CLOSES}|')?$`).test(words.at(-1)!.word) || new RegExp(`^${OPENS.source}`).test(w);
+             w = w.replace(/\p{L}+/gu, s => s.toLowerCase());
+-            if (starts) w = w.replace(/\p{L}/u, c => c.toUpperCase());
++            if (starts || nameWords.has(letters.toLowerCase())) w = w.replace(/\p{L}/u, c => c.toUpperCase());
+         }
+         if (pendingIn) { marks.add('inbreath'); pendingIn = false; }
+         for (const k of open) marks.add(k);
+diff --git a/src/rules/question-pass.js b/src/rules/question-pass.js
+index 3c01edd..9fb14c7 100644
+--- a/src/rules/question-pass.js
++++ b/src/rules/question-pass.js
+@@ -24,6 +24,7 @@ import { loadThings, thingsIn, thingsBlock, setRead, READ } from './things.js';
+ import { decide, applyFix, personSex, correctionOf, correctionFix } from './ask.js';
+ import { readingItems } from './reading.js';
+ import { understand } from './intent.js';
++import { objectEnd } from './json-text.js';
+ import { readProsody, deliveryOf, effortOf } from './prosody.js';
+ import { marksOf, hasHidden, visible, toNotation } from './voice-code.js';
+ /** A message's words as code reads them: the player's line as typed, without its marks (the toolbar's codes, kept in `voiced`
+@@ -162,23 +163,8 @@ export function rawPlan(text) {
+     const s = String(text ?? '');
+     const starts = [...s.matchAll(/\{\s*"calls"/g)].map(m => m.index).reverse();
+     for (const at of starts) {
+-        let depth = 0, end = -1;
+         // Braces inside a JSON string are text (a message quoting ":}" or a whispered "{W …"), not the object's own.
+-        for (let i = at, str = false; i < s.length && end < 0; i++) {
+-            if (str) {
+-                if (s[i] === '\\')
+-                    i++;
+-                else if (s[i] === '"')
+-                    str = false;
+-                continue;
+-            }
+-            if (s[i] === '"')
+-                str = true;
+-            else if (s[i] === '{')
+-                depth++;
+-            else if (s[i] === '}' && --depth === 0)
+-                end = i;
+-        }
++        const end = objectEnd(s, at);
+         if (end < 0)
+             continue;
+         try {
+@@ -412,7 +398,9 @@ async function passOnce(chat, sendRaw, tracker = '', choose, ask) {
+         // The toolbar's marks are read from their codes (kept in `voiced` once the line is notated for the model); a line
+         // without them is read for the signs typed in it.
+         const last = chat[chat.length - 1], lineAsSaved = last.voiced ?? String(last.mes ?? '');
+-        const pros = hasHidden(lineAsSaved) ? marksOf(lineAsSaved) : readProsody(lineAsSaved);
++        // The story's people and the cast's names keep their capital in a line shouted in capitals ("I SHOUT AT WILL").
++        const known = [...Object.keys(s.state.people ?? {}), ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]), String(ctx.name1 ?? '')];
++        const pros = hasHidden(lineAsSaved) ? marksOf(lineAsSaved) : readProsody(lineAsSaved, known);
+         VOICE = pros.marked ? deliveryOf(pros) || null : null;
+         const found = thingsIn(pros.plain);
+         // Code reads the tools from the player's verbs (router.ts) and writes every call whose arguments the words give
+diff --git a/src/rules/question-pass.ts b/src/rules/question-pass.ts
+index f885dfc..45eb7b9 100644
+--- a/src/rules/question-pass.ts
++++ b/src/rules/question-pass.ts
+@@ -25,6 +25,7 @@ import { loadThings, thingsIn, thingsBlock, setRead, READ, type Found } from './
+ import { decide, applyFix, personSex, correctionOf, correctionFix, type Fix } from './ask.js';
+ import { readingItems, type ReadingItem } from './reading.js';
+ import { understand, type Change } from './intent.js';
++import { objectEnd } from './json-text.js';
+ import { readProsody, deliveryOf, effortOf, type Prosody } from './prosody.js';
+ import { marksOf, hasHidden, visible, toNotation } from './voice-code.js';
+ 
+@@ -168,14 +169,8 @@ export function rawPlan(text: unknown): Plan {
+     const s = String(text ?? '');
+     const starts = [...s.matchAll(/\{\s*"calls"/g)].map(m => m.index!).reverse();
+     for (const at of starts) {
+-        let depth = 0, end = -1;
+         // Braces inside a JSON string are text (a message quoting ":}" or a whispered "{W …"), not the object's own.
+-        for (let i = at, str = false; i < s.length && end < 0; i++) {
+-            if (str) { if (s[i] === '\\') i++; else if (s[i] === '"') str = false; continue; }
+-            if (s[i] === '"') str = true;
+-            else if (s[i] === '{') depth++;
+-            else if (s[i] === '}' && --depth === 0) end = i;
+-        }
++        const end = objectEnd(s, at);
+         if (end < 0) continue;
+         try {
+             const o = JSON.parse(s.slice(at, end + 1));
+@@ -380,7 +375,9 @@ async function passOnce(chat: STMessage[], sendRaw: Send, tracker = '', choose?:
+         // The toolbar's marks are read from their codes (kept in `voiced` once the line is notated for the model); a line
+         // without them is read for the signs typed in it.
+         const last = chat[chat.length - 1] as STMessage & { voiced?: string }, lineAsSaved = last.voiced ?? String(last.mes ?? '');
+-        const pros = hasHidden(lineAsSaved) ? marksOf(lineAsSaved) : readProsody(lineAsSaved);
++        // The story's people and the cast's names keep their capital in a line shouted in capitals ("I SHOUT AT WILL").
++        const known = [...Object.keys(s.state.people ?? {}), ...[...tracker.matchAll(/^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?)\s*[(:]/gm)].map(m => m[1]!), String((ctx as { name1?: string }).name1 ?? '')];
++        const pros = hasHidden(lineAsSaved) ? marksOf(lineAsSaved) : readProsody(lineAsSaved, known);
+         VOICE = pros.marked ? deliveryOf(pros) || null : null;
+         const found = thingsIn(pros.plain);
+         // Code reads the tools from the player's verbs (router.ts) and writes every call whose arguments the words give
+diff --git a/src/rules/router.js b/src/rules/router.js
+index ba30c0e..a828ad7 100644
+--- a/src/rules/router.js
++++ b/src/rules/router.js
+@@ -5,7 +5,7 @@
+ // The model's tool picker is asked only when no verb maps to a tool.
+ import { stepsFromWords } from './actions.js';
+ import { VERBNET } from './data/verbnet.js';
+-import { lemmas, BEFORE, lightNounTool, frameTool, climbing } from './verbs.js';
++import { lemmas, BEFORE, lightNounTool, frameTool, climbing, creatureAfter } from './verbs.js';
+ import { LIGHT_VERBS, lightReading, NEGATIVE_TO, MODALS, PASSIVE_AUX, measureOfGoods, noun, LET_US, vocativeImperative } from './grammar.js';
+ import { GIVEN_NAMES } from './data/given-names.js';
+ import { isWord } from './lexicon.js';
+@@ -28,7 +28,9 @@ const CLASS_TOOL = {
+     // Contact by impact (18), attacks and killing (36.4, 42, 60.1), cutting and poking (19, 21.1), throwing at (17.2).
+     hit: ['BodyStrike'], swat: ['BodyStrike'], spank: ['BodyStrike'], attack: ['BodyStrike'], battle: ['BodyStrike'], murder: ['BodyStrike'],
+     subjugate: ['BodyStrike'], poke: ['BodyStrike'], cut: ['BodyStrike'], pelt: ['BodyStrike'],
+-    poison: ['Substance'],
++    // poison-42.2 is Levin's verbs of killing by a means (Levin 1993 §42.2: drown, electrocute, hang, knife, poison, shoot, stab,
++    // strangle, suffocate): the means names the tool, so its verbs are named below (poison, drown, the chokes) or take their other
++    // classes' tools (stab and knife: poke and spank, BodyStrike).
+     // Ingesting (39).
+     eat: ['BodyIntake'], chew: ['BodyIntake'], gobble: ['BodyIntake'], devour: ['BodyIntake'], dine: ['BodyIntake'], gorge: ['BodyIntake'], feeding: ['BodyIntake'],
+     // Time (53, 56, 104) and sleep (40.4).
+@@ -58,6 +60,15 @@ const VERB_TOOL = {
+     kick: ['BodyStrike', 'Break'], smash: ['Break'], shatter: ['Break'], lunge: ['BodyStrike'],
+     // A shot: a bow or crossbow is BodyStrike's, a handgun BodyCheck's (shot_m) [VerbNet files shoot under poisoning and throwing].
+     shoot: ['BodyCheck', 'BodyStrike'],
++    // Killing by a means (Levin 42.2): poison is a substance, drowning water around the body, strangling a choke.
++    poison: ['Substance'], drown: ['BodyEnvironment'], strangle: ['BodyChoke'], throttle: ['BodyChoke'], smother: ['BodyChoke'], suffocate: ['BodyChoke'],
++    asphyxiate: ['BodyChoke'], garrotte: ['BodyChoke'],
++    // Phrasal verbs whose sense is not their verb's (VerbNet files them as entries of their own: pick_up under discover-84, apart
++    // from pick): "pick up the lantern" takes it, no eating (chew-39.2, "pick at"); "blow out the candle" breaks nothing.
++    pick_up: ['Transfer'], blow_out: [],
++    // Lighting a candle or a fire tends no wound (VerbNet files light under remedy-45.7, as "lighten"); drawing a sword, a chair
++    // or near is a motion, no luring or splitting.
++    light: [], draw: ['Act'],
+     hand: ['Transfer'], take: ['Transfer'], pocket: ['Transfer'], lend: ['Transfer'], borrow: ['Transfer'],
+     // Calling is speech: VerbNet also files call under get-13.5.1 ("call me a cab"), which offered a hand-over for "call out to Tom".
+     call: ['Communicate'], call_out: ['Communicate'],
+@@ -188,7 +199,10 @@ export function routeTurn(text, names = []) {
+                 why[light] ??= w;
+                 break;
+             }
+-            const tools = toolsOf(v, words[i + 1] ?? '', after);
++            // A weather verb reports the weather only with "it" as its subject (Levin 1993 §57: "It rained"); "I pour Tom a drink",
++            // "I blow on my hands" are no weather.
++            const dummy = prev === 'it' || prev === "it's" || (prev2 === 'it' && /^(?:is|was|will|has|had|be|been)$/.test(prev ?? ''));
++            const tools = toolsOf(v, words[i + 1] ?? '', after)?.filter(t => t !== 'Weather' || dummy) ?? null;
+             for (const t of tools ?? [])
+                 why[t] ??= w;
+             if (tools)
+@@ -211,6 +225,14 @@ export function routeTurn(text, names = []) {
+         why.Communicate = "let's";
+     if (!why.Communicate && unquoted.split(/(?<=[.!?])\s+/).some(x => vocativeImperative(x, v => !!VERBNET[v.toLowerCase()], n => GIVEN_NAMES[n.toLowerCase()] != null || !isWord(n))))
+         why.Communicate = 'a vocative and an imperative';
++    // A weapon or a limb swung or thrust at someone is a blow tried (Levin 1993 §1.3, the conative alternation: "swing at Tom" is
++    // an attempt to hit him): "I swing my axe at the orc", "I thrust my spear at the guard"; at a thing it is a motion.
++    if (!why.BodyStrike)
++        for (const m of unquoted.toLowerCase().matchAll(/\b(swing|swings|swung|swinging|thrust|thrusts|thrusting)\b(?:\s+(?:my|his|her|their|the|a|an|our|your)\s+[a-z]+)?\s+at\s+([a-z' ]+)/g))
++            if (creatureAfter(m[2].trim().split(/\s+/), text)) {
++                why.BodyStrike = m[1];
++                break;
++            }
+     // A motion the action reader recognizes is an Act; a walk whose distance the words leave out still is (the scene gives it).
+     if (!why.Act && movesIn(text))
+         why.Act = 'motion';
+@@ -243,6 +265,24 @@ export function routeTurn(text, names = []) {
+         drop(/^cast(?:s|ing)?$/);
+         why.CastSpell ??= 'cast a spell';
+     }
++    // Set phrases read by what they mean: taking a seat is sitting down; breaking the silence is speaking; forcing a smile is a
++    // face, no effort to test; slipping, creeping or stealing past someone is keeping out of their sight (Look, the one passed
++    // the viewer), no fall and no theft.
++    if (/\b(?:take|takes|took|taking) (?:a|my|his|her|their|your|our) seat\b/.test(low)) {
++        drop(/^(?:take|takes|took|taking)$/);
++        why.Act ??= 'take a seat';
++    }
++    if (/\bbr(?:eak|eaks|oke|eaking) (?:the|an|a|my|his|her|their|our) (?:\w+ )?silence\b/.test(low)) {
++        drop(/^br(?:eak|eaks|oke|eaking)$/);
++        why.Communicate ??= 'break the silence';
++    }
++    if (/\bforc(?:e|es|ed|ing) (?:a|an|my|his|her|their) (?:\w+ )?(?:smile|grin|laugh|smirk)\b/.test(low))
++        drop(/^forc(?:e|es|ed|ing)$/);
++    if (/\b(?:sneak|sneaks|sneaked|snuck|sneaking|creep|creeps|crept|creeping|slip|slips|slipped|slipping|steal|steals|stole|stealing) (?:past|by) /.test(low)) {
++        drop(/^(?:sneak|sneaks|sneaked|snuck|sneaking|creep|creeps|crept|creeping|slip|slips|slipped|slipping|steal|steals|stole|stealing)$/);
++        why.Act ??= 'past unseen';
++        why.Look ??= 'past unseen';
++    }
+     if (!why.BodyTreat && /\b(?:tourniquet|bandage|splint|sutures?|stitches|poultice|salve|compress|dressing|ointment)s?\b/.test(low))
+         why.BodyTreat = 'a dressing';
+     if (why.Communicate)
+diff --git a/src/rules/router.ts b/src/rules/router.ts
+index 85d8eaa..70edada 100644
+--- a/src/rules/router.ts
++++ b/src/rules/router.ts
+@@ -5,7 +5,7 @@
+ // The model's tool picker is asked only when no verb maps to a tool.
+ import { stepsFromWords } from './actions.js';
+ import { VERBNET } from './data/verbnet.js';
+-import { lemmas, BEFORE, lightNounTool, frameTool, climbing } from './verbs.js';
++import { lemmas, BEFORE, lightNounTool, frameTool, climbing, creatureAfter } from './verbs.js';
+ import { LIGHT_VERBS, lightReading, NEGATIVE_TO, MODALS, PASSIVE_AUX, measureOfGoods, noun, LET_US, vocativeImperative } from './grammar.js';
+ import { GIVEN_NAMES } from './data/given-names.js';
+ import { isWord } from './lexicon.js';
+@@ -29,7 +29,9 @@ const CLASS_TOOL: Record<string, string[]> = {
+     // Contact by impact (18), attacks and killing (36.4, 42, 60.1), cutting and poking (19, 21.1), throwing at (17.2).
+     hit: ['BodyStrike'], swat: ['BodyStrike'], spank: ['BodyStrike'], attack: ['BodyStrike'], battle: ['BodyStrike'], murder: ['BodyStrike'],
+     subjugate: ['BodyStrike'], poke: ['BodyStrike'], cut: ['BodyStrike'], pelt: ['BodyStrike'],
+-    poison: ['Substance'],
++    // poison-42.2 is Levin's verbs of killing by a means (Levin 1993 §42.2: drown, electrocute, hang, knife, poison, shoot, stab,
++    // strangle, suffocate): the means names the tool, so its verbs are named below (poison, drown, the chokes) or take their other
++    // classes' tools (stab and knife: poke and spank, BodyStrike).
+     // Ingesting (39).
+     eat: ['BodyIntake'], chew: ['BodyIntake'], gobble: ['BodyIntake'], devour: ['BodyIntake'], dine: ['BodyIntake'], gorge: ['BodyIntake'], feeding: ['BodyIntake'],
+     // Time (53, 56, 104) and sleep (40.4).
+@@ -59,6 +61,15 @@ const VERB_TOOL: Record<string, string[]> = {
+     kick: ['BodyStrike', 'Break'], smash: ['Break'], shatter: ['Break'], lunge: ['BodyStrike'],
+     // A shot: a bow or crossbow is BodyStrike's, a handgun BodyCheck's (shot_m) [VerbNet files shoot under poisoning and throwing].
+     shoot: ['BodyCheck', 'BodyStrike'],
++    // Killing by a means (Levin 42.2): poison is a substance, drowning water around the body, strangling a choke.
++    poison: ['Substance'], drown: ['BodyEnvironment'], strangle: ['BodyChoke'], throttle: ['BodyChoke'], smother: ['BodyChoke'], suffocate: ['BodyChoke'],
++    asphyxiate: ['BodyChoke'], garrotte: ['BodyChoke'],
++    // Phrasal verbs whose sense is not their verb's (VerbNet files them as entries of their own: pick_up under discover-84, apart
++    // from pick): "pick up the lantern" takes it, no eating (chew-39.2, "pick at"); "blow out the candle" breaks nothing.
++    pick_up: ['Transfer'], blow_out: [],
++    // Lighting a candle or a fire tends no wound (VerbNet files light under remedy-45.7, as "lighten"); drawing a sword, a chair
++    // or near is a motion, no luring or splitting.
++    light: [], draw: ['Act'],
+     hand: ['Transfer'], take: ['Transfer'], pocket: ['Transfer'], lend: ['Transfer'], borrow: ['Transfer'],
+     // Calling is speech: VerbNet also files call under get-13.5.1 ("call me a cab"), which offered a hand-over for "call out to Tom".
+     call: ['Communicate'], call_out: ['Communicate'],
+@@ -158,7 +169,10 @@ export function routeTurn(text: string, names: string[] = []): Route {
+             // BodyCheck's (clamber, scramble: FrameNet Self_motion); a verb VerbNet lacks takes its FrameNet frame's tool.
+             const after = words.slice(i + 1).filter(x => !/^[,.;:!?]$/.test(x)), light = LIGHT_VERBS[w] ? null : lightNounTool(v, after, text);
+             if (light) { why[light] ??= w; break; }
+-            const tools = toolsOf(v, words[i + 1] ?? '', after);
++            // A weather verb reports the weather only with "it" as its subject (Levin 1993 §57: "It rained"); "I pour Tom a drink",
++            // "I blow on my hands" are no weather.
++            const dummy = prev === 'it' || prev === "it's" || (prev2 === 'it' && /^(?:is|was|will|has|had|be|been)$/.test(prev ?? ''));
++            const tools = toolsOf(v, words[i + 1] ?? '', after)?.filter(t => t !== 'Weather' || dummy) ?? null;
+             for (const t of tools ?? []) why[t] ??= w;
+             if (tools) break;
+         }
+@@ -175,6 +189,10 @@ export function routeTurn(text: string, names: string[] = []): Route {
+     const unquoted = acted.replace(QUOTED, ' , ');
+     if (!why.Communicate && [...unquoted.matchAll(/\blet(?:['’]s|\s+us)\s+[a-z]/gi)].some(m => LET_US.test(unquoted.slice(0, m.index! + m[0].length - 1)))) why.Communicate = "let's";
+     if (!why.Communicate && unquoted.split(/(?<=[.!?])\s+/).some(x => vocativeImperative(x, v => !!VERBNET[v.toLowerCase()], n => GIVEN_NAMES[n.toLowerCase()] != null || !isWord(n)))) why.Communicate = 'a vocative and an imperative';
++    // A weapon or a limb swung or thrust at someone is a blow tried (Levin 1993 §1.3, the conative alternation: "swing at Tom" is
++    // an attempt to hit him): "I swing my axe at the orc", "I thrust my spear at the guard"; at a thing it is a motion.
++    if (!why.BodyStrike) for (const m of unquoted.toLowerCase().matchAll(/\b(swing|swings|swung|swinging|thrust|thrusts|thrusting)\b(?:\s+(?:my|his|her|their|the|a|an|our|your)\s+[a-z]+)?\s+at\s+([a-z' ]+)/g))
++        if (creatureAfter(m[2]!.trim().split(/\s+/), text)) { why.BodyStrike = m[1]!; break; }
+     // A motion the action reader recognizes is an Act; a walk whose distance the words leave out still is (the scene gives it).
+     if (!why.Act && movesIn(text)) why.Act = 'motion';
+     // Phrases that name another act than their verb [ASSUMED lists]: a breath taken or caught is breathing, no taking; a breath
+@@ -187,6 +205,13 @@ export function routeTurn(text: string, names: string[] = []): Route {
+     if (/\b(?:pick|picks|picked|picking) (?:the |a |its |that )?(?:door'?s? )?lock\b/.test(low)) { drop(/^(?:pick|picks|picked|picking)$/); why.BodyCheck ??= 'pick the lock'; }
+     if (/\b(?:keep|keeps|kept|keeping) (?:a |the )?(?:watch|lookout|look-out|vigil)\b|\b(?:stand|stands|stood|standing) (?:guard|watch|sentry)\b/.test(low)) { drop(/^(?:keep|keeps|kept|keeping|stand|stands|stood|standing)$/); why.Look ??= 'keep watch'; why.PassTime ??= 'keep watch'; }
+     if (/\bcast(?:s|ing)? (?:a |an |the |my |his |her )?(?:\w+ )?(?:spell|fireball|hex|curse|charm|ward|incantation|enchantment)\b|\bcast(?:s|ing)? (?:a |an |the )?\w+ (?:at|on|upon) /.test(low) && !/\bcast(?:s|ing)? (?:a |an )?(?:glance|look|eye|net|line|shadow|vote|lot|die|dice)\b/.test(low)) { drop(/^cast(?:s|ing)?$/); why.CastSpell ??= 'cast a spell'; }
++    // Set phrases read by what they mean: taking a seat is sitting down; breaking the silence is speaking; forcing a smile is a
++    // face, no effort to test; slipping, creeping or stealing past someone is keeping out of their sight (Look, the one passed
++    // the viewer), no fall and no theft.
++    if (/\b(?:take|takes|took|taking) (?:a|my|his|her|their|your|our) seat\b/.test(low)) { drop(/^(?:take|takes|took|taking)$/); why.Act ??= 'take a seat'; }
++    if (/\bbr(?:eak|eaks|oke|eaking) (?:the|an|a|my|his|her|their|our) (?:\w+ )?silence\b/.test(low)) { drop(/^br(?:eak|eaks|oke|eaking)$/); why.Communicate ??= 'break the silence'; }
++    if (/\bforc(?:e|es|ed|ing) (?:a|an|my|his|her|their) (?:\w+ )?(?:smile|grin|laugh|smirk)\b/.test(low)) drop(/^forc(?:e|es|ed|ing)$/);
++    if (/\b(?:sneak|sneaks|sneaked|snuck|sneaking|creep|creeps|crept|creeping|slip|slips|slipped|slipping|steal|steals|stole|stealing) (?:past|by) /.test(low)) { drop(/^(?:sneak|sneaks|sneaked|snuck|sneaking|creep|creeps|crept|creeping|slip|slips|slipped|slipping|steal|steals|stole|stealing)$/); why.Act ??= 'past unseen'; why.Look ??= 'past unseen'; }
+     if (!why.BodyTreat && /\b(?:tourniquet|bandage|splint|sutures?|stitches|poultice|salve|compress|dressing|ointment)s?\b/.test(low)) why.BodyTreat = 'a dressing';
+     if (why.Communicate) why.Interpret = 'with Communicate';
+     return { tools: Object.keys(why), why };
+diff --git a/src/rules/rules-tools.js b/src/rules/rules-tools.js
+index 6b16b58..12bff9d 100644
+--- a/src/rules/rules-tools.js
++++ b/src/rules/rules-tools.js
+@@ -35,7 +35,7 @@ import { TITLE } from './frame.js';
+ import { parseFormula, molarMass } from './substance.js';
+ import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING } from './rooms.js';
+ import { formatStoryTime, spokenTime } from './clock.js';
+-import { diff, record, truncate, truncateTo, verify, rebuilt } from './world-log.js';
++import { diff, apply, record, truncate, truncateTo, verify, rebuilt } from './world-log.js';
+ import { violations } from './invariants.js';
+ import { mapOf, area, roomAt, straight } from './map.js';
+ import { loadDrugs, startDose } from './drugs.js';
+@@ -240,11 +240,72 @@ export function onRulesMessageReceived(messageId) {
+     (ctx.saveChatDebounced || ctx.saveChat)?.();
+ }
+ /** MESSAGE_SWIPED: returning to an earlier swipe restores the state it ended with. */
+-/** States each swipe of a reply ended with, by swipe id; a player's line (its pass) and a narrator's tool call by 0. */
++/** States each swipe of a reply ended with, by swipe id; a player's line (its pass) and a narrator's tool call by 0: kept in
++ * the chat's world archive by id (`extra.rulesWorld`), or whole on a message kept before the archive (`extra.rulesResult`). */
+ const resultsOf = (m) => m?.extra?.rulesResult;
++const worldIdsOf = (m) => m?.extra?.rulesWorld;
+ const keyOf = (m) => m.is_user || m.is_system ? 0 : m.swipe_id ?? 0;
++/** The world a message ended with in swipe `k`, or undefined. */
++const savedFor = (m, k) => { const id = worldIdsOf(m)?.[k]; return id ? worldOf(id) ?? undefined : resultsOf(m)?.[k]; };
+ /** The world a message ended with (the swipe shown, for a reply), or undefined. */
+-const savedOf = (m) => m ? resultsOf(m)?.[keyOf(m)] : undefined;
++const savedOf = (m) => m ? savedFor(m, keyOf(m)) : undefined;
++// The world archive: each world a message keeps is stored as the changes from the world stored before it (world-log.ts diff),
++// whole every WORLD_CHAIN worlds, so a long chat keeps one world per reply at the size of what changed in it (the chat had
++// grown with the square of its length: 1.09 MB at 120 turns, each reply holding the whole world). Messages hold ids, so a
++// deletion anywhere leaves every other message's world readable; worlds no message reaches go (collectWorlds).
++const WORLD_CHAIN = 50; // [ASSUMED: reading a world applies at most 50 diffs, a few milliseconds]
++// Worlds read, by archive (a chat loaded or branched has its own) and id; read only (restore and restoreAt copy them).
++const WORLD_CACHE = new WeakMap();
++function worldOf(id) {
++    const s = store();
++    if (!s.worlds)
++        return null;
++    const cache = WORLD_CACHE.get(s.worlds) ?? WORLD_CACHE.set(s.worlds, new Map()).get(s.worlds), hit = cache.get(id);
++    if (hit)
++        return hit;
++    const chain = [];
++    for (let at = id; at; at = s.worlds?.[at]?.base) {
++        const w = s.worlds?.[at];
++        if (!w)
++            return null;
++        chain.push(w);
++        if (w.full)
++            break;
++    }
++    if (!chain.at(-1)?.full)
++        return null;
++    const out = chain.reverse().reduce((st, w) => w.full ? structuredClone(w.full) : apply(st, w.ops ?? []), {});
++    if (cache.size > 64)
++        cache.clear();
++    cache.set(id, out);
++    return out;
++}
++function putWorld(state) {
++    const s = store(), worlds = s.worlds ??= {}, id = `w${s.worldSeq = (s.worldSeq ?? 0) + 1}`;
++    const head = s.worldHead && worlds[s.worldHead] ? s.worldHead : undefined, base = head ? worldOf(head) : null, depth = head ? worlds[head].depth + 1 : 0;
++    worlds[id] = base && depth < WORLD_CHAIN ? { base: head, ops: diff(base, state), depth } : { full: structuredClone(state), depth: 0 };
++    s.worldHead = id;
++    if (s.worldSeq % 25 === 0)
++        collectWorlds();
++    return id;
++}
++/** Drops the worlds no message of the chat reaches (directly or as the base of one that does), the latest kept. */
++function collectWorlds() {
++    const s = store(), worlds = s.worlds;
++    if (!worlds)
++        return;
++    const keep = new Set(), mark = (id) => { while (id && !keep.has(id) && worlds[id]) {
++        keep.add(id);
++        id = worlds[id].base;
++    } };
++    for (const m of SillyTavern.getContext().chat ?? [])
++        for (const id of Object.values(worldIdsOf(m) ?? {}))
++            mark(id);
++    mark(s.worldHead);
++    for (const id of Object.keys(worlds))
++        if (!keep.has(id))
++            delete worlds[id];
++}
+ /** After the world is put back and its record cut to match: when the record no longer rebuilds it (a change it kept went
+  * with a later cut, as a swipe's turn goes when another swipe is made), one entry holds the difference, so /rules-replay
+  * rebuilds the world shown; it belongs to message `msg`, so a later cut at or before it takes it too. */
+@@ -255,16 +316,18 @@ function settle(h, msg, tool = 'restored', args = {}) {
+ }
+ /** Whether a question pass has run for the player's line at chat index `i` (it keeps the world its pass left). */
+ export const passRanFor = (i) => !!savedOf(SillyTavern.getContext().chat?.[i]);
+-/** Keeps on the message at chat index `i` the world now, and how many changes the record held then (`extra.rulesResult`,
+- * `extra.rulesLog`): a reply's swipe when it is received, a player's line when its pass has run, a narrator's tool call
+- * and the greeting when a generation starts from them. */
++/** Keeps on the message at chat index `i` the world now, by its id in the archive, and how many changes the record held then
++ * (`extra.rulesWorld`, `extra.rulesLog`): a reply's swipe when it is received, a player's line when its pass has run, a
++ * narrator's tool call and the greeting when a generation starts from them. */
+ export function keepResult(i) {
+     const m = SillyTavern.getContext().chat?.[i];
+     if (!m)
+         return;
+     const s = store(), k = keyOf(m);
+     m.extra ??= {};
+-    (m.extra.rulesResult ??= {})[k] = structuredClone(s.state);
++    (m.extra.rulesWorld ??= {})[k] = putWorld(s.state);
++    if (resultsOf(m)?.[k])
++        delete resultsOf(m)[k];
+     (m.extra.rulesLog ??= {})[k] = s.history?.n ?? 0;
+     prune(i);
+ }
+@@ -279,14 +342,17 @@ function prune(i) {
+         if (!m?.extra)
+             continue;
+         if (!(m.is_user || m.is_system)) {
+-            const k = keyOf(m), r = m.extra.rulesResult, l = m.extra.rulesLog;
++            const k = keyOf(m), r = m.extra.rulesResult, l = m.extra.rulesLog, w = worldIdsOf(m);
+             if (r?.[k] && Object.keys(r).length > 1)
+                 m.extra.rulesResult = { [k]: r[k] };
++            if (w?.[k] && Object.keys(w).length > 1)
++                m.extra.rulesWorld = { [k]: w[k] };
+             if (l?.[k] != null && Object.keys(l).length > 1)
+                 m.extra.rulesLog = { [k]: l[k] };
+             continue;
+         }
+         delete m.extra.rulesResult;
++        delete m.extra.rulesWorld;
+         delete m.extra.rulesLog;
+         delete m.extra.rulesStart;
+         delete m.extra.rulesPass;
+@@ -295,7 +361,7 @@ function prune(i) {
+ export function onRulesSwiped(messageId) {
+     const ctx = SillyTavern.getContext();
+     const msg = ctx.chat?.[messageId];
+-    const saved = resultsOf(msg)?.[msg?.swipe_id ?? 0];
++    const saved = ctx.chatMetadata ? savedFor(msg, msg?.swipe_id ?? 0) : undefined;
+     if (!ctx.chatMetadata || !saved)
+         return;
+     restore(saved);
+@@ -334,6 +400,7 @@ export function syncRulesToChat() {
+         at--;
+     const msg = at >= 0 ? chat[at] : undefined, saved = savedOf(msg), n = msg ? msg.extra?.rulesLog?.[keyOf(msg)] : undefined;
+     const s = store();
++    collectWorlds();
+     // A line deleted takes its pass with it: a new line at its place is a new turn, not that line edited (question-pass.ts).
+     if (s.asked && Number(placeOf(s.asked.turn)) > chat.filter(m => m?.is_user).length) {
+         s.asked = undefined;
+diff --git a/src/rules/rules-tools.ts b/src/rules/rules-tools.ts
+index 4b6d6bb..f21b77b 100644
+--- a/src/rules/rules-tools.ts
++++ b/src/rules/rules-tools.ts
+@@ -39,7 +39,7 @@ import { TITLE } from './frame.js';
+ import { parseFormula, molarMass } from './substance.js';
+ import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING, type Room } from './rooms.js';
+ import { formatStoryTime, spokenTime } from './clock.js';
+-import { diff, record, truncate, truncateTo, verify, rebuilt, type History } from './world-log.js';
++import { diff, apply, record, truncate, truncateTo, verify, rebuilt, type History, type Op } from './world-log.js';
+ import { violations } from './invariants.js';
+ import { mapOf, area, roomAt, straight } from './map.js';
+ import { loadDrugs, startDose } from './drugs.js';
+@@ -90,6 +90,9 @@ export interface EngineStore {
+         taken?: { label: string; others: string[] };
+         /** How the player said their line, from their marks (prosody.ts deliveryOf), and whose line it was. */
+         voice?: string; voiceBy?: string } | null;
++    /** The worlds messages ended with (`extra.rulesWorld` holds their ids), each a diff from the world kept before it or, every
++     * WORLD_CHAIN worlds, whole; `worldHead` is the latest. */
++    worlds?: Record<string, { base?: string; ops?: Op[]; full?: RuleState; depth: number }>; worldSeq?: number; worldHead?: string;
+ }
+ 
+ export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'Break', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Layout', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
+@@ -257,11 +260,52 @@ export function onRulesMessageReceived(messageId: number): void {
+ }
+ 
+ /** MESSAGE_SWIPED: returning to an earlier swipe restores the state it ended with. */
+-/** States each swipe of a reply ended with, by swipe id; a player's line (its pass) and a narrator's tool call by 0. */
++/** States each swipe of a reply ended with, by swipe id; a player's line (its pass) and a narrator's tool call by 0: kept in
++ * the chat's world archive by id (`extra.rulesWorld`), or whole on a message kept before the archive (`extra.rulesResult`). */
+ const resultsOf = (m: STMessage | undefined) => m?.extra?.rulesResult as Record<number, RuleState> | undefined;
++const worldIdsOf = (m: STMessage | undefined) => m?.extra?.rulesWorld as Record<number, string> | undefined;
+ const keyOf = (m: STMessage) => m.is_user || m.is_system ? 0 : m.swipe_id ?? 0;
++/** The world a message ended with in swipe `k`, or undefined. */
++const savedFor = (m: STMessage | undefined, k: number) => { const id = worldIdsOf(m)?.[k]; return id ? worldOf(id) ?? undefined : resultsOf(m)?.[k]; };
+ /** The world a message ended with (the swipe shown, for a reply), or undefined. */
+-const savedOf = (m: STMessage | undefined) => m ? resultsOf(m)?.[keyOf(m)] : undefined;
++const savedOf = (m: STMessage | undefined) => m ? savedFor(m, keyOf(m)) : undefined;
++// The world archive: each world a message keeps is stored as the changes from the world stored before it (world-log.ts diff),
++// whole every WORLD_CHAIN worlds, so a long chat keeps one world per reply at the size of what changed in it (the chat had
++// grown with the square of its length: 1.09 MB at 120 turns, each reply holding the whole world). Messages hold ids, so a
++// deletion anywhere leaves every other message's world readable; worlds no message reaches go (collectWorlds).
++const WORLD_CHAIN = 50; // [ASSUMED: reading a world applies at most 50 diffs, a few milliseconds]
++// Worlds read, by archive (a chat loaded or branched has its own) and id; read only (restore and restoreAt copy them).
++const WORLD_CACHE = new WeakMap<object, Map<string, RuleState>>();
++function worldOf(id: string): RuleState | null {
++    const s = store();
++    if (!s.worlds) return null;
++    const cache = WORLD_CACHE.get(s.worlds) ?? WORLD_CACHE.set(s.worlds, new Map()).get(s.worlds)!, hit = cache.get(id);
++    if (hit) return hit;
++    const chain: { ops?: Op[]; full?: RuleState }[] = [];
++    for (let at: string | undefined = id; at; at = s.worlds?.[at]?.base) { const w = s.worlds?.[at]; if (!w) return null; chain.push(w); if (w.full) break; }
++    if (!chain.at(-1)?.full) return null;
++    const out = chain.reverse().reduce<RuleState>((st, w) => w.full ? structuredClone(w.full) : apply(st, w.ops ?? []), {} as RuleState);
++    if (cache.size > 64) cache.clear();
++    cache.set(id, out);
++    return out;
++}
++function putWorld(state: RuleState): string {
++    const s = store(), worlds = s.worlds ??= {}, id = `w${s.worldSeq = (s.worldSeq ?? 0) + 1}`;
++    const head = s.worldHead && worlds[s.worldHead] ? s.worldHead : undefined, base = head ? worldOf(head) : null, depth = head ? worlds[head]!.depth + 1 : 0;
++    worlds[id] = base && depth < WORLD_CHAIN ? { base: head, ops: diff(base, state), depth } : { full: structuredClone(state), depth: 0 };
++    s.worldHead = id;
++    if (s.worldSeq % 25 === 0) collectWorlds();
++    return id;
++}
++/** Drops the worlds no message of the chat reaches (directly or as the base of one that does), the latest kept. */
++function collectWorlds(): void {
++    const s = store(), worlds = s.worlds;
++    if (!worlds) return;
++    const keep = new Set<string>(), mark = (id: string | undefined) => { while (id && !keep.has(id) && worlds[id]) { keep.add(id); id = worlds[id]!.base; } };
++    for (const m of SillyTavern.getContext().chat ?? []) for (const id of Object.values(worldIdsOf(m) ?? {})) mark(id);
++    mark(s.worldHead);
++    for (const id of Object.keys(worlds)) if (!keep.has(id)) delete worlds[id];
++}
+ /** After the world is put back and its record cut to match: when the record no longer rebuilds it (a change it kept went
+  * with a later cut, as a swipe's turn goes when another swipe is made), one entry holds the difference, so /rules-replay
+  * rebuilds the world shown; it belongs to message `msg`, so a later cut at or before it takes it too. */
+@@ -271,15 +315,16 @@ function settle(h: History, msg: number, tool = 'restored', args: Record<string,
+ }
+ /** Whether a question pass has run for the player's line at chat index `i` (it keeps the world its pass left). */
+ export const passRanFor = (i: number) => !!savedOf(SillyTavern.getContext().chat?.[i]);
+-/** Keeps on the message at chat index `i` the world now, and how many changes the record held then (`extra.rulesResult`,
+- * `extra.rulesLog`): a reply's swipe when it is received, a player's line when its pass has run, a narrator's tool call
+- * and the greeting when a generation starts from them. */
++/** Keeps on the message at chat index `i` the world now, by its id in the archive, and how many changes the record held then
++ * (`extra.rulesWorld`, `extra.rulesLog`): a reply's swipe when it is received, a player's line when its pass has run, a
++ * narrator's tool call and the greeting when a generation starts from them. */
+ export function keepResult(i: number): void {
+     const m = SillyTavern.getContext().chat?.[i];
+     if (!m) return;
+     const s = store(), k = keyOf(m);
+     m.extra ??= {};
+-    ((m.extra.rulesResult ??= {}) as Record<number, RuleState>)[k] = structuredClone(s.state);
++    ((m.extra.rulesWorld ??= {}) as Record<number, string>)[k] = putWorld(s.state);
++    if (resultsOf(m)?.[k]) delete resultsOf(m)![k];
+     ((m.extra.rulesLog ??= {}) as Record<number, number>)[k] = s.history?.n ?? 0;
+     prune(i);
+ }
+@@ -293,19 +338,20 @@ function prune(i: number): void {
+         const m = chat[j];
+         if (!m?.extra) continue;
+         if (!(m.is_user || m.is_system)) {
+-            const k = keyOf(m), r = m.extra.rulesResult as Record<number, RuleState> | undefined, l = m.extra.rulesLog as Record<number, number> | undefined;
++            const k = keyOf(m), r = m.extra.rulesResult as Record<number, RuleState> | undefined, l = m.extra.rulesLog as Record<number, number> | undefined, w = worldIdsOf(m);
+             if (r?.[k] && Object.keys(r).length > 1) m.extra.rulesResult = { [k]: r[k] };
++            if (w?.[k] && Object.keys(w).length > 1) m.extra.rulesWorld = { [k]: w[k] };
+             if (l?.[k] != null && Object.keys(l).length > 1) m.extra.rulesLog = { [k]: l[k] };
+             continue;
+         }
+-        delete m.extra.rulesResult; delete m.extra.rulesLog; delete m.extra.rulesStart; delete m.extra.rulesPass;
++        delete m.extra.rulesResult; delete m.extra.rulesWorld; delete m.extra.rulesLog; delete m.extra.rulesStart; delete m.extra.rulesPass;
+     }
+ }
+ 
+ export function onRulesSwiped(messageId: number): void {
+     const ctx = SillyTavern.getContext();
+     const msg = ctx.chat?.[messageId];
+-    const saved = resultsOf(msg)?.[msg?.swipe_id ?? 0];
++    const saved = ctx.chatMetadata ? savedFor(msg, msg?.swipe_id ?? 0) : undefined;
+     if (!ctx.chatMetadata || !saved) return;
+     restore(saved);
+     // The record of changes follows the swipe shown: the turn's changes, as the swipe made last left them, go, and one entry
+@@ -339,6 +385,7 @@ export function syncRulesToChat(): void {
+     let at = chat.length - 1; while (at >= 0 && !savedOf(chat[at])) at--;
+     const msg = at >= 0 ? chat[at] : undefined, saved = savedOf(msg), n = msg ? (msg.extra?.rulesLog as Record<number, number> | undefined)?.[keyOf(msg)] : undefined;
+     const s = store();
++    collectWorlds();
+     // A line deleted takes its pass with it: a new line at its place is a new turn, not that line edited (question-pass.ts).
+     if (s.asked && Number(placeOf(s.asked.turn)) > chat.filter(m => m?.is_user).length) { s.asked = undefined; s.lineStart = undefined; }
+     // The record keeps the changes it held when that message's world was kept; a reply kept before that, the changes up to
+diff --git a/src/rules/voice-code.js b/src/rules/voice-code.js
+index 736a57d..d4db8dc 100644
+--- a/src/rules/voice-code.js
++++ b/src/rules/voice-code.js
+@@ -88,6 +88,11 @@ export function markWords(t, s0, e0, id) {
+         insert += rewrite(k.word, codes);
+         cursor = k.end;
+     }
++    // A feeling goes on the line's first word; the words the player selected stay selected for the next mark.
++    if (LINE.test(code)) {
++        const d = insert.length - (to - from);
++        return { from, to, insert, selStart: s >= to ? s + d : from, selEnd: e >= to ? e + d : from + insert.length };
++    }
+     return { from, to, insert, selStart: from, selEnd: from + insert.length };
+ }
+ /** The line in the notation the models read: each word's hidden marks written as Jefferson's and VoQS's signs, the spans
+@@ -165,6 +170,28 @@ export function notateChat(chat) {
+             m.mes = toNotation(m.voiced);
+         }
+ }
++/** A request on its way to a model, whoever built it (SillyTavern's CHAT_COMPLETION_SETTINGS_READY and
++ * TEXT_COMPLETION_SETTINGS_READY carry every request: the reply's, a quiet prompt's and an extension's raw prompt, such as the
++ * summary's "raw" builder, which reads the saved chat): each text with hidden marks becomes the notation, line by line, and no
++ * other tag character stays. */
++export function notateRequest(data) {
++    if (!data)
++        return;
++    const fix = (t) => hasHidden(t) ? untagged(t.split('\n').map(toNotation).join('\n')) : t;
++    if (Array.isArray(data.messages))
++        for (const m of data.messages) {
++            if (!m || typeof m !== 'object')
++                continue;
++            if (typeof m.content === 'string')
++                m.content = fix(m.content);
++            else if (Array.isArray(m.content))
++                for (const part of m.content)
++                    if (part && typeof part.text === 'string')
++                        part.text = fix(part.text);
++        }
++    if (typeof data.prompt === 'string')
++        data.prompt = fix(data.prompt);
++}
+ export function typeset(t) {
+     if (!hasHidden(t))
+         return [{ text: t }];
+diff --git a/src/rules/voice-code.ts b/src/rules/voice-code.ts
+index 99aaf98..8a050bd 100644
+--- a/src/rules/voice-code.ts
++++ b/src/rules/voice-code.ts
+@@ -76,6 +76,8 @@ export function markWords(t: string, s0: number, e0: number, id: string): { from
+         insert += rewrite(k.word, codes);
+         cursor = k.end;
+     }
++    // A feeling goes on the line's first word; the words the player selected stay selected for the next mark.
++    if (LINE.test(code)) { const d = insert.length - (to - from); return { from, to, insert, selStart: s >= to ? s + d : from, selEnd: e >= to ? e + d : from + insert.length }; }
+     return { from, to, insert, selStart: from, selEnd: from + insert.length };
+ }
+ 
+@@ -129,6 +131,21 @@ export function notateChat(chat: { is_user?: boolean; mes?: string; voiced?: str
+     for (const m of chat) if (m?.is_user && hasHidden(String(m.mes ?? ''))) { m.voiced = String(m.mes); m.mes = toNotation(m.voiced); }
+ }
+ 
++/** A request on its way to a model, whoever built it (SillyTavern's CHAT_COMPLETION_SETTINGS_READY and
++ * TEXT_COMPLETION_SETTINGS_READY carry every request: the reply's, a quiet prompt's and an extension's raw prompt, such as the
++ * summary's "raw" builder, which reads the saved chat): each text with hidden marks becomes the notation, line by line, and no
++ * other tag character stays. */
++export function notateRequest(data: { messages?: unknown; prompt?: unknown } | null | undefined): void {
++    if (!data) return;
++    const fix = (t: string) => hasHidden(t) ? untagged(t.split('\n').map(toNotation).join('\n')) : t;
++    if (Array.isArray(data.messages)) for (const m of data.messages as { content?: unknown }[]) {
++        if (!m || typeof m !== 'object') continue;
++        if (typeof m.content === 'string') m.content = fix(m.content);
++        else if (Array.isArray(m.content)) for (const part of m.content as { text?: unknown }[]) if (part && typeof part.text === 'string') part.text = fix(part.text);
++    }
++    if (typeof data.prompt === 'string') data.prompt = fix(data.prompt);
++}
++
+ /** What the chat shows for a run of text with hidden marks: plain text, each marked word with its marks, and the small words
+  * the typesetting adds (a pause's dot, "inhales", "exhales", the line's feeling, laughter's "ha", a cut-off's dash). */
+ export type Seg = { text: string; marks?: Mark[]; add?: 'pause' | 'micro' | 'inhales' | 'exhales' | 'feeling' | 'ha' | 'cut'; seconds?: number };
+diff --git a/src/rules/world.js b/src/rules/world.js
+index 0f865cb..11875cb 100644
+--- a/src/rules/world.js
++++ b/src/rules/world.js
+@@ -3,6 +3,7 @@
+ // as little history as its premise needs, each change following from the premise by a stated cause (minimal-rewrite rule,
+ // Tetlock & Belkin 1996). So each entry names its cause and the areas of life the cause reaches; every other area stays as in
+ // real history, and the entry shows in the world through a few stated reflections.
++import { objectEnd } from './json-text.js';
+ import { checkArgs, str } from './tool-schema.js';
+ import { creatureId } from './df/index.js';
+ import { SPEECH_OVERRIDE } from './body-engine.js';
+@@ -116,20 +117,16 @@ export function parseEntry(text) {
+     const s = String(text ?? ''), at = s.lastIndexOf('{"what"') >= 0 ? s.lastIndexOf('{"what"') : s.indexOf('{');
+     if (at < 0)
+         return null;
+-    let depth = 0;
+-    for (let i = at; i < s.length; i++) {
+-        if (s[i] === '{')
+-            depth++;
+-        else if (s[i] === '}' && --depth === 0) {
+-            try {
+-                return JSON.parse(s.slice(at, i + 1));
+-            }
+-            catch {
+-                return null;
+-            }
+-        }
++    // Braces inside its strings are text ("a door marked {sealed}"), not the object's own.
++    const end = objectEnd(s, at);
++    if (end < 0)
++        return null;
++    try {
++        return JSON.parse(s.slice(at, end + 1));
++    }
++    catch {
++        return null;
+     }
+-    return null;
+ }
+ /** The world-book entry for `name` (a creature or people) when the scene lies outside its area, with the distance; else null.
+  *  A being far from where its kind lives is rare there, so a claim to be one needs its path (rules-tools Claim). */
+diff --git a/src/rules/world.ts b/src/rules/world.ts
+index 42933b5..48f5ae2 100644
+--- a/src/rules/world.ts
++++ b/src/rules/world.ts
+@@ -3,6 +3,7 @@
+ // as little history as its premise needs, each change following from the premise by a stated cause (minimal-rewrite rule,
+ // Tetlock & Belkin 1996). So each entry names its cause and the areas of life the cause reaches; every other area stays as in
+ // real history, and the entry shows in the world through a few stated reflections.
++import { objectEnd } from './json-text.js';
+ import { checkArgs, str, type Props } from './tool-schema.js';
+ import { creatureId } from './df/index.js';
+ import { SPEECH_OVERRIDE } from './body-engine.js';
+@@ -114,12 +115,10 @@ Write only the JSON object.`;
+ export function parseEntry(text: unknown): Record<string, unknown> | null {
+     const s = String(text ?? ''), at = s.lastIndexOf('{"what"') >= 0 ? s.lastIndexOf('{"what"') : s.indexOf('{');
+     if (at < 0) return null;
+-    let depth = 0;
+-    for (let i = at; i < s.length; i++) {
+-        if (s[i] === '{') depth++;
+-        else if (s[i] === '}' && --depth === 0) { try { return JSON.parse(s.slice(at, i + 1)); } catch { return null; } }
+-    }
+-    return null;
++    // Braces inside its strings are text ("a door marked {sealed}"), not the object's own.
++    const end = objectEnd(s, at);
++    if (end < 0) return null;
++    try { return JSON.parse(s.slice(at, end + 1)); } catch { return null; }
+ }
+ 
+ /** The world-book entry for `name` (a creature or people) when the scene lies outside its area, with the distance; else null.
+diff --git a/tests/engine.test.mjs b/tests/engine.test.mjs
+index 1b15203..688f63b 100644
+--- a/tests/engine.test.mjs
++++ b/tests/engine.test.mjs
+@@ -1314,7 +1314,7 @@ for (const who of ['Mara', 'Ash']) {
+   T.onRulesGenerationStarted('swipe');
+   const kept = T.storyTime();
+   // A chat saved before messages kept their worlds (2026-10-26 (100)): the snapshot at the reply's place holds the call.
+-  delete ctx.chat[2].extra.rulesResult; delete ctx.chat[2].extra.rulesLog; T.onRulesGenerationStarted('swipe');
++  delete ctx.chat[2].extra.rulesResult; delete ctx.chat[2].extra.rulesWorld; delete ctx.chat[2].extra.rulesLog; T.onRulesGenerationStarted('swipe');
+   if (kept !== 610 || T.storyTime() !== 610) { miss++; console.log(`MISS swipe after a function call keeps its effect: ${kept}; in an older chat ${T.storyTime()}`); }
+ }
+ // R16: in a reverberant room a louder voice fills the room as much as it reaches the ear: the echo carries the voice as noise
+@@ -1704,9 +1704,9 @@ for (const who of ['Mara', 'Ash']) {
+   fresh(); T.setStoryTime(600); ctx.name1 = 'Mara'; ctx.chat = [{ is_user: false, mes: 'Start.', swipe_id: 0 }];
+   for (let i = 0; i < 20; i++) { T.onRulesGenerationStarted('normal'); ctx.chat.push({ is_user: true, mes: `I wait ${i + 1} minutes.` }); await Q.runQuestionPass(ctx.chat, async () => '{"calls":{}}', '', undefined, async () => null); ctx.chat.push({ is_user: false, mes: 'ok', swipe_id: 0 }); T.onRulesMessageReceived(ctx.chat.length - 1); }
+   ctx.name1 = undefined;
+-  const held = k => ['rulesResult', 'rulesLog', 'rulesStart', 'rulesPass'].filter(x => ctx.chat[k].extra?.[x] !== undefined).join();
++  const held = k => ['rulesWorld', 'rulesLog', 'rulesStart', 'rulesPass'].filter(x => ctx.chat[k].extra?.[x] !== undefined).join();
+   const end = ctx.chat.length - 1, old = ctx.chat.slice(0, end - 30).map((m, k) => m.is_user && held(k)).filter(Boolean);
+-  if (old.length || held(end - 1) !== 'rulesResult,rulesLog,rulesStart,rulesPass' || !ctx.chat.every((m, k) => m.is_user || ctx.chat[k].extra?.rulesResult)) { miss++; console.log(`MISS old player lines let go of their worlds, replies keep theirs: ${old.join(' | ')}; latest line ${held(end - 1)}`); }
++  if (old.length || held(end - 1) !== 'rulesWorld,rulesLog,rulesStart,rulesPass' || !ctx.chat.every((m, k) => m.is_user || ctx.chat[k].extra?.rulesWorld)) { miss++; console.log(`MISS old player lines let go of their worlds, replies keep theirs: ${old.join(' | ')}; latest line ${held(end - 1)}`); }
+ }
+ // R51: a line's pass and its draws follow its words, not its place: after an earlier turn is deleted, a swipe of a
+ // correction's reply replays the correction as it was, with the same outcome, and asks the model nothing; a correction
+@@ -1819,5 +1819,30 @@ for (const who of ['Mara', 'Ash']) {
+   const out = String(await run('PassTime', { minutes: 5 }));
+   if (!/after 0 min 18 s of 5 minutes: Kit comes to/.test(out)) { miss++; console.log(`MISS PassTime stops when a person comes to: ${out.slice(0, 120)}`); }
+ }
+-console.log(`192 checks, ${miss} miss(es)`);
++// Each reply's world is kept in the chat's archive as the changes from the world kept before it: a reply holds an id, and a
++// deletion anywhere, a deletion back to a reply, or a branch rebuilds each world exactly (the chat had held a whole world per
++// reply: 1.09 MB at 120 turns).
++{
++  fresh(); T.setStoryTime(600); ctx.name1 = 'Mara'; ctx.chat = [{ is_user: false, mes: 'Start.', swipe_id: 0 }];
++  for (const who of ['Tom', 'Will']) await run('NewCharacter', { who, sex: 'male', age: 30 });
++  const plans = [{ calls: [{ tool: 'PassTime', args: { minutes: 3 } }] }, { calls: [{ tool: 'BodyStrike', args: { attacker: 'Tom', who: 'Will', attack: 'punch' } }] }, { calls: [{ tool: 'RecordFact', args: { fact: 'The bell tolls.' } }] }];
++  const at = [];
++  for (let t = 1; t <= 30; t++) {
++    T.onRulesGenerationStarted('normal'); ctx.chat.push({ is_user: true, mes: `Line ${t}.` });
++    await Q.runQuestionPass(ctx.chat, async () => JSON.stringify({ ...plans[t % 3], calls: plans[t % 3].calls.map(c => c.tool === 'RecordFact' ? { ...c, args: { fact: `The bell tolls ${t} times.` } } : c) }), '', undefined, async () => null);
++    ctx.chat.push({ is_user: false, mes: `Reply ${t}.`, swipe_id: 0 }); T.onRulesMessageReceived(ctx.chat.length - 1);
++    at.push(JSON.stringify(ctx.chatMetadata.rulesEngine.state));
++  }
++  ctx.name1 = undefined;
++  const whole = ctx.chat.filter(m => m.extra?.rulesResult).length, ids = ctx.chat.filter(m => !m.is_user && !m.extra?.rulesWorld).length, worlds = Object.values(ctx.chatMetadata.rulesEngine.worlds ?? {});
++  const branch = { meta: structuredClone(ctx.chatMetadata), chat: structuredClone(ctx.chat.slice(0, 2 * 12 + 1)) };
++  ctx.chat.splice(2 * 5, 2); T.syncRulesToChat();
++  const afterMid = JSON.stringify(ctx.chatMetadata.rulesEngine.state) === at[29];
++  ctx.chat.splice(2 * 20 - 1); T.syncRulesToChat();
++  const backTo20 = JSON.stringify(ctx.chatMetadata.rulesEngine.state) === at[19];
++  ctx.chatMetadata = branch.meta; ctx.chat = branch.chat; T.syncRulesToChat();
++  const branched = JSON.stringify(ctx.chatMetadata.rulesEngine.state) === at[11];
++  if (whole || ids || worlds.filter(w => w.full).length > 2 || !afterMid || !backTo20 || !branched) { miss++; console.log(`MISS replies keep their worlds as changes, rebuilt exactly: whole ${whole}, replies without an id ${ids}, full ${worlds.filter(w => w.full).length} of ${worlds.length}; after a mid-chat deletion ${afterMid}, back to reply 20 ${backTo20}, a branch at 12 ${branched}`); }
++}
++console.log(`193 checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/frame.test.mjs b/tests/frame.test.mjs
+index 182e3cb..f5bfb9e 100644
+--- a/tests/frame.test.mjs
++++ b/tests/frame.test.mjs
+@@ -325,5 +325,19 @@ if (!framedCalls('I walk for an hour.', 'Mara').covered.has('Act')) { miss++; co
+   const got = [t('Tom laughs at me. I glare at him.'), t('I glare at him.')];
+   if (got[0] !== 'Tom' || got[1] !== undefined) { miss++; console.log(`MISS a pronoun looked at is its person: ${JSON.stringify(got)}`); }
+ }
+-console.log(`${CASES.length + 21} checks, ${miss} miss(es)`);
++// A number in figures counts as one in words: "I give Will 3 coins" hands three over.
++{
++  const tr = l => framedCalls(l, 'Mara').calls.find(c => c.tool === 'Transfer')?.args;
++  const got = ['I give Will 3 coins.', 'I give 3 coins to Will.', 'I hand Tom 2 apples.'].map(tr);
++  if (got[0]?.quantity !== 3 || got[0]?.to !== 'Will' || got[1]?.quantity !== 3 || got[1]?.to !== 'Will' || got[2]?.quantity !== 2 || got[2]?.item !== 'apples') { miss++; console.log(`MISS numbers in figures hand over: ${JSON.stringify(got)}`); }
++}
++// A posture held for a timed while passes the time ("I sit by the fire for an hour": the planner is skipped when code settles
++// every routed tool, and the hour had not passed); the words said end where another's clause is joined on.
++{
++  const f = l => framedCalls(l, 'Mara').calls;
++  const wait = ['I sit by the fire for an hour.', 'I hide behind the barrel for ten minutes.', 'I lie on the bed for 20 minutes.'].map(l => f(l).find(c => c.tool === 'PassTime')?.args.minutes);
++  const msg = f('I ask Tom for the key, and he gives it to me.').find(c => c.tool === 'Communicate')?.args.message, kept = f('I tell Will that Tom and Ann left.').find(c => c.tool === 'Communicate')?.args.message;
++  if (wait.join() !== '60,10,20' || msg !== 'for the key' || kept !== 'that Tom and Ann left' || f('Tom sits by the fire for an hour.').length) { miss++; console.log(`MISS a timed posture passes the time, a joined clause ends the words: ${wait.join()}; ${msg}; ${kept}`); }
++}
++console.log(`${CASES.length + 23} checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 18f89a0..7ad18ed 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -917,7 +917,7 @@
+   "id": "H6",
+   "name": "pass reads unseen marks",
+   "file": "src/rules/question-pass.js",
+-  "find": "hasHidden\\(lineAsSaved\\) \\? marksOf\\(lineAsSaved\\) : readProsody\\(lineAsSaved\\)",
++  "find": "hasHidden\\(lineAsSaved\\) \\? marksOf\\(lineAsSaved\\) : readProsody\\(lineAsSaved, known\\)",
+   "replace": "readProsody(String(last.mes ?? ''))",
+   "miss": "unseen marks fix the delivery"
+  },
+@@ -1475,8 +1475,8 @@
+   "name": "a shot",
+   "file": "src/rules/router.js",
+   "find": "shoot: \\['BodyCheck', 'BodyStrike'\\],",
+-  "replace": "",
+-  "miss": "\"I shoot the deer with my bow.",
++  "replace": "shoot: ['BodyStrike'],",
++  "miss": "\"I shoot the guard with my pistol.",
+   "test": "route"
+  },
+  {
+@@ -3499,9 +3499,9 @@
+  {
+   "id": "RS15",
+   "name": "braces inside a JSON string of the plan are text",
+-  "file": "src/rules/question-pass.js",
+-  "find": "\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ if\\ \\(s\\[i\\]\\ ===\\ '\"'\\)\\\n\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ str\\ =\\ true;",
+-  "replace": "            if (false)\n                str = true;",
++  "file": "src/rules/json-text.js",
++  "find": "\\ \\ \\ \\ \\ \\ \\ \\ if\\ \\(s\\[i\\]\\ ===\\ '\"'\\)\\\n\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ str\\ =\\ true;",
++  "replace": "        if (false)\n            str = true;",
+   "miss": "a brace inside a message is text",
+   "test": "plan"
+  },
+@@ -3513,5 +3513,138 @@
+   "replace": "const at = seen;",
+   "miss": "a pronoun looked at is its person",
+   "test": "frame"
++ },
++ {
++  "id": "RA1",
++  "name": "a weather verb routes Weather only with \"it\" as its subject",
++  "file": "src/rules/router.js",
++  "find": "\\?\\.filter\\(t\\ =>\\ t\\ !==\\ 'Weather'\\ \\|\\|\\ dummy\\)\\ \\?\\?\\ null;",
++  "replace": " ?? null;",
++  "miss": "verbs routed by their sense",
++  "test": "route"
++ },
++ {
++  "id": "RA2",
++  "name": "Levin's verbs of killing by a means route by the means",
++  "file": "src/rules/router.js",
++  "find": "\\ \\ \\ \\ subjugate:\\ \\['BodyStrike'\\],\\ poke:\\ \\['BodyStrike'\\],\\ cut:\\ \\['BodyStrike'\\],\\ pelt:\\ \\['BodyStrike'\\],\\\n",
++  "replace": "    subjugate: ['BodyStrike'], poke: ['BodyStrike'], cut: ['BodyStrike'], pelt: ['BodyStrike'], poison: ['Substance'],\n",
++  "miss": "verbs routed by their sense",
++  "test": "route"
++ },
++ {
++  "id": "RA3",
++  "name": "a phrasal verb routes by its own entry",
++  "file": "src/rules/router.js",
++  "find": "pick_up:\\ \\['Transfer'\\],\\ blow_out:\\ \\[\\],",
++  "replace": "",
++  "miss": "verbs routed by their sense",
++  "test": "route"
++ },
++ {
++  "id": "RA4",
++  "name": "taking a seat is sitting down",
++  "file": "src/rules/router.js",
++  "find": "if\\ \\(/\\\\b\\(\\?:take\\|takes\\|took\\|taking\\)\\ \\(\\?:a\\|my\\|his\\|her\\|their\\|your\\|our\\)\\ seat\\\\b/\\.test\\(low\\)\\)\\ \\{",
++  "replace": "if (false) {",
++  "miss": "verbs routed by their sense",
++  "test": "route"
++ },
++ {
++  "id": "RA5",
++  "name": "slipping past someone is keeping out of their sight",
++  "file": "src/rules/router.js",
++  "find": "\\ \\ \\ \\ if\\ \\(/\\\\b\\(\\?:sneak\\|sneaks\\|sneaked\\|snuck\\|sneaking\\|creep\\|creeps\\|crept\\|creeping\\|slip\\|slips\\|slipped\\|slipping\\|steal\\|steals\\|stole\\|stealing\\)\\ \\(\\?:past\\|by\\)\\ /\\.test\\(low\\)\\)\\ \\{",
++  "replace": "    if (false) {",
++  "miss": "verbs routed by their sense",
++  "test": "route"
++ },
++ {
++  "id": "RA6",
++  "name": "a weapon swung at someone is a blow tried",
++  "file": "src/rules/router.js",
++  "find": "\\ \\ \\ \\ if\\ \\(!why\\.BodyStrike\\)\\\n\\ \\ \\ \\ \\ \\ \\ \\ for\\ \\(const\\ m\\ of\\ unquoted\\.toLowerCase\\(\\)",
++  "replace": "    if (false)\n        for (const m of unquoted.toLowerCase()",
++  "miss": "a swing at someone is a blow",
++  "test": "route"
++ },
++ {
++  "id": "RA7",
++  "name": "a numeral in figures is a determinative",
++  "file": "src/rules/grammar.js",
++  "find": "\\|its\\|\\\\d\\{1,4\\}\\)\\$/;",
++  "replace": "|its)$/;",
++  "miss": "numbers in figures hand over",
++  "test": "frame"
++ },
++ {
++  "id": "RA8",
++  "name": "the words said end at a joined clause with its own subject",
++  "file": "src/rules/frame.js",
++  "find": "\\\n\\ \\ \\ \\ \\ \\ \\ \\ \\.replace\\(/,\\\\s\\+\\(\\?:and\\|then\\|but\\)\\\\s\\+\\(\\?:then\\\\s\\+\\)\\?\\(\\?:he\\|she\\|they\\|we\\)\\\\s\\+\\(\\[a\\-z\\]\\+\\)\\\\b\\.\\*\\$/,\\ \\(all,\\ w\\)\\ =>\\ lemmas\\(w\\)\\.some\\(v\\ =>\\ VERBNET\\[v\\]\\)\\ \\?\\ ''\\ :\\ all\\);",
++  "replace": ";",
++  "miss": "a timed posture passes the time, a joined clause ends the words",
++  "test": "frame"
++ },
++ {
++  "id": "RA9",
++  "name": "a posture held for a timed while passes the time",
++  "file": "src/rules/frame.js",
++  "find": "\\|sit\\|sits\\|sat\\|stand\\|stands\\|stood\\|lie\\|lies\\|lay\\|kneel\\|kneels\\|knelt\\|crouch\\|crouches\\|crouched\\|hide\\|hides\\|hid\\|remain\\|remains\\|remained\\)",
++  "replace": "|zzz)",
++  "miss": "a timed posture passes the time, a joined clause ends the words",
++  "test": "frame"
++ },
++ {
++  "id": "RA10",
++  "name": "every request to a model leaves with notation",
++  "file": "src/rules/voice-code.js",
++  "find": "\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ m\\.content\\ =\\ fix\\(m\\.content\\);",
++  "replace": "                void 0;",
++  "miss": "a request leaves with notation",
++  "test": "ui"
++ },
++ {
++  "id": "RA11",
++  "name": "a shouted name keeps its capital",
++  "file": "src/rules/prosody.js",
++  "find": "if\\ \\(starts\\ \\|\\|\\ nameWords\\.has\\(letters\\.toLowerCase\\(\\)\\)\\)",
++  "replace": "if (starts)",
++  "miss": "a shouted name keeps its capital",
++  "test": "ui"
++ },
++ {
++  "id": "RA12",
++  "name": "a feeling keeps the selection",
++  "file": "src/rules/voice-code.js",
++  "find": "\\ \\ \\ \\ if\\ \\(LINE\\.test\\(code\\)\\)\\ \\{",
++  "replace": "    if (false) {",
++  "miss": "a feeling keeps the selection",
++  "test": "ui"
++ },
++ {
++  "id": "RA13",
++  "name": "the world book's draft reads braces in strings as text",
++  "file": "src/rules/world.js",
++  "find": "\\ \\ \\ \\ const\\ end\\ =\\ objectEnd\\(s,\\ at\\);",
++  "replace": "    const end = s.indexOf('}', at);",
++  "miss": "a brace inside a world-book value is text",
++  "test": "plan"
++ },
++ {
++  "id": "RA14",
++  "name": "replies keep their worlds in the archive, by id",
++  "file": "src/rules/rules-tools.js",
++  "find": "\\(m\\.extra\\.rulesWorld\\ \\?\\?=\\ \\{\\}\\)\\[k\\]\\ =\\ putWorld\\(s\\.state\\);",
++  "replace": "(m.extra.rulesResult ??= {})[k] = structuredClone(s.state);",
++  "miss": "replies keep their worlds as changes, rebuilt exactly"
++ },
++ {
++  "id": "RA15",
++  "name": "the archive keeps the bases of every world a message reaches",
++  "file": "src/rules/rules-tools.js",
++  "find": "\\ \\ \\ \\ \\ \\ \\ \\ id\\ =\\ worlds\\[id\\]\\.base;",
++  "replace": "        id = undefined;",
++  "miss": "replies keep their worlds as changes, rebuilt exactly"
+  }
+ ]
+diff --git a/tests/plan.test.mjs b/tests/plan.test.mjs
+index 3d0bdc5..607c169 100644
+--- a/tests/plan.test.mjs
++++ b/tests/plan.test.mjs
+@@ -86,5 +86,11 @@ check('a blow keyed by who strikes it', P.subjectOf('BodyStrike') === 'attacker'
+   const got = ['a smile :}', '{W meet me'].map(m => Q.rawPlan(`QUESTIONS\n1. Does Tom hear?\n{"calls":{"Communicate":{"Mara":{"listener":"Tom","message":${JSON.stringify(m)}}}}}`).calls[0]?.args.message);
+   if (got[0] !== 'a smile :}' || got[1] !== '{W meet me') { miss++; console.log(`MISS a brace inside a message is text: ${JSON.stringify(got)}`); }
+ }
+-console.log(`59 checks, ${miss} miss(es)`);
++// The world book's draft reads as the plan does: a brace inside a value is text.
++{
++  const W = await import('../src/rules/world.js');
++  const e = W.parseEntry('Here: {"what":"a door marked {sealed","kind":"event"}'), f = W.parseEntry('{"what":"orcs who grin :}","kind":"people"}');
++  if (e?.what !== 'a door marked {sealed' || f?.what !== 'orcs who grin :}') { miss++; console.log(`MISS a brace inside a world-book value is text: ${JSON.stringify([e, f])}`); }
++}
++console.log(`60 checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/route.test.mjs b/tests/route.test.mjs
+index 747d104..77e7a27 100644
+--- a/tests/route.test.mjs
++++ b/tests/route.test.mjs
+@@ -34,6 +34,8 @@ const CASES = [
+     ['I cast a fireball at the goblins.', ['CastSpell'], []],
+     ['I cast a glance at the door.', [], ['CastSpell']],
+     ['I shoot the deer with my bow.', ['BodyStrike'], ['Substance']],
++    // A handgun shot is BodyCheck's (shot_m; rules-tools.ts, "A handgun shot → BodyCheck with shot_m").
++    ['I shoot the guard with my pistol.', ['BodyCheck', 'BodyStrike'], ['Substance']],
+     ["I don't hit him.", [], ['BodyStrike']],
+     ['I refuse to drink the wine.', [], ['BodyIntake']],
+     ['I pretend to be drunk.', ['SocialResponse'], ['BodyIntake']],
+@@ -190,5 +192,22 @@ if ('steps' in notWalked) { miss++; console.log(`MISS undone walk "I don't walk
+   const kept = ['I drop down from the wall.', 'I slip on the ice.', 'I fall into the river.'].filter(t => !routeTurn(t).tools.includes('BodyFall'));
+   if (wrong.length || kept.length) { miss++; console.log(`MISS a fall verb with an object is no fall: ${wrong.join(' | ')}; falls lost: ${kept.join(' | ')}`); }
+ }
+-console.log(`${CASES.length + DISTANCES.length + PACES.length + SPOTS.length + 6} checks, ${miss} miss(es)`);
++// Verbs routed by the sense their line gives: a weather verb with "it" only; Levin's verbs of killing by a means by the means;
++// a phrasal verb by its own entry; set phrases by what they mean.
++{
++  const R = l => routeTurn(l).tools;
++  const wrong = [['I pour Tom a drink.', 'Weather'], ['I blow out the candle.', 'Weather'], ['I blow out the candle.', 'Break'], ['I stab Tom.', 'Substance'], ['I strangle the guard.', 'Substance'],
++    ['I light a candle.', 'BodyTreat'], ['I pick up the lantern.', 'BodyIntake'], ['I draw my sword.', 'SocialResponse'], ['I draw my sword.', 'Break'], ['I take a seat.', 'Transfer'],
++    ['I break the silence.', 'Break'], ['I force a smile.', 'BodyCheck'], ['I sneak past the guard.', 'Transfer'], ['I slip past the guard.', 'BodyFall']].filter(([l, t]) => R(l).includes(t));
++  const lost = [['It is pouring outside.', 'Weather'], ['It rains.', 'Weather'], ['I strangle the guard.', 'BodyChoke'], ['I drown the rat.', 'BodyEnvironment'], ['I poison the wine.', 'Substance'],
++    ['I stab Tom.', 'BodyStrike'], ['I pick up the lantern.', 'Transfer'], ['I take a seat.', 'Act'], ['I break the silence.', 'Communicate'], ['I sneak past the guard.', 'Look']].filter(([l, t]) => !R(l).includes(t));
++  if (wrong.length || lost.length) { miss++; console.log(`MISS verbs routed by their sense: wrong ${wrong.map(x => x.join(' → ')).join(' | ')}; lost ${lost.map(x => x.join(' → ')).join(' | ')}`); }
++}
++// A weapon swung or thrust at someone is a blow tried; at a thing, a motion.
++{
++  const at = ['I swing at Tom.', 'I swing my axe at the orc.', 'I thrust my spear at the guard.'].filter(l => !routeTurn(l).tools.includes('BodyStrike'));
++  const things = ['I swing at the door.', 'I swing on the rope.'].filter(l => routeTurn(l).tools.includes('BodyStrike'));
++  if (at.length || things.length) { miss++; console.log(`MISS a swing at someone is a blow: ${at.join(' | ')}; at things: ${things.join(' | ')}`); }
++}
++console.log(`${CASES.length + DISTANCES.length + PACES.length + SPOTS.length + 8} checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index 4c3ec7e..469f773 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -310,4 +310,18 @@ ok(mv?.meant === 'punhc → punch; him back → Tom back', 'the line as meant on
+ }
+ // A line that quotes, in any quotation marks, is no correction ("No, Will, ›run!‹" is said to Will).
+ ok(['No, Will, ›run!‹', 'No, Will «stop»', 'No, Will "stop"'].every(l => A.correctionOf(l) === null) && A.correctionOf('no, Will') === 'Will', 'a line that quotes is no correction', ['No, Will, ›run!‹', 'No, Will «stop»'].map(l => A.correctionOf(l)).join(' | '));
++// Every request to a model leaves with hidden marks as notation, whoever built it (a summary's raw prompt reads the saved chat).
++{
++  const r = VC.markWords('I say stop now', 6, 10, 'loud'), t = 'I say stop now'.slice(0, r.from) + r.insert + 'I say stop now'.slice(r.to);
++  const d = { messages: [{ role: 'user', content: `Narrator:\nHello.\n\nMara:\n${t}` }, { role: 'user', content: [{ type: 'text', text: t }] }], prompt: `Mara: ${t}` };
++  VC.notateRequest?.(d);
++  ok(!VC.hasHidden(JSON.stringify(d)) && d.messages[0].content.endsWith('I say STOP now') && d.messages[1].content[0].text === 'I say STOP now' && d.prompt === 'Mara: I say STOP now', 'a request leaves with notation', JSON.stringify(d));
++}
++// A name in a line shouted in capitals keeps its capital: "I SHOUT AT WILL TO RUN!" is said to Will.
++ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout at Will to run!' && P.readProsody('I SHOUT AT WILL TO RUN!').plain === 'I shout at will to run!', 'a shouted name keeps its capital', P.readProsody('I SHOUT AT WILL TO RUN!', ['Will']).plain);
++// A feeling marks the line and keeps the player's selection, so the next mark goes on the words they chose.
++{
++  const t0 = 'I say stop now', r = VC.markWords(t0, 6, 10, 'feeling:anger'), t = t0.slice(0, r.from) + r.insert + t0.slice(r.to);
++  ok(VC.visible(t.slice(r.selStart, r.selEnd)) === 'stop', 'a feeling keeps the selection', JSON.stringify(VC.visible(t.slice(r.selStart, r.selEnd))));
++}
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

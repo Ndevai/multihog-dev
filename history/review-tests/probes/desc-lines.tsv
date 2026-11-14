@@ -1,0 +1,76 @@
+BodyCheck	climbing	Mara climbs the rope.	I scale the cliff.	The thief clambers onto the roof.
+BodyCheck	jumping	Mara jumps the gap.	I leap across the stream.	Tom vaults the fence.
+BodyCheck	swimming	Mara swims across the river.	I swim to the boat.	The boy paddles toward the raft.
+BodyCheck	lifting/forcing	Mara lifts the barrel onto the cart.	I force the door open.	Tom pries the lid off the crate.
+BodyCheck	balancing	Mara balances on the narrow beam.	I walk along the ledge without falling.	Tom keeps his footing on the icy roof.
+BodyCheck	sneaking	Mara sneaks into the barn.	I tiptoe down the hall.	Tom creeps up behind the guard.
+BodyCheck	sneaking	Mara slinks along the wall.	I sneak past the sentry.	The thief prowls through the garden.
+BodyCheck	picking a lock	Mara picks the lock.	I pick the padlock on the chest.	Tom jimmies the window latch.
+BodyCheck	riding	Mara rides the horse across the field.	I gallop to the village.	Tom mounts the mare and rides off.
+BodyCheck	craft/trade	Mara mends the torn sail.	I forge a new blade.	Tom repairs the wagon wheel.
+BodyCheck	craft/trade	Mara sews the wound shut.	I carve a spoon from the branch.	Tom shoes the horse.
+WorkOut	riddle	Mara tries to solve the riddle.	I work out the answer to the riddle.	Tom puzzles over the riddle.
+WorkOut	code	Mara deciphers the code.	I crack the cipher.	Tom decodes the message.
+WorkOut	link between clues	Mara pieces the clues together.	I figure out who the killer is.	Tom connects the footprints to the gardener.
+WorkOut	sum	Mara adds up the bill.	I calculate how much grain we need.	Tom counts the coins in his head.
+WorkOut	plan	Mara plans the escape.	I think up a way past the guards.	Tom devises a plan to cross the river.
+WorkOut	remember	Mara remembers to lock the door.	I remember to feed the dog.	Tom forgets to bring the map.
+Listen	footsteps	Mara listens for footsteps.	Do I hear anyone coming?	Does the guard hear Mara's footsteps?
+Listen	a voice	Mara hears a voice behind the door.	I strain to hear what they say.	Can Tom hear them talking?
+Listen	bell/hoofbeats	Mara hears the bell ring.	I hear hoofbeats on the road.	Does Tom notice the noise?
+Listen	notice	Does Mara notice anything?	Do I sense anything?	Tom detects movement in the bushes.
+Look	sees at distance	Mara looks for the ship on the horizon.	Can I see the rider?	Does the guard spot Mara?
+Look	notice	Mara notices a man in the crowd.	I spot the thief.	Tom catches sight of the wolf.
+Communicate	speech	Mara tells Tom to wait.	I shout to the guard.	Tom whispers to Mara.
+Communicate	gesture	Mara waves at Tom.	I signal to the guard to stop.	Tom nods to the innkeeper.
+SocialResponse	request	Mara asks the guard to let her pass.	I beg the merchant for a discount.	Tom pleads with the judge.
+SocialResponse	lie	Mara lies to the captain about where she was.	I tell the guard I am the duke's niece.	Tom bluffs his way past the gate.
+SocialResponse	threat	Mara threatens the clerk.	I intimidate the boy into talking.	Tom bullies the stable hand.
+Appraise	emotion	How does Mara feel about her brother?	What do I feel about the betrayal?	Tom wonders how he feels about the news.
+Appraise	emotion	Mara feels angry at the captain.	Is Mara afraid of the dark forest?	How does Tom feel about losing the race?
+Price	goods	Mara buys a loaf of bread.	How much does a horse cost here?	Tom sells his boots.
+Price	wage	Mara asks what a mason earns in a day.	What does a farmhand earn?	How much would Tom be paid for the job?
+Price	bill	Mara pays the bill.	I settle the bill at the inn.	Tom pays the innkeeper for the room.
+NameCharacter	name	Mara asks the waitress her name.	What is the clerk's name?	Mara reads the waitress's name tag.
+NameCharacter	name	I ask the boy what his name is.	Tom asks the stranger's name.	What is the nurse called?
+BodySize	build	Mara sizes him up.	How tall is the stranger?	How heavy is the guard?
+Disease	contagion	When will Tom show symptoms?	Will Mara catch the fever?	How many villagers fall ill?
+Choose	options	What does the guard do?	Does the merchant fight or flee?	Which road does Tom take?
+Claim	what the character is	I am a cat.	Mara is secretly a vampire.	I'm a trained surgeon.
+Claim	an item they have	Mara pulls a revolver from her coat.	I take out my lockpicks.	Mara produces a silver key from her pocket.
+Claim	an ability	Mara speaks fluent Latin.	I can see in the dark.	Mara knows how to sail.
+Claim	happened before	Mara remembers she served in the army.	I studied medicine in Paris.	Mara once lived in Rome.
+Claim	outside their control now	Mara faints.	I get a cramp in my leg.	Mara slips on the wet stones.
+Transfer	hands	Mara gives Tom the key.	I steal the merchant's purse.	Tom drops his sword.
+Transfer	found/made/lost	Mara finds a coin on the floor.	I lose my hat in the wind.	Tom makes a torch from a branch.
+HoldOn	hang on	Mara hangs from the ledge.	I hold on to the rope.	Tom clings to the branch.
+HoldOn	carry by handles	Mara carries the heavy chest by its handles.	I lug the bucket up the hill.	Tom hauls the trunk to the cart.
+Chase	running away	Mara runs from the guards.	I flee into the forest.	The thief bolts down the alley.
+Chase	pursuer	The guards chase Mara.	I run after the thief.	The dog chases the fox.
+Break	gives way	Mara jumps on the rotten plank.	I hang from the old rope.	Tom pulls on the iron bar.
+Break	gives way	Does the shelf hold Mara's weight?	Will the branch break under me?	Tom stands on the thin ice.
+BodyFall	fall	Mara falls off the roof.	I trip down the stairs.	Tom tumbles into the ditch.
+BodyContact	hot	Mara touches the stove.	I grab the hot pot handle.	Tom spills boiling water on his hand.
+BodyContact	hot	Mara picks up the iron pan from the fire.	I press my palm against the hot kettle.	Hot oil splashes onto Tom's arm.
+BodyWound	burn/bite/accident	A dog bites Mara's leg.	I burn my hand on the torch.	A shard cuts Tom's foot.
+BodyWound	bullet/accident	A bullet grazes Mara's arm.	The axe slips and cuts my shin.	A splinter slices Tom's palm.
+BodyStrike	attack	Mara swings her steel long sword at the bandit's head.	I thrust my long iron spear at the guard.	Tom punches the sailor.
+BodyStrike	attack	The guard hits Mara with his club.	A wolf lunges at Tom.	The bandit stabs Tom in the side.
+BodyChoke	choke	Mara chokes the guard.	I strangle the assassin.	Tom keeps the choke on.
+BodyEnvironment	climate	Mara steps out into the blizzard.	I wade into the icy river.	Tom takes off his coat in the heat.
+BodyEnvironment	water	Mara swims for the shore.	I dive into the lake.	Tom climbs out of the water.
+BodyEnvironment	clothes	Mara puts on her fur cloak.	I change into dry clothes.	Tom strips off his wet shirt.
+BodyIntake	drink/eat	Mara drinks from the stream.	I eat the bread.	Tom gulps down the soup.
+Sickness	situations	Mara boards the ship.	I ride in the back of the bumpy coach.	Tom spins until he is dizzy.
+Weather	weather	What is the weather like?	Is it raining?	Will it snow tonight?
+Battle	assault	The assault begins.	Our regiment charges the hill.	The army storms the fort.
+Substance	compound	What happens if Mara lights the lamp oil?	Does the ether catch fire?	Is the gas poisonous?
+RecordFact	learned	Mara memorizes the map.	I note the duke's seal on the letter.	Tom learns the password.
+Act	motion	Mara walks to the door.	I sit down at the table.	Tom steps out into the street.
+PassTime	time	Mara waits an hour.	I sleep until dawn.	They rest for a while.
+BodyTreat	treatment	Mara bandages Tom's arm.	I splint the broken leg.	Tom cleans the wound.
+Dose	medicine	Mara gives Tom a shot of morphine.	The doctor injects Tom with ether.	I give the patient laudanum.
+Room	air	Mara lights the stove in the closed cabin.	I light a brazier in the cellar.	Tom shuts the window of the crowded room.
+CastSpell	spell	Mara casts a fireball.	I cast Flame Lash at the door.	Tom casts a ward on the gate.
+NewCharacter	stranger	Mara walks up to the innkeeper.	I approach a stranger.	Who is behind the counter?
+Trust	trust	Does Tom trust Mara again after her lie?	I confide in Tom despite his betrayal.	Mara apologizes to Tom for lying.

@@ -1,0 +1,181 @@
+# Section 38 runs (2026-10-27). Tree: section 37 (6121fd4) → section 38 (c2294a3).
+
+## 27 shot lines, routed on section 37's tree (why: tool → the word that asked)
+"I fire my pistol at the guard."                 {"BodyStrike":"fire"}
+"I fire at the bandit."                          {"BodyStrike":"fire"}
+"I fire twice at the wolf."                      {"BodyStrike":"fire"}
+"I fire an arrow at the wolf."                   {"BodyStrike":"fire"}
+"I aim and fire."                                {"BodyStrike":"aim"}
+"I fire a warning shot into the air."            {"BodyStrike":"fire"}
+"I fire my weapon at the soldier."               {"BodyStrike":"fire"}
+"I fire the cannon at the ship."                 {"BodyStrike":"fire"}
+"I fire the cook."                               {"BodyStrike":"fire"}
+"I fire him on the spot."                        {"BodyStrike":"fire"}
+"I fire up the stove."                           {"BodyStrike":"fire"}
+"I fire the kiln."                               {"BodyStrike":"fire"}
+"I open fire on the soldiers."                   {}
+"I return fire."                                 {"Act":"return","Transfer":"return"}
+"I hold my fire."                                {"Act":"hold","HoldOn":"hold"}
+"I hold fire until they come closer."            {"Act":"hold","HoldOn":"hold"}
+"I take a shot at the guard with my pistol."     {"BodyStrike":"take"}
+"I take aim at the deer."                        {"BodyStrike":"take"}
+"I take a shot of whiskey."                      {"BodyStrike":"take","Price":"a measure of goods"}
+"I shoot the guard with my pistol."              {"BodyCheck":"shoot","BodyStrike":"shoot"}
+"I gun him down."                                {}
+"I snipe the sentry from the roof."              {}
+"I pick off the guard."                          {"BodyIntake":"pick","Transfer":"pick"}
+"The fire crackles. I warm my hands."            {}
+"I sit by the fire."                             {"Act":"sit"}
+"I set fire to the barn."                        {"Act":"set"}
+"I catch fire."                                  {"Transfer":"catch"}
+
+## The same lines on section 38's tree
+"I fire my pistol at the guard."                 {"BodyStrike":"fire","BodyCheck":"fire"}
+"I fire at the bandit."                          {"BodyStrike":"fire","BodyCheck":"fire"}
+"I fire twice at the wolf."                      {"BodyStrike":"fire","BodyCheck":"fire"}
+"I fire an arrow at the wolf."                   {"BodyStrike":"fire","BodyCheck":"fire"}
+"I aim and fire."                                {"BodyStrike":"aim","BodyCheck":"aim"}
+"I fire a warning shot into the air."            {"BodyStrike":"fire","BodyCheck":"fire"}
+"I fire my weapon at the soldier."               {"BodyStrike":"fire","BodyCheck":"fire"}
+"I fire the cannon at the ship."                 {"BodyStrike":"fire","BodyCheck":"fire"}
+"I fire the cook."                               {}
+"I fire him on the spot."                        {}
+"I fire up the stove."                           {}
+"I fire the kiln."                               {}
+"I open fire on the soldiers."                   {"BodyStrike":"open fire","BodyCheck":"open fire"}
+"I return fire."                                 {"BodyStrike":"return fire","BodyCheck":"return fire"}
+"I hold my fire."                                {}
+"I hold fire until they come closer."            {}
+"I take a shot at the guard with my pistol."     {"BodyStrike":"take","BodyCheck":"take"}
+"I take aim at the deer."                        {"BodyStrike":"take","BodyCheck":"take"}
+"I take a shot of whiskey."                      {"Transfer":"take","Price":"a measure of goods"}
+"I shoot the guard with my pistol."              {"BodyCheck":"shoot","BodyStrike":"shoot"}
+"I gun him down."                                {"BodyStrike":"gun down","BodyCheck":"gun down"}
+"I snipe the sentry from the roof."              {}
+"I pick off the guard."                          {"BodyIntake":"pick","Transfer":"pick"}
+"The fire crackles. I warm my hands."            {}
+"I sit by the fire."                             {"Act":"sit"}
+"I set fire to the barn."                        {"Act":"set"}
+"I catch fire."                                  {"Transfer":"catch"}
+
+## tests/route.test.mjs (section 38's) on section 37's router and verbs
+MISS "I fire my pistol at the guard."
+  routed: BodyStrike
+  lacking: BodyCheck
+MISS "I take a shot at the guard with my pistol."
+  routed: BodyStrike
+  lacking: BodyCheck
+MISS "I fire the cook."
+  routed: BodyStrike
+  wrong: BodyStrike
+MISS "I fire the kiln."
+  routed: BodyStrike
+  wrong: BodyStrike
+MISS "I fire up the stove."
+  routed: BodyStrike
+  wrong: BodyStrike
+MISS "I fire up the generator."
+  routed: BodyStrike
+  wrong: BodyStrike
+MISS "I open fire on the soldiers."
+  routed: (none)
+  lacking: BodyCheck, BodyStrike
+MISS "I return fire."
+  routed: Act, Transfer
+  lacking: BodyCheck, BodyStrike
+  wrong: Transfer, Act
+MISS "I hold my fire."
+  routed: Act, HoldOn
+  wrong: HoldOn
+MISS "I gun him down."
+  routed: (none)
+  lacking: BodyCheck, BodyStrike
+MISS "I take a shot of whiskey."
+  routed: BodyStrike, Price
+  wrong: BodyStrike
+172 checks, 11 miss(es)
+
+## npm test on section 38's tree
+172 checks, 0 miss(es)
+198 checks, 0 miss(es)
+37 checks, 0 miss(es)
+193 checks, 0 miss(es)
+60 checks, 0 miss(es)
+size: 9 of 9
+ui: 54 of 54
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## Negative controls: RB1–RB11 and Q11e (the first Q11e line is before its break became a shoot entry naming BodyStrike alone)
+
+> negative-controls
+> node tools/negative-controls.mjs RB1 RB2 RB3 RB4 RB5 RB6 RB7 RB8 RB9 RB10 RB11 Q11e
+
+Q11e NOT CAUGHT (status 0, 23 bytes out) a shot (0 s)
+RB1 caught a shot's route names both its tools (0 s)
+RB2 caught a light verb's shot names both its tools (0 s)
+RB3 caught fire with a person as its object is no shot (0 s)
+RB4 caught a kiln fired is heated (0 s)
+RB5 caught fire up starts a thing (0 s)
+RB6 caught a named verb's empty list is its answer (0 s)
+RB7 caught opening or returning fire is a shot (0 s)
+RB8 caught gunning down is a shot (0 s)
+RB9 caught holding fire is no grip (1 s)
+RB10 caught a shot of whiskey is a measure (0 s)
+RB11 caught a task firing a person is no shot (27 s)
+11 of 12 controls caught.
+Q11e after retargeting:
+Q11e caught a shot (0 s)
+1 of 1 controls caught.
+
+## Negative controls on router.js and verbs.js, rerun on section 38's tree
+N55 caught sight verbs (27 s)
+N55b caught head verb (26 s)
+N56 caught verb routes (26 s)
+N56b caught read verb kept (26 s)
+N56c caught blow at a creature (26 s)
+N59 caught named kind (26 s)
+N59b caught kind against verb (31 s)
+N65 caught FrameNet verbs (31 s)
+N65b caught light verbs (26 s)
+N65c caught a noun opening the task (26 s)
+N65d caught router light verbs (0 s)
+RT1 caught a measure of goods has a price (0 s)
+RT2 caught quoted words are a message (0 s)
+RT3 caught a message is interpreted (0 s)
+RT4 caught verbs only where a verb stands (0 s)
+Q7b caught a verb not done routes nothing (0 s)
+Q11 caught into the water (0 s)
+Q11b caught pick the lock (0 s)
+Q11c caught keep watch (0 s)
+Q11d caught cast a spell (0 s)
+Q11e caught a shot (0 s)
+Q11f caught pretence (0 s)
+Q11g caught going to (0 s)
+Q11h caught a breath taken (0 s)
+G2 caught the router routes a light use's act (0 s)
+G10 caught a noun FrameNet routes decides first (0 s)
+G20 caught the router reads covertly negative verbs (0 s)
+G22 caught an apology is said (0 s)
+G9 caught a light make reads its noun's act (0 s)
+G25 caught a modal is no lexical verb (0 s)
+G26 caught a name inside a sentence is no verb (0 s)
+G27 caught get and a participle before by is a passive (0 s)
+G28 caught a causative's own sense is no act (0 s)
+G56 caught a let-imperative is said (0 s)
+G57 caught a let-imperative's verb is offered (0 s)
+G60 caught a vocative's directive routes speech (0 s)
+G79 caught an NP of time in front position is no verb (0 s)
+G80 caught used to is no using (0 s)
+G81 caught central adverbs between have and its participle (0 s)
+G82 caught a name opening a sentence is a subject (0 s)
+RV12 caught curly apostrophes route as straight ones (0 s)
+RZ18 caught the router reads no verb inside quoted words (0 s)
+RZ19 caught words in guillemets route Communicate (0 s)
+RS12 caught a verb of falling with an object or a state complement is no fall (0 s)
+RA1 caught a weather verb routes Weather only with "it" as its subject (0 s)
+RA2 caught Levin's verbs of killing by a means route by the means (0 s)
+RA3 caught a phrasal verb routes by its own entry (0 s)
+RA4 caught taking a seat is sitting down (0 s)
+RA5 caught slipping past someone is keeping out of their sight (0 s)
+RA6 caught a weapon swung at someone is a blow tried (0 s)
+50 of 50 controls caught.

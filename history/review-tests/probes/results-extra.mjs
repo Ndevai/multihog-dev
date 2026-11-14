@@ -1,0 +1,41 @@
+// Calls the tools the engine test leaves out, in an 1850 London scene and a 1990 Chicago one, and records what they return.
+process.chdir('/home/claude/work');
+const fs = await import('fs');
+const H = await import('/home/claude/work/tools/st-harness.mjs');
+const T = await import('/home/claude/work/src/rules/rules-tools.js'); const C = await import('/home/claude/work/src/rules/clock.js');
+const B = await import('/home/claude/work/src/rules/body-sheet.js'); const W = await import('/home/claude/work/src/rules/world.js');
+const ctx = H.ctx, run = (t, a) => T.REGISTRY.get(t).exec(a), out = [];
+const rec = async (t, a) => { let r; try { r = String(await run(t, a)); } catch (e) { r = 'THREW ' + e.message; } out.push({ tool: t, args: a, result: r, year: T.storyYearNow() }); };
+for (const [when, place, country] of [['1850-03-10 14:00', 'london', 'United Kingdom of Great Britain and Northern Ireland'], ['1990-07-15 14:00', 'chicago', 'United States of America']]) {
+  ctx.chatMetadata = {}; ctx.chat = [{ is_user: true, mes: 'x' }]; T.setStoryTime(C.parseStoryTime(when));
+  ctx.chatMetadata.rulesEngine.state.setting = { place, label: place, country };
+  for (const [who, sex, age] of [['Tom', 'male', 30], ['Mara', 'female', 25], ['Will', 'male', 12]]) await rec('NewCharacter', { who, sex, age });
+  await rec('RollTheDice', { kind: 'amount', formula: '2d6', for: 'coins in the purse' });
+  await rec('RollTheDice', { kind: 'table', formula: '1d6', for: 'which door', table: '1-3 the left door | 4-6 the right door' });
+  await rec('BodyChoke', { who: 'Will', holder: 'Tom', seconds: 20 });
+  await rec('Communicate', { speaker: 'Tom', listener: 'Mara', means: 'speech', words: 'Meet me at the bank.' });
+  await rec('Interpret', { speaker: 'Tom', listener: 'Mara', language: 'English', word: 'bank', fits: ['a river bank', 'a money bank'] });
+  await rec('NameCharacter', { who: 'the clerk', sex: 'female', birth_year: 1950 });
+  await rec('BodySize', { who: 'Mara', sex: 'female', birth_year: Number(when.slice(0, 4)) - 25 });
+  await rec('Disease', { question: 'when symptoms start', disease: 'measles', who: 'Will' });
+  await rec('Disease', { question: 'how many die in a historical epidemic', epidemic: 'Black Death, 1347–1352' });
+  await rec('Battle', { attackers: 1200, defenders: 400, year: Number(when.slice(0, 4)) });
+  await rec('Substance', { substance: 'ethanol', temp_c: 20 });
+  await rec('Weather', {});
+  await rec('Transfer', { item: 'loaf of bread', how: 'given', from: 'Tom', to: 'Mara' });
+  await rec('Transfer', { item: 'knife', how: 'stolen', from: 'Mara', to: 'Will' });
+  await rec('Sickness', { who: 'Mara', situation: 'a sea crossing' });
+  await rec('Trust', { who: 'Mara', other: 'Tom', event: 'betrayed them' });
+  await rec('Trust', { who: 'Mara', other: 'Tom', event: 'do they trust them now?' });
+  await rec('HoldOn', { who: 'Tom', hanging: true, seconds: 60 });
+  await rec('Chase', { pursuer: 'Tom', fleeing: 'Will', gap_m: 10 });
+  await rec('Dose', { who: 'Tom', substance: 'Epinephrine:IM', mg: 0.5 });
+  await rec('Break', { material: 'pine (eastern white)', shape: 'plank or beam', width_cm: 20, thickness_cm: 2.5, span_m: 2, load_kg: 80 });
+  await rec('BodyStrike', { attacker: 'Tom', who: 'Will', attack: 'punch' });
+  await rec('BodyCheck', { who: 'Mara', task: 'climb a 3 m wall', reference_class: 'climbers', base_share: '50% half', share: '50% half', height_m: 3 });
+  await rec('PassTime', { minutes: 30 });
+  await rec('Price', { question: 'price of goods', item: 'bread (kg)', city: 'London', year: 1850 });
+  await rec('CastSpell', { who: 'Mara', complexity: 3 });
+  out.push({ tool: 'BLOCKS', result: [B.bodyBlock(B.trackedPeople()), T.knowledgeInjection(), T.possessionsInjection(), W.worldBlock(W.CURRENT_BOOK), T.rulesBrief()].join('\n'), year: T.storyYearNow() });
+}
+fs.writeFileSync(process.argv[2], JSON.stringify(out));

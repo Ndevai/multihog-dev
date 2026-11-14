@@ -1,0 +1,46 @@
+Break	+	Will the old ladder hold my weight?
+Break	+	The rotten floorboards give way under Tom.
+Break	+	Does the branch support the boy?
+SocialResponse	+	I wonder whether the baker trusts strangers.
+SocialResponse	+	Does the duchess like Tom?
+SocialResponse	+	Mara asks herself if the captain believed her.
+BodyCheck	+	I tiptoe past the sleeping dog.
+BodyCheck	+	The cat burglar creeps along the roof.
+BodyCheck	+	Mara prowls the dark corridor.
+Transfer	+	I stuff the bread into my satchel.
+Transfer	+	Tom tucks the dagger under his belt.
+Transfer	+	The thief slips the ring into his pocket.
+BodyCheck	+	I vault over the counter.
+BodyCheck	+	Mara rides the mule up the trail.
+WorkOut	+	I figure out the combination.
+WorkOut	+	Tom calculates how much rope we need.
+Listen	+	Does the guard notice my footsteps?
+Look	+	Can I make out the rider's face?
+Appraise	+	I resent the magistrate.
+Appraise	+	How does Tom feel about the fire?
+Price	+	How much does the ferryman charge?
+Claim	+	I am secretly a witch.
+Claim	+	Mara takes a vial out of her pouch.
+Claim	+	I once sailed with pirates.
+Chase	+	The boy flees from the dogs.
+Chase	+	The constable catches the pickpocket.
+BodyEnvironment	+	I pull on my heavy coat.
+BodyEnvironment	+	Mara climbs out of the pond.
+Disease	+	Will Tom catch the plague?
+Trust	+	Can I trust the innkeeper?
+Choose	+	What does the innkeeper do?
+BodyWound	+	A falling beam cuts Tom's arm.
+BodyStrike	+	Mara swings her old iron hammer at the brigand.
+Battle	+	The cavalry assaults the village.
+HoldOn	+	Tom hangs from the gutter.
+SocialResponse	+	"I never saw the letter," Mara says.
+Communicate	+	I read the decree to the crowd.
+Dose	+	The surgeon injects Mara with propofol.
+-	-	Mara puts her hands in her pockets.
+-	-	The box holds a dozen eggs.
+-	-	Tom gives way to the bishop.
+-	-	How does Mara feel about the journey?
+-	-	I read the letter.
+-	-	I catch the apple.
+-	-	The shelf is dusty.
+-	-	I taste the stew.

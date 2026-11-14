@@ -1,0 +1,464 @@
+diff --git a/README.md b/README.md
+index c6a6348..442c4d1 100644
+--- a/README.md
++++ b/README.md
+@@ -50,7 +50,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
+ - Code writes calls for your character's own acts: in "Tom punches Mara" or "I tell Will to wait an hour" the other person's act is read from the scene; "she" in a line written in the third person is your character when the line names no one else she could be. Acts the line says are not done ("I don't hit him", "I almost fall") and out-of-character asides ("(OOC: …)") are not acted on. Typed ›guillemets‹, «guillemets» and „German quotes“ are quotation marks, read as speech like "…", and capitals read as louder on common words only (STOP, NOOOO; NATO and ICU stay as written, and so do the WHO and the IT desk). You can speak to a group as to a person ("I shout to the crew", "I tell the town council"), and to someone named with their looks ("the old blind beggar").
+-- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I sit by the fire for an hour" passes the hour, "I swing my axe at the orc" is a blow, and "I give Will 3 coins" hands three. "I fire my pistol at the guard", "I open fire" and "I gun him down" are shots, a handgun's among them; "I fire the cook", "I fire the kiln" and "I hold my fire" are none, and "a shot of whiskey" is a measure. The models are shown only the options a scene can hold: an 1850 scene is offered no sneakers, antibiotics or spells, and the narrator gets the tools your line needs. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
++- A line in the third person ("Mara climbs the wall") or in asterisks is read by its verbs like one in the first person, and words in bold or italics ("I punch **Tom**", "I _whisper_ to Will") are read as the words; a line that opens "No, I …" or "No, Will is …" is an ordinary line, and only a short "no, Will" or "I meant …" redoes the last turn. Regenerating after a reply that failed or was stopped, or pressing Send with the box empty, runs the turn once; a line edited first runs as edited. Deleting a reply keeps what your line did: the line stays in the chat. Each line keeps the world it started from, so a swipe, a regenerate or a "no, Will" starts from the line itself, also after messages before or after it are deleted. Curly apostrophes read as straight ones ("I’ll punch him"). A number in brackets ("Tom (35)") and a temperature ("20 °C") stay words; "I drop the sword" and "I fall asleep" are no falls. "I sit by the fire for an hour" passes the hour, "I swing my axe at the orc" is a blow, and "I give Will 3 coins" hands three. "I fire my pistol at the guard", "I open fire" and "I gun him down" are shots, a handgun's among them; "I fire the cook", "I fire the kiln" and "I hold my fire" are none, and "a shot of whiskey" is a measure. The models are shown only the options a scene can hold: an 1850 scene is offered no sneakers, antibiotics or spells, and the narrator gets the tools your line needs. Results reach the narrator as what happened and why, without sound levels, status tags or chances. "I run" runs at the pace runners choose, "I dash" sprints and "I hurry" walks as fast as you can walk; "5 m to the door, then 10 m to the gate" is walked in both legs.
+ - A result that ends "Fragile: …" rests on a judged value: within that value's range the outcome comes out otherwise. A room emptying through one door takes a few seconds to work out, the reruns for its judged values included.
+ 
+ License: GPL-3.0 (derived from the Multihog D&D Framework). Third-party data, code and fonts (SIL Open Font License, `fonts/`): `docs/third-party.md`. Your line is read by English grammar as Huddleston & Pullum's *Cambridge Grammar of the English Language* (2002) describes it: "give Tom a kick" is a kick, "I make Tom walk" is Tom's walk, "I fail to climb" is no climb, "him" is the one man named before, "I walk to the market every day" is a habit and no walk now, "Do I walk to the door?" asks, and "give the coin to Tom" hands it over. Before that, the line is read for what you meant: a slip is the word the scene makes likeliest, "again" is your last act, "him back" is whoever just struck you, and a goal you stated fills a later search; each reading is shown under your line. Word meanings come from VerbNet 3.4 (University of Colorado), FrameNet 1.7 (https://framenet.icsi.berkeley.edu; Fillmore & Baker 2010, "A Frame Semantic Approach to Linguistic Analysis", The Oxford Handbook of Linguistic Analysis) and Open English WordNet 2024 (CC BY 4.0).
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index efa4506..194b2ac 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -936,7 +936,7 @@ Published failure modes of language models, and what the engine does about each.
+ | Instructions fade over turns: significant drift within eight rounds (Li et al. 2024, COLM) | rules followed early, ignored later | the rules brief is re-injected every turn at the end of the context, not only in the system prompt |
+ | Information in the middle of a long context is used worst (U-shaped curve; Liu et al. 2024, TACL) | rules or state buried mid-context are ignored | brief and tracker state go in the per-turn injection near the end |
+ | A model commits to an early wrong answer and then justifies it (Zhang et al. 2023, hallucination snowballing) | narration states an outcome, then the tool is called to fit it | every tool says "before narrating"; the audit pass flags outcomes narrated without a tool call, now including the hearing, sight, message, lie, bystander, order, request, grip, chase, first-meeting and contact-burn tools, where the scene leaves the outcome in doubt. Its answer belongs to the swipe it read: a swipe shown while it ran (of the same words) gets no flags and no rewrite, and an answer that comes after the player wrote on stays on its reply and rewrites nothing (2026-10-26 (98), R29) |
+-| Irrelevant detail in the context lowers accuracy (Shi et al. 2023, ICML, "Large Language Models Can Be Easily Distracted by Irrelevant Context") | chances, intermediate values and citations in tool results anchor the narration ("only 31 %…") or leak into the story | tool results reach the narrator as the outcome plus its cause in words, never a chance or a source: BodyCheck says "SUCCESS, despite reduced grasp" or "FAILURE, because of no working grasp", and a failure with no limiting condition says so ("an ordinary failure: no injury or condition caused it"), since an outcome without a cause invites the narrator to invent one. Remaining parentheses holding a %, a year, SII or "chance" are removed as a safety net; the full text goes to the browser console. Data tables stay in code. |
++| Irrelevant detail in the context lowers accuracy (Shi et al. 2023, ICML, "Large Language Models Can Be Easily Distracted by Irrelevant Context") | chances, intermediate values and citations in tool results anchor the narration ("only 31 %…") or leak into the story | tool results reach the narrator as the outcome plus its cause in words, never a chance or a source: BodyCheck says "SUCCESS, despite reduced grasp" or "FAILURE, because of no working grasp", and a failure with no limiting condition says so ("an ordinary failure: no injury or condition caused it"), since an outcome without a cause invites the narrator to invent one. Remaining parentheses holding a %, a year, SII, "chance" or a level in dB, and status tags ([ASSUMED …], [estimated]), are removed as a safety net (`plain`), and the sensitivity note ("Fragile: …") stays out of both ways a result reaches the narrator, the [DECIDED] block and its own tool calls (`storyText`); the full text goes to the browser console. Data tables stay in code. |
+ | Tool-calling models misfire with many tools and fail to detect irrelevant ones (Patil et al. 2025, BFCL) | the wrong tool, or BodyCheck for a task a specialist tool decides | BodyCheck refuses tasks whose words match a specialist tool and names it (§7.1) |
+ | A token in the context raises its own chance of being written (induction heads copy the token that followed an earlier occurrence: Olsson et al. 2022, arXiv 2209.11895); negated prompts get worse with scale (Jang et al. 2022, arXiv 2209.12711) | a list of measured modern clothes, the survey's acts, or "elves, goblins" in a brief for real history pulls those words into an 1850 scene | each model reads the tools as the scene allows them (`scene-fit.ts`): options, arguments and tools carry the years they exist and the worlds they belong to, and the examples name only what any scene holds or a placeholder the scene fills ("<place>: <part>") |
+ | Models pick options by position or label rather than content (selection bias; Zheng et al. 2024, ICLR) | the narrator keeps choosing the first band | the bands carry their meaning in their text, not a letter ID (removing IDs cut the bias most in Zheng et al.), and are reshuffled before every generation: one fixed shuffle per load keeps a fixed position bias |
+@@ -982,6 +982,9 @@ IF a whole number stands in brackets ("Tom (35)", "the year (1850)") → THEN it
+ IF a weather verb's subject is not "it" ("I pour Tom a drink", "I blow out the candle") → THEN no Weather (Levin 1993 §57). IF a verb is one of Levin's verbs of killing by a means (§42.2, VerbNet poison-42.2) → THEN its means names the tool: poison Substance, drown BodyEnvironment, strangle, throttle, smother, suffocate, asphyxiate and garrotte BodyChoke, stab and knife BodyStrike. IF VerbNet has a phrasal entry (pick_up) → THEN that entry's sense: "pick up the lantern" is Transfer, no eating. "Take a seat" is Act, "break the silence" Communicate, "force a smile" no effort, "sneak, slip, creep or steal past someone" Act and Look (the one passed the viewer). IF a weapon or a limb is swung or thrust at a person or animal → THEN BodyStrike (Levin §1.3, the conative "at"). IF a hand-over counts in figures ("give Will 3 coins") → THEN the quantity is that number. IF a posture is held for a timed while ("sit by the fire for an hour") → THEN PassTime for that while. IF a clause with its own pronoun subject is joined on after a comma ("ask Tom for the key, and he gives it to me") → THEN the words said end before it. A name the story holds keeps its capital in a line shouted in capitals. Every request to a model leaves with hidden marks as notation (SillyTavern's CHAT_COMPLETION_SETTINGS_READY and TEXT_COMPLETION_SETTINGS_READY carry each one, the summary's raw prompt among them).
+ The world each message ended with is kept in the chat's archive (`rulesEngine.worlds`) as the changes from the world kept before it, whole every 50; a message holds its world's id (`extra.rulesWorld`), and worlds no message reaches go. Check: 120 scripted turns, chat 1.09 → 0.20 MB, metadata 0.44 → 0.64 MB; a world after a mid-chat deletion, a deletion back to reply 20 and a branch at reply 12 equal the worlds kept then.
+ 
++**Results as the narrator reads them (2026-10-27 (105); `rules-tools.ts`, `question-pass.ts`, `body-engine.ts`, `drugs.ts`, `chem.ts`).**
++IF a result reaches the narrator (its own tool call, or [DECIDED]) → THEN it carries the outcome and its cause in words: no sensitivity note, no status tag, no level in dB ("normal voice at 1 m, quiet room"), no compound's formula, CAS number or molar mass, no program or model name ("(Pulse)", "for the 77 kg model"), no death chance for a burn (the engine draws the death: `advance`), no blood-loss class while no blood is lost. IF Weather has no calendar date → THEN it asks for "time" as YYYY-MM-DD HH:MM, the question pass's form; IF the place has no climate data → THEN it asks for the nearest listed town. Check: every result the engine test makes (10,770 texts from 42 tools and blocks): 2,189 texts with a narrator-facing hit when the narrator calls the tools itself, 2,150 through [DECIDED] (dB 1,520, blood class at 0 L 583, status tags 84, sensitivity notes 40, constant names 27, sources 28) → 0.
++
+ **The tools' words as the scene allows them (2026-10-27 (104); `scene-fit.ts`, `rules-tools.ts`, `question-pass.ts`, `plan-schema.ts`, `social.ts`, `rules-audit.ts`, `index.ts`).**
+ IF an option, an argument or a tool exists only from a year (or up to one), or only in a world with magic → THEN the planner's catalogue, its schema, the narrator's tool schemas and the narrator's brief hold it only in such a scene; an unknown year keeps everything. Years: a treatment from when it first worked as modelled (transfusion 1901, antivenom 1895, antibiotics 1941, laparotomy 1809, oxygen 1917, hyperbaric oxygen 1956), a drug from its first medical use (adrenaline 1901 … rocuronium 1994), anaesthesia 1846, the survey of acts from 2000 (the tool's own rule), a faith from its founding, SARS 2002, a coin while it circulates and an epidemic from its start (their labels), Price & Bouffard's situations from when each exists, aluminium 1886, mild steel 1856, the measured ensembles from 1960, a handgun shot and its arguments from 1350 [ASSUMED where marked in `scene-fit.ts`]; Battle 1600–1991, NameCharacter from 1910 and in the United States only, Price 1209–2008, a market only in the years its data cover. Adamantine and CastSpell only with magic.
+ IF the question pass did not run → THEN the narrator is offered the tools the router finds in the player's line, with those every turn may need (all the scene's tools when it finds none), each with the scene's arguments (SillyTavern reads a tool's parameters after `shouldRegister`).
+diff --git a/docs/progress.md b/docs/progress.md
+index 28805bf..dc0dc24 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,13 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-10-27 (105), Claude Opus 5.5
++- The player said "Continue"; the next item was the tool results read with the same test as the tool texts. Every result the engine test makes was recorded (9,818), with the 17 tools it leaves out called in an 1850 and a 1990 scene, and the [BODY], [KNOWS], [HAS] and [DECIDED] blocks.
++- Changed: a result reaching the narrator keeps out the sensitivity note (also in its own tool calls), status tags, sound levels in dB, a compound's CAS number and molar mass, "(Pulse)", "the 77 kg model", a burn's death chance (the engine draws it), and the blood-loss class at 0 L; Weather tells a missing date from a place without climate data.
++- Checked: route 172, frame 198, intent 37, engine 197 (1 new, missing on section 39's tree), plan 60, size 9, ui 54, sequences 300, all 0 misses; texts with a narrator-facing hit, of 10,770: 2,189 (its own tool calls) and 2,150 ([DECIDED]) → 0; negative controls 122 of 122 caught (RD2 and RD4 on a second run, after the check gave its room a volume and passed a minute after the dose).
++- Checked and left: BodySize's 35 kg at 150 cm in 1850 is a draw 2.3 SD below the 1975 mean BMI, about 1 in 70.
++- Next: several blows in one turn; "I want to X".
++
+ ## 2026-10-27 (104), Claude Opus 5.5
+ - The player asked for every line the models read to name only what the scene can hold. Read and tagged: 9 prompts, 42 tool descriptions, 430 argument descriptions, 112 option lists (942 values), 338 examples (`tool-lines.md` in the bundle).
+ - Changed: options, arguments and tools carry their years and worlds (`scene-fit.ts`); the planner's catalogue and schema, the narrator's tool schemas and its brief are fitted to the story's year, its world's magic and its country; the narrator without a question pass gets the tools of the player's line; a condemned act is read from its words; examples name what any scene holds or a placeholder; "DF creature" is "species"; the speech line names no fantasy species; Price, SocialResponse, Sickness and Dose descriptions shortened; BodyWound and the rule check agree with the other tools.
+diff --git a/src/rules/body-engine.js b/src/rules/body-engine.js
+index 02c5b9d..bad3835 100644
+--- a/src/rules/body-engine.js
++++ b/src/rules/body-engine.js
+@@ -1039,8 +1039,8 @@ export function status(who, p) {
+     const f = lossFraction(p);
+     const c = creatureOf(p);
+     const v = p.pulseLast;
+-    const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} % (Pulse)` : null;
+-    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): bloodless`);
++    const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} %` : null;
++    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L${p.lost > 0 ? ` (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]})` : ''}` : `${who} (${c?.name ?? p.species}): bloodless`);
+     if (p.deathIn !== null)
+         out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
+     if (p.red > 0 || p.lost > 0)
+@@ -1099,8 +1099,9 @@ export function status(who, p) {
+         out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs.work * 100)} % of what can be kept up`);
+     if ((p.heatStroke?.min ?? 0) >= 30)
+         out.push(`heat stroke uncooled for 30 min: about ${p.heatStroke.exertional ? '1 in 4' : '2 in 3'} die within days`);
++    // The engine draws whether the burns kill (advance: fatal, deathMin); the line gives their extent, no chance.
+     if (p.burnDeath)
+-        out.push(`burned ${burnedTBSA(p)} % of body surface: about ${Math.round(p.burnDeath.p * 100)} % of such patients die within 2 weeks`);
++        out.push(`burned ${burnedTBSA(p)} % of body surface`);
+     if (p.co)
+         out.push(`carboxyhaemoglobin ${Math.round(p.co.hb * 100)} %${p.co.hb >= 0.3 ? ' (unconscious)' : p.co.hb >= 0.1 ? ' (headache, dizziness, nausea)' : ''}; unconscious at 30 %, dead at 40 %`);
+     if (p.peritonitis)
+diff --git a/src/rules/body-engine.ts b/src/rules/body-engine.ts
+index 7342488..0eaec1f 100644
+--- a/src/rules/body-engine.ts
++++ b/src/rules/body-engine.ts
+@@ -774,8 +774,8 @@ export function status(who: string, p: Person): string {
+     const f = lossFraction(p);
+     const c = creatureOf(p);
+     const v = p.pulseLast;
+-    const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} % (Pulse)` : null;
+-    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}${p.lost > 0 ? `: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]}` : ''})` : `${who} (${c?.name ?? p.species}): bloodless`);
++    const signs = v ? `pulse ${Math.round(v.hr)}/min, blood pressure ${Math.round(v.sys)}/${Math.round(v.dia)} mmHg, breathing ${Math.round(v.rr)}/min, oxygen ${Math.round(v.spo2 * 100)} %` : null;
++    out.push(bloodVolume(p) ? `${who} (${c?.name ?? p.species}): blood lost ${round(p.lost / 1000, 2)} L${p.lost > 0 ? ` (${round(f * 100)}%, class ${['I', 'II', 'III', 'IV'][bloodClass(p) - 1]}: ${signs ?? SHOCK_SIGNS[bloodClass(p) - 1]})` : ''}` : `${who} (${c?.name ?? p.species}): bloodless`);
+     if (p.deathIn !== null) out.push(`dies in ${p.deathIn} min unless ${p.wounds.some(w => w.bleed) ? 'bleeding stops and blood is replaced' : 'blood is replaced'}`);
+     if (p.red > 0 || p.lost > 0) out.push(`aerobic capacity ${Math.round(vo2avail(p) / vo2max(p) * 100)} % (altitude and missing red cells)`);
+     for (const w of p.wounds) {
+@@ -814,7 +814,8 @@ export function status(who: string, p: Person): string {
+     }
+     if ((p.needs?.work ?? 0) > 0) out.push(p.exhausted ? 'exhausted: exertion fails until a full sleep' : `work done today: ${Math.round(p.needs!.work! * 100)} % of what can be kept up`);
+     if ((p.heatStroke?.min ?? 0) >= 30) out.push(`heat stroke uncooled for 30 min: about ${p.heatStroke!.exertional ? '1 in 4' : '2 in 3'} die within days`);
+-    if (p.burnDeath) out.push(`burned ${burnedTBSA(p)} % of body surface: about ${Math.round(p.burnDeath.p * 100)} % of such patients die within 2 weeks`);
++    // The engine draws whether the burns kill (advance: fatal, deathMin); the line gives their extent, no chance.
++    if (p.burnDeath) out.push(`burned ${burnedTBSA(p)} % of body surface`);
+     if (p.co) out.push(`carboxyhaemoglobin ${Math.round(p.co.hb * 100)} %${p.co.hb >= 0.3 ? ' (unconscious)' : p.co.hb >= 0.1 ? ' (headache, dizziness, nausea)' : ''}; unconscious at 30 %, dead at 40 %`);
+     if (p.peritonitis) out.push(`gut opened (peritonitis): belly pain, fever${p.peritonitis.repaired ? '; repaired by laparotomy' : '; without surgery about 9 in 10 die within a week'}`);
+     if (p.sepsis) out.push(`bloodstream infection (sepsis): fever, weak; heavy exertion fails${p.sepsis.treated ? '; on antibiotics' : '; untreated, about 4 in 5 die within 30 days'}`);
+diff --git a/src/rules/chem.js b/src/rules/chem.js
+index 675725e..f774c76 100644
+--- a/src/rules/chem.js
++++ b/src/rules/chem.js
+@@ -122,12 +122,8 @@ export function describe(q, tempC = 20) {
+         return null;
+     } })();
+     const formula = r?.f ?? (e ? formulaString(e.formula) : '?');
+-    const parts = [`${r?.n ?? q} (${formula}${r ? `, CAS ${r.cas}` : ''}, ${(() => { try {
+-            return molarMass(formula).toFixed(1) + ' g/mol';
+-        }
+-        catch {
+-            return 'molar mass n/a';
+-        } })()})`];
++    // The compound by name: its formula, CAS number and molar mass are the table's, no outcome (a narrator that read them wrote them).
++    const parts = [`${r?.n ?? q}`];
+     const tb = r?.Tb ?? e?.props?.Tb, tm = r?.Tm ?? e?.props?.Tm;
+     const tbTag = r?.Tb != null ? '' : ' [estimated]', tmTag = r?.Tm != null ? '' : ' [estimated]';
+     if (tb != null && tm != null) {
+@@ -146,7 +142,7 @@ export function describe(q, tempC = 20) {
+     if (!burnable)
+         parts.push('incombustible');
+     else if (hc)
+-        parts.push(`burns: ${(hc.kJmol / molarMass(formula)).toFixed(1)} kJ/g (from its measured heat of formation)`);
++        parts.push(`burns: ${(hc.kJmol / molarMass(formula)).toFixed(1)} kJ/g`);
+     else if (e?.props) {
+         const k = combustionKJmol(e.formula, e.props, 'gas');
+         if (k != null)
+diff --git a/src/rules/chem.ts b/src/rules/chem.ts
+index df917a6..96d5d0d 100644
+--- a/src/rules/chem.ts
++++ b/src/rules/chem.ts
+@@ -84,7 +84,8 @@ export function describe(q: string, tempC = 20): string {
+     if (!r) { try { parseSmiles(q); smi = q; } catch { return `Name one compound from the table (3796 single compounds; mixtures such as kerosene or wood are outside it) or give its SMILES ("${q}" fits neither).`; } }
+     const e = (() => { try { return estimate(smi!); } catch { return null; } })();
+     const formula = r?.f ?? (e ? formulaString(e.formula) : '?');
+-    const parts: string[] = [`${r?.n ?? q} (${formula}${r ? `, CAS ${r.cas}` : ''}, ${(() => { try { return molarMass(formula).toFixed(1) + ' g/mol'; } catch { return 'molar mass n/a'; } })()})`];
++    // The compound by name: its formula, CAS number and molar mass are the table's, no outcome (a narrator that read them wrote them).
++    const parts: string[] = [`${r?.n ?? q}`];
+     const tb = r?.Tb ?? e?.props?.Tb, tm = r?.Tm ?? e?.props?.Tm;
+     const tbTag = r?.Tb != null ? '' : ' [estimated]', tmTag = r?.Tm != null ? '' : ' [estimated]';
+     if (tb != null && tm != null) {
+@@ -94,7 +95,7 @@ export function describe(q: string, tempC = 20): string {
+     const hc = r ? heatFromFormation(r) : null;
+     const burnable = (() => { try { return o2Mol(formula) > 0 && /C|H/.test(formula) && formula !== 'H2O'; } catch { return false; } })();
+     if (!burnable) parts.push('incombustible');
+-    else if (hc) parts.push(`burns: ${(hc.kJmol / molarMass(formula)).toFixed(1)} kJ/g (from its measured heat of formation)`);
++    else if (hc) parts.push(`burns: ${(hc.kJmol / molarMass(formula)).toFixed(1)} kJ/g`);
+     else if (e?.props) { const k = combustionKJmol(e.formula, e.props, 'gas'); if (k != null) parts.push(`burns: about ${(k / molarMass(formula)).toFixed(1)} kJ/g as gas [estimated from its groups]`); }
+     const tf = r?.Tf ?? (r ? derivedFlash(r) : null), tfTag = r?.Tf != null ? '' : ' [from its vapour pressure and lower limit]';
+     if (tf != null) parts.push(T >= tf ? `vapour catches fire from a flame at this temperature (flash point ${Math.round(tf - 273.15)} °C${tfTag})` : `vapour catches fire from a flame from ${Math.round(tf - 273.15)} °C (flash point${tfTag})`);
+diff --git a/src/rules/drugs.js b/src/rules/drugs.js
+index 787e17d..7ea1f0f 100644
+--- a/src/rules/drugs.js
++++ b/src/rules/drugs.js
+@@ -30,7 +30,7 @@ export function startDose(p, key, mg) {
+     const a = t.runs[i], b = t.runs[Math.min(i + 1, t.runs.length - 1)], n = Math.min(a.length, b.length);
+     const rows = Array.from({ length: n }, (_, m) => a[m].map((x, j) => held || f === 0 ? x : x + (b[m][j] - x) * f));
+     p.drug = { key, mg, rows, t: 0 };
+-    return { note: `${key.replace(':', ' ')} ${mg} mg (${eff.toFixed(0)} mg for the 77 kg model)${held ? `, held at the largest run (${t.mg[t.mg.length - 1]} mg)` : ''}` };
++    return { note: `${key.replace(':', ' ')} ${mg} mg${held ? `; its effects are those of ${t.mg[t.mg.length - 1]} mg, the largest dose modelled` : ''}` };
+ }
+ /** One minute of the dose's course; called from the body's minute. */
+ export function drugMinute(p) {
+@@ -74,5 +74,5 @@ export function drugStatus(p) {
+     const r = q.drugLast;
+     if (!q.drug || !r)
+         return null;
+-    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', motionless (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''} (Pulse)`;
++    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', motionless (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''}`;
+ }
+diff --git a/src/rules/drugs.ts b/src/rules/drugs.ts
+index cd0eaab..44a2464 100644
+--- a/src/rules/drugs.ts
++++ b/src/rules/drugs.ts
+@@ -34,7 +34,7 @@ export function startDose(p: Person, key: string, mg: number): { note: string }
+     const a = t.runs[i], b = t.runs[Math.min(i + 1, t.runs.length - 1)], n = Math.min(a.length, b.length);
+     const rows = Array.from({ length: n }, (_, m) => a[m].map((x, j) => held || f === 0 ? x : x + (b[m][j] - x) * f));
+     (p as Person & { drug?: unknown }).drug = { key, mg, rows, t: 0 };
+-    return { note: `${key.replace(':', ' ')} ${mg} mg (${eff.toFixed(0)} mg for the 77 kg model)${held ? `, held at the largest run (${t.mg[t.mg.length - 1]} mg)` : ''}` };
++    return { note: `${key.replace(':', ' ')} ${mg} mg${held ? `; its effects are those of ${t.mg[t.mg.length - 1]} mg, the largest dose modelled` : ''}` };
+ }
+ 
+ /** One minute of the dose's course; called from the body's minute. */
+@@ -52,5 +52,5 @@ export function drugMinute(p: Person): void {
+ export function drugStatus(p: Person): string | null {
+     const q = p as Person & { drug?: { key: string; mg: number; rows: number[][]; t: number } | null; drugLast?: DrugRow | null };
+     const r = q.drugLast; if (!q.drug || !r) return null;
+-    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', motionless (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''} (Pulse)`;
++    return `${q.drug.key.split(':')[0].toLowerCase()} ${q.drug.mg} mg, ${q.drug.t} min in: pulse ${Math.round(r.hr)}/min, blood pressure ${Math.round(r.sys)}/${Math.round(r.dia)}, breathing ${r.rr.toFixed(0)}/min, oxygen ${Math.round(r.spo2 * 100)} %, sedation ${r.sed.toFixed(2)}${r.nmb >= k('nmbNoMove') ? ', motionless (muscles blocked)' : r.nmb > 0.05 ? `, muscles ${Math.round(r.nmb * 100)} % blocked` : ''}`;
+ }
+diff --git a/src/rules/question-pass.js b/src/rules/question-pass.js
+index 0e261e1..31503c6 100644
+--- a/src/rules/question-pass.js
++++ b/src/rules/question-pass.js
+@@ -5,7 +5,7 @@
+ // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
+ // tools itself; a call already made here returns the same result (the turn's decision ledger).
+ import { turnKey, placeOf, lineOf } from './turn.js';
+-import { MAGIC_TOOLS, REGISTRY, fittedTool, sceneTools, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, restoreTurnStart, restoreLineStart, keepResult, keepStart, hasStart, passRanFor, keepPass, keptPass } from './rules-tools.js';
++import { MAGIC_TOOLS, REGISTRY, fittedTool, sceneTools, storyText, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, restoreTurnStart, restoreLineStart, keepResult, keepStart, hasStart, passRanFor, keepPass, keptPass } from './rules-tools.js';
+ import { parseStoryTime, findStoryTime } from './clock.js';
+ import { placeIn } from './weather.js';
+ import { takeFlags } from './audit-flags.js';
+@@ -741,4 +741,4 @@ export function decidedResults() {
+ }
+ /** A result as the story reads it: the sensitivity note ("Fragile: … → the right heel bone breaks") is for the log, and a
+  *  narrator that read one told the other outcome as fact. */
+-export const storyResult = (r) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '').replace(/^([a-z])|(\.\s+)(the|a|an)\b/g, (m, a, p, w) => a ? a.toUpperCase() : `${p}${w[0].toUpperCase()}${w.slice(1)}`).replace(/\b(a) (?=[aeiou8]\d*-year|\d*1[18]-year)/gi, '$1n ');
++export const storyResult = (r) => storyText(r).replace(/^([a-z])|(\.\s+)(the|a|an)\b/g, (m, a, p, w) => a ? a.toUpperCase() : `${p}${w[0].toUpperCase()}${w.slice(1)}`).replace(/\b(a) (?=[aeiou8]\d*-year|\d*1[18]-year)/gi, '$1n ');
+diff --git a/src/rules/question-pass.ts b/src/rules/question-pass.ts
+index 21fee86..83b6262 100644
+--- a/src/rules/question-pass.ts
++++ b/src/rules/question-pass.ts
+@@ -5,7 +5,7 @@
+ // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
+ // tools itself; a call already made here returns the same result (the turn's decision ledger).
+ import { turnKey, placeOf, lineOf } from './turn.js';
+-import { MAGIC_TOOLS, REGISTRY, fittedTool, sceneTools, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, restoreTurnStart, restoreLineStart, keepResult, keepStart, hasStart, passRanFor, keepPass, keptPass, type Args } from './rules-tools.js';
++import { MAGIC_TOOLS, REGISTRY, fittedTool, sceneTools, storyText, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, restoreTurnStart, restoreLineStart, keepResult, keepStart, hasStart, passRanFor, keepPass, keptPass, type Args } from './rules-tools.js';
+ import { parseStoryTime, findStoryTime } from './clock.js';
+ import { placeIn } from './weather.js';
+ import { takeFlags } from './audit-flags.js';
+@@ -658,4 +658,4 @@ export function decidedResults(): { tool: string; result: string }[] {
+ }
+ /** A result as the story reads it: the sensitivity note ("Fragile: … → the right heel bone breaks") is for the log, and a
+  *  narrator that read one told the other outcome as fact. */
+-export const storyResult = (r: string) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '').replace(/^([a-z])|(\.\s+)(the|a|an)\b/g, (m, a, p, w) => a ? a.toUpperCase() : `${p}${w[0].toUpperCase()}${w.slice(1)}`).replace(/\b(a) (?=[aeiou8]\d*-year|\d*1[18]-year)/gi, '$1n ');
++export const storyResult = (r: string) => storyText(r).replace(/^([a-z])|(\.\s+)(the|a|an)\b/g, (m, a, p, w) => a ? a.toUpperCase() : `${p}${w[0].toUpperCase()}${w.slice(1)}`).replace(/\b(a) (?=[aeiou8]\d*-year|\d*1[18]-year)/gi, '$1n ');
+diff --git a/src/rules/rules-tools.js b/src/rules/rules-tools.js
+index 901339c..312b1c0 100644
+--- a/src/rules/rules-tools.js
++++ b/src/rules/rules-tools.js
+@@ -469,10 +469,13 @@ export function syncRulesToChat() {
+         truncate(s.history, from + 1, s.state);
+ }
+ // The narrator gets the outcome only: chances, intermediate values and citations are salient details that anchor or
+-// leak into the narration (models are distracted by irrelevant context: Shi et al. 2023, ICML). The full text goes to the
+-// browser console.
+-const DETAIL = /\s*\([^()]*(?:%|\b(?:1[89]|20)\d\d\b|\bSII\b|chance)[^()]*\)/g;
++// leak into the narration (models are distracted by irrelevant context: Shi et al. 2023, ICML), and so are a sound's
++// level in dB and a value's status tag. The full text goes to the browser console.
++const DETAIL = /\s*\([^()]*(?:%|\b(?:1[89]|20)\d\d\b|\bSII\b|chance|\bdB\b)[^()]*\)|\s*\[(?:ASSUMED|FITTED|RAW|estimated|from its)\b[^\]]*\]/g;
+ const ODDS = /\b(?:death )?chance \d+(?:\.\d+)? ?%\s*(?:→|—)\s*/g;
++/** A result as the story reads it: the sensitivity note ("Fragile: …") is for the log and the player's note; a narrator
++ *  that read one told the other outcome as fact. */
++export const storyText = (r) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '');
+ export function plain(out) {
+     if (typeof out !== 'string')
+         return out;
+@@ -985,6 +988,10 @@ export function sceneSky(t) {
+     return SillyTavern.getContext().chatMetadata ? skyAt(store().state, t) : null;
+ }
+ /** Weather at place key `place` (from findPlace) at story minute `t` (calendar dates only): the day, air now, date; or null. */
++// weatherAt is null without a calendar date, or for a place without climate normals; each gets its own answer, the date in
++// the form the question pass writes it (QUESTION_SYSTEM: "time" as YYYY-MM-DD HH:MM).
++const NO_DATE = (what) => `${what} needs a calendar date and hour in [TIME]: add "time" as YYYY-MM-DD HH:MM.`;
++const noClimate = (where) => `No climate data for ${where}: give the nearest listed town, or latitude and longitude.`;
+ function weatherAt(place, t) {
+     const date = dateOf(t);
+     if (t === null || !date)
+@@ -1139,7 +1146,7 @@ export function registerRulesTools(enabled) {
+         // The narrator reads a tool's parameters as the scene allows them; SillyTavern awaits shouldRegister and then reads this
+         // object (tool-calling.js, registerFunctionToolsOpenAI), so it is set there for the request being built.
+         const shown = { type: 'object', properties, required: [...required] };
+-        registerFunctionTool({ name, displayName: name, description, parameters: shown, action: exec, formatMessage: () => '',
++        registerFunctionTool({ name, displayName: name, description, parameters: shown, action: async (a) => { const r = await exec(a); return typeof r === 'string' ? storyText(r) : r; }, formatMessage: () => '',
+             shouldRegister: () => {
+                 const f = questionPassRan() ? null : fittedTool(name);
+                 if (!f || !offeredNow().has(name))
+@@ -1347,7 +1354,7 @@ export function registerRulesTools(enabled) {
+                 }
+                 const w = place ? weatherAt(place.key, storyNow(st)) : null;
+                 if (place && !w) {
+-                    out.push('weather_place needs a calendar date (dd/mm/yyyy) and hour in [TIME].');
++                    out.push(dateOf(storyNow(st)) ? noClimate(place.label || place.key) : NO_DATE('weather_place'));
+                     continue;
+                 }
+                 p.weather = w && place ? place.key : null;
+@@ -1847,7 +1854,7 @@ export function registerRulesTools(enabled) {
+                 return a.place ? `Give the nearest real town to "${a.place}", or latitude and longitude.` : 'Give place: the scene\'s place is still open.';
+             const w = weatherAt(place.key, storyNow(st));
+             if (!w)
+-                return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
++                return dateOf(storyNow(st)) ? noClimate(place.label || place.key) : NO_DATE('Weather');
+             setPlace(st, place);
+             const { d, date } = w, r = (x) => Math.round(x);
+             const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
+diff --git a/src/rules/rules-tools.ts b/src/rules/rules-tools.ts
+index f308321..c4b8981 100644
+--- a/src/rules/rules-tools.ts
++++ b/src/rules/rules-tools.ts
+@@ -436,10 +436,13 @@ export function syncRulesToChat(): void {
+ }
+ 
+ // The narrator gets the outcome only: chances, intermediate values and citations are salient details that anchor or
+-// leak into the narration (models are distracted by irrelevant context: Shi et al. 2023, ICML). The full text goes to the
+-// browser console.
+-const DETAIL = /\s*\([^()]*(?:%|\b(?:1[89]|20)\d\d\b|\bSII\b|chance)[^()]*\)/g;
++// leak into the narration (models are distracted by irrelevant context: Shi et al. 2023, ICML), and so are a sound's
++// level in dB and a value's status tag. The full text goes to the browser console.
++const DETAIL = /\s*\([^()]*(?:%|\b(?:1[89]|20)\d\d\b|\bSII\b|chance|\bdB\b)[^()]*\)|\s*\[(?:ASSUMED|FITTED|RAW|estimated|from its)\b[^\]]*\]/g;
+ const ODDS = /\b(?:death )?chance \d+(?:\.\d+)? ?%\s*(?:→|—)\s*/g;
++/** A result as the story reads it: the sensitivity note ("Fragile: …") is for the log and the player's note; a narrator
++ *  that read one told the other outcome as fact. */
++export const storyText = (r: string) => r.replace(/\s*Fragile: the outcome changes[\s\S]*$/, '');
+ export function plain(out: unknown): unknown {
+     if (typeof out !== 'string') return out;
+     const short = out.replace(DETAIL, '').replace(ODDS, '');
+@@ -916,6 +919,10 @@ export function sceneSky(t: number): SkyLight | null {
+ }
+ 
+ /** Weather at place key `place` (from findPlace) at story minute `t` (calendar dates only): the day, air now, date; or null. */
++// weatherAt is null without a calendar date, or for a place without climate normals; each gets its own answer, the date in
++// the form the question pass writes it (QUESTION_SYSTEM: "time" as YYYY-MM-DD HH:MM).
++const NO_DATE = (what: string) => `${what} needs a calendar date and hour in [TIME]: add "time" as YYYY-MM-DD HH:MM.`;
++const noClimate = (where: string) => `No climate data for ${where}: give the nearest listed town, or latitude and longitude.`;
+ function weatherAt(place: string, t: number | null): { d: WeatherDay; tempC: number; date: Date; observed?: { snowCm: number; windMs: number; humidity: number; source: string } } | null {
+     const date = dateOf(t);
+     if (t === null || !date) return null;
+@@ -1043,7 +1050,7 @@ export function registerRulesTools(enabled: boolean): void {
+         // The narrator reads a tool's parameters as the scene allows them; SillyTavern awaits shouldRegister and then reads this
+         // object (tool-calling.js, registerFunctionToolsOpenAI), so it is set there for the request being built.
+         const shown: { type: 'object'; properties: Props; required: string[] } = { type: 'object', properties, required: [...required] };
+-        registerFunctionTool({ name, displayName: name, description, parameters: shown, action: exec, formatMessage: () => '',
++        registerFunctionTool({ name, displayName: name, description, parameters: shown, action: async (a: Args) => { const r = await exec(a); return typeof r === 'string' ? storyText(r) : r; }, formatMessage: () => '',
+             shouldRegister: () => {
+                 const f = questionPassRan() ? null : fittedTool(name);
+                 if (!f || !offeredNow().has(name)) return false;
+@@ -1224,7 +1231,7 @@ export function registerRulesTools(enabled: boolean): void {
+             const place = a.weather_place ? findPlace(a.weather_place, a.latitude, a.longitude) : null;
+             if (a.weather_place && !place) { out.push(`No weather data for "${a.weather_place}": give the nearest real town, or latitude and longitude.`); continue; }
+             const w = place ? weatherAt(place.key, storyNow(st)) : null;
+-            if (place && !w) { out.push('weather_place needs a calendar date (dd/mm/yyyy) and hour in [TIME].'); continue; }
++            if (place && !w) { out.push(dateOf(storyNow(st)) ? noClimate(place.label || place.key) : NO_DATE('weather_place')); continue; }
+             p.weather = w && place ? place.key : null;
+             if (place) setPlace(st, place);
+             if (a.air_c == null && w) a = { ...a, air_c: w.tempC, radiant_c: a.radiant_c ?? w.tempC };
+@@ -1652,7 +1659,7 @@ export function registerRulesTools(enabled: boolean): void {
+         const place = known ?? findPlace(a.place, a.latitude, a.longitude);
+         if (!place) return a.place ? `Give the nearest real town to "${a.place}", or latitude and longitude.` : 'Give place: the scene\'s place is still open.';
+         const w = weatherAt(place.key, storyNow(st));
+-        if (!w) return 'Weather needs a calendar date (dd/mm/yyyy) and hour in [TIME].';
++        if (!w) return dateOf(storyNow(st)) ? noClimate(place.label || place.key) : NO_DATE('Weather');
+         setPlace(st, place);
+         const { d, date } = w, r = (x: number) => Math.round(x);
+         const amount = `${d.rainMm >= 10 ? r(d.rainMm) : Math.round(d.rainMm * 10) / 10} mm`;
+diff --git a/tests/engine.test.mjs b/tests/engine.test.mjs
+index bbaf828..c43242f 100644
+--- a/tests/engine.test.mjs
++++ b/tests/engine.test.mjs
+@@ -1879,5 +1879,24 @@ for (const who of ['Mara', 'Ash']) {
+   const vague = String(await run('SocialResponse', { situation: 'an act they see or hear of that they may condemn outright', who: 'Ann', act: 'violence' }));
+   if (!/^Ann (condemns|does not condemn) it outright/.test(named) || !/Give act as one of: .*political violence/.test(vague)) { miss++; console.log(`MISS a condemned act is named in the scene's words: ${JSON.stringify(named)} / ${vague.slice(0, 120)}`); }
+ }
+-console.log(`196 checks, ${miss} miss(es)`);
++// What the narrator reads of a result carries the outcome and its cause in words: no sensitivity note (its constant names
++// and status tags), no status tag, no sound level in dB, no compound's CAS number or molar mass, no program or model name,
++// no burn's death chance, no blood-loss class when no blood is lost; Weather names the cause it cannot answer.
++{
++  const { tools: registered } = await import('../tools/st-harness.mjs');
++  const Bs = await import('../src/rules/body-sheet.js');
++  fresh(); T.setStoryTime(C.parseStoryTime('1850-03-10 14:00'));
++  for (const [who, sex, age] of [['Tom', 'male', 30], ['Mara', 'female', 25]]) await run('NewCharacter', { who, sex, age });
++  const heard = [], say = async (n, a) => String(await registered.get(n).action(a));
++  heard.push(await say('Break', { material: 'pine (eastern white)', shape: 'plank or beam', width_cm: 20, thickness_cm: 2.5, span_m: 2, load_kg: 80 }));
++  heard.push((await say('Substance', { substance: 'ethanol', temp_c: 20 })));
++  heard.push((await say('Communicate', { speaker: 'Tom', listener: 'Mara', means: 'speech', words: 'Wait here.' })));
++  heard.push((await say('Room', { room: 'tavern', volume_m3: 200, fires: [{ fuel: 'wood', kg_per_hour: 2 }], people: 40, lining: 'wood' })));
++  heard.push((await say('BodyContact', { who: 'Mara', regions: ['right hand'], material: 'water', temp_c: 68, seconds: 10 })));
++  heard.push((await say('Dose', { who: 'Tom', substance: 'Epinephrine:IM', mg: 0.5 })), await say('PassTime', { minutes: 1 }), Bs.bodyBlock(Bs.trackedPeople()));
++  const left = heard.join('\n').match(/Fragile|\[(?:ASSUMED|FITTED|RAW|estimated)|\bdB\b|CAS \d|g\/mol|heat of formation|\(Pulse\)|kg model|such patients die|L \(0%/g) ?? [];
++  fresh(); const noDate = String(await run('Weather', { place: 'London' }));
++  if (left.length || !/YYYY-MM-DD HH:MM/.test(noDate)) { miss++; console.log(`MISS the narrator reads outcomes in words: ${[...new Set(left)].join(', ')}; without a date Weather says ${noDate}`); }
++}
++console.log(`197 checks, ${miss} miss(es)`);
+ process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 83b49c7..3cd4e87 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -3848,5 +3848,77 @@
+   "find": "\\|\\$\\{scene\\.country \\?\\? ''\\}\\|",
+   "replace": "|",
+   "miss": "tool words fit the scene"
++ },
++ {
++  "id": "RD1",
++  "name": "a sound's level in dB is left out",
++  "file": "src/rules/rules-tools.js",
++  "find": "\\|chance\\|\\\\bdB\\\\b\\)",
++  "replace": "|chance)",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD2",
++  "name": "a value's status tag is left out",
++  "file": "src/rules/rules-tools.js",
++  "find": "\\|\\\\s\\*\\\\\\[\\(\\?:ASSUMED\\|FITTED\\|RAW\\|estimated\\|from its\\)\\\\b\\[\\^\\\\\\]\\]\\*\\\\\\]/g;",
++  "replace": "/g;",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD3",
++  "name": "the narrator's tool calls leave the sensitivity note out",
++  "file": "src/rules/rules-tools.js",
++  "find": "action: async \\(a\\) => \\{ const r = await exec\\(a\\);",
++  "replace": "action: async (a) => { return await exec(a); const r = 0;",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD4",
++  "name": "the dose line names no program",
++  "file": "src/rules/drugs.js",
++  "find": "% blocked` : ''\\}`;",
++  "replace": "% blocked` : ''} (Pulse)`;",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD5",
++  "name": "the dose names no model",
++  "file": "src/rules/drugs.js",
++  "find": "note: `\\$\\{key\\.replace\\(':', ' '\\)\\} \\$\\{mg\\} mg\\$\\{held",
++  "replace": "note: `${key.replace(':', ' ')} ${mg} mg (1 mg for the 77 kg model)${held",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD6",
++  "name": "a compound is named, no CAS number",
++  "file": "src/rules/chem.js",
++  "find": "const parts = \\[`\\$\\{r\\?\\.n \\?\\? q\\}`\\];",
++  "replace": "const parts = [`${r?.n ?? q} (CAS ${r?.cas})`];",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD7",
++  "name": "a burn's line gives its extent, no death chance",
++  "file": "src/rules/body-engine.js",
++  "find": "out\\.push\\(`burned \\$\\{burnedTBSA\\(p\\)\\} % of body surface`\\);",
++  "replace": "out.push(`burned ${burnedTBSA(p)} % of body surface: about ${Math.round(p.burnDeath.p * 100)} % of such patients die within 2 weeks`);",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD8",
++  "name": "no blood-loss class when no blood is lost",
++  "file": "src/rules/body-engine.js",
++  "find": "blood lost \\$\\{round\\(p\\.lost / 1000, 2\\)\\} L\\$\\{p\\.lost > 0 \\?",
++  "replace": "blood lost ${round(p.lost / 1000, 2)} L${p.lost >= 0 ?",
++  "miss": "the narrator reads outcomes in words"
++ },
++ {
++  "id": "RD9",
++  "name": "Weather without a date names the time to add",
++  "file": "src/rules/rules-tools.js",
++  "find": "add \\\"time\\\" as YYYY-MM-DD HH:MM\\.`;",
++  "replace": "(dd/mm/yyyy).`;",
++  "miss": "the narrator reads outcomes in words"
+  }
+ ]

@@ -1,5 +1,5 @@
 import { NAMED_AS } from './kinds.js';
-import { REGISTRY } from './rules-tools.js';
+import { REGISTRY, sceneTools } from './rules-tools.js';
 /** One argument's schema; long lists of options stay as text (the tool answers with the nearest options). */
 export function propSchema(p, enumMax = 200) {
     if (p.type === 'string')
@@ -61,7 +61,9 @@ const PERSON_VALUE = new Set(['who', 'speaker', 'listener', 'viewer', 'attacker'
  *  later round. A first round copied Mara's climb under "the merchant", and the reply had to tell him climbing a wall. */
 export const ACTOR_TOOLS = new Set(['Act', 'BodyCheck', 'BodyFall', 'HoldOn', 'Chase', 'BodyIntake', 'WorkOut', 'BodyStrike']);
 export function planSchema(only, opts = {}) {
-    const tools = [...REGISTRY.values()].filter(t => !only || only.has(t.name));
+    // The tools and their arguments as the scene allows them (scene-fit.ts): constrained decoding then picks only values the
+    // scene can hold.
+    const tools = sceneTools().filter(t => !only || only.has(t.name));
     const people = opts.people ?? [];
     // A person argument inside a call (the listener, the target) takes one of the scene's people.
     const argsOf = (t, drop, self) => ({
@@ -102,8 +104,8 @@ export function planSchema(only, opts = {}) {
         type: 'object', additionalProperties: false, required: ['calls'],
         properties: {
             calls: { type: 'object', additionalProperties: false, properties: Object.fromEntries(tools.map(t => [t.name, entry(t)])), required: [...require] },
-            then: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['question', 'tool'], properties: { question: { type: 'string' }, tool: { type: 'string', enum: [...REGISTRY.keys()] } } }, maxItems: 4 },
-            need: { type: 'array', items: { type: 'string', enum: [...REGISTRY.keys()] }, maxItems: 6 },
+            then: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['question', 'tool'], properties: { question: { type: 'string' }, tool: { type: 'string', enum: sceneTools().map(t => t.name) } } }, maxItems: 4 },
+            need: { type: 'array', items: { type: 'string', enum: sceneTools().map(t => t.name) }, maxItems: 6 },
             time: { type: 'string', pattern: '^(\\d{4}-\\d{2}-\\d{2}|Day \\d+) \\d{2}:\\d{2}$' },
             at: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 },
             present: { type: 'array', items: { type: 'string' }, maxItems: 12 },

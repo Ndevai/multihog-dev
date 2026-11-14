@@ -1,0 +1,58 @@
+# Section 52 run (the tree of section 51 against this tree; 2026-11-11)
+
+## Tests (the steps of npm test; tsc Version 5.6.3)
+route: 218 checks, 0 miss(es)
+frame: 202 checks, 0 miss(es)
+intent: 37 checks, 0 miss(es)
+engine: 203 checks, 0 miss(es)
+plan: 60 checks, 0 miss(es)
+size: 9 of 9
+ui: 88 of 88
+music: 9 of 9
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## Negative controls (every control on index.js and music.js, and N29 and R8 near Appraise in rules-tools.js); every control's pattern found in its file: 636 of 636
+N29 caught sighting (16 s)
+R8 caught one Lombard rise (16 s)
+R12 caught voice button from the keyboard (0 s)
+R20 caught say it another way takes the line back (0 s)
+RY13 caught a world-book line is read without its hidden marks (0 s)
+RZ11 caught the narrator's prompt carries no tag character (0 s)
+RP12 caught the narrator names each speaker while the box is on (0 s)
+RP13 caught Auto toggles one settings object (0 s)
+RQ1 caught K-weighting's shelf gains 4 dB (4 s)
+RQ2 caught the relative gate leaves out blocks 10 LU under the rest (4 s)
+RQ3 caught the onset envelope is read at 250 Hz (5 s)
+RQ4 caught key profiles turn with the tonic (4 s)
+RQ5 caught the key's lowest pitch keeps a bin within half a semitone (4 s)
+RQ6 caught silent frames take no part in brightness (4 s)
+RQ7 caught major is more pleasant (4 s)
+RQ8 caught four areas at least (4 s)
+RQ9 caught another area takes over (5 s)
+RQ10 caught a set named after the one whose feeling leads (4 s)
+RQ11 caught the farthest feeling leads the scene (4 s)
+RQ12 caught songs cross equal-power (4 s)
+RQ13 caught the settings keep one object (5 s)
+RQ14 caught the strongest feeling weighs 0.9 (4 s)
+RQ15 caught a song clearly nearer takes over inside one area (4 s)
+RQ16 caught clearly nearer is 1.5 standard deviations (4 s)
+RQ17 caught the newest feeling is the one of the latest turn (4 s)
+25 of 25 controls caught.
+
+## Chromium: node history/review-tests/browser/music/flow.mjs <root>
+added 4 songs in 2844 ms; uploaded: user/files/rules-song-<time>-Calm-minor.wav, user/files/rules-song-<time>-Calm-major.wav, user/files/rules-song-<time>-Intense-minor.wav, user/files/rules-song-<time>-Intense-major.wav
+  Calm minor: 66.1 BPM · -35 LUFS · 0.3 kHz · A minor · calm, minor
+  Calm major: 69.9 BPM · -34.9 LUFS · 0.3 kHz · C major · calm, major
+  Intense minor: 150 BPM · -16.9 LUFS · 0.4 kHz · E minor · intense, minor
+  Intense major: 146.2 BPM · -16.9 LUFS · 0.4 kHz · D major · intense, major
+  areas: calm, major | intense, minor | calm, minor | intense, major
+no feeling: Playing: Calm major (calm, major)
+Mara's line marked sad: Playing: Calm minor (calm, minor)
+Tom's joy: Playing: Intense major (intense, major)
+Tom's joy, "Calm major" in Tom's set: Playing: Calm major (calm, major)
+after the crossfade: Intense-major.wav paused at volume 0.00, 4.0 s; Calm-major.wav playing at volume 0.60, 4.5 s
+removed one: 3 files kept, 3 songs listed
+no page errors no warnings
+
+## Constants
+docs/constants.md: 144 constants (2 new: musicStrongestWeight 0.9 and musicClearSd 1.5, the player's picks), 339 unregistered tags

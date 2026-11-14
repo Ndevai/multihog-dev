@@ -17,19 +17,26 @@ const ONE: Record<string, string> = {
     ɐ: 'ă', ɑ: 'a', ɒ: 'o', ɪ: 'i', ʊ: 'u', ɿ: 'ï', ʅ: 'ï',
     ʰ: 'h', ʷ: 'w', ʲ: 'y', ˀ: "'", ʼ: "'", ʱ: 'h', ⁿ: 'n', ᵐ: 'm', ᵑ: 'ŋ', ˤ: 'ʿ',
 };
-const DROP = /[\u0320\u032A\u0329\u0325\u031E\u031F\u032F\u0324ˠ˞ˑ∼]/g;
+// Also dropped: apical (◌̺) and laminal (◌̻) marks and creaky voice (◌̰), common in PHOIBLE's inventories (PHOIBLE 2.0, Moran &
+// McCloy 2019: 3,020 inventories; docs/progress.md), which no Latin alphabet writes.
+const DROP = /[\u0320\u032A\u0329\u0325\u031E\u031F\u032F\u0324\u033A\u033B\u0330ˠ˞ˑ∼]/g;
+// Korean-type fortis (◌͈, strong articulation) is written doubled, as Korean's own romanization writes ㅃ ㄸ ㄲ (pp tt kk); the
+// lenis mark (◌͉, weak articulation) is dropped, the plain letter standing for it.
+const FORTIS = '\u0348', LENIS = '\u0349';
 const VOWELS = /[aeiouäëïöüőűıŏâăèòàáéíóúãẽĩõũ]$/i;
 /** Whether letters a + b would read as one sound: a consonant then h, y or w; t·s, d·z; r·r. */
 const joins = (a: string, b: string) => !!a && !!b && (!VOWELS.test(a) && /\p{L}$/u.test(a) && /^[hyw]/.test(b) || /t$/.test(a) && /^s/.test(b) || /d$/.test(a) && /^z/.test(b) || /r$/.test(a) && /^r/.test(b));
 
 /** One IPA segment ("tʃʰ", "aː", "²¹") in letters. */
 function segment(seg: string): string {
-    let s = seg.normalize('NFD').replace(DROP, '').normalize('NFC'), out = '';
+    let s = seg.normalize('NFD').replace(DROP, '').replace(new RegExp(LENIS, 'g'), '').normalize('NFC'), out = '';
     while (s) {
         const m = MULTI.find(([k]) => s.startsWith(k));
         if (m) { out += m[1]; s = s.slice(m[0].length); continue; }
         const ch = [...s][0];
-        out += ch === 'ː' ? (out.slice(-1) || '') : ONE[ch] ?? ch;
+        // Length and fortis double the last letter with its marks (ɛ̃ː → è̃è̃).
+        const last = () => out.normalize('NFD').match(/\P{M}\p{M}*$/u)?.[0].normalize('NFC') ?? '';
+        out += ch === 'ː' || ch === FORTIS ? last() : ONE[ch] ?? ch;
         s = s.slice(ch.length);
     }
     return out;

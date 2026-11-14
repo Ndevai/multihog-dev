@@ -1,0 +1,62 @@
+BodyCheck	+	I scramble up the rocks.
+BodyCheck	+	Mara hops across the stepping stones.
+BodyCheck	+	I paddle out to the buoy.
+BodyCheck	+	Tom prises the board loose.
+BodyCheck	+	We creep past the dogs.
+BodyCheck	+	I lurk in the alley until dark.
+BodyCheck	+	Mara rides into town at dusk.
+BodyCheck	+	I patch up the old boat.
+BodyCheck	+	Tom stitches the torn sail.
+BodyCheck	+	I weave a basket from reeds.
+WorkOut	+	Mara cracks the cipher.
+WorkOut	+	I puzzle out the map's symbols.
+WorkOut	+	Tom computes the distance to the coast.
+WorkOut	+	I infer where the thief went.
+WorkOut	+	Will I remember to feed the horses?
+Listen	+	Did anyone notice the noise?
+Listen	+	A scream echoes from the cellar. Does Tom hear it?
+Listen	+	I sense movement in the dark.
+Appraise	+	Mara hates the duke.
+Appraise	+	I dread the trial tomorrow.
+Appraise	+	How does the boy feel about moving?
+Appraise	+	Tom grieves for his brother.
+Price	+	What would a farmhand earn in a week?
+NameCharacter	+	I ask the innkeeper her name.
+Disease	+	Does Tom catch the measles from the boy?
+Choose	+	What does the sergeant do next?
+Choose	+	Does the boy stay or run?
+Claim	+	I am a priest.
+Claim	+	Mara is in fact a spy.
+Claim	+	I draw a dagger from my sleeve.
+Claim	+	I know how to swim.
+Claim	+	I served in the navy.
+Claim	+	Mara stumbles on the stairs.
+Trust	+	Does Mara trust Tom after the lie?
+Trust	+	I apologise to Tom.
+HoldOn	+	I hang onto the rope.
+HoldOn	+	Tom totes the barrel to the boat.
+Chase	+	The boy runs away from the guards.
+Chase	+	I flee the city.
+Chase	+	The soldiers catch the thief.
+Break	+	I stand on the old beam.
+Break	+	Tom hangs from the thin rope.
+BodyChoke	+	Mara chokes the assassin.
+BodyWound	+	A shard of glass cuts Tom's hand.
+BodyStrike	+	I thrust my long rusty spear at the wolf.
+Battle	+	The regiment assaults the fort.
+BodyEnvironment	+	I pull off my soaked socks.
+BodyEnvironment	+	Mara wades out of the lake.
+BodyEnvironment	+	I swim to the island.
+SocialResponse	+	Tom: "I wasn't there last night."
+SocialResponse	+	I tell the captain I saw nothing.
+Communicate	+	I read the will aloud.
+-	-	I read the sign.
+-	-	I catch the rope.
+-	-	I hang the picture on the wall.
+-	-	I fix the lamp.
+-	-	Tom smells the bread.
+-	-	The ball rolls down the hill.
+-	-	I walk to the beam.
+-	-	I give Tom a ring.
+-	-	I open fire on the bandits.
+-	-	I stab the bandit.

@@ -6,9 +6,10 @@
   "scripts": {
     "build": "tsc -p .",
     "typecheck": "tsc -p . --noEmit",
-    "test": "tsc -p . && node tests/route.test.mjs && node tests/frame.test.mjs && node tests/engine.test.mjs && node tests/plan.test.mjs && node tests/size.test.mjs"
+    "test": "tsc -p . && node tests/route.test.mjs && node tests/frame.test.mjs && node tests/intent.test.mjs && node tests/engine.test.mjs && node tests/plan.test.mjs && node tests/size.test.mjs && node tests/ui.test.mjs && node tests/music.test.mjs && node tests/voice-body.test.mjs && node tests/growth.test.mjs && node tests/sequences.test.mjs",
+    "negative-controls": "node tools/negative-controls.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.6.0"
+    "typescript": "5.6.3"
   }
 }

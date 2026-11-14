@@ -1,0 +1,38 @@
+diff -ru orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp
+--- orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp	2026-06-14 21:19:31.000000000 +0000
++++ src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabApi/VocalTractLabApi.cpp	2026-11-12 13:50:24.026886239 +0000
+@@ -165,6 +165,9 @@
+     return 1;
+   }
+ 
++  // Patched: the anatomy adaptation transforms the shapes of this speaker.
++  AnatomyParams::setReference(*vocalTract);
++
+   // ****************************************************************
+   // Init the object for the time domain simulation.
+   // ****************************************************************
+diff -ru orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp
+--- orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp	2026-06-14 21:19:31.000000000 +0000
++++ src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/src/VocalTractLabBackend/Speaker.cpp	2026-11-12 13:50:24.027311717 +0000
+@@ -83,7 +83,7 @@
+ 
+     xml << *vocalTract;
+ 
+-    xml << "<glottis_models" << std::endl;
++    xml << "<glottis_models>" << std::endl;
+ 
+     for (size_t i = 0; i < glottisModels.size(); ++i)
+     {
+diff -ru orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h
+--- orig/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h	2026-06-14 21:19:31.000000000 +0000
++++ src/vocaltractlab_cython-0.0.17/VocalTractLabBackend-dev/include/VocalTractLabBackend/AnatomyParams.h	2026-11-12 13:50:24.026043922 +0000
+@@ -39,6 +39,9 @@
+   // **************************************************************************
+ 
+ public:
++  // Patched (2026-11-12): the API sets the reference tract to the loaded speaker, so adapted shapes come from it.
++  static void setReference(const VocalTract &t) { *referenceVocalTract = t; }
++
+   enum AnatomyParameters
+   {
+     LIP_WIDTH,

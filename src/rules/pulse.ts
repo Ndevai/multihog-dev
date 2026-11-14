@@ -12,6 +12,7 @@ async function rpc<T>(op: string, ...args: unknown[]): Promise<T> {
     if (typeof Worker !== 'undefined' && typeof window !== 'undefined') {
         worker ??= Object.assign(new Worker(new URL('worker.mjs', BASE), { type: 'module' }), {
             onmessage: ({ data }: MessageEvent) => { const w = waiting.get(data.id); waiting.delete(data.id); if (w) data.error ? w[1](new Error(data.error)) : w[0](data.v); },
+            onerror: (ev: ErrorEvent) => { const err = new Error(ev.message || 'Pulse worker failed'); for (const [, [, no]] of waiting) no(err); waiting.clear(); worker = null; },
         });
         const id = ++seq;
         return new Promise<T>((ok, no) => { waiting.set(id, [ok as (v: unknown) => void, no]); worker!.postMessage({ id, op, args }); });

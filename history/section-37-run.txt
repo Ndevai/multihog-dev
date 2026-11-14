@@ -1,0 +1,480 @@
+Section 37, run. Node 22.23.4, TypeScript 5.6.3, Chromium through Playwright; 2026-10-27.
+
+== npm test steps, section 37's tree: route 160, frame 198, intent 37, engine 193, plan 60, size 9 of 9, ui 54 of 54, sequences 300 run with 0 failing; 0 misses. npx tsc -p . emits the committed .js.
+
+== The new checks on section 36's tree, each must miss there
+-- tests/route.test.mjs
+MISS verbs routed by their sense: wrong I pour Tom a drink. → Weather | I blow out the candle. → Weather | I blow out the candle. → Break | I stab Tom. → Substance | I strangle the guard. → Substance | I light a candle. → BodyTreat | I pick up the lantern. → BodyIntake | I draw my swor
+MISS a swing at someone is a blow: I swing at Tom. | I swing my axe at the orc. | I thrust my spear at the guard.; at things: 
+160 checks, 2 miss(es)
+-- tests/frame.test.mjs
+MISS numbers in figures hand over: [null,null,null]
+MISS a timed posture passes the time, a joined clause ends the words: ,,; for the key, and he gives it to me; that Tom and Ann left
+198 checks, 2 miss(es)
+-- tests/intent.test.mjs
+37 checks, 0 miss(es)
+-- tests/plan.test.mjs
+MISS a brace inside a world-book value is text: [null,null]
+60 checks, 1 miss(es)
+-- tests/ui.test.mjs
+MISS a request leaves with notation: {"messages":[{"role":"user","content":"Narrator:\nHello.\n\nMara:\nI say stop󠁌󠁿 now"},{"role":"user","content":[{"type":"text","text":"I say stop󠁌󠁿 now"}]}],"prompt":"Mara: I say stop󠁌󠁿 now"}
+MISS a shouted name keeps its capital: I shout at will to run!
+MISS a feeling keeps the selection: "I"
+ui: 51 of 54
+-- tests/engine.test.mjs
+MISS old player lines let go of their worlds, replies keep theirs: ; latest line rulesLog,rulesStart,rulesPass
+MISS replies keep their worlds as changes, rebuilt exactly: whole 46, replies without an id 31, full 0 of 0; after a mid-chat deletion true, back to reply 20 true, a branch at 12 true
+193 checks, 2 miss(es)
+
+== Area H (review-tests/probes/chat-growth.mjs), 120 turns, section 37's tree
+turn 1: chat 0.00 MB, metadata 0.01 MB, one state 1 kB
+turn 10: chat 0.03 MB, metadata 0.05 MB, one state 3 kB
+turn 30: chat 0.08 MB, metadata 0.18 MB, one state 5 kB
+turn 60: chat 0.12 MB, metadata 0.32 MB, one state 6 kB
+turn 120: chat 0.20 MB, metadata 0.64 MB, one state 10 kB (section 36: chat 1.09 MB, metadata 0.44 MB)
+metadata at turn 120 (kB): snapshots 262 (30 whole worlds, capped), history 153 (capped at 400 entries), worlds 201 (232 worlds, chain of 20 then; 50 now)
+
+== Browser (review-tests/browser/e.mjs and e3.mjs), section 37's tree
+E1 after Tab: focus in the toolbar; E2 Backspace keeps the mark; E3 touch tap marks; E4 typesetting idempotent
+{"content":"I say STOP now","handlers":2} no page errors  (a chat-completion request leaves with notation)
+
+== Corpus of 92 ordinary lines (review-tests/probes/reader-lines.mjs), readings that changed, section 36 → section 37
+2c2
+<   route: {"Act":"draw","SocialResponse":"draw","Break":"draw"}
+---
+>   route: {"Act":"draw"}
+59c59
+<   route: {"BodyIntake":"pick","Transfer":"pick","Act":"motion"}
+---
+>   route: {"Transfer":"pick","Act":"motion"}
+125c125
+<   route: {"BodyTreat":"light"}
+---
+>   route: {}
+128c128
+<   route: {"Break":"blow","Weather":"blow"}
+---
+>   route: {}
+131c131
+<   route: {"Weather":"pour"}
+---
+>   route: {}
+140c140
+<   route: {"Act":"sneak","Transfer":"sneak"}
+---
+>   route: {"Act":"past unseen","Look":"past unseen"}
+149c149
+<   route: {"Transfer":"take"}
+---
+>   route: {"Act":"take a seat"}
+152c152
+<   route: {"BodyCheck":"force"}
+---
+>   route: {}
+155c155
+<   route: {"Break":"break"}
+---
+>   route: {"Communicate":"break the silence","Interpret":"with Communicate"}
+170c170
+<   route: {"Substance":"stab","BodyStrike":"stab"}
+---
+>   route: {"BodyStrike":"stab"}
+182c182
+<   route: {"Communicate":"warn","Act":"drawing","SocialResponse":"drawing","Break":"drawing","Interpret":"with Communicate"}
+---
+>   route: {"Communicate":"warn","Act":"drawing","Interpret":"with Communicate"}
+213c213
+<   frame: Act {"who":"Mara","action":"sit by the fire for an hour.","level":"on the level, stairs or a change of posture"}
+---
+>   frame: Act {"who":"Mara","action":"sit by the fire for an hour.","level":"on the level, stairs or a change of posture"} | PassTime {"minutes":60,"resting":["Mara"]}
+222c222
+<   frame: Communicate {"speaker":"Mara","listener":"Tom","means":"speech","effort":"normal","message":"for the key, and he gives it to me"}
+---
+>   frame: Communicate {"speaker":"Mara","listener":"Tom","means":"speech","effort":"normal","message":"for the key"}
+273c273
+<   frame: 
+---
+>   frame: Transfer {"item":"coins","quantity":3,"from":"Mara","to":"Will","how":"given"}
+275c275
+<   route: {"Act":"swing"}
+---
+>   route: {"Act":"swing","BodyStrike":"swing"}
+
+== The 92 lines on section 37's tree
+
+» I draw my sword.
+  route: {"Act":"draw"}
+  frame: 
+
+» I sheathe my dagger.
+  route: {}
+  frame: 
+
+» I parry his blow.
+  route: {}
+  frame: 
+
+» I block the punch.
+  route: {}
+  frame: 
+
+» I dodge to the left.
+  route: {}
+  frame: 
+
+» I grab Tom by the collar.
+  route: {"HoldOn":"grab","Transfer":"grab","Act":"motion"}
+  frame: Act {"who":"Mara","action":"grab Tom by the collar.","level":"on the level, stairs or a change of posture"}
+
+» I shove Will away.
+  route: {"Act":"shove","Break":"shove"}
+  frame: 
+
+» I tackle the thief.
+  route: {}
+  frame: 
+
+» I nod at Tom.
+  route: {}
+  frame: 
+
+» I smile at Ann.
+  route: {"Communicate":"smile","Interpret":"with Communicate"}
+  frame: 
+
+» I wink at Will.
+  route: {}
+  frame: 
+
+» I shrug.
+  route: {}
+  frame: 
+
+» I bow to the lady.
+  route: {"Act":"bow"}
+  frame: 
+
+» I wave to Tom.
+  route: {}
+  frame: 
+
+» I hug Ann.
+  route: {}
+  frame: 
+
+» I kiss Ann on the cheek.
+  route: {}
+  frame: 
+
+» I sprint to the gate.
+  route: {"Act":"sprint"}
+  frame: 
+
+» I crawl under the table.
+  route: {"Act":"crawl"}
+  frame: 
+
+» I hide behind the barrel.
+  route: {}
+  frame: 
+
+» I pick up the lantern.
+  route: {"Transfer":"pick","Act":"motion"}
+  frame: Act {"who":"Mara","action":"pick up the lantern.","level":"on the level, stairs or a change of posture"}
+
+» I put the cup down.
+  route: {"Act":"put"}
+  frame: 
+
+» I open the door.
+  route: {}
+  frame: 
+
+» I close the window.
+  route: {}
+  frame: 
+
+» I lock the door.
+  route: {}
+  frame: 
+
+» I knock on the door.
+  route: {"BodyStrike":"knock","Break":"knock"}
+  frame: 
+
+» I glance at the clock.
+  route: {"Look":"glance"}
+  frame: Look {"viewer":"Mara","target":"the clock"}
+
+» I peek through the keyhole.
+  route: {"Look":"peek"}
+  frame: Look {"viewer":"Mara","target":"the keyhole"}
+
+» I sniff the wine.
+  route: {"Look":"sniff","Communicate":"sniff","Interpret":"with Communicate"}
+  frame: 
+
+» I taste the soup.
+  route: {"Look":"taste"}
+  frame: 
+
+» I touch the stove.
+  route: {}
+  frame: 
+
+» I sit next to Ann.
+  route: {"Act":"sit"}
+  frame: Act {"who":"Mara","action":"sit next to Ann.","level":"on the level, stairs or a change of posture"}
+
+» I stand up.
+  route: {"Act":"stand"}
+  frame: Act {"who":"Mara","action":"stand up.","level":"on the level, stairs or a change of posture"}
+
+» I lean against the wall.
+  route: {"Act":"lean"}
+  frame: 
+
+» I sigh.
+  route: {"Communicate":"sigh","Interpret":"with Communicate"}
+  frame: 
+
+» I laugh.
+  route: {}
+  frame: 
+
+» I cry.
+  route: {"Communicate":"cry","Interpret":"with Communicate"}
+  frame: 
+
+» I scream.
+  route: {"Communicate":"scream","Interpret":"with Communicate"}
+  frame: 
+
+» I whistle a tune.
+  route: {"Communicate":"whistle","Interpret":"with Communicate"}
+  frame: 
+
+» I sing a song for Ann.
+  route: {"Communicate":"sing","Interpret":"with Communicate"}
+  frame: 
+
+» I read the letter.
+  route: {"Communicate":"read","Interpret":"with Communicate"}
+  frame: 
+
+» I write a note.
+  route: {"Communicate":"write","Interpret":"with Communicate"}
+  frame: 
+
+» I light a candle.
+  route: {}
+  frame: 
+
+» I blow out the candle.
+  route: {}
+  frame: 
+
+» I pour Tom a drink.
+  route: {}
+  frame: 
+
+» I buy Ann a drink.
+  route: {"Price":"buy","Transfer":"buy"}
+  frame: 
+
+» I pay the innkeeper.
+  route: {"Price":"pay","Transfer":"pay"}
+  frame: 
+
+» I sneak past the guard.
+  route: {"Act":"past unseen","Look":"past unseen"}
+  frame: 
+
+» I follow Tom.
+  route: {"Chase":"follow","Act":"follow"}
+  frame: 
+  ask: TAKE Walk after Tom in the open
+
+» I wait for Tom.
+  route: {"PassTime":"wait"}
+  frame: 
+
+» I take a seat.
+  route: {"Act":"take a seat"}
+  frame: 
+
+» I force a smile.
+  route: {}
+  frame: 
+
+» I break the silence.
+  route: {"Communicate":"break the silence","Interpret":"with Communicate"}
+  frame: 
+
+» I lose my temper.
+  route: {}
+  frame: 
+
+» I keep my distance.
+  route: {}
+  frame: 
+
+» I take aim at the deer.
+  route: {"BodyStrike":"take"}
+  frame: 
+
+» I fire at the deer.
+  route: {"BodyStrike":"fire"}
+  frame: 
+
+» I stab Tom.
+  route: {"BodyStrike":"stab"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I slap Will.
+  route: {"BodyStrike":"slap"}
+  frame: BodyStrike {"attacker":"Mara","who":"Will"}
+
+» I kick the ball.
+  route: {"BodyStrike":"kick","Break":"kick"}
+  frame: 
+
+» I catch the ball.
+  route: {"Transfer":"catch"}
+  frame: 
+
+» "Stay back," I warn Tom, drawing my knife.
+  route: {"Communicate":"warn","Act":"drawing","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Tom","means":"speech","effort":"normal","message":"Stay back,"}
+
+» I slam my fist on the table. "Enough!"
+  route: {"BodyStrike":"slam","Communicate":"quoted words","Interpret":"with Communicate"}
+  frame: 
+
+» Ann hands me a letter. I read it and hand it back.
+  route: {"Transfer":"hands","Communicate":"read","Act":"back","Interpret":"with Communicate"}
+  frame: 
+
+» I tell Will to fetch the doctor and run to the stairs.
+  route: {"Communicate":"tell","Price":"fetch","Transfer":"fetch","Act":"run","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Will","means":"speech","effort":"normal","message":"to fetch the doctor"}
+
+» "Where is he?" I ask the barkeep, sliding a coin across the counter.
+  route: {"Communicate":"ask","SocialResponse":"ask","Act":"sliding","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"the barkeep","means":"speech","effort":"normal","message":"Where is he?"}
+
+» I wait until Tom leaves, then follow him outside.
+  route: {"PassTime":"wait","Act":"leaves","Transfer":"leaves","Chase":"follow"}
+  frame: 
+
+» Tom punches me. I hit him back and run.
+  route: {"BodyStrike":"punches","Act":"hit"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I whisper to Ann that we should leave, then walk to the door.
+  route: {"Communicate":"whisper","Act":"leave","Transfer":"leave","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Ann","means":"speech","effort":"whisper","message":"that we should leave"}
+
+» I give the guard a coin and walk through the gate.
+  route: {"Transfer":"give","Act":"walk"}
+  frame: Transfer {"item":"coin","quantity":1,"from":"Mara","to":"the guard","how":"given"}
+
+» I walk 20 m to the well and drink.
+  route: {"Act":"walk","BodyIntake":"drink"}
+  frame: Act {"who":"Mara","action":"walk 20 m to the well and drink.","level":"on the level, stairs or a change of posture","distance_m":20}
+
+» I sit by the fire for an hour.
+  route: {"Act":"sit"}
+  frame: Act {"who":"Mara","action":"sit by the fire for an hour.","level":"on the level, stairs or a change of posture"} | PassTime {"minutes":60,"resting":["Mara"]}
+
+» I listen for footsteps while I wait ten minutes.
+  route: {"Listen":"listen","PassTime":"wait"}
+  frame: Listen {"listener":"Mara"} | PassTime {"minutes":10,"resting":["Mara"]}
+
+» I look around the room for the key.
+  route: {"Look":"look"}
+  frame: Look {"viewer":"Mara","target":"the room"}
+
+» I ask Tom for the key, and he gives it to me.
+  route: {"Communicate":"ask","SocialResponse":"ask","Transfer":"gives","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"Tom","means":"speech","effort":"normal","message":"for the key"}
+
+» Mara and Tom walk to the market.
+  route: {"Act":"walk"}
+  frame: 
+
+» We walk to the market.
+  route: {"Act":"walk"}
+  frame: 
+
+» I punch Tom and Will.
+  route: {"BodyStrike":"punch"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I hit the guard twice.
+  route: {"BodyStrike":"hit","Act":"hit"}
+  frame: BodyStrike {"attacker":"Mara","who":"the guard"}
+
+» I kick the guard in the knee.
+  route: {"BodyStrike":"kick","Break":"kick"}
+  frame: BodyStrike {"attacker":"Mara","who":"the guard"}
+
+» I shove Tom into the wall.
+  route: {"Act":"shove","Break":"shove"}
+  frame: 
+
+» I pay the innkeeper two shillings for the room.
+  route: {"Price":"pay","Transfer":"pay"}
+  frame: 
+
+» I tell the innkeeper, "Two ales, please."
+  route: {"Communicate":"tell","Interpret":"with Communicate"}
+  frame: Communicate {"speaker":"Mara","listener":"the innkeeper","means":"speech","effort":"normal","message":"Two ales, please."}
+
+» I nod to Tom and say, "Let us go."
+  route: {"Communicate":"say","Act":"motion","Interpret":"with Communicate"}
+  frame: 
+
+» Without a word, I punch Tom.
+  route: {"BodyStrike":"punch"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I almost punch Tom.
+  route: {}
+  frame: 
+
+» I want to punch Tom.
+  route: {"BodyStrike":"punch"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I try to punch Tom.
+  route: {"BodyStrike":"punch"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I punch Tom, or try to.
+  route: {"BodyStrike":"punch"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I punch the air.
+  route: {"BodyStrike":"punch"}
+  frame: 
+
+» I punch Tom, then Will.
+  route: {"BodyStrike":"punch"}
+  frame: BodyStrike {"attacker":"Mara","who":"Tom"}
+
+» I give Will 3 coins.
+  route: {"Transfer":"give"}
+  frame: Transfer {"item":"coins","quantity":3,"from":"Mara","to":"Will","how":"given"}
+
+» I swing my axe at the orc.
+  route: {"Act":"swing","BodyStrike":"swing"}
+  frame: 
+
+== node tests/sequences.test.mjs 3000 40 11, then 12, section 37's tree:
+sequences: 3000 run, 0 distinct failing sequence(s)
+sequences: 3000 run, 0 distinct failing sequence(s)
+
+## Negative controls, all 424 (see negative-controls-run.txt)
+Shard A: 213 of 213 controls caught.
+Shard B: 210 of 211 controls caught. (Q11e not caught; retargeted to a pistol shot and caught: 424 of 424)

@@ -1,4 +1,5 @@
 import { retryInfo, retryDelay } from './rules/retry.js';
+import { untagged } from './rules/voice-code.js';
 // One model call for the engine's own passes (question pass, rule check, /rules-eval): a system and a user message in,
 // the reply text out. Through a Connection Manager profile when one is chosen, else through SillyTavern's own connection.
 // Chat Completion requests stream, so a gateway that closes silent connections (NVIDIA, OpenRouter: about 60 s) keeps
@@ -80,6 +81,8 @@ async function sendOnce(system: string, user: string, opts: { profile?: string; 
 /** One model call, retried as Simulation Blackboard's retry.js decides (src/rules/retry.ts): a rate limit or a server error
  *  waits (the server's Retry-After, at most 20 s while a player waits) and asks again, up to 2 times; anything else fails at once. */
 export async function sendModel(system: string, user: string, opts: { profile?: string; maxTokens?: number; effort?: string; schema?: Record<string, unknown> } = {}): Promise<string> {
+    // No hidden tag character goes out (voice-code.ts untagged): a card, a fact or a reply in the prompt could carry one.
+    system = untagged(system); user = untagged(user);
     for (let attempt = 0; ; attempt++) {
         try { return await sendOnce(system, user, opts); }
         catch (e) {

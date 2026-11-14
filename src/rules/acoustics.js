@@ -3,6 +3,13 @@
 // width (10 log Hz), importance, speech spectrum levels at 1 m by vocal effort, reference internal noise.
 import { def, k } from './constants.js';
 import { WALLS, surfaceMass } from './materials.js';
+def({ id: 'hearSigmaDb', value: 3, unit: 'dB', status: 'assumed', src: 'width of the psychometric function for detecting a sound in noise: the chance of hearing is Φ(margin ÷ σ)', range: [1.5, 5], file: 'acoustics.ts' });
+// Abramowitz & Stegun 7.1.26 (error < 1.5e-7).
+export function phi(x) {
+    const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
+    const e = 1 - t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * Math.exp(-x * x / 2);
+    return x >= 0 ? (1 + e) / 2 : (1 - e) / 2;
+}
 const BANDS = [250, 500, 1000, 2000, 4000, 8000];
 const DELTA = [22.48, 25.48, 28.48, 31.48, 34.48, 37.48];
 const IMPORTANCE = [0.0617, 0.1671, 0.2373, 0.2648, 0.2142, 0.0549];
@@ -117,6 +124,10 @@ export function roomSound(levelAt1m, room) {
     return { early: rev + 10 * Math.log10(1 - late), late: rev + 10 * Math.log10(late) };
 }
 const add = (a, b) => 10 * Math.log10(10 ** (a / 10) + 10 ** (b / 10));
+/** Index of the band holding a tonal sound's pitch (a bell's note, a whistle), -1 for a sound without one. */
+const toneBand = (way) => way?.toneHz ? BANDS.reduce((b, f, i) => Math.abs(Math.log2(f / way.toneHz)) < Math.abs(Math.log2(BANDS[b] / way.toneHz)) ? i : b, 0) : -1;
+/** Level per band of a sound of overall `spl` dB: all in the tone's band when it has a pitch, else spread evenly over the six bands. */
+const spectrum = (spl, tone) => BANDS.map((_, i) => tone >= 0 ? (i === tone ? spl - DELTA[i] : -99) : spl - 10 * Math.log10(6) - DELTA[i]);
 /** Octave-band levels (dB spectrum level) of a sound of `effort` (or overall `spl` at 1 m, pink) after distance and barrier. */
 // The Lombard effect: talkers raise their voices in noise without meaning to. Face to face (levels at 1 m), the voice stays
 // near 55 dB until the background reaches about 48 dB, then rises about 0.6 dB per dB, levelling off near 67 dB around a
@@ -128,8 +139,7 @@ export const lombardDb = (effort, noiseDb) => /whisper/.test(effort) ? 0 : Math.
 function arriving({ effort, spl, distance, barrier, air, way = {}, boost = 0 }) {
     const d = Math.max(1, distance), tC = air?.tC ?? 10;
     // A tone puts its energy in its own band; a noise spreads it evenly over the six (pink) [ASSUMED for noise].
-    const tone = way.toneHz ? BANDS.reduce((b, f, i) => Math.abs(Math.log2(f / way.toneHz)) < Math.abs(Math.log2(BANDS[b] / way.toneHz)) ? i : b, 0) : -1;
-    const src = effort ? SPEECH[effort].map(x => x + boost) : BANDS.map((_, i) => tone >= 0 ? (i === tone ? (spl ?? 0) - DELTA[i] : -99) : (spl ?? 0) - 10 * Math.log10(6) - DELTA[i]);
+    const src = effort ? SPEECH[effort].map(x => x + boost) : spectrum(spl ?? 0, toneBand(way));
     const shadow = way.room ? null : shadowStart(way, tC);
     // The wave spreads over a sphere (−20 log10 d); the air takes energy per band; the ground's reflection adds or cancels;
     // an obstacle screens (its screening replaces the ground term, ISO 9613-2 §7.4); upward-bent rays leave a shadow; a wall
@@ -148,15 +158,17 @@ function arriving({ effort, spl, distance, barrier, air, way = {}, boost = 0 }) 
  * sound peaks, 15 dB above the band average, exceed the disturbance in at least one band) }. shift: listener threshold above
  * normal human hearing, dB; deaf: band indices the listener cannot hear.
  */
-export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air, way }) {
+export function reach({ effort = 'normal', spl = null, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air, way, raise = 0 }) {
     const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
-    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier, air, way, boost: spl == null ? lombardDb(effort, nDb) : 0 });
-    // In a room, the late part of the speaker's own sound adds to the noise band by band.
-    const src1 = spl == null ? SPEECH[effort] : BANDS.map((_, i) => spl - 10 * Math.log10(6) - DELTA[i]);
+    // raise: dB a feeling adds to the voice, on the speech spectrum of the effort (Lombard's rise comes on top).
+    const boost = spl == null ? lombardDb(effort, nDb) + raise : 0;
+    const e = arriving({ effort: spl == null ? effort : null, spl, distance, barrier, air, way, boost });
+    // In a room, the late part of the speaker's own sound, the voice as raised, adds to the noise band by band.
+    const src1 = spl == null ? SPEECH[effort].map(x => x + boost) : spectrum(spl, toneBand(way));
     const n = BANDS.map((_, i) => { const b = nDb - 10 * Math.log10(6) - DELTA[i]; return way?.room ? add(b, roomSound(src1[i], way.room).late) : b; });
     if (way?.room)
         e.forEach((v, i) => { e[i] = add(v, roomSound(src1[i], way.room).early); });
-    let sii = 0, audible = false;
+    let sii = 0, audible = false, best = -Infinity;
     e.forEach((ei, i) => {
         if (deaf.includes(i))
             return;
@@ -166,19 +178,21 @@ export function reach({ effort = 'normal', spl = null, distance = 1, barrier = '
         sii += IMPORTANCE[i] * l * k;
         if (ei + 15 > d)
             audible = true;
+        best = Math.max(best, ei + 15 - d);
     });
     sii = Math.round(sii * 1000) / 1000;
     // Speech-to-noise ratio over the six bands, dB: band level = spectrum level + 10 log bandwidth.
     const sum = (x) => 10 * Math.log10(x.reduce((t, v) => t + 10 ** (v / 10), 0));
     const snr = Math.round(sum(e.map((v, i) => v + DELTA[i])) - sum(n.map((v, i) => v + DELTA[i])));
-    return { sii, words: Math.round(100 / (1 + Math.exp(-0.29 * (30 * sii - 15 + 2.70)))) / 100, audible, snr };
+    return { sii, words: Math.round(100 / (1 + Math.exp(-0.29 * (30 * sii - 15 + 2.70)))) / 100, audible, snr, pAudible: Math.round(phi(best / k('hearSigmaDb')) * 1000) / 1000 };
 }
 export const BAND_HZ = BANDS;
 /** Whether a sound of overall `spl` dB at 1 m is heard: { audible, margin } with margin = best band peak − disturbance, dB. */
 export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet room (25 dB)', noiseDb = null, shift = 0, deaf = [], air, way }) {
     const e = arriving({ spl, distance, barrier, air, way });
+    const src1 = spectrum(spl, toneBand(way));
     if (way?.room)
-        e.forEach((v, i) => { e[i] = add(v, roomSound(spl - 10 * Math.log10(6) - DELTA[i], way.room).early); });
+        e.forEach((v, i) => { e[i] = add(v, roomSound(src1[i], way.room).early); });
     const nDb = noiseDb ?? NOISE[classOf(NOISE, noise) ?? ''] ?? 25;
     let margin = -Infinity;
     e.forEach((ei, i) => {
@@ -187,5 +201,6 @@ export function hearSound({ spl, distance = 1, barrier = 'none', noise = 'quiet 
         const n = nDb - 10 * Math.log10(6) - DELTA[i];
         margin = Math.max(margin, ei + 15 - Math.max(n, XI[i] + (Array.isArray(shift) ? shift[i] : shift)));
     });
-    return { audible: margin > 0, margin: Math.round(margin) };
+    // The chance of hearing rises smoothly with the margin: p = Φ(margin ÷ σ), 0.5 at margin 0.
+    return { audible: margin > 0, margin: Math.round(margin), p: Math.round(phi(margin / k('hearSigmaDb')) * 1000) / 1000 };
 }

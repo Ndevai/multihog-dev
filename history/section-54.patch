@@ -1,0 +1,51 @@
+diff --git a/.claude/skills/exact-voice/SKILL.md b/.claude/skills/exact-voice/SKILL.md
+index 6cead48..f029a7a 100644
+--- a/.claude/skills/exact-voice/SKILL.md
++++ b/.claude/skills/exact-voice/SKILL.md
+@@ -28,12 +28,13 @@ A reply is exact when each sentence has one reading and every clause carries a c
+ 14. Explain the process that generates a pattern.
+ 15. Write decisions into the actual files and commit them; chat-only results are lost.
+ 16. Everything is provisional; replace any part when a superset logic appears.
++17. Generators first: give the rule that produces the details, then the details it produces. Answer the aim a question implies (the layer it points to), and act on it, before the words it uses.
+ 
+ ## Manner: one reading per sentence
+-17. Replace each degree word with the number, count or criterion it stands for; keep each word in one stated sense.
+-18. State what a thing is, what it does, where it applies.
+-19. Tone: everyday words, sentences of 25 words or fewer, statements in the indicative.
+-20. When the user says they didn't understand: restate in 2–4 short sentences with one everyday example.
++18. Replace each degree word with the number, count or criterion it stands for; keep each word in one stated sense.
++19. State what a thing is, what it does, where it applies.
++20. Tone: everyday words, sentences of 25 words or fewer, statements in the indicative.
++21. When the user says they didn't understand: restate in 2–4 short sentences with one everyday example.
+ 
+ ## Writing patterns
+ | When the draft reaches for | Write |
+diff --git a/AGENTS.md b/AGENTS.md
+index 4e5ef1a..0872083 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -6,6 +6,7 @@ A SillyTavern extension where code decides outcomes and the language model narra
+ - Each number carries its source in a short comment, or the flag [ASSUMED] (a stated guess) or [RAW] (a value read from data without a published meaning).
+ - Register a tool with `tool(name, description, props, required, fn)` and add its name to `TOOLS` in `src/rules/rules-tools.ts`.
+ - Runtime data loads with `new URL('../../rules/x.json', import.meta.url)`.
++- Derive; do not look up. A value comes from the deepest layer whose laws can be computed (physics, then tissue, then anatomy, then behaviour), from the fewest causes kept with the thing; everything observable is computed forward from them (few to many). A measured spread stands in only for a cause the story leaves unspecified, and it is drawn at that cause (a tissue's stiffness), never at the outcome (a voice's pitch). Name the layer used and the next one down, and go down when the next one can be computed.
+ - Fixed choices are enums or string-literal unions.
+ - Comment density matches the surrounding file: one line above a block naming the source and the rule.
+ - Tool descriptions and prompts state the wanted behaviour: what the tool decides, when to call it, what it returns.
+diff --git a/docs/progress.md b/docs/progress.md
+index 0fa6a78..473dc4a 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,12 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-11 (121), Claude
++- The player: the questions on genes and on physics asked for the deeper layer, and the replies explained why the shallow one was used. Their aim: describe each thing by its generator (the fewest causes at the deepest layer that can be computed) and compute everything observable from it; a measured spread stands in only for an unspecified cause, at that cause; answer and act on a question's aim, not its words.
++- Changed: `AGENTS.md`, How to write code: "Derive; do not look up" (the rule above, naming the layer used and the next one down). `.claude/skills/exact-voice/SKILL.md`: rule 17, "Generators first" (the rule that produces the details, then the details; the aim a question implies, acted on); the Manner rules renumbered 18–21.
++- Found: Praat's articulatory synthesizer (github.com/praat/praat, `artsynth/`, commit 6a9874e, GPL; Boersma) holds the deeper voice layer ready to port: vocal folds as two masses on springs per speaker (men 18 mm long, 0.1 and 0.05 g, 12 and 4 N/m; women 10 mm, 0.02 and 0.01 g, 10 and 4 N/m; from Ishizaka & Flanagan), the tract from Mermelstein's 1973 articulatory geometry scaled by speaker size, airflow and tube acoustics; pitch, loudness and formants come out of the simulation.
++- Next: port that synthesizer, with each person's fold length, masses, stiffness and tract size derived from their body and the unspecified part drawn at those materials, not at the pitch; then (120)'s height effect follows from the simulation instead of the string law.
++
+ ## 2026-11-11 (120), Claude
+ - The player, on ideas: refer to things by the minimal layer that generates them, few-to-many and invertible, and compute the vocal tract instead of taking examples by sex and age; then, on a question about speaking rate: a "habit" is a frequency, and neurons are physical, so the rate can be approximated from causes. Picked: the full chain (body to anatomy to sound; nerves to rate), bits per syllable from the 17 measured languages, each person's own difference one draw from a measured spread.
+ - Changed (`rules/voice-body.ts`, `rules/data/info-rate.ts`, `body-sheet.ts`, `rules-tools.ts`, `index.ts`, `types.ts`): tract length from height by sex (fitted on Hillenbrand et al. 1995's formant spacing over US mean heights), formants of the neutral vowel by the quarter-wave tube at 37 °C, fold length from height by sex (cadaver equations), pitch by the string law with a wave speed per sex fitted to the measured mean speakers; syllables a second = 39.15 bits/s ÷ the language's bits per syllable (Coupé et al. 2019 data, cloned from its repository) × sex, age and the person's own draw from the same data × talk against reading. A placed person's voice goes into [BODY], the plate's hover, and the pace said words appear at in the box. Six constants registered: two tract ratios, two wave speeds and the rate's spread fitted, the information rate sourced.

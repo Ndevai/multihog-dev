@@ -39,7 +39,7 @@ export function loadSubstances(): Promise<void> {
         const fams: Record<string, Substance[]> = {};
         for (const s of judged) if (s.family) (fams[s.family] ??= []).push(s);
         KFAM = Object.fromEntries(Object.entries(fams).filter(([, r]) => r.length >= 3).map(([f, r]) => [f, k(r)]));
-    });
+    }).catch(e => { loading = null; throw e; });
     return loading;
 }
 export const substanceTable = () => table;

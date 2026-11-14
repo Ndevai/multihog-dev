@@ -33,6 +33,21 @@ export const BIRTHPLACES = [['this county', 18699922], ['a neighbouring county',
  * { sex, age, occupation, born } of a person in England and Wales, 1881. sex, occupation and minAge fix what the story already
  * says; an occupation sets the sex odds from its own men/women counts and an age of at least 15.
  */
+/** The sex an English trade word itself names, when it names one (maidservant, waitress, serving woman, landlady; potman,
+ * watchman, potboy); null for the rest (servant, cook, innkeeper). The census's domestic servants include men, so the word, not
+ * the trade's share, decides a maidservant. */
+export function wordSex(words) {
+    const w = words.toLowerCase();
+    const female = /\b(\w*maid(servant)?|\w*wom[ae]n|\w*girl|\w*wife|\w*lady|widow|nun|matron|nanny|queen|\w*(wait|act|seamst|sempst|laund|govern|mist|host|shepherd|duch|count|abb|priest|emp|princ|poet|sorc|enchant|prophet)ress(es)?)\b/;
+    // "Man" and "men" themselves are male, as are their compounds (fisherman, watchmen); human, German, Roman and the like are
+    // no men.
+    const male = /\b(\w*m[ae]n|\w*boy|lad|husband|monk|friar|king|prince|duke|earl|lord|\w*master)\b/;
+    if (female.test(w))
+        return 'female';
+    if (male.test(w.replace(/\b(hu|ger|ro|sha|otto|talis|cay|ata)m[ae]n\b/g, '')))
+        return 'male';
+    return null;
+}
 export function drawPerson(opts = {}, rng = Math.random) {
     const r = drawBasics(opts, rng);
     return 'error' in r ? r : { ...r, born: pick(BIRTHPLACES, b => b[1], rng)[0] };

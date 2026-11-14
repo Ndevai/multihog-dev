@@ -14,7 +14,7 @@ const STATES: Record<Trait, { m: number; between: number; within: number }> = {
 };
 // The character's place among people, as a z-score: very low −2, low −1, average 0, high +1, very high +2 [bands ASSUMED].
 export const LEVELS = ['very low', 'low', 'average', 'high', 'very high'] as const;
-export const levelZ = (l: string) => Math.max(0, LEVELS.indexOf(l as typeof LEVELS[number])) - 2;
+export const levelZ = (l: string) => { const i = LEVELS.indexOf(l as typeof LEVELS[number]); return i < 0 ? 0 : i - 2; };
 // An act toward the trait's high pole needs a state of 5 or more (mild) or 6 or more (strong); toward its low pole 3 or less
 // (mild) or 2 or less (strong), as the rating bins 4.5 / 5.5 / 3.5 / 2.5 [thresholds ASSUMED; Fleeson rates adjectives, not acts].
 export const POLES = ['toward the high pole', 'toward the low pole'] as const;

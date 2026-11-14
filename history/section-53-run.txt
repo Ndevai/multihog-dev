@@ -1,0 +1,45 @@
+# Section 53 run (the tree of section 52 against this tree; 2026-11-11)
+
+## Tests (the steps of npm test; tsc Version 5.6.3)
+route: 218 checks, 0 miss(es)
+frame: 202 checks, 0 miss(es)
+intent: 37 checks, 0 miss(es)
+engine: 203 checks, 0 miss(es)
+plan: 60 checks, 0 miss(es)
+size: 9 of 9
+ui: 88 of 88
+music: 9 of 9
+voice-body: 5 of 5
+sequences: 300 run, 0 distinct failing sequence(s)
+
+## Negative controls (every control on voice-body.js, body-sheet.js and index.js, and those on rules-tools.js near BodySize); every control's pattern found in its file: 646 of 646
+R12 caught voice button from the keyboard (0 s)
+R20 caught say it another way takes the line back (0 s)
+RY13 caught a world-book line is read without its hidden marks (0 s)
+RZ11 caught the narrator's prompt carries no tag character (0 s)
+RP12 caught the narrator names each speaker while the box is on (0 s)
+RP13 caught Auto toggles one settings object (0 s)
+RQ12 caught songs cross equal-power (4 s)
+RQ13 caught the settings keep one object (4 s)
+VB1 caught the tract's air is at body temperature (0 s)
+VB2 caught odd quarter wavelengths (0 s)
+VB3 caught men's folds by their own equation (0 s)
+VB4 caught the tract per height by sex (0 s)
+VB5 caught the rate is the information rate over bits per syllable (0 s)
+VB6 caught talk is slower than reading (0 s)
+VB7 caught anatomy for adults only (0 s)
+VB8 caught the voice in the narrator's notes (0 s)
+VB9 caught said words at the speaker's own rate (0 s)
+17 of 17 controls caught.
+
+## Data
+Coupé et al. 2019: github.com/keruiduo/SupplMatInfoRate, commit 00798db, InfoRateData.csv (2288 rows, 170 speakers, 17 languages).
+Hillenbrand et al. 1995 and Peterson & Barney 1952: the phonTools package's h95 and pb52 (github.com/cran/phonTools).
+Per language, rate predicted by 39.15 ÷ bits against measured (read speech): THA +15.9 %, FRA −14.8 %, ENG −13.5 %, HUN +13.0 %, VIE −7.9 %, YUE +7.6 %, EUS +7.5 %, SPA −6.7 %, DEU +5.7 %, ITA +4.7 %, CMN −4.0 %, TUR +4.0 %, JPN −3.1 %, KOR −1.1 %, CAT +0.9 %, FIN −0.5 %, SRP +0.1 %; RMS 8.2 %.
+Formant-spacing tract length: Hillenbrand men 17.79 cm (SD 0.75, n 45), women 15.80 (0.83, 48); Peterson & Barney 18.81 (1.02, 33), 16.06 (0.83, 28). Mean f0: 131.2 and 220.4 Hz; 131.3 and 223.0 Hz.
+
+## Chromium: RULES_PEOPLE='{"Tom":{...,"heightCm":180,"sex":"male","age":35,"languages":["english"],"rateZ":-1}}' node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - light flat 412 on - voice 0 light none on
+own rate: Tom ""Sit. Will has been counting t…" appeared in 2894 ms (at 4.18 syllables/s: 2871 ms; at the unmarked 5: 2400 ms); plate hover: Tom's voice: tract 18.1 cm, formants 488 / 1465 / 2442 Hz, pitch about 127 Hz, 4.18 syllables/s in talk
+
+## Constants
+docs/constants.md: 150 constants (6 new), 339 unregistered tags

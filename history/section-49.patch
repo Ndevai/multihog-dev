@@ -1,0 +1,915 @@
+diff --git a/README.md b/README.md
+index 79134a6..788d02f 100644
+--- a/README.md
++++ b/README.md
+@@ -48,6 +48,7 @@ Tested with GLM-5.3 on NVIDIA's API (structured output on). A model without JSON
+ - Under your message a folded line shows how the engine read it, one tagged call each ("Sight Tom · 15 m", "Body vault the low wall · 46 %"), the tag's colour for the kind of rule; click it to open, hover a row to see the rule call. It stays with the message, in a book serif that follows the story's era (Garamond for the 1500s, the Fell types, Baskerville, a Victorian Modern, Caslon; Georgia from 1970 or with no date). When your words leave a choice open, the likeliest reading is taken and shown ("☞ walk after the thief in the open — or…") unless a wrong guess would hurt someone ("I hit him" with two men at the bar, or "I look at Tom and Will, then I punch him"): then the engine asks in a sentence ("Do you mean to hit ¹Tom or ²Will?"; click or press the number), or "Say it another way" stops the reply. Opened, a guess offers the others as links; one puts "no, catch up with the thief" in your input box. That line, or one of your own such as "no, Will" or "I meant to keep out of sight", redoes the last turn that way.
+ - How you say a line: select words in the message box and pick from the toolbar that appears (rises, louder, softer, whispered, slower, a pause, breathy, smiling, a breath in, angry…), or press ♪ beside the box for the word at the cursor; Tab from the box enters the toolbar while it shows. The marks stay out of sight: the box shows your words, the marked ones softly underlined, and the chat sets your line the way it sounds. The engine reads every mark exactly: a whispered or shouted line carries as far as that voice does, and the listener hears your feeling right as often as people do, sometimes hearing another. With **Multiple distinctions** on (the default), each part of the voice has a place of its own in the chat: a thin stroke above a word for its pitch (a rise-fall and a fall-rise differ), heavier letters for louder and paler ones for softer, a wavy rule under creaky words, dots under breathy ones and a broken rule under whispered ones, wider gaps for slower and a lean for faster, a drawn-out vowel written again ("Nooo"), narrow letters for falsetto, and the feeling's colour at the line's edge. Every line keeps the story's line spacing. Hover a marked word to read its marks with their sizes ("louder (about 6 dB above your normal voice)"). Turn it off in the settings for the lighter look.
+ - The chat is a page of its own: with **Dialogue page** on (the default), messages are set black on ivory in a book serif that follows the story's era, with no letter shadow and room between the lines for the voice marks, whatever your theme; quoted words keep the text colour, as in print. After your name a word says what your character is doing in the line: SPEAKING when the line holds said words (a speech call, or words in quotation marks), THINKING when your character works something out; hover it for the call it rests on. Off, messages keep the theme's look and the word stays.
++- One thing on screen at a time: with **Text box** on (the default), the chat shows one box at the foot of the screen under the speaker's name, without the picture at the left. A new box starts wherever said words begin or end: said words are black with SPEAKING on the plate, everything else is dark blue. Tap the text or press → for the next box, ‹ or ← to go back; "Log" shows the whole chat and "Box" returns. The setting under it makes a box hold a whole message. Your SillyTavern background shows above the box.
+ - "Say it another way" puts your line back in the box, marks and all, and takes it out of the chat; the next line stands in its place.
+ - People placed on the map overhear what is said near them, as far as the voice carries to each, and remember what they make out.
+ - Water below 0 °C is not ice by its temperature alone: the Substance lookup decides whether it freezes from how much there is, what is in it and how long it has been cold, so a cloud droplet at −1 °C stays liquid, a bucket freezes, and water touching frost freezes at once.
+diff --git a/docs/df-body-engine.md b/docs/df-body-engine.md
+index 0b4b4b2..8ac6a38 100644
+--- a/docs/df-body-engine.md
++++ b/docs/df-body-engine.md
+@@ -1035,6 +1035,31 @@ Measured with SillyTavern's own stylesheets and message template (release branch
+ 
+ Check: `tests/ui.test.mjs` R34 (modes from calls, older notes and quoted words; plates by the line as it stands) and R35 (the page's inks at 4.5:1 or more, its type, the modes without a hue); U7 and R32 hold the kind and feeling colours on the page's ground; negative controls RN1–RN8.
+ 
++**The text box (2026-11-11 (116); `style.css` body.rules-box, `ui.ts` voiceUnits, `index.ts` unitChat, showBox, stepBox and buildBox, the setting "Text box", on by default).** One unit of the chat is on screen at a time, in a box at the foot of the chat under its speaker's name, as a visual novel's text box holds one line. The player's answers (2026-11-11) set it: one thing per screen; a new box at each change of voice; the speaker as the name plate only, without the picture at the left; one distinction marked, [±voiced].
++
++| Term | Definition |
++|---|---|
++| [+voiced] | words that leave a mouth as sound: the quoted words of any message (`quotes.ts`; SillyTavern sets them in `<q>`) |
++| [−voiced] | every other stretch of text: an account of the scene or of an act, or words formed without sound |
++| unit | a stretch of a paragraph with one value of [±voiced]; a block that is no paragraph (a block quotation, a list, a table) is one unit |
++
++| IF | THEN |
++|---|---|
++| a paragraph has quoted parts | each quoted part is a unit, and the parts between two of them are one unit |
++| a stretch between two units has no letter or digit (", " or ".") | it joins the unit before it; at the paragraph's start, the one after it |
++| the unit shown is [+voiced] | its text is the ink (black) and the plate says "speaking" |
++| the unit shown is [−voiced] | its text is darkslateblue (8.99:1 on ivory) and the plate says no "speaking"; "thinking" stays where a WorkOut call put it |
++| a tap on the text, → or › | the next unit; after a message's last unit, the next message's first |
++| ← or ‹ | the unit before; before a message's first unit, the last of the message before |
++| "Log" | the whole chat, scrolling, with the same colours and without pictures; "Box" returns |
++| a message is being written or edited, or the setting "a box holds a whole message" | the message shows whole in the box |
++| a message is drawn anew (the player's line, a reply) | the box goes to its first unit |
++
++The speaker named on the plate is the message's author. Inside a narrator's message the one who says a quoted part is not known to the engine, so the plate says "speaking" beside the narrator's name. The box keeps four lines' height and scrolls past 60 % of the screen's height [ASSUMED: both]. The bar's buttons are 44 px or more each way (WCAG 2.5.5).
++
++Check: `tests/ui.test.mjs` R36 (units by change of voice, the colour of text that is not voiced, the box's rules); negative controls RO1–RO4; Chromium with SillyTavern's stylesheets (`st-chat.mjs … voice 21`): 16 presses of → walk the 17 units of 7 messages and further presses stay at the last; one message and no picture drawn at each, "speaking" on the 5 voiced units only; the log 0 faults in 36 of 36 combinations.
++
++
+ | Step | Source |
+ |---|---|
+ | questions answered apart from the draft, before writing | Chain-of-Verification (Dhuliawala et al. 2023, arXiv 2309.11495): factored verification beat joint; list precision 0.17 → 0.36, biography FactScore 55.9 → 71.4 (LLaMA 65B); a model defends an outcome it has already written (Zhang et al. 2023) |
+diff --git a/docs/progress.md b/docs/progress.md
+index 0219c33..e69e986 100644
+--- a/docs/progress.md
++++ b/docs/progress.md
+@@ -2,6 +2,15 @@
+ 
+ Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
+ 
++## 2026-11-11 (116), Claude
++- The player on (115): SillyTavern's chat is unusable to them; "ugly" means the whole of the chat's messages in view at once, and the picture at the left; the reference's features are to be taken as that game has them; questions should narrow the space, with options stated as code where English merges distinctions ("semantic" meaning concepts apart from any one language). (115) had read "through English" as words on the screen; this entry corrects that.
++- Asked, four questions with the options drawn or written as code; answered: one thing per screen (undecided between a unit and a whole message); a new box at each change of voice; the speaker as the name plate only; of four distinctions offered, [±voiced] alone (the question was not clear to the player; restated in the reply).
++- Changed: a setting, "Text box", on by default (`style.css` body.rules-box; `index.ts` unitChat, showBox, stepBox, buildBox; `ui.ts` voiceUnits). The chat shows one box at the foot of the screen under the speaker's name; every other message and unit is not drawn, and the picture at the left is gone, in the box and in its log. A paragraph is cut at each change of voice: each quoted part is a unit, the text between two is a unit, a comma left between two joins the unit before. Voiced text is the ink with "speaking" on the plate; text that is not voiced is darkslateblue. A tap on the text or → shows the next unit, ← the one before; "Log" shows the whole chat. A second setting makes a box hold a whole message, since the player was undecided.
++- Checked: route 218, frame 202, intent 37, engine 203, plan 60, size 9, ui 80 (3 new: R36), sequences 300, all 0 misses. Negative controls RO1–RO4 caught. Chromium with SillyTavern's stylesheets: 16 presses of → walk the 17 units of 7 messages and 5 more stay at the last; at each, 1 message and 0 pictures are drawn; "speaking" stands on the 5 voiced units only; the whole-message setting walks 7 boxes; the log has 0 faults in 36 of 36 combinations (first run: 36 with a fault, darkslateblue at 4.24:1 on SillyTavern's block-quotation ground; a block that is no paragraph now keeps the ink).
++- Not checked: a running SillyTavern (as in (115)); a reply while it streams (it has no units until it is drawn whole, and shows whole meanwhile); swipes inside the box.
++- Limits, stated: inside a narrator's message the engine does not know who says a quoted part, so the plate keeps the narrator's name beside "speaking". The reference's art, colours and layout are not copied: the box takes its behaviour (one unit per screen, a name plate, a word for the mode, one colour for text that is not voiced) in the page's own type.
++- Next, for the player to decide: who says each quoted part of a narrator's message (the narrator naming the speaker per passage, which structured replies can carry); a large figure of the speaker above the box; the three distinctions not chosen ([±heard], the kind of silent act, [±character's words]), each a type in code once wanted.
++
+ ## 2026-11-11 (115), Claude
+ - The player judged the look of (114) by its two specimens: the one in SillyTavern's dark type read as a debugging view, the light serif one "much better"; the cause named was SillyTavern's own stylesheet, "plain and inefficient for handling multiple information". The "speaking" and "thinking" of the eight points are the tags a visual novel's text box sets beside the speaker's name. The request: narrow down what to do, carry as much as possible in English words, a few lines of code.
+ - Measured first, with SillyTavern's own stylesheets and message template (release branch, commit 06bde93, read as files; `history/review-tests/browser/voice-look/st-chat.mjs`), 5 shipped themes and a light one × 3 displays × 412 and 800 px: the look of (114) has a fault in 32 of 36 combinations. Three shipped themes cast a shadow of 1, 2 and 5 px under every letter; the theme's quote colour times a whisper's paler ink reads at 2.95:1 to 4.34:1 on 5 of the 6 themes; at SillyTavern's line height (1.53) a pitch stroke lies 0.07 em from the line above at most, and in its letters at 412 px. The player's cause holds.
+diff --git a/history/review-tests/browser/voice-look/README.md b/history/review-tests/browser/voice-look/README.md
+index 0608dcb..f0b297d 100644
+--- a/history/review-tests/browser/voice-look/README.md
++++ b/history/review-tests/browser/voice-look/README.md
+@@ -7,7 +7,7 @@ Scripts for section 47 (`docs/progress.md` (114)). Each takes the repository roo
+ | `measure.mjs <root> [distinct or plain] [font] [width]` | sets the 13 lines of `lines.json` and reports, per line: whether it keeps the story's line height, words drawn over the next, blurred and hollow letters, the pitch stroke's colour; prints `MISS <label>` on a fault |
+ | `specimen.mjs <root> <out.png> [look] [font] [dark or light] [width]` | draws the same lines as a sheet |
+ | `toolbar.mjs <root> <out.png> [font]` | loads `src/index.js` with a stand-in SillyTavern and draws the toolbar and one chat line |
+-| `st-chat.mjs <root> <SillyTavern checkout> <out.png or -> [theme] [flat, bubble or document] [width] [page on or off] [measure]` | section 48 (`docs/progress.md` (115)): draws a chat of 7 messages with SillyTavern's own stylesheets and message template, read from a checkout as files (none of its scripts run), the extension loaded through `src/index.js` with a stand-in context; with `measure` it reports, per message: every line at one height, words drawn over the next, a pause away from its word, a pitch stroke in the line above, letter shadows, each text's contrast on what lies behind it; prints `MISS <label>` on a fault |
++| `st-chat.mjs <root> <SillyTavern checkout> <out.png or -> [theme] [flat, bubble or document] [width] [page on or off] [measure or -] [box: off, voice, message or log] [taps on next]` | sections 48 and 49 (`docs/progress.md` (115), (116)); with the box on it goes to the first unit, presses → as often as asked and prints the place, the plate and the text after each press; draws a chat of 7 messages with SillyTavern's own stylesheets and message template, read from a checkout as files (none of its scripts run), the extension loaded through `src/index.js` with a stand-in context; with `measure` it reports, per message: every line at one height, words drawn over the next, a pause away from its word, a pitch stroke in the line above, letter shadows, each text's contrast on what lies behind it; prints `MISS <label>` on a fault |
+ | `palette-css.mjs <root>` | the feeling colours of `style.css`: sRGB, contrast on each shipped theme, pairwise CIELUV distances for normal colour vision, a deuteranope and a protanope |
+ 
+ `themes.mjs` holds the shipped themes as `tests/ui.test.mjs` lists them; `st-chat.mjs` reads them from the checkout (`default/content/themes`). Playwright with Chromium is needed (`require('playwright')`).
+diff --git a/history/review-tests/browser/voice-look/st-chat.mjs b/history/review-tests/browser/voice-look/st-chat.mjs
+index 42ac042..bde12fe 100644
+--- a/history/review-tests/browser/voice-look/st-chat.mjs
++++ b/history/review-tests/browser/voice-look/st-chat.mjs
+@@ -1,13 +1,14 @@
+ // A chat drawn with SillyTavern's own stylesheets and message template (read from a checkout of SillyTavern as files; none of
+ // its scripts run) and the extension loaded through its own index.js with a stand-in context, as toolbar.mjs does.
+ // Usage: node st-chat.mjs <repo root> <SillyTavern checkout> <out.png> [theme: a file name in default/content/themes, or light]
+-//        [display: flat|bubble|document] [width] [page: on|off] [measure]
++//        [display: flat|bubble|document] [width] [page: on|off] [measure or -] [box: off|voice|message|log] [taps on "next"]
++// With the box on, the chat keeps the height of a phone's screen and the picture is of that screen.
+ // With "measure" it prints one line per check and MISS <label> on a fault.
+ import { createRequire } from 'node:module';
+ import fs from 'node:fs';
+ import path from 'node:path';
+ const { chromium } = createRequire(import.meta.url)('playwright');
+-const [root, st, out, themeName = 'Dark Lite', display = 'flat', width = '412', pageArg = 'on', measure = ''] = process.argv.slice(2);
++const [root, st, out, themeName = 'Dark Lite', display = 'flat', width = '412', pageArg = 'on', measure = '', boxArg = 'off', steps = '0'] = process.argv.slice(2);
+ const pub = path.join(st, 'public');
+ const types = { '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.html': 'text/html', '.png': 'image/png', '.svg': 'image/svg+xml' };
+ 
+@@ -32,14 +33,14 @@ ${sheets.map(h => `<link rel="stylesheet" href="${h}">`).join('\n')}
+ <style>:root { ${Object.entries(vars).map(([k, v]) => `${k}: ${v};`).join(' ')} }
+ html, body { height: auto; overflow: visible; } body { background: linear-gradient(160deg, #3b4252, #20242c); }
+ #sheld { position: static; height: auto; max-height: none; margin: 0 auto; width: min(100vw, 800px); max-width: 100vw; } #chat { max-height: none; overflow: visible; }
+-#form_sheld { position: static; } #send_textarea { min-height: 2.6em; }</style></head><body class="${classes}">
++#form_sheld { position: static; } #send_textarea { min-height: 2.6em; }${boxArg !== 'off' ? ' #chat { height: 560px; max-height: 560px; overflow-y: auto; }' : ''}</style></head><body class="${classes}">
+ <div id="sheld"><div id="chat"></div>
+ <div id="form_sheld"><form id="send_form" class="no-connection"><div id="nonQRFormItems"><div id="leftSendForm" class="alignContentCenter"><div id="options_button" class="fa-solid fa-bars interactable" tabindex="0"></div></div>
+ <textarea id="send_textarea" name="text" class="mdHotkeys" placeholder="Type a message"></textarea><div id="rightSendForm" class="alignContentCenter"><div id="send_but" class="fa-solid fa-paper-plane interactable" tabindex="0"></div></div></div></form></div></div>
+ <div id="extensions_settings2" style="display:none"></div><div id="tpl" style="display:none">${template}</div>
+ <script>
+ window.toastr = { info(){}, warning(){}, success(){} }; window.__h = {};
+-const ctx = { name1: 'Mara', chatMetadata: {}, chat: [], extensionSettings: ${JSON.stringify(pageArg === 'off' ? { 'rules-engine': { page: false } } : {})}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
++const ctx = { name1: 'Mara', chatMetadata: {}, chat: [], extensionSettings: ${JSON.stringify({ 'rules-engine': { page: pageArg !== 'off', box: boxArg !== 'off', boxUnit: boxArg === 'message' ? 'message' : 'voice' } })}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
+   eventTypes: { MESSAGE_RECEIVED: 'mr', CHAT_COMPLETION_SETTINGS_READY: 'ccsr', TEXT_COMPLETION_SETTINGS_READY: 'tcsr', GENERATION_STARTED: 'gs', MESSAGE_SWIPED: 'ms', CHAT_CHANGED: 'cc', MESSAGE_DELETED: 'md', USER_MESSAGE_RENDERED: 'umr', CHARACTER_MESSAGE_RENDERED: 'cmr', MESSAGE_UPDATED: 'mu', MORE_MESSAGES_LOADED: 'mml' },
+   setExtensionPrompt() {}, saveSettingsDebounced() {}, registerFunctionTool() {}, unregisterFunctionTool() {}, saveMetadata: async () => {}, saveMetadataDebounced() {},
+   renderExtensionTemplateAsync: async () => (await fetch('http://rules.test/ext/settings.html')).text(), POPUP_TYPE: { TEXT: 1, INPUT: 2 }, callGenericPopup: async () => null,
+@@ -49,7 +50,7 @@ window.__ready = import('http://rules.test/ext/src/index.js').then(() => new Pro
+ </script></body></html>`;
+ 
+ const browser = await chromium.launch();
+-const page = await (await browser.newContext({ viewport: { width: Number(width), height: 900 }, deviceScaleFactor: measure ? 1 : 2 })).newPage();
++const page = await (await browser.newContext({ viewport: { width: Number(width), height: 900 }, deviceScaleFactor: measure === 'measure' ? 1 : 2 })).newPage();
+ const errs = [];
+ page.on('pageerror', e => errs.push(String(e)));
+ page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
+@@ -110,7 +111,17 @@ const info = await page.evaluate(async () => {
+     return { body: document.body.className, tone: document.body.getAttribute('data-rules-tone'), font: getComputedStyle(document.querySelector('.mes_text')).fontFamily.slice(0, 60) };
+ });
+ await page.waitForTimeout(200);
+-if (measure) {
++if (boxArg !== 'off') {
++    // The box as the player drives it: the chat opens at its newest message; "back" to the first, then the taps asked for.
++    const place = () => page.evaluate(() => `${document.getElementById('rules-box-count')?.textContent} | ${document.querySelector('#chat .rules-now .name_text')?.textContent}${[...document.querySelectorAll('#chat .rules-now .rules-mode')].filter(e => e.getClientRects().length).map(e => ` [${e.textContent}]`).join('')} | ${(document.querySelector('#chat .rules-unit-now') ?? document.querySelector('#chat .rules-now .mes_text'))?.textContent.replace(/[\u{E0000}-\u{E007F}]/gu, '').slice(0, 60)}`);
++    for (let i = 0; i < 40; i++) await page.click('#rules-box-back');
++    console.log(`first: ${await place()}`);
++    for (let i = 0; i < Number(steps); i++) { await page.keyboard.press('ArrowRight'); console.log(`${i + 1}: ${await place()}`); }
++    if (boxArg === 'log') await page.click('#rules-box-log');
++    const drawn = await page.evaluate(() => ({ messages: [...document.querySelectorAll('#chat .mes')].filter(m => m.getClientRects().length).length, pictures: [...document.querySelectorAll('#chat .mesAvatarWrapper')].filter(m => m.getClientRects().length).length }));
++    console.log(`drawn: ${drawn.messages} message(s), ${drawn.pictures} picture(s)`);
++}
++if (measure === 'measure') {
+     // What the look has to hold inside SillyTavern's own type: every line of a message at one height, no word drawn over the
+     // next, no letter shadow or blur on a marked word, each text at 4.5:1 or more on what lies behind it (WCAG 1.4.3).
+     const faults = await page.evaluate(() => {
+@@ -131,9 +142,10 @@ if (measure) {
+             const id = mes.getAttribute('mesid');
+             for (const p of mes.querySelectorAll('.mes_text > p')) {
+                 // Line heights: the distance between the tops of the line boxes of the paragraph's own text.
++                // Text of another size (a mark, code, small print) sits lower in its line and is left out.
+                 const lh = px(getComputedStyle(p).lineHeight), r = document.createRange(), tops = new Set();
+                 const walk = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+-                for (let n = walk.nextNode(); n; n = walk.nextNode()) { if (n.parentElement.closest('.rules-v, .rules-v-add, .rules-run')) continue; r.selectNodeContents(n); for (const b of r.getClientRects()) tops.add(Math.round(b.top * 4) / 4); }
++                for (let n = walk.nextNode(); n; n = walk.nextNode()) { if (n.parentElement.closest('.rules-v, .rules-v-add, .rules-run, code, sub, sup, small')) continue; r.selectNodeContents(n); for (const b of r.getClientRects()) tops.add(Math.round(b.top * 4) / 4); }
+                 const ys = [...tops].sort((a, b) => a - b), gaps = ys.slice(1).map((y, i) => y - ys[i]).filter(g => g > lh / 2);
+                 // A line of marked words only has no text of its own to measure: the gap over it is a whole number of lines.
+                 const bad = gaps.filter(g => Math.abs(g - lh * Math.round(g / lh)) > 0.5);
+diff --git a/history/section-49-run.txt b/history/section-49-run.txt
+new file mode 100644
+index 0000000..23c0f7d
+--- /dev/null
++++ b/history/section-49-run.txt
+@@ -0,0 +1,149 @@
++# Section 49 run (the tree of section 48 against this tree; 2026-11-11)
++
++## Tests (the steps of npm test; tsc Version 5.6.3)
++route: 218 checks, 0 miss(es)
++frame: 202 checks, 0 miss(es)
++intent: 37 checks, 0 miss(es)
++engine: 203 checks, 0 miss(es)
++plan: 60 checks, 0 miss(es)
++size: 9 of 9
++ui: 80 of 80
++sequences: 300 run, 0 distinct failing sequence(s)
++
++## Negative controls (every control on ui.js, index.js, style.css, reading.js)
++N62 caught who acts in a call (14 s)
++U1 caught others latest (0 s)
++U1b caught actor left out (0 s)
++U1c caught hover detail (0 s)
++U2 caught note as text (0 s)
++U3 caught edited line (0 s)
++U4 caught no default (0 s)
++U4b caught choices alike (0 s)
++U4c caught number keys (0 s)
++U4d caught shared words (0 s)
++U6 caught era bands (0 s)
++U7 caught kind contrast (0 s)
++U7b caught tone (0 s)
++U8 caught reserved name (0 s)
++H3 caught layer holds the text (0 s)
++H4 caught chat classes (0 s)
++R12 caught voice button from the keyboard (0 s)
++R20 caught say it another way takes the line back (0 s)
++I18 caught the note shows the line as meant (0 s)
++RW7 caught a pause titled by its length (0 s)
++RW11 caught the typesetting's added words are not selected (0 s)
++RY13 caught a world-book line is read without its hidden marks (0 s)
++RZ11 caught the narrator's prompt carries no tag character (0 s)
++RL3 caught pitch order in the chat (0 s)
++RL4 caught stress mark in the chat (0 s)
++RM3 caught the look's sizes come from the sound (0 s)
++RM4 caught further time is 1 ÷ rate − 1 (0 s)
++RM5 caught the palest ink keeps 4.5:1 (0 s)
++RM6 caught the pitch stroke takes the word's own colour (0 s)
++RM7 caught a breathy word keeps a sharp edge (0 s)
++RM8 caught a word with a pitch stroke adds no height to its line (0 s)
++RM9 caught a feeling's colour reads on the theme (0 s)
++RM10 caught two feelings' colours stay apart (0 s)
++RM11 caught a drawn-out vowel is written again (0 s)
++RM12 caught a pause's dots count its silence (0 s)
++RM13 caught the space between two slower words takes the tempo (0 s)
++RM14 caught words that share a phonation stand in one run (0 s)
++RM15 caught a mark's quantity on hover (0 s)
++RN1 caught a gesture is no speaking (0 s)
++RN2 caught working something out is the mind's (0 s)
++RN3 caught quoted words are said (0 s)
++RN4 caught an edited line keeps what its own words show (0 s)
++RN5 caught the mode's call on hover (0 s)
++RN6 caught the page's aside ink reads on its ground (0 s)
++RN7 caught the page keeps SillyTavern's x-height (0 s)
++RN8 caught a pause stays by its word (0 s)
++RO1 caught a stretch without a letter joins its neighbour (0 s)
++RO2 caught each quoted part is a unit (0 s)
++RO3 caught text that is not voiced reads on the page (0 s)
++RO4 caught the box has no picture (0 s)
++50 of 50 controls caught.
++
++## Prompt audit
++unchanged: the output of tools/prompt-audit.mjs is the same as on the uploaded tree of (114)
++
++## The box in Chromium with SillyTavern's own stylesheets and message template (commit 06bde93, read as files)
++node history/review-tests/browser/voice-look/st-chat.mjs <root> <SillyTavern> - "Dark Lite" flat 412 on - voice 21
++place (message of messages · unit of units) | the plate | the text shown
++first: 1 / 7 · 1 / 5 | Narrator | The tavern door bangs shut behind you. Tom looks up from the
++1: 1 / 7 · 2 / 5 | Narrator [speaking] | "You are late,"
++2: 1 / 7 · 3 / 5 | Narrator |  he says, not quite smiling. 
++3: 1 / 7 · 4 / 5 | Narrator [speaking] | "Sit. Will has been counting the same six coins since noon."
++4: 1 / 7 · 5 / 5 | Narrator | Will does not look up. A candle gutters between them, and pa
++5: 2 / 7 · 1 / 2 | Mara | fearfully I lean in close to Tom. 
++6: 2 / 7 · 2 / 2 | Mara [speaking] | "They are ˈright behind that door. Do not make a sound."
++7: 3 / 7 · 1 / 3 | Narrator | Tom's hand stops over the dice. He hears you: the whisper ca
++8: 3 / 7 · 2 / 3 | Narrator [speaking] | "How many?"
++9: 3 / 7 · 3 / 3 | Narrator |  he breathes.
++10: 4 / 7 | Mara [thinking] | Mara tries to work out the riddle chalked on the door before
++11: 5 / 7 · 1 / 2 | Mara | angrily I stand up. 
++12: 5 / 7 · 2 / 2 | Mara [speaking] | "Get out of my house, — ··· right now, before I throw you ou
++13: 6 / 7 | Mara | I walk to the back door and listen for a while before I open
++14: 7 / 7 · 1 / 3 | Narrator | Nothing moves. On the door someone has chalked:
++15: 7 / 7 · 2 / 3 | Narrator | What has keys but opens no locks?
++16: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
++17: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
++18: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
++19: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
++20: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
++21: 7 / 7 · 3 / 3 | Narrator | Below it, underlined twice, a tally: IIII II, and one word r
++drawn: 1 message(s), 0 picture(s)
++
++node … on - message 7  (a box holds a whole message)
++first: 1 / 7 | Narrator | The tavern door bangs shut behind you. Tom looks up from the
++1: 2 / 7 | Mara [speaking] | fearfully I lean in close to Tom. "They are ˈright behind th
++2: 3 / 7 | Narrator | Tom's hand stops over the dice. He hears you: the whisper ca
++3: 4 / 7 | Mara [thinking] | Mara tries to work out the riddle chalked on the door before
++4: 5 / 7 | Mara [speaking] | angrily I stand up. "Get out of my house, — ··· right now, b
++5: 6 / 7 | Mara | I walk to the back door and listen for a while before I open
++6: 7 / 7 | Narrator | Nothing moves. On the door someone has chalked:What has keys
++7: 7 / 7 | Narrator | Nothing moves. On the door someone has chalked:What has keys
++drawn: 1 message(s), 0 picture(s)
++
++## The log, measured (box on, "Log" pressed): 6 themes × 3 displays × 412 and 800 px
++Dark Lite, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark Lite, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark Lite, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark Lite, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark Lite, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark Lite, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Azure, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Azure, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Azure, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Azure, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Azure, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Azure, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Cappuccino, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Cappuccino, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Cappuccino, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Cappuccino, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Cappuccino, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Cappuccino, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Celestial Macaron, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Celestial Macaron, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Celestial Macaron, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Celestial Macaron, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Celestial Macaron, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Celestial Macaron, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark V 1.0, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark V 1.0, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark V 1.0, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark V 1.0, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++Dark V 1.0, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++Dark V 1.0, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++light, flat, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++light, flat, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++light, bubble, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++light, bubble, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++light, document, 412 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.14 em
++light, document, 800 px, page on: 0 miss(es); lowest contrast 5.24:1 (code in message 6), of a marked word 5.44:1; least room over a pitch stroke 0.36 em
++
++First run of the log, before a block that is no paragraph kept the ink: 36 of 36 with a fault,
++  MISS contrast: p "What has keys but opens " in message 6, 4.24:1 (darkslateblue on SillyTavern's block-quotation ground)
++and 11 times a line-height miss of the measuring script itself (a line that starts with code: its smaller text sits lower); the script now leaves text of another size out.
++
++Contrast on ivory: darkslateblue 8.99:1
+diff --git a/settings.html b/settings.html
+index 97f7379..f10e90b 100644
+--- a/settings.html
++++ b/settings.html
+@@ -10,6 +10,9 @@
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_rule_check" /><span>Rule check: after each reply, a model call compares it with the engine's results and redoes it once when it bends one</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_structured" /><span>Structured replies: the narrator writes one passage per decided result plus scenery, and names what is left open for the next turn; the reply is shown as prose</span></label>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_page" /><span>Dialogue page: the chat is set as a light page, black on ivory, in a book serif that follows the story's era, with room between the lines for the voice marks and no letter shadow, whatever the theme. Off, messages keep the theme's look</span></label>
++            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box" /><span>Text box: one thing on screen at a time, in a box at the foot of the chat under the speaker's name, without the picture at the left. Tap the text or press → for the next, ‹ or ← to go back, "Log" for the whole chat. Off, the chat scrolls</span></label>
++            <label for="rules_engine_box_unit"><small>A box holds</small></label>
++            <select id="rules_engine_box_unit" class="text_pole"><option value="voice">said words, or the text between them (a new box at each quotation)</option><option value="message">a whole message</option></select>
+             <label class="checkbox_label"><input type="checkbox" id="rules_engine_distinct" /><span>Multiple distinctions: your marked lines show each part of the voice in a place of its own (above a word a thin stroke for its pitch; heavier letters for louder, paler for softer; under the words a wavy rule for creaky, dots for breathy, a broken rule for whispered; wider gaps for slower, a lean for faster, narrow letters for falsetto; the feeling's colour at the line's edge); off: the lighter look</span></label>
+             <label for="rules_engine_profile"><small>Connection for the question pass and rule check</small></label>
+             <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
+diff --git a/src/index.js b/src/index.js
+index 5073e3c..6ee091a 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -4,7 +4,7 @@
+ import { pulseSelfTest } from './rules/pulse.js';
+ import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, rulesBrief, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, sceneSky, storyYearNow, } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading } from './rules/question-pass.js';
+-import { noteView, notesOf, platesOf, drawModes, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
++import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -25,7 +25,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
+ const IN_CHAT = 1, SYSTEM = 0;
+ // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
+ const DEPTH = 1;
+-const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, profile: '', maxTokens: 0, effort: 'low' };
++const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, box: true, boxUnit: 'voice', profile: '', maxTokens: 0, effort: 'low' };
+ const ctx = () => SillyTavern.getContext();
+ const toastr = globalThis.toastr;
+ function settings() {
+@@ -538,6 +538,141 @@ function typesetChat() {
+     }
+     toneLook();
+ }
++// The box: one unit of the chat on screen at a time, as a visual novel shows one line in its text box (ui.ts voiceUnits). Every
++// message's paragraphs are set in units by change of voice; the box shows the unit at `boxAt` and its message's name plate,
++// with "speaking" on the plate while the unit is voiced. A tap on the text, → or the bar's ›, shows the next unit, and after
++// a message's last unit the next message's first; ‹ and ← go back. "Log" shows the whole chat, scrolling, and "Box" returns.
++// A message being written or edited has no units yet and shows whole.
++let boxAt = null, boxLog = false;
++const boxOn = () => settings().enabled && settings().box;
++const unitsIn = (mes) => settings().boxUnit === 'message' ? [] : [...mes.querySelectorAll('.mes_text .rules-unit')];
++/** Each drawn message's text in units: a quoted stretch, the text between two of them, or a block that is no paragraph (a
++ * list, a table, a block quotation) as one. Done once per drawing of a message: SillyTavern redraws its text whole. */
++function unitChat() {
++    for (const mes of document.querySelectorAll('#chat .mes')) {
++        const text = mes.querySelector('.mes_text');
++        if (!text || text.querySelector('.rules-unit, .edit_textarea'))
++            continue;
++        let said = false;
++        for (const block of [...text.children]) {
++            if (block.tagName !== 'P') {
++                block.classList.add('rules-unit');
++                block.setAttribute('data-said', 'false');
++                continue;
++            }
++            const nodes = [...block.childNodes];
++            for (const u of voiceUnits(nodes.map(n => ({ said: n.nodeName === 'Q', text: n.textContent ?? '' })))) {
++                const span = document.createElement('span');
++                span.className = 'rules-unit';
++                span.setAttribute('data-said', String(u.said));
++                nodes[u.from].before(span);
++                for (let i = u.from; i < u.to; i++)
++                    span.appendChild(nodes[i]);
++                said ||= u.said;
++            }
++        }
++        // Another speaker's message has no plate word of its own: its voiced units bring "speaking" (style.css shows it in the box).
++        if (said && !mes.querySelector('.rules-modes')) {
++            const tag = drawModes(document, [{ mode: 'speaking', title: 'Words in quotation marks are said' }]);
++            tag.classList.add('rules-modes-unit');
++            mes.querySelector('.name_text')?.after(tag);
++        }
++    }
++}
++/** The box as the settings and `boxAt` have it: the classes on the page, the current message and unit, the bar's count. */
++function showBox() {
++    if (typeof document === 'undefined' || !document.body?.classList)
++        return;
++    const on = boxOn();
++    document.body.classList.toggle('rules-box', on);
++    document.body.classList.toggle('rules-box-log', on && boxLog);
++    const bar = document.getElementById('rules-box-bar');
++    if (bar)
++        bar.hidden = !on;
++    if (!on)
++        return;
++    unitChat();
++    const all = [...document.querySelectorAll('#chat .mes')];
++    const mes = all.find(m => m.getAttribute('mesid') === boxAt?.mes) ?? all.at(-1);
++    if (!mes)
++        return;
++    const units = unitsIn(mes), unit = Math.min(mes.getAttribute('mesid') === boxAt?.mes ? boxAt.unit : 0, Math.max(0, units.length - 1));
++    boxAt = { mes: mes.getAttribute('mesid') ?? '', unit };
++    for (const m of all)
++        m.classList.toggle('rules-now', m === mes);
++    document.querySelectorAll('#chat .rules-unit-now').forEach(e => e.classList.remove('rules-unit-now'));
++    units[unit]?.classList.add('rules-unit-now');
++    // The plate's "speaking" follows the unit shown; a box holding a whole message keeps the message's own words.
++    for (const m of all)
++        m.removeAttribute('data-rules-said');
++    if (units.length)
++        mes.setAttribute('data-rules-said', String(units[unit].getAttribute('data-said') === 'true'));
++    const count = document.getElementById('rules-box-count');
++    if (count)
++        count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
++    const log = document.getElementById('rules-box-log');
++    if (log) {
++        log.textContent = boxLog ? 'Box' : 'Log';
++        log.setAttribute('aria-pressed', String(boxLog));
++    }
++}
++/** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. */
++function stepBox(d) {
++    if (!boxOn() || boxLog || !boxAt)
++        return;
++    const all = [...document.querySelectorAll('#chat .mes')], i = all.findIndex(m => m.getAttribute('mesid') === boxAt.mes);
++    if (i < 0)
++        return;
++    const u = boxAt.unit + d;
++    if (u >= 0 && u < Math.max(1, unitsIn(all[i]).length))
++        boxAt = { mes: boxAt.mes, unit: u };
++    else if (all[i + d])
++        boxAt = { mes: all[i + d].getAttribute('mesid') ?? '', unit: d > 0 ? 0 : Math.max(0, unitsIn(all[i + d]).length - 1) };
++    else
++        return;
++    showBox();
++}
++/** The box's bar above the message box (back, the count, on, the log) and its keys and taps; built once. */
++function buildBox() {
++    const form = document.getElementById('form_sheld'), chat = document.getElementById('chat');
++    if (!form || !chat || document.getElementById('rules-box-bar'))
++        return;
++    const bar = document.createElement('div');
++    bar.id = 'rules-box-bar';
++    bar.setAttribute('role', 'toolbar');
++    bar.setAttribute('aria-label', 'The text box');
++    const button = (id, text, label, act) => { const b = document.createElement('button'); b.type = 'button'; b.id = id; b.textContent = text; b.title = label; b.setAttribute('aria-label', label); b.addEventListener('click', act); bar.appendChild(b); return b; };
++    button('rules-box-back', '‹', 'Back', () => stepBox(-1));
++    const count = document.createElement('span');
++    count.id = 'rules-box-count';
++    count.setAttribute('aria-live', 'off');
++    bar.appendChild(count);
++    button('rules-box-next', '›', 'Next', () => stepBox(1));
++    button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog)
++        document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
++    form.before(bar);
++    // A tap on the box's text is "next"; a tap on anything that acts by itself (a link, a button, the note, an edit) is its own,
++    // and so is a tap that ends a selection of text.
++    chat.addEventListener('click', e => {
++        const t = e.target;
++        if (!boxOn() || boxLog || !t?.closest?.('.rules-now .mes_text') || t.closest('a, button, summary, details, textarea, input, .mes_buttons, [role="button"]') || String(document.getSelection?.() ?? ''))
++            return;
++        stepBox(1);
++    });
++    document.addEventListener('keydown', e => {
++        const t = e.target;
++        if (!boxOn() || boxLog || e.ctrlKey || e.altKey || e.metaKey || t?.closest?.('textarea, input, select, [contenteditable]'))
++            return;
++        if (e.key === 'ArrowRight') {
++            e.preventDefault();
++            stepBox(1);
++        }
++        else if (e.key === 'ArrowLeft') {
++            e.preventDefault();
++            stepBox(-1);
++        }
++    });
++}
+ /** The look of the chat: the dialogue page while its setting is on (style.css, body.rules-page), and for marked lines the
+  * multiple-distinctions look while its setting is on (body.rules-distinct), its sizes set from the sound of each mark (ui.ts
+  * lookVars), so the stylesheet draws the engine's quantities. */
+@@ -617,7 +752,14 @@ async function buildSettings() {
+         bind('rules_engine_distinct', 'distinct', applyLook);
+     // The notes are drawn again with the page: their kind colours take the tone of what they stand on.
+     if (document.getElementById('rules_engine_page'))
+-        bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); });
++        bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); showBox(); });
++    if (document.getElementById('rules_engine_box'))
++        bind('rules_engine_box', 'box', () => { boxLog = false; drawNotes(); showBox(); });
++    const boxUnit = document.getElementById('rules_engine_box_unit');
++    if (boxUnit) {
++        boxUnit.value = s.boxUnit;
++        boxUnit.addEventListener('change', () => { settings().boxUnit = boxUnit.value === 'message' ? 'message' : 'voice'; ctx().saveSettingsDebounced(); boxAt = boxAt && { mes: boxAt.mes, unit: 0 }; showBox(); });
++    }
+     const profile = document.getElementById('rules_engine_profile');
+     const profiles = ctx().extensionSettings.connectionManager?.profiles ?? [];
+     for (const p of profiles)
+@@ -726,14 +868,21 @@ function wireEvents() {
+     on(ev.MESSAGE_SWIPED, (id) => { if (live())
+         onRulesSwiped(id); });
+     on(ev.CHAT_CHANGED, () => { if (live())
+-        syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); });
++        syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; showBox(); });
+     on(ev.MESSAGE_DELETED, () => { if (live())
+-        syncRulesToChat(); drawNotes(); });
++        syncRulesToChat(); drawNotes(); showBox(); });
+     // The reading notes follow the chat as it is drawn: a new or re-drawn message, older messages loaded, an edit (a line
+     // edited since its reading shows no note, ui.ts notesOf).
+     for (const e of [ev.USER_MESSAGE_RENDERED, ev.CHARACTER_MESSAGE_RENDERED, ev.MESSAGE_UPDATED, ev.MORE_MESSAGES_LOADED])
+         if (e)
+-            on(e, () => { drawNotes(); typesetChat(); });
++            on(e, (id) => {
++                drawNotes();
++                typesetChat();
++                // A message just drawn (the player's line, a reply) is read from its first unit.
++                if ((e === ev.USER_MESSAGE_RENDERED || e === ev.CHARACTER_MESSAGE_RENDERED) && (typeof id === 'number' || typeof id === 'string'))
++                    boxAt = { mes: String(id), unit: 0 };
++                showBox();
++            });
+     // PassTime moves the clock; the field follows after each reply.
+     on(ev.MESSAGE_RECEIVED, () => refreshTime());
+ }
+@@ -773,7 +922,14 @@ function wireEvents() {
+     catch (e) {
+         console.warn('[Rules engine] voice toolbar skipped:', e);
+     }
++    try {
++        buildBox();
++    }
++    catch (e) {
++        console.warn('[Rules engine] text box skipped:', e);
++    }
+     applyLook();
++    showBox();
+     applyWorld(getBook());
+     console.log(`[Rules engine] loaded: ${REGISTRY.size} tools`);
+ })();
+diff --git a/src/index.ts b/src/index.ts
+index 0f312d8..4fc798c 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -8,7 +8,7 @@ import {
+     historyCheck, sceneSky, storyYearNow,
+ } from './rules/rules-tools.js';
+ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading, type Chooser, type Asker } from './rules/question-pass.js';
+-import { noteView, notesOf, platesOf, drawModes, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
++import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
+ import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest } from './rules/voice-code.js';
+ import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+ import { onRulesAuditMessage, takeAuditNote, registerRulesStatsCommand } from './rules/rules-audit.js';
+@@ -34,8 +34,11 @@ const DEPTH = 1;
+ // distinct: the multiple-distinctions look for marked lines (style.css, body.rules-distinct), each voice dimension in a visual
+ // channel of its own; off, the lighter look.
+ // page: the chat set as a light page in the story's book serif, whatever the theme (style.css, body.rules-page); off, the theme's look.
+-interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; page: boolean; profile: string; maxTokens: number; effort: string }
+-const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, profile: '', maxTokens: 0, effort: 'low' };
++// box: one unit of the chat on screen at a time, in a box at the foot of the chat (style.css, body.rules-box); off, the scrolling chat.
++// boxUnit: what a box holds: 'voice', a stretch of text with one value of [±voiced] (quoted words, or the text between them);
++// 'message', a whole message.
++interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; page: boolean; box: boolean; boxUnit: 'voice' | 'message'; profile: string; maxTokens: number; effort: string }
++const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, box: true, boxUnit: 'voice', profile: '', maxTokens: 0, effort: 'low' };
+ 
+ interface Ctx {
+     chat: STMessage[]; chatMetadata: Record<string, any>; extensionSettings: Record<string, any>;
+@@ -444,6 +447,102 @@ function typesetChat(): void {
+     toneLook();
+ }
+ 
++// The box: one unit of the chat on screen at a time, as a visual novel shows one line in its text box (ui.ts voiceUnits). Every
++// message's paragraphs are set in units by change of voice; the box shows the unit at `boxAt` and its message's name plate,
++// with "speaking" on the plate while the unit is voiced. A tap on the text, → or the bar's ›, shows the next unit, and after
++// a message's last unit the next message's first; ‹ and ← go back. "Log" shows the whole chat, scrolling, and "Box" returns.
++// A message being written or edited has no units yet and shows whole.
++let boxAt: { mes: string; unit: number } | null = null, boxLog = false;
++const boxOn = () => settings().enabled && settings().box;
++const unitsIn = (mes: Element) => settings().boxUnit === 'message' ? [] : [...mes.querySelectorAll('.mes_text .rules-unit')];
++/** Each drawn message's text in units: a quoted stretch, the text between two of them, or a block that is no paragraph (a
++ * list, a table, a block quotation) as one. Done once per drawing of a message: SillyTavern redraws its text whole. */
++function unitChat(): void {
++    for (const mes of document.querySelectorAll('#chat .mes')) {
++        const text = mes.querySelector('.mes_text');
++        if (!text || text.querySelector('.rules-unit, .edit_textarea')) continue;
++        let said = false;
++        for (const block of [...text.children]) {
++            if (block.tagName !== 'P') { block.classList.add('rules-unit'); block.setAttribute('data-said', 'false'); continue; }
++            const nodes = [...block.childNodes];
++            for (const u of voiceUnits(nodes.map(n => ({ said: n.nodeName === 'Q', text: n.textContent ?? '' })))) {
++                const span = document.createElement('span');
++                span.className = 'rules-unit'; span.setAttribute('data-said', String(u.said));
++                nodes[u.from]!.before(span);
++                for (let i = u.from; i < u.to; i++) span.appendChild(nodes[i]!);
++                said ||= u.said;
++            }
++        }
++        // Another speaker's message has no plate word of its own: its voiced units bring "speaking" (style.css shows it in the box).
++        if (said && !mes.querySelector('.rules-modes')) {
++            const tag = drawModes(document as unknown as Doc, [{ mode: 'speaking', title: 'Words in quotation marks are said' }]) as unknown as HTMLElement;
++            tag.classList.add('rules-modes-unit');
++            mes.querySelector('.name_text')?.after(tag);
++        }
++    }
++}
++/** The box as the settings and `boxAt` have it: the classes on the page, the current message and unit, the bar's count. */
++function showBox(): void {
++    if (typeof document === 'undefined' || !document.body?.classList) return;
++    const on = boxOn();
++    document.body.classList.toggle('rules-box', on); document.body.classList.toggle('rules-box-log', on && boxLog);
++    const bar = document.getElementById('rules-box-bar');
++    if (bar) bar.hidden = !on;
++    if (!on) return;
++    unitChat();
++    const all = [...document.querySelectorAll('#chat .mes')];
++    const mes = all.find(m => m.getAttribute('mesid') === boxAt?.mes) ?? all.at(-1);
++    if (!mes) return;
++    const units = unitsIn(mes), unit = Math.min(mes.getAttribute('mesid') === boxAt?.mes ? boxAt!.unit : 0, Math.max(0, units.length - 1));
++    boxAt = { mes: mes.getAttribute('mesid') ?? '', unit };
++    for (const m of all) m.classList.toggle('rules-now', m === mes);
++    document.querySelectorAll('#chat .rules-unit-now').forEach(e => e.classList.remove('rules-unit-now'));
++    units[unit]?.classList.add('rules-unit-now');
++    // The plate's "speaking" follows the unit shown; a box holding a whole message keeps the message's own words.
++    for (const m of all) m.removeAttribute('data-rules-said');
++    if (units.length) mes.setAttribute('data-rules-said', String(units[unit]!.getAttribute('data-said') === 'true'));
++    const count = document.getElementById('rules-box-count');
++    if (count) count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
++    const log = document.getElementById('rules-box-log');
++    if (log) { log.textContent = boxLog ? 'Box' : 'Log'; log.setAttribute('aria-pressed', String(boxLog)); }
++}
++/** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. */
++function stepBox(d: 1 | -1): void {
++    if (!boxOn() || boxLog || !boxAt) return;
++    const all = [...document.querySelectorAll('#chat .mes')], i = all.findIndex(m => m.getAttribute('mesid') === boxAt!.mes);
++    if (i < 0) return;
++    const u = boxAt.unit + d;
++    if (u >= 0 && u < Math.max(1, unitsIn(all[i]!).length)) boxAt = { mes: boxAt.mes, unit: u };
++    else if (all[i + d]) boxAt = { mes: all[i + d]!.getAttribute('mesid') ?? '', unit: d > 0 ? 0 : Math.max(0, unitsIn(all[i + d]!).length - 1) };
++    else return;
++    showBox();
++}
++/** The box's bar above the message box (back, the count, on, the log) and its keys and taps; built once. */
++function buildBox(): void {
++    const form = document.getElementById('form_sheld'), chat = document.getElementById('chat');
++    if (!form || !chat || document.getElementById('rules-box-bar')) return;
++    const bar = document.createElement('div');
++    bar.id = 'rules-box-bar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'The text box');
++    const button = (id: string, text: string, label: string, act: () => void) => { const b = document.createElement('button'); b.type = 'button'; b.id = id; b.textContent = text; b.title = label; b.setAttribute('aria-label', label); b.addEventListener('click', act); bar.appendChild(b); return b; };
++    button('rules-box-back', '‹', 'Back', () => stepBox(-1));
++    const count = document.createElement('span'); count.id = 'rules-box-count'; count.setAttribute('aria-live', 'off'); bar.appendChild(count);
++    button('rules-box-next', '›', 'Next', () => stepBox(1));
++    button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog) document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
++    form.before(bar);
++    // A tap on the box's text is "next"; a tap on anything that acts by itself (a link, a button, the note, an edit) is its own,
++    // and so is a tap that ends a selection of text.
++    chat.addEventListener('click', e => {
++        const t = e.target as Element | null;
++        if (!boxOn() || boxLog || !t?.closest?.('.rules-now .mes_text') || t.closest('a, button, summary, details, textarea, input, .mes_buttons, [role="button"]') || String(document.getSelection?.() ?? '')) return;
++        stepBox(1);
++    });
++    document.addEventListener('keydown', e => {
++        const t = e.target as Element | null;
++        if (!boxOn() || boxLog || e.ctrlKey || e.altKey || e.metaKey || t?.closest?.('textarea, input, select, [contenteditable]')) return;
++        if (e.key === 'ArrowRight') { e.preventDefault(); stepBox(1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); stepBox(-1); }
++    });
++}
++
+ /** The look of the chat: the dialogue page while its setting is on (style.css, body.rules-page), and for marked lines the
+  * multiple-distinctions look while its setting is on (body.rules-distinct), its sizes set from the sound of each mark (ui.ts
+  * lookVars), so the stylesheet draws the engine's quantities. */
+@@ -500,7 +599,7 @@ async function buildSettings(): Promise<void> {
+     const html = await ctx().renderExtensionTemplateAsync(`third-party/${folder()}`, 'settings');
+     document.getElementById('extensions_settings2')?.insertAdjacentHTML('beforeend', html);
+     const s = settings();
+-    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured' | 'suggest' | 'distinct' | 'page', after?: () => void) => {
++    const bind = (id: string, key: 'enabled' | 'questionPass' | 'ruleCheck' | 'structured' | 'suggest' | 'distinct' | 'page' | 'box', after?: () => void) => {
+         const el = document.getElementById(id) as HTMLInputElement;
+         el.checked = s[key];
+         el.addEventListener('change', () => { settings()[key] = el.checked; ctx().saveSettingsDebounced(); after?.(); });
+@@ -512,7 +611,10 @@ async function buildSettings(): Promise<void> {
+     if (document.getElementById('rules_engine_suggest')) bind('rules_engine_suggest', 'suggest');
+     if (document.getElementById('rules_engine_distinct')) bind('rules_engine_distinct', 'distinct', applyLook);
+     // The notes are drawn again with the page: their kind colours take the tone of what they stand on.
+-    if (document.getElementById('rules_engine_page')) bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); });
++    if (document.getElementById('rules_engine_page')) bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); showBox(); });
++    if (document.getElementById('rules_engine_box')) bind('rules_engine_box', 'box', () => { boxLog = false; drawNotes(); showBox(); });
++    const boxUnit = document.getElementById('rules_engine_box_unit') as HTMLSelectElement | null;
++    if (boxUnit) { boxUnit.value = s.boxUnit; boxUnit.addEventListener('change', () => { settings().boxUnit = boxUnit.value === 'message' ? 'message' : 'voice'; ctx().saveSettingsDebounced(); boxAt = boxAt && { mes: boxAt.mes, unit: 0 }; showBox(); }); }
+     const profile = document.getElementById('rules_engine_profile') as HTMLSelectElement;
+     const profiles: { id: string; name: string }[] = ctx().extensionSettings.connectionManager?.profiles ?? [];
+     for (const p of profiles) profile.add(new Option(p.name, p.id));
+@@ -592,11 +694,16 @@ function wireEvents(): void {
+         }).catch(e => console.warn('[Rules engine] rule check skipped:', e));
+     });
+     on(ev.MESSAGE_SWIPED, (id: number) => { if (live()) onRulesSwiped(id); });
+-    on(ev.CHAT_CHANGED, () => { if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); });
+-    on(ev.MESSAGE_DELETED, () => { if (live()) syncRulesToChat(); drawNotes(); });
++    on(ev.CHAT_CHANGED, () => { if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; showBox(); });
++    on(ev.MESSAGE_DELETED, () => { if (live()) syncRulesToChat(); drawNotes(); showBox(); });
+     // The reading notes follow the chat as it is drawn: a new or re-drawn message, older messages loaded, an edit (a line
+     // edited since its reading shows no note, ui.ts notesOf).
+-    for (const e of [ev.USER_MESSAGE_RENDERED, ev.CHARACTER_MESSAGE_RENDERED, ev.MESSAGE_UPDATED, ev.MORE_MESSAGES_LOADED]) if (e) on(e, () => { drawNotes(); typesetChat(); });
++    for (const e of [ev.USER_MESSAGE_RENDERED, ev.CHARACTER_MESSAGE_RENDERED, ev.MESSAGE_UPDATED, ev.MORE_MESSAGES_LOADED]) if (e) on(e, (id?: unknown) => {
++        drawNotes(); typesetChat();
++        // A message just drawn (the player's line, a reply) is read from its first unit.
++        if ((e === ev.USER_MESSAGE_RENDERED || e === ev.CHARACTER_MESSAGE_RENDERED) && (typeof id === 'number' || typeof id === 'string')) boxAt = { mes: String(id), unit: 0 };
++        showBox();
++    });
+     // PassTime moves the clock; the field follows after each reply.
+     on(ev.MESSAGE_RECEIVED, () => refreshTime());
+ }
+@@ -628,7 +735,9 @@ function wireEvents(): void {
+     registerWorldCommands();
+     await buildSettings();
+     try { buildVoice(); } catch (e) { console.warn('[Rules engine] voice toolbar skipped:', e); }
++    try { buildBox(); } catch (e) { console.warn('[Rules engine] text box skipped:', e); }
+     applyLook();
++    showBox();
+     applyWorld(getBook());
+     console.log(`[Rules engine] loaded: ${REGISTRY.size} tools`);
+ })();
+diff --git a/src/ui.js b/src/ui.js
+index 35acb2d..e4cbf5e 100644
+--- a/src/ui.js
++++ b/src/ui.js
+@@ -126,6 +126,31 @@ export function drawModes(doc, modes) {
+     }
+     return box;
+ }
++/** A paragraph's parts (its child nodes in order, `said` for quoted words) as units by change of voice: each quoted part is a
++ * unit, the parts between two of them are one unit, and a stretch without a letter or digit (the comma or full stop left
++ * between two quotations) joins the unit before it, or the one after it at the paragraph's start. Ranges are [from, to). */
++export function voiceUnits(parts) {
++    const out = [];
++    let lead = 0;
++    for (let i = 0; i < parts.length;) {
++        let j = i + 1;
++        if (!parts[i].said)
++            while (j < parts.length && !parts[j].said)
++                j++;
++        const worded = parts[i].said || /[\p{L}\p{N}]/u.test(parts.slice(i, j).map(p => p.text).join(''));
++        if (worded) {
++            out.push({ said: parts[i].said, from: lead, to: j });
++            lead = j;
++        }
++        else if (out.length) {
++            out.at(-1).to = j;
++            lead = j;
++        }
++        i = j;
++    }
++    // A paragraph with no letter in it (an ellipsis, a rule of dashes) is one unit.
++    return out.length || !parts.length ? out : [{ said: false, from: 0, to: parts.length }];
++}
+ /** The note as an element: a <details> folded to one line (the guess and the tagged calls), opened to a line per call and the
+  * other readings as linked words, each handing its correction to `fill`. Every text is set as text. */
+ export function drawNote(doc, v, look, fill) {
+diff --git a/src/ui.ts b/src/ui.ts
+index 937f7d7..8a1e1c1 100644
+--- a/src/ui.ts
++++ b/src/ui.ts
+@@ -139,6 +139,28 @@ export function drawModes(doc: Doc, modes: PlateMode[]): El {
+     return box;
+ }
+ 
++// The box: one unit of the chat on screen at a time (index.ts showBox). A unit is a stretch of text with one value of
++// [±voiced]: words that leave a mouth as sound, or text that does not. Quoted words are the voiced ones (rules/quotes.ts);
++// SillyTavern's formatting sets them in <q> elements, so a paragraph's parts arrive marked.
++export interface VoiceUnit { said: boolean; from: number; to: number }
++/** A paragraph's parts (its child nodes in order, `said` for quoted words) as units by change of voice: each quoted part is a
++ * unit, the parts between two of them are one unit, and a stretch without a letter or digit (the comma or full stop left
++ * between two quotations) joins the unit before it, or the one after it at the paragraph's start. Ranges are [from, to). */
++export function voiceUnits(parts: { said: boolean; text: string }[]): VoiceUnit[] {
++    const out: VoiceUnit[] = [];
++    let lead = 0;
++    for (let i = 0; i < parts.length;) {
++        let j = i + 1;
++        if (!parts[i]!.said) while (j < parts.length && !parts[j]!.said) j++;
++        const worded = parts[i]!.said || /[\p{L}\p{N}]/u.test(parts.slice(i, j).map(p => p.text).join(''));
++        if (worded) { out.push({ said: parts[i]!.said, from: lead, to: j }); lead = j; }
++        else if (out.length) { out.at(-1)!.to = j; lead = j; }
++        i = j;
++    }
++    // A paragraph with no letter in it (an ellipsis, a rule of dashes) is one unit.
++    return out.length || !parts.length ? out : [{ said: false, from: 0, to: parts.length }];
++}
++
+ /** The parts of a document the note uses (a browser's, or a test's stand-in). */
+ export interface Doc { createElement(tag: string): El; createTextNode(t: string): El }
+ export interface El {
+diff --git a/style.css b/style.css
+index 9e473b5..81b3f71 100644
+--- a/style.css
++++ b/style.css
+@@ -289,3 +289,33 @@ body.rules-page #chat .name_text { font-variant: small-caps; letter-spacing: 0.0
+ .rules-mode { padding: 0.25em 0.5em 0.2em; border: 1px solid var(--SmartThemeBodyColor); border-radius: 2px; font-size: calc(var(--mainFontSize) * 0.66); font-weight: 700; font-variant: normal; line-height: 1; letter-spacing: 0.09em; text-transform: uppercase; color: var(--SmartThemeBodyColor); cursor: help; }
+ .rules-mode-speaking { background-color: var(--SmartThemeBodyColor); color: black; }
+ body[data-rules-tone="light"] .rules-mode-speaking { color: white; }
++
++/* The box (setting "Text box", on by default: body.rules-box; src/index.ts showBox): one unit of the chat on screen at a time,
++   in a box at the foot of the chat under its speaker's name, as a visual novel's text box holds one line. Every other message
++   and every other unit of the message is not drawn; the chat above the box takes no tint, so SillyTavern's background is the scene.
++   The picture at the left goes in the box and in the log: the speaker is the name on the plate. A message without units (one
++   being written or edited, or the setting "a whole message") shows whole. The box keeps four lines' height, so it does not
++   jump from unit to unit, and scrolls past 60 % of the screen's height [ASSUMED: both]. */
++body.rules-box #chat .mesAvatarWrapper { display: none; }
++body.rules-box:not(.rules-box-log) #chat { justify-content: flex-end; overflow: hidden; background-color: transparent; }
++body.rules-box:not(.rules-box-log) #chat .mes:not(.rules-now) { display: none; }
++body.rules-box:not(.rules-box-log) #chat .mes:has(.rules-unit-now) .mes_text > :not(.rules-unit-now):not(:has(.rules-unit-now)) { display: none; }
++body.rules-box:not(.rules-box-log) #chat .mes:has(.rules-unit-now) .mes_text .rules-unit:not(.rules-unit-now) { display: none; }
++body.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: 6.8em; max-height: 60vh; overflow-y: auto; cursor: pointer; }
++/* [±voiced], the one distinction the units carry: voiced words (quoted: they leave a mouth as sound) take the ink, text that
++   is not voiced a named blue, as the reference sets speech in its text colour and the rest in blue; darkslateblue reads at
++   8.99:1 on ivory (tests/ui.test.mjs R36); a block that is no paragraph (a block quotation, a list, a table) keeps the ink,
++   since SillyTavern lays its own ground under some of them. On the plate, "speaking" stands while the unit shown is voiced: on another
++   speaker's message it is drawn for its voiced units only, on the player's it steps aside for a unit that is not voiced. */
++body.rules-page #chat span.rules-unit[data-said="false"] { color: darkslateblue; }
++.rules-modes-unit { display: none; }
++body.rules-box:not(.rules-box-log) #chat .mes[data-rules-said="true"] .rules-modes-unit { display: inline-flex; }
++body.rules-box:not(.rules-box-log) #chat .mes[data-rules-said="false"] .rules-mode-speaking { display: none; }
++/* The box's bar, above the message box: back, the place (message of messages, unit of units), on, and the log. Each button
++   is 44 px or more each way (WCAG 2.5.5, target size). In the log only its own button shows. */
++#rules-box-bar { display: flex; align-items: center; gap: 0.4em; padding: 0.2em 0.5em; font-size: calc(var(--mainFontSize) * 0.85); color: var(--SmartThemeBodyColor); background-color: var(--SmartThemeBlurTintColor); border: 1px solid var(--SmartThemeBorderColor); border-bottom: 0; }
++#rules-box-bar[hidden] { display: none; }
++#rules-box-bar button { min-width: 44px; min-height: 44px; padding: 0 0.6em; font: inherit; color: inherit; background: none; border: 1px solid var(--SmartThemeBorderColor); border-radius: 4px; cursor: pointer; }
++#rules-box-bar button:focus-visible { outline: 1px solid var(--interactable-outline-color); outline-offset: 1px; }
++#rules-box-count { flex: 1 1 auto; text-align: center; font-variant-numeric: tabular-nums; }
++body.rules-box-log #rules-box-back, body.rules-box-log #rules-box-next, body.rules-box-log #rules-box-count { visibility: hidden; }
+diff --git a/tests/negative-controls.json b/tests/negative-controls.json
+index 48f872d..3f2532f 100644
+--- a/tests/negative-controls.json
++++ b/tests/negative-controls.json
+@@ -5201,5 +5201,41 @@
+   "replace": "",
+   "miss": "the modes take no hue; a pause stays by its word",
+   "test": "ui"
++ },
++ {
++  "id": "RO1",
++  "name": "a stretch without a letter joins its neighbour",
++  "file": "src/ui.js",
++  "find": "else if \\(out\\.length\\) \\{",
++  "replace": "else if (false) {",
++  "miss": "units by change of voice",
++  "test": "ui"
++ },
++ {
++  "id": "RO2",
++  "name": "each quoted part is a unit",
++  "file": "src/ui.js",
++  "find": "if \\(!parts\\[i\\]\\.said\\)\\s+while",
++  "replace": "while",
++  "miss": "units by change of voice",
++  "test": "ui"
++ },
++ {
++  "id": "RO3",
++  "name": "text that is not voiced reads on the page",
++  "file": "style.css",
++  "find": "span\\.rules-unit\\[data-said=\"false\"\\] \\{ color: darkslateblue; \\}",
++  "replace": "span.rules-unit[data-said=\"false\"] { color: silver; }",
++  "miss": "text that is not voiced reads on the page, apart from the ink",
++  "test": "ui"
++ },
++ {
++  "id": "RO4",
++  "name": "the box has no picture",
++  "file": "style.css",
++  "find": "body\\.rules-box #chat \\.mesAvatarWrapper \\{ display: none; \\}",
++  "replace": "",
++  "miss": "the box draws one message and one unit, no picture",
++  "test": "ui"
+  }
+ ]
+diff --git a/tests/ui.test.mjs b/tests/ui.test.mjs
+index 31ac621..e6b5b82 100644
+--- a/tests/ui.test.mjs
++++ b/tests/ui.test.mjs
+@@ -120,7 +120,7 @@ const THEMES = { dark: [['Azure', 'rgba(171, 198, 223, 1)', 'rgba(23, 23, 23, 0)
+     ['Dark V 1.0', 'rgba(207, 207, 197, 1)', 'rgba(29, 33, 40, 0.9)', 'rgba(29, 33, 40, 0.9)']], light: [['light', 'rgba(30, 30, 30, 1)', 'rgba(243, 241, 234, 1)', 'rgba(255, 255, 255, 0.5)']] };
+ // The dialogue page is one more light ground (style.css, body.rules-page): its inks and its ground are named colours (CSS
+ // Color 4, named colours), set as SillyTavern's theme variables inside each message, so U7 and R32 hold on it as on a theme.
+-const NAMED = { black: [0, 0, 0], white: [255, 255, 255], ivory: [255, 255, 240], dimgray: [105, 105, 105], silver: [192, 192, 192] };
++const NAMED = { black: [0, 0, 0], white: [255, 255, 255], ivory: [255, 255, 240], dimgray: [105, 105, 105], silver: [192, 192, 192], darkslateblue: [72, 61, 139] };
+ const pageBlock = /body\.rules-page #chat \.mes \{([^}]*)\}/.exec(css)?.[1] ?? '';
+ const pageInk = k => NAMED[new RegExp(`--SmartTheme${k}: (\\w+);`).exec(pageBlock)?.[1] ?? ''], pageGround = NAMED[/background-color: (\w+);/.exec(pageBlock)?.[1] ?? ''];
+ if (pageInk('BodyColor') && pageGround) THEMES.light.push(['the dialogue page', `rgba(${pageInk('BodyColor').join(', ')}, 1)`, `rgba(${pageGround.join(', ')}, 1)`, `rgba(${pageGround.join(', ')}, 1)`]);
+@@ -467,4 +467,19 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
+   ok(/\.rules-mode-speaking \{ background-color: var\(--SmartThemeBodyColor\); color: black; \}/.test(mode) && /body\[data-rules-tone="light"\] \.rules-mode-speaking \{ color: white; \}/.test(mode) && !/#[0-9A-Fa-f]{3,6}|rgb|oklch|color-mix/.test(mode)
+       && /\.rules-v-add-micro, \.rules-v-add-pause, \.rules-v-add-rest \{ white-space: nowrap; \}/.test(css), 'the modes take no hue; a pause stays by its word', mode.slice(0, 160));
+ }
++// R36: the box (style.css body.rules-box, index.ts showBox): one unit of the chat on screen at a time. A unit is a stretch
++// with one value of [±voiced]: each quoted part of a paragraph, or the parts between two of them; a stretch with no letter
++// joins the unit before it (after it at the paragraph's start). Text that is not voiced takes a named colour that reads at
++// 4.5:1 or more on the page; the box draws the current message and unit only, without the picture; its buttons are 44 px.
++{
++  const units = parts => U.voiceUnits(parts.map(([said, text]) => ({ said, text }))).map(u => `${u.said ? 'S' : 'n'}${u.from}-${u.to}`).join(' ');
++  const got = [units([[false, 'Tom looks up. '], [true, '"You are late,"'], [false, ' he says. '], [true, '"Sit."']]), units([[true, '"Sit,"'], [false, ' '], [true, '"Now."']]), units([[false, ' — '], [true, '"Go"'], [false, '.']]),
++      units([[false, 'He '], [false, 'almost'], [false, ' smiles.']]), units([[false, '…']]), units([])];
++  ok(JSON.stringify(got) === JSON.stringify(['n0-1 S1-2 n2-3 S3-4', 'S0-2 S2-3', 'S0-3', 'n0-3', 'n0-1', '']), 'units by change of voice', JSON.stringify(got));
++  const unvoiced = NAMED[/body\.rules-page #chat span\.rules-unit\[data-said="false"\] \{ color: (\w+); \}/.exec(css)?.[1] ?? ''];
++  ok(unvoiced && pageGround && contrast(unvoiced, pageGround) >= 4.5 && contrast(unvoiced, pageInk('BodyColor')) > 1.5, 'text that is not voiced reads on the page, apart from the ink', unvoiced && pageGround ? contrast(unvoiced, pageGround).toFixed(2) : 'no named colour');
++  ok(/body\.rules-box #chat \.mesAvatarWrapper \{ display: none; \}/.test(css) && /body\.rules-box:not\(\.rules-box-log\) #chat \.mes:not\(\.rules-now\) \{ display: none; \}/.test(css)
++      && /body\.rules-box:not\(\.rules-box-log\) #chat \.mes:has\(\.rules-unit-now\) \.mes_text \.rules-unit:not\(\.rules-unit-now\) \{ display: none; \}/.test(css)
++      && /\.mes\[data-rules-said="false"\] \.rules-mode-speaking \{ display: none; \}/.test(css) && /#rules-box-bar button \{ min-width: 44px; min-height: 44px;/.test(css), 'the box draws one message and one unit, no picture', '');
++}
+ console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

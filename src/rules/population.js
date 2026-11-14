@@ -16,7 +16,7 @@ let HOUSEHOLD = null;
 let loading = null;
 export function loadPopulation() {
     loading ??= Promise.all([
-        fetch(new URL('../../rules/clio.json', import.meta.url)).then(r => r.json()).then(d => { CLIO = d; }),
+        fetch(new URL('../../rules/clio.json', import.meta.url)).then(r => r.json()).then(d => { CLIO = d; addFogelHeights(); }),
         fetch(new URL('../../rules/glotto.json', import.meta.url)).then(r => r.json()).then(d => { GLOTTO = d; }),
         fetch(new URL('../../rules/cldr.json', import.meta.url)).then(r => r.json()).then(d => { CLDR = d; }),
         fetch(new URL('../../rules/lifetables.json', import.meta.url)).then(r => r.json()).then(d => { LIFE = d; }),
@@ -61,6 +61,19 @@ export function skillShare(skill, country, year) {
         return null;
     const r = at(s[c], year);
     return { share: Math.min(1, r.v / 100), country: c, from: r.from };
+}
+// Heights of men by quarter-century of reaching maturity (Floud, Fogel, Harris & Hong 2011, The Changing Body, Table 1 as
+// given by Fogel 2010, NBER w16938): Denmark from 18-IV, Norway from 18-III, where Clio Infra starts with births of 1820 and
+// 1810. Maturity at 20 [ASSUMED], so a quarter's mid-year minus 20 is the birth year. Prepended only before Clio's first
+// year; where they overlap the two agree within 0.2 cm (Denmark births 1817: 166.7 against 166.9; Norway 167.4 against 167.5).
+const FOGEL_HEIGHTS = { Denmark: [[1767, 165.7], [1792, 166.2]], Norway: [[1742, 165.6], [1767, 165.5], [1792, 166.6]] };
+function addFogelHeights() {
+    const h = CLIO?.height;
+    if (!h)
+        return;
+    for (const [c, rows] of Object.entries(FOGEL_HEIGHTS))
+        if (h[c])
+            h[c] = [...rows.filter(([y]) => y < h[c][0][0]), ...h[c]];
 }
 /** cm to add to a height for births before `refBirth`: the change in male height in `country` from `birthYear` to `refBirth`. */
 export function heightShift(country, birthYear, refBirth) {
@@ -117,12 +130,15 @@ export function faithShare(faith, country, year) {
 // Before the life tables (they start 1751): the Siler hazard a1·e^(−b1 x) + a2 + a3·e^(b3 x) fitted to Sweden 1751–59, the
 // only agrarian population in Gurven & Kaplan 2007 (Popul Dev Rev 33:321, Table 2: a1 0.400, b1 1.074, a2 0.008, a3 2.01e-4,
 // b3 0.083; both sexes; gives l15 0.607, l45 0.435 against the table's 0.60, 0.43). Used for story years before 1751 when
-// no table lies within 25 years [ASSUMED: one agrarian schedule for all places and sexes].
+// no table lies within 25 years [ASSUMED: one agrarian schedule for all places and sexes]. Also used up to 1900 where no
+// table of the country lies within 25 years: before the health transition no country lived longer than about 40 years at
+// birth (Riley 2001, Rising Life Expectancy, as reviewed by Mooney 2004: world e0 under 30 in 1800), and the tables cover
+// the countries that moved first [ASSUMED: the Swedish schedule (e0 35.1) for any pre-transition place].
 const SILER = { a1: 0.400, b1: 1.074, a2: 0.008, a3: 2.01e-4, b3: 0.083 };
 const silerL = (x) => Math.exp(-((SILER.a1 / SILER.b1) * (1 - Math.exp(-SILER.b1 * x)) + SILER.a2 * x + (SILER.a3 / SILER.b3) * (Math.exp(SILER.b3 * x) - 1)));
 export function survival(country, sex, year, from, to) {
     const r = survivalTable(country, sex, year, from, to);
-    if (r || year === null || year >= 1751)
+    if (r || year === null || year >= 1900)
         return r;
     return { share: Math.min(1, silerL(Math.min(110, to)) / silerL(Math.max(0, from))), country: 'a pre-industrial farming population', years: 'Siler fit to Sweden 1751–59' };
 }
@@ -154,6 +170,35 @@ export function countryFact(fact, country, year) {
         return null;
     const r = at(s[c], year), d = r.from === null ? year : r.from;
     return Math.abs(d - year) > 25 ? null : { v: r.v, country: c, year: d };
+}
+// Homicide before the national series (Eisner 2003, "Long-term historical trends in violent crime", Crime Justice 30:83,
+// History of Homicide Database): Table 1, killings per 100,000 a year by period in five regions (arithmetic means of all
+// estimates; null where none), and Table 2 for Europe as a whole by century. Used where Clio Infra has no figure within 25
+// years. Countries outside the five regions take the Europe-wide mean when European; none elsewhere. Figures in Eisner's
+// parentheses rest on fewer than five estimates and are flagged.
+const EISNER_PERIODS = [[1200, 1399], [1400, 1499], [1500, 1599], [1600, 1649], [1650, 1699], [1700, 1749], [1750, 1799], [1800, 1824], [1825, 1849], [1850, 1874], [1875, 1899], [1900, 1924], [1925, 1949], [1950, 1974], [1975, 1994]];
+const EISNER = {
+    england: [[23, false], null, [7, false], [6, false], [4, false], [2, false], [1, false], [2, false], [1.7, false], [1.6, false], [1.3, false], [0.8, false], [0.8, false], [0.7, false], [1.2, false]],
+    lowlands: [[47, false], [45, false], [25, false], [6, true], [9, false], [7, false], [4, false], [2, false], null, [0.9, false], [1.5, false], [1.7, false], [1.3, false], [0.6, false], [1.2, false]],
+    scandinavia: [null, [46, false], [21, false], [24, false], [12, false], [3, false], [0.7, false], [1.0, false], [1.4, false], [1.2, false], [0.9, false], [0.8, false], [0.6, false], [0.6, false], [1.2, false]],
+    german: [[37, false], [16, false], [11, false], [11, false], [3, true], [7, true], [8, true], [3, false], [4, false], [2, false], [2.2, false], [2.0, false], [1.4, false], [0.9, false], [1.2, false]],
+    italy: [[56, true], [73, true], [47, false], [32, true], null, [12, true], [9, false], [18, false], [15, false], [12, false], [5.5, false], [3.9, false], [2.6, false], [1.3, false], [1.7, false]],
+};
+const EISNER_EUROPE = [[1200, 1399, 32], [1400, 1499, 41], [1500, 1599, 19], [1600, 1699, 11], [1700, 1799, 3.2], [1800, 1899, 2.6], [1900, 1999, 1.4]];
+const EISNER_REGION = { 'united kingdom': 'england', england: 'england', netherlands: 'lowlands', belgium: 'lowlands', sweden: 'scandinavia', norway: 'scandinavia', denmark: 'scandinavia', finland: 'scandinavia', germany: 'german', switzerland: 'german', italy: 'italy' };
+const EUROPE = new Set(['france', 'spain', 'portugal', 'austria', 'ireland', 'poland', 'czech republic', 'czechia', 'hungary', 'greece', 'luxembourg', 'scotland', 'wales', 'iceland', 'croatia', 'slovenia', 'slovakia', 'romania', 'bulgaria', 'serbia', 'estonia', 'latvia', 'lithuania']);
+/** Eisner's homicide rate for `country` in `year` (per 100,000), or null outside Europe or before 1200. */
+export function eisnerHomicide(country, year) {
+    const c = norm(String(country ?? '')), key = Object.keys(EISNER_REGION).find(k => c === k || c.startsWith(k)), region = key ? EISNER_REGION[key] : null;
+    const i = EISNER_PERIODS.findIndex(([a, b]) => year >= a && year <= b);
+    const cell = region && i >= 0 ? EISNER[region][i] : null;
+    const names = { england: 'England', lowlands: 'the Netherlands and Belgium', scandinavia: 'Scandinavia', german: 'Germany and Switzerland', italy: 'Italy' };
+    if (cell)
+        return { v: cell[0], where: `${names[region]}, ${EISNER_PERIODS[i][0]}–${EISNER_PERIODS[i][1]}`, few: cell[1] };
+    if (!region && !EUROPE.has(c))
+        return null;
+    const e = EISNER_EUROPE.find(([a, b]) => year >= a && year <= b);
+    return e ? { v: e[2], where: `Europe, ${e[0]}–${e[1]}`, few: false } : null;
 }
 // Cities: Modelski (ancient 3700 BC–AD 1000; modern AD 2000) and Chandler (AD 100–1975) as spatialized by Reba, Reitsma & Seto
 // 2016 (Sci Data 3:160034): 1,725 cities with population by year. A city's population in `year` is log-linear between its

@@ -31,6 +31,12 @@ export interface Net { C: number; N: number; R: number; P: number; F: number; E:
 export interface Needs {
     waterL: number; kcal: number; awake: number; slept: number; waterDeath: number | null; foodDeath: number | null;
     work?: number; alcohol?: number; debt?: number;
+    /** Minutes of work since the last break of 15 min or more, the current break's length, and minutes worked since the last sleep. */
+    onTask?: number; restRun?: number; duty?: number;
+    /** Energy eaten beyond the day's need, kcal (body-engine.ts settleMass). */
+    surplus?: number;
+    /** Alcohol drunk and not yet absorbed, as the blood alcohol it will add (%), and minutes since the last meal. */
+    gut?: number; sinceMeal?: number;
 }
 
 /** Immersion: water temperature, speed, which of the 17 JOS-3 segments are under, and how the person is in it. */
@@ -81,6 +87,10 @@ export interface Person {
     species: string; mass: number; lost: number; red: number; wounds: Wound[]; nextId: number;
     dead: string | null; deathIn: number | null; deathMode?: 'bleeding' | 'stopped'; minute: number; net: Net;
     age?: number; sex?: string; region?: string | null; body?: BodyTiming;
+    /** The country the character comes from, when the story gives one other than the scene's (swimming, trust games). */
+    country?: string;
+    /** Whether a room's fire set the character's air temperature at the last minute (rooms.ts feelHeat). */
+    fireHeat?: boolean;
     unconscious?: string | null; apnea?: number | null; drowning?: boolean; paralysed?: boolean; exhausted?: boolean;
     needs?: Needs; env?: Env | null; thermal?: ThermalState; weather?: string | null; workMet?: number | null;
     /** Pulse: minute-by-minute flow and vital signs prepared for the coming PassTime, and wounds already applied to its engine. */
@@ -95,9 +105,45 @@ export interface Person {
     burnDeath?: { p: number; fatal: boolean; min: number; deathMin: number | null }; burnO?: number[]; burnt?: Record<string, BurnDepth>; inhalation?: boolean;
     heatStroke?: { min: number; exertional: boolean; fatal?: boolean; deathMin?: number } | null;
     swimFailed?: boolean; canSwim?: boolean; underS?: number; breathHold?: number | null;
-    fitZ?: number; gripZ?: number; runZ?: number;
+    fitZ?: number; gripZ?: number; runZ?: number; jumpZ?: number; liftZ?: number;
+    /** Minutes left of a knockout or a choke (body-engine.ts advance); minutes since waking from a knockout (concussion). */
+    koLeft?: number; concussedMin?: number;
+    /** Story minute on the local clock, set by each rule call and moved with the body's minutes (body clock for alertness). */
+    clockMin?: number;
+    /** General reasoning ability, a z-score among people, drawn once (WorkOut). */
+    gZ?: number;
+    /** The light the eyes were last at (lux) and the story minute they left it (vision.ts adaptedLux). */
+    eye?: { lux: number; t: number };
+    /** Feelings still running (Appraise): the OCC type, what it is about, minutes left. */
+    /** Appraised feelings still running: the OCC type, what it is about, minutes left, and the turn it was recorded in (the
+     *  number of the player's lines then; the music's newest feeling, music.ts sceneTarget). */
+    feelings?: { type: string; about?: string; left: number; turn?: number; strength?: number }[];
     /** Where the person's BMI sits among their sex in their country and year (BodySize, or a build the story states). */
     bmiZ?: number;
+    /** The activity under way, as BodyEnvironment named it (mood.ts). */
+    doing?: string;
+    /** Working-memory span, chunks (knowledge.ts heldOfMessage), drawn once. */
+    span?: number;
+    /** How quick the person's speech is against their language, sex and age, a z-score drawn once when BodySize first places
+     *  them (voice-body.ts voiceOf), from a random stream of its own so no other draw moves. */
+    rateZ?: number;
+    /** The folds' habitual stretch and the tract's size against the person's sex (voice-sound.ts), z-scores drawn once when
+     *  BodySize first places them, each from a random stream of its own. */
+    stretchZ?: number;
+    tractZ?: number;
+    /** The person's speaking habits against people of their sex (pocket.ts HABITS): melody range, time in pauses, breathiness;
+     *  standard normal draws, made once (BodySize), or drawn from the chat's salt and the name where never made. */
+    spanZ?: number;
+    pauseZ?: number;
+    breathZ?: number;
+    /** The timing of the person's growth against their sex (growth.ts: the centre of their growth spurt), a z-score drawn once
+     *  when BodySize first places them, from a stream of its own. */
+    timingZ?: number;
+    /** The trade the story or NewCharacter gave the person, as named (the first-meeting card shows it). */
+    occupation?: string;
+    /** Body stores spent by the food deficit (body-engine.ts settleMass): mass before the deficit, fat and glycogen left, the
+     * deficit already taken from them (kcal). */
+    stores?: { mass0: number; fatKg: number; glycogenG: number; applied: number; lethalBmi?: number };
     /** Languages the character knows, lower case; absent when the story has not stated them. */
     languages?: string[];
     /** How the character produces voice: absent = normal; 'whisper' = no vocal-fold vibration. */
@@ -107,7 +153,7 @@ export interface Person {
 }
 
 /** A fixed fact of the story and who knows it; `from` maps a normalized knower name to how they learned it. */
-export interface Fact { id: number; text: string; imp?: number; knowers: string[]; everyone: boolean; seq?: number; from?: Record<string, string>; secret?: boolean; at?: Record<string, number>; ageAt?: Record<string, number>; kind?: 'event' | 'knowledge' }
+export interface Fact { id: number; text: string; imp?: number; knowers: string[]; everyone: boolean; seq?: number; from?: Record<string, string>; secret?: boolean; at?: Record<string, number>; times?: Record<string, number[]>; ageAt?: Record<string, number>; kind?: 'event' | 'knowledge' }
 
 /** Rules-engine state of one chat (chatMetadata.rulesEngine.state). */
 export interface RuleState {
@@ -115,6 +161,12 @@ export interface RuleState {
     facts?: Fact[]; factSeq?: number;
     /** Trust between two characters after a betrayal, by "truster→betrayer" (social.ts trustAgain). */
     trust?: Record<string, { lied: boolean; repair: string; kept: number }>;
+    /** Who has looked at whom (Look with target_who): when, story minutes, and whether the face was made out; for lineups. */
+    sightings?: Record<string, Record<string, { t: number | null; identified: boolean; stressed?: boolean; weapon?: boolean }>>;
+    /** The last small favour asked of each person (SocialResponse), for a bigger one later: agreed, story minutes, who asked. */
+    favours?: Record<string, { agreed: boolean; t: number | null; by: string | null }>;
+    /** Listener|speaker pairs who have talked (Communicate): a baseline for judging lies. */
+    acquainted?: Record<string, boolean>;
     /** Story clock: the time set with /rules-time (minutes, clock.ts) and the minutes PassTime has run since. */
     clock?: { t: number; add: number; sec?: number };
     /** Distances between named spots, metres, keyed 'a|b' with a < b (actions.ts); recorded once, reused after. */

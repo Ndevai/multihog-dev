@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css">
+<style>#send_form{display:flex} #nonQRFormItems{display:flex;flex:1} textarea{flex:1;height:60px;font:16px serif}</style></head><body>
+<div id="chat"><div class="mes" mesid="0" is_user="true"><div class="mes_text"></div></div></div>
+<div id="form_sheld"><form id="send_form"><div id="nonQRFormItems">
+<div id="leftSendForm"><div id="options_button" tabindex="0">≡</div></div>
+<textarea id="send_textarea"></textarea>
+<div id="rightSendForm"><div id="send_but" tabindex="0">send</div></div></div></form></div>
+<div id="extensions_settings2"></div>
+<script>
+window.toastr = { info(){}, warning(){}, success(){} };
+window.__h = {};
+const ctx = { chatMetadata: {}, chat: [], extensionSettings: {}, eventSource: { on(e, f) { (window.__h[e] ??= []).push(f); } },
+  eventTypes: { MESSAGE_RECEIVED: 'mr', CHAT_COMPLETION_SETTINGS_READY: 'ccsr', TEXT_COMPLETION_SETTINGS_READY: 'tcsr', GENERATION_STARTED: 'gs', MESSAGE_SWIPED: 'ms', CHAT_CHANGED: 'cc', MESSAGE_DELETED: 'md', USER_MESSAGE_RENDERED: 'umr', CHARACTER_MESSAGE_RENDERED: 'cmr', MESSAGE_UPDATED: 'mu', MORE_MESSAGES_LOADED: 'mml' },
+  setExtensionPrompt() {}, saveSettingsDebounced() {}, registerFunctionTool() {}, unregisterFunctionTool() {}, saveMetadata: async () => {}, saveMetadataDebounced() {},
+  renderExtensionTemplateAsync: async () => (await fetch('/settings.html')).text(), POPUP_TYPE: { TEXT: 1, INPUT: 2 }, callGenericPopup: async () => null,
+  getCurrentChatId: () => 'c1', characters: [], writeExtensionField: async () => {}, generate: async () => {} };
+window.SillyTavern = { getContext: () => ctx };
+window.__ready = import('/src/index.js').then(() => new Promise(r => { const t = setInterval(() => { if (document.getElementById('rules-voice')) { clearInterval(t); r(true); } }, 50); }));
+</script></body></html>

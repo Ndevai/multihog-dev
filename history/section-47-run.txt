@@ -1,0 +1,220 @@
+# Section 47 run (the uploaded tree of (113) against this tree; 2026-11-10)
+
+## Tests (the steps of npm test; tsc Version 7.0.2)
+route: 218 checks, 0 miss(es)
+frame: 202 checks, 0 miss(es)
+intent: 37 checks, 0 miss(es)
+engine: 203 checks, 0 miss(es)
+plan: 60 checks, 0 miss(es)
+size: size: 9 of 9
+ui: ui: 69 of 69
+sequences: sequences: 300 run, 0 distinct failing sequence(s)
+
+## Negative controls (every control on ui.js, index.js, style.css, voice.js, voice-code.js, prosody.js)
+U1 caught others latest (0 s)
+U2 caught note as text (0 s)
+U3 caught edited line (0 s)
+U4 caught no default (0 s)
+U4b caught choices alike (0 s)
+U4c caught number keys (0 s)
+U4d caught shared words (0 s)
+U6 caught era bands (0 s)
+U7 caught kind contrast (0 s)
+U7b caught tone (0 s)
+U8 caught reserved name (0 s)
+V1 caught capitals loud (0 s)
+V2 caught abbreviations (0 s)
+V3 caught closer needs opener (0 s)
+V4 caught pi to five (0 s)
+V4b caught pi in engine (12 s)
+H1 caught toggle off (0 s)
+H2 caught marks kept on backspace (0 s)
+H3 caught layer holds the text (0 s)
+H4 caught chat classes (0 s)
+H5 caught one feeling (0 s)
+R10 caught signs after a quotation mark (0 s)
+R10b caught one colon is writing (0 s)
+R11 caught Backspace in quotes (0 s)
+R12 caught voice button from the keyboard (0 s)
+R20 caught say it another way takes the line back (0 s)
+R21 caught guillemets are quotes (0 s)
+R21b caught capitals on common words (0 s)
+R21c caught suspended hyphen (0 s)
+I18 caught the note shows the line as meant (0 s)
+RV7 caught Backspace: a word left with no letter loses its marks (0 s)
+RV8 caught Delete: a word left with no letter loses its marks (0 s)
+RV9 caught a dash may cling to a VoQS opener (0 s)
+RV10 caught a word a dash joins to a VoQS opener is a word of its own (0 s)
+RV11 caught a dash may cling to a VoQS closer (0 s)
+RW7 caught a pause titled by its length (0 s)
+RW8 caught a pause's length kept for its title (0 s)
+RW9 caught capitals after a determiner are an abbreviation (0 s)
+RW10 caught LA, DC, HR, PR and ER are abbreviations (0 s)
+RW11 caught the typesetting's added words are not selected (0 s)
+RY13 caught a world-book line is read without its hidden marks (0 s)
+RY18 caught abbreviations that are nouns stay after a determiner (0 s)
+RY19 caught AIDS and SIM stay as written (0 s)
+RY20 caught a hyphen before a colon is a face, not a cut-off (0 s)
+RZ10 caught every character of the Tags block is taken out (12 s)
+RZ11 caught the narrator's prompt carries no tag character (0 s)
+RZ21 caught speech in any quotation marks is the speech whose loudness counts (0 s)
+RZ22 caught a quote left open runs to the line's end (0 s)
+RZ23 caught a cut-off before a closing quotation mark or bracket (0 s)
+RZ24 caught a word opening any quotation marks starts a sentence (0 s)
+RS9 caught a whole number in brackets is no timed pause (0 s)
+RS10 caught a degree sign before C, F or K is a unit (0 s)
+RS13 caught a mark goes on the letters inside any quotation marks and before a dash (0 s)
+RA10 caught every request to a model leaves with notation (0 s)
+RA11 caught a shouted name keeps its capital (0 s)
+RA12 caught a feeling keeps the selection (0 s)
+RL1 caught pitch order in the notation (0 s)
+RL2 caught pitch order in the delivery (0 s)
+RL3 caught pitch order in the chat (0 s)
+RL4 caught stress mark in the chat (0 s)
+RM1 caught a louder word's level is the raised voice's (0 s)
+RM2 caught faster with slower keeps the speaker's own rate (0 s)
+RM3 caught the look's sizes come from the sound (0 s)
+RM4 caught further time is 1 ÷ rate − 1 (0 s)
+RM5 caught the palest ink keeps 4.5:1 (0 s)
+RM6 caught the pitch stroke takes the word's own colour (0 s)
+RM7 caught a breathy word keeps a sharp edge (0 s)
+RM8 caught a word with a pitch stroke adds no height to its line (0 s)
+RM9 caught a feeling's colour reads on the theme (0 s)
+RM10 caught two feelings' colours stay apart (0 s)
+RM11 caught a drawn-out vowel is written again (0 s)
+RM12 caught a pause's dots count its silence (0 s)
+RM13 caught the space between two slower words takes the tempo (0 s)
+RM14 caught words that share a phonation stand in one run (0 s)
+RM15 caught a mark's quantity on hover (0 s)
+75 of 75 controls caught.
+
+## Chromium: line height, words over the next, blur, hollow letters (measure.mjs)
+### The uploaded tree, multiple distinctions, Inter, 760 px
+pitch: rises / falls / rise-fall / fall-rise               rows 2.424 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve color(srgb 0.442353 0.737255 0.895686)
+MISS every line keeps the line spacing: pitch: rises / falls / rise-fall / fall-rise: 2.424 rows of 23px
+volume: louder / softer / whispered                        rows 2.087 (unmarked 2.000)  overlaps 0  blur 0  hollow 6  curve -
+MISS every line keeps the line spacing: volume: louder / softer / whispered: 2.087 rows of 23px
+MISS no blurred or empty letters: volume: louder / softer / whispered: blur 0, hollow 6
+pace: faster / slower / drawn out / short pause / pause /  rows 2.000 (unmarked 1.000)  overlaps 1  blur 0  hollow 0  curve -
+MISS no word drawn over the next: pace: faster / slower / drawn out / short pause / pause / cut off: swear|, 2.2px
+voice: breathy / creaky / falsetto / smiling / laughing    rows 2.174 (unmarked 2.000)  overlaps 0  blur 6  hollow 0  curve -
+MISS every line keeps the line spacing: voice: breathy / creaky / falsetto / smiling / laughing: 2.174 rows of 23px
+MISS no blurred or empty letters: voice: breathy / creaky / falsetto / smiling / laughing: blur 6, hollow 0
+breath in / breath out / stressed                          rows 1.087 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+MISS every line keeps the line spacing: breath in / breath out / stressed: 1.087 rows of 23px
+louder + rises + stressed · softer + falls · whispered + s rows 1.588 (unmarked 1.000)  overlaps 0  blur 0  hollow 5  curve color(srgb 0.442353 0.737255 0.895686)
+MISS every line keeps the line spacing: louder + rises + stressed · softer + falls · whispered + slower: 1.588 rows of 23px
+MISS no blurred or empty letters: louder + rises + stressed · softer + falls · whispered + slower: blur 0, hollow 5
+breathy + falls · creaky + slower · falsetto + rises · lou rows 1.588 (unmarked 1.000)  overlaps 0  blur 2  hollow 0  curve color(srgb 0.417414 0.729811 0.899967 / 0.944) color(srgb 0.442353 0.737255 0.895686)
+MISS every line keeps the line spacing: breathy + falls · creaky + slower · falsetto + rises · louder + drawn out + rise-fall: 1.588 rows of 23px
+MISS no blurred or empty letters: breathy + falls · creaky + slower · falsetto + rises · louder + drawn out + rise-fall: blur 2, hollow 0
+angry                                                      rows 1.087 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+MISS every line keeps the line spacing: angry: 1.087 rows of 23px
+afraid                                                     rows 1.043 (unmarked 1.000)  overlaps 0  blur 0  hollow 6  curve -
+MISS every line keeps the line spacing: afraid: 1.043 rows of 23px
+MISS no blurred or empty letters: afraid: blur 0, hollow 6
+happy                                                      rows 1.467 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve color(srgb 0.442353 0.737255 0.895686)
+MISS every line keeps the line spacing: happy: 1.467 rows of 23px
+sad                                                        rows 1.314 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve color(srgb 0.442353 0.737255 0.895686)
+MISS every line keeps the line spacing: sad: 1.314 rows of 23px
+tender                                                     rows 1.043 (unmarked 1.000)  overlaps 0  blur 2  hollow 0  curve -
+MISS every line keeps the line spacing: tender: 1.043 rows of 23px
+MISS no blurred or empty letters: tender: blur 2, hollow 0
+no marks                                                   rows 2.000 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve -
+distinct look, Inter, 760px: 1 of 13 lines clean; no page errors
+
+### The uploaded tree, the lighter look, Inter, 760 px
+pitch: rises / falls / rise-fall / fall-rise               rows 2.000 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve rgba(0, 0, 0, 0)
+volume: louder / softer / whispered                        rows 2.043 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve -
+MISS every line keeps the line spacing: volume: louder / softer / whispered: 2.043 rows of 23px
+pace: faster / slower / drawn out / short pause / pause /  rows 2.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+voice: breathy / creaky / falsetto / smiling / laughing    rows 2.217 (unmarked 2.000)  overlaps 0  blur 6  hollow 0  curve -
+MISS every line keeps the line spacing: voice: breathy / creaky / falsetto / smiling / laughing: 2.217 rows of 23px
+breath in / breath out / stressed                          rows 1.087 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+MISS every line keeps the line spacing: breath in / breath out / stressed: 1.087 rows of 23px
+louder + rises + stressed · softer + falls · whispered + s rows 1.043 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve rgba(0, 0, 0, 0)
+MISS every line keeps the line spacing: louder + rises + stressed · softer + falls · whispered + slower: 1.043 rows of 23px
+breathy + falls · creaky + slower · falsetto + rises · lou rows 1.043 (unmarked 1.000)  overlaps 0  blur 2  hollow 0  curve rgba(0, 0, 0, 0)
+MISS every line keeps the line spacing: breathy + falls · creaky + slower · falsetto + rises · louder + drawn out + rise-fall: 1.043 rows of 23px
+angry                                                      rows 1.043 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+MISS every line keeps the line spacing: angry: 1.043 rows of 23px
+afraid                                                     rows 1.043 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+MISS every line keeps the line spacing: afraid: 1.043 rows of 23px
+happy                                                      rows 1.043 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve rgba(0, 0, 0, 0)
+MISS every line keeps the line spacing: happy: 1.043 rows of 23px
+sad                                                        rows 1.043 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve rgba(0, 0, 0, 0)
+MISS every line keeps the line spacing: sad: 1.043 rows of 23px
+tender                                                     rows 1.043 (unmarked 1.000)  overlaps 0  blur 2  hollow 0  curve -
+MISS every line keeps the line spacing: tender: 1.043 rows of 23px
+no marks                                                   rows 2.000 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve -
+plain look, Inter, 760px: 3 of 13 lines clean; no page errors
+
+### This tree, multiple distinctions, Inter, 760 px
+pitch: rises / falls / rise-fall / fall-rise               rows 2.000 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve rgb(220, 220, 210)
+volume: louder / softer / whispered                        rows 2.000 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve -
+pace: faster / slower / drawn out / short pause / pause /  rows 2.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+voice: breathy / creaky / falsetto / smiling / laughing    rows 2.000 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve -
+breath in / breath out / stressed                          rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+louder + rises + stressed · softer + falls · whispered + s rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve rgb(220, 220, 210)
+breathy + falls · creaky + slower · falsetto + rises · lou rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve rgb(220, 220, 210)
+angry                                                      rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+afraid                                                     rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+happy                                                      rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve rgb(220, 220, 210)
+sad                                                        rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve rgb(220, 220, 210)
+tender                                                     rows 1.000 (unmarked 1.000)  overlaps 0  blur 0  hollow 0  curve -
+no marks                                                   rows 2.000 (unmarked 2.000)  overlaps 0  blur 0  hollow 0  curve -
+distinct look, Inter, 760px: 13 of 13 lines clean; no page errors
+
+### This tree, every font and width (summary lines)
+distinct look, Inter, 760px: 13 of 13 lines clean; no page errors
+distinct look, Inter, 400px: 13 of 13 lines clean; no page errors
+distinct look, Liberation Sans, 760px: 13 of 13 lines clean; no page errors
+distinct look, Liberation Sans, 400px: 13 of 13 lines clean; no page errors
+distinct look, DejaVu Serif, 760px: 13 of 13 lines clean; no page errors
+distinct look, DejaVu Serif, 400px: 13 of 13 lines clean; no page errors
+distinct look, Liberation Serif, 760px: 13 of 13 lines clean; no page errors
+distinct look, Liberation Serif, 400px: 13 of 13 lines clean; no page errors
+distinct look, Lora, 760px: 13 of 13 lines clean; no page errors
+distinct look, Lora, 400px: 13 of 13 lines clean; no page errors
+plain look, Inter, 760px: 13 of 13 lines clean; no page errors
+
+## Feeling colours (palette-css.mjs)
+dark
+   anger       oklch(0.74 0.15 28)      #fb8274 contrast 8.2 6.6 5.0 6.8 6.6
+   fear        oklch(0.74 0.13 310)     #c493e8 contrast 8.3 6.7 5.0 6.9 6.7
+   happiness   oklch(0.84 0.15 95)      #e9c944 contrast 12.3 10.0 7.5 10.3 9.9
+   sadness     oklch(0.74 0.045 230)    #8eb1c2 contrast 8.8 7.1 5.4 7.4 7.1
+   tenderness  oklch(0.84 0.085 0)      #fab4c8 contrast 11.8 9.6 7.2 9.9 9.6
+   closest pair, normal vision: fear–sadness 58 CIELUV units; pairs under 40: none
+   closest pair, deuteranope: sadness–tenderness 29 CIELUV units; pairs under 40: anger–happiness 38, fear–sadness 35, sadness–tenderness 29
+   closest pair, protanope: sadness–tenderness 9 CIELUV units; pairs under 40: anger–tenderness 37, sadness–tenderness 9
+   lowest contrast: 4.98
+light
+   anger       oklch(0.46 0.13 28)      #93342c contrast 7.2
+   fear        oklch(0.46 0.12 310)     #6c4289 contrast 7.1
+   happiness   oklch(0.54 0.11 95)      #836d03 contrast 4.8
+   sadness     oklch(0.46 0.04 230)     #415d6a contrast 6.6
+   tenderness  oklch(0.54 0.07 0)       #915d6d contrast 4.9
+   closest pair, normal vision: fear–sadness 45 CIELUV units; pairs under 40: none
+   closest pair, deuteranope: anger–happiness 21 CIELUV units; pairs under 40: anger–happiness 21, anger–tenderness 31, fear–sadness 28, sadness–tenderness 22
+   closest pair, protanope: sadness–tenderness 7 CIELUV units; pairs under 40: anger–happiness 37, anger–sadness 31, anger–tenderness 27, fear–sadness 40, sadness–tenderness 7
+   lowest contrast: 4.76
+
+## The look's sizes, derived from the sound (ui.js lookVars; voice.js soundOf)
+{"fast-track":-0.017,"slow-track":0.053,"fast-gap":-0.03,"slow-gap":0.2,"fast-lean":-10.6,"loud-weight":757,"quiet-weight":354,"whisper-weight":300,"loud-size":1.12,"quiet-size":0.91,"whisper-size":0.82,"quiet-ink":0.88,"whisper-ink":0.78,"pitch-rise":0.3}
+fast {"rate":1.27,"db":0,"pitch":[0],"phonation":"modal","register":"modal","held":0} | about 1.3 times your own pace
+slow {"rate":0.6,"db":0,"pitch":[0],"phonation":"modal","register":"modal","held":0} | about 0.6 times your own pace
+loud {"rate":1,"db":5.99,"pitch":[0],"phonation":"modal","register":"modal","held":0} | about 6 dB above your normal voice
+quiet {"rate":1,"db":-5,"pitch":[0],"phonation":"modal","register":"modal","held":0} | about 5 dB below your normal voice
+whisper {"rate":1,"db":-26.8,"pitch":[0],"phonation":"whisper","register":"modal","held":0} | about 27 dB below your normal voice
+up {"rate":1,"db":0,"pitch":[0,6],"phonation":"modal","register":"modal","held":0} | about 6 semitones up
+down {"rate":1,"db":0,"pitch":[0,-6],"phonation":"modal","register":"modal","held":0} | about 6 semitones down
+loudness ratios loud 1.515, quiet 0.707, whisper 0.156
+pause 0.1 s, 0.5 s, 2 s in dots: 1 3 10
+
+## Prompt audit and constants
+BodyFall.slip: A slip or trip on level ground (ice, a wet floor): the body goes down from its own height, not onto the feet;
+docs/constants.md: 135 constants, 338 unregistered tags
+
+## TypeScript: 6.0.3 against 7.0.2
+131 emitted files compared, 0 differ
