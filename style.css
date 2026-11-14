@@ -408,6 +408,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now {
     /* See-through, under white corner brackets (the player's pick of both, 2026-11-12): 74 % is the least opacity at which
        light sky blue still reads at 4.5:1 with a white background showing through (55 % gave 2.4:1). */
     border: 2px solid transparent; border-radius: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
     background:
         linear-gradient(white, white) top left / 34px 3px no-repeat, linear-gradient(white, white) top left / 3px 34px no-repeat,
         linear-gradient(white, white) top right / 34px 3px no-repeat, linear-gradient(white, white) top right / 3px 34px no-repeat,
@@ -449,6 +450,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene:not(:empty) 
     display: flex; flex-direction: column; align-items: flex-start; margin: 10px 0 0 12px; padding: 0.45em 0.9em 0.5em;
     text-align: left; font-variant: normal; letter-spacing: 0; color: white; background: var(--rules-night-ground);
     border: 0; border-left: 4px solid var(--rules-accent); border-radius: 0 8px 8px 0;
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
 }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene > span + span::before { content: none; }
 body.rules-box-night.rules-box:not(.rules-box-log) .rules-scene-clock { font: 700 max(24px, calc(var(--mainFontSize) * 24 / 15))/1.1 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
@@ -471,6 +473,16 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { min-w
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pressed="true"] { color: var(--rules-accent-ink); background: transparent; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus { outline: none; box-shadow: none; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -8px; }
+@media (max-width: 400px) {
+    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { margin-left: 16px; margin-right: 16px; }
+    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { padding: 0 4px; letter-spacing: 0.04em; }
+}
+@media (max-height: 500px) {
+    body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now { margin-top: 24px; padding: 18px 18px 48px; }
+    body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: min(calc(var(--rules-box-lines) * 1.7em), 36vh); max-height: 36vh; }
+    body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now::after { bottom: 42px; }
+    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { margin-top: -46px; margin-bottom: 6px; }
+}
 /* Hold to explain (index.ts showExplain; the player's pick, 2026-11-13): while a marked word, the name tag or the mode word is
    held, its title stands in the menu line in the buttons' place, its name in bold, and the held word wears a ring in its own
    colour; the one-time hint stands there the same way. A word that explains opens no device menu when held. */
@@ -500,7 +512,7 @@ body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { display: flex
     background: linear-gradient(-7deg, transparent 36%, rgba(255, 255, 255, 0.16) 36%, rgba(255, 255, 255, 0.16) 70%, transparent 70%), linear-gradient(135deg, var(--rules-accent), var(--rules-accent-deep));
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); overflow: visible;
 }
-#rules-box-card .rules-card-band:has(.rules-card-face[hidden]) { padding-left: 18px; }
+#rules-box-card .rules-card-band:has(.rules-card-face[hidden]) { padding-left: 18px; align-items: center; }
 #rules-box-card .rules-card-face { position: absolute; left: 4%; bottom: 0; width: 38%; height: 240px; object-fit: cover; object-position: top; border: 3px solid white; border-bottom: 0; }
 #rules-box-card .rules-card-role { font: italic 700 19px/1.2 var(--rules-serif, Georgia, serif); color: white; transform: rotate(-4deg); transform-origin: 100% 50%; }
 #rules-box-card .rules-card-name {
