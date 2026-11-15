@@ -550,6 +550,25 @@ function combined(a: { share?: string | number; base_share?: string | number }):
 const species = str('Species of this character, as a creature name (human, horse, wolf); read when the character first appears. Default human.');
 const partArg = str('Body part by its name: e.g. head, throat, upper body, lower body, right upper arm, left hand, right lower leg, left eye.');
 
+/** Infer a non-human DF creature id from a descriptive noun phrase (e.g. "the white cat" -> CAT) when species is omitted. */
+function inferSpeciesFromName(name: string): string | undefined {
+    const clean = name.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
+    if (!clean) return undefined;
+    const words = clean.split(" ");
+    // Only infer from multi-word descriptive phrases (e.g. "the cat", "white cat") or lowercase common nouns, not capitalized proper names like "Robin" or "Wolf".
+    const hasDeterminerOrLower = words.length > 1 || /^[a-z]/.test(name.trim());
+    if (!hasDeterminerOrLower) return undefined;
+    for (let i = 0; i < words.length; i++) {
+        const tail = words.slice(i).join(" ");
+        const id = creatureId(tail);
+        if (id && id !== "HUMAN" && creature(id)?.parts.length) return id;
+    }
+    const last = words[words.length - 1];
+    const lastId = creatureId(last);
+    if (lastId && lastId !== "HUMAN" && creature(lastId)?.parts.length) return lastId;
+    return undefined;
+}
+
 /** Species id from a tool argument: 'HUMAN' when absent, null when no DF creature matches. */
 const speciesOf = (text: string | null | undefined) => text ? creatureId(text) : 'HUMAN';
 const noSpecies = (text: string | null | undefined) => `No creature named "${text}" in the creature list. State unchanged.`;
@@ -582,7 +601,8 @@ function who(st: RuleState, rawName: string | null | undefined, speciesArg?: str
     if (near) return { error: `No record of "${name}"; ${near} is on record. Call again with ${near}, or give species to start a separate character.` };
     const known = st.people?.[name];
     const t: ReturnType<typeof recorded> = known ? {} : recorded(name);
-    const text = speciesArg || t.species;
+    const inferred = !known && !speciesArg && !t.species ? inferSpeciesFromName(name) : undefined;
+    const text = speciesArg || t.species || inferred;
     const sp = speciesOf(text);
     if (!sp) return { error: noSpecies(text) };
     // DF names some creatures only in legends ([DOES_NOT_EXIST], no body): chimera, centaur, griffon.
