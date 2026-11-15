@@ -1265,7 +1265,9 @@ function showFigure(mes, unit) {
         }
     }
     const largeOn = settings().boxPicture === 'large' && !!figureSrc;
-    stage.hidden = !largeOn;
+    const hasStage = largeOn && stageRoster.size > 0;
+    stage.hidden = !hasStage;
+    stage.toggleAttribute('hidden', !hasStage);
     fig.hidden = !largeOn;
     // Sort visible cast by spatial x coordinate (t11/t21/t31 slot order)
     const castNames = [...stageRoster.keys()].slice(-3).sort((a, b) => (posOf.get(a)?.x ?? 0) - (posOf.get(b)?.x ?? 0));
@@ -1347,7 +1349,12 @@ function showPlate(mes, unit) {
         who.className = 'rules-who';
         name.after(who);
     }
-    who.textContent = unit?.getAttribute('data-who') || name.textContent || '';
+    const unitWho = unit?.getAttribute('data-who')?.trim() ?? '';
+    const isUser = mes.getAttribute('is_user') === 'true';
+    const plateSaid = unit?.getAttribute('data-said') === 'true';
+    const plateLabel = unitWho || (isUser || plateSaid ? (name.textContent?.trim() ?? '') : '');
+    who.textContent = plateLabel;
+    who.hidden = !plateLabel;
     const voice = voiceOfWho(who.textContent);
     who.title = voice ? `${who.textContent}'s voice: ${voiceLine(voice)}` : '';
     let slot = mes.querySelector('.rules-slot');
@@ -1477,8 +1484,16 @@ function showBox() {
     const units = unitsIn(mes), unit = Math.min(mes.getAttribute('mesid') === boxAt?.mes ? boxAt.unit : 0, Math.max(0, units.length - 1));
     boxAt = { mes: mes.getAttribute('mesid') ?? '', unit };
     document.querySelectorAll('#chat .rules-unit-now').forEach(e => e.classList.remove('rules-unit-now'));
+    document.querySelectorAll('#chat .rules-advance-tri').forEach(e => e.remove());
     const now = units[unit];
     now?.classList.add('rules-unit-now');
+    if (now) {
+        const tri = document.createElement('span');
+        tri.className = 'rules-advance-tri';
+        tri.setAttribute('aria-hidden', 'true');
+        tri.textContent = '▼';
+        now.after(tri);
+    }
     showPlate(mes, now);
     hintHold(now);
     showFigure(mes, now);
@@ -1500,6 +1515,7 @@ function showBox() {
         log.setAttribute('aria-pressed', String(boxLog));
     }
     document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
+    document.getElementById('rules-box-music')?.setAttribute('aria-pressed', String(settings().musicOn));
     // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
     const key = `${boxAt.mes}:${unit}:${units.length}`;
     // The first time the box reaches the first line in the chat of a character with a card of their own, going on, a card names
@@ -1857,12 +1873,12 @@ function buildBox() {
     bar.setAttribute('role', 'toolbar');
     bar.setAttribute('aria-label', 'The text box');
     const button = (id, text, label, act) => { const b = document.createElement('button'); b.type = 'button'; b.id = id; b.textContent = text; b.title = label; b.setAttribute('aria-label', label); b.addEventListener('click', act); bar.appendChild(b); return b; };
-    button('rules-box-back', '‹', 'Back', () => stepBox(-1));
+    button('rules-box-back', '◀', 'Back', () => stepBox(-1));
     const count = document.createElement('span');
     count.id = 'rules-box-count';
     count.setAttribute('aria-live', 'off');
     bar.appendChild(count);
-    button('rules-box-next', '›', 'Next', () => stepBox(1));
+    button('rules-box-next', '▶', 'Next', () => stepBox(1));
     button('rules-box-auto', 'Auto', 'Move on by itself once a box has been read', () => {
         // settings() rebuilds the stored object on each call, so the toggle reads and writes one object.
         const s = settings();
@@ -1875,8 +1891,9 @@ function buildBox() {
         else if (!settings().boxAuto)
             clearTimeout(autoTimer);
     });
-    button('rules-box-music', '♪', 'Music', () => { const s = settings(); s.musicOn = !s.musicOn; ctx().saveSettingsDebounced(); musicNow(); const box = document.getElementById('rules_engine_music'); if (box)
+    const musicBtn = button('rules-box-music', '♪', 'Music', () => { const s = settings(); s.musicOn = !s.musicOn; ctx().saveSettingsDebounced(); musicNow(); musicBtn.setAttribute('aria-pressed', String(s.musicOn)); const box = document.getElementById('rules_engine_music'); if (box)
         box.checked = s.musicOn; });
+    musicBtn.setAttribute('aria-pressed', String(settings().musicOn));
     button('rules-box-story', 'Story', 'What your character remembers, the scene\'s map and the story\'s timeline', () => openTab(mapNow() ? 'map' : 'memory'));
     button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog)
         document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
@@ -1889,6 +1906,21 @@ function buildBox() {
     scene.id = 'rules-box-scene';
     scene.setAttribute('aria-live', 'off');
     chat.before(scene);
+    if (!document.getElementById('rules-top-fold')) {
+        const fold = document.createElement('button');
+        fold.type = 'button';
+        fold.id = 'rules-top-fold';
+        fold.textContent = '▲';
+        fold.title = 'Fold or unfold SillyTavern top toolbar';
+        fold.setAttribute('aria-label', 'Toggle top bar');
+        fold.setAttribute('aria-expanded', 'true');
+        fold.addEventListener('click', () => {
+            const folded = document.body.classList.toggle('rules-top-folded');
+            fold.textContent = folded ? '▼' : '▲';
+            fold.setAttribute('aria-expanded', String(!folded));
+        });
+        document.body.appendChild(fold);
+    }
     // A tap on the badge (the story's clock) opens the timeline.
     scene.addEventListener('click', () => openTab('time'));
     // A tap on the box's text is "next"; a tap on anything that acts by itself (a link, a button, the note, an edit) is its own,
