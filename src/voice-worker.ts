@@ -80,7 +80,7 @@ async function latentsOf(voice: { state: State; steps: number }, c: Chunk, tempe
     const te = await nets.text.run({ token_ids: new ort.Tensor('int64', BigInt64Array.from(c.ids.map(BigInt)), [1, c.ids.length]) });
     st = (await main(new Float32Array(0), 0, te['embeddings']!.data as Float32Array, c.ids.length, st)).state;
     const out: Float32Array[] = [];
-    let curr = new Float32Array(LATENT).fill(NaN), eosAt = -1;
+    let curr: Float32Array = new Float32Array(LATENT).fill(NaN), eosAt = -1;
     for (let step = 0; step < c.maxFrames; step++) {
         const r = await main(curr, 1, new Float32Array(0), 0, st);
         st = r.state;

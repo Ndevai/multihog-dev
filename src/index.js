@@ -1029,20 +1029,18 @@ function typeUnit(unit) {
     // Said words appear at the speaker's own rate (voice-body.ts) where the engine tracks them, as a share of the unmarked rate.
     const said = unit.getAttribute('data-said') === 'true', own = said ? voiceOfWho(unit.getAttribute('data-who')) : null;
     const hl = highlights(), Hl = globalThis.Highlight;
-    // A stretch whose natural voice is still being made waits for it, unseen, then types as it is heard.
+    // Never block the box on slow mobile voice synthesis: type immediately at the speaker's pace and play natural audio if it finishes while this line is still shown.
     const nat = said ? naturalJob(unit) : null;
+    const natural = nat && voiceDone.has(nat.key) ? voiceDone.get(nat.key) ?? null : null;
     if (nat && !voiceDone.has(nat.key)) {
-        if (hl && Hl) {
-            const r = document.createRange();
-            r.selectNodeContents(unit);
-            hl.set(UNSHOWN, new Hl(r));
-        }
         voiceWait = unit;
-        void nat.job.then(() => { if (voiceWait === unit && unit.isConnected && unit.classList.contains('rules-unit-now') && !typing)
-            typeUnit(unit); });
-        return;
+        void nat.job.then(audio => {
+            if (audio && voiceWait === unit && unit.isConnected && unit.classList.contains('rules-unit-now')) {
+                voiceWait = null;
+                playNatural(audio);
+            }
+        });
     }
-    const natural = nat ? voiceDone.get(nat.key) ?? null : null;
     const text = unit.textContent ?? '', spoken = natural ? null : speakUnit(unit, text), read = revealTimes(text, said, own ? own.sylPerS / peek('voiceSyllablesPerS') : 1);
     const times = natural ? scaleTimes(read, 1000 * natural.length / POCKET_MODEL.sampleRate) : spoken ?? read, total = times.at(-1) ?? 0;
     if (natural)
