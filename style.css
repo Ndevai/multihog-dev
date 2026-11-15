@@ -430,6 +430,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-w
 }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-mode { background: white; color: black; border-color: white; }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_buttons { display: none; }
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipes-counter { display: none; }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { color: white; }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now span.rules-unit[data-said="false"] { color: lightskyblue; }
 /* Key words in gold letters, whatever the page's colours (the player's pick, 2026-11-13; the reference's "yellow text"):
@@ -466,7 +467,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) .rules-scene-where { font-siz
    edge, as Doki Doki Literature Club sets its menu; each word keeps a 44 px target (WCAG 2.5.5) and the one that is on turns
    pink. The bar follows the chat in the page, so a negative top margin (−56 px) lays it into the box's bottom padding (62 px),
    which holds it. SillyTavern stacks the chat at layer 30, so the menu stands at 31 to take its taps. */
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { position: relative; z-index: 31; margin: -56px 24px 16px; padding: 0; gap: 0; justify-content: flex-end; background: transparent; border: 0; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { position: relative; z-index: 31; margin: -56px 24px 16px; padding: 0; gap: 4px; justify-content: flex-end; background: transparent; border: 0; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count { flex: 0 0 auto; margin-right: auto; padding: 0; font-size: max(12px, calc(var(--mainFontSize) * 0.8)); color: white; opacity: 0.7; background: transparent; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { min-width: 44px; min-height: 44px; padding: 0 8px; font: 600 max(12px, calc(var(--mainFontSize) * 0.8))/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
     color: rgba(255, 255, 255, 0.85); background: transparent; border: 0; border-radius: 0; }
@@ -474,7 +475,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pr
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus { outline: none; box-shadow: none; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -8px; }
 @media (max-width: 400px) {
-    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { margin-left: 16px; margin-right: 16px; }
+    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { margin-left: 14px; margin-right: 14px; gap: 2px; }
     body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { padding: 0 4px; letter-spacing: 0.04em; }
 }
 @media (max-height: 500px) {
