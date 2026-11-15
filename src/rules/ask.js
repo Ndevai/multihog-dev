@@ -16,6 +16,7 @@ import { byPlayer } from './frame.js';
 import { def, k } from './constants.js';
 import { OPENS } from './quotes.js';
 import { faithNeeds, faithOf } from './faith.js';
+import { wordSlipLikelihood } from './keyboard.js';
 def({ id: 'askBelowHarm', value: 0.9, unit: 'share the likeliest reading needs to be taken unasked, when a reading harms someone', status: 'assumed', src: 'a judgement in the mixed-initiative rule (Horvitz 1999 gives the form, no values)', range: [0.8, 0.97], file: 'ask.ts' });
 def({ id: 'askBelowSafe', value: 0.5, unit: 'share the likeliest reading needs to be taken unasked, when none harms anyone', status: 'assumed', src: 'a judgement: the likelier half is taken and shown back', range: [0.4, 0.7], file: 'ask.ts' });
 def({ id: 'weightLastTarget', value: 2, unit: 'weight added to the person the player acted on last turn', status: 'assumed', src: 'Hugo ranks the object last referred to +1; a judgement on the scale here', range: [1, 3], file: 'ask.ts' });
@@ -157,9 +158,15 @@ const SENSE_WORDS = [[/\b(sneak|unseen|hidden|quiet|quietly|out of sight|shadow|
     [/\b(walk|openly|in the open|stroll)\b/i, /^Walk after/], [/\b(fight|attack|storm|assault|force|battle)\b/i, /^Fight for/], [/\b(go onto|stand|cross|walk onto|go on)\b/i, /^Go onto/]];
 /** What a correction fixes for the last line: a person it names (the first not after "not"), set on the player's call of
  * the tool that took one; or a sense of the last line's verb it names. Null when it names neither. */
-export function correctionFix(corr, lastLine, player, people, lastCalls, has) {
-    const person = people.filter(p => p.name !== player).map(p => ({ p, at: corr.search(new RegExp(`\\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')) }))
+export function correctionFix(corr, lastLine, player, people, lastCalls, has, keyboard = 'auto') {
+    const others = people.filter(p => p.name !== player);
+    const exactPerson = others.map(p => ({ p, at: corr.search(new RegExp(`\\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')) }))
         .filter(x => x.at >= 0 && !/\bnot\s+(?:the\s+)?$/i.test(corr.slice(0, x.at))).sort((a, b) => a.at - b.at)[0]?.p;
+    const slipPerson = !exactPerson ? others
+        .map(p => ({ p, score: Math.max(...corr.split(/\s+/).map(w => wordSlipLikelihood(w, p.name.replace(/^the /i, ''), keyboard))) }))
+        .filter(x => x.score >= 0.22)
+        .sort((a, b) => b.score - a.score)[0]?.p : undefined;
+    const person = exactPerson ?? slipPerson;
     if (person) {
         const keys = [['BodyStrike', 'attacker', 'who'], ['Look', 'viewer', 'target'], ['Communicate', 'speaker', 'listener']];
         for (const [tool, actor, arg] of keys) {

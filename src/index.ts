@@ -1,3 +1,4 @@
+import type { KeyboardLayout } from './rules/keyboard.js';
 // Rules Engine for SillyTavern: code decides outcomes, the narrator writes them (docs/df-body-engine.md). Each turn a
 // question pass names the outcomes in doubt and the engine decides them; the narrator gets the brief, the story time,
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
@@ -52,14 +53,14 @@ const DEPTH = 1;
 // 'message', a whole message.
 // boxPicture: 'none', the speaker as the name plate only; 'large', also their picture, large, above the box.
 // boxLook: 'night', the box a dark framed panel under a pink name tag (the player's pick, 2026-11-11); 'page', the page's own look.
-// boxVoice: 'natural', said words spoken by the recorded voice nearest the speaker's (speech.ts, Piper); 'robotic', in the
+// boxVoice: 'natural', keyboardLayout: 'auto', keyboardLayout: 'auto', said words spoken by the recorded voice nearest the speaker's (speech.ts, Piper); 'robotic', in the
 // speaker's own computed voice by eSpeak NG; 'blips', a tone a syllable; 'off'.
 // boxTyping: a stretch's letters appear one by one at its pace (box.ts revealTimes); off, at once.
 // boxAuto: the box moves on by itself once a stretch has been read (box.ts autoWait); the bar's "Auto" sets it.
 // musicOn: the song nearest the scene's feelings plays (rules/music.ts); musicVolume 0–1; songs: the player's songs as measured;
 // musicAreaNames: the player's names for the areas, by the words an area is first named with (music.ts areaWords).
-interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; page: boolean; pageColours: 'light' | 'dark'; box: boolean; boxUnit: 'voice' | 'message'; boxPicture: 'none' | 'large'; boxLook: 'night' | 'page'; boxVoice: 'natural' | 'robotic' | 'blips' | 'off'; boxTyping: boolean; boxAuto: boolean; musicOn: boolean; musicVolume: number; songs: SongEntry[]; musicAreaNames: Record<string, string>; profile: string; maxTokens: number; effort: string; holdHinted?: boolean }
-const DEFAULTS: Settings = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxLook: 'night', boxVoice: 'natural', boxTyping: true, boxAuto: false, musicOn: true, musicVolume: 0.6, songs: [], musicAreaNames: {}, profile: '', maxTokens: 0, effort: 'low' };
+interface Settings { enabled: boolean; questionPass: boolean; ruleCheck: boolean; structured: boolean; suggest: boolean; distinct: boolean; page: boolean; pageColours: 'light' | 'dark'; box: boolean; boxUnit: 'voice' | 'message'; boxPicture: 'none' | 'large'; boxLook: 'night' | 'page'; boxVoice: 'natural' | 'robotic' | 'blips' | 'off'; keyboardLayout: KeyboardLayout; boxTyping: boolean; boxAuto: boolean; musicOn: boolean; musicVolume: number; songs: SongEntry[]; musicAreaNames: Record<string, string>; profile: string; maxTokens: number; effort: string; holdHinted?: boolean }
+const DEFAULTS: Settings = { keyboardLayout: 'auto', enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxLook: 'night', boxVoice: 'natural', boxTyping: true, boxAuto: false, musicOn: true, musicVolume: 0.6, songs: [], musicAreaNames: {}, profile: '', maxTokens: 0, effort: 'low' };
 /** One of the player's songs: its name, where SillyTavern keeps it (user/files), the set it belongs to ('' for none), its measures. */
 interface SongEntry { id: string; name: string; path: string; set: string; cues: Cues }
 
@@ -1594,7 +1595,7 @@ async function buildSettings(): Promise<void> {
     if (document.getElementById('rules_engine_page')) bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); showBox(); });
     if (document.getElementById('rules_engine_box_typing')) bind('rules_engine_box_typing', 'boxTyping');
     // A setting given as a choice of named values: the select shows the saved one and saves the one picked.
-    const choice = <K extends 'pageColours' | 'boxPicture' | 'boxLook' | 'boxVoice'>(id: string, key: K, values: Settings[K][], after: () => void) => {
+    const choice = <K extends 'pageColours' | 'boxPicture' | 'boxLook' | 'boxVoice' | 'keyboardLayout'>(id: string, key: K, values: Settings[K][], after: () => void) => {
         const el = document.getElementById(id) as HTMLSelectElement | null;
         if (!el) return;
         el.value = String(s[key]);
@@ -1604,6 +1605,7 @@ async function buildSettings(): Promise<void> {
     choice('rules_engine_box_picture', 'boxPicture', ['none', 'large'], showBox);
     choice('rules_engine_box_look', 'boxLook', ['night', 'page'], showBox);
     choice('rules_engine_box_voice', 'boxVoice', ['natural', 'robotic', 'blips', 'off'], () => { if (settings().boxVoice === 'robotic') void loadSpeech().catch(() => undefined); if (settings().boxVoice === 'natural') void loadNatural().catch(() => undefined); });
+    choice('rules_engine_keyboard', 'keyboardLayout', ['auto', 'qwerty', 'qwertz', 'azerty', 'dvorak', 'colemak'], () => undefined);
     // The music: on or off, the volume, songs added from the device, and the list of songs and areas.
     if (document.getElementById('rules_engine_music')) bind('rules_engine_music', 'musicOn', musicNow);
     const volume = document.getElementById('rules_engine_music_volume') as HTMLInputElement | null;

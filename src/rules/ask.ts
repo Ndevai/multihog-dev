@@ -16,6 +16,7 @@ import { byPlayer } from './frame.js';
 import { def, k } from './constants.js';
 import { OPENS } from './quotes.js';
 import { faithNeeds, faithOf } from './faith.js';
+import { wordSlipLikelihood, type KeyboardLayout } from './keyboard.js';
 
 /** What a reading fixes: a tool the turn must call, a note the planner reads as fixed, an argument set on the player's
  * calls of a tool. */
@@ -26,7 +27,7 @@ export interface Question { text: string; options: Reading[] }
 export interface ScenePerson { name: string; sex?: string | null; spot?: string | null }
 /** What the scene gives for weighing: the narrator's last lines (latest last), the people the player acted on last turn,
  * the player's own spot. */
-export interface SceneCues { narration: string[]; lastTargets: string[]; spot?: string | null; pronouns?: Record<string, Record<string, number>> }
+export interface SceneCues { narration: string[]; lastTargets: string[]; spot?: string | null; pronouns?: Record<string, Record<string, number>>; keyboard?: KeyboardLayout }
 export type Decision = { ask: Question } | { take: Reading; question: Question } | null;
 
 def({ id: 'askBelowHarm', value: 0.9, unit: 'share the likeliest reading needs to be taken unasked, when a reading harms someone', status: 'assumed', src: 'a judgement in the mixed-initiative rule (Horvitz 1999 gives the form, no values)', range: [0.8, 0.97], file: 'ask.ts' });
@@ -163,9 +164,15 @@ const SENSE_WORDS: [RegExp, RegExp][] = [[/\b(sneak|unseen|hidden|quiet|quietly|
     [/\b(walk|openly|in the open|stroll)\b/i, /^Walk after/], [/\b(fight|attack|storm|assault|force|battle)\b/i, /^Fight for/], [/\b(go onto|stand|cross|walk onto|go on)\b/i, /^Go onto/]];
 /** What a correction fixes for the last line: a person it names (the first not after "not"), set on the player's call of
  * the tool that took one; or a sense of the last line's verb it names. Null when it names neither. */
-export function correctionFix(corr: string, lastLine: string, player: string, people: ScenePerson[], lastCalls: { tool: string; args: Record<string, unknown> }[], has: (tool: string) => boolean): Fix | null {
-    const person = people.filter(p => p.name !== player).map(p => ({ p, at: corr.search(new RegExp(`\\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')) }))
+export function correctionFix(corr: string, lastLine: string, player: string, people: ScenePerson[], lastCalls: { tool: string; args: Record<string, unknown> }[], has: (tool: string) => boolean, keyboard: KeyboardLayout = 'auto'): Fix | null {
+    const others = people.filter(p => p.name !== player);
+    const exactPerson = others.map(p => ({ p, at: corr.search(new RegExp(`\\b${p.name.replace(/^the /i, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')) }))
         .filter(x => x.at >= 0 && !/\bnot\s+(?:the\s+)?$/i.test(corr.slice(0, x.at))).sort((a, b) => a.at - b.at)[0]?.p;
+    const slipPerson = !exactPerson ? others
+        .map(p => ({ p, score: Math.max(...corr.split(/\s+/).map(w => wordSlipLikelihood(w, p.name.replace(/^the /i, ''), keyboard))) }))
+        .filter(x => x.score >= 0.22)
+        .sort((a, b) => b.score - a.score)[0]?.p : undefined;
+    const person = exactPerson ?? slipPerson;
     if (person) {
         const keys: [string, string, string][] = [['BodyStrike', 'attacker', 'who'], ['Look', 'viewer', 'target'], ['Communicate', 'speaker', 'listener']];
         for (const [tool, actor, arg] of keys) {

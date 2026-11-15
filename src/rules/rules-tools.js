@@ -1,3 +1,4 @@
+import { isAdjacentNameTypo } from './keyboard.js';
 import { NOISE, BARRIER, SOUNDS, phi as phiN } from './acoustics.js';
 import { judgeStatement, EVIDENCE, helpChance, OBEY, obeyShare, REFUSE_SPLIT, PUNISH_ONCE, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, TRUST_REPAIR, trustAgain, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance, trustMeans, shareAround, MISINFO_TAKEN, FALSE_EVENT_TAKEN, WVS_ACTS, wvsFor, conformShare, faceStrength, lineupPick, FITD_EARLIER, fitdChance, ditfChance } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
@@ -637,7 +638,7 @@ function who(st, rawName, speciesArg, massArg) {
     const names = Object.keys(st.people ?? {});
     // The same name in other case or spacing is the same person.
     const name = names.find(n => key(n) === key(rawName)) ?? rawName.trim();
-    const near = !st.people?.[name] && !speciesArg && name.length >= 4 ? names.find(n => n.length >= 4 && editDistance(key(n), key(name)) === 1 && key(n).replace(/\d+/g, '#') !== key(name).replace(/\d+/g, '#')) : undefined;
+    const near = !st.people?.[name] && !speciesArg && name.length >= 4 ? names.find(n => n.length >= 4 && editDistance(key(n), key(name)) === 1 && key(n).replace(/\d+/g, '#') !== key(name).replace(/\d+/g, '#') && isAdjacentNameTypo(key(name), key(n))) : undefined;
     if (near)
         return { error: `No record of "${name}"; ${near} is on record. Call again with ${near}, or give species to start a separate character.` };
     const known = st.people?.[name];

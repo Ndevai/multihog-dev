@@ -36,7 +36,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
 const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
-const DEFAULTS = { enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxLook: 'night', boxVoice: 'natural', boxTyping: true, boxAuto: false, musicOn: true, musicVolume: 0.6, songs: [], musicAreaNames: {}, profile: '', maxTokens: 0, effort: 'low' };
+const DEFAULTS = { keyboardLayout: 'auto', enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxLook: 'night', boxVoice: 'natural', boxTyping: true, boxAuto: false, musicOn: true, musicVolume: 0.6, songs: [], musicAreaNames: {}, profile: '', maxTokens: 0, effort: 'low' };
 const ctx = () => SillyTavern.getContext();
 const toastr = globalThis.toastr;
 /** The stored settings, a default filled in for each key the store lacks. The store's own object is returned, so a value set
@@ -2114,6 +2114,7 @@ async function buildSettings() {
     choice('rules_engine_box_voice', 'boxVoice', ['natural', 'robotic', 'blips', 'off'], () => { if (settings().boxVoice === 'robotic')
         void loadSpeech().catch(() => undefined); if (settings().boxVoice === 'natural')
         void loadNatural().catch(() => undefined); });
+    choice('rules_engine_keyboard', 'keyboardLayout', ['auto', 'qwerty', 'qwertz', 'azerty', 'dvorak', 'colemak'], () => undefined);
     // The music: on or off, the volume, songs added from the device, and the list of songs and areas.
     if (document.getElementById('rules_engine_music'))
         bind('rules_engine_music', 'musicOn', musicNow);
