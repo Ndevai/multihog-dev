@@ -15,7 +15,7 @@ import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, 
 import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY, type ReadingNote, type Doc } from './ui.js';
 import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest, marksOf } from './rules/voice-code.js';
 import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
-import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, type Stretch, type SlotWord, boxFontPx, boxLinesAt, sceneLine, sceneBadge, cardRole, tagFloorPx, explainParts } from './rules/box.js';
+import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, type Stretch, type SlotWord, boxFontPx, boxLinesAt, sceneLine, sceneBadge, cardRole, tagFloorPx, explainParts, muffleSpeech } from './rules/box.js';
 import { peek } from './rules/constants.js';
 import { voiceOf, voiceLine, voiceFactsOf, voicesReady, voiceHarmonics, speakingFactsOf } from './rules/voice-body.js';
 import { speechVoice, speechVoiceFile, speechTimes, scaleTimes } from './rules/speech.js';
@@ -895,12 +895,86 @@ function avatarOf(who: string, mes: Element): string | null {
     const src = mes.querySelector('.avatar img')?.getAttribute('src') ?? '', m = /[?&]type=(avatar|persona)&file=([^&]+)/.exec(src);
     return m ? `${m[1] === 'avatar' ? 'characters' : 'User Avatars'}/${m[2]}` : src || null;
 }
-const stageRoster = new Map<string, { src: string; hiddenBySpotlight: boolean }>();
-let lastHopKey = '';
+const stageRoster = new Map<string, { src: string; hiddenBySpotlight: boolean; exiting?: 'left' | 'right'; exitUntil?: number }>();
+const missingExpr = new Set<string>();
+const EXPR_FILE: Record<string, string> = { happiness: 'joy', anger: 'anger', sadness: 'sadness', fear: 'fear', tenderness: 'love' };
+let lastHopKey = '', lastShockKey = '';
 const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, m => `\\${m}`);
-function showFigure(mes: Element, unit: Element | undefined): void {
+
+/** Resolves SillyTavern native expression sprite (/characters/<Name>/<emotion>.png) with instant fallback to base avatar + OKLCH glow. */
+function spriteFor(who: string, baseSrc: string, felt: string | null): string {
+    const expr = felt ? EXPR_FILE[felt] : null;
+    if (!expr) return baseSrc;
+    const candidate = `characters/${encodeURIComponent(who)}/${expr}.png`;
+    return missingExpr.has(candidate) ? baseSrc : candidate;
+}
+function applySprite(img: HTMLImageElement, who: string, baseSrc: string, felt: string | null): void {
+    const target = spriteFor(who, baseSrc, felt);
+    if (img.getAttribute('src') !== target) {
+        img.onerror = target !== baseSrc ? () => { missingExpr.add(target); img.onerror = null; if (img.getAttribute('src') !== baseSrc) img.setAttribute('src', baseSrc); } : null;
+        img.setAttribute('src', target);
+    }
+}
+
+/** Physiological blood-loss / hypoxia desaturation & vignette on #chat, plus Web Audio low-pass shock on heavy impacts. */
+function updatePhysiology(mes: Element, unit: Element | undefined): void {
     const chat = document.getElementById('chat');
     if (!chat) return;
+    const me = trackedPeople()[playerName()] as { bloodLostL?: number; blood_lost?: number; feelings?: { type: string; strength?: number; left: number }[] } | undefined;
+    const bloodLost = Number(me?.bloodLostL ?? me?.blood_lost ?? 0);
+    const fear = me?.feelings?.filter(f => f.left > 0 && (f.type === 'fear' || f.type === 'terror' || f.type === 'panic')).reduce((m, f) => Math.max(m, f.strength ?? 0.5), 0) ?? 0;
+    const strain = Math.min(1, Math.max(0, (bloodLost - 0.5) / 1.8, (fear - 0.65) * 1.4));
+    if (strain > 0.04) {
+        chat.style.setProperty('--rules-vital-gray', (strain * 0.65).toFixed(2));
+        chat.style.setProperty('--rules-vital-vignette', `inset 0 0 ${Math.round(28 + strain * 64)}px rgba(0, 0, 0, ${(0.18 + strain * 0.48).toFixed(2)})`);
+    } else {
+        chat.style.removeProperty('--rules-vital-gray');
+        chat.style.removeProperty('--rules-vital-vignette');
+    }
+    const text = unit?.textContent ?? '';
+    const shockKey = `${mes.getAttribute('mesid') ?? ''}:${text.slice(0, 24)}`;
+    if (shockKey !== lastShockKey && unit?.querySelector('mark.rules-key') && /\b(smashed|broken|fractured|bleeding|chok|gasp|blow|strike|hit)\b/i.test(text)) {
+        lastShockKey = shockKey;
+        triggerAudioShock(Math.max(0.6, strain));
+    }
+}
+
+/** Returns recorded SII (< 0.75) if Listen reported muffled speech from speaker on this turn, else 1. */
+function speakerSii(mes: Element, speaker: string): number {
+    if (!speaker || speaker === playerName()) return 1;
+    const id = Number(mes.getAttribute('mesid'));
+    const chat = ctx().chat ?? [];
+    for (const idx of [id, id - 1]) {
+        const pass = chat[idx]?.extra?.rulesPass as { calls?: { tool: string; args?: Record<string, unknown> }[]; results?: { tool: string; result?: string }[] } | undefined;
+        if (!pass?.calls || !pass.results) continue;
+        for (let i = 0; i < pass.calls.length; i++) {
+            const c = pass.calls[i]!, r = pass.results[i]?.result ?? '';
+            if (c.tool === 'Listen' && String(c.args?.source_who ?? '').toLowerCase() === speaker.toLowerCase()) {
+                const m = /\bSII\s+([0-9.]+)/i.exec(r);
+                if (m) return Number(m[1]);
+                if (/words are lost in the noise/i.test(r)) return 0.1;
+            }
+        }
+    }
+    return 1;
+}
+function applyMuffle(mes: Element, unit: Element | undefined): void {
+    if (!unit || unit.getAttribute('data-said') !== 'true') return;
+    const who = unit.getAttribute('data-who') ?? '';
+    const sii = speakerSii(mes, who);
+    if (sii >= 0.75 || unit.hasAttribute('data-muffled')) return;
+    unit.setAttribute('data-muffled', String(sii));
+    unit.classList.add('rules-muffled');
+    const walker = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) nodes.push(n as Text);
+    for (const n of nodes) if (n.nodeValue) n.nodeValue = muffleSpeech(n.nodeValue, sii);
+}
+function showFigure(mes: Element, unit: Element | undefined): void {
+    applyMuffle(mes, unit);
+    const chat = document.getElementById('chat');
+    if (!chat) return;
+    updatePhysiology(mes, unit);
     let stage = document.getElementById('rules-box-stage');
     if (!stage) { stage = document.createElement('div'); stage.id = 'rules-box-stage'; stage.setAttribute('aria-hidden', 'true'); }
     if (chat.firstElementChild !== stage) chat.prepend(stage);
@@ -913,6 +987,12 @@ function showFigure(mes: Element, unit: Element | undefined): void {
     const unitText = unit?.textContent ?? '';
     const isRelevant = !!(unit?.querySelector('mark.rules-key') || (who && trackedPeople()[who]?.feelings?.some(f => (f.strength ?? 0) >= 0.65)));
 
+    // Spatial coordinates from mapNow() for slot ordering (west -> left, east -> right) and directional lhide/rhide exits.
+    const mv = mapNow();
+    const posOf = new Map<string, { x: number; y: number; player?: boolean }>();
+    for (const p of mv?.people ?? []) posOf.set(p.name, { x: p.x, y: p.y, player: p.player });
+    const mePos = [...posOf.values()].find(p => p.player) ?? { x: 0, y: 0 };
+
     if (who && who !== playerName()) {
         const src = avatarOf(who, mes);
         if (src) {
@@ -920,7 +1000,16 @@ function showFigure(mes: Element, unit: Element | undefined): void {
             stageRoster.set(who, { src, hiddenBySpotlight: false });
         }
     }
-    for (const [name, entry] of stageRoster) {
+
+    const nowMs = Date.now();
+    for (const [name, entry] of [...stageRoster.entries()]) {
+        if (entry.exitUntil && nowMs >= entry.exitUntil) { stageRoster.delete(name); continue; }
+        // Detect if character moved away (> 12 m) or explicit exit text for directional lhide/rhide
+        const pPos = posOf.get(name);
+        if (!entry.exiting && pPos && Math.hypot(pPos.x - mePos.x, pPos.y - mePos.y) > 12) {
+            entry.exiting = pPos.x < mePos.x ? 'left' : 'right';
+            entry.exitUntil = nowMs + 320;
+        }
         if (entry.hiddenBySpotlight && name !== who && new RegExp(`\\b${escRe(name)}\\b`, 'i').test(unitText)) {
             entry.hiddenBySpotlight = false;
         }
@@ -932,14 +1021,22 @@ function showFigure(mes: Element, unit: Element | undefined): void {
     const largeOn = settings().boxPicture === 'large' && !!figureSrc;
     stage.hidden = !largeOn;
     fig.hidden = !largeOn;
-    if (figureSrc && fig.getAttribute('src') !== figureSrc) fig.setAttribute('src', figureSrc);
+
+    // Sort visible cast by spatial x coordinate (t11/t21/t31 slot order)
+    const castNames = [...stageRoster.keys()].slice(-3).sort((a, b) => (posOf.get(a)?.x ?? 0) - (posOf.get(b)?.x ?? 0));
+    const slotOfName = new Map<string, number>();
+    castNames.forEach((n, i) => slotOfName.set(n, i));
 
     const activeSpeaking = said && !!who && who === figureWho;
     const felt = figureWho ? pictureFeeling(trackedPeople()[figureWho]) : null;
+    if (figureSrc && figureWho) applySprite(fig, figureWho, figureSrc, felt);
     if (felt) fig.setAttribute('data-feeling', felt); else fig.removeAttribute('data-feeling');
     fig.toggleAttribute('data-speaking', activeSpeaking);
     fig.toggleAttribute('data-dimmed', said && !!who && who !== figureWho);
-    fig.toggleAttribute('data-spotlight-hide', !!(figureWho && stageRoster.get(figureWho)?.hiddenBySpotlight));
+    const primaryEntry = figureWho ? stageRoster.get(figureWho) : undefined;
+    fig.toggleAttribute('data-spotlight-hide', !!primaryEntry?.hiddenBySpotlight);
+    if (primaryEntry?.exiting) fig.setAttribute('data-exit', primaryEntry.exiting); else fig.removeAttribute('data-exit');
+    if (figureWho && slotOfName.has(figureWho)) fig.style.order = String(slotOfName.get(figureWho));
 
     const hopKey = `${mes.getAttribute('mesid') ?? ''}:${unit?.textContent?.slice(0, 24) ?? ''}:${figureWho ?? ''}`;
     if (felt === 'happiness' && activeSpeaking && hopKey !== lastHopKey) {
@@ -961,13 +1058,15 @@ function showFigure(mes: Element, unit: Element | undefined): void {
             img.setAttribute('data-stage-who', name);
             stage.appendChild(img);
         }
-        if (img.getAttribute('src') !== entry.src) img.setAttribute('src', entry.src);
         const cFelt = pictureFeeling(trackedPeople()[name]);
+        applySprite(img, name, entry.src, cFelt);
         if (cFelt) img.setAttribute('data-feeling', cFelt); else img.removeAttribute('data-feeling');
         const cSpeaking = said && who === name;
         img.toggleAttribute('data-speaking', cSpeaking);
         img.toggleAttribute('data-dimmed', said && who !== name);
         img.toggleAttribute('data-spotlight-hide', entry.hiddenBySpotlight);
+        if (entry.exiting) img.setAttribute('data-exit', entry.exiting); else img.removeAttribute('data-exit');
+        if (slotOfName.has(name)) img.style.order = String(slotOfName.get(name));
         if (cFelt === 'happiness' && cSpeaking && hopKey !== lastHopKey) {
             lastHopKey = hopKey;
             img.removeAttribute('data-hop');
@@ -1405,8 +1504,37 @@ function sceneFeelings(): { who: string; type: string; turn: number }[] {
     for (const [who, p] of Object.entries(trackedPeople())) for (const f of p.feelings ?? []) if (f.left > 0) out.push({ who, type: f.type, turn: f.turn ?? 0 });
     return out;
 }
+let musicFilter: BiquadFilterNode | null = null;
+const wiredAudio = new WeakSet<HTMLAudioElement>();
+function wireMusicFilter(a: HTMLAudioElement): void {
+    if (wiredAudio.has(a)) return;
+    const AC = (globalThis as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
+    if (!AC) return;
+    try {
+        blipCtx ??= new AC();
+        if (!musicFilter) {
+            musicFilter = blipCtx.createBiquadFilter();
+            musicFilter.type = 'lowpass';
+            musicFilter.frequency.value = 20000;
+            musicFilter.Q.value = 0.8;
+            musicFilter.connect(blipCtx.destination);
+        }
+        const src = blipCtx.createMediaElementSource(a);
+        src.connect(musicFilter);
+        wiredAudio.add(a);
+    } catch { /* fallback to direct audio output if CORS or context blocks routing */ }
+}
+function triggerAudioShock(intensity = 1): void {
+    if (!blipCtx || !musicFilter) return;
+    const now = blipCtx.currentTime;
+    const cutoff = Math.max(420, 900 - intensity * 450);
+    musicFilter.frequency.cancelScheduledValues(now);
+    musicFilter.frequency.setValueAtTime(Math.max(420, musicFilter.frequency.value), now);
+    musicFilter.frequency.exponentialRampToValueAtTime(cutoff, now + 0.12);
+    musicFilter.frequency.exponentialRampToValueAtTime(20000, now + 1.65);
+}
 const player = (i: number) => {
-    if (!players[i]) { const a = new Audio(); a.loop = true; a.preload = 'auto'; players[i] = a; }
+    if (!players[i]) { const a = new Audio(); a.loop = true; a.preload = 'auto'; players[i] = a; wireMusicFilter(a); }
     return players[i]!;
 };
 /** A song on, the one playing out, equal-power over musicCrossfadeS. A browser that holds sound until the page is touched

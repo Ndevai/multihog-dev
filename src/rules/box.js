@@ -297,3 +297,21 @@ export const tagFloorPx = (capShare) => boxMinXPx() / capShare;
 /** A held word's explanation as [name, detail] pairs, for the box's menu line: a marked word's title lists its marks
  * ("louder (about 6 dB above your normal voice), slower (about 0.8 times your own pace)", ui.ts), each its name and size. */
 export const explainParts = (title) => title.split(/,\s*(?![^()]*\))/).map(p => p.trim()).filter(Boolean).map(p => { const m = /^(.*?)\s*\((.*)\)$/.exec(p); return m ? [m[1], m[2]] : [p, '']; });
+const HIGH_FREQ_CONSONANTS = /^[bcdfghjklmnpqrstvwxyz]$/i;
+/** Masks high-frequency consonants proportionally to (1 - sii) when speech is partially muffled (0.15 <= sii < 0.75). */
+export function muffleSpeech(text, sii) {
+    if (sii >= 0.75)
+        return text;
+    if (sii < 0.15)
+        return text.replace(/\p{L}+/gu, w => '·'.repeat(Math.min(w.length, 4)));
+    return text.replace(/\p{L}+/gu, (word, offset) => {
+        if (word.length <= 2)
+            return word;
+        return [...word].map((ch, i) => {
+            if (!HIGH_FREQ_CONSONANTS.test(ch))
+                return ch;
+            const slot = ((offset + i * 7) % 10) / 10;
+            return slot >= sii ? '·' : ch;
+        }).join('');
+    });
+}

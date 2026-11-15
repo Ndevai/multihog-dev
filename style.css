@@ -628,6 +628,10 @@ body.rules-box:not(.rules-box-log) #chat .rules-faith-mark { display: none; }
 .rules-stage-fig[data-speaking] { transform: scale(1.05); z-index: 2; }
 .rules-stage-fig[data-dimmed] { filter: brightness(0.72); }
 .rules-stage-fig[data-spotlight-hide] { opacity: 0; transform: translateY(14px); pointer-events: none; }
+.rules-stage-fig[data-exit="left"] { opacity: 0; transform: translateX(-64px); pointer-events: none; }
+.rules-stage-fig[data-exit="right"] { opacity: 0; transform: translateX(64px); pointer-events: none; }
+#chat[style*="--rules-vital-vignette"] { box-shadow: var(--rules-vital-vignette); filter: grayscale(var(--rules-vital-gray, 0)); transition: filter 500ms ease-out, box-shadow 500ms ease-out; }
+.rules-muffled { opacity: 0.62; letter-spacing: 0.03em; }
 .rules-stage-fig[data-hop] { animation: rules-happy-hop 240ms ease-out; }
 @media (prefers-reduced-motion: reduce) {
     .rules-stage-fig { transition: none; }
