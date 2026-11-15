@@ -159,7 +159,16 @@ export const POCKET_MODEL = {
     megabytes: 165, sampleRate: 24000, temperature: 0.7,
 };
 /** The words the model is given for a said stretch: its quotation marks taken out (a mark the model would read as text). */
-export const spokenText = (text) => text.replace(/["“”«»„]/g, '').replace(/\s+/g, ' ').trim();
+const DOUBLE_ROOTS = /^(?:too|see|boo|coo|moo|woo|zoo|wee|bee|fee|free|tree|three|good|cool|fool|pool|room|soon|moon|look|book|took|feel|keep|deep|sleep|need|seem|week|meet|feet|sweet|street|green|queen|screen|speed|cheer|deer|beer|peer|steer|door|floor|poor|blood|flood|food|mood|wood|foot|root|boot|shoot|proof|roof|smooth|tooth|loose|choose|goose|moose|off|all|call|fall|tall|wall|small|ball|hall|bell|fell|sell|tell|well|yell|hell|shell|smell|spell|swell|ill|bill|fill|hill|kill|mill|pill|skill|still|will|chill|drill|grill|spill|thrill|doll|roll|full|pull|bull|dull|skull|add|odd|egg|err|inn|ebb|buzz|fizz|fuzz|jazz|pass|lass|mass|grass|class|glass|brass|less|mess|bless|dress|press|stress|kiss|miss|hiss|boss|loss|toss|cross|gloss|fuss|plus)$/i;
+export const spokenText = (text) => text
+    .replace(/["“”«»„]/g, '')
+    .replace(/\b([\p{L}]+)\b/gu, w => w.replace(/([\p{L}])\1{2,}/gu, (run, ch) => {
+    const stem = w.slice(0, w.indexOf(run)) + ch + ch;
+    const maxLen = DOUBLE_ROOTS.test(stem) ? 4 : 3;
+    return ch.repeat(Math.min(run.length, maxLen));
+}))
+    .replace(/\s+/g, ' ')
+    .trim();
 /** A said stretch as the worker takes it: each part's token ids, frames after its end and frame limit. */
 export const pocketJob = (text) => pocketChunks(spokenText(text)).map(c => {
     const p = pocketPrepare(c), ids = pocketTokens(p.text);

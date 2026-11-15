@@ -1118,33 +1118,106 @@ function avatarOf(who, mes) {
     const src = mes.querySelector('.avatar img')?.getAttribute('src') ?? '', m = /[?&]type=(avatar|persona)&file=([^&]+)/.exec(src);
     return m ? `${m[1] === 'avatar' ? 'characters' : 'User Avatars'}/${m[2]}` : src || null;
 }
+const stageRoster = new Map();
+let lastHopKey = '';
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, m => `\\${m}`);
 function showFigure(mes, unit) {
     const chat = document.getElementById('chat');
     if (!chat)
         return;
+    let stage = document.getElementById('rules-box-stage');
+    if (!stage) {
+        stage = document.createElement('div');
+        stage.id = 'rules-box-stage';
+        stage.setAttribute('aria-hidden', 'true');
+    }
+    if (chat.firstElementChild !== stage)
+        chat.prepend(stage);
     let fig = document.getElementById('rules-box-figure');
     if (!fig) {
         fig = document.createElement('img');
         fig.id = 'rules-box-figure';
+        fig.className = 'rules-stage-fig';
         fig.alt = '';
         fig.setAttribute('aria-hidden', 'true');
     }
-    if (chat.firstElementChild !== fig)
-        chat.prepend(fig);
+    if (!fig.parentElement)
+        stage.appendChild(fig);
     const who = unit?.getAttribute('data-who') ?? mes.getAttribute('ch_name') ?? '';
+    const said = unit?.getAttribute('data-said') === 'true';
+    const unitText = unit?.textContent ?? '';
+    const isRelevant = !!(unit?.querySelector('mark.rules-key') || (who && trackedPeople()[who]?.feelings?.some(f => (f.strength ?? 0) >= 0.65)));
     if (who && who !== playerName()) {
-        figureSrc = avatarOf(who, mes);
-        figureWho = who;
+        const src = avatarOf(who, mes);
+        if (src) {
+            figureSrc = src;
+            figureWho = who;
+            stageRoster.set(who, { src, hiddenBySpotlight: false });
+        }
     }
-    fig.hidden = settings().boxPicture !== 'large' || !figureSrc;
+    for (const [name, entry] of stageRoster) {
+        if (entry.hiddenBySpotlight && name !== who && new RegExp(`\\b${escRe(name)}\\b`, 'i').test(unitText)) {
+            entry.hiddenBySpotlight = false;
+        }
+        if (said && isRelevant && who && who !== playerName() && name !== who) {
+            entry.hiddenBySpotlight = true;
+        }
+    }
+    const largeOn = settings().boxPicture === 'large' && !!figureSrc;
+    stage.hidden = !largeOn;
+    fig.hidden = !largeOn;
     if (figureSrc && fig.getAttribute('src') !== figureSrc)
         fig.setAttribute('src', figureSrc);
-    // The picture takes its person's feeling (views.ts pictureFeeling; style.css), as a visual novel swaps a sprite.
+    const activeSpeaking = said && !!who && who === figureWho;
     const felt = figureWho ? pictureFeeling(trackedPeople()[figureWho]) : null;
     if (felt)
         fig.setAttribute('data-feeling', felt);
     else
         fig.removeAttribute('data-feeling');
+    fig.toggleAttribute('data-speaking', activeSpeaking);
+    fig.toggleAttribute('data-dimmed', said && !!who && who !== figureWho);
+    fig.toggleAttribute('data-spotlight-hide', !!(figureWho && stageRoster.get(figureWho)?.hiddenBySpotlight));
+    const hopKey = `${mes.getAttribute('mesid') ?? ''}:${unit?.textContent?.slice(0, 24) ?? ''}:${figureWho ?? ''}`;
+    if (felt === 'happiness' && activeSpeaking && hopKey !== lastHopKey) {
+        lastHopKey = hopKey;
+        fig.removeAttribute('data-hop');
+        void fig.getClientRects();
+        fig.setAttribute('data-hop', 'true');
+    }
+    const extras = [...stageRoster.entries()].filter(([name]) => name !== figureWho).slice(-2);
+    const keep = new Set([fig]);
+    for (const [name, entry] of extras) {
+        let img = stage.querySelector(`img[data-stage-who="${CSS.escape(name)}"]`);
+        if (!img) {
+            img = document.createElement('img');
+            img.className = 'rules-stage-fig';
+            img.alt = '';
+            img.setAttribute('aria-hidden', 'true');
+            img.setAttribute('data-stage-who', name);
+            stage.appendChild(img);
+        }
+        if (img.getAttribute('src') !== entry.src)
+            img.setAttribute('src', entry.src);
+        const cFelt = pictureFeeling(trackedPeople()[name]);
+        if (cFelt)
+            img.setAttribute('data-feeling', cFelt);
+        else
+            img.removeAttribute('data-feeling');
+        const cSpeaking = said && who === name;
+        img.toggleAttribute('data-speaking', cSpeaking);
+        img.toggleAttribute('data-dimmed', said && who !== name);
+        img.toggleAttribute('data-spotlight-hide', entry.hiddenBySpotlight);
+        if (cFelt === 'happiness' && cSpeaking && hopKey !== lastHopKey) {
+            lastHopKey = hopKey;
+            img.removeAttribute('data-hop');
+            void img.getClientRects();
+            img.setAttribute('data-hop', 'true');
+        }
+        keep.add(img);
+    }
+    for (const child of [...stage.children])
+        if (!keep.has(child))
+            child.remove();
 }
 /** The plate of the message shown: the name of the one the unit belongs to, and at its right the slot's words. */
 function showPlate(mes, unit) {

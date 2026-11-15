@@ -353,8 +353,10 @@ body.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-slot { display: i
 body.rules-box:not(.rules-box-log) #chat .rules-modes { display: none; }
 /* The picture (setting "The speaker's picture: large", index.ts showFigure): the one the player's character faces, at full
    height above the box, over SillyTavern's background, as the reference stands the one spoken with over the scene. */
-#rules-box-figure { display: none; }
-body.rules-box:not(.rules-box-log) #chat #rules-box-figure:not([hidden]) { display: block; flex: 1 1 0; min-height: 0; width: 100%; object-fit: contain; object-position: center bottom; }
+#rules-box-stage, #rules-box-figure { display: none; }
+body.rules-box:not(.rules-box-log) #chat #rules-box-stage:not([hidden]) { display: flex; align-items: flex-end; justify-content: center; gap: 12px; flex: 1 1 0; min-height: 0; width: 100%; overflow: visible; }
+body.rules-box:not(.rules-box-log) #chat #rules-box-figure:not([hidden]) { display: block; }
+body.rules-box:not(.rules-box-log) #chat .rules-stage-fig:not([hidden]) { display: block; flex: 1 1 0; min-width: 0; min-height: 0; height: 100%; max-width: 100%; object-fit: contain; object-position: center bottom; transform-origin: center bottom; }
 /* Letters not yet shown (index.ts typeUnit): a highlight drawn without ink, so the lines stand where they will and nothing
    moves as the letters appear. */
 ::highlight(rules-unshown) { color: transparent; background-color: transparent; text-decoration-color: transparent; text-shadow: none; }
@@ -611,10 +613,23 @@ body.rules-box:not(.rules-box-log) #chat .rules-faith-mark { display: none; }
    a light to match: anger sharper, happiness brighter, sadness greyer and dimmer, fear darker and paler, tenderness softly
    lit [ASSUMED: the amounts]. The glow follows the picture's outline (a cut-out figure glows along its body); its own
    colours stay as drawn (a hue turned with them made blue clothes green, tried 2026-11-13). */
-#rules-box-figure { transition: filter 600ms ease-out; }
+@keyframes rules-happy-hop {
+    0% { transform: translateY(0) scale(1.05); }
+    45% { transform: translateY(-16px) scale(1.06); }
+    100% { transform: translateY(0) scale(1.05); }
+}
+.rules-stage-fig { transition: filter 400ms ease-out, transform 220ms ease-out, opacity 280ms ease-out; }
 #rules-box-figure[data-feeling="anger"] { filter: saturate(1.2) contrast(1.12) drop-shadow(0 0 10px oklch(0.74 0.15 28)) drop-shadow(0 0 22px oklch(0.74 0.15 28)); }
-#rules-box-figure[data-feeling="happiness"] { filter: brightness(1.08) saturate(1.2) drop-shadow(0 0 10px oklch(0.84 0.15 95)) drop-shadow(0 0 22px oklch(0.84 0.15 95)); }
-#rules-box-figure[data-feeling="sadness"] { filter: grayscale(0.55) brightness(0.85) drop-shadow(0 0 10px oklch(0.74 0.045 230)) drop-shadow(0 0 22px oklch(0.74 0.045 230)); }
-#rules-box-figure[data-feeling="fear"] { filter: brightness(0.8) saturate(0.75) drop-shadow(0 0 10px oklch(0.74 0.13 310)) drop-shadow(0 0 22px oklch(0.74 0.13 310)); }
-#rules-box-figure[data-feeling="tenderness"] { filter: brightness(1.06) drop-shadow(0 0 10px oklch(0.84 0.085 0)) drop-shadow(0 0 22px oklch(0.84 0.085 0)); }
-@media (prefers-reduced-motion: reduce) { #rules-box-figure { transition: none; } }
+.rules-stage-fig[data-feeling="anger"] { filter: saturate(1.2) contrast(1.12) drop-shadow(0 0 10px oklch(0.74 0.15 28)) drop-shadow(0 0 22px oklch(0.74 0.15 28)); }
+.rules-stage-fig[data-feeling="happiness"] { filter: brightness(1.08) saturate(1.2) drop-shadow(0 0 10px oklch(0.84 0.15 95)) drop-shadow(0 0 22px oklch(0.84 0.15 95)); }
+.rules-stage-fig[data-feeling="sadness"] { filter: grayscale(0.55) brightness(0.85) drop-shadow(0 0 10px oklch(0.74 0.045 230)) drop-shadow(0 0 22px oklch(0.74 0.045 230)); }
+.rules-stage-fig[data-feeling="fear"] { filter: brightness(0.8) saturate(0.75) drop-shadow(0 0 10px oklch(0.74 0.13 310)) drop-shadow(0 0 22px oklch(0.74 0.13 310)); }
+.rules-stage-fig[data-feeling="tenderness"] { filter: brightness(1.06) drop-shadow(0 0 10px oklch(0.84 0.085 0)) drop-shadow(0 0 22px oklch(0.84 0.085 0)); }
+.rules-stage-fig[data-speaking] { transform: scale(1.05); z-index: 2; }
+.rules-stage-fig[data-dimmed] { filter: brightness(0.72); }
+.rules-stage-fig[data-spotlight-hide] { opacity: 0; transform: translateY(14px); pointer-events: none; }
+.rules-stage-fig[data-hop] { animation: rules-happy-hop 240ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+    .rules-stage-fig { transition: none; }
+    .rules-stage-fig[data-hop] { animation: none; }
+}
