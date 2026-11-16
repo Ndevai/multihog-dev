@@ -1476,6 +1476,20 @@ function buildBox(): void {
         });
         document.body.appendChild(fold);
     }
+    let rulesSwipeX: number | null = null, rulesSwipeY: number | null = null;
+    chat.addEventListener('touchstart', e => {
+        const t = e.target as Element | null;
+        if (!boxOn() || boxLog || !t?.closest?.('.rules-now') || t.closest('button, a, input, textarea, [role="button"]') || e.touches.length !== 1) { rulesSwipeX = null; return; }
+        rulesSwipeX = e.touches[0]!.clientX; rulesSwipeY = e.touches[0]!.clientY;
+    }, { passive: true });
+    chat.addEventListener('touchend', e => {
+        if (rulesSwipeX === null || rulesSwipeY === null || e.changedTouches.length !== 1) return;
+        const dx = e.changedTouches[0]!.clientX - rulesSwipeX, dy = e.changedTouches[0]!.clientY - rulesSwipeY;
+        rulesSwipeX = null; rulesSwipeY = null;
+        if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+        if (String(document.getSelection?.() ?? '') || document.querySelector('#chat .rules-held')) return;
+        stepBox(dx < 0 ? 1 : -1);
+    }, { passive: true });
     // A tap on the badge (the story's clock) opens the timeline.
     scene.addEventListener('click', () => openTab('time'));
     // A tap on the box's text is "next"; a tap on anything that acts by itself (a link, a button, the note, an edit) is its own,
