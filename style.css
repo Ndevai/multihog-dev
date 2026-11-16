@@ -638,12 +638,15 @@ body.rules-box:not(.rules-box-log) #chat .rules-faith-mark { display: none; }
     .rules-stage-fig[data-hop] { animation: none; }
 }
 
-/* --- Mobile Layout Fixes (Option 3 Adaptive Composer + Top Fold + Swipe Suppression) --- */
+/* --- Verified Mobile & Night-Box Fixes --- */
 body.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipe_left,
 body.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipe_right { display: none !important; }
 
-#rules-box-stage[hidden], #rules-box-figure[hidden], .rules-stage-fig[hidden] { display: none !important; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+#rules-box-stage[hidden], #rules-box-figure[hidden], .rules-stage-fig[hidden] {
+    display: none !important; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
+}
 
+/* Inline ▼ advance indicator at end of active unit */
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now::after { content: none; }
 .rules-advance-tri { display: none; }
 body.rules-box-night.rules-box:not(.rules-box-log):not(.rules-typing) #chat .mes.rules-now .rules-advance-tri {
@@ -651,50 +654,55 @@ body.rules-box-night.rules-box:not(.rules-box-log):not(.rules-typing) #chat .mes
     animation: rules-next 1.1s steps(2, start) infinite;
 }
 
+/* Keep nameplate readable on one line without truncating short names */
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who {
-    display: inline-block; max-width: calc(100% - 115px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72%;
 }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who[hidden] { display: none; }
 
-body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now { padding-bottom: 66px; margin-bottom: 8px; }
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { position: relative; z-index: 31; margin: -60px 24px 20px; gap: 6px; align-items: center; }
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count { margin-right: 0; padding: 0 4px; background: transparent; font-size: 13px; opacity: 0.82; white-space: nowrap; }
+/* Night-box bottom clearance and non-overflowing button bar */
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now {
+    padding-bottom: 66px; margin-bottom: 8px;
+}
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar {
+    position: relative; z-index: 31; margin: -58px 18px 16px; gap: 4px; align-items: center;
+}
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count {
+    margin-right: 0; padding: 0 4px; background: transparent; font-size: 12px; opacity: 0.85; white-space: nowrap;
+}
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-next { margin-right: auto; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button {
-    min-width: 44px; min-height: 44px; padding: 0 10px; font-size: 15px;
-    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.26); border-radius: 6px; color: rgba(255, 255, 255, 0.92);
+    min-width: 36px; min-height: 40px; padding: 0 7px; font-size: 12px; width: auto;
+    background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 6px; color: rgba(255, 255, 255, 0.92);
 }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pressed="true"] {
-    background: rgba(224, 51, 106, 0.22); border-color: #ff5c8f; color: #ff5c8f;
+    background: rgba(224, 51, 106, 0.24); border-color: #ff5c8f; color: #ff5c8f;
 }
 
-/* Foldable top bar (manual toggle + auto-fold when typing) */
+/* Foldable SillyTavern top bar */
 #rules-top-fold { display: none; }
 body.rules-box:not(.rules-box-log) #rules-top-fold {
     display: flex; align-items: center; justify-content: center; position: fixed; top: var(--topBarBlockSize, 42px); right: 10px; z-index: 2005;
-    min-width: 40px; min-height: 26px; padding: 0 10px; font: 700 12px/1 system-ui, sans-serif;
-    color: rgba(255, 255, 255, 0.9); background: rgba(14, 16, 26, 0.86); border: 1px solid rgba(255, 255, 255, 0.35); border-top: 0; border-radius: 0 0 8px 8px; cursor: pointer;
+    min-width: 38px; min-height: 24px; padding: 0 9px; font: 700 12px/1 system-ui, sans-serif;
+    color: rgba(255, 255, 255, 0.9); background: rgba(14, 16, 26, 0.88); border: 1px solid rgba(255, 255, 255, 0.35); border-top: 0; border-radius: 0 0 8px 8px; cursor: pointer;
 }
-body.rules-top-folded, body.rules-box:has(#send_form:focus-within) { --topBarBlockSize: 0px !important; }
-body.rules-top-folded #top-bar, body.rules-top-folded #top-settings-holder,
-body.rules-box:has(#send_form:focus-within) #top-bar, body.rules-box:has(#send_form:focus-within) #top-settings-holder,
-body.rules-box:has(#send_form:focus-within) #rules-box-stage { display: none !important; }
-body.rules-top-folded #sheld, body.rules-box:has(#send_form:focus-within) #sheld { top: 0 !important; height: 100dvh !important; max-height: 100dvh !important; }
-body.rules-top-folded #rules-top-fold, body.rules-box:has(#send_form:focus-within) #rules-top-fold { top: 0; }
+body.rules-top-folded { --topBarBlockSize: 0px !important; }
+body.rules-top-folded #top-bar, body.rules-top-folded #top-settings-holder { display: none !important; }
+body.rules-top-folded #sheld { top: 0 !important; height: 100dvh !important; max-height: 100dvh !important; }
+body.rules-top-folded #rules-top-fold { top: 0; }
 
-/* Option 3: Adaptive Single-Row at rest -> Two-Row Composer when focused */
-@media (max-width: 1000px) {
-    body.rules-box #send_form, body.rules-box #nonQRFormItems, body.rules-box #leftSendForm, body.rules-box #rightSendForm {
-        display: flex !important; flex-direction: row !important; align-items: center !important; flex-wrap: nowrap !important; width: auto !important; height: auto !important; gap: 4px !important; margin: 0 !important;
+/* Portrait mobile: keep textarea full-width on row 1, action buttons horizontally aligned on row 2 */
+@media (max-width: 650px) {
+    body.rules-box #send_form { display: flex !important; flex-direction: column !important; gap: 4px !important; padding: 4px 6px !important; }
+    body.rules-box #nonQRFormItems { display: flex !important; flex-wrap: wrap !important; width: 100% !important; gap: 4px !important; align-items: center !important; }
+    body.rules-box #send_textarea {
+        order: -1 !important; flex: 1 0 100% !important; width: 100% !important; min-width: 100% !important; min-height: 46px !important; margin: 0 !important;
     }
-    body.rules-box #nonQRFormItems { flex: 1 1 100% !important; width: 100% !important; }
+    body.rules-box #leftSendForm, body.rules-box #rightSendForm {
+        display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; width: auto !important; height: auto !important; gap: 6px !important; margin: 0 !important; align-items: center !important;
+    }
+    body.rules-box #leftSendForm { margin-right: auto !important; }
     body.rules-box #leftSendForm > *, body.rules-box #rightSendForm > * {
         display: inline-flex !important; align-items: center; justify-content: center; width: auto !important; margin: 0 !important;
     }
-    body.rules-box #send_textarea { flex: 1 1 auto !important; min-width: 80px !important; margin: 0 !important; }
-    body.rules-box #send_form:focus-within #nonQRFormItems { flex-wrap: wrap !important; }
-    body.rules-box #send_form:focus-within #send_textarea {
-        order: -1 !important; flex: 1 0 100% !important; width: 100% !important; min-width: 100% !important; min-height: 52px !important;
-    }
-    body.rules-box #send_form:focus-within #leftSendForm { margin-right: auto !important; }
 }
