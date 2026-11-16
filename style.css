@@ -656,7 +656,7 @@ body.rules-box-night.rules-box:not(.rules-box-log):not(.rules-typing) #chat .mes
 
 /* Keep nameplate readable on one line without truncating short names */
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who {
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72%;
+    white-space: nowrap; max-width: none; width: max-content; flex: 0 0 auto;
 }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who[hidden] { display: none; }
 
@@ -703,6 +703,6 @@ body.rules-top-folded #rules-top-fold { top: 0; }
     }
     body.rules-box #leftSendForm { margin-right: auto !important; }
     body.rules-box #leftSendForm > *, body.rules-box #rightSendForm > * {
-        display: inline-flex !important; align-items: center; justify-content: center; width: auto !important; margin: 0 !important;
+        width: auto !important; margin: 0 !important;
     }
 }
