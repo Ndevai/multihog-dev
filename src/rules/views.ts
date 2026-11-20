@@ -3,19 +3,25 @@
 // is read from a record the engine keeps: facts with their sources and recall (knowledge.ts), people's bodies and feelings,
 // each line's question pass and its story time, the scene's plan (map.ts) and this turn's hearing and sight.
 import type { RuleState, Person } from './types.js';
-import { recalls, recallStrength } from './knowledge.js';
+import { heldFacts, heldSource, recallStrength, memoryState } from './knowledge.js';
 import { relOfSource, type WhyRel } from './why.js';
 import { VOCAL_FAMILY } from './emotion.js';
 
 const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 /** One remembered fact: its words, how strongly it is recalled (0–1), how and from whom it was learned, and when. */
-export interface MemoryRow { text: string; strength: number; rel: WhyRel; by?: string; at?: number }
-/** What `who` remembers now: the facts they hold and recall (each knower's fixed draw under the forgetting curve), the
- * strongest first, then the newest. */
+export interface MemoryRow { text: string; strength: number; rel: WhyRel; by?: string; at?: number;
+    /** How the character holds it a day or more on (knowledge.ts memoryState): the time since, how sure, how clearly, and of its
+     *  details how many have drifted and how many are lost. */
+    held?: { since: string; sure: string; clear: string; details: number; changed: number; left: number;
+        /** Since section 97: how each drifted detail is held, by meaning (memory-meaning.ts), and the memory in those terms. */
+        told?: import('./memory-meaning.js').Held[]; as?: string } }
+/** What `who` remembers now: the facts they hold and recall (each knower's fixed draw under the forgetting curve), their own
+ * version in place of the world's fact it replaces, as they hold it (the player sees as their character); the strongest
+ * first, then the newest. */
 export function memoryOf(st: RuleState, who: string): MemoryRow[] {
     const w = norm(who);
-    return (st.facts ?? []).filter(f => (f.everyone || f.knowers.some(k => norm(k) === w)) && recalls(st, f, who))
-        .map(f => { const src = f.everyone ? null : relOfSource(f.from?.[w]); return { text: f.text, strength: recallStrength(st, f, who), rel: f.everyone ? 'everyone knows' as WhyRel : src!.rel, by: src?.by, at: f.at?.[w] }; })
+    return heldFacts(st, who)
+        .map(f => { const src = f.everyone ? null : relOfSource(heldSource(st, f, who)); const held = f.everyone ? null : memoryState(st, f, who); return { text: f.text, strength: recallStrength(st, f, who), rel: f.everyone ? 'everyone knows' as WhyRel : src!.rel, by: src?.by, at: f.at?.[w], ...held ? { held } : {} }; })
         .sort((a, b) => b.strength - a.strength || (b.at ?? 0) - (a.at ?? 0));
 }
 /** What `who` remembers of `name`: the remembered facts that name them. */
@@ -32,6 +38,25 @@ export function voiceWords(f0Hz?: number, sylPerS?: number): string {
 export function feelingNow(p: Person | undefined): { type: string; strength: number } | null {
     const f = [...(p?.feelings ?? [])].filter(x => x.left > 0).sort((a, b) => (b.turn ?? 0) - (a.turn ?? 0))[0];
     return f ? { type: f.type, strength: f.strength ?? 0.5 } : null;
+}
+/** A person's report card (the player's pick, 2026-11-17, from Danganronpa's handbook): labelled rows in plain words from the
+ * engine's record, each left out when the record has none (their trade stands under their name, as the handbook's talent
+ * does, so no row repeats it). Age in whole years with the word for them (box.ts cardRole's); height in cm; build from where their BMI sits among their sex in their country and year, slight
+ * below −1 SD and heavy above +1 SD [ASSUMED bands: a sixth of people each side]; voice (voiceWords); the feeling now with how
+ * strongly (0.75 and 0.4, the person card's bands). */
+export function reportRows(p: Person | undefined, voice?: { f0Hz?: number; sylPerS?: number } | null): [string, string][] {
+    const rows: [string, string][] = [];
+    if (p?.age != null) {
+        const noun = p.age < 18 ? (p.sex === 'female' ? 'girl' : p.sex === 'male' ? 'boy' : '') : p.sex === 'female' ? 'woman' : p.sex === 'male' ? 'man' : '';
+        rows.push(['Age', `${Math.floor(p.age)}${noun ? ` · ${noun}` : ''}`]);
+    }
+    if (p?.heightCm) rows.push(['Height', `${Math.round(p.heightCm)} cm`]);
+    if (p?.bmiZ != null) rows.push(['Build', p.bmiZ < -1 ? 'slight' : p.bmiZ > 1 ? 'heavy' : 'average']);
+    const said = voiceWords(voice?.f0Hz, voice?.sylPerS);
+    if (said) rows.push(['Voice', said]);
+    const f = feelingNow(p);
+    if (f) rows.push(['Feeling', `${f.type}, ${f.strength >= 0.75 ? 'strongly' : f.strength >= 0.4 ? 'clearly' : 'faintly'}`]);
+    return rows;
 }
 /** The vocal family (emotion.ts: anger, fear, happiness, sadness, tenderness) a person's picture takes from their feeling. */
 export const pictureFeeling = (p: Person | undefined): string | null => { const f = feelingNow(p); return f ? VOCAL_FAMILY[f.type] ?? null : null; };

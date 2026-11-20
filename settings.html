@@ -5,51 +5,73 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_enabled" /><span>Rules engine: code decides outcomes through tool calls, the narrator writes them</span></label>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_question_pass" /><span>Question pass: before each reply, a model call names the outcomes in doubt and the engine decides them first</span></label>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_rule_check" /><span>Rule check: after each reply, a model call compares it with the engine's results and redoes it once when it bends one</span></label>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_structured" /><span>Structured replies: the narrator writes one passage per decided result plus scenery, and names what is left open for the next turn; the reply is shown as prose</span></label>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_page" /><span>Dialogue page: the chat is set as a light page, black on ivory, in a book serif that follows the story's era, with room between the lines for the voice marks and no letter shadow, whatever the theme. Off, messages keep the theme's look</span></label>
-            <label for="rules_engine_page_colours"><small>Page colours</small></label>
-            <select id="rules_engine_page_colours" class="text_pole"><option value="light">light: black on ivory, text that is not said in dark blue</option><option value="dark">dark: white on black, text that is not said in light blue, key words in gold</option></select>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box" /><span>Text box: one thing on screen at a time, in a box at the foot of the chat under the name of who says it. Tap the text or press → for the next, ‹ or ← to go back, "Auto" to move on by itself, "Log" for the whole chat. Off, the chat scrolls</span></label>
-            <label for="rules_engine_box_unit"><small>A box holds</small></label>
-            <select id="rules_engine_box_unit" class="text_pole"><option value="voice">said words, or the text between them (a new box at each quotation; a long stretch goes on in the next box)</option><option value="message">a whole message</option></select>
-            <label for="rules_engine_box_picture"><small>The speaker's picture</small></label>
-            <select id="rules_engine_box_picture" class="text_pole"><option value="none">none: the name plate only</option><option value="large">large, above the box (the character card's picture)</option></select>
-            <label for="rules_engine_box_look"><small>The box's look</small></label>
-            <select id="rules_engine_box_look" class="text_pole"><option value="night">night: a dark framed panel under a pink name tag</option><option value="page">page: the page's own look</option></select>
-            <label for="rules_engine_box_voice"><small>Voices</small></label>
-            <select id="rules_engine_box_voice" class="text_pole"><option value="natural">natural: each voice computed from the speaker's body (needs voices/averaged-person.bin; downloads 165 MB once)</option><option value="robotic">robotic: each speaker's own computed voice (eSpeak)</option><option value="blips">blips: a tone a syllable in their voice</option><option value="off">off</option></select>
-            <label for="rules_engine_keyboard"><small>Keyboard layout (for typo &amp; slip probability)</small></label>
-            <select id="rules_engine_keyboard" class="text_pole"><option value="auto">auto (from device locale &amp; touch screen)</option><option value="qwerty">QWERTY</option><option value="qwertz">QWERTZ</option><option value="azerty">AZERTY</option><option value="dvorak">Dvorak</option><option value="colemak">Colemak</option></select>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box_typing" /><span>Letters appear one by one: said words at the speaker's pace, other text at reading pace. A tap shows the rest at once</span></label>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_music" /><span>Music: your songs, each measured when you add it (tempo, loudness, brightness, key). The song nearest the feelings in the scene plays, and it stays while the scene stays in its area. A song's set names a character (their theme while their feeling leads the scene) or a place (while your character is there)</span></label>
-            <label for="rules_engine_music_volume"><small>Music volume</small></label>
+            <div class="rules-set-head">Engine</div>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_enabled" /><span>Rules engine</span></label>
+            <small class="rules-set-hint">Code decides what happens; the narrator writes it.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_question_pass" /><span>Question pass</span></label>
+            <small class="rules-set-hint">Before each reply, a model call names what is in doubt, and the engine decides it first.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_rule_check" /><span>Rule check</span></label>
+            <small class="rules-set-hint">After each reply, a model call compares it with the engine's results and redoes it once if it bends one.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_structured" /><span>Structured replies</span></label>
+            <small class="rules-set-hint">One passage per decided result, plus scenery; shown as plain prose.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_suggest" /><span>Rules as suggestions</span></label>
+            <small class="rules-set-hint">For a world far from real history: outcomes are offered as likely. Turns off the rule check and structured replies.</small>
+            <label for="rules_engine_profile" class="rules-set-label">Connection for those calls</label>
+            <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
+            <label for="rules_engine_max_tokens" class="rules-set-label">Reply length for those calls</label>
+            <input id="rules_engine_max_tokens" class="text_pole" type="number" min="0" step="100" placeholder="tokens; empty: the connection's own" />
+            <label for="rules_engine_effort" class="rules-set-label">Thinking for those calls</label>
+            <select id="rules_engine_effort" class="text_pole"><option value="low">low</option><option value="high">high</option><option value="">model default</option></select>
+            <small class="rules-set-hint rules-set-under">Low: 9 of 10 test scenes right in 6 min. Maximum: 3 right, 15 min a scene. GLM 5.3 reads low or high.</small>
+
+            <div class="rules-set-head">Box &amp; page</div>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box" /><span>Text box</span></label>
+            <small class="rules-set-hint">One thing at a time at the foot of the screen, under who says it. Off: the chat scrolls.</small>
+            <label for="rules_engine_box_unit" class="rules-set-label">A box holds</label>
+            <select id="rules_engine_box_unit" class="text_pole"><option value="voice">said words, or the text between them</option><option value="message">a whole message</option></select>
+            <label for="rules_engine_box_look" class="rules-set-label">The box's look</label>
+            <select id="rules_engine_box_look" class="text_pole"><option value="night">night: dark panel, pink name tag</option><option value="page">page: the page's own look</option></select>
+            <label for="rules_engine_box_picture" class="rules-set-label">The speaker's picture</label>
+            <select id="rules_engine_box_picture" class="text_pole"><option value="none">none: the name tag only</option><option value="large">large, above the box</option></select>
+            <label for="rules_engine_horde_key" class="rules-set-label">AI Horde key, for the faces</label>
+            <input id="rules_engine_horde_key" class="text_pole" type="password" autocomplete="off" placeholder="empty: anonymous, the slowest queue" />
+            <small class="rules-set-hint">Free from aihorde.net/register; it queues the faces ahead of anonymous ones. Kept in the settings file as typed.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_box_typing" /><span>Letters appear one by one</span></label>
+            <small class="rules-set-hint">Said words at the speaker's pace, other text at reading pace; a tap shows the rest.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_page" /><span>Dialogue page</span></label>
+            <small class="rules-set-hint">The log as a page in a book serif of the story's era. Off: the theme's own look.</small>
+            <label for="rules_engine_page_colours" class="rules-set-label">Page colours</label>
+            <select id="rules_engine_page_colours" class="text_pole"><option value="light">light: black on ivory</option><option value="dark">dark: white on black, key words gold</option></select>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_distinct" /><span>Multiple distinctions</span></label>
+            <small class="rules-set-hint">Each part of how a line is said in its own place: pitch above, loudness in the ink, voice under the words.</small>
+
+            <div class="rules-set-head">Sound</div>
+            <label for="rules_engine_box_voice" class="rules-set-label">Voices</label>
+            <select id="rules_engine_box_voice" class="text_pole"><option value="natural">natural: computed from the speaker's body</option><option value="robotic">robotic: eSpeak</option><option value="blips">blips: a tone a syllable</option><option value="off">off</option></select>
+            <small class="rules-set-hint rules-set-under">Natural needs voices/averaged-person.bin and downloads 165 MB once.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_music" /><span>Music</span></label>
+            <small class="rules-set-hint">Your songs, measured when added; the one nearest the scene's feelings plays. A set can name a character or a place.</small>
+            <label for="rules_engine_music_volume" class="rules-set-label">Music volume</label>
             <input type="range" id="rules_engine_music_volume" min="0" max="100" step="1" />
             <div class="flex-container alignItemsCenter"><input type="file" id="rules_engine_music_files" accept="audio/*" multiple hidden /><button type="button" class="menu_button" id="rules_engine_music_add">Add songs</button><small id="rules_engine_music_status" aria-live="polite"></small></div>
             <small id="rules_engine_music_now" aria-live="polite"></small>
             <div id="rules_engine_music_list"></div>
             <div id="rules_engine_music_areas"></div>
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_distinct" /><span>Multiple distinctions: your marked lines show each part of the voice in a place of its own (above a word a thin stroke for its pitch; heavier letters for louder, paler for softer; under the words a wavy rule for creaky, dots for breathy, a broken rule for whispered; wider gaps for slower, a lean for faster, narrow letters for falsetto; the feeling's colour at the line's edge); off: the lighter look</span></label>
-            <label for="rules_engine_profile"><small>Connection for the question pass and rule check</small></label>
-            <select id="rules_engine_profile" class="text_pole"><option value="">Same as the chat</option></select>
-            <label for="rules_engine_max_tokens"><small>Reply length for those calls, tokens (empty: the connection's own)</small></label>
-            <input id="rules_engine_max_tokens" class="text_pole" type="number" min="0" step="100" />
-            <label for="rules_engine_effort"><small>Thinking for those calls (GLM 5.3 reads low or high; anything else is maximum). Low: 10 eval scenes in 6 min, 9 right; maximum: 15 min per scene, 3 right.</small></label>
-            <select id="rules_engine_effort" class="text_pole"><option value="low">low</option><option value="high">high</option><option value="">model default</option></select>
-            <label for="rules_engine_time"><small>Story time of this chat (1850-03-14 18:40, or Day 3 07:15); PassTime moves it on</small></label>
+
+            <div class="rules-set-head">Story</div>
+            <label for="rules_engine_time" class="rules-set-label">Story time of this chat</label>
             <input id="rules_engine_time" class="text_pole" type="text" placeholder="1850-03-14 18:40" />
-            <hr />
-            <b>World book</b>
-            <small>What this card's world has that real history lacks. Everything else stays as in real history.</small>
+            <small class="rules-set-hint rules-set-under">A date and time, or Day 3 07:15. PassTime moves it on.</small>
+            <label for="rules_engine_keyboard" class="rules-set-label">Keyboard layout</label>
+            <select id="rules_engine_keyboard" class="text_pole"><option value="auto">auto (from this device)</option><option value="qwerty">QWERTY</option><option value="qwertz">QWERTZ</option><option value="azerty">AZERTY</option><option value="dvorak">Dvorak</option><option value="colemak">Colemak</option></select>
+            <small class="rules-set-hint rules-set-under">For how likely a typo or slip is.</small>
+            <div class="rules-set-label">World book</div>
+            <small class="rules-set-hint rules-set-under">What this card's world has that real history lacks; the rest stays as in real history.</small>
             <div id="rules_engine_world_list"></div>
             <div class="flex-container">
                 <input id="rules_engine_world_line" class="text_pole flex1" type="text" placeholder="orcs in London since the 900s" />
                 <div id="rules_engine_world_fill" class="menu_button">Fill</div>
             </div>
-            <hr />
-            <label class="checkbox_label"><input type="checkbox" id="rules_engine_suggest" /><span>Rules as suggestions: for a world far from real history. The engine's outcomes are offered to the narrator as likely, the story and world book decide. While on, it turns off the rule check and structured replies, whatever their boxes say</span></label>
         </div>
     </div>
 </div>

@@ -58,6 +58,18 @@ export function cardRole(p: { occupation?: string; age?: number; sex?: string } 
     const noun = p.age < 18 ? (p.sex === 'female' ? 'girl' : p.sex === 'male' ? 'boy' : 'child') : p.sex === 'female' ? 'woman' : p.sex === 'male' ? 'man' : 'adult';
     return `${Math.floor(p.age)}-year-old ${noun}`;
 }
+/** Whether `who` spoke before message `at` of the whole chat, not only the part SillyTavern draws (by default its last 100
+ * messages): a message of theirs, or a quotation the reply named as theirs (readReply's speakers, the swipe shown). The
+ * first-meeting card needs it: the first of their lines drawn on the page is their first in the chat only when no earlier
+ * message holds one. */
+export function metBefore(chat: { is_user?: boolean; name?: string; swipe_id?: number; extra?: Record<string, unknown> }[], at: number, who: string): boolean {
+    for (let i = 0; i < Math.min(at, chat.length); i++) {
+        const m = chat[i]!;
+        if (!m.is_user && m.name === who) return true;
+        if ((m.extra?.rulesSpeakers as Record<number, { who: string }[]> | undefined)?.[m.swipe_id ?? 0]?.some(s => s.who === who)) return true;
+    }
+    return false;
+}
 /** The scene above the box, as a visual novel's background tells it: where, when, and the light there (the engine's place,
  * story clock and sky; any of them left out when unknown). */
 export const sceneLine = (place: string | null | undefined, time: string | null | undefined, light: string | null | undefined) =>
@@ -88,6 +100,10 @@ export const personName = (w: string) => capital(w) && !closed(w) && (GIVEN_NAME
 const nameAt = (ws: string[], i: number, sentenceStart: boolean) => personName(ws[i]!) || (capital(ws[i]!) && GIVEN_NAMES[ws[i]!.toLowerCase()] != null
     && (!sentenceStart || (!!ws[i + 1] && !NOMINATIVE.test(ws[i + 1]!) && (AUXILIARY.test(ws[i + 1]!) || /^\p{Ll}+(?:s|ed)$/u.test(ws[i + 1]!)))));
 
+// A title before a name is part of it ("Mrs Pike", "Dr Ward"): the plate reads the two words, not the title alone. A title
+// with no capitalised word after it is left to the rules below (a common word, "Mother sighs", names no one).
+const TITLE = /^(?:Mr|Mrs|Miss|Ms|Mx|Dr|Sir|Dame|Lady|Lord|Madam|Madame|Master|Mistress|Rev|Reverend|Father|Mother|Sister|Brother|Uncle|Aunt|Captain|Inspector|Sergeant|Constable|Professor|Old|Young)\.?$/;
+const titled = (ws: string[], i: number) => TITLE.test(ws[i]!) && !!ws[i + 1] && capital(ws[i + 1]!) && !closed(ws[i + 1]!) ? `${ws[i]} ${ws[i + 1]}` : null;
 const SENTENCE_END = /[.!?…]+["”’)\]*_]*(?:\s+|$)/g;
 const words = (t: string) => [...t.matchAll(/[\p{L}\p{N}'’-]+/gu)].map(m => m[0]);
 
@@ -107,6 +123,8 @@ export function subjectOf(sentence: string, names: Map<string, string>, player: 
             for (let j = named.length - 1; j >= 0; j--) { const n = named[j]!, s = nameSex(n.split(' ')[0]!); if (n !== player && (!want || !s || s === want)) return n; }
             return null;
         }
+        const t = titled(ws, i);
+        if (t) return names.get(t) ?? [...names.values()].find(n => n.endsWith(` ${ws[i + 1]}`) || n === t) ?? t;
         if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0))) return names.get(w) ?? w;
         // An article opens a noun phrase that names someone without a name ("The old guard says"): its words up to the verb
         // (a word in -s or -ed after the first) or a closed word, three at most, so the plate reads "The old guard".
@@ -133,7 +151,7 @@ export function speakersOf(paragraphs: Stretch[][], cast: Cast, named: string[] 
     const note = (text: string) => {
         for (const sentence of text.split(SENTENCE_END)) {
             const ws = words(sentence).map(x => x.replace(/['’]s$/, ''));
-            ws.forEach((w, i) => { if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0))) named.push(names.get(w) ?? w); });
+            ws.forEach((w, i) => { const t = titled(ws, i); if (t) named.push(names.get(t) ?? t); else if (capital(w) && !(i > 0 && titled(ws, i - 1)) && (names.has(w) || nameAt(ws, i, i === 0))) named.push(names.get(w) ?? w); });
         }
     };
     return paragraphs.map(p => {

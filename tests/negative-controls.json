@@ -5827,8 +5827,8 @@
   "id": "BX9",
   "name": "the next marker waits for the stretch",
   "file": "style.css",
-  "find": "body\\.rules-box-night\\.rules-box\\.rules-typing:not\\(\\.rules-box-log\\) #chat \\.mes\\.rules-now::after \\{ content: none; \\}",
-  "replace": "",
+  "find": ":not\\(\\.rules-typing\\) #chat \\.mes\\.rules-now \\.rules-advance-tri \\{",
+  "replace": " #chat .mes.rules-now .rules-advance-tri {",
   "miss": "the night look's colours and parts",
   "test": "ui"
  },
@@ -6052,8 +6052,8 @@
   "id": "PK11",
   "name": "quotation marks not spoken",
   "file": "src/rules/pocket.js",
-  "find": "text\\.replace\\(/\\[\"“”«»„\\]/g,\\ ''\\)",
-  "replace": "text",
+  "find": "\\.replace\\(/\\[\"“”«»„\\]/g, ''\\)",
+  "replace": "",
   "miss": "the natural voice",
   "test": "voice-body"
  },
@@ -6115,8 +6115,8 @@
   "id": "AP2",
   "name": "the melody about the body's pitch",
   "file": "src/rules/averaged-person.js",
-  "find": "f0\\[i\\]\\ =\\ voiced\\ \\?\\ Math\\.exp\\(mel\\ \\+\\ Math\\.log\\(t\\.f0\\)\\)\\ :\\ 0;",
-  "replace": "f0[i] = voiced ? Math.exp(mel + Math.log(150)) : 0;",
+  "find": "f0\\[i\\] = voiced \\? Math\\.exp\\(mel \\* \\(t\\.span \\?\\? 1\\) \\+ Math\\.log\\(t\\.f0\\)\\) : 0;",
+  "replace": "f0[i] = voiced ? Math.exp(mel * (t.span ?? 1) + Math.log(150)) : 0;",
   "miss": "the natural voice",
   "test": "voice-body"
  },
@@ -6393,9 +6393,9 @@
  {
   "id": "NB17",
   "name": "memory holds the player's character's facts",
-  "file": "src/rules/views.js",
-  "find": "\\(f\\.everyone \\|\\| f\\.knowers\\.some\\(k => norm\\(k\\) === w\\)\\) && recalls",
-  "replace": "recalls",
+  "file": "src/rules/knowledge.js",
+  "find": "\\(f\\.everyone \\|\\| f\\.knowers\\.some\\(k => norm\\(k\\) === w\\)\\) && recalls\\(st, f, who\\)",
+  "replace": "recalls(st, f, who)",
   "miss": "the story's sheet",
   "test": "ui"
  },
@@ -6415,6 +6415,2868 @@
   "find": "typeof t === 'number' \\? \\[\\{ index, time: t \\}\\] : \\[\\]",
   "replace": "[]",
   "miss": "the story's sheet",
+  "test": "ui"
+ },
+ {
+  "id": "NB20",
+  "name": "a version stands in for the world's fact in its holder's memory",
+  "file": "src/rules/knowledge.js",
+  "find": "return held\\.filter\\(f => !replaced\\.has\\(f\\.id\\)\\);",
+  "replace": "return held;",
+  "miss": "two records, the world and a memory",
+  "test": "engine"
+ },
+ {
+  "id": "NB21",
+  "name": "a version is marked with what the world holds",
+  "file": "src/rules/knowledge.js",
+  "find": "if \\(f\\.standing !== 'version'\\)\\s*return '';",
+  "replace": "return '';",
+  "miss": "two records, the world and a memory",
+  "test": "engine"
+ },
+ {
+  "id": "NB22",
+  "name": "a saying is marked as said",
+  "file": "src/rules/knowledge.js",
+  "find": "return ' \\[as said\\]';",
+  "replace": "return '';",
+  "miss": "two records, the world and a memory",
+  "test": "engine"
+ },
+ {
+  "id": "NB23",
+  "name": "the world's own record makes the words the world's",
+  "file": "src/rules/knowledge.js",
+  "find": "else if \\(standing === 'world'\\) \\{",
+  "replace": "else if (false) {",
+  "miss": "two records, the world and a memory",
+  "test": "engine"
+ },
+ {
+  "id": "NB24",
+  "name": "a memory met with the world gives way 63 % of the time",
+  "file": "src/rules/social.js",
+  "find": "export const CORRECTION_TAKEN = 0\\.63",
+  "replace": "export const CORRECTION_TAKEN = 0.05",
+  "miss": "a memory meets the world",
+  "test": "engine"
+ },
+ {
+  "id": "NB25",
+  "name": "the place's cue lifts recall while there",
+  "file": "src/rules/knowledge.js",
+  "find": "return atPlaceOf\\(st, f, who\\) \\? phi\\(probit\\(share\\) \\+ k\\('placeCueD'\\)\\) : share;",
+  "replace": "return share;",
+  "miss": "the place's cue",
+  "test": "engine"
+ },
+ {
+  "id": "NB26",
+  "name": "the narrator is told to tell it plainly",
+  "file": "src/index.js",
+  "find": "takeAuditNote\\(\\) \\?\\? '', TELLING_RULE, ",
+  "replace": "takeAuditNote() ?? '', ",
+  "miss": "the narrator tells it plainly",
+  "test": "ui"
+ },
+ {
+  "id": "NB27",
+  "name": "one of the kind shows the sign, anyone else the ordinary",
+  "file": "src/rules/tells.js",
+  "find": "text: sign \\? t\\.sign : t\\.ordinary",
+  "replace": "text: t.ordinary",
+  "miss": "a kind's tells",
+  "test": "engine"
+ },
+ {
+  "id": "NB28",
+  "name": "a tell shows only where its condition holds",
+  "file": "src/rules/tells.js",
+  "find": "if \\(!holds\\)\\s*continue;",
+  "replace": "",
+  "miss": "a kind's tells",
+  "test": "engine"
+ },
+ {
+  "id": "NB29",
+  "name": "a sign too small for the light and distance stays unseen",
+  "file": "src/rules/tells.js",
+  "find": "if \\(!\\(rng\\(\\) < p\\)\\)\\s*continue;",
+  "replace": "",
+  "miss": "a kind's tells",
+  "test": "engine"
+ },
+ {
+  "id": "NB30",
+  "name": "a tell unknown to the world stays out of [WORLD]",
+  "file": "src/rules/world.js",
+  "find": "\\.filter\\(t => t\\.known\\)\\.map",
+  "replace": ".map",
+  "miss": "a kind's tells",
+  "test": "engine"
+ },
+ {
+  "id": "NB31",
+  "name": "breath mists where the mixing line passes saturation",
+  "file": "src/rules/tells.js",
+  "find": "if \\(e > satHpa\\(t\\)\\)\\s*return true;",
+  "replace": "if (e > satHpa(t) * 2) return true;",
+  "miss": "breath mists in cold air",
+  "test": "engine"
+ },
+ {
+  "id": "NB32",
+  "name": "darkness is light below civil twilight where the bearer stands",
+  "file": "src/rules/tells.js",
+  "find": "place\\.lux < LIGHT\\['civil twilight'\\]",
+  "replace": "place.lux > 0",
+  "miss": "the conditions a tell can need",
+  "test": "engine"
+ },
+ {
+  "id": "NB33",
+  "name": "a secret want stays out of what the player is shown",
+  "file": "src/rules/seed.js",
+  "find": "wants: x\\.want\\.secret \\? null :",
+  "replace": "wants: false ? null :",
+  "miss": "the seed",
+  "test": "engine"
+ },
+ {
+  "id": "NB34",
+  "name": "each part of a seed draws from its own stream",
+  "file": "src/rules/seed.js",
+  "find": "const stream = \\(part\\) => seededRng\\(`\\$\\{s\\.salt\\}:\\$\\{part\\}`\\);",
+  "replace": "const one = seededRng(s.salt), stream = (part) => one;",
+  "miss": "the seed",
+  "test": "engine"
+ },
+ {
+  "id": "NB35",
+  "name": "a census trade named exactly is that row",
+  "file": "src/rules/census.js",
+  "find": "exact \\?\\? find\\(t\\)",
+  "replace": "find(t)",
+  "miss": "the seed",
+  "test": "engine"
+ },
+ {
+  "id": "NB36",
+  "name": "the seed's command writes through the tools",
+  "file": "src/index.js",
+  "find": "for \\(const c of seedCalls\\(plan, playerName\\(\\)\\)\\)",
+  "replace": "for (const c of [])",
+  "miss": "the seed writes its start through the tools",
+  "test": "ui"
+ },
+ {
+  "id": "NB37",
+  "name": "each person is of the kind with the world's share",
+  "file": "src/rules/seed.js",
+  "find": "\\(\\) < shareOfN\\(s\\.n\\)\\)",
+  "replace": "() < 0.5)",
+  "miss": "the seed's ratings",
+  "test": "engine"
+ },
+ {
+  "id": "NB38",
+  "name": "a roll keeps to worlds where each one kills at most one a day",
+  "file": "src/rules/seed.js",
+  "find": "killsEach\\(n, d\\) <= MAX_KILLS_EACH",
+  "replace": "killsEach(n, d) <= Infinity",
+  "miss": "the seed's ratings",
+  "test": "engine"
+ },
+ {
+  "id": "NB39",
+  "name": "a person's body switches count as their creature's",
+  "file": "src/rules/body-engine.js",
+  "find": " \\|\\| !!p\\.bodyFlags\\?\\.includes\\(flag\\)",
+  "replace": "",
+  "miss": "a kind on axes",
+  "test": "engine"
+ },
+ {
+  "id": "NB40",
+  "name": "a body that does not breathe shows no mist of breath",
+  "file": "src/rules/tells.js",
+  "find": "if \\(body\\?\\.includes\\('NOBREATHE'\\)\\)",
+  "replace": "if (false)",
+  "miss": "a kind on axes",
+  "test": "engine"
+ },
+ {
+  "id": "NB41",
+  "name": "a name spreads by the Bass model",
+  "file": "src/rules/seed.js",
+  "find": "p = 0\\.03, q = 0\\.38\\) =>",
+  "replace": "p = 0.03, q = 0) =>",
+  "miss": "names and their spread",
+  "test": "engine"
+ },
+ {
+  "id": "NB42",
+  "name": "the player calls the kind by the widest name they know",
+  "file": "src/rules/seed.js",
+  "find": "names\\.sort\\(\\(a, b\\) => b\\.share - a\\.share\\)",
+  "replace": "names.sort((a, b) => a.share - b.share)",
+  "miss": "names and their spread",
+  "test": "engine"
+ },
+ {
+  "id": "NB43",
+  "name": "blood is 780 kcal a litre in the diet's minimum",
+  "file": "src/rules/seed.js",
+  "find": "BLOOD_KCAL_L = 780",
+  "replace": "BLOOD_KCAL_L = 2000",
+  "miss": "a diet and what follows from it",
+  "test": "engine"
+ },
+ {
+  "id": "NB44",
+  "name": "where feeding kills, how deadly the kind is follows from the diet",
+  "file": "src/rules/seed.js",
+  "find": "const deaths = !derived \\? deathsOfD\\(s\\.d\\) : feedingDeaths\\(diet, need\\.bodiesYear, share, rates\\?\\.deaths\\);",
+  "replace": "const deaths = !derived ? deathsOfD(s.d) : 0;",
+  "miss": "a diet and what follows from it",
+  "test": "engine"
+ },
+ {
+  "id": "NB45",
+  "name": "a body with no warmth of its own spends 15 % of a warm one's energy",
+  "file": "src/rules/seed.js",
+  "find": "export const COLD_SHARE = 0\\.15;",
+  "replace": "export const COLD_SHARE = 1;",
+  "miss": "a diet and what follows from it",
+  "test": "engine"
+ },
+ {
+  "id": "NB46",
+  "name": "the dead of the place feed corpse-eaters before they kill",
+  "file": "src/rules/seed.js",
+  "find": "Math\\.max\\(0, wanted - deathsPer1000 \\* 100\\)",
+  "replace": "wanted",
+  "miss": "a diet and what follows from it",
+  "test": "engine"
+ },
+ {
+  "id": "NB47",
+  "name": "a kind's strength scales grip",
+  "file": "src/rules/strength.js",
+  "find": " \\* strengthFactor\\(p\\);",
+  "replace": ";",
+  "miss": "a kind's sheet",
+  "test": "engine"
+ },
+ {
+  "id": "NB48",
+  "name": "seeing in the dark comes with the raws' share",
+  "file": "src/rules/kind-sheet.js",
+  "find": "dark: rng\\(\\) < SHARES\\.EXTRAVISION",
+  "replace": "dark: rng() < 0.5",
+  "miss": "a kind's sheet",
+  "test": "engine"
+ },
+ {
+  "id": "NB49",
+  "name": "one of the kind carries the sheet's attributes",
+  "file": "src/rules/rules-tools.js",
+  "find": "if \\(e\\.sheet\\)\\s*w\\.p\\.attrs = \\{ \\.\\.\\.e\\.sheet\\.attrs \\};",
+  "replace": "",
+  "miss": "a kind's sheet",
+  "test": "engine"
+ },
+ {
+  "id": "NB50",
+  "name": "details told changed rise with time",
+  "file": "src/rules/memory-drift.js",
+  "find": "CHANGED_SLOPE = slopeThroughDay1\\(I\\.map\\(v => v / C\\[0\\]\\), 0\\)",
+  "replace": "CHANGED_SLOPE = 0",
+  "miss": "memory drift",
+  "test": "engine"
+ },
+ {
+  "id": "NB51",
+  "name": "details told the same fall with time",
+  "file": "src/rules/memory-drift.js",
+  "find": "KEPT_SLOPE = slopeThroughDay1\\(C\\.map\\(v => v / C\\[0\\]\\), 1\\)",
+  "replace": "KEPT_SLOPE = 0",
+  "miss": "memory drift",
+  "test": "engine"
+ },
+ {
+  "id": "NB52",
+  "name": "an important memory stays sure and clear",
+  "file": "src/rules/memory-drift.js",
+  "find": "return Math\\.max\\(0, Math\\.min\\(1, \\(i7 - TR\\.intensity\\.everyday\\)",
+  "replace": "return 0 * Math.max(0, Math.min(1, (i7 - TR.intensity.everyday)",
+  "miss": "how sure and how clearly",
+  "test": "engine"
+ },
+ {
+  "id": "NB53",
+  "name": "a source is held less than its fact",
+  "file": "src/rules/memory-drift.js",
+  "find": "Math\\.max\\(0, 1 - 2 \\* gap / s\\)",
+  "replace": "1",
+  "miss": "who told them",
+  "test": "engine"
+ },
+ {
+  "id": "NB54",
+  "name": "[KNOWS] shows the source as held",
+  "file": "src/rules/knowledge.js",
+  "find": "const how = n \\? heldSource\\(st, f, n\\) : undefined;",
+  "replace": "const how = n ? f.from?.[norm(n)] : undefined;",
+  "miss": "the memory line",
+  "test": "engine"
+ },
+ {
+  "id": "NB55",
+  "name": "[KNOWS] carries the memory's mark",
+  "file": "src/rules/knowledge.js",
+  "find": "\\$\\{n \\? memoryMark\\(st, f, n\\) : ''\\}",
+  "replace": "",
+  "miss": "the memory line",
+  "test": "engine"
+ },
+ {
+  "id": "NB56",
+  "name": "a correction is taken 63 % of the time",
+  "file": "src/rules/social.js",
+  "find": "CORRECTION_TAKEN = 0\\.63",
+  "replace": "CORRECTION_TAKEN = 0.3",
+  "miss": "a memory meets the world",
+  "test": "engine"
+ },
+ {
+  "id": "NB57",
+  "name": "a correction that shows how is taken 94 % of the time",
+  "file": "src/rules/social.js",
+  "find": "CORRECTION_EXPLAINED_TAKEN = 0\\.94",
+  "replace": "CORRECTION_EXPLAINED_TAKEN = 0.63",
+  "miss": "a correction that shows how",
+  "test": "engine"
+ },
+ {
+  "id": "NB58",
+  "name": "the seed's date in the engine's clock",
+  "file": "src/index.js",
+  "find": "setStoryTime\\(seedTime\\(plan\\)\\);",
+  "replace": "setStoryTime(Date.UTC(plan.year, plan.month - 1, plan.day, 21) / 60000);",
+  "miss": "the seed writes its start through the tools",
+  "test": "ui"
+ },
+ {
+  "id": "NB59",
+  "name": "the seed's time counts from year 1",
+  "file": "src/index.js",
+  "find": "export const seedTime = \\(plan\\) => parseStoryTime\\(",
+  "replace": "export const seedTime = (plan) => Date.UTC(plan.year, plan.month - 1, plan.day, 21) / 60000 + 0 * parseStoryTime(",
+  "miss": "the seed sets its date in the engine's clock",
+  "test": "ui"
+ },
+ {
+  "id": "NB60",
+  "name": "a title joins the name after it",
+  "file": "src/rules/box.js",
+  "find": "const titled = \\(ws, i\\) => TITLE\\.test",
+  "replace": "const titled = (ws, i) => false && TITLE.test",
+  "miss": "who says each stretch",
+  "test": "ui"
+ },
+ {
+  "id": "NB61",
+  "name": "the menu's log sign",
+  "file": "style.css",
+  "find": "#rules-box-log::before \\{ content: '\\\\f1da'; \\}",
+  "replace": "#rules-box-log::before { content: ''; }",
+  "miss": "the box on a phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB62",
+  "name": "the menu's signs are 44 px",
+  "file": "style.css",
+  "find": "#rules-box-bar button \\{ width: 44px; min-width: 44px; min-height: 44px;",
+  "replace": "#rules-box-bar button { width: 36px; min-width: 36px; min-height: 40px;",
+  "miss": "the box on a phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB63",
+  "name": "the ▼ in the player's pink",
+  "file": "style.css",
+  "find": "font-size: 14px; color: #e0336a; vertical-align: baseline;",
+  "replace": "font-size: 14px; color: gray; vertical-align: baseline;",
+  "miss": "the night look's colours and parts",
+  "test": "ui"
+ },
+ {
+  "id": "NB64",
+  "name": "a long name cut with … on one line",
+  "file": "style.css",
+  "find": "flex: 0 0 auto; overflow: hidden; text-overflow: ellipsis;",
+  "replace": "flex: 0 0 auto;",
+  "miss": "the box on a phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB65",
+  "name": "no name over a description",
+  "file": "src/index.js",
+  "find": "const plateLabel = describes \\? '' : unitWho \\|\\|",
+  "replace": "const plateLabel = unitWho ||",
+  "miss": "the box on a phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB66",
+  "name": "the ▲ taken over 44 px",
+  "file": "style.css",
+  "find": "#rules-top-fold::before \\{ content: ''; position: absolute; inset: 0 -4px -21px; \\}",
+  "replace": "",
+  "miss": "the box on a phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB67",
+  "name": "the ▼ after the last word, in the accent's ink",
+  "file": "style.css",
+  "find": ":not\\(\\.rules-typing\\) #chat \\.mes\\.rules-now \\.rules-advance-tri \\{",
+  "replace": ":not(.rules-typing) #chat .mes.rules-now .rules-advance-tri-off {",
+  "miss": "the night look's colours and parts",
+  "test": "ui"
+ },
+ {
+  "id": "NB68",
+  "name": "the swipe arrows hidden in the box in every look",
+  "file": "style.css",
+  "find": "body\\.rules-box:not\\(\\.rules-box-log\\) #chat \\.mes\\.rules-now \\.swipe_left,",
+  "replace": "body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipe_left,",
+  "miss": "the box on a phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB69",
+  "name": "the tag's room is the row less the plate's word",
+  "file": "src/index.js",
+  "find": "el\\.style\\.maxWidth = `\\$\\{Math\\.max\\(0, row\\.clientWidth - word\\)\\}px`;",
+  "replace": "",
+  "miss": "hold to explain",
+  "test": "ui"
+ },
+ {
+  "id": "NB70",
+  "name": "the world's law folded on the start's card",
+  "file": "src/rules/start-card.js",
+  "find": "<details class=\"rules-start-law\">",
+  "replace": "<details class=\"rules-start-law\" open>",
+  "miss": "the start's card",
+  "test": "ui"
+ },
+ {
+  "id": "NB71",
+  "name": "every word on the start's card escaped",
+  "file": "src/rules/start-card.js",
+  "find": "const esc = \\(t\\) => String\\(t\\)\\.replace\\(/&/g, '&amp;'\\)",
+  "replace": "const esc = (t) => String(t).replace(/^$/g, '')",
+  "miss": "the start's card",
+  "test": "ui"
+ },
+ {
+  "id": "NB72",
+  "name": "a folded part of the start opens on a 44 px row",
+  "file": "style.css",
+  "find": "display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; min-height: 44px; list-style: none;",
+  "replace": "display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; min-height: 20px; list-style: none;",
+  "miss": "the start's card",
+  "test": "ui"
+ },
+ {
+  "id": "NB73",
+  "name": "the sheet's memory carries how it is held",
+  "file": "src/rules/views.js",
+  "find": "\\.\\.\\.held \\? \\{ held \\} : \\{\\}",
+  "replace": "",
+  "miss": "the sheet holds a memory as the narrator does",
+  "test": "engine"
+ },
+ {
+  "id": "NB74",
+  "name": "the sheet shows the drifted details",
+  "file": "src/index.js",
+  "find": "if \\(drift\\)\\s*more\\.append\\(el\\('div', 'rules-mem-drift', drift\\)\\);",
+  "replace": "",
+  "miss": "the memory sheet shows how a memory is held",
+  "test": "ui"
+ },
+ {
+  "id": "NB75",
+  "name": "the name for the kind reads name first",
+  "file": "src/rules/seed.js",
+  "find": "fact: `People call them \"\\$\\{n\\.name\\}\"\\$\\{p\\.law\\?\\.what \\? `: \\$\\{p\\.law\\.what\\}` : ''\\}`",
+  "replace": "fact: `People call ${p.law?.what ?? 'them'} \"${n.name}\"`",
+  "miss": "the name for the kind reads name first",
+  "test": "engine"
+ },
+ {
+  "id": "NB76",
+  "name": "a tap on the dimmed screen closes the sheet",
+  "file": "src/index.js",
+  "find": "wrap\\.addEventListener\\('click', e => \\{ if \\(e\\.target === wrap\\)\\s*hideWhy\\(\\); \\}\\);",
+  "replace": "",
+  "miss": "the sheet is a window of its own",
+  "test": "ui"
+ },
+ {
+  "id": "NB77",
+  "name": "the sheet covers the chat column",
+  "file": "style.css",
+  "find": "#rules-sheet \\{ position: absolute; inset: 0;",
+  "replace": "#rules-sheet { position: absolute; top: 12px; left: 12px;",
+  "miss": "the sheet is a window of its own",
+  "test": "ui"
+ },
+ {
+  "id": "NB78",
+  "name": "a memory row is 52 px or more",
+  "file": "style.css",
+  "find": "gap: 12px; min-height: 52px; padding: 8px 0;",
+  "replace": "gap: 12px; min-height: 20px; padding: 8px 0;",
+  "miss": "the memory sheet shows how a memory is held",
+  "test": "ui"
+ },
+ {
+  "id": "NB79",
+  "name": "≈ marks a memory whose details drifted",
+  "file": "src/index.js",
+  "find": "const m = el\\('span', 'rules-mem-mark', '≈'\\);",
+  "replace": "const m = el('span', 'rules-mem-mark', '');",
+  "miss": "the memory sheet shows how a memory is held",
+  "test": "ui"
+ },
+ {
+  "id": "NB80",
+  "name": "the path's card never covers the box",
+  "file": "src/index.js",
+  "find": "panel\\.style\\.maxHeight = `\\$\\{Math\\.max\\(96, Math\\.floor\\(tag - top\\)\\)\\}px`;",
+  "replace": "panel.style.maxHeight = '';",
+  "miss": "the path's card in the sheet's look",
+  "test": "ui"
+ },
+ {
+  "id": "NB81",
+  "name": "each step says its relation in words",
+  "file": "src/index.js",
+  "find": "el\\('div', 'rules-why-note', \\[relWords\\(s\\.rel\\), s\\.note\\]",
+  "replace": "el('div', 'rules-why-note', [s.note]",
+  "miss": "the path's card in the sheet's look",
+  "test": "ui"
+ },
+ {
+  "id": "NB82",
+  "name": "the folded note names each kind once",
+  "file": "src/ui.js",
+  "find": "if \\(kinds\\.has\\(r\\.tag\\)\\)\\s*continue;",
+  "replace": "",
+  "miss": "each kind once when folded, every step in the rows",
+  "test": "ui"
+ },
+ {
+  "id": "NB83",
+  "name": "every setting the code reads is in the panel",
+  "file": "settings.html",
+  "find": "<input type=\"checkbox\" id=\"rules_engine_suggest\" />",
+  "replace": "<input type=\"checkbox\" />",
+  "miss": "the settings, grouped and short",
+  "test": "ui"
+ },
+ {
+  "id": "NB84",
+  "name": "every choice's value is kept",
+  "file": "settings.html",
+  "find": "<option value=\"blips\">",
+  "replace": "<option value=\"blip\">",
+  "miss": "the settings, grouped and short",
+  "test": "ui"
+ },
+ {
+  "id": "NB85",
+  "name": "the box's tag hidden under the first-meeting card",
+  "file": "style.css",
+  "find": "body\\.rules-box\\.rules-card-on:not\\(\\.rules-box-log\\) #chat \\.mes\\.rules-now \\.ch_name \\{ visibility: hidden; \\}",
+  "replace": "",
+  "miss": "the first-meeting card stands alone and says a tap goes on",
+  "test": "ui"
+ },
+ {
+  "id": "NB86",
+  "name": "the first meeting hangs on the page, not the chat column",
+  "file": "src/index.js",
+  "find": "document\\.body\\.appendChild\\(card\\);",
+  "replace": "(document.getElementById('sheld') ?? document.body).appendChild(card);",
+  "miss": "the first meeting covers the whole page",
+  "test": "ui"
+ },
+ {
+  "id": "NB87",
+  "name": "the first meeting stands over SillyTavern's top bar",
+  "file": "style.css",
+  "find": "inset: 0; z-index: 20000;",
+  "replace": "inset: 0; z-index: 40;",
+  "miss": "the first meeting covers the whole page",
+  "test": "ui"
+ },
+ {
+  "id": "NB88",
+  "name": "the first meeting's ground is opaque",
+  "file": "style.css",
+  "find": "radial-gradient\\(120% 80% at 30% 35%, #1b1d30, #06070d 70%\\);",
+  "replace": "rgba(4, 5, 10, 0.66);",
+  "miss": "the first meeting covers the whole page",
+  "test": "ui"
+ },
+ {
+  "id": "NB89",
+  "name": "the first meeting fades in",
+  "file": "style.css",
+  "find": "\\n    animation: rules-card-in 0\\.25s ease-out;",
+  "replace": "",
+  "miss": "the first meeting covers the whole page",
+  "test": "ui"
+ },
+ {
+  "id": "NB90",
+  "name": "the picture large, at a card picture's shape",
+  "file": "style.css",
+  "find": "height: var\\(--face-h\\); width: auto; aspect-ratio: 2 / 3;",
+  "replace": "height: 240px; width: 38%;",
+  "miss": "the first meeting: the picture large, its shadow sliding out",
+  "test": "ui"
+ },
+ {
+  "id": "NB91",
+  "name": "the picture's shadow slides out",
+  "file": "style.css",
+  "find": " animation: rules-card-shadow 0\\.9s ease-out 0\\.15s backwards;",
+  "replace": "",
+  "miss": "the first meeting: the picture large, its shadow sliding out",
+  "test": "ui"
+ },
+ {
+  "id": "NB92",
+  "name": "on a wide screen the name stands right of the picture",
+  "file": "style.css",
+  "find": " padding-left: calc\\(7% \\+ var\\(--face-h\\) \\* 2 / 3 \\+ 24px\\);",
+  "replace": "",
+  "miss": "the first meeting: the picture large, its shadow sliding out",
+  "test": "ui"
+ },
+ {
+  "id": "NB93",
+  "name": "the motion still for a reader who asks for less",
+  "file": "style.css",
+  "find": "#rules-box-card \\.rules-card-band::after, body\\.rules-box\\.rules-card-on:not\\(\\.rules-box-log\\) #rules-box-card, #rules-box-card \\.rules-card-face \\{ animation: none; \\}",
+  "replace": "#rules-box-card .rules-card-band::after { animation: none; }",
+  "miss": "the first meeting: the picture large, its shadow sliding out",
+  "test": "ui"
+ },
+ {
+  "id": "NB94",
+  "name": "the picture sized by the screen the browser shows",
+  "file": "style.css",
+  "find": "@supports \\(height: 1dvh\\) \\{",
+  "replace": "@supports (height: 1xdvh) {",
+  "miss": "the first meeting: the picture large, its shadow sliding out",
+  "test": "ui"
+ },
+ {
+  "id": "NB95",
+  "name": "a message of theirs before the drawn ones counts",
+  "file": "src/rules/box.js",
+  "find": "if \\(!m\\.is_user && m\\.name === who\\)\\s*return true;",
+  "replace": "",
+  "miss": "a person met before the messages drawn",
+  "test": "ui"
+ },
+ {
+  "id": "NB96",
+  "name": "the player's own message is no meeting",
+  "file": "src/rules/box.js",
+  "find": "if \\(!m\\.is_user && m\\.name === who\\)",
+  "replace": "if (m.name === who)",
+  "miss": "a person met before the messages drawn",
+  "test": "ui"
+ },
+ {
+  "id": "NB97",
+  "name": "only the swipe shown names who spoke",
+  "file": "src/rules/box.js",
+  "find": "\\?\\.\\[m\\.swipe_id \\?\\? 0\\]\\?\\.some",
+  "replace": "?.[0]?.some",
+  "miss": "a person met before the messages drawn",
+  "test": "ui"
+ },
+ {
+  "id": "NB98",
+  "name": "the first line drawn is checked against the whole chat",
+  "file": "src/index.js",
+  "find": " && !metBefore\\(ctx\\(\\)\\.chat \\?\\? \\[\\], Number\\(mes\\.getAttribute\\('mesid'\\)\\), who\\)\\) \\{",
+  "replace": " ) {",
+  "miss": "the first-meeting card once a chat, kept with the chat",
+  "test": "ui"
+ },
+ {
+  "id": "NB99",
+  "name": "the chat keeps who it has met",
+  "file": "src/index.js",
+  "find": "\\s*void c\\.saveMetadata\\(\\);\\n}",
+  "replace": "\n}",
+  "miss": "the first-meeting card once a chat, kept with the chat",
+  "test": "ui"
+ },
+ {
+  "id": "NB100",
+  "name": "a slight build below -1 SD",
+  "file": "src/rules/views.js",
+  "find": "p\\.bmiZ < -1 \\? 'slight'",
+  "replace": "p.bmiZ < -2 ? 'slight'",
+  "miss": "a person's report card in plain words",
+  "test": "ui"
+ },
+ {
+  "id": "NB101",
+  "name": "no row repeats the trade",
+  "file": "src/rules/views.js",
+  "find": "const rows = \\[\\];",
+  "replace": "const rows = []; if (p?.occupation) rows.push(['Trade', p.occupation]);",
+  "miss": "a person's report card in plain words",
+  "test": "ui"
+ },
+ {
+  "id": "NB102",
+  "name": "the report card closes with the other panels",
+  "file": "src/index.js",
+  "find": "\\['rules-why', 'rules-sheet', 'rules-report'\\]",
+  "replace": "['rules-why', 'rules-sheet']",
+  "miss": "the report card as a screen of its own",
+  "test": "ui"
+ },
+ {
+  "id": "NB103",
+  "name": "the report card over the whole page",
+  "file": "src/index.js",
+  "find": "document\\.body\\.appendChild\\(screen\\);",
+  "replace": "(document.getElementById('sheld') ?? document.body).appendChild(screen);",
+  "miss": "the report card as a screen of its own",
+  "test": "ui"
+ },
+ {
+  "id": "NB104",
+  "name": "each row a finger's height",
+  "file": "style.css",
+  "find": "\\.rules-report-rows dt, \\.rules-report-rows dd \\{ display: flex; align-items: center; min-height: 44px;",
+  "replace": ".rules-report-rows dt, .rules-report-rows dd { display: flex; align-items: center; min-height: 24px;",
+  "miss": "the report card as a screen of its own",
+  "test": "ui"
+ },
+ {
+  "id": "NB105",
+  "name": "on a wide screen the rest beside the picture",
+  "file": "style.css",
+  "find": "\\.rules-report-info \\{ display: block; grid-column: 2; grid-row: 1; \\}",
+  "replace": ".rules-report-info { display: contents; }",
+  "miss": "the report card as a screen of its own",
+  "test": "ui"
+ },
+ {
+  "id": "NB106",
+  "name": "the row's controls 44 px each",
+  "file": "style.css",
+  "find": "min-width: 44px !important; min-height: 44px !important; line-height: 44px !important;",
+  "replace": "min-width: 0 !important;",
+  "miss": "the message row's controls a finger's target each",
+  "test": "ui"
+ },
+ {
+  "id": "NB107",
+  "name": "no hidden button of SillyTavern's shown",
+  "file": "style.css",
+  "find": "box-sizing: border-box !important; min-width: 44px !important;",
+  "replace": "display: inline-flex !important; box-sizing: border-box !important; min-width: 44px !important;",
+  "miss": "the message row's controls a finger's target each",
+  "test": "ui"
+ },
+ {
+  "id": "NB108",
+  "name": "the knob's tap area stays in its own box",
+  "file": "style.css",
+  "find": "body\\.rules-box #rules-faith::before \\{ inset: 0; \\}",
+  "replace": "",
+  "miss": "the message row's controls a finger's target each",
+  "test": "ui"
+ },
+ {
+  "id": "NB109",
+  "name": "a night's sleep 6 h 35 min (Voth 1800–03)",
+  "file": "src/rules/days.js",
+  "find": "SLEEP_MIN = 6 \\* 60 \\+ 35",
+  "replace": "SLEEP_MIN = 8 * 60",
+  "miss": "each person's day",
+  "test": "engine"
+ },
+ {
+  "id": "NB110",
+  "name": "the bank holidays off from 1871",
+  "file": "src/rules/days.js",
+  "find": "if \\(day === e \\+ 1 \\|\\| day === e \\+ 50 \\|\\|",
+  "replace": "if (false && day === e + 50 ||",
+  "miss": "each person's day",
+  "test": "engine"
+ },
+ {
+  "id": "NB111",
+  "name": "Saturday's work ends at two",
+  "file": "src/rules/days.js",
+  "find": "weekday\\(dn\\) === 5 \\? SATURDAY_END : day\\.work\\.end",
+  "replace": "day.work.end",
+  "miss": "each person's day",
+  "test": "engine"
+ },
+ {
+  "id": "NB112",
+  "name": "the people away sleep in their hours of sleep",
+  "file": "src/rules/rules-tools.js",
+  "find": "away\\.filter\\(\\(\\[, p\\]\\) => doingAt\\(p\\.day, now\\) === 'asleep'\\)",
+  "replace": "away.filter(() => false)",
+  "miss": "the day at work in the story",
+  "test": "engine"
+ },
+ {
+  "id": "NB113",
+  "name": "no one follows a day when the scene's people are unknown",
+  "file": "src/rules/rules-tools.js",
+  "find": "t0 === null \\|\\| !PRESENT \\? \\[\\] :",
+  "replace": "t0 === null ? [] :",
+  "miss": "the day at work in the story",
+  "test": "engine"
+ },
+ {
+  "id": "NB114",
+  "name": "the player's character gets no day",
+  "file": "src/rules/rules-tools.js",
+  "find": "name !== PLAYER && daysHold",
+  "replace": "daysHold",
+  "miss": "the day at work in the story",
+  "test": "engine"
+ },
+ {
+  "id": "NB115",
+  "name": "the narrator's [WHERE] leaves out the people present",
+  "file": "src/rules/days.js",
+  "find": "!here\\.has\\(n\\.toLowerCase\\(\\)\\)",
+  "replace": "true",
+  "miss": "the day at work in the story",
+  "test": "engine"
+ },
+ {
+  "id": "NB116",
+  "name": "the pass names the scene's people before its calls run",
+  "file": "src/rules/question-pass.js",
+  "find": "setPresent\\(present, playerName\\(ctx\\.name1, tracker\\)\\); ",
+  "replace": "",
+  "miss": "the day at work in the story",
+  "test": "engine"
+ },
+ {
+  "id": "NB117",
+  "name": "a draw is 0.47 litres of blood",
+  "file": "src/rules/hunger.js",
+  "find": "/ BLOOD_KCAL_L / DRAW_L",
+  "replace": "/ BLOOD_KCAL_L",
+  "miss": "the kind's feedings a year",
+  "test": "engine"
+ },
+ {
+  "id": "NB118",
+  "name": "found by eight the next morning",
+  "file": "src/rules/hunger.js",
+  "find": "id: 'foundHour', value: 8,",
+  "replace": "id: 'foundHour', value: 20,",
+  "miss": "the kind's feedings a year",
+  "test": "engine"
+ },
+ {
+  "id": "NB119",
+  "name": "the feeding is the feeder's secret",
+  "file": "src/rules/hunger.js",
+  "find": "f\\.secret = true;\\s*",
+  "replace": "",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB120",
+  "name": "what is found becomes common knowledge",
+  "file": "src/rules/hunger.js",
+  "find": "learn\\(st, x\\.text, \\[\\], true\\)",
+  "replace": "learn(st, x.text, [], false)",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB121",
+  "name": "the kind feeds only away from the scene",
+  "file": "src/rules/rules-tools.js",
+  "find": "p\\.hunger && !p\\.dead && n !== PLAYER && !named\\.has\\(n\\) && !isHere\\(n\\)",
+  "replace": "p.hunger && !p.dead && n !== PLAYER && !named.has(n)",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB122",
+  "name": "the kind does not feed at work or asleep",
+  "file": "src/rules/rules-tools.js",
+  "find": " && \\(!p\\.day \\|\\| doingAt\\(p\\.day, now\\) === 'about'\\)",
+  "replace": "",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB123",
+  "name": "a feeding held back is not made up at once",
+  "file": "src/rules/hunger.js",
+  "find": "h\\.next = t \\+ h\\.every;",
+  "replace": "h.next += h.every;",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB124",
+  "name": "no feeding when the scene's people are unknown",
+  "file": "src/rules/rules-tools.js",
+  "find": "const feeders = t0 === null \\|\\| !PRESENT \\? \\[\\] :",
+  "replace": "const feeders = t0 === null ? [] :",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB125",
+  "name": "the people who left are spread over the decade",
+  "file": "src/rules/world-count.js",
+  "find": "people \\+= births - deaths - left;",
+  "replace": "people += births - deaths;",
+  "miss": "the world year by year",
+  "test": "engine"
+ },
+ {
+  "id": "NB126",
+  "name": "the kind kills only the living not of it",
+  "file": "src/rules/world-count.js",
+  "find": "Math\\.min\\(living, wanted - dead\\)",
+  "replace": "Math.min(people, wanted - dead)",
+  "miss": "the world year by year",
+  "test": "engine"
+ },
+ {
+  "id": "NB127",
+  "name": "fewer people bear fewer children",
+  "file": "src/rules/world-count.js",
+  "find": "births = r\\.births \\* s,",
+  "replace": "births = r.births,",
+  "miss": "the world year by year",
+  "test": "engine"
+ },
+ {
+  "id": "NB128",
+  "name": "the World tab only for a seeded story",
+  "file": "src/index.js",
+  "find": "\\.\\.\\.worldNow\\(\\) \\? \\['world'\\] : \\[\\]",
+  "replace": "'world'",
+  "miss": "the World tab",
+  "test": "ui"
+ },
+ {
+  "id": "NB129",
+  "name": "a lost noun is held at its basic level",
+  "file": "src/rules/memory-meaning.js",
+  "find": "\\? \\{ word, fate, as: chain\\[basic\\]\\.name, how: `held only as \\$\\{chain\\[basic\\]\\.name\\}` \\}",
+  "replace": "? { word, fate, as: '', how: 'left out' }",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB130",
+  "name": "a word is held as a noun only where the sentence uses it so",
+  "file": "src/rules/memory-meaning.js",
+  "find": "if \\(opened && closed\\)\\s*out\\.add",
+  "replace": "if (true) out.add",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB131",
+  "name": "a day drifts to the day beside it",
+  "file": "src/rules/memory-meaning.js",
+  "find": "as: cap\\(DAYS\\[\\(d \\+ side \\+ 7\\) % 7\\]\\)",
+  "replace": "as: cap(DAYS[(d + 3) % 7])",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB132",
+  "name": "a number drifts to a round one",
+  "file": "src/rules/memory-meaning.js",
+  "find": "const step = n >= 30 \\? 10 : 5",
+  "replace": "const step = 1",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB133",
+  "name": "words that stand for one thing drift into one another",
+  "file": "src/rules/memory-meaning.js",
+  "find": "if \\(group && fate === 'changed'\\)",
+  "replace": "if (false)",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB134",
+  "name": "the details held by meaning are the ones driftOf counts",
+  "file": "src/rules/knowledge.js",
+  "find": "d\\.fates\\[i\\] === 'kept' \\? \\[\\] :",
+  "replace": "d.fates[i] !== 'kept' ? [] :",
+  "miss": "the memory of meaning in the story",
+  "test": "engine"
+ },
+ {
+  "id": "NB135",
+  "name": "the sheet shows the memory as held",
+  "file": "src/index.js",
+  "find": "capFirst\\(r\\.held\\?\\.as \\?\\? r\\.text\\)",
+  "replace": "capFirst(r.text)",
+  "miss": "the memory of meaning on the sheet",
+  "test": "ui"
+ },
+ {
+  "id": "NB136",
+  "name": "a part of the day forgotten before \"of\" is the day of it",
+  "file": "src/rules/memory-meaning.js",
+  "find": "if \\(of && PARTS\\.includes\\(tok\\.toLowerCase\\(\\)\\)\\) \\{",
+  "replace": "if (false) {",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB137",
+  "name": "each telling keeps a detail with 0.3^(1/5.5)",
+  "file": "src/rules/retell.js",
+  "find": "id: 'retellLost', value: 0\\.7,",
+  "replace": "id: 'retellLost', value: 0.0,",
+  "miss": "retelling",
+  "test": "engine"
+ },
+ {
+  "id": "NB138",
+  "name": "seven in a hundred never hear",
+  "file": "src/rules/retell.js",
+  "find": "if \\(u < 0\\.93\\)",
+  "replace": "if (u < 1)",
+  "miss": "retelling",
+  "test": "engine"
+ },
+ {
+  "id": "NB139",
+  "name": "what a person hears is their version",
+  "file": "src/rules/hunger.js",
+  "find": "told === x\\.text \\? undefined : 'version'",
+  "replace": "undefined",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB140",
+  "name": "the feeder does not hear their own news",
+  "file": "src/rules/hunger.js",
+  "find": "spread\\(st, w, foundAt\\(t\\), \\[who\\]\\)",
+  "replace": "spread(st, w, foundAt(t), [])",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB141",
+  "name": "a person hears the news at the time drawn for them",
+  "file": "src/rules/hunger.js",
+  "find": "if \\(k in f\\.at\\)\\s*f\\.at\\[k\\] = x\\.at;",
+  "replace": "",
+  "miss": "retelling",
+  "test": "engine"
+ },
+ {
+  "id": "NB142",
+  "name": "the stage by how many times ordinary murder",
+  "file": "src/rules/society.js",
+  "find": "id: 'stagePanic', value: 5,",
+  "replace": "id: 'stagePanic', value: 50,",
+  "miss": "how the country lives with the kind",
+  "test": "engine"
+ },
+ {
+  "id": "NB143",
+  "name": "a kind that spares the living leaves nothing seen",
+  "file": "src/rules/society.js",
+  "find": "if \\(diet\\.prey === 'K'\\)\\s*return deaths;",
+  "replace": "if (diet.prey === 'K' || diet.prey === 'S') return deaths;",
+  "miss": "how the country lives with the kind",
+  "test": "engine"
+ },
+ {
+  "id": "NB144",
+  "name": "fiction's pattern marked as fiction's",
+  "file": "src/rules/society.js",
+  "find": " \\(a pattern from fiction, not history: use it only as the story's people would\\.\\)",
+  "replace": "",
+  "miss": "how the country lives with the kind",
+  "test": "engine"
+ },
+ {
+  "id": "NB145",
+  "name": "the narrator is told how the country lives with it",
+  "file": "src/index.js",
+  "find": "whereInjection\\(\\), societyNow\\(\\), decided",
+  "replace": "whereInjection(), decided",
+  "miss": "society in the story",
+  "test": "ui"
+ },
+ {
+  "id": "NB146",
+  "name": "one of 16 people met at 7.4 interactions a day",
+  "file": "src/rules/meetings.js",
+  "find": "PER_DAY = 7\\.4 \\* 14 / 16 / 14",
+  "replace": "PER_DAY = 7.4",
+  "miss": "people meet while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB147",
+  "name": "they meet only when both are away",
+  "file": "src/rules/rules-tools.js",
+  "find": "awayNow\\(n, p\\) && awayNow\\(o, q\\)",
+  "replace": "!p.dead && !q.dead",
+  "miss": "people meet while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB148",
+  "name": "acting on a secret want stays a secret",
+  "file": "src/rules/meetings.js",
+  "find": "if \\(w\\.secret\\)\\s*act\\.secret = true;",
+  "replace": "",
+  "miss": "people meet while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB149",
+  "name": "the 1881 town bands",
+  "file": "src/rules/seed.js",
+  "find": "\\[\\[0\\.296, 100_000, 4_000_000\\]",
+  "replace": "[[0.5, 100_000, 4_000_000]",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB150",
+  "name": "the town's own stream keeps the seed's town fixed",
+  "file": "src/rules/seed.js",
+  "find": "town: drawTown\\(stream\\('town'\\), s\\.year\\)",
+  "replace": "town: drawTown(Math.random, s.year)",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB151",
+  "name": "the start names the town",
+  "file": "src/rules/seed.js",
+  "find": "\\$\\{s\\.town\\} in \\$\\{s\\.where\\}",
+  "replace": "${s.where}",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB152",
+  "name": "a kind that eats the dead leaves graves",
+  "file": "src/rules/town.js",
+  "find": "diet\\.prey === 'R' \\? 'grave' :",
+  "replace": "false ? 'grave' :",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB153",
+  "name": "the circle's own feeders take their share of the town's",
+  "file": "src/rules/town.js",
+  "find": " - own\\) / YEAR",
+  "replace": " ) / YEAR",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB154",
+  "name": "one record a morning",
+  "file": "src/rules/town.js",
+  "find": "if \\(town\\.found && town\\.found\\.at !== at\\)",
+  "replace": "if (town.found)",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB155",
+  "name": "nothing is found before its morning",
+  "file": "src/rules/town.js",
+  "find": "if \\(town\\.found && town\\.found\\.at <= until\\)",
+  "replace": "if (town.found)",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB156",
+  "name": "the circle hears what the town finds",
+  "file": "src/rules/town.js",
+  "find": "spread\\(st, w, g\\.at\\);",
+  "replace": "",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB157",
+  "name": "a place of 100,000 or more is a city",
+  "file": "src/rules/seed.js",
+  "find": "people >= peek\\('cityFrom'\\) \\? 'city'",
+  "replace": "false ? 'city'",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB158",
+  "name": "passing time runs the town's work",
+  "file": "src/rules/rules-tools.js",
+  "find": "if \\(t0 !== null\\)\\s*townWork\\(st, t0 \\+ elapsed, rng\\);",
+  "replace": "",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB159",
+  "name": "no stray preposition before a comma",
+  "file": "src/rules/memory-meaning.js",
+  "find": "\\.replace\\(/\\\\b\\(the\\|of\\|on\\|in\\|at\\)\\\\s\\+\\(\\?=\\[,\\.;:\\]\\|\\$\\)/gi, ''\\)\\.replace\\(/\\\\s\\+\\(\\[,\\.;:\\]\\)/g, '\\$1'\\)",
+  "replace": ".replace(/\\s+([,.;:])/g, '$1').replace(/\\b(the|of|on|in|at)\\s+(?=[,.;:]|$)/gi, '')",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB160",
+  "name": "a story seeded before section 101 gets its town",
+  "file": "src/index.js",
+  "find": "if \\(!st\\.town\\) \\{\\s*st\\.town = townOf\\(plan\\);\\s*saveState\\(\\);\\s*\\}",
+  "replace": "",
+  "miss": "the player's character's town",
+  "test": "ui"
+ },
+ {
+  "id": "NB161",
+  "name": "the World tab names the town",
+  "file": "src/index.js",
+  "find": "el\\('p', 'rules-world-town', townLine\\(town, 'Your character'\\)\\)",
+  "replace": "el('p', 'rules-world-town', '')",
+  "miss": "the player's character's town",
+  "test": "ui"
+ },
+ {
+  "id": "NB162",
+  "name": "a day of the month goes with its month",
+  "file": "src/rules/memory-meaning.js",
+  "find": "const day = c\\.month \\? c\\.day : undefined",
+  "replace": "const day = c.day",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB163",
+  "name": "a weekday without its date is one Sunday",
+  "file": "src/rules/memory-meaning.js",
+  "find": "`one \\$\\{c\\.weekday\\} \\$\\{c\\.part\\}\\$\\{within\\}`",
+  "replace": "`on the ${c.part} of ${c.weekday}${within}`",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB164",
+  "name": "a count forgotten before \"of\" is some",
+  "file": "src/rules/memory-meaning.js",
+  "find": "if \\(of && /\\^\\\\d\\+\\$/\\.test\\(tok\\)\\) \\{",
+  "replace": "if (false) {",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB165",
+  "name": "the article before a removed compound fits the next word",
+  "file": "src/rules/memory-meaning.js",
+  "find": "\\$\\{anBefore\\(parts\\[k\\]\\) \\? 'n' : ''\\}",
+  "replace": "",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB166",
+  "name": "\"an\" before 8, 11, 18 and the eighties",
+  "file": "src/rules/memory-meaning.js",
+  "find": " \\|\\| /\\^\\(8\\\\d\\?\\|1\\[18\\]\\)\\(\\?!\\\\d\\)/\\.test\\(w\\)",
+  "replace": "",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB167",
+  "name": "a victim's age takes its article",
+  "file": "src/rules/hunger.js",
+  "find": "\\$\\{anBefore\\(String\\(age\\)\\) \\? 'an' : 'a'\\} \\$\\{age\\}-year-old",
+  "replace": "a ${age}-year-old",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB168",
+  "name": "news saved before retelling becomes common knowledge",
+  "file": "src/rules/hunger.js",
+  "find": "if \\(!x\\.who\\) \\{",
+  "replace": "if (false) {",
+  "miss": "the kind feeds while the player's character is away",
+  "test": "engine"
+ },
+ {
+  "id": "NB169",
+  "name": "a person's name in a memory is kept as written",
+  "file": "src/rules/knowledge.js",
+  "find": "return names\\.has\\(w\\.toLowerCase\\(\\)\\) \\? 'kept' : ",
+  "replace": "return ",
+  "miss": "the memory of meaning in the story",
+  "test": "engine"
+ },
+ {
+  "id": "NB170",
+  "name": "the basic level is the most used word of the chain",
+  "file": "src/rules/memory-meaning.js",
+  "find": "export const basicAt = \\(chain\\) => chain\\.reduce\\(",
+  "replace": "export const basicAt = (chain) => 1 || chain.reduce(",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB171",
+  "name": "a lost noun stands in only with a word people use",
+  "file": "src/rules/memory-meaning.js",
+  "find": "basic > 0 && chain\\[basic\\]\\.zipf >= k\\('everydayZipf'\\) \\* 10 \\?",
+  "replace": "basic > 0 ?",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB172",
+  "name": "a changed noun becomes another of a kind people name",
+  "file": "src/rules/memory-meaning.js",
+  "find": "i >= Math\\.max\\(basic, 1\\) && x\\.zipf >= k\\('everydayZipf'\\) \\* 10\\)",
+  "replace": "i >= Math.max(basic, 1))",
+  "miss": "the memory of meaning",
+  "test": "engine"
+ },
+ {
+  "id": "NB173",
+  "name": "a victim under a year is a baby",
+  "file": "src/rules/hunger.js",
+  "find": "if \\(age < 1\\)\\s*return `a baby \\$\\{noun\\(v\\.age, v\\.sex\\)\\}`;",
+  "replace": "",
+  "miss": "the kind beyond the circle, in the town",
+  "test": "engine"
+ },
+ {
+  "id": "NB174",
+  "name": "older people lose names more often",
+  "file": "src/rules/tongue.js",
+  "find": "k\\('totAgeRatio'\\) \\*\\* \\(",
+  "replace": "1 ** (",
+  "miss": "names on the tip of the tongue",
+  "test": "engine"
+ },
+ {
+  "id": "NB175",
+  "name": "a weakly held name slips more often",
+  "file": "src/rules/tongue.js",
+  "find": "k\\('totBase'\\) \\* \\(1 - s\\) \\*",
+  "replace": "k('totBase') *",
+  "miss": "names on the tip of the tongue",
+  "test": "engine"
+ },
+ {
+  "id": "NB176",
+  "name": "a name stays out of reach for the hour",
+  "file": "src/rules/tongue.js",
+  "find": "draw\\(`\\$\\{key\\}\\|tot\\|\\$\\{hour\\}`\\)",
+  "replace": "draw(`${key}|tot|${now}`)",
+  "miss": "names on the tip of the tongue",
+  "test": "engine"
+ },
+ {
+  "id": "NB177",
+  "name": "only proper names, not roles",
+  "file": "src/rules/tongue.js",
+  "find": "/\\^\\\\p\\{Lu\\}/u\\.test\\(n\\) && !/\\^\\(\\?:the\\|a\\|an\\)\\\\s/i\\.test\\(n\\)",
+  "replace": "true",
+  "miss": "names on the tip of the tongue",
+  "test": "engine"
+ },
+ {
+  "id": "NB178",
+  "name": "the first letter told in 57 % of states",
+  "file": "src/rules/tongue.js",
+  "find": "< k\\('totFirstLetter'\\) \\?",
+  "replace": "< 1 ?",
+  "miss": "names on the tip of the tongue",
+  "test": "engine"
+ },
+ {
+  "id": "NB179",
+  "name": "the narrator is told the name will not come",
+  "file": "src/rules/knowledge.js",
+  "find": "\\$\\{tot\\.length \\? ` \\| On the tip of the tongue now: \\$\\{tot\\.map\\(t => totPhrase\\(t\\)\\)\\.join\\('; '\\)\\}` : ''\\}",
+  "replace": "",
+  "miss": "names on the tip of the tongue",
+  "test": "engine"
+ },
+ {
+  "id": "NB180",
+  "name": "the player's sheet shows the name on the tip of the tongue",
+  "file": "src/index.js",
+  "find": "\\[el\\('p', 'rules-mem-tot', `On the tip of your tongue now: ",
+  "replace": "[el('p', 'rules-mem-tot', `",
+  "miss": "a name on the tip of the tongue on the sheet",
+  "test": "ui"
+ },
+ {
+  "id": "NB181",
+  "name": "the story's groups join the seed's",
+  "file": "src/rules/memory-meaning.js",
+  "find": "\\[\\.\\.\\.links, \\.\\.\\.STORY\\.same\\]\\.find\\(",
+  "replace": "links.find(",
+  "miss": "the story's own links between words",
+  "test": "engine"
+ },
+ {
+  "id": "NB182",
+  "name": "a kind the story sets comes first",
+  "file": "src/rules/memory-meaning.js",
+  "find": "const own = STORY\\.kinds\\[w\\] \\?\\? STORY\\.kinds\\[singular\\(w\\) \\?\\? ''\\];",
+  "replace": "const own = null;",
+  "miss": "the story's own links between words",
+  "test": "engine"
+ },
+ {
+  "id": "NB183",
+  "name": "a lorebook key that is a regular expression links nothing",
+  "file": "src/rules/links.js",
+  "find": "!/\\^\\\\/\\.\\*\\\\/\\[a-z\\]\\*\\$/\\.test\\(k\\.trim\\(\\)\\)",
+  "replace": "true",
+  "miss": "the story's own links between words",
+  "test": "engine"
+ },
+ {
+  "id": "NB184",
+  "name": "a disabled lorebook entry links nothing",
+  "file": "src/rules/links.js",
+  "find": "if \\(e\\.disable \\|\\| !Array\\.isArray\\(e\\.key\\)\\)",
+  "replace": "if (!Array.isArray(e.key))",
+  "miss": "the story's own links between words",
+  "test": "engine"
+ },
+ {
+  "id": "NB185",
+  "name": "a phrase stands by its last word",
+  "file": "src/rules/links.js",
+  "find": "return \\(ws\\.at\\(-1\\) \\?\\? ''\\)",
+  "replace": "return (ws[0] ?? '')",
+  "miss": "the story's own links between words",
+  "test": "engine"
+ },
+ {
+  "id": "NB186",
+  "name": "the links are read again on each chat change",
+  "file": "src/index.js",
+  "find": "on\\(ev\\.CHAT_CHANGED, \\(\\) => \\{ void refreshLinks\\(\\); \\}\\);",
+  "replace": "",
+  "miss": "the story's own links between words",
+  "test": "ui"
+ },
+ {
+  "id": "NB187",
+  "name": "the lorebook's groups join the player's links",
+  "file": "src/index.js",
+  "find": ", \\.\\.\\.await loreGroups\\(\\)\\]",
+  "replace": "],",
+  "miss": "the story's own links between words",
+  "test": "ui"
+ },
+ {
+  "id": "NB188",
+  "name": "the stage reads its registered thresholds",
+  "file": "src/rules/society.js",
+  "find": "times < k\\('stagePanic'\\)",
+  "replace": "times < 5",
+  "miss": "sections 94–101's judgements registered",
+  "test": "engine"
+ },
+ {
+  "id": "NB189",
+  "name": "a teller more each registered span",
+  "file": "src/rules/retell.js",
+  "find": "\\(peek\\('tellerHours'\\) \\* 60\\)",
+  "replace": "240",
+  "miss": "sections 94–101's judgements registered",
+  "test": "engine"
+ },
+ {
+  "id": "NB190",
+  "name": "the find's hour is registered",
+  "file": "src/rules/hunger.js",
+  "find": "peek\\('foundHour'\\) \\* 60",
+  "replace": "480",
+  "miss": "sections 94–101's judgements registered",
+  "test": "engine"
+ },
+ {
+  "id": "NB191",
+  "name": "a village by its registered size",
+  "file": "src/rules/seed.js",
+  "find": "people < peek\\('villageUnder'\\)",
+  "replace": "people < 2000",
+  "miss": "sections 94–101's judgements registered",
+  "test": "engine"
+ },
+ {
+  "id": "NB192",
+  "name": "a shifted day is read twelve hours earlier",
+  "file": "src/rules/days.js",
+  "find": "t -= day\\.shift \\?\\? 0;",
+  "replace": "",
+  "miss": "a kind active by night keeps the night",
+  "test": "engine"
+ },
+ {
+  "id": "NB193",
+  "name": "a shifted day changes twelve hours later",
+  "file": "src/rules/days.js",
+  "find": "if \\(day\\.shift\\)\\s*return nextChange\\(\\{ \\.\\.\\.day, shift: 0 \\}, t - day\\.shift\\) \\+ day\\.shift;",
+  "replace": "",
+  "miss": "a kind active by night keeps the night",
+  "test": "engine"
+ },
+ {
+  "id": "NB194",
+  "name": "TrueNature shifts a night kind's day",
+  "file": "src/rules/rules-tools.js",
+  "find": "w\\.p\\.day\\.shift = NIGHT_SHIFT;",
+  "replace": "void 0;",
+  "miss": "a kind active by night keeps the night",
+  "test": "engine"
+ },
+ {
+  "id": "NB195",
+  "name": "a feeder feeds only awake and free",
+  "file": "src/rules/rules-tools.js",
+  "find": "\\(!p\\.day \\|\\| doingAt\\(p\\.day, now\\) === 'about'\\)",
+  "replace": "(!p.day || doingAt(p.day, now) !== 'at work')",
+  "miss": "a kind active by night keeps the night",
+  "test": "engine"
+ },
+ {
+  "id": "NB196",
+  "name": "a seed's law replaces an older entry of its kind",
+  "file": "src/index.js",
+  "find": "if \\(!old \\|\\| JSON\\.stringify\\(old\\) !== JSON\\.stringify\\(plan\\.law\\)\\)",
+  "replace": "if (!old)",
+  "miss": "a seed's law replaces an older entry of its kind",
+  "test": "ui"
+ },
+ {
+  "id": "NB197",
+  "name": "a cold body does not regulate its heat",
+  "file": "src/rules/thermal/exposure.js",
+  "find": "cold \\? \\{ passive: true, avaZero: true, metScale \\} : \\{ shivStopsBelow: 32 \\}",
+  "replace": "{ shivStopsBelow: 32 }",
+  "miss": "a body with no warmth of its own",
+  "test": "engine"
+ },
+ {
+  "id": "NB198",
+  "name": "a cold body starts at the air's temperature",
+  "file": "src/rules/thermal/exposure.js",
+  "find": "th\\.t \\?\\?= cold \\? body\\.t\\.map\\(\\(\\) => p\\.env\\.tdb\\) : \\[\\.\\.\\.body\\.t\\];",
+  "replace": "th.t ??= [...body.t];",
+  "miss": "a body with no warmth of its own",
+  "test": "engine"
+ },
+ {
+  "id": "NB199",
+  "name": "a cold body is not harmed by its own temperature",
+  "file": "src/rules/body-engine.js",
+  "find": "const st = cold \\? null : coreStage\\(heat\\.core\\);",
+  "replace": "const st = coreStage(heat.core);",
+  "miss": "a body with no warmth of its own",
+  "test": "engine"
+ },
+ {
+  "id": "NB200",
+  "name": "a cold body makes 15 % of a warm body's heat",
+  "file": "src/rules/body-engine.js",
+  "find": "metScale: cold \\? peek\\('coldMetShare'\\) : 1",
+  "replace": "metScale: 1",
+  "miss": "a body with no warmth of its own",
+  "test": "engine"
+ },
+ {
+  "id": "NB201",
+  "name": "eyes that see in the dark take the light six times brighter",
+  "file": "src/rules/body-engine.js",
+  "find": "lux \\* k\\('darkSightGain'\\)",
+  "replace": "lux",
+  "miss": "eyes that see in the dark",
+  "test": "engine"
+ },
+ {
+  "id": "NB202",
+  "name": "Look says the eyes see in the dark",
+  "file": "src/rules/rules-tools.js",
+  "find": "\\$\\{dark \\? `, eyes that see in the dark \\(as \\$\\{Math\\.round\\(seeLux\\(v\\.p, 1\\)\\)\\} times the light\\)` : ''\\}",
+  "replace": "",
+  "miss": "eyes that see in the dark",
+  "test": "engine"
+ },
+ {
+  "id": "NB203",
+  "name": "TrueNature gives dark sight to a kind whose sheet has it",
+  "file": "src/rules/rules-tools.js",
+  "find": "\\.\\.\\.e\\.sheet\\?\\.senses\\?\\.dark \\? \\['EXTRAVISION'\\] : \\[\\]",
+  "replace": "...[]",
+  "miss": "eyes that see in the dark",
+  "test": "engine"
+ },
+ {
+  "id": "NB204",
+  "name": "the count runs from 1841",
+  "file": "src/rules/world-count.js",
+  "find": "export const COUNT_YEARS = \\[1841, 1921\\];",
+  "replace": "export const COUNT_YEARS = [1881, 1921];",
+  "miss": "the world year by year",
+  "test": "engine"
+ },
+ {
+  "id": "NB205",
+  "name": "the 1840s at 1850's rate per person",
+  "file": "src/rules/world-count.js",
+  "find": "\\[VITAL\\[1850\\]\\[0\\] \\* people / ref, VITAL\\[1850\\]\\[1\\] \\* people / ref\\]",
+  "replace": "[0, 0]",
+  "miss": "the world year by year",
+  "test": "engine"
+ },
+ {
+  "id": "NB206",
+  "name": "a seed reads its own year's rates",
+  "file": "src/rules/seed.js",
+  "find": "const rates = ewYear\\(s\\.year\\),",
+  "replace": "const rates = ewYear(1881),",
+  "miss": "the world year by year",
+  "test": "engine"
+ },
+ {
+  "id": "NB207",
+  "name": "a seed from 1886 draws its town by 1891's bands",
+  "file": "src/rules/seed.js",
+  "find": "year >= 1886 \\? TOWN_BANDS_1891 : TOWN_BANDS",
+  "replace": "TOWN_BANDS",
+  "miss": "the world year by year",
+  "test": "engine"
+ },
+ {
+  "id": "NB208",
+  "name": "the born's children are of the kind",
+  "file": "src/rules/world-count.js",
+  "find": "born = g\\.origin === 'born' \\? kind \\* perHead\\(births\\) : 0;",
+  "replace": "born = 0;",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB209",
+  "name": "the made are made from the living",
+  "file": "src/rules/world-count.js",
+  "find": "made = g\\.origin === 'made' \\? Math\\.min\\(living - killed, rate \\* kind\\) : 0,",
+  "replace": "made = 0,",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB210",
+  "name": "a share of the place's dead come back",
+  "file": "src/rules/world-count.js",
+  "find": "back = g\\.origin === 'returned' \\? rate \\* deaths : 0,",
+  "replace": "back = 0,",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB211",
+  "name": "more of them arrive from elsewhere",
+  "file": "src/rules/world-count.js",
+  "find": "came = g\\.origin === 'arrived' \\? rate \\* kind : 0;",
+  "replace": "came = 0;",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB212",
+  "name": "a kind whose kills are its food starves for what it cannot find",
+  "file": "src/rules/world-count.js",
+  "find": "const fed = !g\\.feeds \\|\\| wanted <= 0 \\|\\| end \\? 1 : \\(dead \\+ killed\\) / wanted;",
+  "replace": "const fed = 1;",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB213",
+  "name": "the dead feed a corpse-eater before it kills, year by year",
+  "file": "src/rules/world-count.js",
+  "find": "dead = g\\.eatsDead \\? Math\\.min\\(deaths, wanted\\) : 0;",
+  "replace": "dead = 0;",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB214",
+  "name": "a kind that eats its own thins year by year",
+  "file": "src/rules/world-count.js",
+  "find": "\\* fed \\* Math\\.exp\\(-g\\.eatsOwn\\);",
+  "replace": "* fed;",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB215",
+  "name": "the seed's origin sets how the count grows",
+  "file": "src/rules/seed.js",
+  "find": "origin: ORIGIN_OF\\[p\\.law\\?\\.origin \\?\\? ''\\] \\?\\? 'born',",
+  "replace": "origin: 'born',",
+  "miss": "the kind's own number",
+  "test": "engine"
+ },
+ {
+  "id": "NB216",
+  "name": "the World tab counts the kind by its sheet",
+  "file": "src/index.js",
+  "find": "plan\\.deaths, kindGrowth\\(plan\\)\\);",
+  "replace": "plan.deaths);",
+  "miss": "the World tab",
+  "test": "ui"
+ },
+ {
+  "id": "NB217",
+  "name": "a bad outcome nobody can change adds its units to the face",
+  "file": "src/rules/expression-set.js",
+  "find": "add\\(CPM\\.noControl\\);",
+  "replace": "void 0;",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB218",
+  "name": "a sudden appraisal raises the brows",
+  "file": "src/rules/expression-set.js",
+  "find": "add\\(CPM\\.sudden\\);",
+  "replace": "void 0;",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB219",
+  "name": "one's own action praised lifts the head, blamed lowers head and gaze",
+  "file": "src/rules/expression-set.js",
+  "find": "add\\(\\(s\\.praiseworthy \\?\\? true\\) \\? CPM\\.ownPraised : CPM\\.ownBlamed\\);",
+  "replace": "void 0;",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB220",
+  "name": "pain moves the core pain units",
+  "file": "src/rules/expression-set.js",
+  "find": "pain: \\[4, 6, 9, 43\\]",
+  "replace": "pain: []",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB221",
+  "name": "closed eyes show no feeling",
+  "file": "src/rules/expression-set.js",
+  "find": "if \\(b\\.eyesClosed\\) \\{",
+  "replace": "if (false) {",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB222",
+  "name": "a feeling moves its units at its strength",
+  "file": "src/rules/expression-set.js",
+  "find": "f\\[u\\] = Math\\.max\\(f\\[u\\], s\\.strength\\);",
+  "replace": "f[u] = 1;",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB223",
+  "name": "a body state weighs only as often as it is seen",
+  "file": "src/rules/expression-set.js",
+  "find": "w: well \\? 2 : 0 \\}",
+  "replace": "w: 2 }",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB224",
+  "name": "how often each state comes weighs it",
+  "file": "src/rules/expression-set.js",
+  "find": "w = j\\.w \\+ \\(counts\\[j\\.key\\] \\?\\? 0\\);",
+  "replace": "w = j.w;",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB225",
+  "name": "the number of looks is taken at the knee",
+  "file": "src/rules/expression-set.js",
+  "find": "const knee = curve\\.reduce\\(",
+  "replace": "const knee = curve.slice(-2, -1).reduce(",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB226",
+  "name": "each person's look is counted as a reply comes",
+  "file": "src/rules/rules-tools.js",
+  "find": "    countLooks\\(messageId\\);\\n",
+  "replace": "\n",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB227",
+  "name": "the feeling keeps its appraisal",
+  "file": "src/rules/rules-tools.js",
+  "find": "state: key, \\.\\.\\.a\\.target",
+  "replace": "...a.target",
+  "miss": "the looks",
+  "test": "engine"
+ },
+ {
+  "id": "NB228",
+  "name": "the looks command is registered",
+  "file": "src/index.js",
+  "find": "name: 'rules-looks',",
+  "replace": "name: 'rules-look',",
+  "miss": "the looks command",
+  "test": "ui"
+ },
+ {
+  "id": "NB229",
+  "name": "recompute adds this chat's counts to the pooled ones",
+  "file": "src/index.js",
+  "find": "looks\\.chats\\[ctx\\(\\)\\.getCurrentChatId\\(\\) \\?\\? 'chat'\\] = \\{ \\.\\.\\.store\\(\\)\\.state\\.faced \\?\\? \\{\\} \\};",
+  "replace": "void 0;",
+  "miss": "the looks command",
+  "test": "ui"
+ },
+ {
+  "id": "NB230",
+  "name": "the main pass leaves the card picture",
+  "file": "src/faces.js",
+  "find": "denoising_strength: 0, seed",
+  "replace": "denoising_strength: 0.4, seed",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB231",
+  "name": "ADetailer redraws the face at lookFaceDenoise",
+  "file": "src/faces.js",
+  "find": "ad_denoising_strength: faceDenoise\\(\\)",
+  "replace": "ad_denoising_strength: 0.4",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB232",
+  "name": "ADetailer skips the main pass",
+  "file": "src/faces.js",
+  "find": "args: \\[true, true, \\{",
+  "replace": "args: [true, false, {",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB233",
+  "name": "ADetailer draws the face's words",
+  "file": "src/faces.js",
+  "find": "ad_prompt: prompt,",
+  "replace": "ad_prompt: '',",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB234",
+  "name": "the card picture is the picture redrawn",
+  "file": "src/faces.js",
+  "find": "init_images: \\[await base64Of\\(pic\\)\\]",
+  "replace": "init_images: []",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB235",
+  "name": "the card picture's own size",
+  "file": "src/faces.js",
+  "find": "width: bmp\\.width, height: bmp\\.height",
+  "replace": "width: 1024, height: 1024",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB236",
+  "name": "through the CORS proxy when the straight call fails",
+  "file": "src/faces.js",
+  "find": "const routes = \\[\\[full, own\\], \\[`/proxy/\\$\\{full\\}`, \\{ \\.\\.\\.c\\.getRequestHeaders\\?\\.\\(\\) \\?\\? \\{\\}, \\.\\.\\.own \\}\\]\\];",
+  "replace": "const routes = [[full, own]];",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB237",
+  "name": "SillyTavern's token stays off the straight route",
+  "file": "src/faces.js",
+  "find": "const routes = \\[\\[full, own\\]",
+  "replace": "const routes = [[full, { ...c.getRequestHeaders?.() ?? {}, ...own }]",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB238",
+  "name": "SillyTavern's token on the proxy route",
+  "file": "src/faces.js",
+  "find": "\\{ \\.\\.\\.c\\.getRequestHeaders\\?\\.\\(\\) \\?\\? \\{\\}, \\.\\.\\.own \\}\\]\\];",
+  "replace": "own]];",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB239",
+  "name": "the backend's password",
+  "file": "src/faces.js",
+  "find": "Authorization: `Basic \\$\\{btoa\\(auth\\)\\}`",
+  "replace": "Authorization: `Basic ${auth}`",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB240",
+  "name": "a backend without ADetailer stops",
+  "file": "src/faces.js",
+  "find": "if \\(!\\(scripts\\.img2img \\?\\? \\[\\]\\)\\.some\\(n => n\\.toLowerCase\\(\\) === 'adetailer'\\)\\)",
+  "replace": "if (false)",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB241",
+  "name": "a backend that does not answer stops",
+  "file": "src/faces.js",
+  "find": "if \\(!scripts\\)\\s*return `Your image backend at",
+  "replace": "if (false) return `Your image backend at",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB242",
+  "name": "one seed for all of a character's faces",
+  "file": "src/faces.js",
+  "find": "faceTags\\(look\\.face\\)\\.tags\\.join\\(', '\\), seedOf\\(who\\), toast\\)",
+  "replace": "faceTags(look.face).tags.join(', '), -1, toast)",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB243",
+  "name": "only the faces the character lacks",
+  "file": "src/faces.js",
+  "find": "const todo = looks\\.filter\\(l => !have\\.has\\(lookLabel\\(l\\.face\\)\\)\\);",
+  "replace": "const todo = looks;",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB244",
+  "name": "the common prefix and the character's own prompt before the face",
+  "file": "src/faces.js",
+  "find": "joinPrompts\\(joinPrompts\\(s\\.prompt_prefix \\?\\? '', own\\), face, '\\{prompt\\}'\\)",
+  "replace": "face",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB245",
+  "name": "saved under its face's label",
+  "file": "src/faces.js",
+  "find": "form\\.append\\('label', label\\);",
+  "replace": "form.append('label', 'joy');",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB246",
+  "name": "the upload sets its own content type",
+  "file": "src/faces.js",
+  "find": "delete headers\\['Content-Type'\\];",
+  "replace": "",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB247",
+  "name": "ComfyUI for the chat's own character",
+  "file": "src/faces.js",
+  "find": "who !== c\\.name2 \\|\\| ",
+  "replace": "",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB248",
+  "name": "a ComfyUI workflow must take the character's picture",
+  "file": "src/faces.js",
+  "find": "if \\(!String\\(wf\\)\\.includes\\('%char_avatar%'\\)\\)",
+  "replace": "if (false)",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB249",
+  "name": "/imagine posts nothing and keeps the seed",
+  "file": "src/faces.js",
+  "find": "quiet=true gallery=false extend=false seed=\\$\\{seed\\}",
+  "replace": "seed=${seed}",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB250",
+  "name": "the pipe sign kept out of /imagine",
+  "file": "src/faces.js",
+  "find": "joinPrompts\\(own, face\\)\\.replace\\(/\\\\\\|/g, ','\\)",
+  "replace": "joinPrompts(own, face)",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB251",
+  "name": "furrowed brow is 1 with 4",
+  "file": "src/rules/face-words.js",
+  "find": "if \\(on\\(1\\) && on\\(4\\)\\) \\{",
+  "replace": "if (false) {",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB252",
+  "name": "closed eyes over the other eye tags",
+  "file": "src/rules/face-words.js",
+  "find": "if \\(on\\(43\\)\\) \\{",
+  "replace": "if (false) {",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB253",
+  "name": "the tightened lid reported lost under the raised one",
+  "file": "src/rules/face-words.js",
+  "find": "for \\(const u of \\[7, 41, 45\\]\\)\\s*if \\(on\\(u\\)\\)\\s*dropped\\.push\\(u\\);",
+  "replace": "",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB254",
+  "name": "an open mouth over pursed lips",
+  "file": "src/rules/face-words.js",
+  "find": "tag\\('open mouth', at\\(26\\)\\);\\s*for \\(const u of \\[23, 24\\]\\)\\s*if \\(on\\(u\\)\\)\\s*dropped\\.push\\(u\\);",
+  "replace": "tag('open mouth', at(26)); if (on(23) || on(24)) tag('pursed lips', 1);",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB255",
+  "name": "the lighter tag at half strength",
+  "file": "src/rules/face-words.js",
+  "find": "tag\\(at\\(12\\) < 1 \\? 'light smile' : 'smile', 1\\);",
+  "replace": "tag('smile', at(12));",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB256",
+  "name": "the half weight",
+  "file": "src/rules/face-words.js",
+  "find": "s >= 1 \\? t : `\\(\\$\\{t\\}:\\$\\{w\\}\\)`",
+  "replace": "t",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB257",
+  "name": "the units no tag names are dropped",
+  "file": "src/rules/face-words.js",
+  "find": "for \\(const u of UNTAGGED\\)\\s*if \\(on\\(u\\)\\)\\s*dropped\\.push\\(u\\);",
+  "replace": "",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB258",
+  "name": "closed mouth when neither parted nor open",
+  "file": "src/rules/face-words.js",
+  "find": "tag\\('closed mouth', 1\\);",
+  "replace": "",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB259",
+  "name": "a label marks half strength",
+  "file": "src/rules/face-words.js",
+  "find": "\\$\\{face\\[u\\] < 1 \\? 'h' : ''\\}",
+  "replace": "",
+  "miss": "a face in words",
+  "test": "engine"
+ },
+ {
+  "id": "NB260",
+  "name": "the faces command is registered",
+  "file": "src/index.js",
+  "find": "name: 'rules-faces',",
+  "replace": "name: 'rules-face',",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB261",
+  "name": "the chat's character read when the command runs",
+  "file": "src/index.js",
+  "find": "const now = facesCtx\\(\\), who = String",
+  "replace": "const now = c, who = String",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB262",
+  "name": "a face missing before is looked for again",
+  "file": "src/index.js",
+  "find": "for \\(const m of \\[\\.\\.\\.missingExpr\\]\\)\\s*if \\(m\\.startsWith\\(theirs\\)\\)\\s*missingExpr\\.delete\\(m\\);",
+  "replace": "",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB263",
+  "name": "the box shows the look's face first",
+  "file": "src/index.js",
+  "find": "if \\(look && !missingExpr\\.has\\(look\\)\\)\\s*return look;",
+  "replace": "",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB264",
+  "name": "the face redrawn at the model's own size",
+  "file": "src/faces.js",
+  "find": "ad_use_inpaint_width_height: true, ad_inpaint_width: facePx\\(\\), ad_inpaint_height: facePx\\(\\)",
+  "replace": "ad_use_inpaint_width_height: false",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB265",
+  "name": "a missing picture gives way to the next one along",
+  "file": "src/index.js",
+  "find": "wantFaces\\(who\\); applySprite\\(img, who, baseSrc, felt\\); \\}",
+  "replace": "wantFaces(who); img.setAttribute('src', baseSrc); }",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB266",
+  "name": "the looks shown to the player",
+  "file": "src/index.js",
+  "find": "return showText\\(\\[`\\$\\{set\\.looks\\.length\\} looks, calm among them",
+  "replace": "return ([`${set.looks.length} looks, calm among them",
+  "miss": "the looks command",
+  "test": "ui"
+ },
+ {
+  "id": "NB267",
+  "name": "a command's result shown in a window",
+  "file": "src/index.js",
+  "find": "void c\\.callGenericPopup\\(`<pre style=\\\"white-space:pre-wrap;text-align:left\\\">\\$\\{text\\.replace",
+  "replace": "void (`<pre style=\"white-space:pre-wrap;text-align:left\">${text.replace",
+  "miss": "the looks command",
+  "test": "ui"
+ },
+ {
+  "id": "NB268",
+  "name": "how the faces went shown to the player",
+  "file": "src/index.js",
+  "find": "return showText\\(said\\);",
+  "replace": "return said;",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB269",
+  "name": "the character's negative prompt",
+  "file": "src/faces.js",
+  "find": "joinPrompts\\(s\\.negative_prompt \\?\\? '', ownNeg\\)",
+  "replace": "(s.negative_prompt ?? '')",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB270",
+  "name": "the prompt's macros filled",
+  "file": "src/faces.js",
+  "find": "c\\.substituteParams\\?\\.\\(t\\) \\?\\? t",
+  "replace": "t",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB271",
+  "name": "the character's negative prompt on ComfyUI",
+  "file": "src/faces.js",
+  "find": "\\$\\{neg \\? ` negative=\\\"\\$\\{neg\\}\\\"` : ''\\}",
+  "replace": "",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB272",
+  "name": "the {prompt} macro",
+  "file": "src/faces.js",
+  "find": "macro && x\\.includes\\(macro\\) \\? x\\.replace\\(macro, y\\) : ",
+  "replace": "",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB273",
+  "name": "the common prefix left to /imagine on ComfyUI",
+  "file": "src/faces.js",
+  "find": "const text = joinPrompts\\(own, face\\)",
+  "replace": "const text = joinPrompts(joinPrompts(s.prompt_prefix ?? '', own), face)",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB274",
+  "name": "ComfyUI kept out of a group chat",
+  "file": "src/faces.js",
+  "find": " \\|\\| c\\.groupId\\)",
+  "replace": ")",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB275",
+  "name": "the box shows a drawn portrait",
+  "file": "src/index.js",
+  "find": "if \\(drawn && settings\\(\\)\\.looks\\?\\.portraits\\?\\.includes\\(drawn\\)\\)\\s*return `characters/\\$\\{drawn\\}/portrait\\.png`;",
+  "replace": "",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB276",
+  "name": "a portrait's folder is this chat's",
+  "file": "src/index.js",
+  "find": "seedOf\\(`\\$\\{id\\}\\\\n\\$\\{who\\}`\\)",
+  "replace": "seedOf(who)",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB277",
+  "name": "the looks of one with a portrait go in its folder",
+  "file": "src/index.js",
+  "find": "drawn && settings\\(\\)\\.looks\\?\\.portraits\\?\\.includes\\(drawn\\) \\? drawn : null;",
+  "replace": "null;",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB278",
+  "name": "a portrait from the record",
+  "file": "src/index.js",
+  "find": "portraitTags\\(p, storyYearNow\\(\\), colouringNow\\(who\\)\\)\\.join\\(', '\\)",
+  "replace": "'portrait'",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB279",
+  "name": "old age in the portrait",
+  "file": "src/rules/face-words.js",
+  "find": "age >= 60 \\? \\[f \\? 'old woman' : m \\? 'old man' : ''\\] : ",
+  "replace": "",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB280",
+  "name": "build in the portrait",
+  "file": "src/rules/face-words.js",
+  "find": "z <= -w \\? \\['skinny'\\] : z >= w \\? \\['plump'\\] : \\[\\]",
+  "replace": "[]",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB281",
+  "name": "the era in the portrait",
+  "file": "src/rules/face-words.js",
+  "find": "year >= 1837 && year <= 1901 \\? \\['victorian'\\] : \\[\\]",
+  "replace": "[]",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB282",
+  "name": "the portrait takes the common prefix",
+  "file": "src/faces.js",
+  "find": "prompt: sub\\(joinPrompts\\(s\\.prompt_prefix \\?\\? '', tags, '\\{prompt\\}'\\)\\)",
+  "replace": "prompt: tags",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB283",
+  "name": "ComfyUI takes a card only",
+  "file": "src/faces.js",
+  "find": "if \\(!base\\.key\\)\\s*return `ComfyUI takes a card's picture only",
+  "replace": "if (false) return `ComfyUI takes a card's picture only",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB284",
+  "name": "the recruits' table",
+  "file": "src/rules/colouring.js",
+  "find": "\\[\\[237, 1665, 2465, 1052, 100\\], \\[91, 399, 1577, 1223, 251\\]\\]",
+  "replace": "[[1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB285",
+  "name": "the hair drawn by its count",
+  "file": "src/rules/colouring.js",
+  "find": "r -= row\\[hair\\];",
+  "replace": "r -= total / 5;",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB286",
+  "name": "none drawn without a people",
+  "file": "src/rules/colouring.js",
+  "find": "if \\(!seeded \\|\\| !people\\)\\s*return null;",
+  "replace": "",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB287",
+  "name": "the same person drawn the same",
+  "file": "src/rules/colouring.js",
+  "find": "seededRng\\(`colouring\\\\n\\$\\{chatId\\}\\\\n\\$\\{who\\}`\\)",
+  "replace": "seededRng(`colouring\\n${who}`)",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB288",
+  "name": "the portrait takes the colouring",
+  "file": "src/rules/face-words.js",
+  "find": "\\.\\.\\.colour \\? \\[colour\\.hairTag \\?\\? '', colour\\.eyeTag\\] : \\[\\],",
+  "replace": "",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB289",
+  "name": "the narrator told",
+  "file": "src/index.js",
+  "find": "bodyBlock\\(trackedPeople\\(\\)\\), looksInjection\\(\\), possessionsInjection\\(\\)",
+  "replace": "bodyBlock(trackedPeople()), possessionsInjection()",
+  "miss": "the narrator told how they look",
+  "test": "ui"
+ },
+ {
+  "id": "NB290",
+  "name": "the player's character and card holders left as they are",
+  "file": "src/index.js",
+  "find": "who === c\\.name1 \\|\\| ",
+  "replace": "",
+  "miss": "the narrator told how they look",
+  "test": "ui"
+ },
+ {
+  "id": "NB291",
+  "name": "AI Horde redraws the face area alone",
+  "file": "src/faces.js",
+  "find": "source_processing: 'inpainting', source_mask: mask",
+  "replace": "source_processing: 'img2img'",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB292",
+  "name": "two faces at once through AI Horde",
+  "file": "src/faces.js",
+  "find": "hordeAtOnce\\(\\) : 1",
+  "replace": "1 : 1",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB293",
+  "name": "a picture blanked as NSFW is not saved",
+  "file": "src/faces.js",
+  "find": "if \\(g\\.censored\\)\\s*return",
+  "replace": "if (false) return",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB294",
+  "name": "no worker able says so",
+  "file": "src/faces.js",
+  "find": "if \\(ck\\.is_possible === false\\)\\s*return",
+  "replace": "if (false) return",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB295",
+  "name": "Animagine XL when no Horde model is chosen",
+  "file": "src/faces.js",
+  "find": "HORDE_MODEL = 'Animagine XL'",
+  "replace": "HORDE_MODEL = 'WAI-NSFW-illustrious-SDXL'",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB296",
+  "name": "the Horde's sizes in 64s",
+  "file": "src/faces.js",
+  "find": "Math\\.floor\\(x \\* f / 64\\) \\* 64",
+  "replace": "Math.round(x * f)",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB297",
+  "name": "the face marked once is asked for",
+  "file": "src/index.js",
+  "find": "boxes\\[base\\.folder\\] \\?\\? await markFace\\(base\\.url, who\\)",
+  "replace": "boxes[base.folder]",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB298",
+  "name": "the marked face kept",
+  "file": "src/index.js",
+  "find": "boxes\\[base\\.folder\\] = base\\.box = box;",
+  "replace": "base.box = box;",
+  "miss": "the faces command",
+  "test": "ui"
+ },
+ {
+  "id": "NB299",
+  "name": "each face asked for once a session",
+  "file": "src/faces.js",
+  "find": "if \\(this\\.seen\\.has\\(key\\)\\)\\s*continue;",
+  "replace": "",
+  "miss": "faces in the background",
+  "test": "engine"
+ },
+ {
+  "id": "NB300",
+  "name": "two at once",
+  "file": "src/faces.js",
+  "find": "while \\(this\\.running < Math\\.max\\(1, this\\.o\\.atOnce\\(\\)\\) && this\\.todo\\.length\\)",
+  "replace": "while (this.running < 1 && this.todo.length)",
+  "miss": "faces in the background",
+  "test": "engine"
+ },
+ {
+  "id": "NB301",
+  "name": "held for the face box",
+  "file": "src/faces.js",
+  "find": "if \\(r === 'box'\\)\\s*this\\.parked\\.set",
+  "replace": "if (false) this.parked.set",
+  "miss": "faces in the background",
+  "test": "engine"
+ },
+ {
+  "id": "NB302",
+  "name": "a failure told",
+  "file": "src/faces.js",
+  "find": "else if \\(r !== 'done'\\)\\s*this\\.o\\.failed\\?\\.\\(job, r\\);",
+  "replace": "",
+  "miss": "faces in the background",
+  "test": "engine"
+ },
+ {
+  "id": "NB303",
+  "name": "the box asks for a missing face",
+  "file": "src/index.js",
+  "find": "if \\(target\\.includes\\('/look_'\\) && settings\\(\\)\\.boxPicture === 'large'\\)\\s*wantFaces\\(who\\);",
+  "replace": "",
+  "miss": "faces in the background",
+  "test": "ui"
+ },
+ {
+  "id": "NB304",
+  "name": "a face already there is not drawn again",
+  "file": "src/index.js",
+  "find": "if \\(\\(await spriteLabels\\(now, base\\.folder\\)\\)\\.has\\(label\\)\\)\\s*return 'done';",
+  "replace": "",
+  "miss": "faces in the background",
+  "test": "ui"
+ },
+ {
+  "id": "NB305",
+  "name": "marking the face lets them go on",
+  "file": "src/index.js",
+  "find": "faceQueue\\.marked\\(who\\);",
+  "replace": "",
+  "miss": "faces in the background",
+  "test": "ui"
+ },
+ {
+  "id": "NB306",
+  "name": "faces asked for only while the large picture is on",
+  "file": "src/index.js",
+  "find": "if \\(target\\.includes\\('/look_'\\) && settings\\(\\)\\.boxPicture === 'large'\\)",
+  "replace": "if (target.includes('/look_'))",
+  "miss": "faces in the background",
+  "test": "ui"
+ },
+ {
+  "id": "NB307",
+  "name": "the player's AI Horde key sent",
+  "file": "src/faces.js",
+  "find": "apikey: key \\|\\| '0000000000'",
+  "replace": "apikey: '0000000000'",
+  "miss": "the faces made",
+  "test": "engine"
+ },
+ {
+  "id": "NB308",
+  "name": "the key kept from the settings field",
+  "file": "src/index.js",
+  "find": "settings\\(\\)\\.hordeKey = hordeKey\\.value\\.trim\\(\\);",
+  "replace": "",
+  "miss": "the AI Horde key",
+  "test": "ui"
+ },
+ {
+  "id": "NB309",
+  "name": "the faces given the key",
+  "file": "src/index.js",
+  "find": "hordeKey: settings\\(\\)\\.hordeKey \\|\\| undefined",
+  "replace": "hordeKey: undefined",
+  "miss": "the AI Horde key",
+  "test": "ui"
+ },
+ {
+  "id": "NB310",
+  "name": "the Levant's counts",
+  "file": "src/rules/colouring.js",
+  "find": "\\[\\[1, 10, 26, 30, 5\\], \\[1, 3, 15\\.5, 28\\.5, 7\\], \\[1, 0\\.5, 28\\.5, 148, 241\\]\\]",
+  "replace": "[[1, 10, 26, 30, 5], [1, 3, 15.5, 28.5, 7], [1, 0.5, 28.5, 148, 241]].slice(0, 2)",
+  "miss": "other places and greying",
+  "test": "engine"
+ },
+ {
+  "id": "NB311",
+  "name": "the Middle East takes the Levant",
+  "file": "src/rules/colouring.js",
+  "find": "people === 'MID' \\? BEDDOE_LEVANT : null",
+  "replace": "null",
+  "miss": "other places and greying",
+  "test": "engine"
+ },
+ {
+  "id": "NB312",
+  "name": "a neutral eye a third each",
+  "file": "src/rules/colouring.js",
+  "find": "part < 1 / 3 \\? \\['dark grey eyes', 'grey eyes'\\] : part < 2 / 3",
+  "replace": "part < 0.5 ? ['dark grey eyes', 'grey eyes'] : part < 0.6",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB313",
+  "name": "grey from the age drawn",
+  "file": "src/rules/colouring.js",
+  "find": "grey = age != null && age >= halfGrey",
+  "replace": "grey = false",
+  "miss": "other places and greying",
+  "test": "engine"
+ },
+ {
+  "id": "NB314",
+  "name": "the share half grey by 50",
+  "file": "src/rules/colouring.js",
+  "find": "probit\\(k\\(low \\? 'greyHalfAt50Low' : 'greyHalfAt50'\\)\\)",
+  "replace": "probit(0.5)",
+  "miss": "other places and greying",
+  "test": "engine"
+ },
+ {
+  "id": "NB315",
+  "name": "the narrator told the colour it once was",
+  "file": "src/rules/colouring.js",
+  "find": "`grey hair, once \\$\\{hairWords\\[0\\]\\.replace\\(/ hair\\$/, ''\\)\\}`",
+  "replace": "'grey hair'",
+  "miss": "other places and greying",
+  "test": "engine"
+ },
+ {
+  "id": "NB316",
+  "name": "the age given",
+  "file": "src/index.js",
+  "find": "store\\(\\)\\.state\\.seed : undefined\\), p\\.age, genotypeOf",
+  "replace": "store().state.seed : undefined), undefined, genotypeOf",
+  "miss": "the narrator told how they look",
+  "test": "ui"
+ },
+ {
+  "id": "NB317",
+  "name": "the count's share and kills",
+  "file": "src/rules/world-count.js",
+  "find": "\\{ share: r\\.kind / r\\.people, deaths: r\\.killed / r\\.people \\* 1e5 \\}",
+  "replace": "{ share: seed.share, deaths: seed.deaths }",
+  "miss": "the count's year in society",
+  "test": "engine"
+ },
+ {
+  "id": "NB318",
+  "name": "the records' last year takes the year before",
+  "file": "src/rules/world-count.js",
+  "find": "year >= COUNT_YEARS\\[1\\] \\? at\\(COUNT_YEARS\\[1\\] - 1\\) : at\\(year\\)",
+  "replace": "at(year)",
+  "miss": "the count's year in society",
+  "test": "engine"
+ },
+ {
+  "id": "NB319",
+  "name": "the county police before 1856",
+  "file": "src/rules/society.js",
+  "find": "'unnoticed': year < 1856 \\?",
+  "replace": "'unnoticed': false ?",
+  "miss": "the count's year in society",
+  "test": "engine"
+ },
+ {
+  "id": "NB320",
+  "name": "the papers before 1855 and 1861",
+  "file": "src/rules/society.js",
+  "find": "year < 1855 \\? 'the papers, still dear under the stamp duty \\(it goes in 1855\\),' : year < 1861 \\?",
+  "replace": "false ? '' : false ?",
+  "miss": "the count's year in society",
+  "test": "engine"
+ },
+ {
+  "id": "NB321",
+  "name": "Medical Officers of Health before 1872",
+  "file": "src/rules/society.js",
+  "find": "'an emergency': year < 1872 \\?",
+  "replace": "'an emergency': false ?",
+  "miss": "the count's year in society",
+  "test": "engine"
+ },
+ {
+  "id": "NB322",
+  "name": "the society block at the count's year",
+  "file": "src/index.js",
+  "find": "societyBlock\\(societyOf\\(\\{ \\.\\.\\.plan, \\.\\.\\.f \\}, year\\), st\\.town\\)",
+  "replace": "societyBlock(societyOf(plan, year), st.town)",
+  "miss": "society in the story",
+  "test": "ui"
+ },
+ {
+  "id": "NB323",
+  "name": "the town's rate at the count's year",
+  "file": "src/index.js",
+  "find": "st\\.town\\.seen = seen;\\s*delete st\\.town\\.next;",
+  "replace": "",
+  "miss": "society in the story",
+  "test": "ui"
+ },
+ {
+  "id": "NB324",
+  "name": "the IrisPlex model's numbers",
+  "file": "src/rules/colouring.js",
+  "find": "-4\\.8807",
+  "replace": "-2.8807",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB325",
+  "name": "eyes drawn by their odds",
+  "file": "src/rules/colouring.js",
+  "find": "eye = u < pb \\? 0 : u < pb \\+ pm \\? 1 : 2",
+  "replace": "eye = u < 0.33 ? 0 : u < 0.66 ? 1 : 2",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB326",
+  "name": "alleles at their frequency",
+  "file": "src/rules/colouring.js",
+  "find": "\\(rng\\(\\) < f \\? 1 : 0\\) \\+ \\(rng\\(\\) < f \\? 1 : 0\\)",
+  "replace": "(rng() < 0.5 ? 1 : 0) + (rng() < 0.5 ? 1 : 0)",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB327",
+  "name": "a child's alleles one from each parent",
+  "file": "src/rules/colouring.js",
+  "find": "\\(rng\\(\\) < x / 2 \\? 1 : 0\\) \\+ \\(rng\\(\\) < b\\[i\\] / 2 \\? 1 : 0\\)",
+  "replace": "x",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB328",
+  "name": "hair given the eyes",
+  "file": "src/rules/colouring.js",
+  "find": "counts\\[counts\\.length === 2 \\? Math\\.min\\(eye, 1\\) : eye\\]",
+  "replace": "counts[0]",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB329",
+  "name": "Africa's alleles",
+  "file": "src/rules/colouring.js",
+  "find": "Africa: 'AFR'",
+  "replace": "Africa: 'GBR'",
+  "miss": "hair and eyes drawn",
+  "test": "engine"
+ },
+ {
+  "id": "NB330",
+  "name": "Africa and the Asias grey least",
+  "file": "src/rules/colouring.js",
+  "find": "\\['AFR', 'CHB', 'KHV', 'SAS'\\]\\.includes\\(people\\)",
+  "replace": "false",
+  "miss": "other places and greying",
+  "test": "engine"
+ },
+ {
+  "id": "NB331",
+  "name": "the person made before their family is kept",
+  "file": "src/rules/rules-tools.js",
+  "find": "const p = who\\(st, name\\)\\.p;",
+  "replace": "const p = st.people?.[name];",
+  "miss": "families",
+  "test": "engine"
+ },
+ {
+  "id": "NB332",
+  "name": "a family kept on the person",
+  "file": "src/rules/rules-tools.js",
+  "find": "\\n        kin\\.family = family;",
+  "replace": "\n",
+  "miss": "families",
+  "test": "engine"
+ },
+ {
+  "id": "NB333",
+  "name": "a sibling given the first's family",
+  "file": "src/rules/rules-tools.js",
+  "find": "q\\.kin\\.family = family;",
+  "replace": "",
+  "miss": "families",
+  "test": "engine"
+ },
+ {
+  "id": "NB334",
+  "name": "the first of a family keeps their genes",
+  "file": "src/rules/colouring.js",
+  "find": "if \\(fam === who && !shown\\(kin\\.mother\\) && !shown\\(kin\\.father\\)\\)\\s*return fresh\\(who\\);",
+  "replace": "",
+  "miss": "families",
+  "test": "engine"
+ },
+ {
+  "id": "NB335",
+  "name": "the unseen parents carry the first's copies",
+  "file": "src/rules/colouring.js",
+  "find": "const fromM = c === 2 \\|\\| \\(c === 1 && r\\(\\) < 0\\.5\\) \\? 1 : 0, fromF = c - fromM;",
+  "replace": "const fromM = 0, fromF = 0;",
+  "miss": "families",
+  "test": "engine"
+ },
+ {
+  "id": "NB336",
+  "name": "a shown mother passes her genes",
+  "file": "src/rules/colouring.js",
+  "find": "shown\\(kin\\.mother\\) \\? genotypeOf\\(kin\\.mother, chatId, people, new Set\\(seen\\)\\)",
+  "replace": "false ? 0",
+  "miss": "families",
+  "test": "engine"
+ },
+ {
+  "id": "NB337",
+  "name": "the colouring takes the family's genes",
+  "file": "src/index.js",
+  "find": ", p\\.age, genotypeOf\\(who, id, trackedPeople\\(\\)\\)\\)",
+  "replace": ", p.age)",
+  "miss": "the narrator told how they look",
   "test": "ui"
  }
 ]

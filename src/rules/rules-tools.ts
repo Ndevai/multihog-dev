@@ -1,17 +1,18 @@
 import { isAdjacentNameTypo } from './keyboard.js';
 import { NOISE, BARRIER, SOUNDS, phi as phiN } from './acoustics.js';
-import { judgeStatement, EVIDENCE, helpChance, OBEY, obeyShare, REFUSE_SPLIT, PUNISH_ONCE, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, TRUST_REPAIR, trustAgain, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance, trustMeans, shareAround, MISINFO_TAKEN, FALSE_EVENT_TAKEN, WVS_ACTS, wvsFor, conformShare, faceStrength, lineupPick, FITD_EARLIER, fitdChance, ditfChance } from './social.js';
+import { judgeStatement, EVIDENCE, helpChance, OBEY, obeyShare, REFUSE_SPLIT, PUNISH_ONCE, SMALL_REQUEST_YES, interestChance, SITUATIONS, REQUESTERS, ORDERS, orderChance, asRequester, TRUST_REPAIR, trustAgain, GIVE_WAY_SIZES, GIVE_WAY_REASONS, giveWayChance, trustMeans, shareAround, MISINFO_TAKEN, FALSE_EVENT_TAKEN, CORRECTION_TAKEN, CORRECTION_EXPLAINED_TAKEN, WVS_ACTS, wvsFor, conformShare, faceStrength, lineupPick, FITD_EARLIER, fitdChance, ditfChance } from './social.js';
 import type { SocialTraits } from './social.js';
 import { CONTACT_MATERIALS, REGION_WORDS, IMMERSION_WORDS } from './thermal/exposure.js';
 import { SUBLOCATION_NAMES } from './df/sublocations.js';
 import { findOccupation, drawPerson, wordSex } from './census.js';
 import { REGIONS } from './strength.js';
-import { learn, knowledgeBlock, recalls, heldOfMessage } from './knowledge.js';
+import { learn, knowledgeBlock, recalls, heldOfMessage, unlearn } from './knowledge.js';
 import { drawTrait, traitMean } from './personality.js';
 import { OPTION_KINDS, optionFactor, type OptionKind } from './choice.js';
 import { jumpDistanceM, liftCapacityKg, featChance, featZ, JUMP_MIN_AGE, handgunHitChance } from './feats.js';
 import { evacuate, PACES } from './crowd.js';
 import { ABOUT, MATTERS, TYPES, occTypes, lastsWords, EMOTION_WORDS, EMOTION_HOURS, LASTS_H } from './emotion.js';
+import { stateKey, conduciveness, jointOf, type AppraisalState } from './expression-set.js';
 import { skyLight, clearDayWh, type SkyLight, type SkyOptions } from './sky.js';
 import { fetchZone, civilOffsetH } from './zone.js';
 import { LININGS, MATERIALS, GROUNDS, MATERIAL_NAMES, material, ropeBreakKg, rodBreakKg, plankBreakKg } from './materials.js';
@@ -29,10 +30,11 @@ import { TRAITS, LEVELS, POLES, STRENGTHS, BEHAVIOURS, SITUATIONS as SETTINGS, l
 import type { Trait } from './acts.js';
 import { DISEASES, INCUBATION, R0, incubationHours, attackShare, EPIDEMICS, EPIDEMIC_NAMES, deathCause } from './disease.js';
 import { BATTLE_YEARS, attackWinShare, battleCost } from './battle.js';
-import { CLIMBERS, gauss, person, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, reachOf, check, checkChance, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, swimShare, contactBurn, listen, look, holdLoad, chase, hearChance, topSpeedKmh } from './body-engine.js';
+import { CLIMBERS, gauss, person, seeLux, addWound, treat, advanceAll, cast, fall, status, seededRng, strike, reachOf, check, checkChance, openWound, findPart, creatureOf, FUNCTIONS, communicate, intake, choke, setEnvironment, setAltitude, swimShare, contactBurn, listen, look, holdLoad, chase, hearChance, topSpeedKmh } from './body-engine.js';
 import { thermalCapable } from './thermal/exposure.js';
 import { actTogether, honest, stepsFromWords, MOTION_START, type Step } from './actions.js';
-import { see, LIGHT, adaptedLux, DRESSED, AGAINST, figureContrast, diffuseShare } from './vision.js';
+import { see, LIGHT, adaptedLux, DRESSED, AGAINST, figureContrast, diffuseShare, acuityOf, ageAcuity } from './vision.js';
+import { tellsShown, kindsWithTells, type TellPlace } from './tells.js';
 import { GIVEN_NAMES } from './data/given-names.js';
 import { sizeOf, SIZE_KINDS } from './sizes.js';
 import { NAMED_AS } from './kinds.js';
@@ -40,6 +42,10 @@ import { TITLE } from './frame.js';
 import { parseFormula, molarMass } from './substance.js';
 import { airHook, inRoom, roomOf, describeAir, drawAch, exchangeM3s, FIRE_FUELS, OUT_O2, LINING, type Room } from './rooms.js';
 import { formatStoryTime, spokenTime } from './clock.js';
+import { drawDay, daysHold, doingAt, nextChange, whereBlock, NIGHT_SHIFT } from './days.js';
+import { hungerFor, feed, release } from './hunger.js';
+import { meetRate, meetChance, meet } from './meetings.js';
+import { townWork } from './town.js';
 import { diff, apply, record, truncate, truncateTo, verify, rebuilt, type History, type Op } from './world-log.js';
 import { violations } from './invariants.js';
 import { mapOf, area, roomAt, straight } from './map.js';
@@ -99,7 +105,7 @@ export interface EngineStore {
     worlds?: Record<string, { base?: string; ops?: Op[]; full?: RuleState; depth: number }>; worldSeq?: number; worldHead?: string;
 }
 
-export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'Break', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Layout', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus'] as const;
+export const TOOLS = ['Trust', 'Interpret', 'WorkOut', 'Sickness', 'Transfer', 'Claim', 'RollTheDice', 'Battle', 'BodyEnvironment', 'BodyChoke', 'BodyIntake', 'Communicate', 'Listen', 'Look', 'SocialResponse', 'NewCharacter', 'Break', 'RecordFact', 'Appraise', 'Price', 'PlaceProfile', 'NameCharacter', 'BodySize', 'Disease', 'Weather', 'Substance', 'Act', 'Room', 'Dose', 'Layout', 'Choose', 'HoldOn', 'Chase', 'BodyCheck', 'BodyWound', 'BodyStrike', 'BodyTreat', 'BodyContact', 'PassTime', 'CastSpell', 'BodyFall', 'BodyStatus', 'TrueNature', 'Touch'] as const;
 type ToolName = typeof TOOLS[number];
 const KEEP_SNAPSHOTS = 30;
 
@@ -172,6 +178,8 @@ function migrate(st: RuleState | undefined): void {
     for (const p of Object.values(st?.people ?? {})) if (p.weather && !p.weather.includes(':')) p.weather = `wgen:${p.weather}`;
 }
 
+/** Saves the engine's state of this chat (for a change made outside a tool call, as the seed's wants). */
+export const saveState = () => save();
 function save() {
     const ctx = SillyTavern.getContext();
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.();
@@ -292,6 +300,7 @@ export function onRulesMessageReceived(messageId: number): void {
     const ctx = SillyTavern.getContext();
     const msg = ctx.chat?.[messageId];
     if (!ctx.chatMetadata || !msg || msg.is_user || msg.is_system) return;
+    countLooks(messageId);
     keepResult(messageId);
     // The question pass's calls for this reply, for /rules-stats.
     const asked = store().asked;
@@ -299,6 +308,14 @@ export function onRulesMessageReceived(messageId: number): void {
     (ctx.saveChatDebounced || ctx.saveChat)?.();
 }
 
+/** The looks' counts (expression-set.ts, section 111): each tracked person's look state as a reply comes, the one they show
+ *  while it is read; kept with the world and in the record, so a swipe or a deletion takes its count with it. */
+function countLooks(messageId: number): void {
+    const s = store(), before = structuredClone(s.state), now = storyTime();
+    for (const p of Object.values(s.state.people ?? {})) { if (p.dead) continue; const key = jointOf(p, now); (s.state.faced ??= {})[key] = (s.state.faced[key] ?? 0) + 1; }
+    const ops = diff(before, s.state);
+    if (ops.length) { s.history ??= { base: before, log: [], n: 0 }; record(s.history, { msg: messageId, tool: 'looks counted', args: {}, draws: [], ops }); }
+}
 /** MESSAGE_SWIPED: returning to an earlier swipe restores the state it ended with. */
 /** States each swipe of a reply ended with, by swipe id; a player's line (its pass) and a narrator's tool call by 0: kept in
  * the chat's world archive by id (`extra.rulesWorld`), or whole on a message kept before the archive (`extra.rulesResult`). */
@@ -492,6 +509,8 @@ function run<T>(fn: (st: RuleState, rng: Rng) => T): T {
     // Every body reads the story clock (alertness follows the time of day).
     const now = s.state ? storyNow(s.state) : null;
     if (now != null) for (const p of Object.values(s.state.people ?? {})) (p as Person).clockMin = now;
+    // What a feeding left (hunger.ts) is common knowledge once it has been found.
+    if (now != null && s.state) release(s.state, now);
     const out = fn(s.state, rng);
     save();
     return out;
@@ -533,7 +552,7 @@ function inalienable(st: RuleState, item: string, is?: string): string {
     return '';
 }
 
-const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting', 'an order from a stranger', 'a stranger asks to go first', 'an offered split they can refuse so neither gets anything', 'a chance to punish someone who cheated the group, at a cost to themselves', 'a chance to hand something of value to a stranger who could keep it', 'a chance to give back part of what a trusting stranger handed them', 'told a false detail about an event they saw', 'urged to remember a made-up event from their own past', 'an act they see or hear of that they may condemn outright', 'a group around them all state something they can see is wrong', 'a witness looks over a lineup of six for someone they saw', 'asked a bigger favour after a small one for the same cause', 'asked a small favour right after refusing a large one'];
+const SOCIAL = ['a statement that might be a lie', 'an emergency they witness', 'an order to hurt someone', 'a small favour asked by a stranger', 'a brief first meeting', 'an order from a stranger', 'a stranger asks to go first', 'an offered split they can refuse so neither gets anything', 'a chance to punish someone who cheated the group, at a cost to themselves', 'a chance to hand something of value to a stranger who could keep it', 'a chance to give back part of what a trusting stranger handed them', 'told a false detail about an event they saw', 'urged to remember a made-up event from their own past', 'an act they see or hear of that they may condemn outright', 'a group around them all state something they can see is wrong', 'a witness looks over a lineup of six for someone they saw', 'asked a bigger favour after a small one for the same cause', 'asked a small favour right after refusing a large one', 'sees, reads or hears something that shows what they remember is wrong'];
 const SHARES = shuffled(['95% nearly everyone', '80% most', '65% more than half', '50% half', '35% fewer than half', '20% few', '5% almost no one']);
 const shareOf = (v: unknown) => typeof v === 'number' ? v : (parseFloat(String(v)) || 0) / 100;
 // The chance for this attempt combines the narrator's estimate with the share of its reference class, asked for first:
@@ -592,6 +611,25 @@ function editDistance(a: string, b: string): number {
     return d[a.length][b.length];
 }
 
+/** Keeps `name`'s family as the story fixes it: a mother and father by name; a brother or sister, whose family they share
+ *  (the sibling's own, or one named after the sibling, given to both). */
+export function recordKin(st: RuleState, name: string, mother?: unknown, father?: unknown, siblingOf?: unknown): void {
+    if (!mother && !father && !siblingOf) return;
+    // The person, made here when they are new (as NewCharacter would make them a moment later).
+    const p = who(st, name).p;
+    if (!p) return;
+    // A name as the story's people already have it, in whatever case or spacing it is given.
+    const key = (x: string) => x.toLowerCase().replace(/\s+/g, ' ').trim(), named = (x: unknown) => { const t = String(x).trim(); return Object.keys(st.people ?? {}).find(n => key(n) === key(t)) ?? t; };
+    const kin = p.kin ??= {};
+    if (mother) kin.mother = named(mother);
+    if (father) kin.father = named(father);
+    const sib = siblingOf ? named(siblingOf) : '', q = sib ? st.people?.[sib] : undefined;
+    if (sib) {
+        const family = q?.kin?.family ?? kin.family ?? sib;
+        kin.family = family;
+        if (q) { q.kin ??= {}; q.kin.family = family; kin.mother ??= q.kin.mother; kin.father ??= q.kin.father; }
+    }
+}
 function who(st: RuleState, rawName: string | null | undefined, speciesArg?: string, massArg?: number): Who {
     if (!rawName) return { error: 'Give the character\'s name.' };
     const key = (x: string) => x.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -781,6 +819,12 @@ function storyNow(st: RuleState): number | null {
     return st.clock ? st.clock.t + st.clock.add : null;
 }
 
+/** Who is in this turn's scene (the question pass's plan) and the player's character, set before the pass's calls run: the
+ * people with a day who are away from the scene follow it while time passes (days.ts). Unknown: nobody follows a day. */
+let PRESENT: string[] | undefined, PLAYER: string | null = null;
+export function setPresent(present: string[] | undefined, player: string | null): void { PRESENT = present; PLAYER = player; }
+const isHere = (n: string) => !!PRESENT?.some(x => x.toLowerCase() === n.toLowerCase());
+
 /** Sets the story time (minutes, clock.ts) for this chat. */
 export function setStoryTime(t: number): void {
     const s = store(), before = structuredClone(s.state);
@@ -886,6 +930,12 @@ function skyAt(st: RuleState, t: number): SkyLight | null {
 def({ id: 'flameLmPerKgH', value: 1800, unit: 'lm per kg/h of fuel', status: 'assumed', src: 'a paraffin candle, about 12.6 lm at about 7 g/h, for every flame', range: [500, 4000], file: 'rules-tools.ts' });
 def({ id: 'roomReflectance', value: 0.3, unit: 'mean reflectance of a room', status: 'assumed', src: 'typical plaster, wood and furnishing', range: [0.1, 0.6], file: 'rules-tools.ts' });
 def({ id: 'daylightFactor', value: 0.015, unit: 'indoor ÷ outdoor illuminance', status: 'sourced', src: 'BS 8206-2:2008 minimum average daylight factor for living rooms (kitchens 2 %, bedrooms 1 %), as quoted in BRE Site Layout Planning for Daylight and Sunlight', range: [0.005, 0.05], file: 'rules-tools.ts' });
+/** Where a tell's bearer stands, for its condition (tells.ts): the light there, the sun's altitude, and whether a room is
+ * around them; null where the story's time and place leave it open. */
+function tellPlace(st: RuleState, p: Person, t: number | null): TellPlace {
+    const sky = t !== null ? skyAt(st, t) : null, room = roomOf(st, p), lit = lightAt(st, p, t);
+    return { lux: lit?.lux ?? null, sunAlt: sky?.sunAlt ?? null, indoors: room ? true : sky ? false : null };
+}
 function lightAt(st: RuleState, p: Person, t: number | null): { lux: number; label: string; shade?: number } | null {
     const sky = t !== null ? skyAt(st, t) : null, room = roomOf(st, p);
     // Outdoors with the sun up, the share of light on a figure's shaded side (vision.ts diffuseShare); otherwise all diffuse.
@@ -938,7 +988,7 @@ function perceivedBy(st: RuleState, actors: { who: string; p: Person; steps: Ste
             if (rng() < hearChance(q, { spl: 64 + (paceDb[pace] ?? 0), distance: d, barrier: wall ? 'plaster wall' : 'none', noiseDb: noise })) heard.push(`${x.who} (${pace}, ${Math.round(d)} m${wall ? ', through a wall' : ''})`);
             // Seeing takes the light on the one seen (where the actor ends up), not at the onlooker.
             const onActor = lightAt(st, x.p, t);
-            if (!wall && onActor && rng() < see({ size: 0.5, distance: d, light: onActor.lux }).detect) seen.push(`${x.who} (${Math.round(d)} m)`);
+            if (!wall && onActor && rng() < see({ size: 0.5, distance: d, light: seeLux(q, onActor.lux) }).detect) seen.push(`${x.who} (${Math.round(d)} m)`);
         }
         if (heard.length || seen.length) lines.push(`${name}${heard.length ? ` hears the footsteps of ${heard.join(', ')}` : ''}${heard.length && seen.length ? ' and' : ''}${seen.length ? ` sees ${seen.join(', ')}` : ''}`);
     }
@@ -991,6 +1041,14 @@ export function knowledgeInjection(): string {
     const a = store().asked;
     const scene = (ctx.chat ?? []).slice(-2).map((m: { mes?: string }) => m.mes ?? '').join(' ');
     return knowledgeBlock(store().state, a?.turn === turnKey(ctx.chat) ? a.present : undefined, scene);
+}
+
+/** The per-turn [WHERE] block (days.ts): where the people away from this turn's scene are by their usual day; '' when none. */
+export function whereInjection(): string {
+    const ctx = SillyTavern.getContext();
+    if (!ctx.chatMetadata) return '';
+    const s = store(), a = s.asked, people = Object.fromEntries(Object.entries(s.state.people ?? {}).filter(([n]) => n !== PLAYER));
+    return whereBlock(people, storyNow(s.state), a?.turn === turnKey(ctx.chat) ? a.present : undefined);
 }
 
 /** Sets the scene's position (and the latitude light and weather use). */
@@ -1350,7 +1408,7 @@ export function registerRulesTools(enabled: boolean): void {
         // there, one draw (E13), unless the story says whether it is lit.
         const L = a.means === 'gesture' && a.lit === undefined ? lightAt(st, l.p, storyNow(st)) : null;
         const map = placed(st, s.p, l.p, a.distance_m), distance = map?.d ?? a.distance_m ?? 1;
-        const lit = a.lit ?? (L ? rng() < see({ size: 0.088, distance, light: L.lux }).recognize : true);
+        const lit = a.lit ?? (L ? rng() < see({ size: 0.088, distance, light: seeLux(l.p, L.lux) }).recognize : true);
         const crowd = crowdDb(st, l.p);
         let out = communicate(a.speaker, s.p, a.listener, l.p, { way: wayFor(st, l.p, a, geo ? geo.ra === geo.rb : (!a.barrier || a.barrier === 'none')), means: a.means, lit, languages: langs, distance, effort, noise: a.noise ?? 'quiet room (25 dB)', ...crowd == null ? {} : { noise_db: sumDb(NOISE[a.noise ?? 'quiet room (25 dB)'] ?? 25, crowd) }, barrier: a.barrier ?? (geo && geo.ra && geo.rb && geo.ra !== geo.rb && !geo.open ? 'plaster wall' : 'none'), louder_db: a.feeling ? FEELING_DB[a.feeling] : 0, brazil: /brazil/i.test(st.setting?.country ?? '') });
         if (map?.note) out = out.replace(/\.?$/, `${map.note}.`);
@@ -1367,7 +1425,7 @@ export function registerRulesTools(enabled: boolean): void {
                 const r = communicate(a.speaker, s.p, n, q, { way: wayFor(st, q, a, !wall), means: 'speech', lit: true, languages: [langs[0], q.languages?.map(x => stageKey(x, year))], distance: Math.max(1, g!.d!), effort, noise: a.noise ?? 'quiet room (25 dB)', ...qCrowd == null ? {} : { noise_db: sumDb(NOISE[a.noise ?? 'quiet room (25 dB)'] ?? 25, qCrowd) }, barrier: wall ? 'plaster wall' : 'none', louder_db: a.feeling ? FEELING_DB[a.feeling] : 0, brazil: /brazil/i.test(st.setting?.country ?? '') });
                 if (!/\bhears\b/.test(r)) continue;
                 overheard.push(`${r.split(' (')[0]!.replace(/\.$/, '')} (${Math.round(g!.d!)} m${wall ? ', through a wall' : ''})`);
-                if (a.message && /makes out (every word|most words|some words)/.test(r) && !/language foreign/.test(r)) learn(st, String(a.message), [n], false, { [n]: `overheard ${a.speaker}` });
+                if (a.message && /makes out (every word|most words|some words)/.test(r) && !/language foreign/.test(r)) learn(st, String(a.message), [n], false, { [n]: `overheard ${a.speaker}` }, 'said');
             }
         }
         const over = overheard.length ? ` [OVERHEARD] ${overheard.join('; ')}.` : '';
@@ -1388,8 +1446,9 @@ export function registerRulesTools(enabled: boolean): void {
         // A list longer than the listener's working memory is kept in part (knowledge.ts heldOfMessage); the speaker keeps it whole.
         l.p.span ??= 4 + Math.max(-2, Math.min(2, gauss(rng)));
         const held = heldOfMessage(a.message, l.p.span);
-        if (held.dropped) { learn(st, a.message, [a.speaker]); learn(st, held.kept, [a.listener], false, { [a.listener]: `told by ${a.speaker}` }); }
-        else learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` });
+        // What was said is a saying ([as said] in [KNOWS]): the world holds it where a fact of its own says the same.
+        if (held.dropped) { learn(st, a.message, [a.speaker], false, {}, 'said'); learn(st, held.kept, [a.listener], false, { [a.listener]: `told by ${a.speaker}` }, 'said'); }
+        else learn(st, a.message, [a.speaker, a.listener], false, { [a.listener]: `told by ${a.speaker}` }, 'said');
         // The listener has now heard this speaker (a baseline for judging them later, SocialResponse statements).
         (st.acquainted ??= {})[`${norm(a.listener)}|${norm(a.speaker)}`] = true;
         // English speech is already on the page in its own words; another language's words are not. A whisper loses voicing
@@ -1449,6 +1508,9 @@ export function registerRulesTools(enabled: boolean): void {
         praiseworthy: { type: 'boolean', description: 'For an action: the character judges it praiseworthy (false: blameworthy)' },
         result_for_them: { type: 'string', enum: ['good', 'bad', 'none'], description: 'For an action: what its result means for the character. Default none.' },
         appealing: { type: 'boolean', description: 'For a person or thing encountered: the character finds it appealing' },
+        sudden: { type: 'boolean', description: 'It came suddenly and unexpectedly' },
+        can_be_changed: { type: 'boolean', description: 'For a bad outcome: someone could still change or stop it (false: nothing anyone does will change it)' },
+        they_can_change_it: { type: 'boolean', description: 'For a bad outcome someone could change: the character could change or stop it themselves' },
         emotion_word: { type: 'string', enum: EMOTION_WORDS, description: 'The plain word for the feeling when one fits (fear = a present threat; anxiety = a feared prospect)' },
     }, ['who', 'about', 'matters'], a => run((st, rng) => {
         const types = occTypes({ about: a.about, good: a.good !== false, wants: a.wants_it_for_them !== false, cameTrue: a.came_true !== false,
@@ -1469,7 +1531,16 @@ export function registerRulesTools(enabled: boolean): void {
         const scale = 10 ** (0.14 * ((strong ? 6 : 3) - 4.5)) * (kept?.sex === 'female' ? 10 ** (4.42 - 4.225) : kept?.sex === 'male' ? 10 ** (4.04 - 4.225) : 1);
         // Its strength, for the voice (index.ts feelingOf): 1 when the event is central to a goal, standard or taste, less when it
         // only touches one (emotion.ts voiceFeelingTouched).
-        if (kept && medianH) kept.feelings = [...(kept.feelings ?? []).filter(f => f.type !== main), { type: main, strength: strong ? 1 : peek('voiceFeelingTouched'), ...a.target ? { about: String(a.target) } : {}, left: medianH * scale * 60 * Math.log2(1 / Math.max(1e-9, rng())), turn: ((globalThis as { SillyTavern?: typeof SillyTavern }).SillyTavern?.getContext?.()?.chat ?? []).filter(m => m.is_user).length }];
+        // The appraisal itself, as answered (expression-set.ts, section 111), kept on the feeling: its look is read from the input,
+        // not from the type's name.
+        const ix = ABOUT.indexOf(a.about), answers: AppraisalState = { about: a.about, strength: strong ? 1 : 0.5, sudden: a.sudden === true,
+            ...ix === 0 || ix === 2 ? { good: a.good !== false } : {}, ...ix === 1 ? { good: a.good !== false, wants: a.wants_it_for_them !== false } : {},
+            ...ix === 3 ? { good: a.good !== false, cameTrue: a.came_true !== false } : {}, ...ix === 4 || ix === 5 ? { praiseworthy: a.praiseworthy !== false, result: a.result_for_them ?? 'none' } : {},
+            ...ix === 6 ? { appealing: a.appealing !== false } : {} };
+        // For a bad outcome, how the character can cope with it, where the narrator says (the face's control and power).
+        if (conduciveness(answers) < 0 && a.can_be_changed != null) { answers.control = a.can_be_changed; if (a.can_be_changed && a.they_can_change_it != null) answers.power = a.they_can_change_it; }
+        const key = stateKey(answers);
+        if (kept && medianH) kept.feelings = [...(kept.feelings ?? []).filter(f => f.type !== main), { type: main, strength: strong ? 1 : peek('voiceFeelingTouched'), state: key, ...a.target ? { about: String(a.target) } : {}, left: medianH * scale * 60 * Math.log2(1 / Math.max(1e-9, rng())), turn: ((globalThis as { SillyTavern?: typeof SillyTavern }).SillyTavern?.getContext?.()?.chat ?? []).filter(m => m.is_user).length }];
         return `${a.who} feels ${main}${with_.length ? `, together with ${with_.join(' and ')}` : ''}${a.target ? ` (${a.target})` : ''}. Words at this strength: ${words(main)}; it grows stronger ${TYPES[main].stronger}.${lasts ? ` ${lasts[0].toUpperCase()}${lasts.slice(1)}, longer the more it matters to ${a.who}.` : ''}`;
     }));
 
@@ -1766,6 +1837,44 @@ export function registerRulesTools(enabled: boolean): void {
         return `${a.who} chooses: ${pick.option}.${why.length ? ` What weighed: ${why.join(', ')}.` : ''}${opts.some(o => cannot(o.kind)) ? ` Out of reach for the body now: ${opts.filter(o => cannot(o.kind)).map(o => o.option).join('; ')}.` : ''}`;
     }));
 
+    // What a tracked character truly is (tells.ts): fixed in the world's record and kept hidden; it shows only through its
+    // kind's tells, in what others see (Look) and feel (Touch).
+    tool('TrueNature', 'Fix what a tracked character truly is, when the world book has a kind that passes for another (a thing that looks human) and the story makes them one, before anything shows it. Kept hidden; it shows only through its kind\'s tells when others look at or touch them.', {
+        who: str('The tracked character'),
+        kind: str('The world-book entry they truly are, by its name'),
+    }, ['who', 'kind'], a => run((st, rng) => {
+        const w = who(st, a.who);
+        if (!w.p) return w.error;
+        const e = CURRENT_BOOK.find(x => x.what.toLowerCase() === String(a.kind).trim().toLowerCase());
+        if (!e) return `No world-book entry named "${a.kind}". Entries: ${CURRENT_BOOK.map(x => x.what).join('; ') || 'none'}.`;
+        w.p.truly = e.what;
+        if (e.body?.length || e.sheet?.resists.length || e.sheet?.senses?.dark) w.p.bodyFlags = [...new Set([...e.body ?? [], ...e.sheet?.resists ?? [], ...e.sheet?.senses?.dark ? ['EXTRAVISION'] : []])];
+        if (e.sheet) w.p.attrs = { ...e.sheet.attrs };
+        // A kind that lives on flesh or blood feeds as often as its body needs (hunger.ts), counted from now.
+        { const now = storyNow(st); if (e.diet && now !== null && !w.p.hunger) w.p.hunger = hungerFor(e.diet, e.mass ?? 70, !!e.body?.includes('NO_HEAT'), now, rng); }
+        // A kind active by night keeps the night: their day runs twelve hours later (days.ts, section 106).
+        if (e.sheet?.active === 'night' && w.p.day && !w.p.day.shift) w.p.day.shift = NIGHT_SHIFT;
+        const of = /^the\s/i.test(e.what) ? e.what : `the ${e.what}`;
+        const f = learn(st, `${a.who} is truly one of ${of}`, [a.who], false, { [a.who]: 'their own' }, 'world');
+        f.secret = true;
+        return `Recorded and kept hidden: ${a.who} is truly one of ${of}. It shows only through its tells.`;
+    }));
+
+    tool('Touch', 'Decide what a character feels when they touch another tracked character (a hand on the chest, a handshake, a hand on the skin), before narrating it, when the world book gives a kind tells to the touch.', {
+        who: str('The one who touches'),
+        target_who: str('The tracked character touched'),
+    }, ['who', 'target_who'], a => run((st, rng) => {
+        const w = who(st, a.who), t = who(st, a.target_who);
+        if (!w.p) return w.error;
+        if (!t.p) return t.error;
+        const map = placed(st, w.p, t.p, null);
+        // Contact needs the other within reach: about an arm's length, 1 m [ASSUMED].
+        if (map && map.d > 1) return `${a.target_who} is ${map.d} m from ${a.who}: out of reach.`;
+        const r = tellsShown(CURRENT_BOOK, t.p, 'touch', rng, undefined, tellPlace(st, t.p, storyNow(st)));
+        for (const x of r.shown) learnt(st, `${a.target_who}: ${x.text}`, a.who, KNOWN_HOW[1]);
+        return r.shown.length ? `${a.who} feels of ${a.target_who}: ${r.shown.map(x => x.text).join('; ')}.` : `${a.who} touches ${a.target_who}; nothing the world's laws name shows to the touch.`;
+    }));
+
     tool('RecordFact', 'Fix a fact the moment the story establishes it (a place, an object, a person, a secret, an event) and record who knows it: those who saw it, heard it, read it or were told it. A recorded fact stays true for the rest of the story and appears in [KNOWS].', {
         fact: str('The fact, one short sentence'),
         known_by: { type: 'array', items: { type: 'string' }, description: 'Characters who know it' },
@@ -1780,7 +1889,7 @@ export function registerRulesTools(enabled: boolean): void {
         const how = a.how === KNOWN_HOW[4] && a.told_by ? `told by ${a.told_by}` : a.how;
         if (a.cause && !['a natural force', 'unknown'].includes(a.cause.toLowerCase())) { const c = whoAny(st, a.cause); if (!c.p) return c.error; }
         const text = a.cause ? `${a.fact.replace(/[.!?]?$/, '')} (cause: ${a.cause})` : a.fact;
-        const f = learn(st, text, a.known_by ?? [], !!a.common_knowledge, how ? Object.fromEntries((a.known_by ?? []).map(k => [k, how])) : {});
+        const f = learn(st, text, a.known_by ?? [], !!a.common_knowledge, how ? Object.fromEntries((a.known_by ?? []).map(k => [k, how])) : {}, 'world');
         if (a.secret && !a.common_knowledge) f.secret = true;
         if (a.kind === 'knowledge') f.kind = 'knowledge';
         if (a.importance != null) f.imp = Math.min(10, Math.max(1, Math.round(a.importance)));
@@ -2065,20 +2174,28 @@ export function registerRulesTools(enabled: boolean): void {
         const here = !a.light ? lightAt(st, v.p, t) : null, lux0 = here?.lux ?? LIGHT[a.light ?? 'daylight'] ?? LIGHT.daylight;
         const ad = adaptedLux(v.p.eye, lux0, t);
         v.p.eye = ad.eye;
-        const label = `${here?.label ?? a.light ?? 'daylight'}${ad.dark ? ', eyes still used to brighter light' : ''}`;
+        const dark = seeLux(v.p, 1) > 1, label = `${here?.label ?? a.light ?? 'daylight'}${ad.dark ? ', eyes still used to brighter light' : ''}${dark ? `, eyes that see in the dark (as ${Math.round(seeLux(v.p, 1))} times the light)` : ''}`;
         // Under water a target's contrast falls with distance by the same law as in air, e^(−3.912 d/v), v the water's
         // hydrological range, the distance at which a black object fades to the 2 % threshold (Duntley 1960, The Visibility of
         // Submerged Objects, Scripps Institution of Oceanography, eq. 1.29): the water's range stands in for visibility.
         const vis = Number(a.water_visibility_m) > 0 ? Number(a.water_visibility_m) : a.visibility_m ?? 20000;
         // The figure against its background (vision.ts figureContrast), and the time spent looking (one try per 6 s, up to 10).
         const contrast = figureContrast(a.dressed, a.against, here?.shade ?? 1), contrastLabel = a.dressed && a.against ? `${a.dressed.replace(/ \(.*\)$/, '')} against ${a.against.replace(/ \(.*\)$/, '')}, contrast ${Math.round(contrast * 100) / 100}` : null;
-        const out = look(a.viewer, v.p, { size_m: a.size_m, distance_m: dist, light: ad.lux, lightLabel: label, visibility_m: vis, contrast, seconds: Number(a.seconds) || 0, contrastLabel }, rng);
+        const out = look(a.viewer, v.p, { size_m: a.size_m, distance_m: dist, light: seeLux(v.p, ad.lux), lightLabel: label, visibility_m: vis, contrast, seconds: Number(a.seconds) || 0, contrastLabel }, rng);
         // A sighting of a tracked person is kept for a later lineup (SocialResponse): when, and whether the face was made out.
         // A closer look later replaces a vaguer one; the latest look at the face counts.
         if (a.target_who) { const seen = ((st.sightings ??= {})[String(a.viewer)] ??= {}), was = seen[String(a.target_who)], id = / identifies it /.test(out);
             if (id || !was?.identified) seen[String(a.target_who)] = { t: t ?? null, identified: id, ...(v.p.feelings?.some(f => f.type === 'fear') ? { stressed: true } : {}), ...(a.weapon_in_view ? { weapon: true } : {}) }; }
         const said = map?.note ? out.replace(/\.?$/, `${map.note}.`) : out;
-        return / identifies it /.test(out) && a.reveals ? `${said} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : said;
+        // The world's tells (tells.ts): a tracked person the viewer makes out shows, for each sight tell whose condition holds
+        // and whose sign the viewer's eyes resolve, the sign if they truly are of its kind and the ordinary otherwise.
+        let tells = '';
+        if (tp && !/ misses it /.test(out) && kindsWithTells(CURRENT_BOOK).length) {
+            const r = tellsShown(CURRENT_BOOK, tp, 'sight', rng, { distance_m: dist, light: seeLux(v.p, ad.lux), visibility_m: vis, contrast, seconds: Number(a.seconds) || 0, acuityFactor: acuityOf(v.p.species) * (!v.p.species || /^human$/i.test(v.p.species) ? ageAcuity(v.p.age) : 1) }, tellPlace(st, tp, t));
+            for (const x of r.shown) learnt(st, `${a.target_who}: ${x.text}`, a.viewer, KNOWN_HOW[0]);
+            tells = `${r.shown.length ? ` ${a.viewer} sees of ${a.target_who}: ${r.shown.map(x => x.text).join('; ')}.` : ''}${r.open.length ? ` Whether this shows stays open, since what it needs where ${a.target_who} stands is not on record (the story's time and place; the air, BodyEnvironment): ${r.open.join('; ')}.` : ''}`;
+        }
+        return / identifies it /.test(out) && a.reveals ? `${said}${tells} ${a.viewer} now knows: ${learnt(st, a.reveals, a.viewer, KNOWN_HOW[0])}` : `${said}${tells}`;
     }); });
 
     // One tool for a person's social response, the situation as an enum (as RPG-MCP consolidated 195 tools into 36 with action
@@ -2106,6 +2223,8 @@ export function registerRulesTools(enabled: boolean): void {
         request_size: { type: 'string', enum: GIVE_WAY_SIZES, description: 'For a stranger asking to go first: how long they need, against the person\'s own task' },
         reason: { type: 'string', enum: GIVE_WAY_REASONS, description: 'For a stranger asking to go first: the reason they give' },
         event_fact: str('For a false detail: the recorded fact of the event they witnessed, as recorded'),
+        shown: str('For something that shows what they remember is wrong: what they see, read or hear, as the world holds it (the receipt reads 4 shillings); statement: what they remember'),
+        explains_why: str('For something that shows what they remember is wrong, when it also shows how they came to remember it wrong: how, in a few words (the innkeeper was never there to see it). Leave out otherwise'),
         act: str('For an act they may condemn: the act, in a few words'),
         ally: { type: 'boolean', description: 'For a group stating something wrong: one other person sides with what they see' },
         target_who: str('For a lineup: the tracked person the witness saw, whose face they look for'),
@@ -2191,7 +2310,10 @@ export function registerRulesTools(enabled: boolean): void {
                 const ev = a.event_fact ? (st.facts ?? []).find(f => norm(f.text) === norm(a.event_fact) && f.knowers.some(k => norm(k) === norm(a.who))) : undefined;
                 const faded = !!ev && !recalls(st, ev, a.who);
                 const taken = faded || rng() < MISINFO_TAKEN;
-                learn(st, a.statement, [a.who], false, { [a.who]: taken ? 'saw it (as they now remember it)' : `told by ${a.speaker ?? 'someone'}` });
+                // The false detail is a version either way (the world holds otherwise): taken in, it stands in their memory for
+                // the event's own fact; refused, they hold it as what the speaker said.
+                const v = learn(st, a.statement, [a.who], false, { [a.who]: taken ? 'saw it (as they now remember it)' : `told by ${a.speaker ?? 'someone'}` }, 'version');
+                if (taken && ev) v.versionOf = ev.id;
                 return taken ? `${a.who} now remembers it as part of what they saw: ${a.statement}${faded ? ' (their own memory of it had faded)' : ''}.`
                     : `${a.who} keeps their own memory of the event; they know only that ${a.speaker ?? 'they were'}${a.speaker ? ' said' : ' told'} ${a.statement}.`;
             }
@@ -2251,8 +2373,27 @@ export function registerRulesTools(enabled: boolean): void {
             case SOCIAL[12]: {
                 if (!a.statement) return 'Give statement: the event they are urged to remember.';
                 const taken = rng() < FALSE_EVENT_TAKEN;
-                if (taken) learn(st, a.statement, [a.who], false, { [a.who]: 'remembers it happening (in part)' });
+                if (taken) learn(st, a.statement, [a.who], false, { [a.who]: 'remembers it happening (in part)' }, 'version');
                 return taken ? `${a.who} comes to remember it, at least in part: ${a.statement}.` : `${a.who} does not remember it and doubts it happened.`;
+            }
+            case SOCIAL[18]: {
+                // A memory the world holds otherwise, met with what the world holds (the player's pick, 2026-11-16, decided by
+                // Claude): it gives way with CORRECTION_TAKEN, or CORRECTION_EXPLAINED_TAKEN when what they meet also shows how
+                // they came to remember it wrong (social.ts, Blank & Launay 2014); otherwise they hold both, what they were
+                // shown and their own version.
+                if (!a.statement || !a.shown) return 'Give statement: what they remember, and shown: what they see, read or hear against it.';
+                const w = words(a.statement), mine = (st.facts ?? []).filter(f => f.standing === 'version' && f.knowers.some(k => norm(k) === norm(a.who)))
+                    .map(f => { const v = words(f.text), both = [...w].filter(x => v.has(x)).length; return { f, score: both / Math.max(w.size, v.size, 1) }; })
+                    .filter(x => x.score >= 0.6).sort((x, y) => y.score - x.score)[0]?.f;
+                learn(st, a.shown, [a.who], false, { [a.who]: 'saw it' });
+                if (!mine) return `${a.who} holds no memory on record that the world holds otherwise matching "${a.statement}": what they were shown is learned (${a.shown}); what they remember stands as the world's or as they were told it.`;
+                const own = mine.versionOf != null ? (st.facts ?? []).find(f => f.id === mine.versionOf) : undefined;
+                if (rng() < (a.explains_why ? CORRECTION_EXPLAINED_TAKEN : CORRECTION_TAKEN)) {
+                    unlearn(mine, a.who);
+                    if (own) learn(st, own.text, [a.who], false, { [a.who]: 'found out' });
+                    return `${a.who} takes it in: their memory gives way to what they were shown (${a.shown}${a.explains_why ? `; ${a.explains_why}` : ''})${own ? `; they now hold ${own.text.replace(/[.!?]?$/, '')}` : ''}.`;
+                }
+                return `${a.who} still remembers it their own way (${mine.text.replace(/[.!?]?$/, '')}), and holds what they were shown beside it (${a.shown}).`;
             }
             default: return `Give situation, one of: ${SOCIAL.join('; ')}.`;
         }
@@ -2319,6 +2460,12 @@ export function registerRulesTools(enabled: boolean): void {
         return map?.note ? `${out}${map.note}` : out;
     }));
 
+    /** A person's usual day (days.ts), drawn once where the time and place have it, after the call's other draws; never for the
+     *  player's character, whose day the player decides. */
+    const dayFor = (st: RuleState, p: Person | undefined, name: string, works: boolean, rng: Rng) => {
+        const y = storyYear(st);
+        if (p && !p.day && name !== PLAYER && daysHold(st.setting?.country, y)) p.day = drawDay(rng, y!, works);
+    };
     tool('NewCharacter', 'Decide the sex, age, occupation and birthplace of a character new to the story (a stranger, a passer-by, the person behind the counter), before describing them. Drawn from the 1881 census of England and Wales there; elsewhere age and sex from the country\'s population in the story year.', {
         who: str('Name or label for the character (e.g. "the innkeeper", "stranger 2")'),
         sex: { type: 'string', enum: ['male', 'female'], description: 'Only when the story already fixes it' },
@@ -2326,7 +2473,13 @@ export function registerRulesTools(enabled: boolean): void {
         occupation: str('Only when the story already fixes it, in a word or two, as the scene names it'),
         min_age: { type: 'number', description: 'Only when the story already fixes it (e.g. 18 for someone serving drinks)' },
         age: { type: 'number', description: 'Only when the story states it ("her brother Will, 12")' },
+        mother: str('Their mother\'s name, when the story names her as one of its people'),
+        father: str('Their father\'s name, when the story names him as one of its people'),
+        sibling_of: str('The name of a brother or sister of theirs in the story ("her brother Will": Will is sibling_of her)'),
     }, ['who'], a => run((st, rng) => {
+        // Family as the story fixes it (section 120): kept on the person, before anything else is decided, so a person met before
+        // gets it too; their genes, and so their colouring, come from it (colouring.ts genotypeOf).
+        recordKin(st, String(a.who), a.mother, a.father, a.sibling_of);
         // A person already drawn keeps what was drawn (an innkeeper drawn at 56 was drawn again at 68 two turns later).
         { const known = st.people?.[String(a.who)] as { age?: number; sex?: string } | undefined;
           if (known?.age != null && typeof a.age !== 'number') return `${a.who}: ${aYears(known.age)}-year-old ${known.age < 18 ? (known.sex === 'female' ? 'girl' : 'boy') : known.sex === 'female' ? 'woman' : 'man'}, as drawn when first met.`; }
@@ -2334,6 +2487,7 @@ export function registerRulesTools(enabled: boolean): void {
         if (typeof a.age === 'number' && a.age >= 0) {
             const { p } = who(st, a.who), age = Math.round(a.age), sex = a.sex ?? null;
             if (p) Object.assign(p, { age, ...sex ? { sex } : {}, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+            dayFor(st, p, String(a.who), !!a.occupation, rng);
             const noun = !sex ? (age < 18 ? 'child' : 'adult') : age < 18 ? (sex === 'female' ? 'girl' : 'boy') : sex === 'female' ? 'woman' : 'man';
             return `${a.who}: ${aYears(age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (as the story states).`;
         }
@@ -2395,6 +2549,7 @@ export function registerRulesTools(enabled: boolean): void {
         if ('error' in r) return r.error;
         const { p } = who(st, a.who);
         if (p) Object.assign(p, { age: r.age, sex: r.sex, ...a.occupation ? { occupation: String(a.occupation) } : {} });
+        if (english) dayFor(st, p, String(a.who), !!(a.occupation ?? r.occupation), rng);
         const noun = r.age < 18 ? (r.sex === 'female' ? 'girl' : 'boy') : r.sex === 'female' ? 'woman' : 'man';
         if (!english) return `${a.who}: ${aYears(r.age)}-year-old ${noun}${a.occupation ? `; occupation: ${a.occupation}` : ''} (age and sex drawn from the 1881 census of England and Wales${a.occupation ? ', among its people of that occupation' : ''}, the nearest table held for ${c} ${y ?? ''}; birthplace as the story sets it).`;
         return `${a.who}: ${aYears(r.age)}-year-old ${noun}; ${r.occupation ? `occupation: ${r.occupation}` : r.age < 15 ? 'a child' : 'occupation unlisted in the census'}; born in ${r.born}.`;
@@ -2516,15 +2671,36 @@ export function registerRulesTools(enabled: boolean): void {
         }
         // Characters outdoors at a weather station: time runs in hour steps, each taking the air temperature at its start.
         const t0 = storyNow(st), weathered = t0 !== null && Object.values(st.people || {}).some(p => p.weather && p.env);
+        // The people away from the scene, with a usual day and not named in this call, follow it (days.ts): asleep in their
+        // hours of sleep, active in their hours of work; time runs in steps that end where one of them changes.
+        const named = new Set([...a.resting || [], ...a.active || [], ...a.sleeping || [], ...(a.walking || []).map(w => w.who)]);
+        const away = t0 === null || !PRESENT ? [] : Object.entries(st.people || {}).filter(([n, p]) => p.day && !p.dead && n !== PLAYER && !named.has(n) && !isHere(n)) as [string, Person & { day: NonNullable<Person['day']> }][];
+        // One truly of a kind that feeds (hunger.ts), away from the scene, feeds when it is due and they are not at work.
+        // One who wants something toward another of the story, both away (meetings.ts), meets them in the stretches both spend
+        // awake and free.
+        const awayNow = (n: string, p: Person) => !p.dead && n !== PLAYER && !named.has(n) && !isHere(n);
+        const pairs = t0 === null || !PRESENT ? [] : Object.entries(st.people || {}).flatMap(([n, p]) => { const o = p.want?.toward, q = o ? st.people?.[o] : undefined; return p.want && o && q && o !== PLAYER && awayNow(n, p) && awayNow(o, q) ? [[n, p, o, q] as [string, Person, string, Person]] : []; });
+        const feeders = t0 === null || !PRESENT ? [] : Object.entries(st.people || {}).filter(([n, p]) => p.hunger && !p.dead && n !== PLAYER && !named.has(n) && !isHere(n)) as [string, Person & { hunger: NonNullable<Person['hunger']> }][];
         let elapsed = 0, events: string[] = [];
+        // The kind's work in the town (town.ts), wherever the player's character is, up to each step's end.
+        if (t0 !== null) townWork(st, t0, rng);
         do {
             if (weathered) applyWeather(st.people!, t0 + elapsed);
-            const step = weathered ? Math.min(60, asked - elapsed) : asked - elapsed;
-            const r = advanceAll(st.people || {}, step, new Set(a.resting || []), rng, { active: new Set(a.active || []), sleeping: new Set(a.sleeping || []), eachMinute: airHook(st) });
+            const now = (t0 ?? 0) + elapsed;
+            // Feeding needs the feeder awake and free (since section 106: before, one asleep by their day could feed).
+            for (const [n, p] of feeders) if (now >= p.hunger.next && (!p.day || doingAt(p.day, now) === 'about')) feed(st, n, p, now, rng);
+            const turns = [...away.map(([, p]) => Math.max(1, Math.ceil(nextChange(p.day, now) - now))), ...feeders.filter(([, p]) => p.hunger.next > now).map(([, p]) => Math.max(1, Math.ceil(p.hunger.next - now)))];
+            const step = Math.min(weathered ? 60 : Infinity, asked - elapsed, ...turns);
+            const free = (p: Person) => !p.day || doingAt(p.day, now) === 'about';
+            for (const [n, p, o, q] of pairs) if (free(p) && free(q) && rng() < meetChance(meetRate(p, q), step)) meet(st, n, p, o, Math.round(now + rng() * step), PLAYER);
+            const sleeping = new Set([...a.sleeping || [], ...away.filter(([, p]) => doingAt(p.day, now) === 'asleep').map(([n]) => n)]);
+            const active = new Set([...a.active || [], ...away.filter(([, p]) => doingAt(p.day, now) === 'at work').map(([n]) => n)]);
+            const r = advanceAll(st.people || {}, step, new Set(a.resting || []), rng, { active, sleeping, eachMinute: airHook(st) });
             elapsed += r.elapsed; events = r.events;
+            if (t0 !== null) townWork(st, t0 + elapsed, rng);
             if (events.length || r.elapsed < step) break;
         } while (elapsed < asked);
-        if (t0 !== null && st.clock) st.clock.add += elapsed;
+        if (t0 !== null && st.clock) { st.clock.add += elapsed; release(st, storyNow(st)!); }
         const walked = walkers.map(([n, p, kmh]) => { const met = p.workMet ?? 0; delete p.workMet; return `${n} walked ${Math.round(kmh * elapsed / 60 * 10) / 10} km at ${Math.round(met * 10) / 10} MET`; });
         const head = (events.length
             ? `Time stopped after ${mmss(elapsed)} of ${asked} minutes: ${events.join('; ')}. ${mmss(asked - elapsed)} remain.`

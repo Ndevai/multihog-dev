@@ -182,8 +182,10 @@ export function drawNote(doc: Doc, v: NoteView, look: Look, fill: (text: string)
     if (v.taken) sum.appendChild(el('span', 'rules-reading-taken', `${markOf(look.era)} ${v.taken}`));
     // "or…" stays whole when the guess is cut short on a narrow screen: it says other readings are offered.
     if (v.taken && v.alts) sum.appendChild(el('span', 'rules-reading-or', '— or…'));
-    const list = el('span', 'rules-reading-list');
-    for (const r of v.rows) { const item = el('span', 'rules-reading-item'); item.appendChild(tag(r)); item.appendChild(doc.createTextNode(` ${r.text}`)); list.appendChild(item); }
+    // Folded, each kind of step once, in order (the player's review of 2026-11-17: every step on the one line was cut short
+    // with "…"); the steps themselves stand in the opened rows.
+    const list = el('span', 'rules-reading-list'), kinds = new Set<string>();
+    for (const r of v.rows) { if (kinds.has(r.tag)) continue; kinds.add(r.tag); const item = el('span', 'rules-reading-item'); item.appendChild(tag(r)); list.appendChild(item); }
     sum.appendChild(list);
     sum.appendChild(el('span', 'rules-reading-label', 'read as'));
     box.appendChild(sum);

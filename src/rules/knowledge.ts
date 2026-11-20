@@ -4,6 +4,10 @@
 // what was said while they were absent (FANToM, Kim et al. 2023), so knowledge is kept per character in code.
 import type { RuleState, Fact } from './types.js';
 import { def, k } from './constants.js';
+import { phi } from './acoustics.js';
+import { driftShares, heldAs, beliefWords, vividWords, sourceShare, kindGap, teller, withoutTeller, detailsOf } from './memory-drift.js';
+import { heldBy, heldText, toldPhrase, headNouns, type Held } from './memory-meaning.js';
+import { onTheTongue, totPhrase } from './tongue.js';
 
 const massedMin = () => k('massedDays') * 1440;
 const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -12,17 +16,34 @@ export const FACTS_SHOWN = 12;
 
 // Each fact keeps its source ("told by X", "saw it"), so a character can doubt or trace hearsay (source-tagged beliefs:
 // Versu, Evans & Short 2014; LoCoMo, Maharana et al. 2024, ACL).
+// The world and a character's memory are two records (the player's pick, 2026-11-16: "she thinks 2 and 4 happens"). A fact
+// is the world's unless it carries a standing: 'said' is what someone said (a message, an overheard line), which the world
+// holds where a fact of its own says the same; 'version' is a memory or a saying the world holds otherwise (a false detail
+// taken in, a made-up event remembered). A character speaks, acts and expects by what they hold; papers, signs, objects,
+// places and the memories of people who do not hold the version follow the world. The world's own record of the same words
+// makes them the world's; a version outranks a saying, since the world is known to hold otherwise.
+export type Standing = 'world' | 'said' | 'version';
 /**
- * Records `text` as a fixed fact, adds `knowers`, marks it common knowledge when `everyone`. `sources` maps a knower to how
- * they learned it. Returns the fact.
+ * Records `text` as a fact, adds `knowers`, marks it common knowledge when `everyone`. `sources` maps a knower to how they
+ * learned it; `standing` is how the world stands to it (the world's when not given, for a new fact). Returns the fact.
  */
-export function learn(st: RuleState, text: string, knowers: (string | null | undefined)[] = [], everyone = false, sources: Record<string, string> = {}): Fact {
+export function learn(st: RuleState, text: string, knowers: (string | null | undefined)[] = [], everyone = false, sources: Record<string, string> = {}, standing?: Standing): Fact {
     const facts = st.facts ??= [];
     st.factSeq = (st.factSeq ?? 0) + 1;
     let f = facts.find(x => norm(x.text) === norm(text));
-    if (!f) { f = { id: facts.length + 1, text: String(text).trim(), knowers: [], everyone: false }; facts.push(f); }
+    if (!f) { f = { id: facts.length + 1, text: String(text).trim(), knowers: [], everyone: false }; facts.push(f); if (standing && standing !== 'world') f.standing = standing; }
+    else if (standing === 'world') { delete f.standing; delete f.versionOf; }
+    else if (standing === 'version' && f.standing === 'said') f.standing = 'version';
     f.seq = st.factSeq;
-    if (everyone) f.everyone = true;
+    if (everyone) { f.everyone = true; delete f.standing; delete f.versionOf; }
+    // Where each knower met it: the spot they stand at (Person.at), for the place's cue (recallStrength).
+    for (const k of knowers) if (k) {
+        const here = Object.entries(st.people ?? {}).find(([n]) => norm(n) === norm(k))?.[1]?.at;
+        if (!here) continue;
+        const list = (f.where ??= {})[norm(k)] ??= [];
+        if (!list.includes(here)) list.push(here);
+        if (list.length > 8) list.shift();
+    }
     const from = f.from ??= {};
     for (const [k, v] of Object.entries(sources)) if (v && !from[norm(k)]) from[norm(k)] = String(v).trim();
     for (const k of knowers) if (k && !f.knowers.some(x => norm(x) === norm(k))) f.knowers.push(String(k).trim());
@@ -79,14 +100,11 @@ export function recallShare(years: number, age = 30): number {
     return Math.min(1, y1 * years ** -m);
 }
 const draw = (s: string) => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return ((h >>> 0) % 100000) / 100000; };
-/** Whether `who` recalls the fact now: their one fixed draw for it under its recall share (recallStrength). */
-export function recalls(st: RuleState, f: Fact, who: string): boolean {
-    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallStrength(st, f, who);
-}
-/** The share of people like `who` who would recall the fact now (1 for common knowledge and for a fact with no time kept). */
-export function recallStrength(st: RuleState, f: Fact, who: string): number {
+/** How old the fact is in `who`'s memory, in years, as one encounter of the same strength; null for common knowledge and for
+ * a fact with no time kept. */
+export function memoryYears(st: RuleState, f: Fact, who: string): number | null {
     const now = st.clock ? st.clock.t + st.clock.add : null, at = f.at?.[norm(who)];
-    if (now === null || at == null || f.everyone) return 1;
+    if (now === null || at == null || f.everyone) return null;
     // The age that sets the rate is the knower's age when they learned it (Bauer & Larkina group by age at the events).
     // Every encounter counts (ACT-R base-level learning, Anderson et al. 2004, Psychol Rev 111:1036): strength = ln Σ t_j^−d
     // over the times since each encounter, d = 0.5 (the default "over a large range of applications"); the curves above are
@@ -95,12 +113,125 @@ export function recallStrength(st: RuleState, f: Fact, who: string): number {
     // [ASSUMED: massed repetition adds little that lasts, the spacing effect].
     const list = f.times?.[norm(who)]?.length ? f.times[norm(who)] : [at];
     const sum = list.reduce((s, t) => s + Math.max(1 / 525960, (now - t) / 525960) ** -k('actrDecay'), 0);
-    const years = sum ** (-1 / k('actrDecay'));
+    return sum ** (-1 / k('actrDecay'));
+}
+/** Whether `who` recalls the fact now: their one fixed draw for it under its recall share (recallStrength). */
+export function recalls(st: RuleState, f: Fact, who: string): boolean {
+    return draw(`${f.id}|${norm(who)}|${f.text}`) < recallStrength(st, f, who);
+}
+/** The share of people like `who` who would recall the fact now (1 for common knowledge and for a fact with no time kept). */
+export function recallStrength(st: RuleState, f: Fact, who: string): number {
+    const years = memoryYears(st, f, who);
+    if (years === null) return 1;
     // Importance (E33): the event curve is fitted to events a person singled out as notable, taken as importance 7 of 10; each
     // point below runs the clock faster and each above slower, by a factor 2^((7 − importance) ÷ 3) [ASSUMED: form and step],
     // so a meal (1) fades four times as fast and a death (10) half as fast. Facts with no importance keep the curve as it is.
     const pace = f.kind === 'knowledge' || f.imp == null ? 1 : 2 ** ((k('notableImportance') - f.imp) / k('importanceDoubling'));
-    return f.kind === 'knowledge' ? knowledgeShare(years) : recallShare(years * pace, f.ageAt?.[norm(who)] ?? 30);
+    const share = f.kind === 'knowledge' ? knowledgeShare(years) : recallShare(years * pace, f.ageAt?.[norm(who)] ?? 30);
+    // The place's cue (the player's pick, 2026-11-16: "can come back while there"): recall in the environment of learning beats
+    // recall elsewhere by d = 0.28 (Smith & Vela 2001, Psychon Bull Rev 8:203, meta-analysis of environmental
+    // context-dependent memory), applied as a shift of the share's probit [ASSUMED, as social.ts applies Fischer et al.'s g]
+    // while the knower stands at a spot where they met the fact. The draw stays fixed, so a fact the place brings back
+    // fades again when they leave.
+    return atPlaceOf(st, f, who) ? phi(probit(share) + k('placeCueD')) : share;
+}
+/** Whether `who` stands now at a spot where they met the fact. */
+export function atPlaceOf(st: RuleState, f: Fact, who: string): boolean {
+    const here = Object.entries(st.people ?? {}).find(([n]) => norm(n) === norm(who))?.[1]?.at;
+    return !!here && !!f.where?.[norm(who)]?.includes(here);
+}
+const probit = (p: number) => { if (p >= 1) return 8; if (p <= 0) return -8; let lo = -8, hi = 8; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (phi(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; };
+def({ id: 'placeCueD', value: 0.28, unit: 'Cohen\'s d of recall in the place of learning over recall elsewhere', status: 'sourced', src: 'Smith & Vela 2001, Psychon Bull Rev 8:203 (93 effect sizes); range none to twice [ASSUMED]', range: [0, 0.56], file: 'knowledge.ts' });
+
+/** Takes `who` off a fact's knowers, with their source, times and places (a memory that gave way). */
+export function unlearn(f: Fact, who: string): void {
+    const w = norm(who);
+    f.knowers = f.knowers.filter(k => norm(k) !== w);
+    for (const rec of [f.from, f.at, f.times, f.ageAt, f.where]) if (rec) delete (rec as Record<string, unknown>)[w];
+}
+/** The facts `who` holds and recalls now (common knowledge included), with a recalled version standing in for the world's
+ * fact it replaces: the character's memory as they would tell it. */
+export function heldFacts(st: RuleState, who: string, list: Fact[] = st.facts ?? []): Fact[] {
+    const w = norm(who), held = list.filter(f => (f.everyone || f.knowers.some(k => norm(k) === w)) && recalls(st, f, who));
+    const replaced = new Set(held.filter(f => f.standing === 'version' && f.versionOf != null).map(f => f.versionOf));
+    return held.filter(f => !replaced.has(f.id));
+}
+/** A fact's mark in [KNOWS]: what someone said, or the world's own fact where it holds otherwise. */
+export function standingMark(st: RuleState, f: Fact): string {
+    if (f.standing === 'said') return ' [as said]';
+    if (f.standing !== 'version') return '';
+    const w = f.versionOf != null ? (st.facts ?? []).find(x => x.id === f.versionOf) : undefined;
+    return ` [the world holds otherwise${w ? `: ${w.text.replace(/[.!?]?$/, '')}` : ''}]`;
+}
+/**
+ * How `who` holds where the fact came from now (memory-drift.ts, Bornstein & LeCompte 1995): the source as recorded; told
+ * without the person when that has gone; undefined when the kind of source has gone too, or none was recorded. A fact with no
+ * time kept keeps its source. Each knower keeps one fixed draw for the kind and one for the person, so a source once gone
+ * stays gone while the fact weakens, and comes back with it when the fact is met again.
+ */
+export function heldSource(st: RuleState, f: Fact, who: string): string | undefined {
+    const how = f.from?.[norm(who)];
+    if (!how || memoryYears(st, f, who) === null) return how;
+    const s = recallStrength(st, f, who);
+    if (!(draw(`${f.id}|${norm(who)}|source kind`) < sourceShare(s, kindGap(how)))) return undefined;
+    if (teller(how) && !(draw(`${f.id}|${norm(who)}|source person`) < sourceShare(s, k('gapWho')))) return withoutTeller(how);
+    return how;
+}
+/** Of a fact's details, how many `who` would tell the same, changed and left out now: one fixed draw per detail against the
+ *  shares of memory-drift.ts driftShares, so a detail once changed stays changed as the memory ages. */
+export function driftOf(st: RuleState, f: Fact, who: string): { details: number; changed: number; left: number; days: number } | null {
+    const d = driftDetails(st, f, who);
+    if (!d) return null;
+    return { details: d.words.length, changed: d.fates.filter(x => x === 'changed').length, left: d.fates.filter(x => x === 'left').length, days: d.days };
+}
+/** The words of the story's people's names where a text names them ("the third neighbour"). They are kept as written
+ *  (2026-11-17, section 101): who a memory is about is held by its source and its knowers, and a name drifting into its kind
+ *  ("the third actor") is no memory people have [ASSUMED]. */
+export function nameWords(st: RuleState, text: string): Set<string> {
+    const out = new Set<string>(), low = ` ${text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ')} `;
+    for (const n of Object.keys(st.people ?? {})) {
+        const k = n.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+        if (k && low.includes(` ${k} `)) for (const w of k.split(' ')) out.add(w);
+    }
+    return out;
+}
+/** Each of a fact's details as `who` holds it now: kept, changed or left out, by the same fixed draw per detail driftOf counts,
+ *  and for each a second fixed draw for the way it drifts (memory-meaning.ts heldBy: which neighbour, which other name); the
+ *  words of a person's name kept. */
+export function driftDetails(st: RuleState, f: Fact, who: string): { words: string[]; fates: ('kept' | 'changed' | 'left')[]; ways: number[]; days: number } | null {
+    const years = memoryYears(st, f, who);
+    if (years === null || f.kind === 'knowledge') return null;
+    const days = years * 365.25, sh = driftShares(days), words = detailsOf(f.text), names = nameWords(st, f.text);
+    const fates = words.map((w, i) => { const u = draw(`${f.id}|${norm(who)}|detail ${i}`); return names.has(w.toLowerCase()) ? 'kept' as const : u < sh.changed ? 'changed' as const : u < 1 - sh.kept ? 'left' as const : 'kept' as const; });
+    return { words, fates, ways: words.map((_, i) => draw(`${f.id}|${norm(who)}|detail ${i}|way`)), days };
+}
+/** How each drifted detail of a fact is held by `who` now, by its meaning (memory-meaning.ts), and the fact in those terms. */
+export function heldMeaning(st: RuleState, f: Fact, who: string): { told: Held[]; as: string } | null {
+    const d = driftDetails(st, f, who);
+    if (!d) return null;
+    const nouns = headNouns(f.text), told = d.words.flatMap((w, i) => d.fates[i] === 'kept' ? [] : [heldBy(w, d.fates[i] as 'changed' | 'left', d.ways[i]!, st.alike ?? [], nouns.has(w))]);
+    return { told, as: told.length ? heldText(f.text, told) : f.text };
+}
+export const span = (days: number) => days < 14 ? `${Math.round(days)} days` : days < 61 ? `${Math.round(days / 7)} weeks` : days < 730 ? `${Math.round(days / 30.44)} months` : `${Math.round(days / 365.25)} years`;
+/** How `who` holds a memory a day or more after learning it: the time since, how sure and how clearly in words, and of its
+ *  details how many would come out changed and how many left out (memory-drift.ts); null for common knowledge, for knowledge
+ *  learned by study, for a fact with no time kept, and in its first day. The narrator's mark and the player's sheet both
+ *  read it. */
+export function memoryState(st: RuleState, f: Fact, who: string): { since: string; sure: string; clear: string; details: number; changed: number; left: number; told: Held[]; as: string } | null {
+    const d = driftOf(st, f, who);
+    if (!d || d.days < 1) return null;
+    const h = heldAs(d.days, f.imp ?? 5), m = heldMeaning(st, f, who)!;
+    return { since: span(d.days), sure: beliefWords(h.belief), clear: vividWords(h.vivid), details: d.details, changed: d.changed, left: d.left, told: m.told, as: m.as };
+}
+/** A memory's mark in [KNOWS] a day or more after it was learned: the time since, how sure its holder is and how clearly they
+ *  see it, and how many of its details they would tell changed or leave out. Empty for common knowledge, for knowledge
+ *  learned by study, and for a fact with no time kept. */
+export function memoryMark(st: RuleState, f: Fact, who: string): string {
+    const m = memoryState(st, f, who);
+    if (!m) return '';
+    // Since 2026-11-17 (section 97, the memory of meaning): each drifted detail as it is held, by what it means.
+    const told = m.told.map(toldPhrase).join(', ');
+    return ` [${m.since} on: ${m.sure}, ${m.clear}${told ? `; told now: ${told}` : ''}]`;
 }
 def({ id: 'actrDecay', value: 0.5, unit: 'power of each encounter\'s decay', status: 'sourced', src: 'ACT-R default d (Anderson et al. 2004, Psychol Rev 111:1036)', range: [0.3, 0.7], file: 'knowledge.ts' });
 def({ id: 'massedDays', value: 1, unit: 'days within which a repeat counts as the same encounter', status: 'assumed', src: 'spacing effect: massed repetition adds little long-term retention', range: [0.04, 3], file: 'knowledge.ts' });
@@ -159,13 +290,14 @@ export function pickFacts(st: RuleState, list: Fact[], who: string | undefined, 
 export function knowledgeBlock(st: RuleState, present?: string[], scene = ''): string {
     const facts = [...(st.facts ?? [])].sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
     if (!facts.length) return '';
-    const last = (list: Fact[], n?: string) => pickFacts(st, list, n, scene).map(f => `${f.text}${n && f.from?.[norm(n)] ? ` (${f.from[norm(n)]})` : ''}${f.secret ? ' [secret: kept hidden]' : ''}`).join(' | ');
+    const last = (list: Fact[], n?: string) => pickFacts(st, list, n, scene).map(f => { const how = n ? heldSource(st, f, n) : undefined; return `${f.text}${how ? ` (${how})` : ''}${standingMark(st, f)}${n ? memoryMark(st, f, n) : ''}${f.secret ? ' [secret: kept hidden]' : ''}`; }).join(' | ');
     const lines = [];
     const common = facts.filter(f => f.everyone);
     if (common.length) lines.push(`Common knowledge: ${last(common)}`);
     const here = present?.length ? new Set(present.map(norm)) : null;
     const names = [...new Set(facts.flatMap(f => f.everyone ? [] : f.knowers))].filter(n => !here || here.has(norm(n)));
-    for (const n of names) { const own = facts.filter(f => !f.everyone && f.knowers.some(k => norm(k) === norm(n)) && recalls(st, f, n)); if (own.length) lines.push(`${n}: ${last(own, n)}`); }
+    // Names on the tip of the tongue (tongue.ts, section 103): known, and out of reach this hour.
+    for (const n of names) { const own = heldFacts(st, n, facts.filter(f => !f.everyone)), tot = onTheTongue(st, n, own); if (own.length) lines.push(`${n}: ${last(own, n)}${tot.length ? ` | On the tip of the tongue now: ${tot.map(t => totPhrase(t)).join('; ')}` : ''}`); }
     if (!lines.length) return '';
-    return `[KNOWS]\nFixed facts of the story and who knows each${here ? ', for the characters in this scene' : ''}. A character knows common knowledge, their own line, and what they perceive in the scene now. A secret is kept hidden: asked about it, its keeper evades or lies (SocialResponse decides whether a lie is believed).\n${lines.join('\n')}\n[/KNOWS]`;
+    return `[KNOWS]\nWhat each character holds in memory and how they came by it${here ? ', for the characters in this scene' : ''}. Each item is the world's, as written, except: [as said] marks what someone said, which the world holds where an item of its own says the same; [the world holds otherwise] marks a memory or a saying the world does not hold, with the world's own item when one is recorded. A character speaks, acts and expects by what they hold; papers, signs, objects, places and the people who do not hold that item follow the world. Where it came from stands in brackets while they still hold it. [N days, weeks, months or years on] gives how sure they are of a memory and how clearly they see it, and, after "told now", how each detail that has drifted comes out when they tell it or act on it now, by its meaning: "held only as" a broader kind (say it so), "as another" of a kind (choose one), as a neighbouring day or a round number, forgotten (leave it out), or in other words; they hold a changed one as surely as the rest. Past the moment it was said, they keep what was meant, not the words: quoting it, they say it their own way. The narration of what happens follows the world. "On the tip of the tongue now" names a person whose name will not come to them this hour: they know who it is and can say what is given of the name, but reaching for it, they cannot say it, and it may come back later. A character knows common knowledge, their own line, and what they perceive in the scene now. A secret is kept hidden: asked about it, its keeper evades or lies (SocialResponse decides whether a lie is believed).\n${lines.join('\n')}\n[/KNOWS]`;
 }

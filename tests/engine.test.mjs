@@ -2017,5 +2017,1209 @@ for (const who of ['Mara', 'Ash']) {
   if (!/solid once crystallised; a melt cooled below its melting point stays liquid/.test(benz)) bad.push(`benzene: ${benz}`);
   if (bad.length) { miss++; console.log(`MISS water freezes once ice starts in it:\n  ${bad.join('\n  ')}`); }
 }
-console.log(`203 checks, ${miss} miss(es)`);
+// N71: the world and a memory are two records. A false detail taken in stands in the witness's memory for the event's fact,
+// marked with what the world holds, while the event's other witness keeps the world's; her memory card shows her own; a
+// message is marked as said; the world's own record of the same words makes them the world's.
+{
+  const K = await import('../src/rules/knowledge.js'), Vw = await import('../src/rules/views.js');
+  const bad = [];
+  let taken = null;
+  for (let i = 0; i < 60 && !taken; i++) {
+    fresh(); ctx.chat[0].mes = `two records ${i}`; await run('BodyWound', { who: 'Mara', part: 'upper body', type: 'blunt' });
+    T.setStoryTime(Date.UTC(1890, 0, 1) / 60000);
+    await run('RecordFact', { fact: 'The baker asked 4 shillings for the bread', known_by: ['Mara', 'Baker'], how: 'saw it', importance: 3 });
+    const r = String(await run('SocialResponse', { situation: 'told a false detail about an event they saw', who: 'Mara', speaker: 'Innkeeper', statement: 'The baker asked 2 shillings for the bread', event_fact: 'The baker asked 4 shillings for the bread' }));
+    if (/now remembers it/.test(r)) taken = ctx.chatMetadata.rulesEngine.state;
+  }
+  const kb = taken ? K.knowledgeBlock(taken) : '';
+  const mara = kb.split('\n').find(l => l.startsWith('Mara:')) ?? '', baker = kb.split('\n').find(l => l.startsWith('Baker:')) ?? '';
+  if (!/2 shillings[^|]*\[the world holds otherwise: The baker asked 4 shillings for the bread\]/.test(mara) || /\(saw it\)$|4 shillings for the bread \(saw it\) \|/.test(mara)) bad.push(`her line: ${mara}`);
+  if (!/^Baker: The baker asked 4 shillings for the bread( \(saw it\))?$/.test(baker)) bad.push(`his line: ${baker}`);
+  const card = taken ? Vw.memoryOf(taken, 'Mara').map(r => r.text) : [];
+  if (!(card.length === 1 && /2 shillings/.test(card[0]))) bad.push(`her card: ${JSON.stringify(card)}`);
+  const st = { clock: { t: 0, add: 0 }, people: {} };
+  K.learn(st, 'the watchman walks the round at ten', ['Innkeeper', 'Mara'], false, { Mara: 'told by Innkeeper' }, 'said');
+  const said = K.knowledgeBlock(st);
+  K.learn(st, 'the watchman walks the round at ten', ['Watchman'], false, {}, 'world');
+  const items = K.knowledgeBlock(st).split('\n').slice(2).join('\n');
+  if (!/at ten( \(told by (Innkeeper|someone)\))? \[as said\]/.test(said) || /\[as said\]/.test(items)) bad.push(`a saying: ${said}\n  recorded by the world: ${items}`);
+  if (bad.length) { miss++; console.log(`MISS two records, the world and a memory:\n  ${bad.join('\n  ')}`); }
+}
+// N72: met with what the world holds, a memory the world holds otherwise gives way 63 % of the time (Blank & Launay 2014: of
+// the 24.6 points a false detail added, 9.1 were left after a warning); kept, they hold both. 100 witnesses: the bounds
+// 0.44–0.82 sit 4 SD out (SD 0.048).
+{
+  const K = await import('../src/rules/knowledge.js');
+  let gave = 0, kept = 0, shownBoth = true;
+  for (let i = 0; i < 400 && gave + kept < 100; i++) {
+    fresh(); ctx.chat[0].mes = `receipt ${i}`; await run('BodyWound', { who: 'Mara', part: 'upper body', type: 'blunt' });
+    T.setStoryTime(Date.UTC(1890, 0, 1) / 60000);
+    await run('RecordFact', { fact: 'The baker asked 4 shillings for the bread', known_by: ['Mara'], how: 'saw it', importance: 3 });
+    const r = String(await run('SocialResponse', { situation: 'told a false detail about an event they saw', who: 'Mara', speaker: 'Innkeeper', statement: 'The baker asked 2 shillings for the bread', event_fact: 'The baker asked 4 shillings for the bread' }));
+    if (!/now remembers it/.test(r)) continue;
+    const c = String(await run('SocialResponse', { situation: 'sees, reads or hears something that shows what they remember is wrong', who: 'Mara', statement: 'the baker asked 2 shillings', shown: 'The receipt reads 4 shillings' }));
+    const line = K.knowledgeBlock(ctx.chatMetadata.rulesEngine.state).split('\n').find(l => l.startsWith('Mara:')) ?? '';
+    if (/gives way/.test(c)) { gave++; if (/2 shillings/.test(line) || !/4 shillings for the bread/.test(line)) shownBoth = false; }
+    else if (/still remembers it their own way/.test(c)) { kept++; if (!/2 shillings/.test(line) || !/receipt reads 4 shillings/.test(line)) shownBoth = false; }
+  }
+  if (!(gave + kept === 100 && gave / 100 > 0.44 && gave / 100 < 0.82 && shownBoth)) { miss++; console.log(`MISS a memory meets the world: gave way ${gave}, kept ${kept}, lines right ${shownBoth}`); }
+}
+// N73: a fact met in a place comes back more often while its knower stands there (Smith & Vela 2001, d = 0.28 on the probit),
+// and fades again when they leave: 2000 people, two years on, importance 5.
+{
+  const K = await import('../src/rules/knowledge.js'), Ac = await import('../src/rules/acoustics.js');
+  const names = Array.from({ length: 2000 }, (_, i) => `q${i}`), st = { clock: { t: 0, add: 0 }, people: Object.fromEntries(names.map(n => [n, { at: 'the yard' }])) };
+  const f = K.learn(st, 'the key is under the third stone', names); f.imp = 5;
+  st.clock.add = 2 * 525960;
+  const share = at => { for (const n of names) st.people[n].at = at; return names.filter(n => K.recalls(st, f, n)).length / names.length; };
+  const away = share('the kitchen'), there = share('the yard'), back = share('the kitchen');
+  for (const n of names) st.people[n].at = 'the kitchen';
+  const s = K.recallStrength(st, f, 'q0'); st.people.q0.at = 'the yard';
+  const lifted = K.recallStrength(st, f, 'q0'), z = x => { let lo = -8, hi = 8; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (Ac.phi(m) < x) lo = m; else hi = m; } return (lo + hi) / 2; };
+  if (!(there > away + 0.05 && back === away && Math.abs(z(lifted) - z(s) - 0.28) < 0.01)) { miss++; console.log(`MISS the place's cue: away ${away}, there ${there}, after leaving ${back}, probit shift ${z(lifted) - z(s)}`); }
+}
+// N74: breath mists where the mix of breath and air passes saturation (tells.ts breathMists, the mixing-line test): at 2 °C
+// and 80 %, at 10 °C and 60 %; at 20 °C and 50 % and at 25 °C and 90 %, it does not.
+{
+  const Tl = await import('../src/rules/tells.js');
+  const got = [Tl.breathMists(2, 80), Tl.breathMists(10, 60), Tl.breathMists(20, 50), Tl.breathMists(25, 90)];
+  if (JSON.stringify(got) !== '[true,true,false,false]') { miss++; console.log(`MISS breath mists in cold air: ${JSON.stringify(got)}`); }
+}
+// N75: a kind's tells (tells.ts, TrueNature, Look, Touch), with a kind of this project's own (the drowned who come back on
+// the third day): one of the kind shows the sign and anyone else the ordinary, whatever they want; a tell that needs breath
+// to mist shows only in air where it would; a sign too small for the light and distance stays unseen; a tell unknown to the
+// world stays out of [WORLD]; who truly is what is a secret kept by its keeper.
+{
+  const Wb = await import('../src/rules/world.js');
+  const RET = { what: 'the returned', kind: 'people', worldwide: true, cause: 'Since 1871 some of the drowned walk out of the sea on the third day, with the same face and the same memories up to the water.', reaches: ['religion and folklore', 'law and government', 'daily life'], reflections: ['The law gives the returned their names back.'],
+    tells: [{ sign: 'his breath leaves no mist', ordinary: 'his breath mists', sense: 'sight', size_m: 0.2, when: 'when breath would mist', known: true },
+      { sign: 'salt has dried at the corners of his mouth', ordinary: 'his lips are clean of salt', sense: 'sight', size_m: 0.002, known: true },
+      { sign: 'his skin is as cold as the sea', ordinary: 'his skin is warm', sense: 'touch', known: false }] };
+  const bad = [];
+  if (Wb.checkEntry(RET).errors.length || !Wb.checkEntry({ ...RET, tells: [{ sign: 'x', ordinary: 'y', sense: 'sight' }] }).errors.some(e => /size_m/.test(e))) bad.push('the entry check');
+  Wb.applyWorld([RET]);
+  const wb = Wb.worldBlock([RET]);
+  if (!/Signs known to all: his breath leaves no mist \(his breath mists in anyone else\); salt has dried at the corners of his mouth/.test(wb) || /cold as the sea/.test(wb)) bad.push(`[WORLD]: ${wb}`);
+  const ferry = async (truly, air, dist, light) => {
+    fresh(); ctx.chat[0].mes = `ferry ${truly} ${air.tdb} ${dist} ${light}`;
+    await run('BodyWound', { who: 'Mara', part: 'upper body', type: 'blunt' }); await run('BodyWound', { who: 'Ferryman', part: 'upper body', type: 'blunt' });
+    const st = ctx.chatMetadata.rulesEngine.state; st.people.Ferryman.env = { ...air };
+    const n = truly ? String(await run('TrueNature', { who: 'Ferryman', kind: 'the returned' })) : '';
+    const l = String(await run('Look', { viewer: 'Mara', kind: 'a person', target: 'the ferryman', target_who: 'Ferryman', distance_m: dist, light, seconds: 30 }));
+    const t = String(await run('Touch', { who: 'Mara', target_who: 'Ferryman' }));
+    return { n, l, t, st };
+  };
+  const cold = { tdb: 3, rh: 85 }, warm = { tdb: 24, rh: 60 };
+  const v = await ferry(true, cold, 1, 'living room'), h = await ferry(false, cold, 1, 'living room'), vw = await ferry(true, warm, 1, 'living room'), far = await ferry(false, cold, 12, 'dim street or public lighting');
+  if (!/sees of Ferryman: his breath leaves no mist; salt has dried at the corners of his mouth/.test(v.l) || !/his skin is as cold as the sea/.test(v.t)) bad.push(`one of the returned up close: ${v.l} | ${v.t}`);
+  if (!/sees of Ferryman: his breath mists; his lips are clean of salt/.test(h.l) || !/: his skin is warm/.test(h.t)) bad.push(`a living man up close: ${h.l} | ${h.t}`);
+  if (/breath/.test(vw.l) || !/salt has dried/.test(vw.l)) bad.push(`one of the returned in warm air: ${vw.l}`);
+  if (/salt|lips/.test(far.l)) bad.push(`his mouth at 12 m under a street lamp: ${far.l}`);
+  const secret = (v.st.facts ?? []).find(f => /^Ferryman is truly one of the returned$/.test(f.text));
+  if (!(secret?.secret && secret.knowers.join() === 'Ferryman' && v.st.people.Ferryman.truly === 'the returned') || !/kept hidden/.test(v.n)) bad.push(`the hidden truth: ${JSON.stringify(secret)} ${v.n}`);
+  if (!(v.st.facts ?? []).some(f => /Ferryman: his breath leaves no mist/.test(f.text) && f.knowers.includes('Mara'))) bad.push('what she saw is not learned');
+  Wb.applyWorld([]);
+  if (bad.length) { miss++; console.log(`MISS a kind's tells:\n  ${bad.join('\n  ')}`); }
+}
+// N76: each condition a tell can need is worked out where its bearer stands (tells.ts tellHolds): the open sky with the sun up,
+// darkness below civil twilight's 3.4 lux, night with the sun below the horizon, water; and it stays open where the records
+// cannot settle it.
+{
+  const Tl = await import('../src/rules/tells.js');
+  const tell = when => ({ sign: 's', ordinary: 'o', sense: 'touch', when }), dry = { env: { tdb: 20, rh: 50, water: null } }, wet = { env: { tdb: 20, rh: 50, water: { tc: 18 } } };
+  const out = { outdoorsNoon: { lux: 15800, sunAlt: 40, indoors: false }, indoorsNoon: { lux: 400, sunAlt: 40, indoors: true }, outdoorsNight: { lux: 0.01, sunAlt: -20, indoors: false }, unknown: { lux: null, sunAlt: null, indoors: null } };
+  const got = [
+    Tl.tellHolds(tell('under the open sky by day'), dry, out.outdoorsNoon), Tl.tellHolds(tell('under the open sky by day'), dry, out.indoorsNoon), Tl.tellHolds(tell('under the open sky by day'), dry, out.unknown),
+    Tl.tellHolds(tell('in darkness'), dry, out.outdoorsNight), Tl.tellHolds(tell('in darkness'), dry, out.indoorsNoon), Tl.tellHolds(tell('in darkness'), dry, out.unknown),
+    Tl.tellHolds(tell('at night'), dry, out.outdoorsNight), Tl.tellHolds(tell('at night'), dry, out.outdoorsNoon),
+    Tl.tellHolds(tell('in water'), wet, out.unknown), Tl.tellHolds(tell('in water'), dry, out.unknown), Tl.tellHolds(tell('in water'), {}, out.unknown),
+    Tl.tellHolds(tell('always'), {}, out.unknown)];
+  if (JSON.stringify(got) !== '[true,false,null,true,false,null,true,false,true,false,null,true]') { miss++; console.log(`MISS the conditions a tell can need: ${JSON.stringify(got)}`); }
+}
+// N77: the seed (seed.ts): a code gives the same start every time; a part changed changes its own part (more people keep the
+// first ones; another law keeps the people); ties fit (work ties only for a player with a trade, a workmate of the player's
+// trade, a spouse of the other sex, one person truly of the kind); what the player is shown leaves out the secret wants and
+// who is what; the start written through the tools puts each want with its knowers and the truth in a kept secret.
+{
+  const Sd = await import('../src/rules/seed.js'), K = await import('../src/rules/knowledge.js'), Wb = await import('../src/rules/world.js');
+  const bad = [];
+  if (!('error' in Sd.parseSeed('EW1700-RET-N4-D2-K5-7f2c')) || !('error' in Sd.parseSeed('EW1881-BH.RA-N4-D2-K9-7f2c')) || !('error' in Sd.parseSeed('EW1881-BH.RA-N8-D2-K5-7f2c')) || !('error' in Sd.parseSeed('EW1881-BH.RA-N4-D5-K5-7f2c')) || !('error' in Sd.parseSeed('hello'))) bad.push('bad codes read');
+  const a = Sd.drawStart('EW1881-BH.RA-N1-D0-K5-7f2c'), a2 = Sd.drawStart('ew1881 bh.ra n1 d0 k5 7F2C'), more = Sd.drawStart('EW1881-BH.RA-N1-D0-K6-7f2c'), law = Sd.drawStart('EW1881-SP.MA-N1-D0-K5-7f2c');
+  if (JSON.stringify(a) !== JSON.stringify(a2)) bad.push('the same code drew two starts');
+  const core = x => ({ label: x.label, tie: x.tie, sex: x.sex, age: x.age, occupation: x.occupation, motive: x.want.motive });
+  if (JSON.stringify(a.people.map(core)) !== JSON.stringify(more.people.slice(0, 5).map(core)) || JSON.stringify(a.you) !== JSON.stringify(more.you)) bad.push('one more person changed the others');
+  if (JSON.stringify(a.people) !== JSON.stringify(law.people) || JSON.stringify(law.law.body) !== '["NO_SLEEP","NOPAIN"]') bad.push('another law changed the people');
+  for (let i = 0; i < 300; i++) {
+    const p = Sd.drawStart(`EW1881-BH.RA-N${i % 8}-D${i % 5}-K${3 + i % 5}-${i.toString(16).padStart(4, '0')}`), you = p.you;
+    const shown = Sd.knownStart(p);
+    const why = [
+      !you.occupation && p.people.some(x => /workmate/.test(x.label)) && 'a work tie without a trade',
+      p.people.some(x => /workmate/.test(x.label) && x.occupation !== you.occupation) && 'a workmate of another trade',
+      p.people.some(x => /^the (husband|wife)$/.test(x.label) && x.sex === you.sex) && 'a spouse of the same sex',
+      p.people.some(x => x.want.secret && (shown.split('\n').find(l => l.toLowerCase().startsWith(`${x.label} (`)) ?? '').includes('Wants:')) && 'a secret want shown',
+      /truly|TRULY/.test(shown) && 'who is what shown',
+    ].filter(Boolean);
+    if (why.length) { bad.push(`${p.code}: ${why.join(', ')}`); break; }
+  }
+  // Written through the tools.
+  fresh(); ctx.chat[0].mes = 'seed';
+  T.setStoryTime(Date.UTC(a.year, a.month - 1, a.day, 21) / 60000);
+  Wb.applyWorld([a.law]);
+  for (const c of Sd.seedCalls(a, 'Mara')) await run(c.tool, c.args);
+  const st = ctx.chatMetadata.rulesEngine.state, kb = K.knowledgeBlock(st);
+  const truly = a.people.find(x => x.truly), secretWant = a.people.find(x => x.want.secret && !x.truly);
+  if (!a.people.every(x => st.people[x.label]?.age === x.age) || st.people.Mara?.age !== a.you.age) bad.push('the people are not in the records');
+  if (st.people[truly.label]?.truly !== a.law.what || JSON.stringify(st.people[truly.label]?.bodyFlags) !== '["NOBREATHE","NO_HEAT"]' || !(st.facts ?? []).some(f => f.secret && f.knowers.join() === truly.label && /is truly one of the people who came back from death/.test(f.text))) bad.push('the truth is not a kept secret');
+  const maraLine = kb.split('\n').find(l => l.startsWith('Mara:')) ?? '';
+  if (secretWant && maraLine.includes(secretWant.want.text.replace(/\.$/, '').toLowerCase())) bad.push(`Mara holds a secret want: ${maraLine}`);
+  if (!/was born in/.test(maraLine) || !a.people.every(x => maraLine.includes(x.label))) bad.push(`Mara's line: ${maraLine}`);
+  Wb.applyWorld([]);
+  if (bad.length) { miss++; console.log(`MISS the seed:\n  ${bad.join('\n  ')}`); }
+}
+// N78: the seed's two ratings (seed.ts): each a share of the people there and then, each step ten times the last. N4 is one
+// person in 10,000; D2 is 10 deaths per 100,000 a year; each one then kills 1 a year. Each person is of the kind with the
+// world's share: over 1,000 circles of five at N1 (one in ten), 0.5 a circle, within 0.415–0.585 (4 SD). A roll keeps to
+// worlds where each one kills at most one a day. The player is shown both as shares, and as counts among England and Wales's
+// 25,974,439 people of 1881.
+{
+  const Sd = await import('../src/rules/seed.js');
+  const bad = [];
+  if (Math.abs(Sd.shareOfN(4) - 1e-4) > 1e-12 || Math.abs(Sd.deathsOfD(2) - 10) > 1e-9 || Math.abs(Sd.killsEach(4, 2) - 1) > 1e-9) bad.push('the ratings');
+  let truly = 0;
+  for (let i = 0; i < 1000; i++) truly += Sd.drawStart(`EW1881-BH.RA-N1-D0-K5-${(i + 7000).toString(16).padStart(4, '0')}`).people.filter(x => x.truly).length;
+  if (!(truly / 1000 > 0.415 && truly / 1000 < 0.585)) bad.push(`people of the kind at one in ten: ${truly / 1000} a circle`);
+  let r = 0.37; const rng = () => (r = (r * 9301 + 0.49297) % 1);
+  for (let i = 0; i < 200; i++) { const code = Sd.rollSeed(rng, 0), p = Sd.drawStart(code); if ('error' in p || p.killsEach > 365 || p.deaths > 1000) { bad.push(`a roll past the edges: ${code} ${JSON.stringify('error' in p ? p : [p.killsEach, p.deaths])}`); break; } }
+  const shown = Sd.knownStart(Sd.drawStart('EW1881-BH.RA-N4-D2-K5-7f2c'));
+  if (!/how many, one person in 10,000 \(0\.01 %\); how deadly, 10 deaths per 100,000 people a year \(0\.01 % a year\); each one kills about 1 a year\. What it does: the living still grow 1\.5 % a year\. Among the 25,974,439 people of England and Wales in 1881: about 2,597 of them, and 2,597 deaths a year\./.test(shown)) bad.push(`shown: ${shown.split('\n').at(-1)}`);
+  if (bad.length) { miss++; console.log(`MISS the seed's ratings:\n  ${bad.join('\n  ')}`); }
+}
+// N79: a kind on axes (seed.ts kindOf, tells.ts BODY): BH.RA reads as people who came back from death, who do not breathe and
+// keep no warmth of their own and look like anyone (lacking breath or warmth takes nothing: neither feeds a body), no name stored; its tells are
+// computed from its body: no mist of breath in cold air, skin at the air's temperature under a hand where the air is 3 °C or
+// more from a person's skin; one of the kind carries the switches (Person.bodyFlags), which the body engine reads.
+{
+  const Sd = await import('../src/rules/seed.js'), Wb = await import('../src/rules/world.js'), Tl = await import('../src/rules/tells.js');
+  const bad = [], kind = Sd.kindOf('BH.RA');
+  if (kind?.what !== 'people who came back from death; they do not breathe and keep no warmth of their own; they look like anyone' || Sd.kindOf('XQ.ZZ') !== null) bad.push(`the kind reads: ${kind?.what}`);
+  if (JSON.stringify(Tl.bodyTells(kind.body).map(t => [t.sense, t.when])) !== '[["sight","when breath would mist"],["touch","when the air is far from a body\'s warmth"]]') bad.push('the tells computed from the body');
+  Wb.applyWorld([kind]);
+  const meet = async (truly, air) => {
+    fresh(); ctx.chat[0].mes = `axes ${truly} ${air.tdb}`;
+    await run('BodyWound', { who: 'Mara', part: 'upper body', type: 'blunt' }); await run('BodyWound', { who: 'Lodger', part: 'upper body', type: 'blunt' });
+    const st = ctx.chatMetadata.rulesEngine.state; st.people.Lodger.env = { ...air };
+    if (truly) await run('TrueNature', { who: 'Lodger', kind: kind.what });
+    return { l: String(await run('Look', { viewer: 'Mara', kind: 'a person', target: 'the lodger', target_who: 'Lodger', distance_m: 1, light: 'living room', seconds: 30 })), t: String(await run('Touch', { who: 'Mara', target_who: 'Lodger' })), st };
+  };
+  const cold = { tdb: 3, rh: 85 }, mild = { tdb: 32, rh: 50 };
+  const k1 = await meet(true, cold), h1 = await meet(false, cold), k2 = await meet(true, mild);
+  if (!/no mist of breath/.test(k1.l) || !/skin at the air's temperature/.test(k1.t)) bad.push(`one of the kind in cold air: ${k1.l} | ${k1.t}`);
+  if (!/breath that mists/.test(h1.l) || !/skin with a body's warmth/.test(h1.t)) bad.push(`a person in cold air: ${h1.l} | ${h1.t}`);
+  if (!/^Mara touches Lodger; nothing the world's laws name shows to the touch\./.test(k2.t)) bad.push(`one of the kind in air near skin's warmth: ${k2.t}`);
+  if (JSON.stringify(k1.st.people.Lodger.bodyFlags) !== '["NOBREATHE","NO_HEAT"]') bad.push('the body switches are not on the person');
+  // A switch changes what the body engine does: a person whose body does not eat builds no hunger over two hours.
+  fresh(); ctx.chat[0].mes = 'axes no eat'; T.setStoryTime(Date.UTC(1881, 1, 12, 12) / 60000);
+  await run('BodyWound', { who: 'Eater', part: 'upper body', type: 'blunt' }); await run('BodyWound', { who: 'Faster', part: 'upper body', type: 'blunt' });
+  ctx.chatMetadata.rulesEngine.state.people.Faster.bodyFlags = ['NO_EAT'];
+  await run('PassTime', { minutes: 120, active: [], asleep: [] });
+  const ne = ctx.chatMetadata.rulesEngine.state.people;
+  if (!(ne.Faster.needs?.kcal === 0 && (ne.Eater.needs?.kcal ?? 0) !== 0)) bad.push(`a body that does not eat: ${JSON.stringify([ne.Eater.needs?.kcal, ne.Faster.needs?.kcal])}`);
+  Wb.applyWorld([]);
+  if (bad.length) { miss++; console.log(`MISS a kind on axes:\n  ${bad.join('\n  ')}`); }
+}
+// N80: names (seed.ts): each coined by a census adult after one feature of the kind, the word for that feature; spread by the
+// Bass model (p 0.03, q 0.38 a year): 3.6 % a year after, 81 % ten years after; each person knows a name with that share, over
+// 300 starts within 4 SD; the player calls the kind by the most widespread name they know, or has none.
+{
+  const Sd = await import('../src/rules/seed.js');
+  const bad = [];
+  if (Sd.bassShare(0) !== 0 || Math.abs(Sd.bassShare(1) - 0.0357) > 0.0005 || Math.abs(Sd.bassShare(10) - 0.8128) > 0.0005) bad.push(`the spread: ${Sd.bassShare(1)}, ${Sd.bassShare(10)}`);
+  const words = { B: 'the breathless', H: 'the cold ones', R: 'the returned', A: 'the lookalikes' };
+  let expected = 0, got = 0, n = 0;
+  for (let i = 0; i < 300; i++) {
+    const p = Sd.drawStart(`EW1881-BH.RA-N4-D2-K5-${(i + 9000).toString(16).padStart(4, '0')}`);
+    if (!p.names.length || p.names.some(x => !Object.values(words).includes(x.name) || x.year < p.since || x.year > 1881 || !(x.coiner.age >= 16))) { bad.push(`${p.code}: names ${JSON.stringify(p.names)}`); break; }
+    for (const [who, ns] of Object.entries(p.knows)) for (const x of p.names) { expected += x.share; got += ns.includes(x.name) ? 1 : 0; n++; }
+    const shown = Sd.knownStart(p), use = p.knows.you[0];
+    if (use ? !shown.includes(`What you call them: ${use}`) : !shown.includes('You have no name for them')) { bad.push(`${p.code}: shown name`); break; }
+    if (use && p.names.find(x => x.name === use).share < Math.max(...p.names.filter(x => p.knows.you.includes(x.name)).map(x => x.share))) { bad.push(`${p.code}: not the widest name`); break; }
+  }
+  const sd = Math.sqrt(expected * (1 - expected / n));
+  if (Math.abs(got - expected) > 4 * sd) bad.push(`names known: ${got} of ${n}, expected ${expected.toFixed(0)}`);
+  if (bad.length) { miss++; console.log(`MISS names and their spread:\n  ${bad.join('\n  ')}`); }
+}
+// N81: a body that eats no food of ours lives on a diet, and the engine computes its least from the 1,400 kcal a day it charges
+// a body at rest: flesh (32,000 kcal in an adult's muscle) is one adult every 23 days, 16 a year; blood (780 kcal a litre) is
+// 1.8 L a day, killing 134 a year (4.9 L each) or about 4 donation-sized draws. Size scales it by mass to the 0.75 (35 kg:
+// 0.595), a body with no warmth of its own by 0.15. Where feeding kills, how deadly the kind is follows, and a D given is
+// refused. No world is refused for its numbers: at 1 in 100 warm human-sized flesh-eaters the living (33.9 births, 18.9 deaths
+// per 1,000 in 1881) fall 14.5 % a year; small cold ones eating the dead are all fed by them and kill no one; eating their own,
+// they thin. Flesh cannot be taken while sparing, nor blood from the dead.
+{
+  const Sd = await import('../src/rules/seed.js');
+  const bad = [];
+  const fl = Sd.dietMinimum({ food: 'flesh', prey: 'K', kills: true }), bk = Sd.dietMinimum({ food: 'blood', prey: 'K', kills: true }), bs = Sd.dietMinimum({ food: 'blood', prey: 'S', kills: false });
+  if (!(Math.abs(fl.killsYear - 15.97) < 0.01 && /every 23 days/.test(fl.perDay) && Math.abs(bk.killsYear - 133.7) < 0.1 && /^1\.8 L of blood a day$/.test(bk.perDay) && bs.killsYear === 0 && /about 4 donation-sized draws/.test(bs.perDay))) bad.push(`the minimums: ${JSON.stringify([fl, bk, bs])}`);
+  if (Math.abs(Sd.kcalDay(35) / Sd.kcalDay(70) - 0.5946) > 0.001 || Math.abs(Sd.kcalDay(70, true) / Sd.kcalDay(70) - 0.15) > 1e-9) bad.push('size and warmth');
+  for (const [law, re] of [['BHE.RA', /add its diet/], ['BH.RA.BK', /Only a body that does not eat/], ['E.RA.FS', /Flesh cannot be taken while sparing/], ['E.RA.BR', /Blood is taken from the living/]]) { const r = Sd.readLaw(law); if (!('error' in r) || !re.test(r.error)) bad.push(`${law}: ${JSON.stringify(r)}`); }
+  const p = Sd.drawStart('EW1881-BE.RA.BK-N6-K5-7f2c');
+  if ('error' in p || Math.abs(p.deaths - 13.37) > 0.01 || Math.abs(p.killsEach - 133.7) > 0.1 || !/following from what each must eat/.test(Sd.knownStart(p)) || !/live on blood of the living, and kill to take it, at least 1\.8 L of blood a day/.test(p.law.what)) bad.push(`a blood-drinking world: ${JSON.stringify('error' in p ? p : [p.deaths, p.killsEach, p.law.what])}`);
+  const withD = Sd.drawStart('EW1881-BE.RA.BK-N6-D2-K5-7f2c'), deadD = Sd.drawStart('EW1881-E.RA.FR-N2-D2-K5-7f2c');
+  if (!('error' in withD) || !/leave D out/.test(withD.error) || !('error' in deadD)) bad.push('a D given where feeding sets it was read');
+  const collapse = Sd.drawStart('EW1881-E.RA.FK-N2-K5-7f2c'), dead = Sd.drawStart('EW1881-HE.RA.FR-W35-N2-K5-7f2c'), own = Sd.drawStart('EW1881-HE.RA.FO-W35-N2-D1-K5-7f2c');
+  if ('error' in collapse || !/the living fall 14\.5 % a year and halve in 4\.8 years/.test(collapse.outcome)) bad.push(`collapse: ${JSON.stringify(collapse.outcome ?? collapse)}`);
+  if ('error' in dead || dead.deaths !== 0 || !/the dead feed all of them/.test(dead.outcome) || !/still grow 1\.5 % a year/.test(dead.outcome) || !/weigh about 35 kg/.test(dead.law.what) || !/-W35-/.test(dead.code)) bad.push(`the dead: ${JSON.stringify(dead.outcome ?? dead)}`);
+  if ('error' in own || !/they eat each other and thin: their number halves every 0\.49 years/.test(own.outcome)) bad.push(`their own: ${JSON.stringify(own.outcome ?? own)}`);
+  if (bad.length) { miss++; console.log(`MISS a diet and what follows from it:\n  ${bad.join('\n  ')}`); }
+}
+// N82: every kind's sheet has every field filled (kind-sheet.ts, docs/kinds.md): over 300 seeds no field is empty or absent;
+// each attribute is a median the raws give a human-like creature; seeing in the dark comes with the raws' share (37 of 767,
+// within 4 SD over 2,000 sheets); one of the kind gets the sheet's attributes and resistances (TrueNature), and a kind's
+// strength scales grip in proportion; the narrator reads the sheet in the world book line.
+{
+  const Sd = await import('../src/rules/seed.js'), Ks = await import('../src/rules/kind-sheet.js'), Wb = await import('../src/rules/world.js'), St = await import('../src/rules/strength.js');
+  const bad = [], allowed = new Set([1000, ...Object.values(Ks.TEMPLATES).flatMap(t => Object.values(t))]);
+  for (let i = 0; i < 300; i++) {
+    const p = Sd.drawStart(`EW1881-BH.RA-N4-D2-K5-${(i + 12000).toString(16).padStart(4, '0')}`), sh = p.law.sheet;
+    const empty = Object.entries(sh).filter(([k, v]) => v == null || v === '' || (Array.isArray(v) && !v.length && !['resists', 'tells'].includes(k)));
+    if (empty.length || Object.keys(sh.attrs).length !== 19 || Object.values(sh.attrs).some(v => !allowed.has(v)) || Ks.sheetLines(sh).some(l => /undefined|NaN/.test(l))) { bad.push(`${p.code}: ${JSON.stringify(empty)} ${JSON.stringify(sh.attrs)}`); break; }
+  }
+  let dark = 0; for (let i = 0; i < 2000; i++) { let r = (i * 7919 % 10007) / 10007 + 1e-6; const rng = () => (r = (r * 9301 + 0.49297) % 1); dark += Ks.rollSheet({ body: [] }, 70, [], rng).senses.dark ? 1 : 0; }
+  const e = 2000 * 37 / 767, sd = Math.sqrt(e * (1 - 37 / 767));
+  if (Math.abs(dark - e) > 4 * sd) bad.push(`seeing in the dark: ${dark} of 2,000, expected ${e.toFixed(0)}`);
+  const plan = Sd.drawStart('EW1881-BH.RA-N1-D0-K5-7f2c'), law = { ...plan.law, sheet: { ...plan.law.sheet, attrs: { ...plan.law.sheet.attrs, STRENGTH: 1250 }, resists: ['NOSTUN'] } };
+  Wb.applyWorld([law]);
+  fresh(); ctx.chat[0].mes = 'sheet';
+  await run('BodyWound', { who: 'Lodger', part: 'upper body', type: 'blunt' }); await run('BodyWound', { who: 'Twin', part: 'upper body', type: 'blunt' });
+  const ps = ctx.chatMetadata.rulesEngine.state.people; ps.Twin.age = ps.Lodger.age = 30; ps.Twin.sex = ps.Lodger.sex = 'male'; ps.Twin.gripZ = ps.Lodger.gripZ = 0;
+  await run('TrueNature', { who: 'Lodger', kind: law.what });
+  if (!(ps.Lodger.attrs?.STRENGTH === 1250 && ps.Lodger.bodyFlags?.includes('NOSTUN') && Math.abs(St.grip(ps.Lodger) / St.grip(ps.Twin) - 1.25) < 1e-9)) bad.push(`the sheet on the person: ${JSON.stringify([ps.Lodger.attrs?.STRENGTH, ps.Lodger.bodyFlags, St.grip(ps.Lodger), St.grip(ps.Twin)])}`);
+  if (!/Its sheet \(as it is, not as known\): Body: lacks breath; 70 kg; no warmth of its own\./.test(Wb.worldBlock([law]))) bad.push(`the world book line: ${Wb.worldBlock([law]).slice(0, 300)}`);
+  Wb.applyWorld([]);
+  if (bad.length) { miss++; console.log(`MISS a kind's sheet:\n  ${bad.join('\n  ')}`); }
+}
+// N83: details drift (memory-drift.ts, Talarico & Rubin 2003): of the details a memory held when first told, the shares told
+// the same and told changed follow the pooled points of their Figure 1 at 8, 43 and 225 days (within 0.05); none before a day;
+// kept falls and changed rises without end, and never pass the whole; over 2,000 holders of a 5-detail fact, the changed share
+// at 225 days sits within 4 SD of the curve; each holder's count only grows with time and is the same when asked twice; the
+// world's record keeps its words.
+{
+  const M = await import('../src/rules/memory-drift.js'), K = await import('../src/rules/knowledge.js');
+  const bad = [], C = [0, 1, 2, 3].map(i => (M.TR.consistent.flashbulb[i] + M.TR.consistent.everyday[i]) / 2), I = [0, 1, 2, 3].map(i => (M.TR.inconsistent.flashbulb[i] + M.TR.inconsistent.everyday[i]) / 2);
+  for (const i of [1, 2, 3]) { const d = M.driftShares(M.TR_DAYS[i]); if (Math.abs(d.kept - C[i] / C[0]) > 0.05 || Math.abs(d.changed - I[i] / C[0]) > 0.05) bad.push(`day ${M.TR_DAYS[i]}: ${JSON.stringify(d)} against kept ${(C[i] / C[0]).toFixed(3)}, changed ${(I[i] / C[0]).toFixed(3)}`); }
+  const d0 = M.driftShares(0.5); if (d0.kept !== 1 || d0.changed !== 0) bad.push(`half a day: ${JSON.stringify(d0)}`);
+  let prev = { kept: 1, changed: 0 };
+  for (let d = 2; d < 30000; d *= 1.5) { const x = M.driftShares(d); if (x.kept > prev.kept || x.changed < prev.changed || x.kept + x.changed > 1) { bad.push(`day ${d}: ${JSON.stringify(x)}`); break; } prev = x; }
+  const names = Array.from({ length: 2000 }, (_, i) => `w${i}`), st = { clock: { t: 0, add: 0 }, people: {} };
+  const f = K.learn(st, 'the baker asked 4 shillings for bread', names);
+  st.clock.add = 225 * 1440;
+  const at225 = names.map(n => K.driftOf(st, f, n)), share = at225.reduce((s, x) => s + x.changed, 0) / (5 * names.length), p = M.driftShares(225).changed, sd = Math.sqrt(p * (1 - p) / (5 * names.length));
+  if (at225[0].details !== 5 || Math.abs(share - p) > 4 * sd) bad.push(`changed at 225 days: ${share.toFixed(3)} against ${p.toFixed(3)} (${at225[0].details} details)`);
+  if (JSON.stringify(K.driftOf(st, f, 'w7')) !== JSON.stringify(at225[7])) bad.push('asked twice, a different count');
+  st.clock.add = 2 * 525960;
+  if (names.some((n, i) => K.driftOf(st, f, n).changed < at225[i].changed)) bad.push('a changed detail came back');
+  if (f.text !== 'the baker asked 4 shillings for bread') bad.push(`the world's record: ${f.text}`);
+  if (bad.length) { miss++; console.log(`MISS memory drift:\n  ${bad.join('\n  ')}`); }
+}
+// N84: how sure and how clearly (Talarico & Rubin 2003): at 225 days a memory of high importance (9 of 10, flashbulb) sits at
+// their flashbulb ratings (5.37 belief, 5.01 vividness) and an everyday one (2 of 10) at theirs (4.43, 3.61), within 0.15;
+// the flashbulb one falls by less than a third of the everyday one's fall; the words follow the scale; the [KNOWS] mark
+// carries the time since and both, and none before a day or for knowledge learned by study.
+{
+  const M = await import('../src/rules/memory-drift.js'), K = await import('../src/rules/knowledge.js');
+  const bad = [], f1 = M.heldAs(1, 9), f225 = M.heldAs(225, 9), e1 = M.heldAs(1, 2), e225 = M.heldAs(225, 2);
+  if (Math.abs(f225.belief - 5.37) > 0.15 || Math.abs(f225.vivid - 5.01) > 0.15 || f1.belief - f225.belief > (e1.belief - e225.belief) / 3 || f1.vivid - f225.vivid > (e1.vivid - e225.vivid) / 3) bad.push(`flashbulb: ${JSON.stringify([f1, f225])}`);
+  if (Math.abs(e225.belief - 4.43) > 0.15 || Math.abs(e225.vivid - 3.61) > 0.15) bad.push(`everyday at 225 days: ${JSON.stringify(e225)}`);
+  if (M.beliefWords(5.5) !== 'sure of it' || M.vividWords(3.6) !== 'sees it dimly' || M.flashShare(9) !== 1 || M.flashShare(2) !== 0) bad.push('the words or the importance scale');
+  const st = { clock: { t: 0, add: 0 }, people: {} };
+  const big = K.learn(st, 'the mill burned with the miller inside', ['Ann']); big.imp = 9;
+  const small = K.learn(st, 'the carter wore a grey coat', ['Ann']); small.imp = 2;
+  const book = K.learn(st, 'copper turns green in wet air', ['Ann']); book.kind = 'knowledge';
+  st.clock.add = 120;
+  if (K.memoryMark(st, big, 'Ann') !== '') bad.push(`two hours on: ${K.memoryMark(st, big, 'Ann')}`);
+  st.clock.add = 225 * 1440;
+  const mb = K.memoryMark(st, big, 'Ann'), ms = K.memoryMark(st, small, 'Ann');
+  if (!/^ \[7 months on: sure of it, sees it clearly/.test(mb) || !/^ \[7 months on: fairly sure of it, sees it dimly/.test(ms) || K.memoryMark(st, book, 'Ann') !== '') bad.push(`marks: ${mb} / ${ms} / ${K.memoryMark(st, book, 'Ann')}`);
+  if (bad.length) { miss++; console.log(`MISS how sure and how clearly:\n  ${bad.join('\n  ')}`); }
+}
+// N85: who told them (memory-drift.ts, Bornstein & LeCompte 1995): a source's two-choice accuracy is the item's less a fixed
+// gap, so the model gives back their Figure 1 (Exp. 1 at 168 h: item .59, source .54; Exp. 2 at 48 h: item .785, seen or
+// heard .60; within .02); over 2,000 holders of a fact told them minutes ago, 66 % × 89 % keep "told by Innkeeper", 66 % × 11 %
+// keep "told by someone", the rest no source (within 4 SD); a source gone stays gone as the fact weakens; a fact with no
+// time kept keeps its source; the memory card shows a gone source as known only.
+{
+  const M = await import('../src/rules/memory-drift.js'), K = await import('../src/rules/knowledge.js'), Vw = await import('../src/rules/views.js');
+  const bad = [], acc = (itemAcc, gap) => { const s = 2 * (itemAcc - 0.5); return 0.5 + 0.5 * s * M.sourceShare(s, gap); };
+  if (Math.abs(acc(0.59, 0.055) - 0.54) > 0.02 || Math.abs(acc(0.785, 0.17) - 0.60) > 0.02) bad.push(`back to the figure: ${acc(0.59, 0.055).toFixed(3)}, ${acc(0.785, 0.17).toFixed(3)}`);
+  if (M.sourceKind('told by Innkeeper') !== 'told' || M.sourceKind('heard it') !== 'told' || M.sourceKind('inferred from what they saw') !== 'thought' || M.sourceKind('heard, smelled or felt it') !== 'perceived' || M.sourceKind('saw it') !== 'perceived') bad.push('the kinds of source');
+  const names = Array.from({ length: 2000 }, (_, i) => `h${i}`), st = { clock: { t: 0, add: 0 }, people: {} };
+  const f = K.learn(st, 'the lodger keeps a knife under the stair', names, false, Object.fromEntries(names.map(n => [n, 'told by Innkeeper'])));
+  st.clock.add = 5;
+  const held = names.map(n => K.heldSource(st, f, n)), full = held.filter(h => h === 'told by Innkeeper').length / 2000, some = held.filter(h => h === 'told by someone').length / 2000;
+  const s = K.recallStrength(st, f, 'h0'), pk = M.sourceShare(s, 0.17), pw = M.sourceShare(s, 0.055), se = p => 4 * Math.sqrt(p * (1 - p) / 2000);
+  if (Math.abs(full - pk * pw) > se(pk * pw) || Math.abs(some - pk * (1 - pw)) > se(pk * (1 - pw)) || held.some(h => h && !['told by Innkeeper', 'told by someone'].includes(h))) bad.push(`minutes on: full ${full}, someone ${some}, expected ${(pk * pw).toFixed(3)}, ${(pk * (1 - pw)).toFixed(3)}`);
+  st.clock.add = 3 * 525960;
+  if (names.some((n, i) => !held[i] && K.heldSource(st, f, n))) bad.push('a source came back as the fact weakened');
+  const noClock = { people: {} }, g = K.learn(noClock, 'the gate sticks', ['Ann'], false, { Ann: 'saw it' });
+  if (K.heldSource(noClock, g, 'Ann') !== 'saw it') bad.push('no time kept, the source lost');
+  st.clock.add = 5;
+  const gone = names.find((n, i) => !held[i] && K.recalls(st, f, n)), card = gone ? Vw.memoryOf(st, gone)[0] : null;
+  if (!card || card.rel !== 'knows' || card.by) bad.push(`the card of one whose source is gone: ${JSON.stringify(card)}`);
+  if (bad.length) { miss++; console.log(`MISS who told them:\n  ${bad.join('\n  ')}`); }
+}
+// N86: a correction that shows how they came to remember it wrong ("enlightenment", Blank & Launay 2014: no misinformation
+// effect left, 94 %): 100 witnesses, the bound 0.845 sits 4 SD out (SD 0.024).
+{
+  let gave = 0, kept = 0;
+  for (let i = 0; i < 400 && gave + kept < 100; i++) {
+    fresh(); ctx.chat[0].mes = `explained ${i}`; await run('BodyWound', { who: 'Mara', part: 'upper body', type: 'blunt' });
+    T.setStoryTime(Date.UTC(1890, 0, 1) / 60000);
+    await run('RecordFact', { fact: 'The baker asked 4 shillings for the bread', known_by: ['Mara'], how: 'saw it', importance: 3 });
+    const r = String(await run('SocialResponse', { situation: 'told a false detail about an event they saw', who: 'Mara', speaker: 'Innkeeper', statement: 'The baker asked 2 shillings for the bread', event_fact: 'The baker asked 4 shillings for the bread' }));
+    if (!/now remembers it/.test(r)) continue;
+    const c = String(await run('SocialResponse', { situation: 'sees, reads or hears something that shows what they remember is wrong', who: 'Mara', statement: 'the baker asked 2 shillings', shown: 'The receipt reads 4 shillings', explains_why: 'the innkeeper was never in the shop' }));
+    if (/gives way/.test(c)) gave++; else if (/still remembers it their own way/.test(c)) kept++;
+  }
+  if (!(gave + kept === 100 && gave / 100 > 0.845)) { miss++; console.log(`MISS a correction that shows how: gave way ${gave}, kept ${kept}`); }
+}
+// N87: the memory line in [KNOWS]: seven months on, a witness's line carries the time since, how sure and how clearly, and
+// the changed and left-out counts the drift draws give; the heading tells the narrator to pick which details and to narrate
+// what happens by the world; the world's fact keeps its words; a hearer whose source has gone shows the fact with none.
+{
+  const K = await import('../src/rules/knowledge.js');
+  const st = { clock: { t: 0, add: 0 }, people: {} }, f = K.learn(st, 'the lodger came in at midnight with mud to the knees', ['Ann'], false, { Ann: 'saw it' }); f.imp = 7;
+  const hearers = Array.from({ length: 40 }, (_, i) => `Hearer${i}`), g = K.learn(st, 'the lodger pays in old coin', hearers, false, Object.fromEntries(hearers.map(n => [n, 'told by Innkeeper']))); g.imp = 7;
+  st.clock.add = 225 * 1440;
+  const kb = K.knowledgeBlock(st), line = kb.split('\n').find(l => l.startsWith('Ann:')) ?? '', d = K.driftOf(st, f, 'Ann');
+  const lost = hearers.find(n => K.recalls(st, g, n) && !K.heldSource(st, g, n)), lostLine = kb.split('\n').find(l => l.startsWith(`${lost}:`)) ?? '';
+  if (!lost || !/^Hearer\d+: the lodger pays in old coin \[7 months on/.test(lostLine)) { miss++; console.log(`MISS the memory line: a source gone: ${lost} ${lostLine}`); }
+  // Since section 97 the line says how each drifted detail comes out, by meaning, in place of the counts.
+  const M = await import('../src/rules/memory-drift.js'), MM = await import('../src/rules/memory-meaning.js'), h = M.heldAs(225, 7), hm = K.heldMeaning(st, f, 'Ann');
+  const want = hm.told.map(MM.toldPhrase).join(', ');
+  if (hm.told.length !== d.changed + d.left || !line.includes(`[7 months on: ${M.beliefWords(h.belief)}, ${M.vividWords(h.vivid)}${want ? `; told now: ${want}` : ''}]`) || !/after "told now", how each detail that has drifted comes out[^.]*by its meaning[^.]*; they hold a changed one as surely as the rest\. Past the moment it was said, they keep what was meant, not the words: quoting it, they say it their own way\. The narration of what happens follows the world\./.test(kb) || f.text !== 'the lodger came in at midnight with mud to the knees') { miss++; console.log(`MISS the memory line:\n  ${line}\n  ${JSON.stringify(d)}`); }
+}
+// N88: the player's sheet holds a memory as the narrator does (views.ts memoryOf, knowledge.ts memoryState): seven months on,
+// the time since, how sure and how clearly in the same words as the [KNOWS] mark, and the drift's counts as driftOf gives
+// them; none in the first day, for knowledge learned by study, or for common knowledge.
+{
+  const K = await import('../src/rules/knowledge.js'), Vw = await import('../src/rules/views.js'), M = await import('../src/rules/memory-drift.js');
+  const st = { clock: { t: 0, add: 0 }, people: {} }, f = K.learn(st, 'the lodger came in at midnight with mud to the knees', ['Ann'], false, { Ann: 'saw it' }); f.imp = 7;
+  const book = K.learn(st, 'copper turns green in wet air', ['Ann']); book.kind = 'knowledge';
+  K.learn(st, 'the queen is in Windsor', [], true);
+  st.clock.add = 120;
+  const fresh = Vw.memoryOf(st, 'Ann').find(r => /lodger/.test(r.text));
+  st.clock.add = 225 * 1440;
+  const rows = Vw.memoryOf(st, 'Ann'), row = rows.find(r => /lodger/.test(r.text)), d = K.driftOf(st, f, 'Ann'), h = M.heldAs(225, 7);
+  const ok = !!row?.held && row.held.since === '7 months' && row.held.sure === M.beliefWords(h.belief) && row.held.clear === M.vividWords(h.vivid)
+    && row.held.changed === d.changed && row.held.left === d.left && row.held.details === d.details && !fresh?.held
+    && !rows.find(r => /copper/.test(r.text))?.held && !rows.find(r => /Windsor/.test(r.text))?.held
+    && K.memoryMark(st, f, 'Ann').startsWith(` [7 months on: ${row.held.sure}, ${row.held.clear}`);
+  if (!ok) { miss++; console.log(`MISS the sheet holds a memory as the narrator does: ${JSON.stringify([row, fresh?.held, d])}`); }
+}
+// N89: the name a person uses for the kind reads name first ("People call them "the returned": people who came back…"),
+// not after the kind's whole description.
+{
+  const Sd = await import('../src/rules/seed.js'), p = Sd.drawStart('EW1881-BH.RA-N4-D2-K5-7f2c');
+  const facts = Sd.seedCalls(p, 'Mary').map(c => String(c.args.fact ?? '')).filter(f => /^People call/.test(f));
+  if (!(facts.length && facts.every(f => new RegExp(`^People call them "[^"]+": ${p.law.what.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`).test(f)))) { miss++; console.log(`MISS the name for the kind reads name first: ${JSON.stringify(facts)}`); }
+}
+// N90: each person's day (days.ts; section 94): the U.K.'s weekly hours by year (Huberman & Minns 2007, 56.6 in 1880, the
+// line between decades, the nearest outside); a worker starts at 6:00 or 7:00, rises 37 minutes before, sleeps 6 h 35 min and
+// works the week's hours less Saturday's 6.5 over five weekdays in a span 2 h longer; Saturday ends at 14:00; Sundays, Good
+// Friday, Christmas Day and from 1871 the bank holidays are off; the computus gives Easter; what they do at a time and when
+// that changes.
+{
+  const D = await import('../src/rules/days.js');
+  const ep = (y, m, d) => { const t = new Date(0), e = new Date(0); t.setUTCFullYear(y, m - 1, d); e.setUTCFullYear(1, 0, 1); return Math.round((t - e) / 864e5); };
+  const w = D.drawDay(() => 0.1, 1880, true), idle = D.drawDay(() => 0.5, 1880, false), mon = ep(1881, 9, 12), sat = ep(1881, 9, 17), sun = ep(1881, 9, 18);
+  const at = (day, h) => D.doingAt(w, day * 1440 + h * 60);
+  const ok = Math.abs(D.weekHours(1880) - 56.6) < 1e-9 && Math.abs(D.weekHours(1875) - 56.75) < 1e-9 && D.weekHours(1850) === 56.9 && D.weekHours(1921) === 56
+    && w.work.start === 360 && w.rise === 323 && w.sleep === 395 && w.work.end === Math.round(360 + ((56.6 - 6.5) / 5 + 2) * 60) && idle.sleep === 395 && idle.rise >= 120 && idle.rise <= 630
+    && D.easter(1881) === ep(1881, 4, 17) && D.easter(2025) === ep(2025, 4, 20) && D.easter(2024) === ep(2024, 3, 31)
+    && D.weekday(mon) === 0 && D.weekday(sun) === 6 && D.dayOff(sun) && !D.dayOff(mon) && D.dayOff(ep(1881, 4, 15)) && D.dayOff(ep(1881, 4, 18)) && D.dayOff(ep(1881, 6, 6))
+    && D.dayOff(ep(1881, 8, 1)) && !D.dayOff(ep(1881, 8, 8)) && D.dayOff(ep(1881, 12, 26)) && D.dayOff(ep(1881, 12, 25)) && !D.dayOff(D.easter(1869) + 1)
+    && at(mon, 3) === 'asleep' && at(mon, 23) === 'asleep' && at(mon, 22.5) === 'about' && at(mon, 5.5) === 'about' && at(mon, 10) === 'at work' && at(mon, 18.5) === 'about'
+    && at(sat, 13) === 'at work' && at(sat, 15) === 'about' && at(sun, 10) === 'about'
+    && D.nextChange(w, mon * 1440 + 600) === mon * 1440 + w.work.end && D.nextChange(w, mon * 1440 + 20 * 60) === mon * 1440 + w.rise - w.sleep + 1440
+    && D.daysHold('United Kingdom', 1881) && D.daysHold(null, 1900) && !D.daysHold('France', 1881) && !D.daysHold('United Kingdom', 1990) && !D.daysHold('United Kingdom', null);
+  if (!ok) { miss++; console.log(`MISS each person's day: ${JSON.stringify([w, idle, D.weekHours(1875), D.easter(1881) - ep(1881, 4, 17)])}`); }
+}
+// N91: the day at work in the story (rules-tools.ts NewCharacter, PassTime, whereInjection; question-pass.ts sets who is in the
+// scene before its calls): a person met in England in 1881 gets a day, the player's character none; ten hours from Monday
+// 21:00 the father, away from the scene, has slept and is at work at 07:00, while with no scene's people known everyone
+// stays as the call names them (awake); the narrator's [WHERE] names the people away, not the present or the dead.
+{
+  const D = await import('../src/rules/days.js'), qp = (await import('node:fs')).readFileSync(new URL('../src/rules/question-pass.js', import.meta.url), 'utf8');
+  const ep = (y, m, d) => { const t = new Date(0), e = new Date(0); t.setUTCFullYear(y, m - 1, d); e.setUTCFullYear(1, 0, 1); return Math.round((t - e) / 864e5); };
+  const night = async present => {
+    fresh(); T.setStoryTime(ep(1881, 9, 12) * 1440 + 21 * 60);
+    ctx.chatMetadata.rulesEngine.state.setting = { country: 'United Kingdom' };
+    T.setPresent(undefined, 'Mary');
+    for (const [who, age, sex, occupation] of [['the father', 59, 'male', 'Worsted, Stuff Manufacture'], ['Mary', 31, 'female'], ['the neighbour', 21, 'female']]) await run('NewCharacter', { who, age, sex, ...occupation ? { occupation } : {} });
+    T.setPresent(present, 'Mary');
+    await run('PassTime', { minutes: 600, resting: ['Mary'] });
+    return ctx.chatMetadata.rulesEngine.state;
+  };
+  const known = await night(['Mary']), father = known.people['the father'], kept = { ...known.people };
+  const where = D.whereBlock(kept, T.storyTime(), ['Mary']), none = await night(undefined);
+  const ok = !!father.day?.work && !known.people.Mary.day && father.needs.awake < 120 && D.doingAt(father.day, T.storyTime() - 1) !== 'asleep'
+    && none.people['the father'].needs.awake === 600 && none.people['the neighbour'].needs.awake === 600
+    && /^\[WHERE\]/.test(where) && /the father: at work \(Worsted, Stuff Manufacture\) until \d\d:\d\d/.test(where) && /the neighbour: /.test(where) && !/Mary:/.test(where) && !/the neighbour/.test(D.whereBlock(kept, T.storyTime(), ['Mary', 'The Neighbour']))
+    && D.whereBlock(kept, T.storyTime(), undefined) === '' && !/the father/.test(D.whereBlock({ ...kept, 'the father': { ...father, dead: 'bled' } }, T.storyTime(), ['Mary']))
+    && /const runAll = async \(list\) => \{ setPresent\(present, playerName\(/.test(qp);
+  if (!ok) { miss++; console.log(`MISS the day at work in the story: ${JSON.stringify([father.day, father.needs?.awake, none.people['the father'].needs?.awake, where])}`); }
+}
+// N92: the kind's hunger (hunger.ts; section 95): feedings a year from the seed's own minimum (a warm flesh-eater that kills
+// 365 × 1400 / 32,000 = 16 bodies; a cold blood-drinker that spares 365 × 210 / 780 / 0.47 draws); what is found is found by
+// eight the next morning.
+{
+  const H = await import('../src/rules/hunger.js'), Sd = await import('../src/rules/seed.js');
+  const fk = Sd.readLaw('E.BA.FK').diet, bs = Sd.readLaw('BHE.RA.BS').diet, bk = Sd.readLaw('E.BA.BK').diet;
+  const ok = Math.abs(H.feedsYear(fk) - 365 * 1400 / 32000) < 1e-9 && Math.abs(H.feedsYear(bs, 70, true) - 365 * 1400 * 0.15 / 780 / 0.47) < 1e-9
+    && Math.abs(H.feedsYear(bk) - 365 * 1400 / (780 * 0.07 * 70)) < 1e-9 && Sd.readLaw('E.BA.FK').mass === undefined && Sd.readLaw('E.BA.FK', 35).mass === 35
+    && H.foundAt(10 * 1440 + 23 * 60) === 11 * 1440 + 480 && H.foundAt(10 * 1440 + 5 * 60) === 10 * 1440 + 480 && H.foundAt(10 * 1440 + 480) === 11 * 1440 + 480;
+  if (!ok) { miss++; console.log(`MISS the kind's feedings a year: ${[H.feedsYear(fk), H.feedsYear(bs, 70, true), H.feedsYear(bk)]}`); }
+}
+// N93: the kind feeds while the player's character is away (rules-tools.ts TrueNature, PassTime, run; hunger.ts): one truly
+// of a kind that kills for blood (a warm body: every 2.7 days), away from the scene for a week, feeds two or three times
+// outside their hours of work; each feeding is their secret alone; each body is found by eight the next morning and is then
+// common knowledge, so the player's character holds it as everyone does, and the passing of time's own result says nothing of
+// it. Kept in the scene the whole week, or with the scene's people unknown, they do not feed; let go, they feed at once.
+{
+  const Sd = await import('../src/rules/seed.js'), HU = await import('../src/rules/hunger.js'), Wb = await import('../src/rules/world.js'), K = await import('../src/rules/knowledge.js'), D = await import('../src/rules/days.js'), C = await import('../src/rules/clock.js');
+  const ep = (y, m, d) => { const t = new Date(0), e = new Date(0); t.setUTCFullYear(y, m - 1, d); e.setUTCFullYear(1, 0, 1); return Math.round((t - e) / 864e5); };
+  const kind = Sd.readLaw('E.BA.BK'); Wb.applyWorld([kind]);
+  const week = async (present, label) => {
+    fresh(); ctx.chat[0].mes = `hunger ${label}`; T.setStoryTime(ep(1881, 9, 12) * 1440 + 21 * 60);
+    const st = ctx.chatMetadata.rulesEngine.state; st.setting = { country: 'United Kingdom', place: 'Bradford' };
+    T.setPresent(undefined, 'Mary');
+    await run('NewCharacter', { who: 'Mary', age: 31, sex: 'female' }); await run('NewCharacter', { who: 'the lodger', age: 30, sex: 'male', occupation: 'Clerk' });
+    await run('TrueNature', { who: 'the lodger', kind: kind.what });
+    const start = st.people['the lodger'].hunger ? { ...st.people['the lodger'].hunger } : null;
+    T.setPresent(present, 'Mary');
+    const said = [];
+    for (let left = 7 * 1440, i = 0; left > 0 && i < 60; i++) {
+      const r = String(await run('PassTime', { minutes: Math.min(1440, left), resting: ['Mary'] })); said.push(r);
+      const stop = /Time stopped after (\d+) min(?: (\d+) s)? of (\d+) minutes/.exec(r);
+      left -= stop ? Number(stop[1]) + Number(stop[2] ?? 0) / 60 : Math.min(1440, left);
+    }
+    return { st, start, said: said.join('\n') };
+  };
+  const away = await week(['Mary'], 'away'), lodger = away.st.people['the lodger'], facts = away.st.facts ?? [];
+  // Since section 98 what is found is the world's record, and each person hears it in their own time and version (retell.ts).
+  const secrets = facts.filter(f => /^the lodger killed /.test(f.text)), found = facts.filter(f => /^The body of .* was found in Bradford on the morning of .*, drained of blood$/.test(f.text) && !f.standing);
+  const ids = new Set(found.map(f => f.id)), heard = facts.filter(f => (f.versionOf != null && ids.has(f.versionOf)) || (ids.has(f.id) && f.knowers.length));
+  const maryHeard = K.heldFacts(away.st, 'Mary').filter(f => (f.versionOf != null && ids.has(f.versionOf)) || ids.has(f.id));
+  const kept = await week(['Mary', 'the lodger'], 'kept'), keptFed = kept.st.people['the lodger'].hunger.fed ?? 0, overdue = kept.st.people['the lodger'].hunger.next < T.storyTime();
+  T.setPresent(['Mary'], 'Mary'); await run('PassTime', { minutes: 60, resting: ['Mary'] });
+  const letGo = kept.st.people['the lodger'].hunger.fed ?? 0, ahead = kept.st.people['the lodger'].hunger.next - T.storyTime() > kept.st.people['the lodger'].hunger.every - 61;
+  const blind = await week(undefined, 'blind');
+  const ok = !!away.start && Math.abs(away.start.every - 365 * 1440 / (365 * 1400 / (780 * 0.07 * 70))) < 1e-6 && away.start.next >= ep(1881, 9, 12) * 1440 + 21 * 60 && away.start.next <= ep(1881, 9, 12) * 1440 + 21 * 60 + away.start.every
+    && (lodger.hunger.fed === 2 || lodger.hunger.fed === 3) && secrets.length === lodger.hunger.fed && secrets.every(f => f.secret && f.knowers.length === 1 && f.knowers[0] === 'the lodger') && !!lodger.day?.work && secrets.every(f => { const t = C.parseStoryTime(f.text); return t !== null && D.doingAt(lodger.day, t) !== 'at work'; })
+    && found.length === lodger.hunger.fed && found.every(f => !f.everyone) && heard.length >= 1 && maryHeard.length >= 1 && !heard.some(f => f.knowers.includes('the lodger')) && heard.every(f => f.versionOf == null || Object.values(f.at ?? {}).every(t => { const h = (t % 1440) / 60; return h >= 8 && h <= 22; })) && heard.every(f => f.versionOf == null || (f.knowers.length === 1 && f.standing === 'version' && f.from?.[f.knowers[0].toLowerCase()] === 'hearsay'))
+    && !K.heldFacts(away.st, 'Mary').some(f => /^the lodger killed/.test(f.text)) && !/killed|drained|fed on|grave/i.test(away.said)
+    && keptFed === 0 && overdue && letGo === 1 && ahead && (blind.st.people['the lodger'].hunger.fed ?? 0) === 0
+    && (() => { const old = { pending: [{ at: 10, text: 'A fresh grave was found opened' }] }; HU.release(old, 20); return old.facts?.length === 1 && old.facts[0].everyone && !old.pending; })();
+  if (!ok) { miss++; console.log(`MISS the kind feeds while the player's character is away: ${JSON.stringify({ start: away.start, fed: lodger.hunger, secrets: secrets.map(f => f.text), found: found.map(f => f.text), heard: heard.map(f => [f.knowers, f.text]), keptFed, overdue, letGo, blind: blind.st.people['the lodger'].hunger })}`); }
+}
+// N94: the world year by year (world-count.ts; section 96): with a kind that kills no one, each decade lands on the next census
+// (births less deaths less the decade's leavers, Registrar General and censuses 1881–1921); a story with fewer people has
+// births in proportion; the kind kills only the living not of it, so its share rises, and once the living are gone only the
+// kind is left (section 110: before, the count ended at none); outside the records, nothing.
+{
+  const W = await import('../src/rules/world-count.js'), Sd = await import('../src/rules/seed.js');
+  const none = W.yearByYear(1881, 1921, 0, 0), at = (rows, y) => rows.find(r => r.year === y);
+  const p = Sd.drawStart('EW1881-BHE.RA.BK-N2-K5-005a'), fall = W.yearByYear(1881, 1921, p.share, p.deaths), gone = W.yearByYear(1881, 1884, 0.1, 200549);
+  const ok = [1881, 1891, 1901, 1911, 1921].every(y => Math.round(at(none, y).people) === W.CENSUS[y]) && W.CENSUS[1881] === Sd.EW_1881
+    && Math.abs(at(fall, 1885).births / at(none, 1885).births - at(fall, 1885).people / at(none, 1885).people) < 1e-9
+    && at(fall, 1882).kind / at(fall, 1882).people > p.share && Math.abs(at(fall, 1881).killed - W.CENSUS[1881] * p.deaths / 1e5) < 1e-3
+    && at(fall, 1891).people < W.CENSUS[1891] / 4 && at(fall, 1921).killed === 0
+    && Math.abs(at(gone, 1881).killed - W.CENSUS[1881] * 0.9) < 1e-3 && at(gone, 1882).people === at(gone, 1882).kind && at(gone, 1884).kind > 0 && at(gone, 1884).killed === 0
+    && W.yearByYear(1830, 1840, 0, 0) === null && W.yearByYear(1881, 1870, 0, 0).length === 1 && W.yearByYear(1881, 1950, 0, 0).at(-1).year === 1921
+    // section 109: the count from 1841, each census met; the year's rates per 1,000 (1840s at 1850's rate per person)
+    && [1841, 1851, 1861, 1871].every(y => Math.round(at(W.yearByYear(1841, 1881, 0, 0), y).people) === W.CENSUS[y])
+    && Math.abs(W.ewYear(1881).deaths - 18.94) < 0.01 && Math.abs(W.ewYear(1845).births - W.ewYear(1850).births) < 0.05 && W.ewYear(1921).births === W.ewYear(1920).births && W.ewYear(1840) === null
+    && Sd.startParts(Sd.drawStart('EW1911-E.RA.FR-N3-K5-1a2b')).among.startsWith('Among the 36,065,951 people of England and Wales in 1911')
+    && /the living still grow 1\.1 % a year/.test(Sd.drawStart('EW1841-E.RA.BK-N5-K5-7f2c').outcome)
+    && (() => { let x = 0x9e3779b9; const rr = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; }; const t = Array.from({ length: 40000 }, () => Sd.drawTown(rr, 1900)); return Math.abs(t.filter(v => v >= 1e5).length / t.length - 0.316) < 0.012 && Math.abs(Sd.TOWN_BANDS_1891.reduce((a, b) => a + b[0], 0) - 1) < 1e-9; })();
+  if (!ok) { miss++; console.log(`MISS the world year by year: ${JSON.stringify([1881, 1891, 1901].map(y => Math.round(at(none, y).people)), at(fall, 1891), at(gone, 1881))}`); }
+}
+// N95: the memory of meaning (memory-meaning.ts; section 97): the words a sentence uses as head nouns (a phrase opened by a
+// determiner, a possessive, a number or a preposition, closed by a stop); a drifted detail by what it means: a noun left out
+// at its basic level (section 102), changed as another of the kind there; a day, a month, a part of the day to the one beside it; a
+// year one off; another number to the nearest round one; a word of a group that stands for one thing to another of the group;
+// any other word in other words or left out; the held text with "a"/"an" fitted and compounds kept.
+{
+  const MM = await import('../src/rules/memory-meaning.js');
+  const hn = (t) => [...MM.headNouns(t)].join(',');
+  const servant = MM.heldBy('servant', 'left', 0.3), lodger = MM.heldBy('lodger', 'changed', 0.3);
+  const ok = hn('The body of a 27-year-old woman, a domestic indoor servant, was found nearby') === 'body,woman,servant'
+    && hn('the lodger came in at midnight with mud to the knees') === 'lodger,midnight,mud,knees' && hn('People call them the returned') === ''
+    && hn('The debtor wants: having an occupation') === 'debtor,occupation' && hn('the lodger pays in old coin') === 'lodger,coin'
+    && MM.kindsAbove('servant')[0] === 'worker' && MM.kindsAbove('lodger')[0] === 'tenant' && MM.fileOf('woman') === 'person'
+    && servant.as === 'worker' && servant.how === 'held only as worker' && lodger.as === 'another tenant'
+    && MM.heldBy('Saturday', 'changed', 0.7).as === 'Sunday' && MM.heldBy('Saturday', 'changed', 0.2).as === 'Friday' && MM.heldBy('sunday', 'changed', 0.9).as === 'Monday'
+    && MM.heldBy('february', 'changed', 0.9).as === 'March' && MM.heldBy('morning', 'changed', 0.2).as === 'dawn' && MM.heldBy('dawn', 'changed', 0.2).as === 'morning'
+    && MM.heldBy('1881', 'changed', 0.9).as === '1882' && MM.heldBy('27', 'changed', 0.5).as === '25' && MM.heldBy('34', 'changed', 0.5).as === '30' && MM.heldBy('30', 'changed', 0.5).as === '40'
+    && MM.heldBy('5', 'left', 0.5).as === '' && MM.heldBy('returned', 'changed', 0.9, [['returned', 'breathless', 'lookalikes']]).as === 'lookalikes'
+    && MM.heldBy('domestic', 'changed', 0.5, [], false).how === 'in other words' && MM.heldBy('nearby', 'left', 0.5, [], false).how === 'left out'
+    && MM.heldText('a lodger with an apple', [MM.heldBy('lodger', 'left', 0.1), MM.heldBy('apple', 'left', 0.1)]) === 'a tenant with an apple'
+    && MM.heldText('a 27-year-old woman on Saturday 5 February', [MM.heldBy('year', 'left', 0.1), MM.heldBy('27', 'changed', 0.5), MM.heldBy('saturday', 'changed', 0.2), MM.heldBy('5', 'left', 0.5)]) === 'a 25-year-old woman one Friday in February'
+    && MM.heldText('the lodger came in at midnight with mud', [MM.heldBy('midnight', 'left', 0.2)]) === 'the lodger came in with mud'
+    && MM.heldText('The body of a 27-year-old woman was found on the morning of Saturday 5 February 1881', [MM.heldBy('27', 'left', 0.2)]) === 'The body of a woman was found on the morning of Saturday 5 February 1881'
+    && MM.heldText('The body of a 27-year-old woman was found on the morning of Saturday 5 February 1881', [MM.heldBy('morning', 'left', 0.2)]) === 'The body of a 27-year-old woman was found on Saturday 5 February 1881'
+    && MM.heldBy('years', 'left', 0.5).how === 'held only as some time' && MM.heldText("has been Mary's friend for years", [MM.heldBy('years', 'left', 0.5)]) === "has been Mary's friend for years"
+    && MM.heldText('found on the morning of Sunday 6 February 1881', [MM.heldBy('morning', 'left', 0.2), MM.heldBy('sunday', 'left', 0.2), MM.heldBy('6', 'left', 0.2)]) === 'found in February 1881'
+    && MM.heldText('He left on the morning of the fire', [MM.heldBy('morning', 'left', 0.2)]) === 'He left on the day of the fire' && MM.heldText('the 3 of them went', [MM.heldBy('3', 'left', 0.2)]) === 'some of them went'
+    && MM.heldText('The body of an 18-year-old woman was found', [MM.heldBy('18', 'left', 0.2)]) === 'The body of a woman was found' && MM.heldText('The body of a 27-year-old artisan was found', [MM.heldBy('27', 'left', 0.2)]) === 'The body of an artisan was found' && MM.heldText('a 27-year-old woman', [MM.heldBy('27', 'changed', 0.5)]) === 'a 25-year-old woman' && MM.anBefore('80') && MM.anBefore('18') && !MM.anBefore('1881') && !MM.anBefore('25')
+    && MM.toldPhrase(MM.heldBy('knees', 'changed', 0.2)) === '"knees" as other joints'
+    // section 102: a lost noun held at its basic level, the most used word of its chain, when people use that word (Zipf 3.5);
+    // a word that is its own basic level, or whose basic level few say, held as someone or something, its word the narrator's
+    && MM.basicAt([{ zipf: 30 }, { zipf: 50 }, { zipf: 27 }]) === 1 && MM.basicAt([{ zipf: 52 }, { zipf: 34 }]) === 0
+    && MM.heldBy('poodle', 'left', 0.3).as === 'dog' && MM.heldBy('vicar', 'left', 0.3).as === 'priest' && MM.heldBy('miner', 'left', 0.3).as === 'employee'
+    && MM.heldBy('blood', 'left', 0.3).how === 'held only as something' && MM.heldBy('blood', 'changed', 0.3).how === 'in other words' && MM.heldBy('town', 'left', 0.3).how === 'held only as somewhere'
+    && MM.heldBy('debtor', 'left', 0.3).how === 'held only as someone' && MM.heldBy('debtor', 'changed', 0.3).how === 'in other words' && MM.heldBy('poodle', 'changed', 0.3).as === 'another dog'
+    && MM.chainOf('navvy').map(x => x.name).includes('labourer') && !MM.chainOf('miner').some(x => x.name === 'jack')
+    && MM.toldPhrase(servant) === '"servant" held only as worker' && MM.toldPhrase(lodger) === '"lodger" as another tenant' && MM.toldPhrase(MM.heldBy('5', 'left', 0.5)) === '"5" forgotten';
+  if (!ok) { miss++; console.log(`MISS the memory of meaning: ${JSON.stringify([hn('The body of a 27-year-old woman, a domestic indoor servant, was found nearby'), hn('the lodger came in at midnight with mud to the knees'), MM.kindsAbove('servant'), MM.heldText('a 27-year-old woman on Saturday 5 February', [MM.heldBy('year', 'left', 0.1), MM.heldBy('27', 'changed', 0.5), MM.heldBy('saturday', 'changed', 0.2), MM.heldBy('5', 'left', 0.5)])])}`); }
+}
+// N96: the memory of meaning in the story (knowledge.ts driftDetails, heldMeaning, memoryState; views.ts memoryOf): the
+// drifted details are the ones driftOf counts, by the same draws, asked again the same; the player's sheet holds the memory
+// as the narrator is told it; the kind's names given as one group drift into one another.
+{
+  const K = await import('../src/rules/knowledge.js'), Vw = await import('../src/rules/views.js');
+  const st = { clock: { t: 0, add: 0 }, people: {}, alike: [['returned', 'breathless']] }, names = Array.from({ length: 30 }, (_, i) => `w${i}`);
+  const f = K.learn(st, 'the lodger came in at midnight with mud to the knees and a knife in his coat', names, false, Object.fromEntries(names.map(n => [n, 'saw it']))); f.imp = 7;
+  const g = K.learn(st, 'People call them the returned', names, false, Object.fromEntries(names.map(n => [n, 'told by the vicar']))); g.imp = 7;
+  st.clock.add = 225 * 1440;
+  const bad = [];
+  for (const n of names) {
+    const d = K.driftOf(st, f, n), dd = K.driftDetails(st, f, n), hm = K.heldMeaning(st, f, n);
+    if (hm.told.length !== d.changed + d.left || hm.told.filter(x => x.fate === 'changed').length !== d.changed || JSON.stringify(K.heldMeaning(st, f, n)) !== JSON.stringify(hm)) bad.push(`${n} counts`);
+    if (dd.words.filter((w, i) => dd.fates[i] !== 'kept').join() !== hm.told.map(x => x.word).join()) bad.push(`${n} words`);
+    const row = Vw.memoryOf(st, n).find(r => r.text === f.text);
+    if (row?.held && (row.held.as !== hm.as || row.held.told.length !== hm.told.length)) bad.push(`${n} sheet`);
+  }
+  const renamed = names.map(n => K.heldMeaning(st, g, n).told.find(x => x.word === 'returned')).filter(Boolean);
+  if (!renamed.length || renamed.some(x => x.fate === 'changed' && x.as !== 'breathless')) bad.push(`names: ${JSON.stringify(renamed)}`);
+  // a person's name in the story is kept as written: "the third neighbour" never drifts into "the third actor" (section 101)
+  st.people['the third neighbour'] = {};
+  const nf = K.learn(st, 'The third neighbour lives next door to Ann and keeps a dog', names, false, Object.fromEntries(names.map(n => [n, 'saw it']))); nf.imp = 7; st.clock.add += 400 * 1440;
+  const nd = names.map(n => K.driftDetails(st, nf, n)), nameKept = nd.every(d => d.words.every((w, i) => !['third', 'neighbour'].includes(w.toLowerCase()) || d.fates[i] === 'kept')) && nd.some(d => d.fates.some(x => x !== 'kept'))
+    && names.every(n => /^The third neighbour /.test(K.heldMeaning(st, nf, n).as)) && [...K.nameWords(st, 'the third neighbour came')].join() === 'the,third,neighbour' && !K.nameWords(st, 'a neighbour came').size;
+  if (!nameKept) bad.push(`names kept: ${JSON.stringify(nd.slice(0, 3))}`);
+  if (bad.length) { miss++; console.log(`MISS the memory of meaning in the story: ${bad.slice(0, 5).join('; ')}`); }
+}
+// N97: retelling (retell.ts; section 98): news found at eight reaches half on its day by ten at night, four tenths the next
+// day, three in a hundred on the third, and seven in a hundred never (Deutschmann & Danielson 1960's diffusion, shaped);
+// one teller in the first hours, one more each four hours, at most six; each telling keeps a detail with 0.3^(1/5.5) (about
+// 70 % gone after five or six tellings, Allport & Postman), the lost ones by meaning; the same hearer hears the same version.
+{
+  const R = await import('../src/rules/retell.js');
+  const found = 100 * 1440 + 480, day = (t) => Math.floor(t / 1440) - 100, hour = (t) => (t % 1440) / 60;
+  const at = [0.2, 0.6, 0.91, 0.95].map(u => R.hearsAt(found, u, 0.5));
+  const text = 'The body of a 29-year-old man, a farmer, was found in Bradford on the morning of Friday 16 September 1881, drained of blood';
+  const words = text.toLowerCase().match(/[\p{L}\p{N}]+/gu).length;
+  let kept = 0, total = 0;
+  const M = await import('../src/rules/memory-drift.js'), n = M.detailsOf(text).length;
+  for (let i = 0; i < 400; i++) { const f = R.retellFates(text, 5, `k${i}`); kept += f.filter(x => x.fate === 'kept').length; total += f.length; }
+  const share = kept / total, want = 0.3 ** (5 / 5.5);
+  const st = { people: { Ann: {}, Tom: {}, Dead: { dead: 'bled' }, Feeder: {} } }; R.spread(st, { id: 9, text }, found, ['Feeder']);
+  // News due at 600 and released when the passing of time ends at 900 is dated 600.
+  const Hg = await import('../src/rules/hunger.js'), Kn = await import('../src/rules/knowledge.js'), st2 = { clock: { t: 0, add: 900 }, people: { Ann: {} }, facts: [] };
+  const w2 = Kn.learn(st2, text, [], false); st2.pending = [{ at: 600, text, who: 'Ann', of: w2.id, chain: 6 }]; Hg.release(st2, 900);
+  const got = st2.facts.find(f => f.knowers.includes('Ann'));
+  const ok = day(at[0]) === 0 && hour(at[0]) >= 8 && hour(at[0]) <= 22 && day(at[1]) === 1 && hour(at[1]) >= 8 && day(at[2]) === 2 && at[3] === null
+    && R.tellersBy(found, found + 60) === 1 && R.tellersBy(found, found + 300) === 2 && R.tellersBy(found, found + 5000) === 6
+    && R.retold(text, 0, 'x') === text && R.retold(text, 4, 'same') === R.retold(text, 4, 'same') && R.retold(text, 6, 'a') !== text
+    && Math.abs(share - want) < 0.05 && got?.at?.ann === 600 && !st2.pending?.length
+    && (st.pending ?? []).every(p => ['Ann', 'Tom'].includes(p.who) && p.at >= found && p.of === 9 && p.chain === R.tellersBy(found, p.at)) && !(st.pending ?? []).some(p => p.who === 'Feeder' || p.who === 'Dead');
+  if (!ok) { miss++; console.log(`MISS retelling: ${JSON.stringify({ at: at.map(t => t && [day(t), hour(t)]), share, want, pending: st.pending })}`); }
+}
+// N98: how the country lives with the kind (society.ts; section 99): what the living find a year per 100,000 against about 1
+// murder (ONS 1898–1901): a kind that kills, its deaths; one that eats the dead, the graves it opens; one that spares or eats
+// its own, nothing; the stage by how many times ordinary murder (under 0.5 unnoticed, 5 a run of killings, 100 a panic, 1,000
+// an emergency, beyond collapse); knowing the tale apart from blaming the deaths on it; a long name or a world book's
+// description said as "them"; a pattern from fiction always marked as fiction's.
+{
+  const Sd = await import('../src/rules/seed.js'), So = await import('../src/rules/society.js');
+  const st = (c, y = 1881) => So.societyOf(Sd.drawStart(c), y);
+  const d0 = st('EW1881-BH.RA-N4-D0-K5-7f2c'), d1 = st('EW1881-BH.RA-N4-D1-K5-7f2c'), d2 = st('EW1881-BH.RA-N4-D2-K5-7f2c'), d3 = st('EW1881-BH.RA-N3-D3-K5-7f2c'), bk = st('EW1881-BHE.RA.BK-N2-K5-005a');
+  const spare = Sd.readLaw('HE.BA.BS'), dead = Sd.readLaw('E.BA.FR');
+  const block = So.societyBlock(d2);
+  const ok = So.MURDER_PER_100K === 1 && [0.4, 0.6, 4.9, 5, 99, 100, 999, 1000].map(So.stageOf).join() === 'unnoticed,a run of killings,a run of killings,a panic,a panic,an emergency,an emergency,collapse'
+    && d0.stage === 'unnoticed' && d1.stage === 'a run of killings' && d2.stage === 'a panic' && d3.stage === 'an emergency' && bk.stage === 'collapse'
+    && So.seenPer100k(spare, 0.001, 5) === 0 && Math.abs(So.seenPer100k(dead, 1e-4, 0) - 1e-4 * 1e5 * Sd.dietMinimum(dead.diet, 70, false).bodiesYear) < 1e-9 && So.seenPer100k(null, 0.01, 7) === 7
+    && /know them only as a tale/.test(d0.lines[1]) && /a few lay the deaths at their door/.test(d1.lines[1]) && /many now blame them/.test(d2.lines[1]) && /most blame them/.test(d3.lines[1])
+    && /about as many as the ordinary murders/.test(d1.lines[0]) && /10 times the ordinary murders/.test(d2.lines[0]) && /Whitechapel in 1888/.test(d1.lines[2]) && /New England/.test(d2.lines[2])
+    && /^\[SOCIETY\]\nHow the country lives with them in 1881 \(a panic\)\./.test(block) && /\(a pattern from fiction, not history: use it only as the story's people would\.\)\n\[\/SOCIETY\]$/.test(block)
+    && /Masquerade/.test(d0.fiction) && /Daybreakers/.test(bk.fiction)
+    && So.societyOf({ law: dead, share: 1e-4, deaths: 0, names: [{ name: dead.what, year: 1800, noticed: '', coiner: {}, share: 1 }] }, 1881).lines[1].startsWith('100 % have heard of them:')
+    && /Few have a name for them/.test(So.societyOf({ law: null, share: 1e-4, deaths: 10, names: [] }, 1881).lines[1]);
+  if (!ok) { miss++; console.log(`MISS how the country lives with the kind: ${JSON.stringify([d0, d1, d2].map(s => [s.stage, s.lines]))}`); }
+}
+// N99: people meet while the player's character is away (meetings.ts; section 100): one of 16 people met over a fortnight at
+// 7.4 interactions a day (Wheeler & Nezlek 1977), 0.46 a day; three a day under one roof; only when both are away, awake and
+// free; the meeting held by both, the act on the want by the one who wants (secret when the want is); none toward the
+// player's character, none when either is in the scene or the scene's people are unknown.
+{
+  const M = await import('../src/rules/meetings.js'), K = await import('../src/rules/knowledge.js');
+  const ep = (y, m, d) => { const t = new Date(0), e = new Date(0); t.setUTCFullYear(y, m - 1, d); e.setUTCFullYear(1, 0, 1); return Math.round((t - e) / 864e5); };
+  const fortnight = async (present, toward = 'the debtor', label = 'm') => {
+    fresh(); ctx.chat[0].mes = `meet ${label}`; T.setStoryTime(ep(1881, 9, 12) * 1440 + 9 * 60);
+    const st = ctx.chatMetadata.rulesEngine.state; st.setting = { country: 'United Kingdom' };
+    T.setPresent(undefined, 'Mary');
+    for (const [who, age, sex] of [['Mary', 31, 'female'], ['the neighbour', 40, 'female'], ['the debtor', 38, 'male']]) await run('NewCharacter', { who, age, sex });
+    st.people['the neighbour'].want = { text: 'Being in love.', toward, secret: true };
+    T.setPresent(present, 'Mary');
+    for (let d = 0; d < 14; d++) { for (const n of Object.keys(st.people)) await run('BodyIntake', { who: n, water_l: 2.5, food_kcal: 2200 }); await run('PassTime', { minutes: 1440, resting: ['Mary'] }); }
+    return st;
+  };
+  const away = await fortnight(['Mary']), w = away.people['the neighbour'].want, facts = away.facts ?? [];
+  const met = facts.filter(f => /^the neighbour and the debtor met on /.test(f.text)), acts = facts.filter(f => /^the neighbour acted on what they want \(being in love\) when meeting the debtor on /.test(f.text));
+  const here = await fortnight(['Mary', 'the debtor'], 'the debtor', 'here'), toMary = await fortnight(['Mary'], 'Mary', 'mary'), blind = await fortnight(undefined, 'the debtor', 'blind');
+  const ok = Math.abs(M.PER_DAY - 7.4 * 14 / 16 / 14) < 1e-12 && M.meetRate({ home: 'h' }, { home: 'h' }) === 3 && M.meetRate({}, {}) === M.PER_DAY && Math.abs(M.meetChance(M.PER_DAY, 960) - (1 - Math.exp(-M.PER_DAY))) < 1e-12
+    && w.met >= 1 && w.met <= 16 && met.length === w.met && acts.length === w.met && met.every(f => f.knowers.length === 2 && f.knowers.includes('the debtor') && /, Mary not there$/.test(f.text))
+    && acts.every(f => f.secret && f.knowers.length === 1 && f.knowers[0] === 'the neighbour') && !K.heldFacts(away, 'Mary').some(f => /met on|acted on/.test(f.text))
+    && !here.people['the neighbour'].want.met && !toMary.people['the neighbour'].want.met && !blind.people['the neighbour'].want.met;
+  if (!ok) { miss++; console.log(`MISS people meet while the player's character is away: ${JSON.stringify({ met: w.met, facts: met.length, acts: acts.length, here: here.people['the neighbour'].want.met, toMary: toMary.people['the neighbour'].want.met, blind: blind.people['the neighbour'].want.met, sample: met[0]?.text })}`); }
+}
+// N100: the kind beyond the player's circle (town.ts, seed.ts drawTown; section 101): the town drawn as people of 1881 lived
+// (29.6 % in towns of over 100,000, 56.3 % over 10,000; The Statesman's Year-Book 1899); kills at the town's rate (what the
+// living find per 100,000 times its people, less the circle's own feeders), found by eight the next morning, one record a
+// morning (a single body described, more counted), heard by the circle in their own time; none before the morning comes,
+// none for a kind that leaves nothing found; PassTime runs it wherever the player's character is.
+{
+  const S = await import('../src/rules/seed.js'), W = await import('../src/rules/town.js'), B = await import('../src/rules/body-engine.js'), H = await import('../src/rules/hunger.js'), C = await import('../src/rules/society.js');
+  const r = B.seededRng('n100'), xs = Array.from({ length: 50000 }, () => S.drawTown(r)), sh = lo => xs.filter(x => x >= lo).length / xs.length;
+  const bands = Math.abs(S.TOWN_BANDS.reduce((s, b) => s + b[0], 0) - 1) < 1e-9 && Math.abs(sh(1e5) - 0.296) < 0.01 && Math.abs(sh(1e4) - 0.563) < 0.01 && xs.every(x => x >= 500 && x <= 4e6);
+  const pk = S.drawStart('EW1881-E.RA.BK-N4-K5-7f2c'), pr = S.drawStart('EW1881-E.RA.FR-N3-K5-1a2b'), ps = S.drawStart('EW1881-E.RA.BS-N4-D2-K5-7f2c');
+  const tk = W.townOf(pk), tr = W.townOf(pr), ts = W.townOf(ps);
+  const plans = pk.town === S.drawStart('EW1881-E.RA.BK-N4-K5-7f2c').town && tk.how === 'blood' && tr.how === 'grave' && tk.seen === C.seenPer100k(pk.law, pk.share, pk.deaths) && ts.seen === 0
+    && W.townRate({ town: ts }) === 0 && W.nextKill({ town: ts }, 0, r) === Infinity && /^Seed \S+ · a (town|village|city) of about [\d,]+ people in England and Wales, /.test(S.knownStart(pk));
+  // the circle's own feeders take their share of the town's
+  const YEAR = 365 * 1440, base = { town: { people: 100000, seen: 100, how: 'blood' } }, own = { ...base, people: { x: { hunger: { every: YEAR / 10, next: 0, food: 'blood', prey: 'K' } } } };
+  const rates = Math.abs(W.townRate(base) * YEAR - 100) < 1e-9 && Math.abs(W.townRate(own) * YEAR - 90) < 1e-9;
+  // a busy city, a fortnight: one record a morning, counted; each heard by the circle
+  const t0 = (await import('../src/rules/clock.js')).parseStoryTime('1881-03-03 21:00'), st = { people: { 'the lodger': {}, 'the neighbour': {} }, town: { people: 150000, seen: 1000, how: 'flesh' } }, rr = B.seededRng('busy');
+  W.townWork(st, t0, rr); const early = st.facts?.length ?? 0;
+  for (let m = 0; m <= 14 * 1440; m += 37) W.townWork(st, t0 + m, rr);
+  const world = (st.facts ?? []).filter(f => !f.knowers.length), WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'], n = f => { const m = /^The bodies of (\w+) people/.exec(f.text); return !m ? 1 : WORDS.includes(m[1]) ? WORDS.indexOf(m[1]) : Number(m[1]); };
+  const days = world.map(f => /on the morning of (.+?),/.exec(f.text)?.[1]);
+  const busy = early === 0 && world.length >= 10 && new Set(days).size === world.length && world.every(f => / in the city on the morning of /.test(f.text) && /flesh gone$/.test(f.text))
+    && world.reduce((s, f) => s + n(f), 0) + (st.town.found?.n ?? 0) === st.town.killed && Math.abs(st.town.killed - 1000 * 1.5 * 14 / 365) < 25
+    && (st.pending ?? []).every(x => x.who && x.at >= H.foundAt(t0)) && (st.pending ?? []).length > 0;
+  // not found before its morning; nothing without a town
+  const one = { people: {}, town: { people: 50000, seen: 100, how: 'grave', next: t0 + 60 } }; W.townWork(one, t0 + 120, rr);
+  const before = !one.facts?.length && one.town.found?.n === 1 && one.town.found.at === H.foundAt(t0 + 60);
+  W.townWork(one, one.town.found.at, rr);
+  const after = one.facts?.length === 1 && /^A fresh grave in the town was found opened on the morning of /.test(one.facts[0].text) && !one.town.found;
+  // PassTime runs it, with or without the scene's people known
+  fresh(); ctx.chat[0].mes = 'town pass'; T.setStoryTime(t0); const s2 = ctx.chatMetadata.rulesEngine.state; s2.town = { people: 3e6, seen: 1000, how: 'blood' };
+  T.setPresent(undefined, 'Mary'); await run('PassTime', { minutes: 2 * 1440 });
+  const passed = s2.town.killed > 0 && (s2.facts ?? []).some(f => / in the city on the morning of .*drained of blood$/.test(f.text));
+  // a heard version that loses the morning's date keeps no stray "on" before the comma (memory-meaning.ts heldText)
+  const MM = await import('../src/rules/memory-meaning.js'), gone = w => ({ word: w, as: '', how: 'forgotten' });
+  const held = MM.heldText('The body was found in the town on the morning of Monday 7 March 1881, drained of blood', ['morning', 'Monday', '7', 'March', '1881'].map(gone)) === 'The body was found in the town, drained of blood'
+    && MM.heldText('The body was found in the town on , drained of blood', []) === 'The body was found in the town, drained of blood';
+  // a date is held as a whole: what is left of it said as people say it; a day of the month goes with its month
+  const T0 = 'The body of a girl was found in the town on the morning of Sunday 13 February 1881, drained of blood', g = (w, as) => ({ word: w, as, how: as ? 'changed' : 'forgotten' });
+  const dates = MM.heldText(T0, []) === T0 && MM.heldText(T0, [g('13', '')]) === 'The body of a girl was found in the town one Sunday morning in February 1881, drained of blood'
+    && MM.heldText(T0, [g('February', ''), g('morning', 'noon')]) === 'The body of a girl was found in the town at noon one Sunday in 1881, drained of blood'
+    && MM.heldText(T0, [g('Sunday', ''), g('13', ''), g('February', ''), g('1881', '1880')]) === 'The body of a girl was found in the town one morning in 1880, drained of blood'
+    && MM.heldText('He came on Sunday and left', [g('Sunday', '')]) === 'He came and left' && MM.heldText('Mary was born in 1850 in Leeds', [g('1850', '1851')]) === 'Mary was born in 1851 in Leeds';
+  // a victim's age and trade take "an" where said with a vowel ("an 18-year-old", "an 80-year-old")
+  const vr = B.seededRng('victims'), vs = Array.from({ length: 3000 }, () => H.victimOf(vr));
+  const articles = vs.every(v => { const m = /^(an?) (\d+)-year-old/.exec(v); return /^a baby (girl|boy)$/.test(v) || m && m[2] !== '0' && (m[1] === 'an') === /^(8\d?|1[18])$/.test(m[2]); }) && vs.some(v => /^an 18-year-old/.test(v)) && vs.some(v => /^an 8\d-year-old/.test(v)) && vs.some(v => /^a baby /.test(v));
+  if (!(bands && plans && rates && busy && before && after && passed && held && dates && articles)) { miss++; console.log(`MISS the kind beyond the circle, in the town: ${JSON.stringify({ bands, plans, rates, busy, before, after, passed, held, dates, articles, killed: st.town.killed, world: world.length, sample: world[0]?.text, start: S.knownStart(pk).split('\n')[0] })}`); }
+}
+// N101: names on the tip of the tongue (tongue.ts; section 103): a proper name a character holds will not come with chance
+// totBase × (1 − the strength of the strongest fact naming them) × the age factor (1 at 20, 7 at 70: once a week against once a
+// day, Schwartz & Metcalfe 2011); one draw per name and story hour; the first letter told in 57 % of states, the syllables in
+// 47 % (Brown & McNeill 1966); roles ("the lodger") and names not held never; [KNOWS] carries the line.
+{
+  const K = await import('../src/rules/knowledge.js'), T = await import('../src/rules/tongue.js');
+  const NAMES = Array.from({ length: 40 }, (_, i) => `Person${String.fromCharCode(65 + (i % 26))}${i}`);
+  const mk = (age) => { const st = { clock: { t: 0, add: 0 }, people: { Mary: { age }, 'the lodger': {} } }; for (const n of NAMES) { st.people[n] = {}; const f = K.learn(st, `${n} keeps a shop in the town`, ['Mary'], false, { Mary: 'saw it' }); f.imp = 5; } K.learn(st, 'the lodger came in late', ['Mary'], false, { Mary: 'saw it' }); st.clock.add = 150 * 1440; return st; };
+  const old = mk(70), young = mk(20), held = NAMES.filter(n => T.totChance(old, 'Mary', n) > 0);
+  // each hour's states against that hour's chances (the memories weaken as the hours pass)
+  const count = (st, hours) => { let n = 0, first = 0, syl = 0, e = 0, all = []; for (let h = 0; h < hours; h++) { st.clock.add = 150 * 1440 + h * 60; const mine = K.heldFacts(st, 'Mary', st.facts.filter(f => !f.everyone)), t = T.onTheTongue(st, 'Mary', mine); e += Object.keys(st.people).reduce((s, x) => s + T.totChance(st, 'Mary', x, mine), 0); n += t.length; first += t.filter(x => x.first).length; syl += t.filter(x => x.syllables).length; all.push(...t); } st.clock.add = 150 * 1440; return { n, first, syl, e, all }; };
+  const co = count(old, 3000), cy = count(young, 3000), eo = co.e, ey = cy.e;
+  const f0 = held[0], fx = (old.facts ?? []).find(f => f.text.startsWith(f0));
+  const formula = Math.abs(T.totChance(old, 'Mary', f0) - Math.min(1, 0.1 * (1 - K.recallStrength(old, fx, 'Mary')) * 7)) < 1e-9 && T.totChance(old, 'Mary', 'Nobody') === 0
+    && Math.abs(T.ageFactor(20) - 1) < 1e-9 && Math.abs(T.ageFactor(70) - 7) < 1e-9 && Math.abs(T.ageFactor(45) - Math.sqrt(7)) < 1e-9 && Math.abs(T.ageFactor(90) - 7) < 1e-9;
+  const rates = held.length >= 10 && Math.abs(co.n - eo) < 4 * Math.sqrt(eo) + 1 && Math.abs(cy.n - ey) < 4 * Math.sqrt(ey) + 1 && co.n > 3 * cy.n
+    && Math.abs(co.first / co.n - 0.57) < 0.12 && Math.abs(co.syl / co.n - 0.47) < 0.12 && co.all.every(t => !/^the /i.test(t.name) && held.includes(t.name));
+  // the same within an hour; the [KNOWS] line
+  let hour = -1; for (let h = 0; h < 3000 && hour < 0; h++) { old.clock.add = 150 * 1440 + h * 60; if (T.onTheTongue(old, 'Mary', K.heldFacts(old, 'Mary', old.facts)).length) hour = h; }
+  old.clock.add = 150 * 1440 + hour * 60 + 59; const same = JSON.stringify(T.onTheTongue(old, 'Mary'));
+  old.clock.add = 150 * 1440 + hour * 60; const block = K.knowledgeBlock(old), tot = T.onTheTongue(old, 'Mary');
+  const shown = hour >= 0 && same === JSON.stringify(tot) && block.includes(`On the tip of the tongue now: ${T.totPhrase(tot[0])}`) && /'s name will not come \(they know who; /.test(block) && /"On the tip of the tongue now" names a person/.test(block)
+    && T.totPhrase({ name: 'Thomas Pike', first: 'T', syllables: 3 }) === "Thomas Pike's name will not come (they know who; they can tell it starts with T and it has three syllables)"
+    && T.totPhrase({ name: 'Ann' }) === "Ann's name will not come (they know who; nothing of it comes)";
+  const words = T.syllables('Thomas Pike') === 3 && T.syllables('Mary') === 2 && T.syllables('George') === 1 && T.syllables('Eliza') === 3 && !T.properName('the lodger') && T.properName('Thomas Pike');
+  if (!(formula && rates && shown && words)) { miss++; console.log(`MISS names on the tip of the tongue: ${JSON.stringify({ formula, rates, shown, words, held: held.length, old: [co.n, Math.round(eo)], young: [cy.n, Math.round(ey)], first: co.first / co.n, syl: co.syl / co.n, hour })}`); }
+}
+// N102: the story's own links between words (links.ts, memory-meaning.ts setLinks; section 104): "a = b = c" names one
+// thing (a changed one comes out as another), "a : b" a kind (a lost word held as it, a changed one as another of it); a
+// phrase by its head word; a lorebook entry's plain keys give a group, regular expressions and disabled entries none; the
+// story's kind comes before WordNet's.
+{
+  const L = await import('../src/rules/links.js'), MM = await import('../src/rules/memory-meaning.js');
+  const parsed = JSON.stringify(L.parseLink("the Red Lion = Pike's = the inn")) === JSON.stringify({ same: ['lion', "pike's", 'inn'] })
+    && JSON.stringify(L.parseLink('the returned : monster')) === JSON.stringify({ kind: ['returned', 'monster'] })
+    && 'error' in L.parseLink('the inn') && 'error' in L.parseLink('inn = the inn') && L.headWord('the blood-drinkers') === 'blood-drinkers' && L.headWord('the Red Lion') === 'lion' && L.headWord('magical forest') === 'forest' && L.headWord('the cold ones') === 'cold' && L.headWord('the keeper of the inn') === 'keeper';
+  const lore = L.groupsOfLore([{ key: ['Red Lion', 'the inn', "Pike's"] }, { key: ['/lion/i', 'den'] }, { key: ['vicar', 'parson'], disable: true }, { key: ['ale'] }, { key: 'x' }]);
+  const loreOk = JSON.stringify(lore) === JSON.stringify([['lion', 'inn', "pike's"]]);
+  const before = MM.heldBy('inn', 'changed', 0.1).how, beforeLeft = MM.heldBy('returned', 'left', 0.5, [], false).how;
+  MM.setLinks({ same: lore, kinds: { returned: 'monster', poodle: 'pet' } });
+  const same = MM.heldBy('inn', 'changed', 0.1), kind = MM.heldBy('returned', 'left', 0.5, [], false), kindC = MM.heldBy('returned', 'changed', 0.5, [], false), own = MM.heldBy('poodle', 'left', 0.3);
+  const linked = same.how === 'as another word for the same' && ['lion', "pike's"].includes(same.as) && kind.as === 'monster' && kind.how === 'held only as monster' && kindC.as === 'another monster'
+    && own.as === 'pet' && MM.heldText('they drank at the inn', [same]) === `they drank at the ${same.as}` && before !== same.how && beforeLeft === 'left out';
+  MM.setLinks({ same: [], kinds: {} });
+  const cleared = MM.heldBy('poodle', 'left', 0.3).as === 'dog';
+  if (!(parsed && loreOk && linked && cleared)) { miss++; console.log(`MISS the story's own links between words: ${JSON.stringify({ parsed, loreOk, linked, cleared, lore, same, kind, own })}`); }
+}
+// N103: sections 94–101's judgements registered (section 105): each with a range that holds its value, listed in the
+// registry, and read where it decides: overriding one changes the outcome it sets.
+{
+  const C = await import('../src/rules/constants.js'), S = await import('../src/rules/society.js'), R = await import('../src/rules/retell.js'), H = await import('../src/rules/hunger.js');
+  const M = await import('../src/rules/meetings.js'), Sd = await import('../src/rules/seed.js');
+  const IDS = ['foundHour', 'retellLost', 'retellChanged', 'tellerHours', 'tellersMax', 'householdMeals', 'wakingHours', 'stageRun', 'stagePanic', 'stageEmergency', 'stageCollapse', 'nameKnownMin', 'villageUnder', 'cityFrom', 'smallestPlace'];
+  const reg = IDS.every(id => { const c = C.REGISTRY_K.get(id); return c && c.range && c.value >= Math.min(...c.range) && c.value <= Math.max(...c.range) && ['assumed', 'raw', 'sourced', 'fitted'].includes(c.status); });
+  const o = (id, v, fn) => C.withOverride(id, v, fn);
+  const moved = S.stageOf(13.4) === 'a panic' && await o('stagePanic', 20, () => S.stageOf(13.4)) === 'a run of killings' && await o('stageEmergency', 10, () => S.stageOf(13.4)) === 'an emergency'
+    && R.tellersBy(0, 300) === 2 && await o('tellerHours', 2, () => R.tellersBy(0, 300)) === 3 && await o('tellersMax', 2, () => R.tellersBy(0, 5000)) === 2
+    && H.foundAt(0) === 480 && await o('foundHour', 6, () => H.foundAt(0)) === 360
+    && M.meetRate({ home: 'h' }, { home: 'h' }) === 3 && await o('householdMeals', 2, () => M.meetRate({ home: 'h' }, { home: 'h' })) === 2
+    && Math.abs(await o('wakingHours', 8, () => M.meetChance(1, 480)) - (1 - Math.exp(-1))) < 1e-12
+    && Sd.placeWord(1500) === 'village' && await o('villageUnder', 1000, () => Sd.placeWord(1500)) === 'town' && await o('cityFrom', 60000, () => Sd.placeWord(80000)) === 'city';
+  // every detail lost when nothing is kept: a third changed by default, all changed with retellChanged 1
+  const T = 'the lodger came in at midnight with mud to the knees and a knife in his coat';
+  const keep = (await o('retellLost', 1, () => R.retellFates(T, 1, 'k'))).every(x => x.fate !== 'kept') && (await o('retellLost', 1, () => o('retellChanged', 1, () => R.retellFates(T, 1, 'k')))).every(x => x.fate === 'changed');
+  if (!(reg && moved && keep)) { miss++; console.log(`MISS sections 94–101's judgements registered: ${JSON.stringify({ reg, moved, missing: IDS.filter(id => !C.REGISTRY_K.get(id)) })}`); }
+}
+// N104: a kind active by night keeps the night (days.ts NIGHT_SHIFT, TrueNature; section 106): its whole day runs twelve hours
+// later, what it does at any hour being what the day it drew does twelve hours earlier; TrueNature shifts the day of one of a
+// night kind; a feeder feeds only awake and free (a feeding due while asleep waits for waking).
+{
+  const D = await import('../src/rules/days.js'), Sd = await import('../src/rules/seed.js'), Wb = await import('../src/rules/world.js');
+  const ep = (y, m, d) => { const t = new Date(0), e = new Date(0); t.setUTCFullYear(y, m - 1, d); e.setUTCFullYear(1, 0, 1); return Math.round((t - e) / 864e5); };
+  const day = { rise: 6 * 60 - 37, sleep: 395, work: { start: 360, end: 360 + 11 * 60 } }, night = { ...day, shift: D.NIGHT_SHIFT }, t0 = ep(1881, 9, 12) * 1440;
+  let same = true; for (let t = t0; t < t0 + 7 * 1440; t += 37) if (D.doingAt(night, t) !== D.doingAt(day, t - 720) || D.nextChange(night, t) !== D.nextChange(day, t - 720) + 720) same = false;
+  const wed = ep(1881, 9, 14) * 1440, shifted = same && D.doingAt(night, wed + 3 * 60) === 'at work' && D.doingAt(day, wed + 3 * 60) === 'asleep' && D.doingAt(night, wed + 14 * 60) === 'asleep' && D.doingAt(day, wed + 14 * 60) === 'at work';
+  // TrueNature with a night kind
+  const kind = { ...Sd.readLaw('E.BA.BK'), sheet: { active: 'night', resists: [], attrs: {} } }, dayKind = { ...kind, what: kind.what + ' by day', sheet: { active: 'day', resists: [], attrs: {} } };
+  Wb.applyWorld([kind, dayKind]);
+  fresh(); ctx.chat[0].mes = 'night kind'; T.setStoryTime(ep(1881, 9, 14) * 1440 + 12 * 60);
+  const st = ctx.chatMetadata.rulesEngine.state; st.setting = { country: 'United Kingdom', place: 'Bradford' };
+  T.setPresent(undefined, 'Mary');
+  await run('NewCharacter', { who: 'Mary', age: 31, sex: 'female' }); await run('NewCharacter', { who: 'the lodger', age: 30, sex: 'male', occupation: 'Clerk' }); await run('NewCharacter', { who: 'the clerk', age: 30, sex: 'male', occupation: 'Clerk' });
+  await run('TrueNature', { who: 'the lodger', kind: kind.what }); await run('TrueNature', { who: 'the clerk', kind: dayKind.what });
+  const lodger = st.people['the lodger'], clerk = st.people['the clerk'], set = lodger.day?.shift === 720 && !clerk.day?.shift;
+  // due now, at noon, while the night kind sleeps: fed only once awake and free
+  const startT = T.storyTime(); lodger.hunger.next = startT; T.setPresent(['Mary'], 'Mary');
+  for (const n of Object.keys(st.people)) await run('BodyIntake', { who: n, water_l: 2.5, food_kcal: 2200 });
+  await run('PassTime', { minutes: 1440, resting: ['Mary'] });
+  const fedAt = lodger.hunger.next - lodger.hunger.every, awake = (lodger.hunger.fed ?? 0) >= 1 && D.doingAt(lodger.day, fedAt) === 'about' && D.doingAt(lodger.day, startT) === 'asleep' && fedAt > startT;
+  if (!(shifted && set && awake)) { miss++; console.log(`MISS a kind active by night keeps the night: ${JSON.stringify({ same, shifted, set, awake, shift: lodger.day?.shift, fed: lodger.hunger.fed, at: fedAt % 1440 / 60, doing: D.doingAt(lodger.day, fedAt), start: D.doingAt(lodger.day, startT), day: lodger.day })}`); }
+  Wb.applyWorld([]);
+}
+// N105: a body with no warmth of its own (NO_HEAT; thermal/exposure.ts, jos3.ts metScale, body-engine.ts; section 107): it
+// starts at the air's temperature and keeps near it (no sweating, shivering or change of skin blood flow; heat at 15 % of a
+// warm body's), so it spends far less food in the cold; no hypothermia stage stops time or kills it; moved into a warm room it
+// warms slowly; the status says it keeps no warmth.
+{
+  const C = await import('../src/rules/clock.js');
+  fresh(); ctx.chat[0].mes = 'no warmth'; T.setStoryTime(C.parseStoryTime('1881-01-10 21:00'));
+  const st = ctx.chatMetadata.rulesEngine.state;
+  await run('NewCharacter', { who: 'Warm', age: 30, sex: 'male' }); await run('NewCharacter', { who: 'Cold', age: 30, sex: 'male' });
+  st.people.Cold.bodyFlags = ['NO_HEAT'];
+  await run('BodyEnvironment', { who: ['Warm', 'Cold'], air_c: 2, wind_kmh: 0 });
+  const r1 = String(await run('PassTime', { minutes: 480, resting: ['Warm', 'Cold'] }));
+  const cold = st.people.Cold, warm = st.people.Warm;
+  const kept = Math.abs(cold.thermal.core - 2) < 3 && warm.thermal.core > 35 && !cold.dead && !cold.unconscious && /^480 minutes passed/.test(r1)
+    && (warm.needs?.kcal ?? 0) > 3 * Math.max(1, cold.needs?.kcal ?? 0) && /Cold \(human\):[^\n]*body at the temperature around it: core [\d.]+ °C \(no warmth of its own\)/.test(r1) && !/Cold \(human\):[^\n]*hypothermia/.test(r1);
+  // both into the warm room, so no one's cold stops the time
+  await run('BodyEnvironment', { who: ['Warm', 'Cold'], air_c: 25, wind_kmh: 0 });
+  const r2 = String(await run('PassTime', { minutes: 120, resting: ['Warm', 'Cold'] }));
+  for (const n of ['Warm', 'Cold']) await run('BodyIntake', { who: n, water_l: 2.5, food_kcal: 2200 });
+  const c2 = cold.thermal.core, r3 = String(await run('PassTime', { minutes: 600, resting: ['Warm', 'Cold'] })), c3 = cold.thermal.core;
+  const warms = /^120 minutes passed/.test(r2) && /^600 minutes passed/.test(r3) && c2 > 5 && c2 < 15 && c3 > 20 && c3 < 25;
+  if (!(kept && warms)) { miss++; console.log(`MISS a body with no warmth of its own: ${JSON.stringify({ kept, warms, cold: cold.thermal.core, warm: warm.thermal.core, kcal: [warm.needs?.kcal, cold.needs?.kcal], c2, c3, head: r1.split('\n')[0], r2: r2.split('\n')[0], r3: r3.split('\n')[0] })}`); }
+}
+// N106: eyes that see in the dark (EXTRAVISION; body-engine.ts seeLux, darkSightGain; section 108): the light counts six times
+// brighter (a cat's threshold about a sixth of a person's), so at night such a viewer makes out what another does not; in
+// daylight it changes nothing seen; Look says so; TrueNature gives the flag to one of a kind whose sheet sees in the dark.
+{
+  const B = await import('../src/rules/body-engine.js'), V = await import('../src/rules/vision.js'), Sd = await import('../src/rules/seed.js'), Wb = await import('../src/rules/world.js'), C = await import('../src/rules/clock.js');
+  const cat = { bodyFlags: ['EXTRAVISION'] }, man = { bodyFlags: [] };
+  const gain = B.seeLux(cat, 0.01) === 0.06 && B.seeLux(man, 0.01) === 0.01 && B.seeLux(null, 5) === 5;
+  const night = V.see({ size: 0.5, distance: 20, light: B.seeLux(cat, 0.001) }).detect > V.see({ size: 0.5, distance: 20, light: 0.001 }).detect + 0.3
+    && Math.abs(V.see({ size: 0.5, distance: 20, light: B.seeLux(cat, 10000) }).detect - V.see({ size: 0.5, distance: 20, light: 10000 }).detect) < 0.01;
+  const kind = { ...Sd.readLaw('E.BA.BK'), sheet: { active: 'night', resists: [], attrs: {}, senses: { sight: 1, hearing: 1, smell: 1, dark: true } } };
+  Wb.applyWorld([kind]);
+  fresh(); ctx.chat[0].mes = 'dark eyes'; T.setStoryTime(C.parseStoryTime('1881-01-10 23:30'));
+  const st = ctx.chatMetadata.rulesEngine.state;
+  await run('NewCharacter', { who: 'Mary', age: 31, sex: 'female' }); await run('NewCharacter', { who: 'the lodger', age: 30, sex: 'male' });
+  await run('TrueNature', { who: 'the lodger', kind: kind.what });
+  const flag = st.people['the lodger'].bodyFlags.includes('EXTRAVISION') && !(st.people.Mary.bodyFlags ?? []).includes('EXTRAVISION');
+  const said = String(await run('Look', { viewer: 'the lodger', target: 'a man', kind: 'a person', distance_m: 15, latitude: 51.5 })), plain = String(await run('Look', { viewer: 'Mary', target: 'a man', kind: 'a person', distance_m: 15, latitude: 51.5 }));
+  const told = /eyes that see in the dark \(as 6 times the light\)/.test(said) && !/see in the dark/.test(plain);
+  Wb.applyWorld([]);
+  if (!(gain && night && flag && told)) { miss++; console.log(`MISS eyes that see in the dark: ${JSON.stringify({ gain, night, flag, told, said: said.slice(0, 200) })}`); }
+}
+// N107: the kind's own number (world-count.ts KindGrowth, seed.ts kindGrowth, kind-sheet.ts numbersOf; section 110): the born
+// keep their share; the made and the arrived gain 1 % of their number a year and the returned 1 % of the place's dead, each
+// losing the place's deaths and leavers; the first year's kills are the seed's; the dead feed a corpse-eater first; a kind
+// whose kills are its food starves in the share it cannot feed; one that eats its own thins; the sheet says the rate.
+{
+  const W = await import('../src/rules/world-count.js'), Sd = await import('../src/rules/seed.js'), KS = await import('../src/rules/kind-sheet.js');
+  const at = (rows, y) => rows.find(r => r.year === y), none = W.yearByYear(1881, 1921, 0, 0);
+  const near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(b));
+  const g = (origin, o = {}) => ({ origin, killsEach: 0, eatsDead: false, feeds: false, eatsOwn: 0, ...o }), share = 1e-4;
+  const run = (o, sh = share) => W.yearByYear(1881, 1921, sh, 0, o);
+  const born = run(g('born')), made = run(g('made')), back = run(g('returned')), came = run(g('arrived')), own = run(g('born', { eatsOwn: Math.log(2) }));
+  const r0 = at(none, 1881), b = r0.births / r0.people, d = r0.deaths / r0.people, l = r0.left / r0.people, k0 = r0.people * share;
+  // a corpse-eater the dead of 1881 feed nine-tenths over: no kills then; by 1911 the death rate has fallen below its need
+  const ghoul = run(g('born', { killsEach: 1, eatsDead: true, feeds: true }), 0.9 * d);
+  const starve = W.yearByYear(1881, 1884, 0.1, 0, g('born', { killsEach: 20.0549, feeds: true }));
+  const seeds = ['EW1881-BH.BA-N5-D1-K5-7f2c', 'EW1881-E.MA.FK-N5-K5-7f2c', 'EW1881-BHE.RA.BK-N2-K5-005a', 'EW1841-E.RA.BK-N5-K5-7f2c'].map(c => Sd.drawStart(c));
+  const firstKills = seeds.every(p => { const rows = W.yearByYear(p.year, 1921, p.share, p.deaths, Sd.kindGrowth(p)), r = rows[0]; return near(r.killed, Math.min(r.people - r.kind, r.people * p.deaths / 1e5), 1e-9); });
+  const gr = (c) => Sd.kindGrowth(Sd.drawStart(c)), bk = gr('EW1881-BHE.RA.BK-N2-K5-005a'), md = gr('EW1881-BH.MA-N5-D1-K5-7f2c'), fo = gr('EW1881-HE.BA.FO-N4-D1-K5-1a2b'), fr = gr('EW1881-BHE.BA.FR-N3-K5-1a2b');
+  const ok = [1881, 1891, 1901, 1911, 1921].every(y => near(at(born, y).kind / at(born, y).people, share, 1e-9))
+    && near(at(made, 1882).kind, k0 * (1 + 0.01 - d - l)) && near(at(made, 1882).people, at(none, 1882).people, 1e-9)
+    && near(at(back, 1882).kind, k0 * (1 - d - l) + 0.01 * r0.deaths) && near(at(back, 1882).people, at(none, 1882).people + 0.01 * r0.deaths, 1e-9)
+    && near(at(came, 1882).kind, k0 * (1 + 0.01 - d - l)) && near(at(came, 1882).people, at(none, 1882).people + 0.01 * k0, 1e-9)
+    && near(at(own, 1882).kind, k0 * (1 + b - d - l) * 0.5)
+    && firstKills && at(ghoul, 1881).killed === 0 && at(ghoul, 1911).killed > 0 && near(at(ghoul, 1891).kind / at(ghoul, 1891).people, 0.9 * d, 1e-9)
+    && at(starve, 1882).kind > 0 && at(starve, 1882).people === at(starve, 1882).kind && at(starve, 1883).people === 0
+    && bk.origin === 'returned' && bk.feeds && !bk.eatsDead && near(bk.killsEach, Sd.dietMinimum({ food: 'blood', prey: 'K', kills: true }, 70, true).bodiesYear)
+    && md.origin === 'made' && !md.feeds && near(md.killsEach, Sd.drawStart('EW1881-BH.MA-N5-D1-K5-7f2c').killsEach) && fo.origin === 'born' && fo.eatsOwn > 2 && fr.eatsDead && fr.feeds
+    && KS.numbersOf('were made') === 'others of them are made from the living: 1 % of their number a year' && KS.numbersOf('came back from death') === '1 % of the place\'s dead come back as one of them'
+    && KS.numbersOf('came from elsewhere') === 'more arrive: 1 % of their number a year' && KS.numbersOf('rose from the sea') === 'their own children, at the place\'s birth rate, are of the kind'
+    && Sd.drawStart('EW1881-BHE.RA.BK-N2-K5-005a').law.sheet.numbers === KS.numbersOf('came back from death');
+  if (!ok) { miss++; console.log(`MISS the kind's own number: ${JSON.stringify({ made: at(made, 1882).kind, back: at(back, 1882).kind, came: at(came, 1882).kind, own: at(own, 1882).kind, k0, firstKills, ghoul: [at(ghoul, 1881).killed, at(ghoul, 1911).killed], starve: starve.map(r => [r.people, r.kind]), bk, md, fo, fr })}`); }
+}
+// N108: the looks (expression-set.ts; section 111): a look's state is a feeling's appraisal (Appraise's answers, sudden or not,
+// a bad outcome's control and power, the strength) or calm, with the body's pain, sleepiness or closed eyes; each makes the
+// face the component process model and the displays' studies predict (sudden 1 2; one's own action praised 12 53, blamed
+// 54 64; pain 4 6 9 43; sleepy 7 9 18 45 55; eyes closed 43 alone), each unit at the feeling's strength and the stronger part
+// winning; the agglomerative bottleneck over the faces, feelings alike on a well body, has its knee at 6 looks, calm's a faint
+// smile; pain seen often takes its own look; σ 1.5 gives 7; each person's look state is counted as a reply comes, in the state
+// and the record.
+{
+  const X = await import('../src/rules/expression-set.js'), E = await import('../src/rules/emotion.js'), B = await import('../src/rules/body-engine.js');
+  const f = (s, b = {}) => X.faceText(X.faceOf(s, b)), bad = { about: E.ABOUT[2], good: false, sudden: false, strength: 1 };
+  const all = X.allStates(), faces = new Set(); for (const b of X.BODY_STATES) { faces.add(f(null, b)); for (const s of all) faces.add(f(s, b)); }
+  const set = X.expressionSet({}, 1), knee = set.knee.looks.map(l => `${l.calm ? 'calm:' : ''}${X.faceText(l.face)}`);
+  const pained = X.expressionSet({ [X.jointKey(null, { pain: true })]: 40 }, 1).knee.looks.map(l => X.faceText(l.face));
+  const st = ctx.chatMetadata.rulesEngine.state, ivy = B.person(st, 'Ivy');
+  ctx.chat.push({ mes: 'N108 storm', is_user: true });
+  await run('Appraise', { who: 'Ivy', about: E.ABOUT[2], matters: E.MATTERS[2], good: false, sudden: true, can_be_changed: false, target: 'the storm coming' });
+  const fear = ivy.feelings?.find(x => x.type === 'fear'), key = X.jointOf(ivy), before = st.faced?.[key] ?? 0, hist = () => ctx.chatMetadata.rulesEngine.history, logN = hist()?.n ?? 0;
+  ctx.chat.push({ mes: 'The wind rose.', is_user: false, extra: {} });
+  T.onRulesMessageReceived(ctx.chat.length - 1);
+  const counted = st.faced?.[key] === before + 1 && !!hist()?.log.some(e => e.n > logN && e.tool === 'looks counted');
+  const hurt = B.newPerson(70); hurt.wounds = [{ id: 1, part: 'arm', pid: 'x', type: 'cut', bleed: 0, age: 10 / 1440, cleanedAt: null, infection: null, splinted: false, heals: null, healed: false }];
+  const old = B.newPerson(70); old.wounds = [{ ...hurt.wounds[0], age: 2 }];
+  const out = B.newPerson(70); out.unconscious = 'test';
+  const ok = all.length === 224 && X.BODY_STATES.length === 5 && faces.size === 293
+    && f({ about: E.ABOUT[0], good: true, sudden: true, strength: 1 }) === '1 2 12 25' && f({ about: E.ABOUT[4], praiseworthy: true, result: 'none', strength: 1 }) === '12 53'
+    && f({ about: E.ABOUT[4], praiseworthy: false, result: 'none', strength: 1 }) === '54 64' && f(null, { pain: true }) === '4 6 9 43' && f(null, { sleepy: true }) === '7 9 18 45 55'
+    && f(bad, { eyesClosed: true }) === '43' && f({ ...bad, strength: 0.5 }) === '4½ 7½ 17½ 23½' && f({ ...bad, strength: 0.5 }, { pain: true }) === '4 6 7½ 9 17½ 23½ 43'
+    && f({ ...bad, control: true, power: false }) === '1 2 4 5 7 17 20 23 26 38' && f({ ...bad, control: false }) === '4 7 15 17 23 25 26 41 43'
+    && set.knee.looks.length === 6 && knee[0] === 'calm:12½ 25½' && ['4 7 17 23', '4 7 15 17 23 25 26 41 43', '1 2 4 5 7 17 20 23 26 38', '4 7 9 10 15 17 24 39'].every(x => knee.includes(x))
+    && set.curve.every((c, i, a) => i === 0 || (c.cost <= a[i - 1].cost + 1e-9 && c.tells <= a[i - 1].tells + 1e-9))
+    && pained.includes('4 6 9 43') && X.expressionSet({}, 1.5).knee.looks.length === 7
+    && X.bodyOf(hurt).pain === true && X.bodyOf(old).pain === undefined && X.bodyOf(out).eyesClosed === true
+    && fear?.state === X.stateKey({ about: E.ABOUT[2], good: false, sudden: true, control: false, strength: 1 }) && counted;
+  if (!ok) { miss++; console.log(`MISS the looks: ${JSON.stringify({ counted, n: all.length, faces: faces.size, knee, pained, fear, counted, hurt: X.bodyOf(hurt), old: X.bodyOf(old), out: X.bodyOf(out) })}`); }
+}
+// N109: a face in words (face-words.ts; section 112): each action unit the Danbooru tag whose definition is its movement, the
+// brows by what moves together, the lighter tag or a lower weight at half strength, a contradicted unit dropped (closed eyes over
+// the rest, the raised lid over the tightened, an open mouth over pursed lips) and the units no tag names dropped; a look's
+// sprite label from its face, with no "-" or "." (SillyTavern reads a label up to either).
+{
+  const W = await import('../src/rules/face-words.js'), X = await import('../src/rules/expression-set.js');
+  const t = (face) => { const r = W.faceTags(face); return `${r.tags.join(', ')}${r.dropped.length ? ` [${r.dropped.join(' ')}]` : ''}`; };
+  const F = (s) => Object.fromEntries(s.split(' ').map(x => [parseInt(x), x.endsWith('½') ? 0.5 : 1]));
+  const labels = X.expressionSet({}, 1).knee.looks.map(l => W.lookLabel(l.face));
+  const got = { smile: t(F('12 25')), faint: t(F('12½ 25½')), frown: t(F('4 7 17 23')), lost: t(F('4 7 15 17 23 25 26 41 43')), fear: t(F('1 2 4 5 7 17 20 23 26 38')),
+    pain: t(F('4 6 9 43')), sleepy: t(F('7 9 18 45 55')), pride: t(F('12 53')), shame: t(F('54 64')), inner: t(F('1')), calm: t({}) };
+  const ok = got.smile === 'smile, parted lips' && got.faint === 'light smile, (parted lips:0.7)'
+    && got.frown === 'v-shaped eyebrows, narrowed eyes, pursed lips, closed mouth [17]'
+    && got.lost === 'v-shaped eyebrows, closed eyes, frown, open mouth [7 17 23 41]'
+    && got.fear === 'furrowed brow, raised eyebrows, wide-eyed, wavy mouth, open mouth [7 17 23 38]'
+    && got.pain === 'v-shaped eyebrows, closed eyes, closed mouth [6 9]' && got.sleepy === 'half-closed eyes, puckered lips, closed mouth, head tilt [7 9]'
+    && got.pride === 'smile, closed mouth, head back' && got.shame === 'closed mouth, head down, looking down' && got.inner === 'raised inner eyebrows, closed mouth' && got.calm === 'closed mouth'
+    && W.lookLabel(F('12½ 25½')) === 'look_12h_25h' && W.lookLabel({}) === 'look_calm' && labels.length === 6 && labels.every(l => /^look_[a-z0-9_]+$/.test(l)) && new Set(labels).size === 6;
+  if (!ok) { miss++; console.log(`MISS a face in words: ${JSON.stringify({ got, labels })}`); }
+}
+// N110: the faces made (faces.ts; section 112), against a stand-in SillyTavern and image backend: only the faces the character
+// lacks are made; each from the card picture by img2img at denoising 0 with ADetailer redrawing the face alone at
+// lookFaceDenoise and at faceInpaintPx a side, the prompt as SillyTavern's Image Generation makes it (its common prefix, the
+// character's own prompt, then the face's tags; its negative prompt and the character's; the macros filled), one seed for all
+// of a character's faces; the backend reached through the CORS proxy when the straight call fails, SillyTavern's token on the
+// proxy route only; each face saved as the character's sprite labelled by its face; a backend that does not answer, one without
+// ADetailer, a source that cannot keep the picture, another character or a group chat on ComfyUI, and a ComfyUI workflow
+// without the character's picture each stop with why, saving nothing; a ComfyUI workflow that takes it draws through /imagine
+// with the same seed.
+{
+  const Fc = await import('../src/faces.js'), W = await import('../src/rules/face-words.js'), X = await import('../src/rules/expression-set.js');
+  const looks = X.expressionSet({}, 1).knee.looks, labels = looks.map(l => W.lookLabel(l.face));
+  const card = new Uint8Array([137, 80, 78, 71, 1, 2, 3]), drawn = new Uint8Array([137, 80, 78, 71, 9, 9]), b64 = (u) => Buffer.from(u).toString('base64');
+  const realFetch = globalThis.fetch, realBitmap = globalThis.createImageBitmap;
+  let calls = [], have = [], scripts = {}, straight = false, proxyOn = true, workflow = '';
+  globalThis.createImageBitmap = async () => ({ width: 832, height: 1216 });
+  globalThis.fetch = async (u, o = {}) => {
+    const url = String(u), res = (body, ok = true) => ({ ok, json: async () => body });
+    calls.push({ url, o });
+    if (url.startsWith('/api/sprites/get?name=')) return res(have.map(label => ({ label, path: `/characters/Mary/${label}.png` })));
+    if (url === '/api/sprites/upload') { have.push(o.body.get('label')); return res({ ok: true }); }
+    if (url === '/characters/mary.png') return { ok: true, blob: async () => new Blob([card]) };
+    if (url === '/characters/rules-people/the_lodger_x/portrait.png') return { ok: true, blob: async () => new Blob([drawn]) };
+    if (url === '/api/sd/comfy/workflow') return res(workflow);
+    if (url === '/user/images/drawn.png') return { ok: true, blob: async () => new Blob([drawn]) };
+    if (url.startsWith('http') && !straight) throw new TypeError('Failed to fetch');
+    if (url.startsWith('/proxy/') && !proxyOn) return res('Not found', false);
+    if (url.endsWith('/sdapi/v1/scripts')) return res(scripts);
+    if (url.endsWith('/sdapi/v1/img2img') || url.endsWith('/sdapi/v1/txt2img')) return res({ images: [b64(drawn)] });
+    return res(null, false);
+  };
+  const sdAuto = { source: 'auto', auto_url: 'http://127.0.0.1:7860/', width: 832, height: 1216, prompt_prefix: 'masterpiece, best quality,', negative_prompt: 'lowres', sampler: 'Euler a', scheduler: 'Automatic', steps: 28, scale: 6,
+    character_prompts: { mary: '{{char}}, 1girl, red hair' }, character_negative_prompts: { mary: 'freckles,' } };
+  let slash = '';
+  const c = (sd, more = {}) => ({ extensionSettings: { sd }, getRequestHeaders: () => ({ 'Content-Type': 'application/json', 'X-CSRF-Token': 'tok' }), name2: 'Mary', substituteParams: (t) => t.replaceAll('{{char}}', 'Mary'),
+    executeSlashCommandsWithOptions: async (t) => { slash = t; return { pipe: '/user/images/drawn.png' }; }, ...more });
+  const mary = { url: '/characters/mary.png', folder: 'Mary', key: 'mary' };
+  const run = async (sd, who = 'Mary', toast, more, base = mary) => { calls = []; return Fc.makeFaces(c(sd, more), who, base, looks, toast); };
+  const ups = () => calls.filter(x => x.url === '/api/sprites/upload'), toasts = [];
+  // Made from the card picture, one face already there.
+  have = [labels[0]]; scripts = { txt2img: [], img2img: ['ADetailer', 'xyz plot'] };
+  const said = await run(sdAuto, 'Mary', m => toasts.push(m));
+  const i2i = calls.filter(x => x.url.endsWith('/sdapi/v1/img2img')), viaProxy = i2i.filter(x => x.url === '/proxy/http://127.0.0.1:7860/sdapi/v1/img2img');
+  const bodies = viaProxy.map(x => JSON.parse(x.o.body)), made = ups();
+  const forms = await Promise.all(made.map(async x => { const f = x.o.body.get('avatar'); return { name: x.o.body.get('name'), label: x.o.body.get('label'), sprite: x.o.body.get('spriteName'), file: f.name, type: f.type, bytes: [...new Uint8Array(await f.arrayBuffer())].join(','), headers: x.o.headers }; }));
+  const firstOk = said === `Made 5 of Mary's 6 faces; the others were there.` && looks.length === 6 && toasts.length === 5 && toasts[0] === 'Making Mary\'s face 1 of 5…'
+    && i2i.length === 10 && viaProxy.length === 5 && i2i.filter(x => x.url.startsWith('http')).every(x => !('X-CSRF-Token' in x.o.headers) && !('Authorization' in x.o.headers))
+    && viaProxy.every(x => x.o.headers['X-CSRF-Token'] === 'tok')
+    && bodies.every((b, i) => { const p = ['masterpiece, best quality, Mary, 1girl, red hair', ...W.faceTags(looks[i + 1].face).tags].join(', '), a = b.alwayson_scripts?.ADetailer?.args ?? [];
+      return b.prompt === p && b.init_images?.[0] === b64(card) && b.denoising_strength === 0 && b.seed === Fc.seedOf('Mary') && b.width === 832 && b.height === 1216
+        && b.negative_prompt === 'lowres, freckles' && a[2]?.ad_negative_prompt === 'lowres, freckles' && b.sampler_name === 'Euler a' && b.steps === 28 && b.cfg_scale === 6
+        && a[0] === true && a[1] === true && a[2]?.ad_model === 'face_yolov8n.pt' && a[2]?.ad_prompt === p && a[2]?.ad_denoising_strength === 0.5 && a[2]?.ad_mask_k === 1
+        && a[2]?.ad_use_inpaint_width_height === true && a[2]?.ad_inpaint_width === 1024 && a[2]?.ad_inpaint_height === 1024; })
+    && forms.length === 5 && forms.every((f, i) => f.name === 'Mary' && f.label === labels[i + 1] && f.sprite === labels[i + 1] && f.file === `${labels[i + 1]}.png` && f.type === 'image/png'
+      && f.bytes === [...drawn].join(',') && f.headers['X-CSRF-Token'] === 'tok' && !('Content-Type' in f.headers));
+  // Nothing more to make; the straight route first, the backend's password on both routes, SillyTavern's token on neither straight.
+  const again = await run(sdAuto), againCalls = calls.length;
+  straight = true; calls = [];
+  await Fc.toBackend(c(sdAuto), 'http://127.0.0.1:7860/', '/sdapi/v1/scripts', null, 'u:p');
+  const authOk = calls.length === 1 && calls[0].url === 'http://127.0.0.1:7860/sdapi/v1/scripts' && calls[0].o.headers.Authorization === 'Basic dTpw' && !('X-CSRF-Token' in calls[0].o.headers) && !calls[0].o.method;
+  straight = false;
+  // Stops with why, saving nothing.
+  have = []; proxyOn = false;
+  const dead = await run(sdAuto), deadUps = ups().length;
+  proxyOn = true; scripts = { img2img: ['xyz plot'] };
+  const noAd = await run(sdAuto), noAdUps = ups().length;
+  const novel = await run({ ...sdAuto, source: 'novel' }), novelCalls = calls.filter(x => !x.url.startsWith('/api/sprites/get')).length;
+  const sdComfy = { ...sdAuto, source: 'comfy', comfy_workflow: 'face.json', character_prompts: { mary: '1girl | red hair' }, character_negative_prompts: { mary: 'freckles' } };
+  const other = await run(sdComfy, 'John'), group = await run(sdComfy, 'Mary', undefined, { groupId: 'g1' });
+  workflow = '{"3":{"inputs":{"text":"%prompt%"}}}';
+  const noAvatar = await run(sdComfy), noAvatarUps = ups().length;
+  workflow = '{"3":{"inputs":{"text":"%prompt%","image":"%char_avatar%"}}}';
+  const comfy = await run(sdComfy), comfyForms = await Promise.all(ups().map(async x => [...new Uint8Array(await x.o.body.get('avatar').arrayBuffer())].join(',')));
+  // One the engine made, with no card (section 113): a portrait drawn from the record, then the faces from it.
+  const lodger = { sex: 'female', age: 64, bmiZ: 2, occupation: 'Laundress' }, ptags = W.portraitTags(lodger, 1881), folder = 'rules-people/the_lodger_x';
+  have = []; scripts = { img2img: ['ADetailer'] }; calls = [];
+  const drew = await Fc.drawPortrait(c(sdAuto), 'the lodger', folder, ptags.join(', '), Fc.seedOf('the lodger'));
+  const t2i = calls.filter(x => x.url.endsWith('/sdapi/v1/txt2img') && x.url.startsWith('/proxy/')).map(x => JSON.parse(x.o.body)), pUp = ups().map(x => [x.o.body.get('name'), x.o.body.get('label')].join(' '));
+  const lodgerFaces = await run(sdAuto, 'the lodger', undefined, undefined, { url: `/characters/${folder}/portrait.png`, folder });
+  const li2i = calls.filter(x => x.url === '/proxy/http://127.0.0.1:7860/sdapi/v1/img2img').map(x => JSON.parse(x.o.body)), lUps = ups().map(x => x.o.body.get('name'));
+  have = [];
+  const comfyNoCard = await run({ ...sdComfy }, 'Mary', undefined, undefined, { url: `/characters/${folder}/portrait.png`, folder });
+  const comfyPortrait = await Fc.drawPortrait(c(sdComfy), 'the lodger', folder, ptags.join(', '), 1);
+  const portraitOk = ptags.join(', ') === '1girl, old woman, plump, victorian, laundress, portrait, upper body, looking at viewer, simple background'
+    && W.portraitTags({ sex: 'male', age: 40, bmiZ: -1.6 }, 1910).join(', ') === '1boy, mature male, skinny, portrait, upper body, looking at viewer, simple background'
+    && W.portraitTags({ age: 8 }, null).join(', ') === 'solo, child, portrait, upper body, looking at viewer, simple background'
+    && W.portraitTags({ sex: 'female', age: 25, bmiZ: 1 }, 1850).join(', ') === '1girl, victorian, portrait, upper body, looking at viewer, simple background'
+    && drew === null && t2i.length === 1 && t2i[0].prompt === `masterpiece, best quality, ${ptags.join(', ')}` && t2i[0].negative_prompt === 'lowres' && t2i[0].seed === Fc.seedOf('the lodger')
+    && t2i[0].width === 832 && t2i[0].height === 1216 && pUp.length === 1 && pUp[0] === `${folder} portrait`
+    && lodgerFaces === `Made 6 of the lodger's 6 faces; the others were there.` && li2i.length === 6 && li2i.every(b => b.init_images[0] === b64(drawn) && b.prompt.startsWith('masterpiece, best quality, ') && !b.prompt.includes('red hair') && b.negative_prompt === 'lowres')
+    && lUps.length === 6 && lUps.every(n => n === folder) && /takes a card's picture only; Mary has no card/.test(comfyNoCard) && /needs AI Horde, Forge or AUTOMATIC1111 \(your image source: comfy\)/.test(comfyPortrait);
+  // AI Horde (section 115): the face marked once is redrawn by inpainting through the anonymous queue, two at a time; a picture
+  // blanked as NSFW, or no worker able, stops with why.
+  let hordeBodies = [], hordeState = 'ok', live = 0, most = 0;
+  const painter = { sourceAndMask: async (pic, w, h, box) => ({ image: `IMG${w}x${h}`, mask: `MASK${box.x},${box.y},${box.w},${box.h}` }), png: async (b) => new Blob([await b.arrayBuffer()], { type: 'image/png' }) };
+  const hordeFetch = globalThis.fetch;
+  globalThis.fetch = async (u, o = {}) => {
+    const url = String(u);
+    if (url === 'https://aihorde.net/api/v2/generate/async') { hordeBodies.push({ body: JSON.parse(o.body), headers: o.headers }); live++; most = Math.max(most, live); return { ok: true, json: async () => ({ id: `job${hordeBodies.length}` }) }; }
+    if (url.startsWith('https://aihorde.net/api/v2/generate/check/')) { await new Promise(r => setTimeout(r, 5)); return { ok: true, json: async () => hordeState === 'impossible' ? { done: false, is_possible: false } : { done: true, is_possible: true, queue_position: 0, wait_time: 0 } }; }
+    if (url.startsWith('https://aihorde.net/api/v2/generate/status/')) { live--; return { ok: true, json: async () => ({ generations: [{ img: b64(drawn), censored: hordeState === 'censored' }] }) }; }
+    return hordeFetch(u, o);
+  };
+  const sdHorde = { ...sdAuto, source: 'horde', sampler: 'k_dpmpp_2m', horde_karras: true, horde_nsfw: false };
+  const box = { x: 0.3, y: 0.1, w: 0.4, h: 0.3 }, hc = (more) => ({ ...c(sdHorde, more), paint: painter, hordeEveryMs: 0 });
+  have = [];
+  const hordeSaid = await Fc.makeFaces(hc(), 'Mary', { ...mary, box }, looks, () => {});
+  const hb = hordeBodies[0]?.body ?? {}, hUps = ups().length, mostFaces = most, anonKey = hordeBodies[0]?.headers?.apikey;
+  const noBox = await Fc.lookPicture(hc(), 'Mary', mary, 'smile', 1);
+  have = []; hordeState = 'censored';
+  const blanked = await Fc.makeFaces(hc(), 'Mary', { ...mary, box }, looks, () => {});
+  have = []; hordeState = 'impossible';
+  const impossible = await Fc.lookPicture(hc(), 'Mary', { ...mary, box }, 'smile', 1, () => {});
+  hordeState = 'ok'; hordeBodies = [];
+  const hordePortrait = await Fc.drawPortrait(hc(), 'the lodger', folder, ptags.join(', '), 7);
+  const hp = hordeBodies[0]?.body ?? {};
+  hordeBodies = []; await Fc.drawPortrait({ ...hc(), hordeKey: 'k123' }, 'the lodger', folder, ptags.join(', '), 7);
+  const keyed = hordeBodies[0]?.headers?.apikey;
+  const hordeChecks = hordeSaid === `Made 6 of Mary's 6 faces; the others were there.` && mostFaces === 2 && hUps === 6
+    && hb.source_processing === 'inpainting' && hb.source_image === 'IMG832x1216' && hb.source_mask === 'MASK0.3,0.1,0.4,0.3' && hb.r2 === false && hb.nsfw === false
+    && JSON.stringify(hb.models) === '["Animagine XL"]' && hb.params?.denoising_strength === 0.5 && hb.params?.seed === String(Fc.seedOf('Mary')) && hb.params?.sampler_name === 'k_dpmpp_2m'
+    && hb.params?.width === 832 && hb.params?.height === 1216 && hb.params?.karras === true
+    && hb.prompt?.startsWith('masterpiece, best quality, Mary, 1girl, red hair, ') && hb.prompt?.endsWith(' ### lowres, freckles')
+    && /has not been marked/.test(noBox) && /blanked the picture as NSFW, so nothing was saved/.test(blanked) && /none runs that model with inpainting/.test(impossible)
+    && hordePortrait === null && !hp.source_image && hp.prompt === `masterpiece, best quality, ${ptags.join(', ')} ### lowres` && hp.params?.width === 832
+    && anonKey === '0000000000' && keyed === 'k123' && JSON.stringify(Fc.hordeSize(512, 768)) === '[512,768]' && JSON.stringify(Fc.hordeSize(1024, 1536)) === '[832,1216]' && JSON.stringify(Fc.hordeSize(400, 600)) === '[384,576]';
+  globalThis.fetch = realFetch; globalThis.createImageBitmap = realBitmap;
+  const stopsOk = again === `Mary has all 6 faces.` && againCalls === 1 && authOk
+    && /did not answer.*enableCorsProxy: true/.test(dead) && deadUps === 0 && /no ADetailer/.test(noAd) && noAdUps === 0
+    && /\(novel\) cannot keep the card picture/.test(novel) && novelCalls === 0 && /only in a chat with them alone; open John's own chat/.test(other) && /only in a chat with them alone/.test(group)
+    && /does not take the character's picture \(%char_avatar%\)/.test(noAvatar) && noAvatarUps === 0
+    && comfy === `Made 6 of Mary's 6 faces; the others were there.` && comfyForms.length === 6 && comfyForms.every(b => b === [...drawn].join(','))
+    && slash.startsWith(`/imagine quiet=true gallery=false extend=false seed=${Fc.seedOf('Mary')} negative="freckles" 1girl , red hair, `) && !slash.includes('|') && !slash.includes('masterpiece')
+    && Fc.joinPrompts('best quality, absurdres, aesthetic,', '1girl') === 'best quality, absurdres, aesthetic, 1girl' && Fc.joinPrompts('score_9, {prompt}, detailed', 'smile', '{prompt}') === 'score_9, smile, detailed'
+    && Fc.joinPrompts('', 'smile') === 'smile' && Fc.joinPrompts('best quality,', '') === 'best quality,';
+  if (!(firstOk && stopsOk && portraitOk && hordeChecks)) { miss++; console.log(`MISS the faces made: ${JSON.stringify({ firstOk, portraitOk, hordeChecks, hordeSaid, most, hUps, hb: { ...hb, source_image: hb.source_image, prompt: hb.prompt }, noBox, blanked, impossible, hordePortrait, hp, ptags, drew, t2i: t2i[0], pUp, lodgerFaces, li2i: li2i.length, comfyNoCard, comfyPortrait, said, toasts, i2i: i2i.length, viaProxy: viaProxy.length, body0: bodies[0] && { ...bodies[0], init_images: undefined }, forms: forms.map(f => ({ ...f, headers: undefined })), again, againCalls, authOk, dead, deadUps, noAd, novel, novelCalls, other, group, noAvatar, comfy, slash })}`); }
+}
+// N111: hair and eyes from genes (colouring.ts; sections 114, 119): the IrisPlex model gives the Slovenes of Kastelic et al.
+// 2013 the probabilities published for them; drawn over England's allele frequencies the eyes come back to the model's shares
+// (69.9 % blue, 8.7 % intermediate, 21.4 % brown) and the hair, given the eyes, to Beddoe's recruits; a child's alleles one from
+// each parent; the same person drawn the same, another chat another; one from Africa gets eyes from Africa's alleles and no
+// hair (none counted there); none without a seed; the dress named by trade and year; the portrait takes the tags.
+{
+  const C = await import('../src/rules/colouring.js'), W = await import('../src/rules/face-words.js'), B = await import('../src/rules/body-engine.js');
+  const near = (a, b, tol) => Math.abs(a - b) <= tol;
+  // Slovenes 1, 5, 23 and 104 of Supplementary Table 3, as allele counts.
+  const rows = [[[0, 0, 1, 0, 1, 0], [0.945, 0.045, 0.011]], [[0, 0, 1, 2, 0, 0], [0.008, 0.071, 0.921]], [[0, 0, 0, 1, 0, 2], [0.393, 0.152, 0.455]], [[0, 0, 0, 2, 1, 1], [0.002, 0.034, 0.964]]];
+  const slovenes = rows.every(([g, p]) => C.eyeOdds(g).every((x, i) => near(x, p[i], 0.001)));
+  const n = 20000, rng = B.seededRng('genes test'), count = {}, add = (k) => { count[k] = (count[k] ?? 0) + 1; };
+  for (let i = 0; i < n; i++) { const c = C.drawColouring(rng, 'GBR'); const eye = /blue|^grey/.test(c.eyes) ? 'B' : /brown eyes$/.test(c.eyes) && !/hazel/.test(c.eyes) ? 'D' : 'I'; add(eye); add(c.eyes); add(`${eye} ${c.hair}`); }
+  const share = (k) => (count[k] ?? 0) / n;
+  const redGivenBlue = share('B red hair') / share('B'), blackGivenBrown = share('D black hair') / share('D');
+  const kids = Array.from({ length: 4000 }, () => C.childGenotype([1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1], rng)), mean = kids.flat().reduce((a, b) => a + b, 0) / kids.flat().length;
+  const one = C.colouringOf('the lodger', 'chat A', undefined, true), again = C.colouringOf('the lodger', 'chat A', 'Europe/North America', true);
+  const others = new Set(['chat B', 'chat C', 'chat D', 'chat E', 'chat F'].map(id => JSON.stringify(C.colouringOf('the lodger', id, undefined, true))));
+  const african = C.colouringOf('Kofi', 'chat A', 'Africa', true, 30);
+  // An intermediate eye a third each dark grey, green and light hazel; a blue one half blue, half grey.
+  const thirds = ['dark grey eyes', 'green eyes', 'light hazel eyes'].every(e => near(share(e) / share('I'), 1 / 3, 0.05)) && near(share('blue eyes') / share('B'), 0.5, 0.02);
+  const ok = slovenes && thirds && near(share('B'), 0.699, 0.012) && near(share('I'), 0.087, 0.008) && near(share('D'), 0.214, 0.012)
+    && near(redGivenBlue, 237 / 5519, 0.006) && near(blackGivenBrown, 251 / 3541, 0.012)
+    && JSON.stringify(C.childGenotype([2, 2, 2, 2, 2, 2], [0, 0, 0, 0, 0, 0], rng)) === '[1,1,1,1,1,1]' && near(mean, 1, 0.03)
+    && one !== null && JSON.stringify(one) === JSON.stringify(again) && others.size > 1 && one.genotype.length === 6
+    && african !== null && african.hair === undefined && african.eyes === 'brown eyes' && C.colouringOf('the lodger', 'chat A', undefined, false) === null
+    && C.dressOf('Laundress', 1881) === 'the working dress of a laundress of 1881' && C.dressOf(undefined, null) === 'everyday dress'
+    && W.portraitTags({ sex: 'female', age: 30, occupation: 'Laundress' }, 1881, { eyes: 'grey eyes', hair: 'fair hair', hairTag: 'blonde hair', eyeTag: 'grey eyes' }).join(', ') === '1girl, victorian, blonde hair, grey eyes, laundress, portrait, upper body, looking at viewer, simple background'
+    && W.portraitTags({ sex: 'male', age: 30 }, 1881, { eyes: 'brown eyes', eyeTag: 'brown eyes' }).join(', ') === '1boy, victorian, brown eyes, portrait, upper body, looking at viewer, simple background';
+  if (!ok) { miss++; console.log(`MISS hair and eyes drawn: ${JSON.stringify({ slovenes, odds: rows.map(([g]) => C.eyeOdds(g)), B: share('B'), I: share('I'), D: share('D'), redGivenBlue, blackGivenBrown, mean, one, african })}`); }
+}
+// N112: faces drawn in the background (faces.ts FaceQueue; section 116): asked for as the box needs them, each once a session,
+// the first asked first, two at a time; one waiting for its face box held until the box is marked; a failure told once and
+// not tried again in the session.
+{
+  const Fc = await import('../src/faces.js');
+  const A = { 4: 1, 7: 1 }, calm = { 12: 0.5, 25: 0.5 }, B = { 1: 1, 2: 1 };
+  let live = 0, most = 0; const drawn = [], told = [], boxless = new Set(['John']);
+  const q = new Fc.FaceQueue({ atOnce: () => 2, failed: (job, why) => told.push(`${job.who}: ${why}`), draw: async (job) => {
+    live++; most = Math.max(most, live); await new Promise(r => setTimeout(r, 5)); live--;
+    if (boxless.has(job.who)) return 'box';
+    if (job.who === 'Ann') return 'no backend';
+    drawn.push(`${job.who} ${JSON.stringify(job.face)}`); return 'done';
+  } });
+  q.want('Mary', [A, calm]); q.want('Mary', [A, calm, B]); q.want('John', [A]); q.want('Ann', [calm]);
+  await q.idle();
+  const before = [...drawn], waiting = q.waiting();
+  boxless.delete('John'); q.marked('John'); await q.idle();
+  q.want('Ann', [calm]); await q.idle();
+  const ok = JSON.stringify(before) === JSON.stringify(['Mary {"4":1,"7":1}', 'Mary {"12":0.5,"25":0.5}', 'Mary {"1":1,"2":1}']) && most === 2
+    && JSON.stringify(waiting) === '["John"]' && drawn.length === 4 && drawn[3] === 'John {"4":1,"7":1}' && q.waiting().length === 0
+    && told.length === 1 && told[0] === 'Ann: no backend';
+  if (!ok) { miss++; console.log(`MISS faces in the background: ${JSON.stringify({ before, drawn, waiting, most, told })}`); }
+}
+// N113: the Middle East and greying (colouring.ts; sections 118, 119): over the Middle East's alleles the eyes come back to the
+// model's shares (6.7 % blue, 4.8 % intermediate, 88.5 % brown) and the hair, given brown eyes, to the Levant's dark-eyed;
+// the hair half grey at the age drawn from a normal whose share by 50 is 23 % (6 % for Africa and the Asias), so about 23 % grey
+// at 50, few at 30, most at 70; the same person the same at any age but for the grey, "grey hair, once …" for the narrator and
+// "grey hair" for the picture.
+{
+  const C = await import('../src/rules/colouring.js'), B = await import('../src/rules/body-engine.js');
+  const n = 20000, rng = B.seededRng('levant test'), count = {}, add = (k) => { count[k] = (count[k] ?? 0) + 1; };
+  for (let i = 0; i < n; i++) { const c = C.drawColouring(rng, 'MID'); const eye = /blue|^grey/.test(c.eyes) ? 'B' : c.eyes === 'brown eyes' ? 'D' : 'I'; add(eye); add(`${eye} ${c.hair}`); }
+  const share = (k) => (count[k] ?? 0) / n, near = (a, b, tol) => Math.abs(a - b) <= tol;
+  const greyAt = (age, people = 'GBR') => { const r = B.seededRng(`grey ${age} ${people}`); let g = 0; for (let i = 0; i < n; i++) if (C.drawColouring(r, people, age).grey) g++; return g / n; };
+  const g30 = greyAt(30), g50 = greyAt(50), g70 = greyAt(70), afr50 = greyAt(50, 'AFR');
+  // The first of P0, P1, … not yet grey at 30, then the same person at 95.
+  const who = Array.from({ length: 50 }, (_, i) => `P${i}`).find(w => !C.colouringOf(w, 'chat A', 'Middle East', true, 30)?.grey);
+  const young = C.colouringOf(who, 'chat A', 'Middle East', true, 30), old = C.colouringOf(who, 'chat A', 'Middle East', true, 95);
+  const ok = near(share('B'), 0.067, 0.008) && near(share('I'), 0.048, 0.007) && near(share('D'), 0.885, 0.01) && near(share('D black hair') / share('D'), 241 / 419, 0.015)
+    && near(C.probit(0.23), -0.7388, 0.0005) && near(C.probit(0.975), 1.95996, 0.0001)
+    && near(g50, 0.23, 0.012) && g30 < 0.02 && near(g70, 0.82, 0.015) && near(afr50, 0.06, 0.008)
+    && young !== null && !young.grey && old?.grey === true && old.hairTag === 'grey hair' && old.hair === `grey hair, once ${young.hair.replace(/ hair$/, '')}` && old.eyes === young.eyes
+    && C.peopleOf(undefined) === 'GBR' && C.peopleOf('Middle East') === 'MID' && C.peopleOf('South Asia') === 'SAS' && C.peopleOf('Atlantis') === null
+    && C.hairCountsFor('GBR') === C.BEDDOE_EW && C.hairCountsFor('MID') === C.BEDDOE_LEVANT && C.hairCountsFor('SAS') === null;
+  if (!ok) { miss++; console.log(`MISS other places and greying: ${JSON.stringify({ count, g30, g50, g70, afr50, young, old })}`); }
+}
+// N114: the count's year for the stage, the society block and the town (world-count.ts figuresIn; section 118): in the seed's
+// year the seed's own share and kills; a kind of the returned grows, and what is found with it; the records' last year takes
+// the year before; outside the count, the seed's own. The institutions as the year had them: before 1856 the county police
+// only allowed; before 1855 the papers still taxed, before 1861 the paper duty still on; before 1872 Medical Officers of Health
+// only where a town had one.
+{
+  const So = await import('../src/rules/society.js'), Sd = await import('../src/rules/seed.js'), Wc = await import('../src/rules/world-count.js');
+  const plan = Sd.drawStart('EW1881-BH.RA-N4-D1-K5-7f2c'), rows = Wc.yearByYear(plan.year, 1921, plan.share, plan.deaths, Sd.kindGrowth(plan));
+  const f81 = Wc.figuresIn(rows, 1881, plan), f00 = Wc.figuresIn(rows, 1900, plan), f21 = Wc.figuresIn(rows, 1921, plan), f20 = Wc.figuresIn(rows, 1920, plan), out = Wc.figuresIn(null, 1950, plan);
+  const rel = (a, b) => Math.abs(a / b - 1);
+  const stage = (code, y) => So.societyOf(Sd.drawStart(code), y).lines[2];
+  const u50 = stage('EW1881-BH.RA-N4-D0-K5-7f2c', 1850), u60 = stage('EW1881-BH.RA-N4-D0-K5-7f2c', 1860);
+  const r50 = stage('EW1881-BH.RA-N4-D1-K5-7f2c', 1850), r58 = stage('EW1881-BH.RA-N4-D1-K5-7f2c', 1858), r81 = stage('EW1881-BH.RA-N4-D1-K5-7f2c', 1881);
+  const e60 = stage('EW1881-BH.RA-N3-D3-K5-7f2c', 1860), e81 = stage('EW1881-BH.RA-N3-D3-K5-7f2c', 1881);
+  const ok = rel(f81.share, plan.share) < 0.02 && rel(f81.deaths, plan.deaths) < 0.02 && f00.share > f81.share * 5 && f00.deaths > f81.deaths
+    && f21.share === f20.share && f21.deaths === f20.deaths && out.share === plan.share && out.deaths === plan.deaths
+    && /allowed since 1839, required only from 1856/.test(u50) && /compulsory since 1856/.test(u60)
+    && /still dear under the stamp duty/.test(r50) && /cheap since the stamp duty went in 1855\)/.test(r58) && /stamp and paper duties went, 1855 and 1861/.test(r81) && /Whitechapel in 1888/.test(r50)
+    && /where a town has one/.test(e60) && /in every district since the Public Health Acts/.test(e81);
+  if (!ok) { miss++; console.log(`MISS the count's year in society: ${JSON.stringify({ plan: { share: plan.share, deaths: plan.deaths }, f81, f00, f20, f21, u50, r50, r58, e60 })}`); }
+}
+// N115: families (section 120; rules-tools.ts recordKin, colouring.ts genotypeOf): NewCharacter keeps the mother, father and
+// brothers and sisters the story fixes, on a person met before too; a child carries only what its parents could give, one copy
+// from each; brown-eyed parents of two brown copies each have children of two; the first of a family keeps the genes it was
+// drawn with, and brothers and sisters inherit from the same unseen two, so they are alike as siblings are (their copies at
+// HERC2 correlated about one half) and strangers are not; a parent of a parent is followed; a loop of names stops.
+{
+  const C = await import('../src/rules/colouring.js');
+  fresh();
+  await run('NewCharacter', { who: 'Ann', sex: 'female', age: 30 }); await run('NewCharacter', { who: 'Will', sex: 'male', age: 12, sibling_of: 'Ann' });
+  await run('NewCharacter', { who: 'Tom', sex: 'male', age: 5, mother: 'Ann', father: 'Ned' }); await run('NewCharacter', { who: 'Ann', sibling_of: 'Will' });
+  const ppl = ctx.chatMetadata.rulesEngine.state.people;
+  const kinOk = ppl.Will?.kin?.family === 'Ann' && ppl.Ann?.kin?.family === 'Ann' && ppl.Tom?.kin?.mother === 'Ann' && ppl.Tom?.kin?.father === 'Ned';
+  const fits = (c, m, f) => c.every((x, i) => x >= (m[i] === 2 ? 1 : 0) + (f[i] === 2 ? 1 : 0) && x <= (m[i] > 0 ? 1 : 0) + (f[i] > 0 ? 1 : 0));
+  const people = { Mum: {}, Dad: {} }, kids = [];
+  for (let i = 0; i < 200; i++) { people[`K${i}`] = { kin: { mother: 'Mum', father: 'Dad' } }; kids.push(C.genotypeOf(`K${i}`, 'chat A', people)); }
+  const mum = C.genotypeOf('Mum', 'chat A', people), dad = C.genotypeOf('Dad', 'chat A', people);
+  const mendel = kids.every(k => fits(k, mum, dad));
+  const brownKids = Array.from({ length: 50 }, (_, i) => C.childGenotype([0, 0, 0, 2, 0, 0], [0, 0, 0, 2, 0, 0], () => (i * 0.37) % 1)).every(k => k[3] === 2);
+  // Families: P{i} first, S{i} their sibling; HERC2 (index 3) correlated across siblings, not across strangers.
+  const fam = {}; for (let i = 0; i < 600; i++) { fam[`P${i}`] = { kin: { family: `P${i}` } }; fam[`S${i}`] = { kin: { family: `P${i}` } }; fam[`X${i}`] = {}; }
+  const corr = (xs, ys) => { const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length; let sxy = 0, sxx = 0, syy = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; syy += (ys[i] - my) ** 2; }); return sxy / Math.sqrt(sxx * syy); };
+  const first = [], sib = [], stranger = [];
+  for (let i = 0; i < 600; i++) { first.push(C.genotypeOf(`P${i}`, 'chat A', fam)[3]); sib.push(C.genotypeOf(`S${i}`, 'chat A', fam)[3]); stranger.push(C.genotypeOf(`X${i}`, 'chat A', fam)[3]); }
+  const rSib = corr(first, sib), rStranger = corr(first, stranger);
+  const firstStays = Array.from({ length: 20 }, (_, i) => JSON.stringify(C.genotypeOf(`P${i}`, 'chat A', fam)) === JSON.stringify(C.genotypeOf(`P${i}`, 'chat A', { [`P${i}`]: {} }))).every(Boolean);
+  const tree = { Gran: {}, Mum: { kin: { mother: 'Gran' } }, Kid: { kin: { mother: 'Mum' } } }, loop = { A: { kin: { mother: 'B' } }, B: { kin: { mother: 'A' } } };
+  const kid = C.genotypeOf('Kid', 'chat A', tree), mumT = C.genotypeOf('Mum', 'chat A', tree), loopOk = C.genotypeOf('A', 'chat A', loop).length === 6;
+  const ok = kinOk && mendel && brownKids && rSib > 0.35 && Math.abs(rStranger) < 0.1 && firstStays && kid.every((x, i) => x <= (mumT[i] > 0 ? 1 : 0) + 1) && loopOk;
+  if (!ok) { miss++; console.log(`MISS families: ${JSON.stringify({ kinOk, kin: { Ann: ppl.Ann?.kin, Will: ppl.Will?.kin, Tom: ppl.Tom?.kin }, mendel, brownKids, rSib, rStranger, firstStays, loopOk })}`); }
+}
+console.log(`245 checks, ${miss} miss(es)`);
 process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

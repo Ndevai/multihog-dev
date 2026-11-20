@@ -5,7 +5,7 @@
 // has written an outcome defends it (Zhang et al. 2023), so the questions come before the reply. The narrator still calls
 // tools itself; a call already made here returns the same result (the turn's decision ledger).
 import { turnKey, placeOf, lineOf } from './turn.js';
-import { MAGIC_TOOLS, REGISTRY, fittedTool, sceneTools, storyText, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, scenePosition, setScenePosition, restoreTurnStart, restoreLineStart, keepResult, keepStart, hasStart, passRanFor, keepPass, keptPass, type Args } from './rules-tools.js';
+import { MAGIC_TOOLS, REGISTRY, fittedTool, sceneTools, storyText, LAST_DRAWS, clearDraws, store, storyTime, setStoryTime, setPresent, scenePosition, setScenePosition, restoreTurnStart, restoreLineStart, keepResult, keepStart, hasStart, passRanFor, keepPass, keptPass, type Args } from './rules-tools.js';
 import { parseStoryTime, findStoryTime } from './clock.js';
 import { placeIn } from './weather.js';
 import { takeFlags } from './audit-flags.js';
@@ -329,7 +329,7 @@ async function passOnce(chat: STMessage[], sendRaw: Send, tracker = '', choose?:
     // The tool and subject of each call that has run this turn and stands (a refused call leaves its key open).
     const used = new Map<string, Set<string>>(), usedKeys = () => used;
     const markUsed = (c: Call, result: string) => { const k = subjectOf(c.tool); if (!k || REFUSED.test(result)) return; (used.get(c.tool) ?? used.set(c.tool, new Set()).get(c.tool)!).add(String(c.args[k] ?? c.args.question ?? '')); };
-    const runAll = async (list: Call[]) => { for (const c of list) { await held(Promise.resolve()); clearDraws(); const result = String(await REGISTRY.get(c.tool)!.exec(c.args as Args)); results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) }); RAN++; markUsed(c, result); } };
+    const runAll = async (list: Call[]) => { setPresent(present, playerName((ctx as { name1?: string }).name1, tracker)); for (const c of list) { await held(Promise.resolve()); clearDraws(); const result = String(await REGISTRY.get(c.tool)!.exec(c.args as Args)); results.push({ tool: c.tool, result, draws: LAST_DRAWS.map(x => Math.round(x * 1e4) / 1e4) }); RAN++; markUsed(c, result); } };
     let calls: Call[], time: number | null = null, present: string[] | undefined;
     // A pass that has run for this place in the chat (the same line, or the line edited in place) is redone from the line's
     // start: a swipe's state may hold the calls (the follow-up generation after the narrator's tools saved it with their

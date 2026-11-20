@@ -59,6 +59,20 @@ export function cardRole(p) {
     const noun = p.age < 18 ? (p.sex === 'female' ? 'girl' : p.sex === 'male' ? 'boy' : 'child') : p.sex === 'female' ? 'woman' : p.sex === 'male' ? 'man' : 'adult';
     return `${Math.floor(p.age)}-year-old ${noun}`;
 }
+/** Whether `who` spoke before message `at` of the whole chat, not only the part SillyTavern draws (by default its last 100
+ * messages): a message of theirs, or a quotation the reply named as theirs (readReply's speakers, the swipe shown). The
+ * first-meeting card needs it: the first of their lines drawn on the page is their first in the chat only when no earlier
+ * message holds one. */
+export function metBefore(chat, at, who) {
+    for (let i = 0; i < Math.min(at, chat.length); i++) {
+        const m = chat[i];
+        if (!m.is_user && m.name === who)
+            return true;
+        if (m.extra?.rulesSpeakers?.[m.swipe_id ?? 0]?.some(s => s.who === who))
+            return true;
+    }
+    return false;
+}
 /** The scene above the box, as a visual novel's background tells it: where, when, and the light there (the engine's place,
  * story clock and sky; any of them left out when unknown). */
 export const sceneLine = (place, time, light) => [place, time, light].filter((x) => !!x && !!x.trim()).join(' · ');
@@ -78,6 +92,10 @@ export const personName = (w) => capital(w) && !closed(w) && (GIVEN_NAMES[w.toLo
  * the auxiliary has its subject next ("Will you come?"). */
 const nameAt = (ws, i, sentenceStart) => personName(ws[i]) || (capital(ws[i]) && GIVEN_NAMES[ws[i].toLowerCase()] != null
     && (!sentenceStart || (!!ws[i + 1] && !NOMINATIVE.test(ws[i + 1]) && (AUXILIARY.test(ws[i + 1]) || /^\p{Ll}+(?:s|ed)$/u.test(ws[i + 1])))));
+// A title before a name is part of it ("Mrs Pike", "Dr Ward"): the plate reads the two words, not the title alone. A title
+// with no capitalised word after it is left to the rules below (a common word, "Mother sighs", names no one).
+const TITLE = /^(?:Mr|Mrs|Miss|Ms|Mx|Dr|Sir|Dame|Lady|Lord|Madam|Madame|Master|Mistress|Rev|Reverend|Father|Mother|Sister|Brother|Uncle|Aunt|Captain|Inspector|Sergeant|Constable|Professor|Old|Young)\.?$/;
+const titled = (ws, i) => TITLE.test(ws[i]) && !!ws[i + 1] && capital(ws[i + 1]) && !closed(ws[i + 1]) ? `${ws[i]} ${ws[i + 1]}` : null;
 const SENTENCE_END = /[.!?…]+["”’)\]*_]*(?:\s+|$)/g;
 const words = (t) => [...t.matchAll(/[\p{L}\p{N}'’-]+/gu)].map(m => m[0]);
 /** The person a stretch's last sentence is about: its subject, the first name or nominative pronoun among its first three
@@ -101,6 +119,9 @@ export function subjectOf(sentence, names, player, named) {
             }
             return null;
         }
+        const t = titled(ws, i);
+        if (t)
+            return names.get(t) ?? [...names.values()].find(n => n.endsWith(` ${ws[i + 1]}`) || n === t) ?? t;
         if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0)))
             return names.get(w) ?? w;
         // An article opens a noun phrase that names someone without a name ("The old guard says"): its words up to the verb
@@ -135,7 +156,9 @@ export function speakersOf(paragraphs, cast, named = []) {
     const note = (text) => {
         for (const sentence of text.split(SENTENCE_END)) {
             const ws = words(sentence).map(x => x.replace(/['’]s$/, ''));
-            ws.forEach((w, i) => { if (capital(w) && (names.has(w) || nameAt(ws, i, i === 0)))
+            ws.forEach((w, i) => { const t = titled(ws, i); if (t)
+                named.push(names.get(t) ?? t);
+            else if (capital(w) && !(i > 0 && titled(ws, i - 1)) && (names.has(w) || nameAt(ws, i, i === 0)))
                 named.push(names.get(w) ?? w); });
         }
     };

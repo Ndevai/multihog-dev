@@ -357,7 +357,7 @@ export function createBody(b: BodyParams = {}): ThermalBody {
  * Advances the body dtime seconds in env: { tdb, tr, rh %, v m/s, clo, iclo, par, posture: standing|sitting|lying }; tdb, tr, rh,
  * v, clo and iclo take one number or 17 (SEGMENTS order). Returns the step's heat and water figures.
  */
-export function step(body: ThermalBody, env: ThermalEnv, dtime = 60, { passive = false, avaZero = false, shivStopsBelow = null as number | null } = {}): StepResult {
+export function step(body: ThermalBody, env: ThermalEnv, dtime = 60, { passive = false, avaZero = false, shivStopsBelow = null as number | null, metScale = 1 } = {}): StepResult {
     const tdb = arr(env.tdb ?? 28.8), tr = arr(env.tr ?? env.tdb ?? 28.8), rh = arr(env.rh ?? 50), v = arr(env.v ?? 0.1);
     const clo = arr(env.clo ?? 0), iclo = arr(env.iclo ?? 0.45), par = env.par ?? 1.25, posture = env.posture ?? 'standing';
     const tcr = INDEX.core.map(k => body.t[k]), tsk = INDEX.skin.map(k => body.t[k]);
@@ -376,7 +376,9 @@ export function step(body: ThermalBody, env: ThermalEnv, dtime = 60, { passive =
     if (avaZero && passive) avaH = avaF = 0;
     const qNst = nonshivering(errSk, body);
     const bmr = basalMet(body.height, body.weight, body.age, body.sex);
-    const mCr = MBF_CR.map(f => f * bmr), mMs = MBF_MS.map(f => f * bmr), mFat = MBF_FAT.map(f => f * bmr), mSk = MBF_SK.map(f => f * bmr);
+    // Added (section 107): metScale scales the body's whole heat production, basal and work, for a body with no warmth of its
+    // own (seed.ts coldMetShare).
+    const mCr = MBF_CR.map(f => f * bmr * metScale), mMs = MBF_MS.map(f => f * bmr * metScale), mFat = MBF_FAT.map(f => f * bmr * metScale), mSk = MBF_SK.map(f => f * bmr * metScale);
     const qBmrTotal = sum(mCr) + sum(mMs) + sum(mFat) + sum(mSk);
     // Added to JOS-3: peak shivering = 4.9 × resting metabolism in total (Eyolfson et al. 2001, Eur J Appl Physiol 84:100),
     // so shivering heat ≤ 3.9 × basal.
@@ -385,7 +387,7 @@ export function step(body: ThermalBody, env: ThermalEnv, dtime = 60, { passive =
     if (shivSum > shivCap) qShiv = qShiv.map(x => x * shivCap / shivSum);
     if (shivStopsBelow != null && tcr[4] < shivStopsBelow) qShiv = qShiv.map(() => 0);
     if (par < 1) throw new Error('par must be 1 or more');
-    const qWork = WORKF.map(f => f * (par - 1) * qBmrTotal);
+    const qWork = WORKF.map(f => f * (par - 1) * qBmrTotal);  // qBmrTotal already scaled
     const qCr = [...mCr], qMs = [...mMs];
     const r = bfbRate(body.height, body.weight, body.age, body.ci);
     const bfCore = BFB_CORE.map(x => x * r), bfMuscle = BFB_MUSCLE.map(x => x * r), bfFat = BFB_FAT.map(x => x * r);

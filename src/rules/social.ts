@@ -203,6 +203,17 @@ export const shareAround = (mean: number, gauss: () => number) => Math.max(0, Ma
 // narratives, imagination, suggestive interviews), about 30 % go on to a partial or complete false memory (Lindsay et al.
 // 2004, as reviewed there).
 export const MISINFO_TAKEN = 0.47, FALSE_EVENT_TAKEN = 0.30;
+// A memory the world holds otherwise, met with what the world holds (a receipt, a letter, the place itself): Blank & Launay
+// 2014 (J Appl Res Mem Cogn 3:77; meta-analysis of 25 post-warning studies, 155 effect sizes). Across 25 direct comparisons
+// from 10 papers, misled people endorsed the false detail 42.3 % of the time without a warning against 17.7 % for controls,
+// and 28.5 % against 19.5 % after one (their §3.4): of the 24.6 points the false detail added, 9.1 were left, so 63 % of
+// those it had misled let it go. A warning that also explains how the misleading came about ("enlightenment") left no
+// misinformation effect: endorsement odds ratio 1.1 (95 % CI 0.6–1.9, 5 effect sizes; Figure 6) against 2.10 for warnings of
+// every kind (Figure 3); laid on the post-warning rates, 1.1 leaves 1.5 of the 24.6 points, so 94 % let it go. Warnings that
+// discredit the source did no better than others (odds ratios 2.1 and 2.1, Figure 7). Evidence a person meets for themselves
+// acts as a warning does [ASSUMED]. Otherwise they hold both (the continued influence of a corrected belief: Walter &
+// Tukachinsky 2020, Commun Res 47:155).
+export const CORRECTION_TAKEN = 0.63, CORRECTION_EXPLAINED_TAKEN = 0.94;
 
 // What people in a country think of an act (World Values Survey wave 7, 2017–2022; data/wvs7.ts): the share who call it never
 // justifiable, 1 on a 1–10 scale. A person of the setting condemns it outright with that chance; used for story years from

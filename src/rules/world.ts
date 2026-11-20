@@ -8,6 +8,8 @@ import { checkArgs, str, type Props } from './tool-schema.js';
 import { creatureId } from './df/index.js';
 import { SPEECH_OVERRIDE } from './body-engine.js';
 import { distKm } from './weather.js';
+import { TELL_SENSES, TELL_WHEN, BODY, type Tell } from './tells.js';
+import { sheetLines } from './kind-sheet.js';
 
 export const KINDS = ['creature', 'people', 'place', 'institution', 'technology', 'magic', 'event'] as const;
 export const DOMAINS = ['wildlife and danger', 'warfare', 'settlement and building', 'law and government', 'religion and folklore', 'language and names', 'trade and prices', 'medicine', 'daily life'] as const;
@@ -32,11 +34,19 @@ export const ENTRY: Props = {
     speaks: { type: 'boolean', description: 'For a creature or a people: it talks' },
     active: { type: 'string', enum: ACTIVE },
     weakness: { type: 'string', enum: WEAKNESS },
+    body: { type: 'array', items: { type: 'string', enum: Object.values(BODY).map(b => b.token) }, description: 'For a kind that passes for people: the human functions its body lacks; the engine computes what shows of them' },
+    tells: { type: 'array', description: 'For a kind that passes for people (or for anything else): what shows it, as laws of nature, 0–6', items: { type: 'object', properties: {
+        sign: str('What one of the kind shows, as a viewer would put it ("his breath leaves no mist")'),
+        ordinary: str('What anyone else shows in its place ("his breath mists")'),
+        sense: { type: 'string', enum: [...TELL_SENSES] },
+        size_m: { type: 'number', description: 'For sight: the smallest dimension of the sign, m (a mist of breath 0.2; a line of dirt under a nail 0.002)' },
+        when: { type: 'string', enum: [...TELL_WHEN], description: 'The condition it needs. Default always.' },
+        known: { type: 'boolean', description: 'Known to all in the world; otherwise true but unknown, found by noticing' } }, required: ['sign', 'ordinary', 'sense'] } },
     changes: { type: 'array', items: { type: 'object', properties: { what: str('The invention'), year: { type: 'number', description: 'Its real year' }, new_year: { type: 'number', description: 'Its year in this world' }, never: { type: 'boolean', description: 'Never made in this world' } }, required: ['what', 'year'] }, description: 'Inventions this entry moves: decided by code for /world-without and /world-earlier' },
 };
 const REQUIRED = ['what', 'kind', 'cause', 'reaches', 'reflections'] as const;
 export type Entry = { what: string; kind: string; since?: number; worldwide?: boolean; lat?: number; lon?: number; radius_km?: number; cause: string; reaches: string[]; reflections: string[];
-    species?: string; speaks?: boolean; active?: string; weakness?: string; changes?: { what: string; year: number; new_year?: number; never?: boolean }[] };
+    species?: string; speaks?: boolean; active?: string; weakness?: string; tells?: Tell[]; body?: string[]; origin?: string; passing?: string; need?: string; diet?: { food: 'flesh' | 'blood'; prey: 'K' | 'S' | 'R' | 'O'; kills: boolean }; mass?: number; sheet?: import('./kind-sheet.js').KindSheet; changes?: { what: string; year: number; new_year?: number; never?: boolean }[] };
 
 /** The entry as the schema wants it, or the errors to fix. A species must be a DF creature. */
 export function checkEntry(raw: Record<string, unknown>): { entry?: Entry; errors: string[] } {
@@ -46,6 +56,7 @@ export function checkEntry(raw: Record<string, unknown>): { entry?: Entry; error
     if (args.lat != null && Math.abs(Number(args.lat)) > 90 || args.lon != null && Math.abs(Number(args.lon)) > 180) errors.push('lat is −90 to 90, lon −180 to 180');
     const n = (args.reflections as string[] | undefined)?.length ?? 0;
     if (n && (n < 1 || n > 15)) errors.push(`reflections: give 1 to 15 (got ${n})`);
+    for (const t of (args.tells as Tell[] | undefined) ?? []) if (t.sense === 'sight' && !(Number(t.size_m) > 0)) errors.push(`tells: give size_m for the sight tell "${t.sign}"`);
     return errors.length ? { errors } : { entry: args as Entry, errors };
 }
 
@@ -100,7 +111,7 @@ export function worldBlock(book: Entry[], here: { lat: number; lon: number } | n
     };
     const line = (e: Entry) => {
         const body = e.species ? `; body: ${e.species}${e.speaks === undefined ? '' : e.speaks ? ', talks' : ', speechless'}${e.active && e.active !== 'any time' ? `, active by ${e.active}` : ''}${e.weakness && e.weakness !== 'none' ? `, ${e.weakness}` : ''}${now(e)}` : '';
-        return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${areaWords(e, here)}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}`;
+        return `- ${e.what} (${e.kind}), ${e.since == null ? 'always' : `since ${e.since}`}, ${areaWords(e, here)}${body}. Cause: ${e.cause} Reaches: ${e.reaches.join(', ')}. Known to all: ${e.reflections.join(' ')}${e.sheet ? ` Its sheet (as it is, not as known): ${sheetLines(e.sheet).join(' ')}` : ''}${(e.tells ?? []).some(t => t.known) ? ` Signs known to all: ${(e.tells ?? []).filter(t => t.known).map(t => `${t.sign} (${t.ordinary} in anyone else)`).join('; ')}.` : ''}`;
     };
     return `[WORLD]\nThis world is real history with these additions. Everything else is as in real history.\n${book.map(line).join('\n')}\n[/WORLD]`;
 }

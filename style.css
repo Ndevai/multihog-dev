@@ -28,8 +28,10 @@
 .rules-era-c20 { --rules-serif: 'Rules Libre Caslon Text', 'Big Caslon', serif; --rules-nums: oldstyle-nums; font-variant-ligatures: no-common-ligatures; }
 .rules-era-now { --rules-serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif; --rules-nums: normal; }
 
-/* The note: an italic aside under the line, folded to one line (the guess, then each call's tag and words), opened to a
-   line per call with its tag in a column. font-size-adjust gives every era's face the same x-height. */
+/* The note: an italic aside under the line, folded to one line (the guess, then each kind of step once), opened to a line
+   per step with its tag in a column, its words upright in the page's ink (the player's review of 2026-11-17: the folded
+   line had every step on it, cut short with "…", and the open rows were small and pale). At SillyTavern's own text size
+   (it was 90 % of it); font-size-adjust gives every era's face the same x-height. */
 .rules-reading {
     margin: 0.4em 0 0.1em;
     padding: 0 0 0 0.75em;
@@ -37,7 +39,7 @@
     border-radius: 0;
     font-family: var(--rules-serif);
     font-style: italic;
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: var(--mainFontSize);
     font-size-adjust: 0.46;
     font-variant-numeric: var(--rules-nums, normal);
     line-height: 1.45;
@@ -55,9 +57,10 @@
 .rules-reading-label { display: none; }
 .rules-reading[open] .rules-reading-list { display: none; }
 .rules-reading[open] .rules-reading-sum:not(:has(.rules-reading-taken, .rules-reading-redone, .rules-reading-meant)) .rules-reading-label { display: inline; }
-.rules-reading-body { padding: 0.15em 0 0.25em 1.05em; }
-.rules-reading-row { display: flex; gap: 0.4em; align-items: baseline; }
-.rules-reading-row > .rules-tag { flex: none; min-width: 3.7em; }
+.rules-reading-body { padding: 0.3em 0 0.4em 1.05em; }
+.rules-reading-row { display: flex; gap: 0.6em; align-items: baseline; padding: 0.15em 0; }
+.rules-reading-row > .rules-tag { flex: none; min-width: 4.6em; }
+.rules-reading-text { font-style: normal; color: var(--SmartThemeBodyColor); }
 .rules-reading-text[title] { cursor: help; }
 .rules-reading-alts { margin: 0.3em 0 0; }
 
@@ -398,15 +401,16 @@ body.rules-box-log #rules-box-music { visibility: visible; }
    sets small type and the ▼ on the panel: 4.58:1 where the panel lets 20 % of a white background through, where the
    accent itself gives 2.6:1 (WCAG 1.4.3 asks 4.5:1 of 12 px type, 1.4.11 3:1 of a sign). Sizes in px are the look's at
    SillyTavern's 15 px font (--mainFontSize); a player who sets a larger font gets them scaled, never smaller. The box's
-   chrome is its top margin, paddings and border: 34 + 26 + 62 + 4 px. */
-body { --rules-accent: #d93167; --rules-accent-deep: #8e1240; }
-body.rules-box-night { --rules-accent-ink: #ff79a3; --rules-night-ground: rgba(8, 9, 16, 0.72); --rules-box-chrome: 126px; }
+   chrome is its margins, paddings and border: 34 + 26 + 66 + 4 + 8 px (the 8 px below it keeps the bottom brackets off the
+   message box, from the player's phone tests). */
+body { --rules-accent: #d93167; --rules-accent-deep: #8e1240; --rules-accent-ink: #ff79a3; }
+body.rules-box-night { --rules-night-ground: rgba(8, 9, 16, 0.72); --rules-box-chrome: 138px; }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now {
     --SmartThemeBodyColor: white; --SmartThemeQuoteColor: white; --SmartThemeUnderlineColor: white; --SmartThemeEmColor: darkgray;
     --SmartThemeBlurTintColor: black; --SmartThemeBotMesBlurTintColor: black; --SmartThemeUserMesBlurTintColor: black;
     --SmartThemeBorderColor: dimgray; --SmartThemeShadowColor: transparent;
     /* The bottom padding holds the menu (#rules-box-bar, drawn over it); the top margin holds the name tag. */
-    position: relative; width: calc(100% - 24px); align-self: center; box-sizing: border-box; margin: 34px 12px 0; padding: 26px 18px 62px; overflow: visible;
+    position: relative; width: calc(100% - 24px); align-self: center; box-sizing: border-box; margin: 34px 12px 8px; padding: 26px 18px 66px; overflow: visible;
     /* See-through, under white corner brackets (the player's pick of both, 2026-11-12): 74 % is the least opacity at which
        light sky blue still reads at 4.5:1 with a white background showing through (55 % gave 2.4:1). */
     border: 2px solid transparent; border-radius: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
@@ -439,11 +443,17 @@ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now span.rul
    5.61:1 on the panel's top over a white background. A whispered key word, paled to 78 % with its run, reads 4.09:1 there
    (8.67:1 at the panel's foot); the player kept the letters. */
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now mark.rules-key { background-color: transparent; color: gold; padding: 0; }
-/* The ▼ stands above the menu. */
-body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now::after { content: '▼'; position: absolute; right: 16px; bottom: 52px; font-size: max(15px, var(--mainFontSize)); color: var(--rules-accent-ink); animation: rules-next 1.1s steps(2, start) infinite; }
-body.rules-box-night.rules-box.rules-typing:not(.rules-box-log) #chat .mes.rules-now::after { content: none; }
+/* The ▼ says the stretch has all appeared. It stands after the last word, where reading ends (index.ts adds
+   .rules-advance-tri), as the player's tests on a phone placed it (the block "Verified Mobile & Night-Box Fixes", after
+   section 69), in its pink: 4.26:1 on the panel, where a sign needs 3:1 (WCAG 1.4.11). It blinks, and holds still for a
+   reader who asks for less motion. */
+.rules-advance-tri { display: none; }
+body.rules-box-night.rules-box:not(.rules-box-log):not(.rules-typing) #chat .mes.rules-now .rules-advance-tri {
+    display: inline-block; margin-left: 6px; font-size: 14px; color: #e0336a; vertical-align: baseline;
+    animation: rules-next 1.1s steps(2, start) infinite;
+}
 @keyframes rules-next { to { visibility: hidden; } }
-@media (prefers-reduced-motion: reduce) { body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-advance-tri { animation: none; } }
 
 /* The scene's three parts (index.ts showBox: clock, date, where with its light) on one line in the page look; in the night
    look a badge in the chat's top corner, the clock large over the date and the place, as some visual novels keep the day in a
@@ -465,26 +475,32 @@ body.rules-box-night.rules-box:not(.rules-box-log) .rules-scene-where { font-siz
     body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene:not(:empty) { flex-direction: row; align-items: baseline; gap: 0.6em; margin-top: 6px; padding: 0.25em 0.8em; }
     body.rules-box-night.rules-box:not(.rules-box-log) .rules-scene-clock { font-size: max(17px, calc(var(--mainFontSize) * 17 / 15)); }
 }
-/* The menu inside the box (night look): Back, the count, Next, Auto, music and Log as small words along the frame's bottom
-   edge, as Doki Doki Literature Club sets its menu; each word keeps a 44 px target (WCAG 2.5.5) and the one that is on turns
-   pink. The bar follows the chat in the page, so a negative top margin (−56 px) lays it into the box's bottom padding (62 px),
-   which holds it. SillyTavern stacks the chat at layer 30, so the menu stands at 31 to take its taps. */
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { position: relative; z-index: 31; margin: -56px 24px 16px; padding: 0; gap: 4px; justify-content: flex-end; background: transparent; border: 0; }
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count { flex: 0 0 auto; margin-right: auto; padding: 0; font-size: max(12px, calc(var(--mainFontSize) * 0.8)); color: white; opacity: 0.7; background: transparent; }
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { min-width: 44px; min-height: 44px; padding: 0 8px; font: 600 max(12px, calc(var(--mainFontSize) * 0.8))/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.85); background: transparent; border: 0; border-radius: 0; }
+/* The menu inside the box (night look): signs along the frame's bottom edge (the player's pick, 2026-11-16, of three drawn on
+   a 360 px phone: boxed words 36–47 × 40 px, where AUTO and STORY spilled out of their boxes; signs; words without boxes).
+   Back, the count, next, then auto (fast-forward), music (a note), story (a book) and log (a clock turning back), each a
+   44 × 44 px target (WCAG 2.5.5), no boxes. The signs are Font Awesome 6's, which SillyTavern loads; each button keeps its
+   word for a screen reader and for hold to explain (font-size 0 hides it from sight only). Six and the count fit in 332 px,
+   the frame at 360 px less 14 px each side (measured: the last ends at 346 of the frame's 347). The one that is on takes the
+   accent's ink. The bar follows the chat in the page, so a negative top margin (−60 px) lays it into the box's bottom
+   padding (66 px), which holds it. SillyTavern stacks the chat at layer 30, so the menu stands at 31 to take its taps. */
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { position: relative; z-index: 31; margin: -60px 14px 16px; padding: 0; gap: 0; align-items: center; justify-content: flex-end; background: transparent; border: 0; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count { flex: 0 0 auto; padding: 0; font-size: max(11px, calc(var(--mainFontSize) * 11 / 15)); letter-spacing: -0.02em; white-space: nowrap; color: white; opacity: 0.75; background: transparent; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-next { margin-right: auto; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { width: 44px; min-width: 44px; min-height: 44px; padding: 0; font-size: 0; color: rgba(255, 255, 255, 0.92); background: transparent; border: 0; border-radius: 0; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button::before { font: 900 max(18px, calc(var(--mainFontSize) * 18 / 15))/1 'Font Awesome 6 Free'; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-back::before { content: '\f053'; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-next::before { content: '\f054'; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-auto::before { content: '\f04e'; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-music::before { content: '\f001'; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-story::before { content: '\f518'; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-log::before { content: '\f1da'; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pressed="true"] { color: var(--rules-accent-ink); background: transparent; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus { outline: none; box-shadow: none; }
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -8px; }
-@media (max-width: 400px) {
-    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { margin-left: 14px; margin-right: 14px; gap: 2px; }
-    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button { padding: 0 4px; letter-spacing: 0.04em; }
-}
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -6px; }
 @media (max-height: 500px) {
-    body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now { margin-top: 24px; padding: 18px 18px 48px; }
+    body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now { margin-top: 24px; padding: 18px 18px 52px; }
     body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: min(calc(var(--rules-box-lines) * 1.7em), 36vh); max-height: 36vh; }
-    body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now::after { bottom: 42px; }
-    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { margin-top: -46px; margin-bottom: 6px; }
+    body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar { margin-top: -48px; margin-bottom: 4px; }
 }
 /* Hold to explain (index.ts showExplain; the player's pick, 2026-11-13): while a marked word, the name tag or the mode word is
    held, its title stands in the menu line in the buttons' place, its name in bold, and the held word wears a ring in its own
@@ -500,8 +516,8 @@ body.rules-box:not(.rules-box-log) #chat .rules-now .rules-held { outline: 2px s
 body.rules-box:not(.rules-box-log) #chat .rules-now :is(.rules-v[title], .rules-mode, .rules-who) { -webkit-touch-callout: none; }
 /* The first-meeting card (index.ts showCard): a full-width band across the screen, the person's picture at its left, their
    trade or age over their name, as visual novels introduce a character the first time they appear (the player's pick,
-   2026-11-12, from Danganronpa's cards). It covers SillyTavern's chat column (#sheld, placed absolutely) above the chat's
-   layer 30. A tap, Next or the next key takes it away.
+   2026-11-12, from Danganronpa's cards). Until 2026-11-17 it covered SillyTavern's chat column (#sheld) over the dimmed
+   chat; now the whole page (below). A tap or the next key takes it away.
    Since 2026-11-13 (the player's pick of four drawn variants): the name stands on its own white label, as tall as its lines,
    running to the band's right edge, its left end cut at the tag's angle, under a hard black shadow, label and trade turned
    4°; the band's diagonal white stripe stays as a faint mark. Before, the name lay on a fixed stripe, and a second line fell
@@ -509,14 +525,56 @@ body.rules-box:not(.rules-box-log) #chat .rules-now :is(.rules-v[title], .rules-
    accent (4.58:1). The name's size steps down from 34 px until no word is wider than its column, to the print-size floor of
    its capitals (index.ts fitCardName, box.ts tagFloorPx, the face's capitals measured when shown: 17.3 px for Inter's 0.73). */
 #rules-box-card { display: none; }
-body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { display: flex; position: absolute; inset: 0; z-index: 40; align-items: center; background: rgba(0, 0, 0, 0.5); cursor: pointer; }
+/* Since 2026-11-17 (section 90, the player's ask, "is Danganronpa's first meeting a screen of its own": yes, the game's and a
+   fan extension's alike) the card is a screen of its own: it covers the whole page, SillyTavern's top bar and the box
+   included (layer 20000: over the top bar's 3005 and the menus' 4100, under SillyTavern's pop-ups, 29999, and its notices),
+   on the night look's dark ground with faint stripes at the band's angle. It fades in over a quarter of a second (the fan
+   extension's 0.25 s), then waits for a tap, as the box does, where the fan's goes after 4 s. */
+body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card {
+    display: flex; position: absolute; inset: 0; z-index: 20000; flex-direction: column; justify-content: center; overflow: hidden; cursor: pointer;
+    --face-h: min(58vh, 129vw, calc(100vh - 260px));
+    background: repeating-linear-gradient(-7deg, transparent 0 26px, rgba(255, 255, 255, 0.035) 26px 28px), radial-gradient(120% 80% at 30% 35%, #1b1d30, #06070d 70%);
+    animation: rules-card-in 0.25s ease-out;
+}
+@keyframes rules-card-in { from { opacity: 0; } }
+/* While the card fades in, the box's own tag and plate word are hidden, so no piece of them shows through; the box's ▼
+   stands in the band's corner, the sign that a tap goes on, blinking as the box's does (still for a reader who asks for
+   less motion). */
+body.rules-box.rules-card-on:not(.rules-box-log) #chat .mes.rules-now .ch_name { visibility: hidden; }
+#rules-box-card .rules-card-band::after { content: '▼'; position: absolute; right: 14px; bottom: 8px; font-size: 14px; line-height: 1; color: white; animation: rules-next 1.1s steps(2, start) infinite; }
+/* The picture, large (2026-11-17): on a tall screen it stands over the band, its foot 28 px into it, as tall as 58% of the
+   screen, at most 129% of its width (so that, at two parts wide to three tall, a card picture's own shape, it leaves 7% each
+   side) and at most what the band leaves; the band holds the trade and the name under it, at its right. On a wide screen
+   (wider than tall) it stands at the band's left, its foot on the band's foot, 84% of the screen tall, and the trade and
+   name stand right of it. Its hard shadow in the accent slides out from behind it over 0.9 s, as the fan extension's
+   shadow grows behind its picture (theirs over 4 s, with no tap to wait for), and stands still for a reader who asks for
+   less motion. */
 #rules-box-card .rules-card-band {
-    position: relative; box-sizing: border-box; width: 100%; min-height: 180px; padding: 34px 18px 30px 44%; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px;
+    position: relative; box-sizing: border-box; width: 100%; min-height: 150px; margin-top: calc(var(--face-h) - 28px); padding: 40px 18px 34px; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px;
     background: linear-gradient(-7deg, transparent 36%, rgba(255, 255, 255, 0.16) 36%, rgba(255, 255, 255, 0.16) 70%, transparent 70%), linear-gradient(135deg, var(--rules-accent), var(--rules-accent-deep));
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); overflow: visible;
 }
-#rules-box-card .rules-card-band:has(.rules-card-face[hidden]) { padding-left: 18px; align-items: center; }
-#rules-box-card .rules-card-face { position: absolute; left: 4%; bottom: 0; width: 38%; height: 240px; object-fit: cover; object-position: top; border: 3px solid white; border-bottom: 0; }
+#rules-box-card .rules-card-band:has(.rules-card-face[hidden]) { margin-top: 0; padding-left: 18px; align-items: center; }
+#rules-box-card .rules-card-face {
+    position: absolute; left: 7%; bottom: calc(100% - 28px); height: var(--face-h); width: auto; aspect-ratio: 2 / 3; object-fit: cover; object-position: top; border: 3px solid white; border-bottom: 0;
+    filter: drop-shadow(14px 10px 0 var(--rules-accent)); animation: rules-card-shadow 0.9s ease-out 0.15s backwards;
+}
+@keyframes rules-card-shadow { from { filter: drop-shadow(0 0 0 var(--rules-accent)); } }
+@media (min-aspect-ratio: 1 / 1) {
+    body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { --face-h: min(84vh, calc(100vh - 40px)); justify-content: flex-end; padding-bottom: 8vh; }
+    #rules-box-card .rules-card-band { margin-top: 0; min-height: 180px; padding-left: calc(7% + var(--face-h) * 2 / 3 + 24px); }
+    #rules-box-card .rules-card-face { bottom: 0; }
+    /* The trade and name grow with a tall wide screen (a desktop's), from the phone's 19 and 34 px: 3% and 6% of its height. */
+    #rules-box-card .rules-card-band .rules-card-role { font-size: max(19px, 3vh); }
+    #rules-box-card .rules-card-band .rules-card-name { font-size: max(34px, 6vh); }
+}
+/* A phone's browser bar takes part of the screen that vh counts (SillyTavern's page is 100dvh tall): where the browser knows
+   dvh, the picture is sized by the screen it can see. */
+@supports (height: 1dvh) {
+    body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { --face-h: min(58dvh, 129vw, calc(100dvh - 260px)); }
+    @media (min-aspect-ratio: 1 / 1) { body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { --face-h: min(84dvh, calc(100dvh - 40px)); padding-bottom: 8dvh; } }
+}
+@media (prefers-reduced-motion: reduce) { #rules-box-card .rules-card-band::after, body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card, #rules-box-card .rules-card-face { animation: none; } }
 #rules-box-card .rules-card-role { font: italic 700 19px/1.2 var(--rules-serif, Georgia, serif); color: white; transform: rotate(-4deg); transform-origin: 100% 50%; }
 #rules-box-card .rules-card-name {
     position: relative; z-index: 0; max-width: calc(100% + 18px); margin-right: -18px; padding: 0.08em 18px 0.1em 0.9em;
@@ -528,26 +586,32 @@ body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { display: flex
 #rules-box-card .rules-card-name::before, #rules-box-card .rules-card-name::after { content: ''; position: absolute; inset: 0; clip-path: polygon(0.6em 0, 100% 0, 100% 100%, 0 100%); }
 #rules-box-card .rules-card-name::before { z-index: -1; background: white; }
 #rules-box-card .rules-card-name::after { z-index: -2; background: #111; translate: 4px 4px; }
-/* Shoot a word (index.ts showWhy, rules/why.ts; the player's pick, 2026-11-13): words selected in a message show their path in
-   a white card over the chat, in every look: a title, one line per step (its relation as a crimson tag, what it names, a
-   note of who and when) on a crimson thread, and the measures folded under it in blue. #111 on white 18.9:1, the crimson
-   #8e1240 9.09:1, the note #555 7.46:1, the blue #1e3a8a 10.4:1. It stands over the chat (layer 30), under the
-   first-meeting card (40). */
-#rules-why { position: absolute; z-index: 35; top: 12px; left: 12px; right: 12px; max-height: 45%; overflow-y: auto; box-sizing: border-box; padding: 12px 14px;
-    border-radius: 10px; background: white; color: #111; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); font: 400 max(14px, calc(var(--mainFontSize) * 14 / 15))/1.45 system-ui, sans-serif; }
+/* Shoot a word (index.ts showWhy, drawWhy, rules/why.ts; the player's pick, 2026-11-13): words selected in a message show their
+   path in a card over the chat. Rebuilt on 2026-11-17 in the sheet's look, after the player's review of the white card ("no
+   editing… it collides with the rest"): the solid dark panel, the shot words as the pink tag, a close button of 44 px, one
+   row per step (a sign for its relation, what it names, under it the relation in words with who and when), the measures
+   folded under them in light sky blue. A card, not a window: a selection can still grow under it. index.ts sets its place:
+   never over the box or its tag; under the scene's badge when it fits there. Inks as the sheet's (white 18.4:1, notes 9.8:1, the accent's ink 7.5:1,
+   light sky blue 10.7:1). It stands over the chat (layer 30), under the first-meeting card (40). */
+#rules-why { position: absolute; z-index: 35; top: 12px; left: 12px; right: 12px; max-height: 45%; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;
+    border-radius: 6px; background: rgb(18, 20, 34); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    color: white; font: 400 max(15px, var(--mainFontSize))/1.4 system-ui, sans-serif; }
 #rules-why[hidden] { display: none; }
-.rules-why-head { margin-bottom: 6px; font-weight: 700; font-size: 0.86em; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rules-accent-deep); }
+.rules-why-top { position: relative; flex: none; display: flex; align-items: center; min-height: 48px; }
+.rules-why-title { min-width: 0; max-width: calc(100% - 56px); box-sizing: border-box; margin-left: 12px; padding: 0.47em 1.47em 0.47em 0.74em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: var(--rules-accent); color: white; font: 700 max(15px, var(--mainFontSize))/1 var(--rules-serif, Georgia, serif); letter-spacing: 0.06em;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 0.74em) 100%, 0 100%); }
+#rules-why .rules-sheet-close { top: 2px; }
+.rules-why-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 14px 10px; }
 .rules-why-path { list-style: none; margin: 0; padding: 0; }
-.rules-why-path li { position: relative; padding: 3px 0 3px 22px; }
-.rules-why-path li::before { content: ''; position: absolute; left: 7px; top: 0; bottom: 0; border-left: 2px solid #e3c4ce; }
-.rules-why-path li:first-child::before { top: 11px; }
-.rules-why-path li:last-child::before { bottom: calc(100% - 11px); }
-.rules-why-path li::after { content: ''; position: absolute; left: 3px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--rules-accent); }
-.rules-why-rel { display: inline-block; margin-right: 6px; padding: 3px 5px; border-radius: 3px; vertical-align: 1px; font: 700 0.75em/1 system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rules-accent-deep); background: #fbe9ee; }
-.rules-why-note { display: block; font-size: 0.9em; color: #555; }
-.rules-why-measures { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #ddd; font-size: 0.92em; color: #1e3a8a; }
-.rules-why-measures summary { cursor: pointer; font-weight: 600; color: var(--rules-accent-deep); }
-.rules-why-measures ul { margin: 4px 0 0; padding-left: 18px; }
+.rules-why-path li { display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.rules-why-path li:last-child { border-bottom: 0; }
+.rules-why-icon { flex: none; width: 22px; padding-top: 2px; text-align: center; font-size: 16px; color: rgba(255, 255, 255, 0.72); }
+.rules-why-text { flex: 1 1 auto; min-width: 0; }
+.rules-why-note { display: block; margin-top: 2px; font-size: 0.88em; color: rgba(255, 255, 255, 0.72); }
+.rules-why-measures { margin-top: 6px; font-size: 0.92em; color: lightskyblue; }
+.rules-why-measures summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-weight: 600; color: var(--rules-accent-ink); }
+.rules-why-measures ul { margin: 0 0 4px; padding-left: 18px; }
 
 /* Tap areas (2026-11-13): the small controls a finger aims at take 44 px or more each way (WCAG 2.5.5; the box's menu has
    it), the look unchanged. The note's line grows by padding that a negative margin gives back (its overflow is clipped, so
@@ -581,21 +645,135 @@ body.rules-box.rules-card-on:not(.rules-box-log) #rules-box-card { display: flex
 @media (prefers-reduced-motion: reduce) { #rules-faith line { transition: none; } }
 .rules-faith-mark { margin-left: 0.35em; padding: 0.25em 0.5em 0.2em; border: 1px solid currentColor; border-radius: 2px; font-size: calc(var(--mainFontSize) * 0.66); font-weight: 700; line-height: 1; letter-spacing: 0.09em; text-transform: uppercase; color: var(--SmartThemeEmColor); align-self: center; }
 body.rules-box:not(.rules-box-log) #chat .rules-faith-mark { display: none; }
-/* The story's sheet (index.ts openSheet, rules/views.ts; the player's picks of six drawn ideas, 2026-11-13): the path's white
-   card also holds a person's card (a tap on the name tag), and three tabs from the box's Story button or a tap on the clock:
-   what the player's character remembers (each fact with a bar as long as it is recalled), the scene's plan around them, and
-   the story's time (each line a point; a tap goes back to its box). Inks as the path's: #111, the crimson, #555 notes. */
-.rules-sheet-tabs { display: flex; gap: 6px; margin: -2px 0 8px; }
-.rules-sheet-tabs button { min-height: 32px; padding: 0 12px; border: 1px solid #ccc; border-radius: 16px; background: white; color: #111; font: 600 0.86em/1 system-ui, sans-serif; cursor: pointer; }
-.rules-sheet-tabs button[aria-pressed="true"] { border-color: var(--rules-accent-deep); background: var(--rules-accent-deep); color: white; }
-.rules-memory { list-style: none; margin: 0; padding: 0; }
-.rules-memory-row { margin: 0 0 7px; }
-.rules-memory-text { display: block; }
-.rules-memory-bar { display: block; height: 6px; margin: 3px 0 2px; border-radius: 3px; background: #eee; overflow: hidden; }
-.rules-memory-bar i { display: block; height: 100%; background: var(--rules-accent); }
-.rules-person { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 6px; }
-.rules-person-face { flex: none; width: 72px; height: 96px; object-fit: cover; object-position: top; border-radius: 6px; }
-.rules-person-sub { margin: 8px 0 4px; font-weight: 700; font-size: 0.86em; color: var(--rules-accent-deep); }
+/* The story's sheet (index.ts openSheet, memoryList; the player's picks of six drawn ideas, 2026-11-13: what the player's
+   character remembers, the scene's plan around them, the story's time, a person's card from the name tag). Rebuilt on
+   2026-11-17 after the player's review of the white card ("reading the memory sheet gives me a headache, it's like it has no
+   editing… when you open it it collides with the rest"; their references, a game's journal: one entry a line, each with a
+   sign, details on a tap, the tabs at the window's foot): a window of its own over the dimmed screen, so nothing of the box
+   shows through it, in the box's own look (the see-through dark panel, white corner brackets, the title as the pink tag),
+   always the same size, so its tabs stay in one place from tab to tab.
+   A memory is one row: a sign for how it was learned, its words in one or two lines, ≈ in the accent where some of its
+   details have drifted or are lost (the one place the accent marks a row); a tap opens the rest; a white line along the
+   row's foot is as long as it is recalled. Every
+   target 44 px or more (WCAG 2.5.5). The panel is solid: nothing of the box shows through. Inks on it (#121422 at its
+   lightest, computed): white 18.4:1; notes white
+   at 72 % 9.8:1; the accent's ink 7.5:1; light sky blue for the measures 10.7:1; the recall line, white at 40 %, 3.8:1 (a
+   graphic needs 3:1, WCAG 1.4.11). */
+#rules-sheet { position: absolute; inset: 0; z-index: 36; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 34px 12px 12px; background: rgba(4, 5, 10, 0.66); }
+#rules-sheet[hidden] { display: none; }
+.rules-sheet-frame { position: relative; display: flex; flex-direction: column; box-sizing: border-box; width: 100%; max-width: 560px; height: 100%; padding-top: 30px; border-radius: 4px;
+    color: white; font: 400 max(15px, var(--mainFontSize))/1.4 system-ui, sans-serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background:
+        linear-gradient(white, white) top left / 34px 3px no-repeat,
+        linear-gradient(white, white) top left / 3px 34px no-repeat,
+        linear-gradient(white, white) top right / 34px 3px no-repeat,
+        linear-gradient(white, white) top right / 3px 34px no-repeat,
+        linear-gradient(white, white) bottom left / 34px 3px no-repeat,
+        linear-gradient(white, white) bottom left / 3px 34px no-repeat,
+        linear-gradient(white, white) bottom right / 34px 3px no-repeat,
+        linear-gradient(white, white) bottom right / 3px 34px no-repeat,
+        linear-gradient(180deg, rgb(18, 20, 34), rgb(8, 9, 16));
+}
+.rules-sheet-title { position: absolute; left: 12px; top: -18px; max-width: calc(100% - 72px); box-sizing: border-box; padding: 0.47em 1.47em 0.47em 0.74em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: var(--rules-accent); color: white; font: 700 max(17px, calc(var(--mainFontSize) * 17 / 15))/1 var(--rules-serif, Georgia, serif); letter-spacing: 0.1em; text-transform: uppercase;
+    clip-path: polygon(0 0, 100% 0, calc(100% - 0.74em) 100%, 0 100%); box-shadow: 0 2px 0 black; }
+.rules-sheet-close { position: absolute; top: 2px; right: 6px; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: rgba(255, 255, 255, 0.85); font-size: 0; cursor: pointer; }
+.rules-sheet-close::before { content: '\f00d'; font: 900 20px/1 'Font Awesome 6 Free'; }
+.rules-sheet-close:focus-visible, .rules-sheet-tabs button:focus-visible, .rules-mem-item summary:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -4px; }
+.rules-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px 16px 14px; }
+.rules-sheet-tabs { display: flex; flex: none; border-top: 1px solid rgba(255, 255, 255, 0.16); }
+.rules-sheet-tabs button { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; padding: 0; border: 0; background: transparent;
+    color: rgba(255, 255, 255, 0.72); font: 600 11px/1 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.rules-sheet-tabs button i { font-size: 18px; }
+.rules-sheet-tabs button[aria-pressed="true"] { color: var(--rules-accent-ink); box-shadow: inset 0 2px 0 var(--rules-accent-ink); }
+.rules-mem { list-style: none; margin: 0; padding: 0; }
+.rules-mem-none { padding: 14px 0; color: rgba(255, 255, 255, 0.72); }
+/* A name on the tip of the player's character's tongue (section 103): above the memories, set off by the accent. */
+.rules-mem-tot { margin: 0 0 10px; padding: 8px 10px; border-left: 3px solid var(--rules-accent); background: rgba(255, 255, 255, 0.06); font-style: italic; }
+.rules-mem-item { position: relative; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.rules-mem-item summary { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; list-style: none; cursor: pointer; }
+.rules-mem-item summary::-webkit-details-marker { display: none; }
+.rules-mem-icon { flex: none; width: 22px; text-align: center; font-size: 16px; color: rgba(255, 255, 255, 0.72); }
+.rules-mem-text { flex: 1 1 auto; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.rules-mem-item details[open] > summary .rules-mem-text { display: block; }
+.rules-mem-mark { flex: none; font-size: 20px; line-height: 1; color: var(--rules-accent-ink); }
+.rules-mem-more { padding: 0 0 12px 34px; font-size: 0.88em; color: rgba(255, 255, 255, 0.72); }
+.rules-mem-more > div + div { margin-top: 3px; }
+.rules-mem-more .rules-mem-drift { color: var(--rules-accent-ink); }
+.rules-mem-more .rules-mem-first { color: rgba(255, 255, 255, 0.72); font-style: italic; }
+.rules-mem-bar { position: absolute; left: 34px; right: 0; bottom: -1px; height: 2px; pointer-events: none; }
+.rules-mem-bar i { display: block; height: 100%; background: rgba(255, 255, 255, 0.4); }
+/* The story's time, on the window's dark panel. */
+/* The world year by year (index.ts openTab 'world', world-count.ts; section 96): this year's count large, the years so far in a
+   table, numbers in lining figures to the right, the current year in the accent's ink (7.5:1), rows 40 px; the kind folded,
+   as the start's card folds its law. */
+.rules-world-now { padding: 4px 0 12px; }
+.rules-world-year { font: 700 0.78em/1.3 system-ui, sans-serif; letter-spacing: 0.1em; color: var(--rules-accent-ink); }
+.rules-world-people { font: 700 1.9em/1.15 system-ui, sans-serif; font-variant-numeric: lining-nums tabular-nums; }
+.rules-world-sub, .rules-world-note { color: rgba(255, 255, 255, 0.72); font-size: 0.88em; }
+.rules-world-table { width: 100%; border-collapse: collapse; font-variant-numeric: lining-nums tabular-nums; border-top: 3px solid var(--rules-accent); }
+.rules-world-table th { padding: 8px 6px; font: 700 0.72em/1.2 system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rules-accent-ink); text-align: right; }
+.rules-world-table td { height: 40px; padding: 0 6px; text-align: right; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.rules-world-table :is(th, td):first-child { text-align: left; padding-left: 0; }
+.rules-world-table tr.rules-world-current td { font-weight: 700; color: var(--rules-accent-ink); }
+.rules-world-life { margin-top: 16px; padding-top: 10px; border-top: 3px solid var(--rules-accent); }
+.rules-world-life p { margin: 0 0 8px; }
+.rules-world-sub-head { margin: 0 0 8px; font: 700 0.78em/1.3 system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rules-accent-ink); }
+.rules-world-life .rules-world-fiction { color: rgba(255, 255, 255, 0.72); font-style: italic; }
+/* The player's character's own town (section 101): the line nearest home, set off by the accent. */
+.rules-world-life .rules-world-town { margin: 12px 0; padding-left: 10px; border-left: 3px solid var(--rules-accent); font-weight: 600; }
+.rules-world-kind { margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.16); }
+.rules-world-kind summary { min-height: 44px; display: flex; align-items: center; color: var(--rules-accent-ink); cursor: pointer; }
+.rules-world-kind p { margin: 0 0 8px; }
+.rules-world-note { margin: 12px 0 0; }
+#rules-sheet .rules-time::before { background: rgba(255, 255, 255, 0.25); }
+#rules-sheet .rules-time-label { color: rgba(255, 255, 255, 0.72); }
+/* A person's report card (index.ts showPerson, views.ts reportRows; 2026-11-17, section 92, the player's pick from
+   Danganronpa's handbook, in the extension's own look): a screen of its own over the whole page, on the first-meeting
+   card's ground and layer (20000), fading in as it does. Their picture with the accent's hard shadow, their trade (or age)
+   and their name on the white label, its hard shadow in the accent (black would not show on the dark ground); under them a
+   table of labelled rows, the labels in the accent's ink, small capitals (7.5:1), the values white (18.4:1), each row 44 px
+   or more; then what the player's character remembers of them, rows as in the Story window, and the measures folded in
+   light sky blue (10.7:1). It scrolls inside; the close button stays in the corner. On a phone the picture takes two fifths
+   of the width beside the name, and the rows run the full width under them; on a screen 720 px wide or more the picture
+   stands in a column of 320 px and the rest beside it. */
+#rules-report[hidden] { display: none; }
+#rules-report { position: absolute; inset: 0; z-index: 20000; color: white; font: 400 max(15px, var(--mainFontSize))/1.45 system-ui, sans-serif;
+    background: repeating-linear-gradient(-7deg, transparent 0 26px, rgba(255, 255, 255, 0.035) 26px 28px), radial-gradient(120% 80% at 30% 35%, #1b1d30, #06070d 70%);
+    animation: rules-card-in 0.25s ease-out; }
+#rules-report > .rules-sheet-close { top: 8px; right: 8px; z-index: 1; }
+.rules-report-scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; }
+.rules-report-page { box-sizing: border-box; max-width: 980px; margin: 0 auto; padding: 60px 16px 40px; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); column-gap: 18px; align-items: end; }
+.rules-report-info { display: contents; }
+.rules-report-face { grid-column: 1; grid-row: 1; box-sizing: border-box; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; object-position: top; border: 3px solid white; filter: drop-shadow(10px 8px 0 var(--rules-accent)); }
+.rules-report-head { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding-bottom: 8px; }
+.rules-report-page:not(:has(.rules-report-face)) .rules-report-head { grid-column: 1 / -1; }
+.rules-report-role { font: italic 700 17px/1.2 var(--rules-serif, Georgia, serif); text-align: right; transform: rotate(-4deg); transform-origin: 100% 50%; }
+.rules-report-name { position: relative; z-index: 0; max-width: 100%; box-sizing: border-box; padding: 0.08em 14px 0.1em 0.9em; font: italic 800 28px/1.1 system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase;
+    text-align: right; color: #111; overflow-wrap: anywhere; text-wrap: balance; transform: rotate(-4deg); transform-origin: 100% 50%; }
+.rules-report-name::before, .rules-report-name::after { content: ''; position: absolute; inset: 0; clip-path: polygon(0.6em 0, 100% 0, 100% 100%, 0 100%); }
+.rules-report-name::before { z-index: -1; background: white; }
+.rules-report-name::after { z-index: -2; background: var(--rules-accent); translate: 4px 4px; }
+.rules-report-rows, .rules-report-notes, .rules-report-measures, .rules-report-none { grid-column: 1 / -1; }
+.rules-report-rows { margin: 24px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); border-top: 3px solid var(--rules-accent); }
+.rules-report-rows dt, .rules-report-rows dd { display: flex; align-items: center; min-height: 44px; box-sizing: border-box; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.rules-report-rows dt { padding-right: 18px; font-weight: 700; font-size: 0.78em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rules-accent-ink); }
+.rules-report-rows dd { margin: 0; }
+.rules-report-notes { margin-top: 28px; }
+.rules-report-sub { margin: 0; padding-top: 12px; border-top: 3px solid var(--rules-accent); font: 700 0.78em/1.3 system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rules-accent-ink); }
+.rules-report-measures { margin-top: 18px; color: lightskyblue; }
+.rules-report-measures summary { min-height: 44px; display: flex; align-items: center; color: var(--rules-accent-ink); cursor: pointer; }
+.rules-report-measures summary:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -4px; }
+.rules-report-measures ul { margin: 0; padding-left: 20px; }
+.rules-report-none { margin: 24px 0 0; color: rgba(255, 255, 255, 0.72); }
+@media (min-width: 720px) {
+    .rules-report-page { grid-template-columns: 320px minmax(0, 1fr); column-gap: 36px; align-items: start; padding-top: 72px; }
+    .rules-report-info { display: block; grid-column: 2; grid-row: 1; }
+    .rules-report-page:not(:has(.rules-report-face)) .rules-report-info { grid-column: 1 / -1; }
+    .rules-report-head { padding: 24px 0 8px; }
+    .rules-report-name { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { #rules-report { animation: none; } }
 .rules-map { display: block; width: 100%; height: auto; background: #f7f4ec; border-radius: 8px; }
 .rules-map-room { fill: none; stroke: #555; stroke-width: 2; }
 .rules-map-me { fill: var(--rules-accent); }
@@ -638,60 +816,40 @@ body.rules-box:not(.rules-box-log) #chat .rules-faith-mark { display: none; }
     .rules-stage-fig[data-hop] { animation: none; }
 }
 
-/* --- Verified Mobile & Night-Box Fixes --- */
+/* From the player's tests on a phone (the block "Verified Mobile & Night-Box Fixes", added after section 69), kept part by
+   part on 2026-11-16 (the player: "you choose"); its menu gave way to the signs above, and its ▼ to the one above.
+   In the box (every look), SillyTavern's swipe arrows stand over the text: hidden there; the log keeps them. */
 body.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipe_left,
 body.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipe_right { display: none !important; }
-
+/* A stage or picture with nothing to show takes no height, so the box keeps its place under the scene. */
 #rules-box-stage[hidden], #rules-box-figure[hidden], .rules-stage-fig[hidden] {
     display: none !important; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
 }
-
-/* Inline ▼ advance indicator at end of active unit */
-body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now::after { content: none; }
-.rules-advance-tri { display: none; }
-body.rules-box-night.rules-box:not(.rules-box-log):not(.rules-typing) #chat .mes.rules-now .rules-advance-tri {
-    display: inline-block; margin-left: 6px; font-size: 14px; color: #e0336a; vertical-align: baseline;
-    animation: rules-next 1.1s steps(2, start) infinite;
-}
-
-/* Keep nameplate readable on one line without truncating short names */
+/* The tag: one line at full size, a name that fits whole (the player's fix, tested on a phone: the tag never gives way to
+   the plate's word beside it), and a longer one cut with "…" (the player, 2026-11-17: "I want a long name to be cut"):
+   index.ts fitTag caps it at the row less the plate's word, so it neither runs past the screen nor covers SPEAKING. Section
+   82's rule let the tag shrink and broke "Anna Smiwinska" over two lines; the player's one-line rule ran a long name past the
+   screen's edge ("Anna Smiwinska-Hartley" to 392 px of 360); both measured on the page. */
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who {
-    white-space: nowrap; max-width: none; width: max-content; flex: 0 0 auto;
+    white-space: nowrap; max-width: none; width: max-content; flex: 0 0 auto; overflow: hidden; text-overflow: ellipsis;
 }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-who[hidden] { display: none; }
-
-/* Night-box bottom clearance and non-overflowing button bar */
-body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now {
-    padding-bottom: 66px; margin-bottom: 8px;
-}
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar {
-    position: relative; z-index: 31; margin: -58px 18px 16px; gap: 4px; align-items: center;
-}
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-count {
-    margin-right: 0; padding: 0 4px; background: transparent; font-size: 12px; opacity: 0.85; white-space: nowrap;
-}
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-next { margin-right: auto; }
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button {
-    min-width: 36px; min-height: 40px; padding: 0 7px; font-size: 12px; width: auto;
-    background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 6px; color: rgba(255, 255, 255, 0.92);
-}
-body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pressed="true"] {
-    background: rgba(224, 51, 106, 0.24); border-color: #ff5c8f; color: #ff5c8f;
-}
-
-/* Foldable SillyTavern top bar */
+/* SillyTavern's top bar folds away in the box (index.ts adds the ▲), giving the scene its height. The ▲ is drawn 38 × 24 px
+   and taken by a finger over 44 × 44 (the layer stands inside its 1 px border: 36 + 8 wide, 23 + 21 tall; hit-tested on the
+   page): the extra lies below it, over the scene, off the top bar's own buttons. */
 #rules-top-fold { display: none; }
 body.rules-box:not(.rules-box-log) #rules-top-fold {
     display: flex; align-items: center; justify-content: center; position: fixed; top: var(--topBarBlockSize, 42px); right: 10px; z-index: 2005;
     min-width: 38px; min-height: 24px; padding: 0 9px; font: 700 12px/1 system-ui, sans-serif;
     color: rgba(255, 255, 255, 0.9); background: rgba(14, 16, 26, 0.88); border: 1px solid rgba(255, 255, 255, 0.35); border-top: 0; border-radius: 0 0 8px 8px; cursor: pointer;
 }
+body.rules-box:not(.rules-box-log) #rules-top-fold::before { content: ''; position: absolute; inset: 0 -4px -21px; }
 body.rules-top-folded { --topBarBlockSize: 0px !important; }
 body.rules-top-folded #top-bar, body.rules-top-folded #top-settings-holder { display: none !important; }
 body.rules-top-folded #sheld { top: 0 !important; height: 100dvh !important; max-height: 100dvh !important; }
 body.rules-top-folded #rules-top-fold { top: 0; }
-
-/* Portrait mobile: keep textarea full-width on row 1, action buttons horizontally aligned on row 2 */
+/* A phone held upright (650 px or narrower): the message box takes the whole first row and its buttons the second, so the
+   line being written is never squeezed beside them. SillyTavern's own rules for the form are strong, hence !important. */
 @media (max-width: 650px) {
     body.rules-box #send_form { display: flex !important; flex-direction: column !important; gap: 4px !important; padding: 4px 6px !important; }
     body.rules-box #nonQRFormItems { display: flex !important; flex-wrap: wrap !important; width: 100% !important; gap: 4px !important; align-items: center !important; }
@@ -702,7 +860,49 @@ body.rules-top-folded #rules-top-fold { top: 0; }
         display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; width: auto !important; height: auto !important; gap: 6px !important; margin: 0 !important; align-items: center !important;
     }
     body.rules-box #leftSendForm { margin-right: auto !important; }
+    /* Each control in the row a finger's target (2026-11-17, section 93, the screen pass's last item): measured at 390 px
+       wide, SillyTavern's ☰ and wand and the extension's note and knob were 25–34 px wide and 35 px tall, the knob's tap area
+       reaching over its neighbours. Now each is 44 × 44 px (WCAG 2.5.5), 6 px apart, so no two overlap. The icons keep their
+       own size, centred in the larger box; no display is set, so a button SillyTavern hides stays hidden. */
     body.rules-box #leftSendForm > *, body.rules-box #rightSendForm > * {
-        width: auto !important; margin: 0 !important;
+        width: auto !important; margin: 0 !important; box-sizing: border-box !important; min-width: 44px !important; min-height: 44px !important; line-height: 44px !important; text-align: center !important;
     }
+    body.rules-box #rules-faith { height: 44px; }
+    body.rules-box #rules-faith::before { inset: 0; }
+    body.rules-box #rules-faith:not([data-faith="1"])::after { top: 2px; right: 0; }
 }
+
+/* The start's card (src/rules/start-card.ts, the seed's popup; decided by Claude on 2026-11-17): in SillyTavern's popup, in its
+   theme's inks, the headings in the accent: its ink on a dark theme (#ff79a3, 8:1 on a near-black popup), its dark on a light
+   one (#8e1240, 9.09:1 on white). A folded part opens on a 44 px row (WCAG 2.5.5), its sign as the reading note's. */
+.rules-start { --rules-start-head: var(--rules-accent-ink); text-align: left; font: 400 max(15px, var(--mainFontSize))/1.45 system-ui, sans-serif; color: var(--SmartThemeBodyColor); }
+body[data-rules-tone="light"] .rules-start { --rules-start-head: var(--rules-accent-deep); }
+.rules-start-title { font-weight: 700; font-size: 1.25em; }
+.rules-start-head { margin: 14px 0 4px; font-weight: 700; font-size: 0.78em; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rules-start-head); }
+.rules-start-note, .rules-start-wants { color: var(--SmartThemeEmColor); }
+.rules-start-wants { font-style: italic; }
+.rules-start-people { list-style: none; margin: 0; padding: 0; }
+.rules-start-people li { margin: 0 0 10px; }
+.rules-start-who { font-weight: 700; }
+.rules-start details > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; min-height: 44px; list-style: none; cursor: pointer; font-weight: 700; color: var(--rules-start-head); }
+.rules-start details > summary::-webkit-details-marker { display: none; }
+.rules-start details > summary::before { content: '▸'; font-weight: 400; }
+.rules-start details[open] > summary::before { content: '▾'; }
+.rules-start details > summary .rules-start-note { font-weight: 400; font-size: 0.86em; }
+.rules-start-law { margin-top: 12px; border-top: 1px solid var(--SmartThemeBorderColor); }
+.rules-start-law p { margin: 4px 0 8px; }
+.rules-start-sheet { margin: 0 0 6px; padding-left: 18px; }
+.rules-start-code { margin-top: 14px; font: 12px/1.4 ui-monospace, monospace; color: var(--SmartThemeEmColor); -webkit-user-select: all; user-select: all; }
+
+/* The extension's settings (settings.html), edited on 2026-11-17 with the review's eye (photographed: every checkbox a
+   paragraph, the choices cut off at the panel's edge, nothing grouped): four groups under a heading each (Engine, Box &
+   page, Sound, Story), a short name for each setting and one plain line under it, short choices. In SillyTavern's theme
+   inks: names in its text colour, hints in its italic colour. */
+.rules-engine-settings .rules-set-head { margin: 16px 0 6px; padding-top: 10px; border-top: 1px solid var(--SmartThemeBorderColor); font-weight: 700; font-size: 0.8em; letter-spacing: 0.08em; text-transform: uppercase; }
+.rules-engine-settings .inline-drawer-content > .rules-set-head:first-child { margin-top: 4px; padding-top: 0; border-top: 0; }
+.rules-engine-settings .checkbox_label { margin-top: 6px; font-weight: 600; }
+.rules-engine-settings .rules-set-label { display: block; margin: 10px 0 2px; font-weight: 600; }
+.rules-engine-settings .rules-set-hint { display: block; margin: 0 0 4px 28px; font-size: 0.86em; line-height: 1.35; color: var(--SmartThemeEmColor); }
+.rules-engine-settings .rules-set-hint.rules-set-under { margin-left: 0; margin-top: 2px; }
+.rules-engine-settings select.text_pole, .rules-engine-settings input.text_pole { width: 100%; box-sizing: border-box; }
+.rules-engine-settings .menu_button { white-space: nowrap; }

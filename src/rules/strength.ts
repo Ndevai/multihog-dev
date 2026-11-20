@@ -1,5 +1,6 @@
 // Grip strength (docs/df-body-engine.md §6.10): mean and SD by age and sex, Dodds et al. 2014 (PLoS One 9:e113637, Table 2:
 // 60 803 observations from 12 British studies), linear between the tabled ages; each person keeps a z drawn once from N(0, 1).
+import { strengthFactor } from './kind-sheet.js';
 import type { Person, Gauss } from './types.js';
 
 // Children 5, 10, 15 from the same Table 2.
@@ -37,7 +38,8 @@ export function gripNorm(age = 25, sex = 'male', region: string | null = null): 
 
 /** This person's grip strength (kg, one hand), drawing their z once. */
 export function grip(p: Person, gauss?: Gauss): number {
+    // A kind's strength scales a human's grip (kind-sheet.ts strengthFactor).
     if (p.gripZ == null && gauss) p.gripZ = Math.round(gauss() * 100) / 100;
     const n = gripNorm(p.age, p.sex, p.region ?? null);
-    return Math.max(0, n.mean + (p.gripZ ?? 0) * n.sd);
+    return Math.max(0, n.mean + (p.gripZ ?? 0) * n.sd) * strengthFactor(p);
 }

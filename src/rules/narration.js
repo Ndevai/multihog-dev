@@ -20,6 +20,19 @@ Write the reply as the JSON {"scene":"…","results":{"1":"…","2":"…"},"open
 - The reply's events are the results. Where the scene moves toward something no result decides (a person's reaction, a sound someone may hear, a payment, a door that may open), the passage ends before it and "open" names it as a question for the next turn; the next turn decides it.
 - The scene and the passages, joined in order, read as the whole reply: full paragraphs, third person, past tense.
 </reply_form>`;
+// How the narrator tells it (the player's picks, 2026-11-16: "I absolutely despise cinematographic writing where every
+// writing wants to be special and dramatic"; of a scene told big and the same scene told flat, the flat one: "A's writing is
+// too dramatic, tries to convince me through dramatic look-at-me words"). Professional writers editing paragraphs from three
+// model families (GPT-4o, Claude 3.5 Sonnet, Llama 3.1 70B) made the same kinds of edits to all three: awkward word choice and
+// phrasing 28 % of 8,035 edits, poor sentence structure 20 %, unnecessary exposition 18 %, clichés 17 %, with purple prose
+// and missing specific detail among the rest (Chakrabarty, Laban & Wu 2025, CHI, the LAMP corpus, 18 writers). The rule says
+// what to write, since models follow negated instructions poorly (Truong et al. 2023, "Language models are not naysayers").
+export const TELLING_RULE = `<telling>
+Tell the story plainly, as a witness tells it afterwards: what happens, what people do and say, in the order it happens, in ordinary words, one thing to a sentence.
+- A concrete detail a person there would notice carries what is strange, frightening or sad (a dry hand in the rain); a feeling is named when someone shows it.
+- A death, a blow or a discovery is told in the same voice as a meal, as briefly as it happens.
+- Each sentence says something new; the reader draws what follows from it.
+</telling>`;
 /** The narration read from the model's JSON, or null when the text is plain prose. */
 export function readNarration(text) {
     const s = String(text ?? '').trim(), at = s.indexOf('{'), end = s.lastIndexOf('}');

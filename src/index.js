@@ -2,15 +2,19 @@
 // question pass names the outcomes in doubt and the engine decides them; the narrator gets the brief, the story time,
 // [BODY], [KNOWS] and [DECIDED] as one system message; a rule check reads the reply and redoes it once when it bends a result.
 import { pulseSelfTest } from './rules/pulse.js';
-import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, rulesBrief, RULES_BRIEF_DECIDED, knowledgeInjection, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, sceneSky, scenePlace, storyYearNow, store, } from './rules/rules-tools.js';
+import { registerRulesTools, onRulesGenerationStarted, onRulesMessageReceived, onRulesSwiped, syncRulesToChat, rulesBrief, RULES_BRIEF_DECIDED, knowledgeInjection, whereInjection, setPresent, possessionsInjection, scenePosition, questionPassRan, storyTime, setStoryTime, REGISTRY, historyCheck, sceneSky, scenePlace, storyYearNow, store, saveState, } from './rules/rules-tools.js';
 import { pathOf, sentenceAt } from './rules/why.js';
-import { memoryOf, memoryAbout, voiceWords, feelingNow, pictureFeeling, timelineOf, mapView, sensedThisTurn } from './rules/views.js';
+import { toldPhrase } from './rules/memory-meaning.js';
+import { onTheTongue, totPhrase } from './rules/tongue.js';
+import { parseLink, groupsOfLore, linkLines, headWord } from './rules/links.js';
+import { setLinks } from './rules/memory-meaning.js';
+import { memoryOf, memoryAbout, reportRows, pictureFeeling, timelineOf, mapView, sensedThisTurn } from './rules/views.js';
 import { FAITH_STOPS, FAITH_NAME, FAITH_SAYS, faithOf, faithLine, nextFaith } from './rules/faith.js';
 import { runQuestionPass, decidedInjection, decidedResults, turnLog, setGuided, setOpen, GUIDED, actionItems, rephraseAsked, takenReading, redoneBy, voiceRead, meantReading, storyResult } from './rules/question-pass.js';
 import { noteView, notesOf, platesOf, drawModes, voiceUnits, lineToTakeBack, drawNote, askPopup, askAnswer, saidOf, eraOf, toneOf, VOICE_GROUPS, mirrorParts, drawVoice, lookVars, heldParts, RUN_MARKS, NOTE_KEY } from './ui.js';
 import { markWords, keyDelete, hasHidden, notateChat, visible, untagged, notateRequest, marksOf } from './rules/voice-code.js';
-import { NARRATION_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
-import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, boxFontPx, boxLinesAt, sceneLine, sceneBadge, cardRole, tagFloorPx, explainParts, muffleSpeech } from './rules/box.js';
+import { NARRATION_RULE, TELLING_RULE, narrationSchema, readNarration, proseOf } from './rules/narration.js';
+import { speakersOf, takeSpeakers, SPEAKER_RULE, cutsOf, revealTimes, autoWait, slotOf, keyPhrase, boxFontPx, boxLinesAt, sceneLine, sceneBadge, cardRole, metBefore, tagFloorPx, explainParts, muffleSpeech } from './rules/box.js';
 import { peek } from './rules/constants.js';
 import { voiceOf, voiceLine, voiceFactsOf, voicesReady, voiceHarmonics, speakingFactsOf } from './rules/voice-body.js';
 import { speechVoice, speechVoiceFile, speechTimes, scaleTimes } from './rules/speech.js';
@@ -24,10 +28,19 @@ import { VOCAL_FAMILY } from './rules/emotion.js';
 import { parseStoryTime, formatStoryTime } from './rules/clock.js';
 import { sendModel } from './send.js';
 import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM } from './rules/world.js';
+import { drawStart, rollSeed, knownStart, startParts, seedCalls, kindGrowth } from './rules/seed.js';
+import { yearByYear, figuresIn } from './rules/world-count.js';
+import { societyOf, societyBlock, townLine, seenPer100k } from './rules/society.js';
+import { townOf } from './rules/town.js';
+import { startCardHtml } from './rules/start-card.js';
 import { removeWithDescendants, outcomeLine, bornIn } from './rules/counterfactual.js';
 import { firstYear, earlier, loadChat } from './rules/history.js';
 import { loadPopulation } from './rules/population.js';
 import { seededRng, gauss } from './rules/body-engine.js';
+import { expressionSet, lookWords, jointOf } from './rules/expression-set.js';
+import { faceTags, lookLabel, portraitTags, hordeAtOnce } from './rules/face-words.js';
+import { makeFaces, drawPortrait, seedOf, lookPicture, saveSprite, spriteLabels, FaceQueue } from './faces.js';
+import { colouringOf, dressOf, genotypeOf } from './rules/colouring.js';
 import { loadColex } from './rules/colex.js';
 import { loadLanguageYears } from './rules/languages.js';
 import { loadThings } from './rules/things.js';
@@ -246,7 +259,7 @@ function storyState() {
     // Sun above the horizon at the scene, for the world book's day and night creatures (a calendar date is needed: a bare
     // "Day N" count has no season).
     const sky = t !== null && here ? sceneSky(t) : null, sunUp = sky ? sky.sunAlt >= 0 : null;
-    return [worldBlock(getBook(), here, sunUp), t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), possessionsInjection()].filter(Boolean).join('\n');
+    return [worldBlock(getBook(), here, sunUp), t === null ? '' : `[TIME]\n${formatStoryTime(t)}\n[/TIME]`, bodyBlock(trackedPeople()), looksInjection(), possessionsInjection()].filter(Boolean).join('\n');
 }
 globalThis.rulesEngineInterceptor = async (chat, _size, abort, type) => {
     const s = settings(), c = ctx();
@@ -302,7 +315,7 @@ globalThis.rulesEngineInterceptor = async (chat, _size, abort, type) => {
     // While the box is on, the narrator names the speaker before each quotation (box.ts SPEAKER_RULE), for the box's plate.
     // How closely the reply follows the player's line: its knob's stop (faith.ts).
     const line = [...(c.chat ?? [])].reverse().find(m => m.is_user), follow = line ? faithLine(faithOf(line.extra?.rulesFaith), playerName()) : '';
-    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), decided, follow, takeAuditNote() ?? '', structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : ''];
+    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), whereInjection(), societyNow(), decided, follow, takeAuditNote() ?? '', TELLING_RULE, structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : ''];
     // The narrator's prompt carries no hidden tag character (voice-code.ts untagged).
     c.setExtensionPrompt(KEY, untagged(parts.filter(Boolean).join('\n\n')), IN_CHAT, DEPTH, false, SYSTEM);
 };
@@ -1113,6 +1126,13 @@ function avatarOf(who, mes) {
     const card = ctx().characters?.find(c => c.name === who);
     if (card?.avatar)
         return `characters/${encodeURIComponent(card.avatar)}`;
+    // One the engine made, with a portrait drawn for them (/rules-faces).
+    const drawn = portraitFolder(who);
+    if (drawn && settings().looks?.portraits?.includes(drawn))
+        return `characters/${drawn}/portrait.png`;
+    // Someone the engine made, shown with no picture yet: theirs is drawn in the background (section 116).
+    if (drawn && trackedPeople()[who])
+        wantFaces(who);
     if (who !== mes.getAttribute('ch_name'))
         return null;
     const src = mes.querySelector('.avatar img')?.getAttribute('src') ?? '', m = /[?&]type=(avatar|persona)&file=([^&]+)/.exec(src);
@@ -1125,6 +1145,10 @@ let lastHopKey = '', lastShockKey = '';
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, m => `\\${m}`);
 /** Resolves SillyTavern native expression sprite (/characters/<Name>/<emotion>.png) with instant fallback to base avatar + OKLCH glow. */
 function spriteFor(who, baseSrc, felt) {
+    // The face for the person's look now (section 112), where it has been made; else the feeling's sprite, else the card.
+    const look = lookSpriteOf(who);
+    if (look && !missingExpr.has(look))
+        return look;
     const expr = felt ? EXPR_FILE[felt] : null;
     if (!expr)
         return baseSrc;
@@ -1134,8 +1158,10 @@ function spriteFor(who, baseSrc, felt) {
 function applySprite(img, who, baseSrc, felt) {
     const target = spriteFor(who, baseSrc, felt);
     if (img.getAttribute('src') !== target) {
-        img.onerror = target !== baseSrc ? () => { missingExpr.add(target); img.onerror = null; if (img.getAttribute('src') !== baseSrc)
-            img.setAttribute('src', baseSrc); } : null;
+        // A picture that is not there is not asked for again; the next one along is (the look's face, the feeling's sprite, the card).
+        // A missing face is drawn only while the large picture is on (section 117): hidden, it would be drawn for no one to see.
+        img.onerror = target !== baseSrc ? () => { missingExpr.add(target); img.onerror = null; if (target.includes('/look_') && settings().boxPicture === 'large')
+            wantFaces(who); applySprite(img, who, baseSrc, felt); } : null;
         img.setAttribute('src', target);
     }
 }
@@ -1352,7 +1378,11 @@ function showPlate(mes, unit) {
     const unitWho = unit?.getAttribute('data-who')?.trim() ?? '';
     const isUser = mes.getAttribute('is_user') === 'true';
     const plateSaid = unit?.getAttribute('data-said') === 'true';
-    const plateLabel = unitWho || (isUser || plateSaid ? (name.textContent?.trim() ?? '') : '');
+    const thinking = platesOf(ctx().chat ?? []).find(p => String(p.index) === mes.getAttribute('mesid'))?.modes.find(m => m.mode === 'thinking');
+    // A description, where no one speaks or thinks, has no name on the tag, so a name always means someone's words (the
+    // player's pick, 2026-11-16, of three drawn: always the player's character, who the description is about, none).
+    const describes = !!unit && !plateSaid && !thinking;
+    const plateLabel = describes ? '' : unitWho || (isUser || plateSaid ? (name.textContent?.trim() ?? '') : '');
     who.textContent = plateLabel;
     who.hidden = !plateLabel;
     const voice = voiceOfWho(who.textContent);
@@ -1363,8 +1393,7 @@ function showPlate(mes, unit) {
         slot.className = 'rules-slot';
         name.closest('.flex1')?.appendChild(slot) ?? who.after(slot);
     }
-    const said = unit?.getAttribute('data-said') === 'true';
-    const thinking = platesOf(ctx().chat ?? []).find(p => String(p.index) === mes.getAttribute('mesid'))?.modes.find(m => m.mode === 'thinking');
+    const said = plateSaid;
     const titles = { speaking: 'Said aloud: words in quotation marks', whispering: 'Whispered: said without voicing', thinking: thinking?.title ?? 'Thinking', auto: 'The box moves on by itself' };
     const words = unit ? slotOf({ said, whispered: !!unit.querySelector('.rules-v-whisper, .rules-run-whisper'), thinking: !said && !!thinking, auto: settings().boxAuto }) : settings().boxAuto ? ['auto'] : [];
     slot.replaceChildren(...words.map(w => { const e = document.createElement('span'); e.className = `rules-mode rules-mode-${w}`; e.textContent = w; e.title = titles[w]; return e; }));
@@ -1393,23 +1422,18 @@ function fitsBox(el) {
     const cs = getComputedStyle(el), box = el.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     return r.getBoundingClientRect().width <= box + 0.5;
 }
-/** The night tag's name on one line (the player's pick, 2026-11-13): its size steps down from the look's (style.css) to the
- * print-size floor of the era's face (box.ts tagFloorPx); a name that does not fit even there keeps the full size and wraps
- * upward (style.css), so smaller letters are used only where they buy one line. */
+/** The night tag (the player, 2026-11-17: "I want a long name to be cut"): one line at full size; a name that fits stays
+ * whole, a longer one is cut with "…" (style.css). The room is the plate's row (.ch_name) less the plate's word at its right
+ * (SPEAKING, THINKING) and 8 px between, so neither covers the other. Holding the tag still shows the whole name. */
 function fitTag(el) {
-    el.style.fontSize = '';
-    el.style.whiteSpace = '';
+    el.style.maxWidth = '';
     if (!document.body.classList.contains('rules-box-night') || !el.getClientRects().length)
         return;
-    const cs = getComputedStyle(el), full = parseFloat(cs.fontSize), floor = Math.min(full, tagFloorPx(capShare(cs.fontFamily)));
-    el.style.whiteSpace = 'nowrap';
-    for (let s = full; !fitsBox(el) && s > floor;) {
-        s = Math.max(floor, s - 0.5);
-        el.style.fontSize = `${s}px`;
-    }
-    if (!fitsBox(el))
-        el.style.fontSize = '';
-    el.style.whiteSpace = '';
+    const row = el.closest('.ch_name'), slot = row?.querySelector('.rules-slot');
+    if (!row)
+        return;
+    const w = slot?.getBoundingClientRect().width ?? 0, word = w ? w + 8 : 0;
+    el.style.maxWidth = `${Math.max(0, row.clientWidth - word)}px`;
 }
 // Hold to explain (the player's pick, 2026-11-13): a touch screen has no hover, so a word's title (a marked word's marks with
 // their sizes, the mode word's call, the name tag's voice) is out of reach. Holding one for HOLD_MS [ASSUMED: Android's
@@ -1519,11 +1543,13 @@ function showBox() {
     // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
     const key = `${boxAt.mes}:${unit}:${units.length}`;
     // The first time the box reaches the first line in the chat of a character with a card of their own, going on, a card names
-    // them before it (as visual novels introduce a person); the line types once the card is tapped away.
+    // them before it (as visual novels introduce a person); the line types once the card is tapped away. Their first line: the
+    // first drawn on the page that is theirs, with none in the messages before the drawn ones (box.ts metBefore). Once shown,
+    // the chat keeps their name (rulesMet), so the card plays once a chat, also after the chat is opened again (2026-11-17).
     const who = now?.getAttribute('data-who') ?? '';
-    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metShown.has(who) && hasCard(who)
-        && document.querySelector(`#chat .rules-unit[data-who="${CSS.escape(who)}"]`) === now) {
-        metShown.add(who);
+    if (!boxLog && now && stepDir !== -1 && key !== shownKey && who && who !== playerName() && !metIn().includes(who) && hasCard(who)
+        && document.querySelector(`#chat .rules-unit[data-who="${CSS.escape(who)}"]`) === now && !metBefore(ctx().chat ?? [], Number(mes.getAttribute('mesid')), who)) {
+        markMet(who);
         showCard(who, mes);
         stopTyping();
         clearTimeout(autoTimer);
@@ -1545,10 +1571,19 @@ function showBox() {
 /** Whether the player made a SillyTavern character card for this name: only they get a first-meeting card (the player, 2026-11-12:
  * else every passer-by the story names would get one). */
 const hasCard = (who) => !!ctx().characters?.some(c => c.name === who);
-/** Characters whose first-meeting card was shown in this chat's session. */
-const metShown = new Set();
-/** The first-meeting card: the person's picture, their trade or age (box.ts cardRole), their name; a tap, the next key or
- * the next button takes it away and the line goes on. */
+/** Characters whose first-meeting card this chat has shown, kept with the chat (its metadata); none where no chat is open. */
+const metIn = () => ctx().chatMetadata?.rulesMet ?? [];
+function markMet(who) {
+    const c = ctx();
+    if (!c.chatMetadata)
+        return;
+    (c.chatMetadata.rulesMet ??= []).push(who);
+    void c.saveMetadata();
+}
+/** The first-meeting card: the person's picture, their trade or age (box.ts cardRole), their name; a tap or the next key takes
+ * it away and the line goes on. Since 2026-11-17 (section 90, the player's ask: a screen of its own, as Danganronpa's) it
+ * covers the whole page, SillyTavern's top bar included, so it hangs on <body> (SillyTavern pins the body and turns <html>,
+ * so a fixed layer would take <html>'s height of 0; an absolute one takes the body's). */
 function showCard(who, mes) {
     let card = document.getElementById('rules-box-card');
     if (!card) {
@@ -1556,7 +1591,7 @@ function showCard(who, mes) {
         card.id = 'rules-box-card';
         card.setAttribute('role', 'dialog');
         card.addEventListener('click', e => { e.stopPropagation(); hideCard(); });
-        (document.getElementById('sheld') ?? document.body).appendChild(card);
+        document.body.appendChild(card);
     }
     const src = avatarOf(who, mes), role = cardRole(trackedPeople()[who]);
     const face = document.createElement('img');
@@ -1636,49 +1671,142 @@ function showWhy() {
     });
     drawWhy(span, steps);
 }
-/** The sheet over the chat (the path's panel), made once; filled with a title and its parts. */
+/** The sheet: a window of its own over the dimmed screen (the player's review of 2026-11-17: the white card over the box
+ * "collides with the rest"), made once: its title as the box's pink tag, a close button, its parts in a body that scrolls,
+ * and the story's tabs at its foot when there is more than one. A tap on the dimmed screen closes it. */
 function openSheet(head, parts, tab) {
-    let panel = document.getElementById('rules-why');
-    if (!panel) {
-        panel = document.createElement('div');
-        panel.id = 'rules-why';
-        panel.setAttribute('role', 'status');
-        panel.setAttribute('aria-live', 'polite');
-        (document.getElementById('sheld') ?? document.body).appendChild(panel);
+    let wrap = document.getElementById('rules-sheet');
+    if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'rules-sheet';
+        wrap.addEventListener('click', e => { if (e.target === wrap)
+            hideWhy(); });
+        (document.getElementById('sheld') ?? document.body).appendChild(wrap);
     }
-    const nodes = [];
-    if (tab) {
-        const tabs = document.createElement('div');
-        tabs.className = 'rules-sheet-tabs';
-        for (const t of sheetTabs()) {
+    const path = document.getElementById('rules-why');
+    if (path)
+        path.hidden = true;
+    const frame = el('div', 'rules-sheet-frame');
+    frame.setAttribute('role', 'dialog');
+    frame.setAttribute('aria-label', head);
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'rules-sheet-close';
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => hideWhy());
+    const body = el('div', 'rules-sheet-body');
+    body.append(...parts);
+    frame.append(el('div', 'rules-sheet-title', head), close, body);
+    const tabs = tab ? sheetTabs() : [];
+    if (tabs.length > 1) {
+        const bar = el('div', 'rules-sheet-tabs');
+        for (const t of tabs) {
             const b = document.createElement('button');
             b.type = 'button';
-            b.textContent = TAB_NAME[t];
             b.setAttribute('aria-pressed', String(t === tab));
+            const icon = el('i', `fa-solid ${TAB_ICON[t]}`);
+            icon.setAttribute('aria-hidden', 'true');
+            b.append(icon, el('span', '', TAB_NAME[t]));
             b.addEventListener('click', () => openTab(t));
-            tabs.append(b);
+            bar.append(b);
         }
-        nodes.push(tabs);
+        frame.append(bar);
     }
-    const h = document.createElement('div');
-    h.className = 'rules-why-head';
-    h.textContent = head;
-    panel.replaceChildren(...nodes, h, ...parts);
-    panel.hidden = false;
+    wrap.replaceChildren(frame);
+    wrap.hidden = false;
 }
-const TAB_NAME = { memory: 'Memory', map: 'Map', time: 'Time' };
+const TAB_NAME = { memory: 'Memory', map: 'Map', time: 'Time', world: 'World' };
+const TAB_ICON = { memory: 'fa-brain', map: 'fa-map', time: 'fa-clock', world: 'fa-earth-europe' };
 /** The tabs the story holds now: the map with a plan that places the player's character, the timeline with a line's time. */
-const sheetTabs = () => ['memory', ...mapNow() ? ['map'] : [], ...timelineOf(ctx().chat ?? []).length ? ['time'] : []];
+const sheetTabs = () => ['memory', ...mapNow() ? ['map'] : [], ...timelineOf(ctx().chat ?? []).length ? ['time'] : [], ...worldNow() ? ['world'] : []];
+/** The narrator's [SOCIETY] block for a seeded story (society.ts): how the country lives with the kind in the story's year. */
+function societyNow() {
+    const code = ctx().chatMetadata ? store().state.seed : undefined;
+    if (!code)
+        return '';
+    const plan = drawStart(code, getBook());
+    if ('error' in plan)
+        return '';
+    // A story seeded before section 101 gets its town from its own seed, as it would have at the start.
+    const st = store().state;
+    if (!st.town) {
+        st.town = townOf(plan);
+        saveState();
+    }
+    // The count's year (section 118): the kind's share and kills as the World tab counts them, for the stage and the town.
+    const year = storyYearNow() ?? plan.year, f = figuresIn(yearByYear(plan.year, year, plan.share, plan.deaths, kindGrowth(plan)), year, plan);
+    const seen = seenPer100k(plan.law, f.share, f.deaths);
+    if (Math.abs(seen - st.town.seen) > 1e-9) {
+        st.town.seen = seen;
+        delete st.town.next;
+        saveState();
+    }
+    return societyBlock(societyOf({ ...plan, ...f }, year), st.town);
+}
+/** The seeded story's world year by year (world-count.ts), from the seed's year to the story's; null without a seed or
+ * outside the records. */
+function worldNow() {
+    const code = ctx().chatMetadata ? store().state.seed : undefined;
+    if (!code)
+        return null;
+    const plan = drawStart(code, getBook());
+    if ('error' in plan)
+        return null;
+    const rows = yearByYear(plan.year, storyYearNow() ?? plan.year, plan.share, plan.deaths, kindGrowth(plan));
+    return rows ? { plan, rows } : null;
+}
 const el = (tag, cls, text) => { const e = document.createElement(tag); e.className = cls; if (text != null)
     e.textContent = text; return e; };
-/** A list of remembered facts: each its words, a bar as long as it is recalled, how and when it was learned. */
+// How a fact was learned, as a sign and in words (why.ts relOfSource's relations).
+const REL_ICON = { saw: 'fa-eye', sensed: 'fa-ear-listen', heard: 'fa-ear-listen', told: 'fa-comment', said: 'fa-comment', overheard: 'fa-ear-listen',
+    hearsay: 'fa-comments', 'worked out': 'fa-magnifying-glass', assumed: 'fa-lightbulb', 'found out': 'fa-circle-check', remembers: 'fa-clock-rotate-left',
+    'their own': 'fa-user', knows: 'fa-brain', 'everyone knows': 'fa-users', decided: 'fa-gavel', written: 'fa-scroll', clock: 'fa-clock' };
+const relWords = (rel, by) => ({ saw: 'Saw it', sensed: 'Heard, smelled or felt it', heard: 'Heard it', told: by ? `Told by ${by}` : 'Told',
+    said: 'Said', overheard: by ? `Overheard ${by}` : 'Overheard it', hearsay: 'Heard it said', 'worked out': 'Worked it out', assumed: 'Assumed it',
+    'found out': 'Found out', remembers: 'Remembers it happening', 'their own': 'Their own', knows: 'Knows it', 'everyone knows': 'Everyone knows',
+    decided: 'Decided', written: 'Written', clock: 'The clock' }[rel] ?? rel);
+const capFirst = (t) => t ? `${t[0].toUpperCase()}${t.slice(1)}` : t;
+/** A list of remembered facts (the player's review of 2026-11-17, after their references: one entry a line, details on a
+ * tap): each a row with a sign for how it was learned, its words in one or two lines, and ≈ where some of its details have
+ * drifted or are lost; a tap opens how and when it was learned, how long ago, how sure and how clearly, and the drift; a line
+ * along the row's foot as long as it is recalled. The words stay as first held: which details drifted, the telling decides. */
 function memoryList(rows) {
-    const ul = el('ul', 'rules-memory');
+    const ul = el('ul', 'rules-mem');
+    if (!rows.length) {
+        const li = el('li', 'rules-mem-none', 'Nothing on record yet.');
+        ul.append(li);
+        return ul;
+    }
     for (const r of rows) {
-        const li = el('li', 'rules-memory-row'), bar = el('span', 'rules-memory-bar'), fill = el('i', '');
+        const li = el('li', 'rules-mem-item'), d = document.createElement('details'), sum = document.createElement('summary');
+        const icon = el('i', `rules-mem-icon fa-solid ${REL_ICON[r.rel] ?? 'fa-brain'}`);
+        icon.setAttribute('aria-hidden', 'true');
+        // Since 2026-11-17 (section 97): the memory as it is held now, by meaning; the words first held under the tap.
+        sum.append(icon, el('span', 'rules-mem-text', capFirst(r.held?.as ?? r.text)));
+        const h = r.held, drift = !h ? '' : (() => {
+            const n = (k, one, many) => `${k} of its ${h.details} details ${k === 1 ? one : many}`;
+            return h.changed && h.left ? `${n(h.changed, 'has', 'have')} drifted, ${h.left} ${h.left === 1 ? 'is' : 'are'} lost` : h.changed ? `${n(h.changed, 'has', 'have')} drifted` : h.left ? `${n(h.left, 'is', 'are')} lost` : '';
+        })();
+        if (drift) {
+            const m = el('span', 'rules-mem-mark', '≈');
+            m.title = drift;
+            sum.append(m);
+        }
+        const more = el('div', 'rules-mem-more');
+        more.append(el('div', '', [relWords(r.rel, r.by), r.at != null ? formatStoryTime(r.at) : ''].filter(Boolean).join(' · ')));
+        if (h)
+            more.append(el('div', '', `${capFirst(h.since)} ago · ${h.sure} · ${h.clear}`));
+        if (drift)
+            more.append(el('div', 'rules-mem-drift', drift));
+        if (h?.told?.length)
+            more.append(el('div', 'rules-mem-drift', `Told now: ${h.told.map(toldPhrase).join(', ')}`));
+        if (h?.as && h.as !== r.text)
+            more.append(el('div', 'rules-mem-first', `First held as: ${capFirst(r.text)}`));
+        const bar = el('span', 'rules-mem-bar'), fill = el('i', '');
         fill.style.width = `${Math.round(r.strength * 100)}%`;
         bar.append(fill);
-        li.append(el('span', 'rules-memory-text', r.text), bar, el('span', 'rules-why-note', [r.rel, r.by, r.at != null ? formatStoryTime(r.at) : ''].filter(Boolean).join(' · ')));
+        d.append(sum, more);
+        li.append(d, bar);
         ul.append(li);
     }
     return ul;
@@ -1692,8 +1820,11 @@ function mapNow() {
 function openTab(tab) {
     const player = playerName();
     if (tab === 'memory') {
-        const rows = memoryOf(store().state, player);
-        openSheet(`What ${player} remembers`, [memoryList(rows)], tab);
+        // A name on the tip of the player's character's tongue this hour (tongue.ts): the player writes their lines, so it
+        // stands above the memories.
+        const rows = memoryOf(store().state, player), tot = onTheTongue(store().state, player);
+        const tip = tot.length ? [el('p', 'rules-mem-tot', `On the tip of your tongue now: ${tot.map(t => totPhrase(t, 'you')).join('; ')}. It may come back later.`)] : [];
+        openSheet(`${player} remembers`, [...tip, memoryList(rows)], tab);
         return;
     }
     if (tab === 'map') {
@@ -1718,6 +1849,57 @@ function openTab(tab) {
             add('text', { x: X(p.x), y: Y(p.y) + 18, 'text-anchor': 'middle', class: 'rules-map-name' }, `${p.name}${p.heard ? ' · heard' : ''}${p.seen ? ' · seen' : ''}`);
         }
         openSheet(`Around ${player}`, [svg], tab);
+        return;
+    }
+    if (tab === 'world') {
+        const w = worldNow();
+        if (!w) {
+            openTab('memory');
+            return;
+        }
+        // This year's count first, the years so far under it, and the kind folded: the seed's numbers, which the player's
+        // character does not know (as the start's card folds its law).
+        const n = (x) => Math.round(x).toLocaleString('en-GB'), now = w.rows.at(-1), kills = w.rows.some(r => r.killed > 0);
+        const head = el('div', 'rules-world-now');
+        head.append(el('div', 'rules-world-year', String(now.year)), el('div', 'rules-world-people', `${n(now.people)} people`), el('div', 'rules-world-sub', `in England and Wales${now.year === w.plan.year ? '' : `, ${n(Math.abs(now.people - w.rows[0].people))} ${now.people >= w.rows[0].people ? 'more' : 'fewer'} than in ${w.plan.year}`}`));
+        const table = document.createElement('table');
+        table.className = 'rules-world-table';
+        const hr = document.createElement('tr');
+        for (const h of ['Year', 'People', 'Of the kind', ...kills ? ['Killed by them'] : []])
+            hr.append(el('th', '', h));
+        const thead = document.createElement('thead');
+        thead.append(hr);
+        table.append(thead);
+        const tbody = document.createElement('tbody');
+        for (const r of [...w.rows].reverse()) {
+            const tr = document.createElement('tr');
+            if (r === now)
+                tr.className = 'rules-world-current';
+            for (const v of [String(r.year), n(r.people), n(r.kind), ...kills ? [r.year === 1921 ? '–' : n(r.killed)] : []])
+                tr.append(el('td', '', v));
+            tbody.append(tr);
+        }
+        table.append(tbody);
+        // How the country lives with them this year (society.ts; history, with fiction's pattern marked).
+        const soc = societyOf({ ...w.plan, ...figuresIn(w.rows, now.year, w.plan) }, now.year), life = el('section', 'rules-world-life');
+        // Where the player's character lives (town.ts): what is found there, and how much since the story began; then fiction's.
+        const town = store().state.town;
+        life.append(el('h3', 'rules-world-sub-head', `How people live with it: ${soc.stage}`), ...soc.lines.map(l => el('p', '', l)), ...town ? [el('p', 'rules-world-town', townLine(town, 'Your character'))] : [], el('p', 'rules-world-fiction', `${soc.fiction} (fiction's pattern, not history)`));
+        const kind = document.createElement('details'), sum = document.createElement('summary');
+        kind.className = 'rules-world-kind';
+        sum.textContent = 'The kind: the seed\'s, which your character may not know';
+        const body = el('div', '');
+        if (w.plan.law?.what)
+            body.append(el('p', '', capFirst(w.plan.law.what)));
+        body.append(el('p', '', `What it does: ${w.plan.outcome}.`));
+        // How their number changes year by year (the sheet's Numbers, counted since section 110).
+        if (w.plan.law?.sheet?.numbers)
+            body.append(el('p', '', `How their number changes: ${w.plan.law.sheet.numbers}; they live, die and leave as people do.`));
+        if (w.plan.names.length)
+            body.append(el('p', '', `Names for them: ${w.plan.names.map(x => `"${x.name}", first said in ${x.year}, known to ${Math.round(x.share * 100)} % of people`).join('; ')}.`));
+        kind.append(sum, body);
+        const note = el('p', 'rules-world-note', `Births and deaths as the Registrar General recorded them from 1850 (the 1840s at 1850's rates), the censuses of 1841–1921, and those who left between them; the kind's number follows its sheet.${now.year === 1921 && (storyYearNow() ?? 0) > 1921 ? ' The records held end in 1921.' : ''}`);
+        openSheet('The world', [head, table, life, kind, note], tab);
         return;
     }
     const points = timelineOf(ctx().chat ?? []), t0 = points[0]?.time ?? 0, t1 = points.at(-1)?.time ?? 1, strip = el('div', 'rules-time');
@@ -1747,36 +1929,50 @@ function openTab(tab) {
     });
     openSheet('The story\'s time', [strip], tab);
 }
-/** A person's card: their picture, body, voice and feeling in plain words, what the player's character remembers of them,
- * and the numbers folded under it. */
+/** A person's report card, a screen of its own (2026-11-17, section 92, the player's pick from Danganronpa's handbook, in the
+ * extension's own look): over the whole page as the first-meeting card, their picture with its shadow, their trade (or age)
+ * and their name on the white label, the labelled rows of what the engine records of them (views.ts reportRows), what the
+ * player's character remembers of them (one row each, as in the Story window), and the numbers folded under it. Drawn anew
+ * each time it opens, so it follows the story. A tap on the name tag opens it; the close button, Escape or a step on closes
+ * it (hideWhy). */
 function showPerson(name, mes) {
-    const p = trackedPeople()[name], parts = [], row = el('div', 'rules-person');
-    const src = mes ? avatarOf(name, mes) : null;
+    let screen = document.getElementById('rules-report');
+    if (!screen) {
+        screen = document.createElement('div');
+        screen.id = 'rules-report';
+        screen.setAttribute('role', 'dialog');
+        document.body.appendChild(screen);
+    }
+    const p = trackedPeople()[name], v = voiceOfWho(name), rows = reportRows(p, v), role = p?.occupation ?? '';
+    // The picture and, beside it on a wide screen, the rest (on a phone the rest's parts stand in the page's own grid).
+    const page = el('div', 'rules-report-page'), info = el('div', 'rules-report-info'), src = mes ? avatarOf(name, mes) : null;
     if (src) {
         const img = document.createElement('img');
-        img.className = 'rules-person-face';
+        img.className = 'rules-report-face';
         img.alt = '';
         img.src = src;
-        row.append(img);
+        page.append(img);
     }
-    const facts = el('div', 'rules-person-facts'), v = voiceOfWho(name), f = feelingNow(p);
-    const body = [p?.heightCm ? `${Math.round(p.heightCm)} cm` : '', p?.age != null ? `${Math.floor(p.age)} years` : '', p?.sex ?? ''].filter(Boolean).join(' · ');
-    if (body)
-        facts.append(el('div', '', body));
-    const said = voiceWords(v?.f0Hz, v?.sylPerS);
-    if (said)
-        facts.append(el('div', '', said));
-    if (f)
-        facts.append(el('div', '', `feeling ${f.type}, ${f.strength >= 0.75 ? 'strongly' : f.strength >= 0.4 ? 'clearly' : 'faintly'}`));
-    row.append(facts);
-    parts.push(row);
-    const about = memoryAbout(store().state, playerName(), name);
+    page.append(info);
+    const head = el('div', 'rules-report-head'), label = el('span', 'rules-report-name', name);
+    if (role)
+        head.append(el('span', 'rules-report-role', role));
+    head.append(label);
+    info.append(head);
+    if (rows.length) {
+        const dl = el('dl', 'rules-report-rows');
+        for (const [k, val] of rows)
+            dl.append(el('dt', '', k), el('dd', '', val));
+        info.append(dl);
+    }
+    const about = memoryAbout(store().state, playerName(), name), notes = el('section', 'rules-report-notes');
     if (about.length) {
-        parts.push(el('div', 'rules-person-sub', `What ${playerName()} remembers of ${name}`), memoryList(about));
+        notes.append(el('h3', 'rules-report-sub', `What ${playerName()} remembers`), memoryList(about));
+        info.append(notes);
     }
     if (v) {
         const d = document.createElement('details'), sum = document.createElement('summary'), ul = document.createElement('ul');
-        d.className = 'rules-why-measures';
+        d.className = 'rules-report-measures';
         sum.textContent = 'the measures';
         for (const m of [v.f0Hz ? `pitch: ${Math.round(v.f0Hz)} Hz` : '', v.sylPerS ? `pace: ${v.sylPerS.toFixed(1)} syllables a second` : '', voiceLine(v)].filter(Boolean)) {
             const li = document.createElement('li');
@@ -1784,11 +1980,27 @@ function showPerson(name, mes) {
             ul.append(li);
         }
         d.append(sum, ul);
-        parts.push(d);
+        info.append(d);
     }
-    openSheet(name, parts);
+    if (!rows.length && !about.length && !v)
+        info.append(el('p', 'rules-report-none', `Nothing on record about ${name} yet.`));
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'rules-sheet-close';
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => hideWhy());
+    const scroll = el('div', 'rules-report-scroll');
+    scroll.append(page);
+    screen.replaceChildren(scroll, close);
+    screen.setAttribute('aria-label', name);
+    hideWhy();
+    screen.hidden = false;
+    fitCardName(label);
 }
-/** The panel: its title, the path as one line per step (the relation, what it names, a note), the measures folded under it. */
+/** The path's card (shoot a word), rebuilt on 2026-11-17 in the sheet's look after the player's review of the white card:
+ * the shot words as the pink tag, a close button, one row per step (a sign for its relation, what it names, and under it the
+ * relation in words with who and when), the measures folded under them. It stays a card, not a window, so a selection can
+ * still grow under it; it never covers the box or its tag, and it stands under the scene's badge when it fits there. */
 function drawWhy(span, steps) {
     let panel = document.getElementById('rules-why');
     if (!panel) {
@@ -1798,25 +2010,25 @@ function drawWhy(span, steps) {
         panel.setAttribute('aria-live', 'polite');
         (document.getElementById('sheld') ?? document.body).appendChild(panel);
     }
-    const head = document.createElement('div');
-    head.className = 'rules-why-head';
-    head.textContent = `The path to “${span.length > 60 ? `${span.slice(0, 57)}…` : span}”`;
-    const list = document.createElement('ul');
-    list.className = 'rules-why-path';
+    const sheet = document.getElementById('rules-sheet');
+    if (sheet)
+        sheet.hidden = true;
+    const top = el('div', 'rules-why-top'), close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'rules-sheet-close';
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => hideWhy());
+    top.append(el('div', 'rules-why-title', `The path to “${span.length > 40 ? `${span.slice(0, 37)}…` : span}”`), close);
+    const list = el('ul', 'rules-why-path');
     for (const s of steps) {
-        const li = document.createElement('li'), rel = document.createElement('span');
-        rel.className = 'rules-why-rel';
-        rel.textContent = s.rel;
-        li.append(rel, document.createTextNode(s.text));
-        if (s.note) {
-            const n = document.createElement('span');
-            n.className = 'rules-why-note';
-            n.textContent = s.note;
-            li.append(n);
-        }
+        const li = el('li', ''), icon = el('i', `rules-why-icon fa-solid ${REL_ICON[s.rel] ?? 'fa-circle'}`), words = el('div', 'rules-why-text');
+        icon.setAttribute('aria-hidden', 'true');
+        words.append(el('div', '', capFirst(s.text)), el('div', 'rules-why-note', [relWords(s.rel), s.note].filter(Boolean).join(' · ')));
+        li.append(icon, words);
         list.append(li);
     }
-    panel.replaceChildren(head, list);
+    const body = el('div', 'rules-why-body');
+    body.append(list);
     const measures = steps.flatMap(s => s.measures ?? []);
     if (measures.length) {
         const d = document.createElement('details'), sum = document.createElement('summary'), ul = document.createElement('ul');
@@ -1828,17 +2040,35 @@ function drawWhy(span, steps) {
             ul.append(li);
         }
         d.append(sum, ul);
-        panel.append(d);
+        body.append(d);
     }
+    panel.replaceChildren(top, body);
     panel.hidden = false;
+    // Its place: in the box, never over the box or its tag (34 px over the box); under the scene's badge when the card fits
+    // in the room between them, else from the top of the screen down to the tag, its rows scrolling.
+    panel.style.top = '';
+    panel.style.maxHeight = 'none';
+    const host = (panel.parentElement ?? document.body).getBoundingClientRect(), badge = document.getElementById('rules-box-scene'), box = document.querySelector('#chat .mes.rules-now');
+    if (boxOn() && !boxLog && box) {
+        const tag = box.getBoundingClientRect().top - 34 - 8 - host.top, b = badge?.getClientRects().length ? badge.getBoundingClientRect().bottom - host.top + 8 : 12;
+        const tall = panel.getBoundingClientRect().height, top = tall <= tag - b ? b : 12;
+        panel.style.top = `${Math.round(top)}px`;
+        panel.style.maxHeight = `${Math.max(96, Math.floor(tag - top))}px`;
+    }
+    else
+        panel.style.maxHeight = '';
 }
 /** Closes the panel; true when it was open. */
 function hideWhy() {
-    const panel = document.getElementById('rules-why');
-    if (!panel || panel.hidden)
-        return false;
-    panel.hidden = true;
-    return true;
+    let was = false;
+    for (const id of ['rules-why', 'rules-sheet', 'rules-report']) {
+        const panel = document.getElementById(id);
+        if (panel && !panel.hidden) {
+            panel.hidden = true;
+            was = true;
+        }
+    }
+    return was;
 }
 /** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. Going on while
  * a unit still appears shows the rest of it first. */
@@ -2254,6 +2484,391 @@ function toneLook() {
     if (settings().page)
         chat.classList.add(`rules-era-${eraOf(storyYearNow())}`);
 }
+// The seed (seed.ts): a code, given or rolled, written into the engine's records through the tools, as the story would
+// write them: the world's law into the card's world book, the date at nine at night, the player's character and the people
+// around them (NewCharacter with what the code drew), their ties and wants (RecordFact; a secret want known to its keeper
+// alone), and who is truly of the law's kind (TrueNature). The player is shown what their character knows.
+/** The parts of the last start written, for its card (start-card.ts); taken by the command's popup. */
+let lastStart = null;
+/** Nine at night on the seed's date, in the engine's story minutes. */
+export const seedTime = (plan) => parseStoryTime(`${plan.year}-${String(plan.month).padStart(2, '0')}-${String(plan.day).padStart(2, '0')} 21:00`);
+async function applySeed(arg) {
+    const book = getBook(), code = arg.trim() || rollSeed(Math.random, book.filter(e => e.tells?.length).length);
+    const plan = drawStart(code, book);
+    if ('error' in plan)
+        return plan.error;
+    // The seed's law is the authority for its kind: an entry of the same kind from an earlier seed (with that seed's sheet: its
+    // active hours, attributes and resistances drawn from its own code) gives way to this one (since section 106).
+    if (plan.law) {
+        const old = book.find(e => e.what === plan.law.what);
+        if (!old || JSON.stringify(old) !== JSON.stringify(plan.law))
+            await saveBook([...book.filter(e => e.what !== plan.law.what), plan.law]);
+    }
+    // The engine's clock counts minutes from 1 January of year 1 (clock.ts), not from 1970.
+    setStoryTime(seedTime(plan));
+    const st = store().state;
+    st.setting = { ...st.setting ?? {}, country: 'United Kingdom' };
+    st.seed = plan.code;
+    // The player's character gets no usual day (days.ts): the player decides what they do.
+    setPresent(undefined, playerName());
+    // The names people use for the kind stand for one thing (memory-meaning.ts): a changed name comes out as another of them.
+    {
+        const words = [...new Set(plan.names.map(x => headWord(x.name)).filter(Boolean))];
+        if (words.length > 1)
+            st.alike = [words];
+    }
+    for (const c of seedCalls(plan, playerName()))
+        await REGISTRY.get(c.tool).exec(c.args);
+    // The town the player's character lives in, and the kind's work among its people (town.ts).
+    store().state.town = townOf(plan);
+    // What each person wants toward another of the story, and who shares the player's roof (meetings.ts).
+    {
+        const me = playerName(), people = store().state.people ?? {};
+        for (const x of plan.people) {
+            const p = people[x.label];
+            if (!p)
+                continue;
+            if (x.want.toward)
+                p.want = { text: x.want.text, toward: x.want.toward === 'you' ? me : x.want.toward, secret: x.want.secret };
+            if (/under your roof/.test(x.relation)) {
+                p.home = 'the player\'s';
+                if (people[me])
+                    people[me].home = 'the player\'s';
+            }
+        }
+        saveState();
+    }
+    refreshTime();
+    lastStart = startParts(plan);
+    return knownStart(plan);
+}
+// The story's own links between words (links.ts, section 104): /memory-link's, kept with the card (or the chat without one),
+// and the groups the card's and the chat's lorebook entries give by their keys; memory drifts along them.
+function getLinks() {
+    const card = cardOf(), l = (card ? card.data?.extensions?.rulesLinks : ctx().chatMetadata?.rulesLinks);
+    return { same: l?.same ?? [], kinds: l?.kinds ?? {} };
+}
+async function saveLinks(l) {
+    const c = ctx(), card = cardOf();
+    if (card)
+        await c.writeExtensionField(Number(c.characterId), 'rulesLinks', l);
+    else {
+        c.chatMetadata.rulesLinks = l;
+        await c.saveMetadata();
+    }
+    await refreshLinks();
+}
+/** The lorebook groups now: the card's own lorebook and the chat's. */
+async function loreGroups() {
+    const c = ctx(), names = [cardOf()?.data?.extensions?.world, c.chatMetadata?.world_info].filter((x) => typeof x === 'string' && !!x);
+    const out = [];
+    for (const n of [...new Set(names)]) {
+        try {
+            const book = await c.loadWorldInfo?.(n);
+            out.push(...groupsOfLore(Object.values((book?.entries ?? {}))));
+        }
+        catch (e) {
+            console.warn('[Rules engine] lorebook not read:', e);
+        }
+    }
+    return out;
+}
+async function refreshLinks() { const own = getLinks(); setLinks({ same: [...own.same, ...await loreGroups()], kinds: own.kinds }); }
+function registerLinkCommand() {
+    const c = ctx();
+    if (!c.SlashCommand || !c.SlashCommandParser)
+        return;
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'memory-link',
+        helpString: 'Link words as memory holds them: /memory-link the Red Lion = Pike\'s = the inn (one thing under several names: a misremembered one comes out as another), /memory-link the returned : monster (a kind: a forgotten word is held as it). /memory-link alone lists the links; /memory-link remove 2 removes the second. A lorebook entry\'s keys link themselves.',
+        returns: 'the links',
+        callback: async (_a, value) => {
+            const t = String(value ?? '').trim(), own = getLinks();
+            const rm = /^remove\s+(\d+)$/i.exec(t);
+            if (rm) {
+                const i = Number(rm[1]) - 1, n = own.same.length;
+                if (i < 0 || i >= n + Object.keys(own.kinds).length)
+                    return `There is no link ${rm[1]}.`;
+                if (i < n)
+                    own.same.splice(i, 1);
+                else
+                    delete own.kinds[Object.keys(own.kinds)[i - n]];
+                await saveLinks(own);
+            }
+            else if (t) {
+                const p = parseLink(t);
+                if ('error' in p)
+                    return p.error;
+                if ('same' in p)
+                    own.same.push(p.same);
+                else
+                    own.kinds[p.kind[0]] = p.kind[1];
+                await saveLinks(own);
+            }
+            const lore = await loreGroups(), mine = linkLines(own);
+            return [mine.length ? `Your links:\n${mine.map((l, i) => `${i + 1}. ${l}`).join('\n')}` : 'No links of your own yet.', lore.length ? `From the lorebook's keys:\n${lore.map(g => g.join(' = ')).join('\n')}` : ''].filter(Boolean).join('\n\n');
+        },
+    }));
+}
+// The looks a character's picture takes (section 111; rules/expression-set.ts): one set for every chat (the player's pick),
+// worked out from how often each look state was on a character as replies came, pooled over the chats whose counts the player
+// added, and kept in the settings until worked out again.
+function looksFrom(chats) {
+    const sum = {};
+    for (const c of Object.values(chats))
+        for (const [k, n] of Object.entries(c))
+            sum[k] = (sum[k] ?? 0) + n;
+    return sum;
+}
+/** The set kept in the settings, worked out (again, with `recompute`: this chat's counts added to the pooled ones) when asked
+ *  or when there is none yet. */
+async function looksSet(recompute = false) {
+    const s = settings(), looks = s.looks ??= { chats: {} };
+    if (recompute)
+        looks.chats[ctx().getCurrentChatId() ?? 'chat'] = { ...store().state.faced ?? {} };
+    if (recompute || !looks.set) {
+        toastr.info('Working out the looks…');
+        await new Promise(r => setTimeout(r, 0));
+        const counts = looksFrom(looks.chats), n = Object.values(counts).reduce((a, b) => a + b, 0), set = expressionSet(counts);
+        looks.set = { made: new Date().toISOString(), from: n, chats: Object.keys(looks.chats).length, looks: set.knee.looks.map(l => ({ face: l.face, calm: l.calm, keys: l.keys })) };
+        ctx().saveSettingsDebounced();
+    }
+    return looks.set;
+}
+/** A command's result in plain words, shown to the player and given back: SillyTavern shows nothing of a command typed in
+ *  the chat box but its errors. The window is left open while a script that pipes the result goes on. */
+function showText(text) {
+    const c = ctx();
+    void c.callGenericPopup(`<pre style="white-space:pre-wrap;text-align:left">${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>`, c.POPUP_TYPE.TEXT, '', {});
+    return text;
+}
+function registerLooksCommand() {
+    const c = ctx();
+    if (!c.SlashCommand || !c.SlashCommandParser)
+        return;
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'rules-looks',
+        helpString: 'The looks every character\'s picture takes, the same in every chat: /rules-looks shows the set; /rules-looks recompute adds this chat\'s counts (what each character looked like as replies came) to those of the chats added before and works the set out again (some seconds).',
+        returns: 'the looks and what each stands for',
+        callback: async (_a, value) => {
+            const set = await looksSet(/^\s*recompute\s*$/i.test(String(value ?? '')));
+            return showText([`${set.looks.length} looks, calm among them, from ${set.from} look${set.from === 1 ? '' : 's'} seen in ${set.chats} chat${set.chats === 1 ? '' : 's'}${set.from ? '' : ' (none yet: every state counted alike)'}:`,
+                ...set.looks.map((l, i) => `${i + 1}. ${lookWords({ ...l, weights: [] })} → ${faceTags(l.face).tags.join(', ')}`)].join('\n'));
+        },
+    }));
+}
+// The looks' pictures (section 112; faces.ts): /rules-faces makes a character's faces from their card picture.
+function registerFacesCommand() {
+    const c = ctx();
+    if (!c.SlashCommand || !c.SlashCommandParser)
+        return;
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'rules-faces',
+        helpString: 'Make a character\'s faces, one for each look of the set, from their card picture with only the face redrawn: /rules-faces for this chat\'s character, /rules-faces Mary for another with a card. Faces already made are kept.',
+        returns: 'how many faces were made',
+        callback: async (_a, value) => {
+            // The context read now, for the chat open when the command runs.
+            const now = facesCtx(), who = String(value ?? '').trim() || now.name2 || '', card = (now.characters ?? []).find(x => x.name === who);
+            const base = await baseOf(who, m => toastr.info(m));
+            if (typeof base === 'string')
+                return showText(base);
+            // AI Horde redraws an area the player marks once on the picture (section 115).
+            if ((now.extensionSettings?.sd?.source) === 'horde') {
+                const boxes = (settings().looks ??= { chats: {} }).faceBoxes ??= {};
+                const box = boxes[base.folder] ?? await markFace(base.url, who);
+                if (!box)
+                    return showText(`No face was marked on ${who}'s picture, so no face was drawn.`);
+                boxes[base.folder] = base.box = box;
+                now.saveSettingsDebounced();
+            }
+            const said = await makeFaces(now, who, base, (await looksSet()).looks, m => toastr.info(m));
+            // A face the box found missing before may be there now.
+            const theirs = `characters/${card?.avatar ? encodeURIComponent(who) : base.folder}/look_`;
+            for (const m of [...missingExpr])
+                if (m.startsWith(theirs))
+                    missingExpr.delete(m);
+            return showText(said);
+        },
+    }));
+}
+/** SillyTavern's context with the player's AI Horde key, for the faces (section 118). */
+const facesCtx = () => ({ ...ctx(), hordeKey: settings().hordeKey || undefined });
+const portraitDrawing = new Map();
+/** The picture `who`'s faces are made from: their card's, or for one the engine made a portrait drawn once from their record
+ *  (section 113; once at a time, however many ask); why there is none, else. */
+async function baseOf(who, say = () => { }) {
+    const now = facesCtx(), card = (now.characters ?? []).find(x => x.name === who);
+    if (card?.avatar)
+        return { url: `/characters/${encodeURIComponent(card.avatar)}`, folder: who, key: card.avatar.replace(/\.[^/.]+$/, '') };
+    const p = trackedPeople()[who], folder = portraitFolder(who);
+    if (!p || !folder)
+        return `${who || 'This chat'} has no card and is no one the engine keeps in this chat, so there is no picture to make faces from.`;
+    const looks = settings().looks ??= { chats: {} };
+    if (!looks.portraits?.includes(folder)) {
+        let drawing = portraitDrawing.get(folder);
+        if (!drawing) {
+            say(`Drawing ${who}'s portrait…`);
+            drawing = drawPortrait(now, who, folder, portraitTags(p, storyYearNow(), colouringNow(who)).join(', '), seedOf(who)).then(why => {
+                if (!why) {
+                    (looks.portraits ??= []).push(folder);
+                    now.saveSettingsDebounced();
+                }
+                portraitDrawing.delete(folder);
+                return why;
+            });
+            portraitDrawing.set(folder, drawing);
+        }
+        const why = await drawing;
+        if (why)
+            return why;
+    }
+    return { url: `/characters/${folder}/portrait.png`, folder };
+}
+// Faces drawn in the background (section 116; faces.ts FaceQueue): for AI Horde, Forge, AUTOMATIC1111 or SD.Next, whenever the
+// box shows someone whose look has no face yet, that face and their calm one are drawn, two at a time through AI Horde. On AI
+// Horde the face is first marked once: a note the player taps when they like, the faces held until then.
+const imageSource = () => (ctx().extensionSettings?.sd?.source) ?? '';
+const faceTold = new Set(), faceBoxAsked = new Set();
+let looksPending = null;
+const faceQueue = new FaceQueue({
+    atOnce: () => imageSource() === 'horde' ? hordeAtOnce() : 1,
+    draw: drawQueuedFace,
+    failed: (_job, why) => { if (!faceTold.has(why)) {
+        faceTold.add(why);
+        toastr.warning(why, 'Faces');
+    } },
+});
+/** Asks for the faces of the look `who` is in now and of calm, in the background. */
+function wantFaces(who) {
+    const p = trackedPeople()[who];
+    if (!p || !['horde', 'auto', 'vlad'].includes(imageSource()))
+        return;
+    // The set worked out once, however many ask while it is.
+    const set = settings().looks?.set;
+    void (set ? Promise.resolve(set) : looksPending ??= looksSet().finally(() => { looksPending = null; })).then(set => {
+        const key = jointOf(p, storyTime()), now = set.looks.find(l => l.keys.includes(key)), calm = set.looks.find(l => l.calm);
+        faceQueue.want(who, [now?.face, calm?.face].filter((f) => !!f));
+    });
+}
+async function drawQueuedFace(job) {
+    const now = facesCtx(), base = await baseOf(job.who);
+    if (typeof base === 'string')
+        return base;
+    const label = lookLabel(job.face);
+    if ((await spriteLabels(now, base.folder)).has(label))
+        return 'done';
+    if (imageSource() === 'horde') {
+        const box = settings().looks?.faceBoxes?.[base.folder];
+        if (!box) {
+            askFaceBox(job.who, base);
+            return 'box';
+        }
+        base.box = box;
+    }
+    const pic = await lookPicture(now, job.who, base, faceTags(job.face).tags.join(', '), seedOf(job.who));
+    if (typeof pic === 'string')
+        return pic;
+    if (!await saveSprite(now, base.folder, label, pic))
+        return `A face of ${job.who}'s could not be saved.`;
+    missingExpr.delete(`characters/${base.key ? encodeURIComponent(job.who) : base.folder}/${label}.png`);
+    return 'done';
+}
+/** A note the player taps to mark `who`'s face, once a session; their faces go on once it is marked. */
+function askFaceBox(who, base) {
+    if (faceBoxAsked.has(base.folder))
+        return;
+    faceBoxAsked.add(base.folder);
+    toastr.info(`Tap here to mark ${who}'s face on their picture, so their faces can be drawn.`, 'Faces', {
+        timeOut: 0, extendedTimeOut: 0, closeButton: true,
+        onclick: () => void markFace(base.url, who).then(box => {
+            if (!box) {
+                faceBoxAsked.delete(base.folder);
+                return;
+            }
+            ((settings().looks ??= { chats: {} }).faceBoxes ??= {})[base.folder] = box;
+            ctx().saveSettingsDebounced();
+            faceQueue.marked(who);
+        }),
+    });
+}
+/** Asks the player once to mark a face on a picture, by dragging a box over it from brow to chin; the box as shares of the
+ *  picture's width and height, or null when none was marked. */
+async function markFace(url, who) {
+    const c = ctx(), id = `rules-facebox-${Date.now()}`, esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    let box = null;
+    const shown = c.callGenericPopup(`<div style="text-align:left;margin-bottom:6px">Drag a box over ${esc(who)}'s face, from brow to chin, then press OK. AI Horde redraws only inside it.</div>`
+        + `<div id="${id}" style="position:relative;display:inline-block;touch-action:none;user-select:none"><img src="${url}" draggable="false" style="max-width:100%;max-height:60vh;display:block">`
+        + `<div class="rules-facebox" style="position:absolute;border:2px solid #f44;border-radius:50%;display:none;pointer-events:none"></div></div>`, c.POPUP_TYPE.CONFIRM, '', {});
+    await new Promise(r => setTimeout(r, 0));
+    const wrap = document.getElementById(id), img = wrap?.querySelector('img'), mark = wrap?.querySelector('.rules-facebox');
+    if (wrap && img && mark) {
+        let from = null;
+        const at = (e) => { const r = img.getBoundingClientRect(), cl = (v) => Math.min(1, Math.max(0, v)); return [cl((e.clientX - r.left) / r.width), cl((e.clientY - r.top) / r.height)]; };
+        wrap.addEventListener('pointerdown', e => { from = at(e); wrap.setPointerCapture(e.pointerId); });
+        wrap.addEventListener('pointermove', e => {
+            if (!from)
+                return;
+            const p = at(e), b = { x: Math.min(from[0], p[0]), y: Math.min(from[1], p[1]), w: Math.abs(p[0] - from[0]), h: Math.abs(p[1] - from[1]) };
+            box = b;
+            Object.assign(mark.style, { display: 'block', left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` });
+        });
+        wrap.addEventListener('pointerup', () => { from = null; });
+    }
+    const ok = await shown, b = box;
+    return ok && b && b.w > 0.02 && b.h > 0.02 ? b : null;
+}
+/** The face for a person's look now, from the set kept in the settings: their sprite labelled by the look's face. */
+function lookSpriteOf(who) {
+    const set = settings().looks?.set, p = trackedPeople()[who];
+    if (!set || !p)
+        return null;
+    const key = jointOf(p, storyTime()), look = set.looks.find(l => l.keys.includes(key));
+    const card = ctx().characters?.some(c => c.name === who && c.avatar), drawn = portraitFolder(who);
+    const folder = card ? encodeURIComponent(who) : drawn && settings().looks?.portraits?.includes(drawn) ? drawn : null;
+    return look && folder ? `characters/${folder}/${lookLabel(look.face)}.png` : null;
+}
+/** The hair and eyes of one the engine made, with no card and other than the player's character, drawn from measured
+ *  shares where they fit (colouring.ts); null otherwise. */
+function colouringNow(who) {
+    const c = ctx(), id = c.getCurrentChatId?.(), p = trackedPeople()[who];
+    if (!id || !p || who === c.name1 || (c.characters ?? []).some(x => x.name === who && x.avatar))
+        return null;
+    return colouringOf(who, id, p.region, !!(c.chatMetadata ? store().state.seed : undefined), p.age, genotypeOf(who, id, trackedPeople()));
+}
+/** What the narrator is told of how the people with no card look (section 114): the hair and eyes drawn for them and the dress
+ *  of their trade and year, so the story and their pictures agree. */
+function looksInjection() {
+    const year = storyYearNow(), lines = Object.entries(trackedPeople()).flatMap(([who, p]) => {
+        const col = colouringNow(who);
+        return col ? [`${who}: ${[col.hair, col.eyes].filter(Boolean).join(', ')}; wears ${dressOf(p.occupation, year)}.`] : [];
+    });
+    return lines.length ? `[LOOKS]\n${lines.join('\n')}\n[/LOOKS]` : '';
+}
+/** The sprite folder of one the engine made in this chat (rules-people/<name>_<hash of chat and name>): the same name in
+ *  another chat is another person. Letters and digits only, so SillyTavern keeps it as it is. */
+function portraitFolder(who) {
+    const id = ctx().getCurrentChatId?.();
+    return who && id ? `rules-people/${who.replace(/[^\p{L}\p{N}]+/gu, '_')}_${seedOf(`${id}\n${who}`).toString(36)}` : null;
+}
+function registerSeedCommand() {
+    const c = ctx();
+    if (!c.SlashCommand || !c.SlashCommandParser)
+        return;
+    c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
+        name: 'rules-seed',
+        helpString: 'Start from a seed: /rules-seed rolls one; /rules-seed EW1881-BH.RA-N4-D2-K5-7f2c gives that start again. Place and year; the law on axes (body: B breath, H warmth, S sleep, E food, D drink, P pain, F fear it lacks; a dot; origin: B born so, M made, R came back from death, E from elsewhere; passing: A looks like anyone, C copies one person, H keeps out of sight; with E, a dot and its diet: F flesh or B blood, then K the living killed, S spared, R the dead, O their own kind; and then no D where feeding kills, since how deadly they are follows); W and their mass in kg, if not 70, or WB1… for your world book\'s kinds; how many are of the kind, N (one in 10^N); how deadly, D (10^(D−1) deaths per 100,000 people a year); K and 3–7 people; the draw. Best in a new chat.',
+        returns: 'what your character knows of the start',
+        callback: async (_args, value) => {
+            lastStart = null;
+            const out = await applySeed(String(value ?? ''));
+            // The start as a card (start-card.ts); a refusal (a code that does not read) as the plain words it is.
+            const card = lastStart ? startCardHtml(lastStart) : `<pre style="white-space:pre-wrap;text-align:left">${out.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>`;
+            lastStart = null;
+            await c.callGenericPopup(card, c.POPUP_TYPE.TEXT, '', {});
+            return out;
+        },
+    }));
+}
 function registerTimeCommand() {
     const c = ctx();
     if (!c.SlashCommand || !c.SlashCommandParser)
@@ -2348,6 +2963,11 @@ async function buildSettings() {
         profile.add(new Option(p.name, p.id));
     profile.value = profiles.some(p => p.id === s.profile) ? s.profile : '';
     profile.addEventListener('change', () => { settings().profile = profile.value; ctx().saveSettingsDebounced(); });
+    const hordeKey = document.getElementById('rules_engine_horde_key');
+    if (hordeKey) {
+        hordeKey.value = s.hordeKey ?? '';
+        hordeKey.addEventListener('change', () => { settings().hordeKey = hordeKey.value.trim(); ctx().saveSettingsDebounced(); });
+    }
     const tokens = document.getElementById('rules_engine_max_tokens');
     tokens.value = String(s.maxTokens || '');
     tokens.addEventListener('change', () => { settings().maxTokens = Math.max(0, Number(tokens.value) || 0); ctx().saveSettingsDebounced(); });
@@ -2505,7 +3125,8 @@ function wireEvents() {
         if (e)
             on(e, () => { void voicesReady(trackedPeople()).then(() => { if (boxOn())
                 showBox(); }).catch(err => console.warn('[Rules engine] voice skipped:', err)); });
-    on(ev.CHAT_CHANGED, () => { metShown.clear(); document.body.classList.remove('rules-card-on'); if (live())
+    on(ev.CHAT_CHANGED, () => { void refreshLinks(); });
+    on(ev.CHAT_CHANGED, () => { document.body.classList.remove('rules-card-on'); if (live())
         syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
     on(ev.MESSAGE_DELETED, () => { if (live())
         syncRulesToChat(); drawNotes(); showBox(); });
@@ -2552,6 +3173,10 @@ function wireEvents() {
     c.SlashCommandParser?.addCommandObject(c.SlashCommand.fromProps({ name: 'rules-log', helpString: 'This turn\'s decisions: each call, its arguments, the random draws it used and its result.', callback: async () => turnLog() }));
     registerRulesEvalCommand(send);
     registerTimeCommand();
+    registerSeedCommand();
+    registerLinkCommand();
+    registerLooksCommand();
+    registerFacesCommand();
     registerWorldCommands();
     await buildSettings();
     try {

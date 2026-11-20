@@ -124,12 +124,15 @@ function paramsOf(p: Person): ModelParams {
  * One minute in p.env. Returns { core, skin[17], waterL (all water lost this minute, given restL per minute at rest), frozen
  * (segments whose skin fell below the person's freezing temperature this minute) }.
  */
-export function thermalMinute(p: Person, { active = false, sleeping = false, restL = 0 } = {}, rng: Rng, gauss: Gauss): ThermalMinute {
+// A body with no warmth of its own (NO_HEAT, section 107): the same model with its regulation off (JOS-3's passive: no
+// sweating, shivering or change of blood flow to the skin) and its heat production at coldMetShare of a warm body's (Bennett &
+// Ruben 1979), so it takes the temperature around it, slowly as its mass allows; it starts at the air's temperature.
+export function thermalMinute(p: Person, { active = false, sleeping = false, restL = 0, cold = false, metScale = 1 } = {}, rng: Rng, gauss: Gauss): ThermalMinute {
     const th = p.thermal ??= {};
     th.params ??= paramsOf(p); th.frozen ??= []; th.bareDose ??= 0;
     const params = th.params, frozenAll = th.frozen;
     const body = modelOf(params);
-    th.t ??= [...body.t];
+    th.t ??= cold ? body.t.map(() => p.env!.tdb) : [...body.t];
     th.freezeC ??= Math.round((FREEZE_MEAN + FREEZE_SD * gauss()) * 100) / 100;
     th.bareQ ??= rng();  // where in each time range this person's skin freezes, uniform [ASSUMED]
     const e = p.env!;
@@ -142,7 +145,7 @@ export function thermalMinute(p: Person, { active = false, sleeping = false, res
     // Shivering stops below 32 °C core (Swiss stage II: drowsy, not shivering; Brown et al. 2012).
     const water = e.water ? { tc: e.water.tc, hc: waterHc(e.water.speed), segs: e.water.segs } : null;
     const clo = (Array.isArray(e.clo) ? e.clo : new Array(SEGMENTS.length).fill(e.clo ?? 0) as number[]).map((c, i) => water?.segs[i] && !e.water!.suit ? c * WET_CLO : c);
-    const r = step(run, { tdb: e.tdb, tr: e.tr ?? e.tdb, rh: e.rh ?? 50, v: e.v ?? 0.1, clo, par, posture, water }, 60, { shivStopsBelow: 32 });
+    const r = step(run, { tdb: e.tdb, tr: e.tr ?? e.tdb, rh: e.rh ?? 50, v: e.v ?? 0.1, clo, par, posture, water }, 60, cold ? { passive: true, avaZero: true, metScale } : { shivStopsBelow: 32 });
     th.t = run.t;
     const skin = skinOf(run);
     const frozen = SEGMENTS.filter((s, i) => skin[i] < freezeC && !frozenAll.includes(s));

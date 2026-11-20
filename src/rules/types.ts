@@ -73,6 +73,13 @@ export interface BodyTiming { nerve_mps?: number; limb_m?: number; sense_s?: Rec
 
 /** One character's body as the engine keeps it. */
 export interface Person {
+    /** The world-book kind this person truly is, kept hidden (tells.ts; TrueNature); it shows only through its tells. */
+    truly?: string;
+    /** Body switches of their kind, as Dwarf Fortress creature tokens (NOBREATHE, NO_SLEEP, NO_EAT, NO_DRINK, NOPAIN, NOFEAR)
+     * and NO_HEAT (no warmth of its own); body-engine.ts `has` reads them with the creature's own (tells.ts BODY). */
+    bodyFlags?: string[];
+    /** Dwarf Fortress attributes of their kind (kind-sheet.ts KindSheet), a human's median 1000; strength scales grip. */
+    attrs?: Record<string, number>;
     /** Named spot the character is at (actions.ts), e.g. "John's house: living room". */
     at?: string;
     /** Sitting or standing, as the last Act left them (actions.ts). */
@@ -117,9 +124,20 @@ export interface Person {
     /** Feelings still running (Appraise): the OCC type, what it is about, minutes left. */
     /** Appraised feelings still running: the OCC type, what it is about, minutes left, and the turn it was recorded in (the
      *  number of the player's lines then; the music's newest feeling, music.ts sceneTarget). */
-    feelings?: { type: string; about?: string; left: number; turn?: number; strength?: number }[];
+    feelings?: { type: string; about?: string; left: number; turn?: number; strength?: number; state?: string }[];
     /** Where the person's BMI sits among their sex in their country and year (BodySize, or a build the story states). */
     bmiZ?: number;
+    /** Their usual day (days.ts): the minute of the day they rise, how long they sleep, and their hours of work if they work;
+     *  drawn by NewCharacter where the time and place have it (England and Wales, 1841–1921). */
+    day?: { rise: number; sleep: number; work?: { start: number; end: number }; shift?: number };
+    /** For one truly of a kind that lives on flesh or blood (hunger.ts): minutes between feedings, the next one due (story
+     *  minute), the diet, and how many feedings so far. Set by TrueNature where the story has a clock. */
+    hunger?: { every: number; next: number; food: 'flesh' | 'blood'; prey: 'K' | 'S' | 'R' | 'O'; fed?: number };
+    /** What the person wants toward another of the story (seed.ts want; meetings.ts): the want's words, whom it is toward,
+     *  whether it is kept secret, and how many times they have acted on it while the player's character was away. */
+    want?: { text: string; toward: string; secret: boolean; met?: number };
+    /** The household the person lives in (seed.ts: under the player's roof), for how often its people meet. */
+    home?: string;
     /** The activity under way, as BodyEnvironment named it (mood.ts). */
     doing?: string;
     /** Working-memory span, chunks (knowledge.ts heldOfMessage), drawn once. */
@@ -141,6 +159,10 @@ export interface Person {
     timingZ?: number;
     /** The trade the story or NewCharacter gave the person, as named (the first-meeting card shows it). */
     occupation?: string;
+    /** Their family as the story fixes it (section 120; NewCharacter mother, father, sibling_of): their mother and father by
+     *  name, where they are among the story's people, and the family they share with their brothers and sisters (a key: the
+     *  name of the first of them recorded), whose parents the story may never show. Their genes come from these (colouring.ts). */
+    kin?: { mother?: string; father?: string; family?: string };
     /** Body stores spent by the food deficit (body-engine.ts settleMass): mass before the deficit, fat and glycogen left, the
      * deficit already taken from them (kcal). */
     stores?: { mass0: number; fatKg: number; glycogenG: number; applied: number; lethalBmi?: number };
@@ -153,11 +175,21 @@ export interface Person {
 }
 
 /** A fixed fact of the story and who knows it; `from` maps a normalized knower name to how they learned it. */
-export interface Fact { id: number; text: string; imp?: number; knowers: string[]; everyone: boolean; seq?: number; from?: Record<string, string>; secret?: boolean; at?: Record<string, number>; times?: Record<string, number[]>; ageAt?: Record<string, number>; kind?: 'event' | 'knowledge' }
+export interface Fact { id: number; text: string; imp?: number; knowers: string[]; everyone: boolean; seq?: number; from?: Record<string, string>; secret?: boolean; at?: Record<string, number>; times?: Record<string, number[]>; ageAt?: Record<string, number>; kind?: 'event' | 'knowledge';
+    /** How the world stands to it (knowledge.ts): absent, the world's own (it happened as written); 'said', what someone said,
+     * which the world holds where a fact of its own says the same; 'version', a memory or a saying the world holds otherwise. */
+    standing?: 'said' | 'version';
+    /** For a version: the id of the world's fact it stands in for in its holders' memory. */
+    versionOf?: number;
+    /** The spots (Person.at) where each knower met it, by knower, for the place's cue (knowledge.ts recallStrength). */
+    where?: Record<string, string[]> }
 
 /** Rules-engine state of one chat (chatMetadata.rulesEngine.state). */
 export interface RuleState {
     people?: Record<string, Person>;
+    /** How often each look state (expression-set.ts jointKey: a feeling's appraisal or calm, with the body's state) was on a
+     *  character as a reply came in this chat. */
+    faced?: Record<string, number>;
     facts?: Fact[]; factSeq?: number;
     /** Trust between two characters after a betrayal, by "truster→betrayer" (social.ts trustAgain). */
     trust?: Record<string, { lied: boolean; repair: string; kept: number }>;
@@ -183,6 +215,19 @@ export interface RuleState {
     longitude?: number;
     /** What the scene has fixed for every tool: the last place given (a weather place key), its label and country. */
     setting?: { place?: string; label?: string; country?: string | null };
+    /** The town the player's character lives in (town.ts): its people, what the living find of the kind's work a year per
+     *  100,000 (society.ts seenPer100k), what is found (a body drained of blood, one with its flesh gone, one dead of no cause
+     *  anyone can name, or a grave opened), the next kill (story minute), the kills waiting to be found the same morning, and
+     *  how many so far. */
+    town?: { people: number; seen: number; how: 'blood' | 'flesh' | 'unknown' | 'grave'; next?: number; found?: { at: number; n: number }; killed?: number };
+    /** Groups of words that stand for one thing (memory-meaning.ts): a changed detail comes out as another of its group. The
+     *  seed sets the names people use for the kind; a story can add its own. */
+    alike?: string[][];
+    /** News still on its way (hunger.ts, retell.ts): `who` hears the world's fact `of` at story minute `at`, through `chain`
+     *  tellers; an item with no `who` (kept by chats saved before section 98) becomes common knowledge then. */
+    pending?: { at: number; text: string; who?: string; of?: number; chain?: number }[];
+    /** The seed the story started from (seed.ts), when it did. */
+    seed?: string;
     /** What each character carries, by holder name (possessions.ts). */
     items?: Record<string, { item: string; qty: number; owner?: string }[]>;
     /** Holders who give only what is on record: player characters after a Claim about what they have. */

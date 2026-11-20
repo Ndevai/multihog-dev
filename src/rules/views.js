@@ -1,13 +1,14 @@
-import { recalls, recallStrength } from './knowledge.js';
+import { heldFacts, heldSource, recallStrength, memoryState } from './knowledge.js';
 import { relOfSource } from './why.js';
 import { VOCAL_FAMILY } from './emotion.js';
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-/** What `who` remembers now: the facts they hold and recall (each knower's fixed draw under the forgetting curve), the
- * strongest first, then the newest. */
+/** What `who` remembers now: the facts they hold and recall (each knower's fixed draw under the forgetting curve), their own
+ * version in place of the world's fact it replaces, as they hold it (the player sees as their character); the strongest
+ * first, then the newest. */
 export function memoryOf(st, who) {
     const w = norm(who);
-    return (st.facts ?? []).filter(f => (f.everyone || f.knowers.some(k => norm(k) === w)) && recalls(st, f, who))
-        .map(f => { const src = f.everyone ? null : relOfSource(f.from?.[w]); return { text: f.text, strength: recallStrength(st, f, who), rel: f.everyone ? 'everyone knows' : src.rel, by: src?.by, at: f.at?.[w] }; })
+    return heldFacts(st, who)
+        .map(f => { const src = f.everyone ? null : relOfSource(heldSource(st, f, who)); const held = f.everyone ? null : memoryState(st, f, who); return { text: f.text, strength: recallStrength(st, f, who), rel: f.everyone ? 'everyone knows' : src.rel, by: src?.by, at: f.at?.[w], ...held ? { held } : {} }; })
         .sort((a, b) => b.strength - a.strength || (b.at ?? 0) - (a.at ?? 0));
 }
 /** What `who` remembers of `name`: the remembered facts that name them. */
@@ -23,6 +24,29 @@ export function voiceWords(f0Hz, sylPerS) {
 export function feelingNow(p) {
     const f = [...(p?.feelings ?? [])].filter(x => x.left > 0).sort((a, b) => (b.turn ?? 0) - (a.turn ?? 0))[0];
     return f ? { type: f.type, strength: f.strength ?? 0.5 } : null;
+}
+/** A person's report card (the player's pick, 2026-11-17, from Danganronpa's handbook): labelled rows in plain words from the
+ * engine's record, each left out when the record has none (their trade stands under their name, as the handbook's talent
+ * does, so no row repeats it). Age in whole years with the word for them (box.ts cardRole's); height in cm; build from where their BMI sits among their sex in their country and year, slight
+ * below −1 SD and heavy above +1 SD [ASSUMED bands: a sixth of people each side]; voice (voiceWords); the feeling now with how
+ * strongly (0.75 and 0.4, the person card's bands). */
+export function reportRows(p, voice) {
+    const rows = [];
+    if (p?.age != null) {
+        const noun = p.age < 18 ? (p.sex === 'female' ? 'girl' : p.sex === 'male' ? 'boy' : '') : p.sex === 'female' ? 'woman' : p.sex === 'male' ? 'man' : '';
+        rows.push(['Age', `${Math.floor(p.age)}${noun ? ` · ${noun}` : ''}`]);
+    }
+    if (p?.heightCm)
+        rows.push(['Height', `${Math.round(p.heightCm)} cm`]);
+    if (p?.bmiZ != null)
+        rows.push(['Build', p.bmiZ < -1 ? 'slight' : p.bmiZ > 1 ? 'heavy' : 'average']);
+    const said = voiceWords(voice?.f0Hz, voice?.sylPerS);
+    if (said)
+        rows.push(['Voice', said]);
+    const f = feelingNow(p);
+    if (f)
+        rows.push(['Feeling', `${f.type}, ${f.strength >= 0.75 ? 'strongly' : f.strength >= 0.4 ? 'clearly' : 'faintly'}`]);
+    return rows;
 }
 /** The vocal family (emotion.ts: anger, fear, happiness, sadness, tenderness) a person's picture takes from their feeling. */
 export const pictureFeeling = (p) => { const f = feelingNow(p); return f ? VOCAL_FAMILY[f.type] ?? null : null; };

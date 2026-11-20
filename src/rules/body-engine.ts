@@ -12,7 +12,7 @@ import { envenom, baseVenom, symptoms, activeSymptoms } from './venom.js';
 import { relativeLoad, mawtHours, vo2max, vo2avail } from './work.js';
 import { foodEnergy } from './substance.js';
 import { drugMinute, drugStatus } from './drugs.js';
-import { def, k, reaches } from './constants.js';
+import { def, k, peek, reaches } from './constants.js';
 import { drmRow, drmLine } from './mood.js';
 import { worldHasMagic } from './world.js';
 import type { Creature, Part, Layer, Tissue } from './df/raws.js';
@@ -107,7 +107,14 @@ export function newPerson(massKg = 70, species = 'HUMAN'): Person {
 export const creatureOf = (p: Person | null | undefined): Creature | null => creature(p?.species ?? 'HUMAN');
 // DF creature tokens that switch off a need or an effect: NOBREATHE, NO_EAT, NO_DRINK, NO_SLEEP, NOEXERT, NOSTUN, and the
 // syndrome immunities NOPAIN, NO_DIZZINESS, NO_FEVERS, NONAUSEA, PARALYZEIMMUNE [RAW].
-const has = (p: Person, flag: string) => !!creatureOf(p)?.flags?.includes(flag);
+// A person's own body switches (Person.bodyFlags: a world-book kind they truly are, tells.ts) count as the creature's tokens.
+const has = (p: Person, flag: string) => !!creatureOf(p)?.flags?.includes(flag) || !!p.bodyFlags?.includes(flag);
+// Eyes that see in the dark (the raws' EXTRAVISION; kind-sheet.ts senses.dark; section 108): the light counts as darkSightGain
+// times brighter, as a cat's threshold is about a sixth of a person's (a veterinary review: the human threshold 6 times the
+// cat's; Gunter 1951, J Physiol 114:8, its source, not read here). Daylight is past every threshold, so it changes the dark.
+def({ id: 'darkSightGain', value: 6, unit: 'times the light, for eyes that see in the dark', status: 'raw', src: 'a cat\'s absolute threshold about a sixth to a seventh of a person\'s (VIN veterinary review; Wikipedia, Cat senses), after Gunter 1951, not read', range: [5, 8], file: 'body-engine.ts' });
+/** The light as `p`'s eyes take it: `lux` times darkSightGain for eyes that see in the dark. */
+export const seeLux = (p: Person | null | undefined, lux: number) => p && has(p, 'EXTRAVISION') ? lux * k('darkSightGain') : lux;
 
 export function person(state: { people?: Record<string, Person> }, who: string, massKg?: number | null, species = 'HUMAN'): Person {
     state.people ??= {};
@@ -307,7 +314,8 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
         if (p.burnDeath && ++p.burnDeath.min >= (p.burnDeath.deathMin ?? Infinity) && p.burnDeath.fatal) { p.dead = 'burns'; return; }
         venomMinute(p);
         let heat: { core: number; frozen: string[]; kcal: number; waterL: number; burned?: { seg: string; depth: BurnDepth }[] } | null = null;
-        if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN }, rng, () => gauss(rng));
+        const cold = has(p, 'NO_HEAT');
+        if (p.env && thermalCapable(p.species)) heat = thermalMinute(p, { active, sleeping, restL: WATER_L_DAY.rest / DAY_MIN, cold, metScale: cold ? peek('coldMetShare') : 1 }, rng, () => gauss(rng));
         else if (p.env && c?.homeotherm) {
             const r = endothermMinute(p, c, { met: p.env.met ?? p.workMet ?? (sleeping ? 0.95 : active ? 3.5 : 1.3) });
             // Stages at the human distances from the set point (−2, −5, −9, −13, +3 °C) [ASSUMED].
@@ -316,18 +324,21 @@ export function advance(p: Person, minutes: number, resting: boolean, rng: Rng =
         }
         if (p.env?.water && !thermalCapable(p.species)) water(p, rng);
         if (heat) {
-            const st = coreStage(heat.core);
+            // A body with no warmth of its own is not harmed by its own temperature: its stages are a warm body's failing to keep
+            // its heat [ASSUMED, as Dwarf Fortress's creatures without HOMEOTHERM take the temperature around them unharmed];
+            // freezing and burning of its tissue and the protein ceiling stay (section 107).
+            const st = cold ? null : coreStage(heat.core);
             if (st === 'hypothermia IV') { p.dead = 'hypothermia'; return; }
             // Above the highest core temperature anyone survived, 46.5 °C (Wikipedia, Hyperthermia: 10 July 1980) → dead [ASSUMED ceiling].
             if (heat.core > k('heatDeathCore')) { p.dead = 'hyperthermia'; return; }
             // Heat stroke: survived when core is back under 40 °C within 30 min (PMC11438465); past that, death 26.5 % if
             // exertional, 63.2 % classic (MedLink), 1–3 days later [ASSUMED timing]. The roll stands after cooling.
-            if (st === 'heat stroke' || (p.heatStroke?.min ?? 0) >= 30) {
+            if (!cold && (st === 'heat stroke' || (p.heatStroke?.min ?? 0) >= 30)) {
                 const hs = p.heatStroke ??= { min: 0, exertional: !!(p.workMet || active) };
                 if (++hs.min === 30) { hs.fatal = rng() < (hs.exertional ? 0.265 : 0.632); hs.deathMin = 30 + Math.round((1 + 2 * rng()) * DAY_MIN); }
                 if (hs.fatal && hs.min >= (hs.deathMin ?? Infinity)) { p.dead = 'heat stroke'; return; }
             } else p.heatStroke = null;
-            if (st === 'hypothermia III') p.unconscious ??= 'hypothermia';
+            if (st === 'hypothermia III') p.unconscious ??= 'hypothermia';  // never for a cold body: st is null
             else if (p.unconscious === 'hypothermia') p.unconscious = null;
             for (const seg of heat.frozen) for (const part of frostParts(c, seg)) addWound(p, { part, type: 'frostbite' }, rng);
             for (const b of heat.burned ?? []) for (const part of frostParts(c, b.seg)) addWound(p, { part, type: 'burn', depth: b.depth }, rng);
@@ -537,7 +548,8 @@ function checkDeath(p: Person) {
  * information is lost and speed is −50 %; recall and accuracy hold. Linear to 34.5 °C, held there below [ASSUMED].
  */
 function coolCore(p: Person): number {
-    const t = p.env ? p.thermal?.stageCore ?? p.thermal?.core : null;
+    // a body with no warmth of its own thinks at its own temperature (section 107) [ASSUMED]
+    const t = p.env && !has(p, 'NO_HEAT') ? p.thermal?.stageCore ?? p.thermal?.core : null;
     return t == null ? 0 : Math.min(2.2, Math.max(0, 36.7 - t));
 }
 const thinkSpeed = (p: Person) => 1 - 0.5 * coolCore(p) / 2.2;
@@ -833,10 +845,11 @@ export function status(who: string, p: Person): string {
     }
     const th = p.thermal;
     if (p.env && th?.core != null) {
-        const st = coreStage(th.stageCore ?? th.core);
+        if (has(p, 'NO_HEAT')) out.push(`body at the temperature around it: core ${round(th.core, 1)} °C (no warmth of its own)${th.coldest ? `, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})` : ''}`);
+        const st = has(p, 'NO_HEAT') ? null : coreStage(th.stageCore ?? th.core);
         const cc = coolCore(p);
         if (cc > 0) out.push(`cold brain: mental tasks take ${round(1 / thinkSpeed(p), 2)} × as long (accuracy holds), keeps ${Math.round(keepsNew(p) * 100)} % of new information (recall of known things intact)`);
-        out.push(`core ${round(th.core, 1)} °C${th.set != null ? ` (normal ${round(th.set, 1)})` : ''}${st ? ` (${st})` : ''}${th.coldest ? `, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})` : ''}`);
+        if (!has(p, 'NO_HEAT')) out.push(`core ${round(th.core, 1)} °C${th.set != null ? ` (normal ${round(th.set, 1)})` : ''}${st ? ` (${st})` : ''}${th.coldest ? `, coldest skin ${th.skinMin} °C (${th.coldest.replace('_', ' ')})` : ''}`);
     }
     if (worldHasMagic()) { const n = p.net, s = stage(n); out.push(`network: C ${n.C}, N ${n.N}, stage ${s.stage} (max complexity ${s.max}), R ${Math.floor(n.R)}/${n.C} PE, P ${Math.round(n.P * 100)}%`); }
     { const d = drugStatus(p); if (d) out.push(d); }
@@ -881,7 +894,7 @@ const APNEA_DEATH = () => k('apneaDeathMin');
 // Thirst begins at a water loss of 2 % of body mass, where plasma osmolality has risen about 2 % (Cheuvront et al.,
 // "Physiologic basis for understanding quantitative dehydration assessment", Am J Clin Nutr; loss by sweat or no drinking).
 const WATER_L_DAY = { rest: 1.5, active: 4 };
-const KCAL_DAY = { rest: 1400, active: 2400 };
+export const KCAL_DAY = { rest: 1400, active: 2400 };
 const SLEEP_WAKE_END_MIN = 60, CRITICAL_WAKE_H = 15.84, SLEEP_NEED_H = 8.16;
 // Other body masses scale water and energy use by (mass ÷ 70 kg)^0.75 (Kleiber's metabolic scaling law).
 const kleiber = (p: Person) => (p.mass / 70) ** 0.75;
@@ -1107,7 +1120,7 @@ function defenceDone(a: StrikeInput, t: Timing, defender: Person | null, rng: Rn
     const eyeSees = (e: { flags: string[] }) => sideFlag ? e.flags.includes(sideFlag) || !e.flags.some(f => f === 'LEFT' || f === 'RIGHT') : a.facing !== false;
     // Light (E13): with `lux` (the sky or the room, when the story did not say whether it is lit) the target sees the attacker
     // with the chance of noticing a person-sized target (vision.ts, 0.5 m) at the starting distance, one draw.
-    const sees = a.lit !== false && dir !== 'back' && eyes.some(eyeSees) && (a.lit === true || a.lux == null || rng() < see({ size: 0.5, distance: Math.max(0.5, dist), light: a.lux }).detect);
+    const sees = a.lit !== false && dir !== 'back' && eyes.some(eyeSees) && (a.lit === true || a.lux == null || rng() < see({ size: 0.5, distance: Math.max(0.5, dist), light: seeLux(defender, a.lux) }).detect);
     // A named sound source (Listen presets) at the attack's starting distance gives the level by spherical spreading.
     const db = a.noise_sound && SOUNDS[classOf(SOUNDS, a.noise_sound) ?? ''] != null ? SOUNDS[classOf(SOUNDS, a.noise_sound)!] - 20 * Math.log10(Math.max(1, a.distance_m ?? 1)) : a.noise_db || 0, level = db - hearingShift(defender?.species) - (earsOk < ears.length ? 3 : 0);
     const audible = earsOk > 0 && inRange(defender?.species, db, a.noise_khz);
@@ -1634,7 +1647,7 @@ type Watch = ReturnType<typeof watch>;
 const watch = (p: Person) => ({
     dead: p.dead, cls: bloodClass(p), dying: p.deathIn !== null, out: p.unconscious ?? null, thirst: waterStage(p),
     exhausted: !!p.exhausted, ams: !!p.altitude?.ams, oedema: !!p.altitude?.oedema,
-    heat: coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
+    heat: has(p, 'NO_HEAT') ? null : coreStage(p.thermal?.stageCore ?? p.thermal?.core), core: has(p, 'NO_HEAT') ? null : p.thermal?.core, swim: !!p.swimFailed, frost: p.wounds.filter(w => w.type === 'frostbite').map(w => w.part),
     infected: p.wounds.filter(w => w.infection === true).map(w => w.id), sepsis: !!p.sepsis, peritonitis: !!p.peritonitis,
 });
 
@@ -1642,7 +1655,7 @@ const watch = (p: Person) => ({
 // (unconscious 30 %, dead 40 %), water deficit as % of body mass (thirst 2, 5, 8), work done ÷ the day's limit (exhausted at 1),
 // core temperature (heat stroke above 40 °C rising; hypothermia stages below 35, 32, 28, 24 falling).
 type Levels = Record<'loss' | 'hb' | 'water' | 'work' | 'core', number>;
-const levels = (p: Person): Levels => ({ loss: lossFraction(p), hb: p.co?.hb ?? 0, water: p.needs ? p.needs.waterL / p.mass * 100 : 0, work: p.needs?.work ?? 0, core: p.thermal?.stageCore ?? p.thermal?.core ?? 37 });
+const levels = (p: Person): Levels => ({ loss: lossFraction(p), hb: p.co?.hb ?? 0, water: p.needs ? p.needs.waterL / p.mass * 100 : 0, work: p.needs?.work ?? 0, core: has(p, 'NO_HEAT') ? 37 : p.thermal?.stageCore ?? p.thermal?.core ?? 37 });
 const UP: Partial<Record<keyof Levels, number[]>> = { loss: [0.15, 0.3, 0.4], hb: [0.3, 0.4], water: [2, 5, 8], work: [1], core: [40] };
 const DOWN: Partial<Record<keyof Levels, number[]>> = { core: [35, 32, 28, 24] };
 function crossing(a: Levels, b: Levels): number {

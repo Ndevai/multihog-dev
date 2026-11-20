@@ -21,7 +21,10 @@ const SAME_TRADE = { landlord: 'innkeeper', landlady: 'innkeeper', publican: 'in
 export const findOccupation = (text) => {
     const raw = norm(text).replace(/^(the|a|an) /, ''), t = norm(SAME_TRADE[raw] ?? raw);
     const find = (w) => OCCUPATIONS.find(o => norm(o.name).split(' ').includes(w)) ?? OCCUPATIONS.find(o => norm(o.name).includes(w));
-    return t ? find(t) ?? t.split(' ').reverse().map(w => find(norm(SAME_TRADE[w] ?? w))).find(Boolean) ?? null : null;
+    // A census row named exactly comes first: "Printer" is the row Printer, not the first row that holds the word (Music
+    // Publisher, Seller, Printer).
+    const exact = t ? OCCUPATIONS.find(o => norm(o.name) === t) : undefined;
+    return t ? exact ?? find(t) ?? t.split(' ').reverse().map(w => find(norm(SAME_TRADE[w] ?? w))).find(Boolean) ?? null : null;
 };
 // Birthplace of people living in England and Wales, 1881 (Ravenstein 1885, "The Laws of Migration", J Stat Soc London
 // 48:167, tables of the 1881 census): 25 974 439 residents; born in the county where enumerated 18 699 922, a border county

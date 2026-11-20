@@ -44,7 +44,7 @@ ok(U.noteView({ acts: [], things: [] }, true) === null && R.kindOf('BodyStrike')
 // An older note, kept before kinds were stored, still gets its tag from the call.
 ok(U.noteView({ acts: [{ text: 'Ann looks at Tom', detail: 'Look: viewer Ann, target Tom' }], things: [] }, true).rows[0].tag === 'Sight', 'old note tagged from its call');
 
-// U2: drawn, the note is a <details> folded to one line (the guess with "or…", then each tag and its words), opened to one
+// U2: drawn, the note is a <details> folded to one line (the guess with "or…", then each kind of step once), opened to one
 // row per call with the call as hover text and the others as linked words, each filling the message box with its
 // correction; every word is set as text (markup in a name stays letters); the era and the tone are on the element.
 let filled = null;
@@ -53,10 +53,14 @@ const box = U.drawNote(doc, v, { era: 'c19', tone: 'dark' }, t => { filled = t; 
 const sum = byClass(box, 'rules-reading-sum')[0], alts = byClass(box, 'rules-reading-alts')[0];
 const links = byClass(alts ?? el('x'), 'rules-link');
 ok(box.tag === 'details' && /rules-era-c19/.test(box.className) && box.attrs['data-tone'] === 'dark' && sum?.tag === 'summary', 'folded details with era and tone', `${box.tag} ${box.className}`);
-ok(/^Redone: it meant Will☞ walk after Tom in the open— or…Move walks after Tom · 12 mSight Tom · 12 m/.test(text(sum)) && byClass(sum, 'rules-reading-or').length === 1, 'folded line', text(sum));
+ok(/^Redone: it meant Will☞ walk after Tom in the open— or…MoveSight/.test(text(sum)) && !/walks after Tom/.test(text(sum)) && new Set(byClass(sum, 'rules-tag').map(t => t.textContent)).size === byClass(sum, 'rules-tag').length
+    && byClass(sum, 'rules-reading-or').length === 1 && /walks after Tom · 12 m/.test(text(byClass(box, 'rules-reading-body')[0] ?? el('x'))), 'folded line: each kind once; the steps in the rows', text(sum));
 ok(text(alts) === 'Or did you mean to catch up with Tom or keep behind Tom, out of sight?' && links.length === 2, 'others as linked words', text(alts));
 links[1]?.click();
 ok(filled === 'no, keep behind Tom, out of sight' && all(box).some(x => x.title === 'Look: viewer Ann, target Tom, distance_m 12'), 'link fills the line; call on hover', String(filled));
+const dup = U.drawNote(doc, U.noteView({ acts: [{ text: 'Ann looks at Tom', detail: 'Look: viewer Ann, target Tom', kind: 'sight' }, { text: 'Ann looks at Will', detail: 'Look: viewer Ann, target Will', kind: 'sight' }], things: ['the step', 'the lamp'] }, true), { era: 'now', tone: 'dark' }, () => {});
+const dupTags = byClass(byClass(dup, 'rules-reading-sum')[0], 'rules-tag').map(t => t.textContent);
+ok(JSON.stringify(dupTags) === '["Sight","Thing"]' && byClass(dup, 'rules-reading-row').length === 4, 'each kind once when folded, every step in the rows', JSON.stringify(dupTags));
 const evilBox = U.drawNote(doc, evil, { era: 'now', tone: 'light' }, () => {});
 ok(htmlSet === 0 && text(evilBox).includes('<img src=x onerror=alert(1)>') && /→ hit <b>Tom<\/b>/.test(text(evilBox)), 'note drawn as text', `${htmlSet} innerHTML sets`);
 const tags = byClass(box, 'rules-tag').map(t => `${t.textContent}:${t.className.split(' ').find(c => c.startsWith('rules-k-'))}`);
@@ -513,8 +517,9 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
     said(['Kyoko frowns. "Who set all this up?" I shrug. "No idea."'], { player: 'Makoto Naegi', author: 'Makoto Naegi', names: ['Makoto Naegi', 'Kyoko Kirigiri'] }),
     said(['Anna nods to Tom. She smiles. "Thank you."', 'The old guard coughs. "Papers." "Fine," a voice behind the door says.', '"Sit."']),
     said(['"Who set all this up?"', 'Tom laughs. "Me."'], undefined, { '"Who set all this up?"': 'Kyoko' }),
+    said(['Mrs Pike looks down the stair. "Not tonight." She turns the lamp down. "Old coin."', 'Mother sighs. "Bed."']),
   ];
-  ok(JSON.stringify(got) === JSON.stringify(['Tom Tom Will', 'Kyoko Kirigiri Makoto Naegi', 'Anna The old guard A voice Narrator', 'Kyoko Tom']), 'who says each stretch', JSON.stringify(got));
+  ok(JSON.stringify(got) === JSON.stringify(['Tom Tom Will', 'Kyoko Kirigiri Makoto Naegi', 'Anna The old guard A voice Narrator', 'Kyoko Tom', 'Mrs Pike Mrs Pike Narrator']), 'who says each stretch', JSON.stringify(got));
   const tk = B.takeSpeakers('Tom looks up. [Tom] "Sit." Mara laughs. [Mara]"No." [a note] stays.');
   ok(tk.text === 'Tom looks up. "Sit." Mara laughs. "No." [a note] stays.' && JSON.stringify(tk.said) === JSON.stringify([{ q: '"Sit."', who: 'Tom' }, { q: '"No."', who: 'Mara' }]) && /\[Tom\] "Sit\."/.test(B.SPEAKER_RULE), 'the names before quotations leave the text', JSON.stringify(tk));
 }
@@ -582,10 +587,10 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
   const foot = over([8, 9, 16, 0.8], [255, 255, 255]), accent = /--rules-accent: (#[0-9a-f]{6});/.exec(css)?.[1] ?? '', ink = /--rules-accent-ink: (#[0-9a-f]{6});/.exec(css)?.[1] ?? '';
   ok(contrast([255, 255, 255], panel) >= 4.5 && contrast(sky, panel) >= 4.5 && accent === '#d93167' && contrast([255, 255, 255], hex(accent)) >= 4.5 && contrast([255, 215, 0], panel) >= 4.5 && !!ink && contrast(hex(ink), foot) >= 4.5
       && has(`${night} #chat .mes.rules-now {\n    --SmartThemeBodyColor: white;`) && has('background: var(--rules-accent); color: white; font: 700 max(19px, ')
-      && has('#chat .mes.rules-now::after { content: \'▼\';') && /::after \{ content: '▼';[^}]*color: var\(--rules-accent-ink\);/.test(css) && /button\[aria-pressed="true"\] \{ color: var\(--rules-accent-ink\);/.test(css)
+      && /:not\(\.rules-typing\) #chat \.mes\.rules-now \.rules-advance-tri \{\s*display: inline-block; margin-left: 6px; font-size: 14px; color: #e0336a;/.test(css) && /tri\.className = 'rules-advance-tri'/.test(idx) && /button\[aria-pressed="true"\] \{ color: var\(--rules-accent-ink\);/.test(css)
       && has(`${night} #chat .mes.rules-now mark.rules-key { background-color: transparent; color: gold; padding: 0; }`)
       && has('rules-page-dark:not(.rules-box-log):not(.rules-box-night) #rules-box-scene:not(:empty)') && has('.ch_name { position: absolute; bottom: calc(100% - 16px);') && has(`${night} #chat .mes.rules-now span.rules-unit[data-said="false"] { color: lightskyblue; }`)
-      && has(`body.rules-box-night.rules-box.rules-typing:not(.rules-box-log) #chat .mes.rules-now::after { content: none; }`) && /prefers-reduced-motion: reduce\) \{ body\.rules-box-night/.test(css)
+      && /prefers-reduced-motion: reduce\) \{ body\.rules-box-night[^}]*\.rules-advance-tri \{ animation: none; \}/.test(css)
       && has(`${night} #rules-box-scene:not(:empty) { width: fit-content;`) && /--rules-night-ground: rgba\(8, 9, 16, 0\.72\);/.test(css) && /color: white; background: var\(--rules-night-ground\);/.test(css),
       "the night look's colours and parts", JSON.stringify([contrast([255, 255, 255], panel), contrast(sky, panel), accent && contrast([255, 255, 255], hex(accent)), ink && contrast(hex(ink), foot)]));
 }
@@ -600,8 +605,8 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
   ok(B.cardRole({ occupation: 'innkeeper', age: 34, sex: 'male' }) === 'innkeeper' && B.cardRole({ age: 16.4, sex: 'female' }) === '16-year-old girl' && B.cardRole({ age: 40 }) === '40-year-old adult' && B.cardRole(undefined) === ''
       && JSON.stringify(badge) === JSON.stringify({ clock: '18:20', date: 'Sunday 15 July 1990', where: 'Recife · nautical twilight' }) && JSON.stringify(day) === JSON.stringify({ clock: '07:00', date: 'Day 2', where: '' }),
       "the card's line and the badge's parts", JSON.stringify([badge, day]));
-  ok(/!metShown\.has\(who\) && hasCard\(who\)\s*&& document\.querySelector\(`#chat \.rules-unit\[data-who="\$\{CSS\.escape\(who\)\}"\]`\) === now\)/.test(idx) && /stepDir !== -1/.test(idx) && /if \(d === 1 && hideCard\(\)\)\s*return;/.test(idx) && /metShown\.clear\(\)/.test(idx)
-      && /#rules-box-bar \{ position: relative; z-index: 31;/.test(css) && /body\.rules-box\.rules-card-on:not\(\.rules-box-log\) #rules-box-card \{ display: flex; position: absolute; inset: 0; z-index: 40;/.test(css),
+  ok(/!metIn\(\)\.includes\(who\) && hasCard\(who\)\s*&& document\.querySelector\(`#chat \.rules-unit\[data-who="\$\{CSS\.escape\(who\)\}"\]`\) === now/.test(idx) && /stepDir !== -1/.test(idx) && /if \(d === 1 && hideCard\(\)\)\s*return;/.test(idx)
+      && /#rules-box-bar \{ position: relative; z-index: 31;/.test(css) && /body\.rules-box\.rules-card-on:not\(\.rules-box-log\) #rules-box-card \{\s*display: flex; position: absolute; inset: 0; z-index: 20000;/.test(css),
       'the card once, the menu above the chat', '');
   ok(/const hasCard = \(who\) => !!ctx\(\)\.characters\?\.some\(c => c\.name === who\)/.test(idx) && /rgba\(18, 20, 34, 0\.74\), rgba\(8, 9, 16, 0\.82\)/.test(css) && /linear-gradient\(white, white\) bottom right \/ 3px 34px no-repeat/.test(css)
       && /#rules-box-card \.rules-card-name::before \{ z-index: -1; background: white; \}/.test(css)
@@ -620,7 +625,7 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
       && JSON.stringify(parts) === JSON.stringify([['louder', 'about 6 dB above your normal voice'], ['slower', 'about 0.8 times your own pace']])
       && JSON.stringify(B.explainParts('short pause')) === JSON.stringify([['short pause', '']]),
       'the tag floor and the explanation', JSON.stringify([B.tagFloorPx(0.73), parts]));
-  ok(/floor = Math\.min\(full, tagFloorPx\(capShare\(cs\.fontFamily\)\)\)/.test(idx) && /if \(!fitsBox\(el\)\)\s*el\.style\.fontSize = '';/.test(idx)
+  ok(/floor = Math\.min\(full, tagFloorPx\(capShare\(cs\.fontFamily\)\)\)/.test(idx) && /const w = slot\?\.getBoundingClientRect\(\)\.width \?\? 0, word = w \? w \+ 8 : 0;\s*el\.style\.maxWidth = `\$\{Math\.max\(0, row\.clientWidth - word\)\}px`;/.test(idx)
       && /fitCardName\(n\);/.test(idx) && /el\.style\.overflowWrap = 'normal';\s*el\.style\.transform = 'none';/.test(idx)
       && /e\.pointerType === 'mouse'/.test(idx) && /if \(performance\.now\(\) < swallowUntil\)\s*return;/.test(idx) && /hintHold\(now\);/.test(idx)
       && /#rules-box-bar\.rules-explaining > :not\(#rules-box-explain\) \{ visibility: hidden; \}/.test(css),
@@ -698,5 +703,327 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
       "the story's sheet", JSON.stringify([mem.map(r => [r.text, r.strength.toFixed(3)]), about, map?.people, sensed]));
   ok(/openTab\(mapNow\(\) \? 'map' : 'memory'\)/.test(idx) && /scene\.addEventListener\('click', \(\) => openTab\('time'\)\)/.test(idx) && /fig\.setAttribute\('data-feeling', felt\)/.test(idx)
       && /showPerson\(tag\.textContent/.test(idx) && /#rules-box-figure\[data-feeling="anger"\] \{ filter:/.test(css), "the sheet's wiring", '');
+}
+// R48: the narrator is told how to tell it (narration.ts TELLING_RULE, the player's picks): plainly, a concrete detail
+// carrying what is strange, a death told in the same voice as a meal; phrased as what to write (no negated instruction), and
+// sent with every reply.
+{
+  const Nr = await import('../src/rules/narration.js'), idx = fs.readFileSync(new URL('../src/index.js', import.meta.url), 'utf8');
+  const r = Nr.TELLING_RULE ?? '';
+  ok(/^<telling>\nTell the story plainly/.test(r) && /concrete detail/.test(r) && /same voice as a meal/.test(r) && !/\b(don't|do not|never|avoid|no)\b/i.test(r)
+      && /takeAuditNote\(\) \?\? '', TELLING_RULE, structuredNow\(\)/.test(idx), 'the narrator tells it plainly', r.slice(0, 80));
+}
+// R49: the seed's command (src/index.js applySeed): /rules-seed sets the story time to the code's night at nine in the
+// engine's own minutes (from year 1, clock.ts; minutes from 1970 read as "Day -32463"), writes the start through the same
+// tool calls the engine test runs (seed.ts seedCalls), and is registered with the other commands.
+{
+  const idx = fs.readFileSync(new URL('../src/index.js', import.meta.url), 'utf8'), Ck = await import('../src/rules/clock.js');
+  const seedTime = new Function('parseStoryTime', `return ${/export const seedTime = ([^\n]+);/.exec(idx)?.[1] ?? 'null'};`)(Ck.parseStoryTime);
+  ok(typeof seedTime === 'function' && Ck.formatStoryTime(seedTime({ year: 1881, month: 2, day: 12 })) === 'Saturday 12 February 1881, 21:00', 'the seed sets its date in the engine\'s clock', String(seedTime && Ck.formatStoryTime(seedTime({ year: 1881, month: 2, day: 12 }))));
+  ok(/name: 'rules-seed'/.test(idx) && /registerSeedCommand\(\);/.test(idx) && /setStoryTime\(seedTime\(plan\)\)/.test(idx)
+      && /for \(const c of seedCalls\(plan, playerName\(\)\)\)\s*await REGISTRY\.get\(c\.tool\)\.exec\(c\.args\);/.test(idx), 'the seed writes its start through the tools', '');
+}
+// R50: the box on a phone (style.css, src/index.js showPlate), the player's picks of 2026-11-16 on a 360 px screen: the menu
+// as six signs, each 44 × 44 px with no box (Font Awesome 6, which SillyTavern loads), the word kept for a screen reader; the
+// accent's three shades (the fill, its dark and its ink) each written once, as a token, the boxed menu's pinks gone with it; the
+// name on one line, whole where it fits and cut with "…" where it does not (the player, 2026-11-17), never shrinking;
+// the ▲ and the sheet's tabs taken over 44 px (a layer stands inside the 1 px border); the box's chrome the sum of its
+// margins, paddings and border;
+// and no name on the tag over a description.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), night = 'body.rules-box-night.rules-box:not(.rules-box-log)', rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const signs = { back: 'f053', next: 'f054', auto: 'f04e', music: 'f001', story: 'f518', log: 'f1da' };
+  const signOk = Object.entries(signs).every(([b, c]) => rules.includes(`${night} #rules-box-${b}::before { content: '\\${c}'; }`));
+  const btn = /#rules-box-bar button \{ width: 44px; min-width: 44px; min-height: 44px; padding: 0; font-size: 0;/.test(rules) && /#rules-box-bar button::before \{ font: 900 [^;]*'Font Awesome 6 Free'; \}/.test(rules);
+  const pinks = (rules.match(/#[0-9a-fA-F]{6}\b/g) ?? []).filter(h => ['#d93167', '#8e1240', '#ff79a3', '#ff5c8f'].includes(h.toLowerCase()));
+  const strayPink = /#ff5c8f|224, 51, 106/i.test(rules);
+  const tag = rules.includes(`${night} #chat .mes.rules-now .rules-who {\n    white-space: nowrap; max-width: none; width: max-content; flex: 0 0 auto; overflow: hidden; text-overflow: ellipsis;\n}`) && !/\.rules-who \{ width: max-content; max-width: 100%; flex: 0 1 auto; \}/.test(rules);
+  const fold = /#rules-top-fold \{[^}]*min-width: 38px; min-height: 24px;/.test(rules) && rules.includes('#rules-top-fold::before { content: \'\'; position: absolute; inset: 0 -4px -21px; }');
+  const tabs = /\.rules-sheet-tabs button \{[^}]*min-height: 56px;/.test(rules);
+  const chrome = /--rules-box-chrome: 138px;/.test(rules) && rules.includes('margin: 34px 12px 8px; padding: 26px 18px 66px;') && 34 + 26 + 66 + 4 + 8 === 138;
+  const label = /const describes = !!unit && !plateSaid && !thinking;/.test(idx) && /const plateLabel = describes \? '' : unitWho \|\|/.test(idx);
+  const swipes = rules.includes('body.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipe_left,\nbody.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipe_right { display: none !important; }');
+  ok(swipes && signOk && btn && !strayPink && pinks.length === 3 && new Set(pinks.map(h => h.toLowerCase())).size === 3 && /--rules-accent: #d93167; --rules-accent-deep: #8e1240;/.test(rules) && /--rules-accent-ink: #ff79a3;/.test(rules) && tag && fold && 38 - 2 + 8 >= 44 && 24 - 1 + 21 >= 44 && tabs && chrome && label,
+     'the box on a phone', JSON.stringify({ swipes, signOk, btn, strayPink, pinks, tag, fold, tabs, chrome, label }));
+}
+// R51: the start's card (src/rules/start-card.ts; src/index.js registerSeedCommand; style.css .rules-start), decided by
+// Claude on 2026-11-17: the start's words (seed.ts startParts, the same as knownStart's) in order, place and night, you, the
+// people around you, what you call them; the world's law folded (a closed details), its sheet folded inside it; the seed's
+// code last; every word escaped; a code that does not read shown as its plain words; a folded part opens on a 44 px row.
+{
+  const Sd = await import('../src/rules/seed.js'), Cd = await import('../src/rules/start-card.js'), idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const p = Sd.drawStart('EW1881-BH.RA-N4-D2-K5-7f2c'), s = Sd.startParts(p), h = Cd.startCardHtml(s);
+  const order = ['Your start', '>You<', 'Around you', 'What you call them', 'class="rules-start-law"', 'Its sheet', 'Seed EW1881-BH.RA-N4-D2-K5-7f2c'].map(t => h.indexOf(t));
+  const evil = Cd.startCardHtml({ ...s, people: [{ who: '<b>Tom</b> & "Kit"', relation: 'x', line: 'man, 3', wants: null }] });
+  ok(order.every((v, i) => v >= 0 && (i === 0 || v > order[i - 1])) && s.people.every(x => h.includes(x.who)) && !/<details[^>]* open/.test(h)
+      && /<details class="rules-start-law"><summary>The world's law/.test(h) && /<\/p><details><summary>Its sheet<\/summary>/.test(h) && !/<pre/.test(h)
+      && evil.includes('&lt;b&gt;Tom&lt;/b&gt; &amp; &quot;Kit&quot;') && !evil.includes('<b>Tom')
+      && /const card = lastStart \? startCardHtml\(lastStart\) : `<pre/.test(idx) && /lastStart = startParts\(plan\);\s*return knownStart\(plan\);/.test(idx)
+      && /\.rules-start details > summary \{[^}]*min-height: 44px;/.test(css),
+      "the start's card", JSON.stringify(order));
+}
+// R52: the memory sheet shows how a memory is held (src/index.js memoryList; style.css), rebuilt after the player's review
+// of 2026-11-17 (their references: one entry a line, details on a tap): each memory a row (a details' summary) with a sign for
+// how it was learned, its words in two lines at most, ≈ where details drifted or are lost; a tap opens how and when it was
+// learned, how long ago, how sure and how clearly, and the drift in the accent's ink; the words as first held; a white line
+// as long as it is recalled; each row 52 px or more.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/sum\.append\(icon, el\('span', 'rules-mem-text', capFirst\(r\.held\?\.as \?\? r\.text\)\)\);/.test(idx) && /if \(drift\) \{\s*const m = el\('span', 'rules-mem-mark', '≈'\);/.test(idx)
+      && /if \(h\)\s*more\.append\(el\('div', '', `\$\{capFirst\(h\.since\)\} ago · \$\{h\.sure\} · \$\{h\.clear\}`\)\);/.test(idx) && /if \(drift\)\s*more\.append\(el\('div', 'rules-mem-drift', drift\)\);/.test(idx)
+      && /\.rules-mem-item summary \{[^}]*min-height: 52px;/.test(css) && /\.rules-mem-text \{[^}]*-webkit-line-clamp: 2;/.test(css) && /\.rules-mem-more \.rules-mem-drift \{ color: var\(--rules-accent-ink\); \}/.test(css)
+      && /\.rules-mem-bar i \{ display: block; height: 100%; background: rgba\(255, 255, 255, 0\.4\); \}/.test(css),
+     'the memory sheet shows how a memory is held', '');
+}
+// R53: the sheet as a window of its own (src/index.js openSheet, hideWhy; style.css #rules-sheet), the player's review of
+// 2026-11-17 ("when you open it it collides with the rest"): over the whole chat column, the screen dimmed under it; its
+// title as the box's pink tag, a close button of 44 px, a body that scrolls, the story's tabs at its foot (56 px) when there is
+// more than one; a tap on the dimmed screen, the close button or Escape closes it; the path's own card (shoot a word) stays
+// apart, so a selection can still grow under it.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/wrap\.id = 'rules-sheet';\s*wrap\.addEventListener\('click', e => \{ if \(e\.target === wrap\)\s*hideWhy\(\); \}\);/.test(idx) && /frame\.append\(el\('div', 'rules-sheet-title', head\), close, body\);/.test(idx)
+      && /if \(tabs\.length > 1\) \{/.test(idx) && /for \(const id of \['rules-why', 'rules-sheet'(, 'rules-report')?\]\)/.test(idx) && /panel = document\.getElementById\('rules-why'\);/.test(idx)
+      && /#rules-sheet \{ position: absolute; inset: 0; z-index: 36;[^}]*background: rgba\(4, 5, 10, 0\.66\); \}/.test(css) && /\.rules-sheet-close \{[^}]*width: 44px; height: 44px;/.test(css)
+      && /\.rules-sheet-body \{[^}]*overflow-y: auto;/.test(css),
+     'the sheet is a window of its own', '');
+}
+// R54: the path's card in the sheet's look (src/index.js drawWhy; style.css #rules-why), the player's review of 2026-11-17:
+// the solid dark panel; the shot words as the pink tag and a close button; one row per step, a sign for its relation, what it
+// names, and under it the relation in words with who and when; the measures folded; in the box never over the box or its
+// tag (its height capped there), under the scene's badge when it fits; still a card, so a selection can grow under it.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/el\('div', 'rules-why-title', `The path to “/.test(idx) && /words\.append\(el\('div', '', capFirst\(s\.text\)\), el\('div', 'rules-why-note', \[relWords\(s\.rel\), s\.note\]\.filter\(Boolean\)\.join\(' · '\)\)\);/.test(idx)
+      && /const tag = box\.getBoundingClientRect\(\)\.top - 34 - 8 - host\.top/.test(idx) && /panel\.style\.maxHeight = `\$\{Math\.max\(96, Math\.floor\(tag - top\)\)\}px`;/.test(idx) && /top = tall <= tag - b \? b : 12;/.test(idx)
+      && /#rules-why \{ position: absolute; z-index: 35;[^}]*background: rgb\(18, 20, 34\);/.test(css) && /\.rules-why-note \{[^}]*color: rgba\(255, 255, 255, 0\.72\); \}/.test(css) && !/#rules-why \{[^}]*inset: 0/.test(css),
+     "the path's card in the sheet's look", '');
+}
+// R55: the settings, edited (settings.html; style.css .rules-engine-settings), 2026-11-17: every setting the code reads is
+// there (each id src/index.js names, each choice's value it compares), in four groups; a setting's name is short (40
+// letters or fewer) and its hint one line of plain words (120 or fewer); no choice runs past 45 letters.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), html = fs.readFileSync(`${ROOT}/settings.html`, 'utf8');
+  const ids = [...new Set(idx.match(/rules_engine_[a-z_]+/g) ?? [])], missing = ids.filter(id => !html.includes(`id="${id}"`));
+  const values = { page_colours: ['light', 'dark'], box_unit: ['voice', 'message'], box_picture: ['none', 'large'], box_look: ['night', 'page'], box_voice: ['natural', 'robotic', 'blips', 'off'],
+    keyboard: ['auto', 'qwerty', 'qwertz', 'azerty', 'dvorak', 'colemak'], effort: ['low', 'high', ''] };
+  const lost = Object.entries(values).flatMap(([id, vs]) => { const sel = new RegExp(`<select id="rules_engine_${id}"[^>]*>([\\s\\S]*?)</select>`).exec(html)?.[1] ?? ''; return vs.filter(v => !sel.includes(`value="${v}"`)).map(v => `${id}=${v}`); });
+  const names = [...html.matchAll(/<label class="checkbox_label">[^]*?<span>([^<]*)<\/span>/g)].map(m => m[1]), hints = [...html.matchAll(/<small class="rules-set-hint[^"]*">([^<]*)<\/small>/g)].map(m => m[1]);
+  const options = [...html.matchAll(/<option value="[^"]*">([^<]*)<\/option>/g)].map(m => m[1]), heads = [...html.matchAll(/<div class="rules-set-head">([^<]*)<\/div>/g)].map(m => m[1]);
+  ok(!missing.length && !lost.length && heads.join('|') === 'Engine|Box &amp; page|Sound|Story' && names.length >= 9 && names.every(n => n.length <= 40) && hints.every(h => h.length <= 120) && options.every(o => o.length <= 45)
+      && /\.rules-engine-settings \.rules-set-hint \{[^}]*color: var\(--SmartThemeEmColor\);/.test(css),
+     'the settings, grouped and short', JSON.stringify({ missing, lost, heads, long: [...names.filter(n => n.length > 40), ...hints.filter(h => h.length > 120), ...options.filter(o => o.length > 45)] }));
+}
+// R56: the first-meeting card, the screen pass of 2026-11-17 (style.css): while it shows, the box's own tag and plate word are
+// hidden (no piece of them shows through), and the box's ▼ stands in the band's corner as the sign that a tap goes on,
+// still under reduced motion.
+{
+  ok(css.includes('body.rules-box.rules-card-on:not(.rules-box-log) #chat .mes.rules-now .ch_name { visibility: hidden; }')
+      && /#rules-box-card \.rules-card-band::after \{ content: '▼';[^}]*animation: rules-next/.test(css) && /prefers-reduced-motion: reduce\) \{ #rules-box-card \.rules-card-band::after,[^{]*\{ animation: none; \} \}/.test(css),
+     'the first-meeting card stands alone and says a tap goes on', '');
+}
+// R57: the first meeting as a screen of its own (section 90, the player's ask, 2026-11-17; src/index.js showCard, style.css):
+// it hangs on <body> and covers the whole page, SillyTavern's top bar included (layer 20000, over the top bar's 3005 and the
+// menus' 4100, under its pop-ups' 29999), on an opaque dark ground; the picture is large (58% of a tall screen, at a card
+// picture's shape of two to three; on a wide screen 84% at the band's left, the name right of it, grown with the screen);
+// it fades in over 0.25 s and its hard shadow slides out over 0.9 s, both still for a reader who asks for less motion; the
+// browser bar left out of the picture's height where dvh is known.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const show = idx.slice(idx.indexOf('function showCard('), idx.indexOf('function fitCardName('));
+  const card = /body\.rules-box\.rules-card-on:not\(\.rules-box-log\) #rules-box-card \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const face = /\n#rules-box-card \.rules-card-face \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const wide = css.slice(css.indexOf('@media (min-aspect-ratio: 1 / 1) {'), css.indexOf('@supports (height: 1dvh)'));
+  const still = /@media \(prefers-reduced-motion: reduce\) \{ ([^{]*)\{ animation: none; \} \}/.exec(css.slice(css.indexOf('@supports (height: 1dvh)')))?.[1] ?? '';
+  ok(/document\.body\.appendChild\(card\)/.test(show) && !/sheld/.test(show)
+      && /z-index: 20000;/.test(card) && /position: absolute; inset: 0;/.test(card) && !/rgba\(4, 5, 10, 0\.66\)/.test(card) && /radial-gradient\(120% 80% at 30% 35%, #1b1d30, #06070d 70%\)/.test(card)
+      && /--face-h: min\(58vh, 129vw, calc\(100vh - 260px\)\);/.test(card) && /animation: rules-card-in 0\.25s ease-out;/.test(card) && /@keyframes rules-card-in \{ from \{ opacity: 0; \} \}/.test(css),
+     'the first meeting covers the whole page', '');
+  ok(/height: var\(--face-h\); width: auto; aspect-ratio: 2 \/ 3;/.test(face) && /bottom: calc\(100% - 28px\);/.test(face) && /filter: drop-shadow\(14px 10px 0 var\(--rules-accent\)\); animation: rules-card-shadow 0\.9s ease-out 0\.15s backwards;/.test(face)
+      && /@keyframes rules-card-shadow \{ from \{ filter: drop-shadow\(0 0 0 var\(--rules-accent\)\); \} \}/.test(css) && /margin-top: calc\(var\(--face-h\) - 28px\);/.test(css)
+      && /--face-h: min\(84vh, calc\(100vh - 40px\)\); justify-content: flex-end; padding-bottom: 8vh;/.test(wide) && /padding-left: calc\(7% \+ var\(--face-h\) \* 2 \/ 3 \+ 24px\);/.test(wide) && /\.rules-card-face \{ bottom: 0; \}/.test(wide)
+      && /\.rules-card-band \.rules-card-name \{ font-size: max\(34px, 6vh\); \}/.test(wide)
+      && /@supports \(height: 1dvh\) \{\s*body\.rules-box\.rules-card-on:not\(\.rules-box-log\) #rules-box-card \{ --face-h: min\(58dvh, 129vw, calc\(100dvh - 260px\)\); \}/.test(css)
+      && /#rules-box-card \.rules-card-band::after/.test(still) && /body\.rules-box\.rules-card-on:not\(\.rules-box-log\) #rules-box-card/.test(still) && /#rules-box-card \.rules-card-face/.test(still),
+     'the first meeting: the picture large, its shadow sliding out', JSON.stringify({ face: face.slice(0, 120), still }));
+}
+// R58: the first-meeting card once a chat, on the person's real first line (section 91, 2026-11-17; box.ts metBefore,
+// src/index.js showBox, markMet). SillyTavern draws a chat's last 100 messages by default, so the first of a person's lines
+// drawn on the page is their first only when no message before the drawn ones holds one: a message of theirs, or a quotation
+// the reply named as theirs in the swipe shown (not another swipe's, not the player's own message under the same name).
+// Once shown, the chat keeps the name (chat metadata rulesMet, saved), so opening the chat again does not replay it.
+{
+  const B = await import('../src/rules/box.js'), idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const chat = [{ is_user: true, name: 'Ann', mes: 'Hello.' }, { name: 'Narrator', swipe_id: 1, extra: { rulesSpeakers: { 0: [{ q: 'Hi', who: 'Tom' }], 1: [{ q: 'Yes', who: 'Will' }] } } }, { name: 'Seraphina' }, { is_user: true, name: 'Mara' }];
+  ok(B.metBefore(chat, 3, 'Seraphina') && !B.metBefore(chat, 2, 'Seraphina') && B.metBefore(chat, 2, 'Will') && !B.metBefore(chat, 4, 'Tom') && !B.metBefore(chat, 4, 'Mara') && !B.metBefore(chat, 4, 'Ann')
+      && B.metBefore(chat, 99, 'Seraphina') && !B.metBefore([], 5, 'Seraphina'),
+     'a person met before the messages drawn', JSON.stringify(['Seraphina', 'Will', 'Tom', 'Mara'].map(w => B.metBefore(chat, 4, w))));
+  ok(/=== now && !metBefore\(ctx\(\)\.chat \?\? \[\], Number\(mes\.getAttribute\('mesid'\)\), who\)\) \{\s*markMet\(who\);\s*showCard\(who, mes\);/.test(idx)
+      && /const metIn = \(\) => ctx\(\)\.chatMetadata\?\.rulesMet \?\? \[\];/.test(idx) && /\(c\.chatMetadata\.rulesMet \?\?= \[\]\)\.push\(who\);\s*void c\.saveMetadata\(\);/.test(idx) && !/metShown/.test(idx),
+     'the first-meeting card once a chat, kept with the chat', '');
+}
+// R59: a person's report card, a screen of its own (section 92, 2026-11-17; views.ts reportRows, src/index.js showPerson,
+// style.css): labelled rows in plain words, each left out when the record has none (age with the word for them, height,
+// build in three bands of the BMI's z, voice, the feeling with how strongly; the trade stands under the name, not in a row);
+// over the whole page on the first-meeting card's layer, closed with the other panels (hideWhy); the rows 44 px or more; on a
+// phone the picture beside the name and the rows under them, on a wide screen the picture's column of 320 px.
+{
+  const V = await import('../src/rules/views.js'), idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const full = V.reportRows({ occupation: 'herbalist', age: 27.6, sex: 'female', heightCm: 168.4, bmiZ: -1.3, feelings: [{ type: 'fear', left: 30, turn: 2, strength: 0.6 }, { type: 'joy', left: 0, turn: 3, strength: 0.9 }] }, { f0Hz: 230, sylPerS: 6 });
+  const young = V.reportRows({ age: 15, sex: 'male', bmiZ: 1.2 }, null), mid = V.reportRows({ bmiZ: 0.4, feelings: [{ type: 'anger', left: 5, strength: 0.2 }] });
+  ok(JSON.stringify(full) === JSON.stringify([['Age', '27 · woman'], ['Height', '168 cm'], ['Build', 'slight'], ['Voice', 'high voice, quick speech'], ['Feeling', 'fear, clearly']])
+      && JSON.stringify(young) === JSON.stringify([['Age', '15 · boy'], ['Build', 'heavy']]) && JSON.stringify(mid) === JSON.stringify([['Build', 'average'], ['Feeling', 'anger, faintly']])
+      && JSON.stringify(V.reportRows(undefined)) === '[]' && JSON.stringify(V.reportRows({ age: 40 })) === '[["Age","40"]]',
+     "a person's report card in plain words", JSON.stringify([full, young, mid]));
+  const show = idx.slice(idx.indexOf('function showPerson('), idx.indexOf('function drawWhy('));
+  const scr = /\n#rules-report \{([^}]*)\}/.exec(css)?.[1] ?? '', wide = css.slice(css.indexOf('@media (min-width: 720px) {\n    .rules-report-page'));
+  ok(/document\.body\.appendChild\(screen\)/.test(show) && /rows = reportRows\(p, v\), role = p\?\.occupation \?\? ''/.test(show) && /memoryAbout\(store\(\)\.state, playerName\(\), name\)/.test(show) && /fitCardName\(label\)/.test(show)
+      && /for \(const id of \['rules-why', 'rules-sheet', 'rules-report'\]\)/.test(idx) && /showPerson\(tag\.textContent/.test(idx)
+      && /position: absolute; inset: 0; z-index: 20000;/.test(scr) && /animation: rules-card-in 0\.25s ease-out;/.test(scr) && /#rules-report\[hidden\] \{ display: none; \}/.test(css)
+      && /\.rules-report-rows dt, \.rules-report-rows dd \{ display: flex; align-items: center; min-height: 44px;/.test(css) && /\.rules-report-info \{ display: contents; \}/.test(css)
+      && /grid-template-columns: 320px minmax\(0, 1fr\);/.test(wide) && /\.rules-report-info \{ display: block; grid-column: 2; grid-row: 1; \}/.test(wide)
+      && /@media \(prefers-reduced-motion: reduce\) \{ #rules-report \{ animation: none; \} \}/.test(css) && !/\.rules-person \{/.test(css),
+     "the report card as a screen of its own", '');
+}
+// R60: SillyTavern's message row under the box on a phone (section 93, the screen pass's last item; style.css, the 650 px
+// block): each control a 44 × 44 px target (WCAG 2.5.5), 6 px apart, the knob's tap area its own box (no longer reaching over
+// its neighbours), the icons' size untouched, and no display set on the row's buttons, so none SillyTavern hides is shown.
+{
+  const phone = css.slice(css.indexOf('@media (max-width: 650px) {\n    body.rules-box #send_form'), css.indexOf('/* The start\'s card'));
+  const row = /body\.rules-box #leftSendForm > \*, body\.rules-box #rightSendForm > \* \{([^}]*)\}/.exec(phone)?.[1] ?? '';
+  ok(/min-width: 44px !important; min-height: 44px !important; line-height: 44px !important; text-align: center !important;/.test(row) && !/display|font-size/.test(row)
+      && /gap: 6px !important;/.test(phone) && /body\.rules-box #rules-faith \{ height: 44px; \}/.test(phone) && /body\.rules-box #rules-faith::before \{ inset: 0; \}/.test(phone)
+      && /body\.rules-box #rules-faith:not\(\[data-faith="1"\]\)::after \{ top: 2px; right: 0; \}/.test(phone),
+     "the message row's controls a finger's target each", row);
+}
+// R61: the World tab (section 96; src/index.js worldNow, openTab 'world'; style.css): shown only for a seeded story inside the
+// records, read from the seed's own plan and the story's year; this year's count large, the years so far newest first with the
+// current year marked, the kind folded as the seed's, which the player's character may not know; rows 40 px, figures tabular.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/world: 'World'/.test(idx) && /world: 'fa-earth-europe'/.test(idx) && /\.\.\.worldNow\(\) \? \['world'\] : \[\]/.test(idx)
+      && /const plan = drawStart\(code, getBook\(\)\);/.test(idx) && /yearByYear\(plan\.year, storyYearNow\(\) \?\? plan\.year, plan\.share, plan\.deaths, kindGrowth\(plan\)\)/.test(idx)
+      && /kills = w\.rows\.some\(r => r\.killed > 0\)/.test(idx) && /How their number changes: \$\{w\.plan\.law\.sheet\.numbers\}/.test(idx) && /the censuses of 1841–1921/.test(idx)
+      && /\[\.\.\.w\.rows\]\.reverse\(\)/.test(idx) && /if \(r === now\)\s*tr\.className = 'rules-world-current';/.test(idx) && /The kind: the seed\\'s, which your character may not know/.test(idx)
+      && /'more' : 'fewer'\} than in/.test(idx)
+      && /\.rules-world-table td \{ height: 40px;/.test(css) && /\.rules-world-table \{[^}]*tabular-nums/.test(css) && /\.rules-world-kind summary \{ min-height: 44px;/.test(css),
+     'the World tab', '');
+}
+// The looks command (section 111): /rules-looks shows the one set for every chat, kept in the settings; recompute adds this
+// chat's counts to the chats' pooled counts and works it out again (expression-set.ts).
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/name: 'rules-looks',/.test(idx) && /registerLooksCommand\(\);/.test(idx) && /set = expressionSet\(counts\)/.test(idx) && /counts = looksFrom\(looks\.chats\)/.test(idx)
+      && /looks\.chats\[ctx\(\)\.getCurrentChatId\(\) \?\? 'chat'\] = \{ \.\.\.store\(\)\.state\.faced \?\? \{\} \}/.test(idx)
+      && /return showText\(\[`\$\{set\.looks\.length\} looks, calm among them/.test(idx)
+      && /void c\.callGenericPopup\(`<pre style="white-space:pre-wrap;text-align:left">\$\{text\.replace\(\/&\/g, '&amp;'\)\.replace\(\/<\/g, '&lt;'\)\}<\/pre>`, c\.POPUP_TYPE\.TEXT, '', \{\}\);\s*return text;/.test(idx),
+     'the looks command', '');
+}
+// The faces command (section 112): /rules-faces makes a character's faces from their card picture (src/faces.js, run against a
+// stand-in backend by the engine tests' N110), for the chat open when it runs or the character named, from the set kept in the
+// settings; a face the box found missing before is looked for again; the box shows the face for the person's look before the
+// feeling's sprite, and a picture that is not there gives way to the next one along (the look's face, the feeling's sprite,
+// the card).
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/name: 'rules-faces',/.test(idx) && /registerFacesCommand\(\);/.test(idx)
+      && /const now = facesCtx\(\), who = String\(value \?\? ''\)\.trim\(\) \|\| now\.name2 \|\| ''/.test(idx)
+      && /makeFaces\(now, who, base, \(await looksSet\(\)\)\.looks, /.test(idx)
+      && /if \(drawn && settings\(\)\.looks\?\.portraits\?\.includes\(drawn\)\)\s*return `characters\/\$\{drawn\}\/portrait\.png`;/.test(idx)
+      && /`rules-people\/\$\{who\.replace\(\/\[\^\\p\{L\}\\p\{N\}\]\+\/gu, '_'\)\}_\$\{seedOf\(`\$\{id\}\\n\$\{who\}`\)\.toString\(36\)\}`/.test(idx)
+      && /const folder = card \? encodeURIComponent\(who\) : drawn && settings\(\)\.looks\?\.portraits\?\.includes\(drawn\) \? drawn : null;/.test(idx)
+      && /drawPortrait\(now, who, folder, portraitTags\(p, storyYearNow\(\), colouringNow\(who\)\)\.join\(', '\), seedOf\(who\)\)/.test(idx)
+      && /return showText\(said\);/.test(idx)
+      && /if \(\(now\.extensionSettings\?\.sd\?\.source\) === 'horde'\)/.test(idx) && /const box = boxes\[base\.folder\] \?\? await markFace\(base\.url, who\);/.test(idx)
+      && /boxes\[base\.folder\] = base\.box = box;/.test(idx) && /wrap\.addEventListener\('pointermove'/.test(idx) && /return `\$\{who \|\| 'This chat'\} has no card and is no one the engine keeps/.test(idx) && /if \(typeof base === 'string'\)\s*return showText\(base\);/.test(idx)
+      && /for \(const m of \[\.\.\.missingExpr\]\)\s*if \(m\.startsWith\(theirs\)\)\s*missingExpr\.delete\(m\);/.test(idx)
+      && /const look = lookSpriteOf\(who\);\s*if \(look && !missingExpr\.has\(look\)\)\s*return look;/.test(idx)
+      && /img\.onerror = target !== baseSrc \? \(\) => \{ missingExpr\.add\(target\); img\.onerror = null; if \(target\.includes\('\/look_'\) && settings\(\)\.boxPicture === 'large'\)\s*wantFaces\(who\); applySprite\(img, who, baseSrc, felt\); \} : null;/.test(idx)
+      && /const key = jointOf\(p, storyTime\(\)\), look = set\.looks\.find\(l => l\.keys\.includes\(key\)\);/.test(idx),
+     'the faces command', '');
+}
+// The narrator told how the people with no card look (section 114): a [LOOKS] block in the story's state, hair and eyes drawn
+// for each one the engine made, other than the player's character and anyone with a card; the portrait drawn with them.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/bodyBlock\(trackedPeople\(\)\), looksInjection\(\), possessionsInjection\(\)/.test(idx)
+      && /if \(!id \|\| !p \|\| who === c\.name1 \|\| \(c\.characters \?\? \[\]\)\.some\(x => x\.name === who && x\.avatar\)\)\s*return null;/.test(idx)
+      && /`\$\{who\}: \$\{\[col\.hair, col\.eyes\]\.filter\(Boolean\)\.join\(', '\)\}; wears \$\{dressOf\(p\.occupation, year\)\}\.`/.test(idx)
+      && /portraitTags\(p, storyYearNow\(\), colouringNow\(who\)\)/.test(idx) && /colouringOf\(who, id, p\.region, [^\n]*, p\.age, genotypeOf\(who, id, trackedPeople\(\)\)\)/.test(idx),
+     'the narrator told how they look', '');
+}
+// Faces drawn in the background (section 116): the box asks for the face of a look it finds missing, and for a portrait of one
+// with none; the face already there is not drawn again; on AI Horde a face box not yet marked holds them behind a note to tap.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/if \(target\.includes\('\/look_'\) && settings\(\)\.boxPicture === 'large'\)\s*wantFaces\(who\);/.test(idx) && /if \(drawn && trackedPeople\(\)\[who\]\)\s*wantFaces\(who\);/.test(idx)
+      && /if \(\(await spriteLabels\(now, base\.folder\)\)\.has\(label\)\)\s*return 'done';/.test(idx)
+      && /if \(!box\) \{\s*askFaceBox\(job\.who, base\);\s*return 'box';/.test(idx) && /faceQueue\.marked\(who\);/.test(idx)
+      && /faceQueue\.want\(who, \[now\?\.face, calm\?\.face\]/.test(idx) && /\['horde', 'auto', 'vlad'\]\.includes\(imageSource\(\)\)/.test(idx),
+     'faces in the background', '');
+}
+// The player's AI Horde key (section 118): a field in the settings, kept, and given to the faces.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), html = fs.readFileSync(`${ROOT}/settings.html`, 'utf8');
+  ok(/id="rules_engine_horde_key"[^>]*type="password"/.test(html) && /settings\(\)\.hordeKey = hordeKey\.value\.trim\(\);/.test(idx)
+      && /const facesCtx = \(\) => \(\{ \.\.\.ctx\(\), hordeKey: settings\(\)\.hordeKey \|\| undefined \}\);/.test(idx)
+      && (idx.match(/const now = facesCtx\(\)/g) ?? []).length === 3,
+     'the AI Horde key', '');
+}
+// R62: the memory of meaning on the player's sheet (section 97; src/index.js memoryList; style.css): each row shows the memory
+// as it is held now, by meaning; under the tap, how each drifted detail is told now and the words it was first held in.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/sum\.append\(icon, el\('span', 'rules-mem-text', capFirst\(r\.held\?\.as \?\? r\.text\)\)\);/.test(idx) && /`Told now: \$\{h\.told\.map\(toldPhrase\)\.join\(', '\)\}`/.test(idx)
+      && /`First held as: \$\{capFirst\(r\.text\)\}`/.test(idx) && /if \(h\?\.as && h\.as !== r\.text\)/.test(idx) && /\.rules-mem-more \.rules-mem-first \{[^}]*font-style: italic;/.test(css)
+      && /st\.alike = \[words\]/.test(idx),
+     'the memory of meaning on the sheet', '');
+}
+// R63: society in the story (section 99; src/index.js societyNow, openTab 'world'; style.css): the narrator's message holds
+// the [SOCIETY] block for a seeded story at the story's year; the World tab shows how people live with it, the fiction's
+// pattern marked, before the kind's details.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/whereInjection\(\), societyNow\(\), decided/.test(idx) && /societyBlock\(societyOf\(\{ \.\.\.plan, \.\.\.f \}, year\), st\.town\)/.test(idx) && /f = figuresIn\(yearByYear\(plan\.year, year, plan\.share, plan\.deaths, kindGrowth\(plan\)\), year, plan\)/.test(idx) && /st\.town\.seen = seen;\s*delete st\.town\.next;/.test(idx) && /societyOf\(\{ \.\.\.w\.plan, \.\.\.figuresIn\(w\.rows, now\.year, w\.plan\) \}, now\.year\)/.test(idx)
+      && /openSheet\('The world', \[head, table, life, kind, note\], tab\)/.test(idx) && /\(fiction's pattern, not history\)/.test(idx)
+      && /\.rules-world-life \.rules-world-fiction \{[^}]*font-style: italic;/.test(css),
+     'society in the story', '');
+}
+// R64: the player's character's town (section 101; src/index.js applySeed, societyNow, openTab 'world'; start-card.js; style.css):
+// the seed writes the town; a story seeded before it gets its town from its own seed; the narrator's [SOCIETY] block and the
+// World tab say where the player's character lives and what is found there, the tab's line set off by the accent; the start's
+// card names the town.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), card = fs.readFileSync(`${ROOT}/src/rules/start-card.js`, 'utf8');
+  ok(/store\(\)\.state\.town = townOf\(plan\);/.test(idx) && /if \(!st\.town\) \{\s*st\.town = townOf\(plan\);\s*saveState\(\);\s*\}/.test(idx)
+      && /el\('p', 'rules-world-town', townLine\(town, 'Your character'\)\)/.test(idx) && /\$\{esc\(s\.town\[0\]\.toUpperCase\(\) \+ s\.town\.slice\(1\)\)\} in \$\{esc\(s\.where\)\}/.test(card)
+      && /\.rules-world-life \.rules-world-town \{[^}]*border-left: 3px solid var\(--rules-accent\);/.test(css),
+     "the player's character's town", '');
+}
+// R65: a name on the tip of the player's character's tongue (section 103; src/index.js openTab 'memory'; style.css): above the
+// memories, in the second person, set off by the accent.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/onTheTongue\(store\(\)\.state, player\)/.test(idx) && /`On the tip of your tongue now: \$\{tot\.map\(t => totPhrase\(t, 'you'\)\)\.join\('; '\)\}\. It may come back later\.`/.test(idx)
+      && /openSheet\(`\$\{player\} remembers`, \[\.\.\.tip, memoryList\(rows\)\], tab\)/.test(idx) && /\.rules-mem-tot \{[^}]*border-left: 3px solid var\(--rules-accent\);/.test(css),
+     'a name on the tip of the tongue on the sheet', '');
+}
+// R66: the story's own links between words (section 104; src/index.js getLinks, saveLinks, loreGroups, refreshLinks,
+// /memory-link): kept with the card (the chat without one); the card's and the chat's lorebooks read by their keys; the links
+// set on every chat change and after each change; the command adds "=" groups and ":" kinds, lists, and removes by number.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/writeExtensionField\(Number\(c\.characterId\), 'rulesLinks', l\)/.test(idx) && /c\.chatMetadata\.rulesLinks = l;/.test(idx)
+      && /cardOf\(\)\?\.data\?\.extensions\?\.world, c\.chatMetadata\?\.world_info/.test(idx) && /groupsOfLore\(Object\.values\(/.test(idx)
+      && /setLinks\(\{ same: \[\.\.\.own\.same, \.\.\.await loreGroups\(\)\], kinds: own\.kinds \}\)/.test(idx) && /on\(ev\.CHAT_CHANGED, \(\) => \{ void refreshLinks\(\); \}\)/.test(idx)
+      && /name: 'memory-link'/.test(idx) && /registerLinkCommand\(\);/.test(idx) && /\/\^remove\\s\+\(\\d\+\)\$\/i/.test(idx),
+     "the story's own links between words", '');
+}
+// R67: a seed's law gives way to no older entry of its kind (section 106; src/index.js applySeed): an entry of the same kind from
+// an earlier seed, with that seed's sheet, is replaced by this seed's.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/const old = book\.find\(e => e\.what === plan\.law\.what\);\s*if \(!old \|\| JSON\.stringify\(old\) !== JSON\.stringify\(plan\.law\)\)\s*await saveBook\(\[\.\.\.book\.filter\(e => e\.what !== plan\.law\.what\), plan\.law\]\);/.test(idx),
+     "a seed's law replaces an older entry of its kind", '');
 }
 console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)
