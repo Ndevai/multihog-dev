@@ -759,6 +759,7 @@ const UNSHOWN = 'rules-unshown';
 const FADE_STEPS = 6, FADE_MS = 140;
 const FADES = Array.from({ length: FADE_STEPS }, (_, i) => `rules-fade-${i + 1}`);
 let lastBoxVoice = 'natural';
+let naturalMissing = false;
 const highlights = () => globalThis.CSS?.highlights;
 // The voice blips (blips.ts): one tone per syllable of a said stretch as it appears, in the speaker's own voice, while the
 // music is on (the bar's ♪), under it (blipLevel × its volume). A periodic wave per voice holds its harmonics.
@@ -888,6 +889,8 @@ const askWorker = (m, transfer = []) => new Promise(ok => {
     voiceWorker.postMessage({ ...m, id }, transfer);
 });
 function loadNatural() {
+    if (naturalMissing)
+        return Promise.reject(new Error('averaged-person.bin: missing'));
     voiceLoad ??= (async () => {
         const files = {};
         for (const f of POCKET_MODEL.files) {
@@ -922,9 +925,11 @@ function loadNatural() {
             voiceWorker.postMessage({ type: 'load', ortUrl: ORT_URL, files }, Object.values(files));
         });
         // The averaged person, from the extension's folder (not in the repository: the player keeps the file they were sent).
+        if (naturalMissing)
+            throw new Error('averaged-person.bin: missing');
         const res = await fetch(new URL('../voices/averaged-person.bin', import.meta.url));
         if (!res.ok) {
-            toast('The natural voice needs voices/averaged-person.bin in the extension folder.');
+            naturalMissing = true;
             throw new Error(`averaged-person.bin: ${res.status}`);
         }
         const buffer = await res.arrayBuffer(), r = await askWorker({ type: 'person', buffer }, [buffer]);
@@ -1002,7 +1007,7 @@ function naturalJob(unit) {
     return { key, job };
 }
 /** The said stretches of a message, made ahead in order. */
-function prepareVoices(mes) { if (settings().boxVoice === 'natural')
+function prepareVoices(mes) { if (settings().boxVoice === 'natural' && !naturalMissing)
     for (const u of unitsIn(mes))
         naturalJob(u); }
 function playNatural(audio) {
@@ -1048,7 +1053,7 @@ function typeUnit(unit) {
     const said = unit.getAttribute('data-said') === 'true', own = said ? voiceOfWho(unit.getAttribute('data-who')) : null;
     const hl = highlights(), Hl = globalThis.Highlight;
     // Never block the box on slow mobile voice synthesis: type immediately at the speaker's pace and play natural audio if it finishes while this line is still shown.
-    const nat = said ? naturalJob(unit) : null;
+    const nat = said && !naturalMissing ? naturalJob(unit) : null;
     const natural = nat && voiceDone.has(nat.key) ? voiceDone.get(nat.key) ?? null : null;
     if (nat && !voiceDone.has(nat.key)) {
         voiceWait = unit;
@@ -2264,10 +2269,6 @@ function buildBox() {
             }
             else {
                 s.boxVoice = lastBoxVoice;
-                if (s.boxVoice === 'robotic')
-                    void loadSpeech().catch(() => undefined);
-                if (s.boxVoice === 'natural')
-                    void loadNatural().catch(() => undefined);
             }
             ctx().saveSettingsDebounced();
             pill.setAttribute('aria-pressed', String(s.boxVoice !== 'off'));

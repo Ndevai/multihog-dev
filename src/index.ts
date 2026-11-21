@@ -641,6 +641,7 @@ const UNSHOWN = 'rules-unshown';
 const FADE_STEPS = 6, FADE_MS = 140;
 const FADES = Array.from({ length: FADE_STEPS }, (_, i) => `rules-fade-${i + 1}`);
 let lastBoxVoice: Exclude<Settings['boxVoice'], 'off'> = 'natural';
+let naturalMissing = false;
 const highlights = () => (globalThis as unknown as { CSS?: { highlights?: Map<string, unknown> } }).CSS?.highlights;
 // The voice blips (blips.ts): one tone per syllable of a said stretch as it appears, in the speaker's own voice, while the
 // music is on (the bar's ♪), under it (blipLevel × its volume). A periodic wave per voice holds its harmonics.
@@ -734,6 +735,7 @@ const askWorker = (m: Record<string, unknown>, transfer: Transferable[] = []) =>
     const id = ++voiceJobId; voiceJobs.set(id, ok); voiceWorker!.postMessage({ ...m, id }, transfer);
 });
 function loadNatural(): Promise<void> {
+    if (naturalMissing) return Promise.reject(new Error('averaged-person.bin: missing'));
     voiceLoad ??= (async () => {
         const files: Record<string, ArrayBuffer> = {};
         for (const f of POCKET_MODEL.files) {
@@ -760,8 +762,9 @@ function loadNatural(): Promise<void> {
             voiceWorker!.postMessage({ type: 'load', ortUrl: ORT_URL, files }, Object.values(files));
         });
         // The averaged person, from the extension's folder (not in the repository: the player keeps the file they were sent).
+        if (naturalMissing) throw new Error('averaged-person.bin: missing');
         const res = await fetch(new URL('../voices/averaged-person.bin', import.meta.url));
-        if (!res.ok) { toast('The natural voice needs voices/averaged-person.bin in the extension folder.'); throw new Error(`averaged-person.bin: ${res.status}`); }
+        if (!res.ok) { naturalMissing = true; throw new Error(`averaged-person.bin: ${res.status}`); }
         const buffer = await res.arrayBuffer(), r = await askWorker({ type: 'person', buffer }, [buffer]);
         if (r.error) throw new Error(r.error);
         // The five vocal families' files (voices/emotion-<family>.bin), where the player has them: a feeling is heard only then.
@@ -826,7 +829,7 @@ function naturalJob(unit: Element): { key: string; job: Promise<Float32Array | n
     return { key, job };
 }
 /** The said stretches of a message, made ahead in order. */
-function prepareVoices(mes: Element): void { if (settings().boxVoice === 'natural') for (const u of unitsIn(mes)) naturalJob(u); }
+function prepareVoices(mes: Element): void { if (settings().boxVoice === 'natural' && !naturalMissing) for (const u of unitsIn(mes)) naturalJob(u); }
 function playNatural(audio: Float32Array): void {
     const AC = (globalThis as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
     if (!AC) return;
@@ -858,7 +861,7 @@ function typeUnit(unit: Element): void {
     const said = unit.getAttribute('data-said') === 'true', own = said ? voiceOfWho(unit.getAttribute('data-who')) : null;
     const hl = highlights(), Hl = (globalThis as unknown as { Highlight?: new (...r: Range[]) => unknown }).Highlight;
     // Never block the box on slow mobile voice synthesis: type immediately at the speaker's pace and play natural audio if it finishes while this line is still shown.
-    const nat = said ? naturalJob(unit) : null;
+    const nat = said && !naturalMissing ? naturalJob(unit) : null;
     const natural = nat && voiceDone.has(nat.key) ? voiceDone.get(nat.key) ?? null : null;
     if (nat && !voiceDone.has(nat.key)) {
         voiceWait = unit;
@@ -1732,8 +1735,6 @@ function buildBox(): void {
                 stopBlips(); stopSpeech(); voiceWait = null;
             } else {
                 s.boxVoice = lastBoxVoice;
-                if (s.boxVoice === 'robotic') void loadSpeech().catch(() => undefined);
-                if (s.boxVoice === 'natural') void loadNatural().catch(() => undefined);
             }
             ctx().saveSettingsDebounced();
             pill.setAttribute('aria-pressed', String(s.boxVoice !== 'off'));
