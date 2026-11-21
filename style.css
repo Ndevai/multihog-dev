@@ -814,9 +814,20 @@ body.rules-box:not(.rules-box-log) #chat .rules-faith-mark { display: none; }
 .rules-time { position: relative; height: 64px; margin: 6px 4px 0; }
 .rules-time::before { content: ''; position: absolute; left: 0; right: 0; top: 20px; height: 3px; background: #ddd; }
 .rules-time-point { position: absolute; top: 0; width: 44px; height: 44px; margin-left: -22px; padding: 0; border: 0; background: none; cursor: pointer; }
-.rules-time-point::before { content: ''; position: absolute; left: 14px; top: 13px; width: 16px; height: 16px; border-radius: 50%; background: var(--rules-accent); border: 2px solid white; box-sizing: border-box; }
+.rules-time-point::before { content: ''; position: absolute; left: 14px; top: 13px; width: 16px; height: 16px; border-radius: 50%; background: white; border: 2px solid #777; box-sizing: border-box; transition: background-color 140ms ease, border-color 140ms ease; }
+#rules-sheet .rules-time-point::before { background: rgba(255, 255, 255, 0.92); border-color: rgba(255, 255, 255, 0.92); }
+.rules-time-point[aria-pressed="true"]::before, #rules-sheet .rules-time-point[aria-pressed="true"]::before { background: var(--rules-accent); border-color: white; }
+#rules-sheet .rules-time-point[aria-pressed="true"] .rules-time-label { color: var(--rules-accent-ink); font-weight: 700; }
 .rules-time-label { position: absolute; left: 0; right: 0; top: 34px; font: 11px system-ui, sans-serif; color: #555; text-align: center; }
+.rules-time-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 4px 10px; }
+.rules-time-readout { font: 600 13px/1.3 system-ui, sans-serif; color: rgba(255, 255, 255, 0.86); }
+.rules-time-pin { flex: 0 0 auto; padding: 4px 10px; border-radius: 4px; border: 1px solid white; background: white; color: black; font: 700 11px/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+.rules-time-pin[aria-pressed="true"] { background: var(--rules-accent); color: white; border-color: var(--rules-accent); }
 #rules-box-scene { cursor: pointer; }
+body.rules-scene-hidden #rules-box-scene { display: none !important; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene:not(:empty) { position: relative; max-width: calc(100% - 66px); padding-right: 2.3em; }
+.rules-scene-close { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; border: 0; background: transparent; color: rgba(255, 255, 255, 0.78); font: 700 18px/1 system-ui, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.rules-scene-close:hover, .rules-scene-close:focus-visible { color: var(--rules-accent-ink); }
 /* The picture takes its person's feeling (index.ts showFigure, views.ts pictureFeeling), as a visual novel swaps a sprite: a
    glow in the feeling's colour (the OKLCH colours of the message's edge above, so one feeling has one colour throughout) and
    a light to match: anger sharper, happiness brighter, sadness greyer and dimmer, fear darker and paler, tenderness softly

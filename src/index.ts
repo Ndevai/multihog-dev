@@ -1268,7 +1268,15 @@ function showBox(): void {
         const t = storyTime(), args = [scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label] as const;
         const line = sceneLine(...args), b = sceneBadge(...args);
         // Three lines for the night look's corner badge (clock, date, where); the page look runs them on one line.
-        scene.replaceChildren(...line ? (['clock', 'date', 'where'] as const).filter(k => b[k]).map(k => { const e = document.createElement('span'); e.className = `rules-scene-${k}`; e.textContent = b[k]; return e; }) : []);
+        const kids: Node[] = line ? (['clock', 'date', 'where'] as const).filter(k => b[k]).map(k => { const e = document.createElement('span'); e.className = `rules-scene-${k}`; e.textContent = b[k]; return e; }) : [];
+        if (kids.length) {
+            const x = document.createElement('button');
+            x.type = 'button'; x.className = 'rules-scene-close'; x.textContent = '×';
+            x.title = 'Hide story clock'; x.setAttribute('aria-label', 'Hide story clock');
+            x.addEventListener('click', e => { e.stopPropagation(); setSceneHidden(true); });
+            kids.push(x);
+        }
+        scene.replaceChildren(...kids);
         scene.setAttribute('aria-label', line);
     }
     const count = document.getElementById('rules-box-count');
@@ -1534,20 +1542,50 @@ function openTab(tab: SheetTab): void {
         const note = el('p', 'rules-world-note', `Births and deaths as the Registrar General recorded them from 1850 (the 1840s at 1850's rates), the censuses of 1841–1921, and those who left between them; the kind's number follows its sheet.${now.year === 1921 && (storyYearNow() ?? 0) > 1921 ? ' The records held end in 1921.' : ''}`);
         openSheet('The world', [head, table, life, kind, note], tab); return;
     }
-    const points = timelineOf(ctx().chat ?? []), t0 = points[0]?.time ?? 0, t1 = points.at(-1)?.time ?? 1, strip = el('div', 'rules-time');
+    const chat = ctx().chat ?? [], points = timelineOf(chat), t0 = points[0]?.time ?? 0, t1 = points.at(-1)?.time ?? 1, strip = el('div', 'rules-time');
+    const curMes = boxOn() && !boxLog && boxAt ? Number(boxAt.mes) : chat.length - 1;
+    let active = -1;
+    for (let i = 0; i < points.length; i++) if (points[i]!.index <= curMes) active = i;
+    const head = el('div', 'rules-time-head');
+    const readout = el('div', 'rules-time-readout', active >= 0 ? formatStoryTime(points[active]!.time) : (storyTime() !== null ? formatStoryTime(storyTime()!) : ''));
+    const pin = document.createElement('button');
+    pin.type = 'button'; pin.id = 'rules-scene-toggle'; pin.className = 'rules-time-pin'; pin.textContent = 'Clock';
+    pin.title = 'Show or hide the top story clock banner';
+    pin.setAttribute('aria-pressed', String(!document.body.classList.contains('rules-scene-hidden')));
+    pin.addEventListener('click', () => setSceneHidden(!document.body.classList.contains('rules-scene-hidden')));
+    head.append(readout, pin);
     // A point's clock stands under it when it lies 14 % of the strip or more from the last one labelled (the newest always).
     let labelled = -Infinity;
+    const dots: HTMLButtonElement[] = [];
     points.forEach((p, i) => {
         const b = document.createElement('button'); b.type = 'button'; b.className = 'rules-time-point';
-        const left = points.length > 1 ? 4 + 92 * (p.time - t0) / Math.max(1, t1 - t0) : 50;
+        const left = points.length > 1 ? (t1 > t0 ? 4 + 92 * (p.time - t0) / (t1 - t0) : 4 + 92 * i / (points.length - 1)) : 50;
         b.style.left = `${left}%`;
+        b.setAttribute('aria-pressed', String(i === active));
         const clock = /\d{1,2}:\d{2}/.exec(formatStoryTime(p.time))?.[0] ?? '', last = i === points.length - 1;
         b.title = formatStoryTime(p.time); b.setAttribute('aria-label', `Go to the line at ${formatStoryTime(p.time)}`);
         if (last || left - labelled >= 14) { b.append(el('span', 'rules-time-label', clock)); labelled = left; }
-        b.addEventListener('click', () => { hideWhy(); if (boxOn() && !boxLog) { boxAt = { mes: String(p.index), unit: 0 }; stepDir = -1; showBox(); } else document.querySelector(`#chat .mes[mesid="${p.index}"]`)?.scrollIntoView({ block: 'center' }); });
+        b.addEventListener('click', () => {
+            if (b.getAttribute('aria-pressed') === 'true') { hideWhy(); return; }
+            for (const d of dots) d.setAttribute('aria-pressed', String(d === b));
+            readout.textContent = formatStoryTime(p.time);
+            if (settings().boxAuto) {
+                const s = settings(); s.boxAuto = false; clearTimeout(autoTimer); ctx().saveSettingsDebounced();
+                document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', 'false');
+            }
+            boxAt = { mes: String(p.index), unit: 0 };
+            if (boxOn() && !boxLog) { stepDir = -1; showBox(); }
+            else document.querySelector(`#chat .mes[mesid="${p.index}"]`)?.scrollIntoView({ block: 'center' });
+        });
+        dots.push(b);
         strip.append(b);
     });
-    openSheet('The story\'s time', [strip], tab);
+    openSheet('The story\'s time', [head, strip], tab);
+}
+function setSceneHidden(hidden: boolean): void {
+    document.body.classList.toggle('rules-scene-hidden', hidden);
+    try { localStorage.setItem('rules_scene_hidden', hidden ? '1' : '0'); } catch { /* private mode */ }
+    document.getElementById('rules-scene-toggle')?.setAttribute('aria-pressed', String(!hidden));
 }
 /** A person's report card, a screen of its own (2026-11-17, section 92, the player's pick from Danganronpa's handbook, in the
  * extension's own look): over the whole page as the first-meeting card, their picture with its shadow, their trade (or age)
@@ -1687,6 +1725,7 @@ function buildBox(): void {
     const explain = document.createElement('span'); explain.id = 'rules-box-explain'; explain.setAttribute('aria-live', 'polite'); bar.appendChild(explain);
     form.before(bar);
     const scene = document.createElement('div'); scene.id = 'rules-box-scene'; scene.setAttribute('aria-live', 'off'); chat.before(scene);
+    try { if (localStorage.getItem('rules_scene_hidden') === '1') document.body.classList.add('rules-scene-hidden'); } catch { /* private mode */ }
     if (!document.getElementById('rules-top-fold')) {
         const fold = document.createElement('button');
         fold.type = 'button';
