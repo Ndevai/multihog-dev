@@ -879,6 +879,7 @@ body.rules-top-folded { --topBarBlockSize: 0px !important; }
 body.rules-top-folded #top-bar, body.rules-top-folded #top-settings-holder { display: none !important; }
 body.rules-top-folded #sheld { top: 0 !important; height: 100dvh !important; max-height: 100dvh !important; }
 body.rules-top-folded #rules-top-fold { top: 0; }
+body.rules-box-night.rules-box:not(.rules-box-log) #rules-top-fold[aria-expanded="true"] { color: var(--rules-accent-ink); }
 /* A phone held upright (650 px or narrower): the message box takes the whole first row and its buttons the second, so the
    line being written is never squeezed beside them. SillyTavern's own rules for the form are strong, hence !important. */
 @media (max-width: 650px) {
