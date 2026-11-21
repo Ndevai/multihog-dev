@@ -638,6 +638,9 @@ function fitUnits(mes: Element): void {
 // appear. Without the API, with reduced motion asked for, or with the setting off, the unit shows whole.
 let typing: { unit: Element; raf: number; total: number } | null = null, autoTimer: ReturnType<typeof setTimeout> | undefined, shownKey = '', stepDir: 1 | -1 | 0 = 0, figureSrc: string | null = null;
 const UNSHOWN = 'rules-unshown';
+const FADE_STEPS = 6, FADE_MS = 140;
+const FADES = Array.from({ length: FADE_STEPS }, (_, i) => `rules-fade-${i + 1}`);
+let lastBoxVoice: Exclude<Settings['boxVoice'], 'off'> = 'natural';
 const highlights = () => (globalThis as unknown as { CSS?: { highlights?: Map<string, unknown> } }).CSS?.highlights;
 // The voice blips (blips.ts): one tone per syllable of a said stretch as it appears, in the speaker's own voice, while the
 // music is on (the bar's ♪), under it (blipLevel × its volume). A periodic wave per voice holds its harmonics.
@@ -839,6 +842,7 @@ function stopTyping(): void {
     if (typing) cancelAnimationFrame(typing.raf);
     typing = null; document.body?.classList?.remove('rules-typing');
     highlights()?.delete(UNSHOWN);
+    for (const f of FADES) highlights()?.delete(f);
 }
 /** AUTO: the next unit once this one has been read (box.ts autoWait), while the box shows it and Auto stays on. */
 function scheduleAuto(unit: Element, appearMs: number): void {
@@ -868,23 +872,42 @@ function typeUnit(unit: Element): void {
     const text = unit.textContent ?? '', spoken = natural ? null : speakUnit(unit, text), read = revealTimes(text, said, own ? own.sylPerS / peek('voiceSyllablesPerS') : 1);
     const times = natural ? scaleTimes(read, 1000 * natural.length / POCKET_MODEL.sampleRate) : spoken ?? read, total = times.at(-1) ?? 0;
     if (natural) playNatural(natural);
-    if (!settings().boxTyping || reducedMotion() || !hl || !Hl || !text.trim()) { hl?.delete(UNSHOWN); scheduleAuto(unit, spoken || natural ? total : 0); return; }
+    if (!settings().boxTyping || reducedMotion() || !hl || !Hl || !text.trim()) { hl?.delete(UNSHOWN); for (const f of FADES) hl?.delete(f); scheduleAuto(unit, spoken || natural ? total : 0); return; }
     const nodes: Text[] = [];
     const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
     for (let n = walk.nextNode(); n; n = walk.nextNode()) nodes.push(n as Text);
-    const range = document.createRange(), last = nodes.at(-1)!;
-    hl.set(UNSHOWN, new Hl(range));
+    const range = document.createRange();
+    const fadeRanges = Array.from({ length: FADE_STEPS }, () => document.createRange());
+    const setHl = (name: string, r: Range, priority: number) => {
+        const h = new Hl(r) as { priority?: number };
+        h.priority = priority;
+        hl.set(name, h);
+    };
+    setHl(UNSHOWN, range, FADE_STEPS + 1);
+    for (let b = 0; b < FADE_STEPS; b++) setHl(FADES[b]!, fadeRanges[b]!, FADE_STEPS - b);
+    const place = (r: Range, a: number, b: number) => {
+        if (a >= b) { r.setStart(nodes[0]!, 0); r.setEnd(nodes[0]!, 0); return; }
+        let seen = 0;
+        for (const n of nodes) {
+            const end = seen + n.length;
+            if (a >= seen && a < end) r.setStart(n, a - seen);
+            if (b > seen && b <= end) { r.setEnd(n, b - seen); return; }
+            seen = end;
+        }
+    };
     const t0 = performance.now();
-    let shown = 0;
+    const cuts = new Int32Array(FADE_STEPS + 1);
     const frame = () => {
         if (!typing || typing.unit !== unit) return;
         if (!unit.isConnected) { stopTyping(); return; }
         const t = performance.now() - t0;
-        while (shown < text.length && times[shown]! <= t) shown++;
-        if (shown >= text.length) { stopTyping(); scheduleAuto(unit, total); return; }
-        let seen = 0;
-        for (const n of nodes) { if (seen + n.length > shown) { range.setStart(n, shown - seen); break; } seen += n.length; }
-        range.setEnd(last, last.length);
+        for (let k = 0; k <= FADE_STEPS; k++) {
+            const cut = t - (k * FADE_MS) / FADE_STEPS;
+            while (cuts[k]! < text.length && (times[cuts[k]!] ?? total) <= cut) cuts[k]!++;
+        }
+        if (cuts[FADE_STEPS]! >= text.length) { stopTyping(); scheduleAuto(unit, total); return; }
+        place(range, cuts[0]!, text.length);
+        for (let b = 0; b < FADE_STEPS; b++) place(fadeRanges[b]!, cuts[b + 1]!, cuts[b]!);
         typing.raf = requestAnimationFrame(frame);
     };
     typing = { unit, raf: 0, total }; document.body.classList.add('rules-typing');
@@ -1129,7 +1152,17 @@ function showPlate(mes: Element, unit: Element | undefined): void {
     const said = plateSaid;
     const titles: Record<SlotWord, string> = { speaking: 'Said aloud: words in quotation marks', whispering: 'Whispered: said without voicing', thinking: thinking?.title ?? 'Thinking', auto: 'The box moves on by itself' };
     const words = unit ? slotOf({ said, whispered: !!unit.querySelector('.rules-v-whisper, .rules-run-whisper'), thinking: !said && !!thinking, auto: settings().boxAuto }) : settings().boxAuto ? ['auto' as const] : [];
-    slot.replaceChildren(...words.map(w => { const e = document.createElement('span'); e.className = `rules-mode rules-mode-${w}`; e.textContent = w; e.title = titles[w]; return e; }));
+    const voiceOn = settings().boxVoice !== 'off';
+    slot.replaceChildren(...words.map(w => {
+        const toggle = w === 'speaking' || w === 'auto';
+        const e = document.createElement(toggle ? 'button' : 'span');
+        if (toggle) {
+            (e as HTMLButtonElement).type = 'button';
+            e.setAttribute('aria-pressed', String(w === 'speaking' ? voiceOn : settings().boxAuto));
+        }
+        e.className = `rules-mode rules-mode-${w}`; e.textContent = w; e.title = titles[w];
+        return e;
+    }));
     fitTag(who as HTMLElement);
 }
 /** A face's capitals' height as a share of its size (a canvas measures "H" in it), kept per face once the face has loaded. */
@@ -1241,6 +1274,8 @@ function showBox(): void {
     if (log) { log.textContent = boxLog ? 'Box' : 'Log'; log.setAttribute('aria-pressed', String(boxLog)); }
     document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
     document.getElementById('rules-box-music')?.setAttribute('aria-pressed', String(settings().musicOn));
+    const sheet = document.getElementById('rules-sheet');
+    document.getElementById('rules-box-story')?.setAttribute('aria-pressed', String(!!sheet && !sheet.hidden));
     // A unit newly shown appears letter by letter unless the player stepped back to it; the same unit drawn again keeps going.
     const key = `${boxAt.mes}:${unit}:${units.length}`;
     // The first time the box reaches the first line in the chat of a character with a card of their own, going on, a card names
@@ -1339,6 +1374,7 @@ function openSheet(head: string, parts: Node[], tab?: SheetTab): void {
         wrap = document.createElement('div'); wrap.id = 'rules-sheet';
         wrap.addEventListener('click', e => { if (e.target === wrap) hideWhy(); });
         (document.getElementById('sheld') ?? document.body).appendChild(wrap);
+        if (typeof MutationObserver !== 'undefined') new MutationObserver(() => document.getElementById('rules-box-story')?.setAttribute('aria-pressed', String(!wrap!.hidden))).observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
     }
     const path = document.getElementById('rules-why'); if (path) path.hidden = true;
     const frame = el('div', 'rules-sheet-frame'); frame.setAttribute('role', 'dialog'); frame.setAttribute('aria-label', head);
@@ -1358,6 +1394,7 @@ function openSheet(head: string, parts: Node[], tab?: SheetTab): void {
     }
     wrap.replaceChildren(frame);
     wrap.hidden = false;
+    document.getElementById('rules-box-story')?.setAttribute('aria-pressed', 'true');
 }
 type SheetTab = 'memory' | 'map' | 'time' | 'world';
 const TAB_NAME: Record<SheetTab, string> = { memory: 'Memory', map: 'Map', time: 'Time', world: 'World' };
@@ -1604,6 +1641,11 @@ function stepBox(d: 1 | -1): void {
     if (!boxOn() || boxLog || !boxAt) return;
     hideWhy();
     if (d === 1 && hideCard()) return;
+    if (d === -1 && settings().boxAuto) {
+        const s = settings(); s.boxAuto = false; clearTimeout(autoTimer); ctx().saveSettingsDebounced();
+        document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', 'false');
+        document.querySelectorAll('#chat .rules-now .rules-mode-auto').forEach(e => e.remove());
+    }
     if (d === 1 && finishTyping()) return;
     const all = [...document.querySelectorAll('#chat .mes')], i = all.findIndex(m => m.getAttribute('mesid') === boxAt!.mes);
     if (i < 0) return;
@@ -1632,7 +1674,12 @@ function buildBox(): void {
     });
     const musicBtn = button('rules-box-music', '♪', 'Music', () => { const s = settings(); s.musicOn = !s.musicOn; ctx().saveSettingsDebounced(); musicNow(); musicBtn.setAttribute('aria-pressed', String(s.musicOn)); const box = document.getElementById('rules_engine_music') as HTMLInputElement | null; if (box) box.checked = s.musicOn; });
     musicBtn.setAttribute('aria-pressed', String(settings().musicOn));
-    button('rules-box-story', 'Story', 'What your character remembers, the scene\'s map and the story\'s timeline', () => openTab(mapNow() ? 'map' : 'memory'));
+    const storyBtn = button('rules-box-story', 'Story', 'What your character remembers, the scene\'s map and the story\'s timeline', () => {
+        const sh = document.getElementById('rules-sheet');
+        if (sh && !sh.hidden) { hideWhy(); return; }
+        openTab(mapNow() ? 'map' : 'memory');
+    });
+    storyBtn.setAttribute('aria-pressed', 'false');
     button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog) document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
     const explain = document.createElement('span'); explain.id = 'rules-box-explain'; explain.setAttribute('aria-live', 'polite'); bar.appendChild(explain);
     form.before(bar);
@@ -1673,6 +1720,33 @@ function buildBox(): void {
     const explainable = (t: EventTarget | null) => (t as Element | null)?.closest?.('.rules-now .rules-v[title], .rules-now .rules-mode[title]') ?? null;
     chat.addEventListener('click', e => { const tag = (e.target as Element | null)?.closest?.('.rules-now .rules-who'); if (tag && boxOn() && !boxLog) { e.stopPropagation(); showPerson(tag.textContent ?? '', tag.closest('.mes')); } }, true);
     let holdTimer: ReturnType<typeof setTimeout> | undefined, swallowUntil = 0;
+    chat.addEventListener('click', e => {
+        const pill = (e.target as Element | null)?.closest?.('.rules-now button.rules-mode[aria-pressed]') as HTMLButtonElement | null;
+        if (!pill || !boxOn() || boxLog) return;
+        e.stopPropagation();
+        if (performance.now() < swallowUntil) return;
+        const s = settings();
+        if (pill.classList.contains('rules-mode-speaking')) {
+            if (s.boxVoice !== 'off') {
+                lastBoxVoice = s.boxVoice; s.boxVoice = 'off';
+                stopBlips(); stopSpeech(); voiceWait = null;
+            } else {
+                s.boxVoice = lastBoxVoice;
+                if (s.boxVoice === 'robotic') void loadSpeech().catch(() => undefined);
+                if (s.boxVoice === 'natural') void loadNatural().catch(() => undefined);
+            }
+            ctx().saveSettingsDebounced();
+            pill.setAttribute('aria-pressed', String(s.boxVoice !== 'off'));
+            const sel = document.getElementById('rules_engine_box_voice') as HTMLSelectElement | null;
+            if (sel) sel.value = s.boxVoice;
+        } else if (pill.classList.contains('rules-mode-auto')) {
+            s.boxAuto = !s.boxAuto; ctx().saveSettingsDebounced();
+            pill.setAttribute('aria-pressed', String(s.boxAuto));
+            document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(s.boxAuto));
+            const now = document.querySelector('#chat .rules-unit-now');
+            if (s.boxAuto && now && !typing) scheduleAuto(now, Infinity); else if (!s.boxAuto) clearTimeout(autoTimer);
+        }
+    }, true);
     chat.addEventListener('pointerdown', e => {
         clearTimeout(holdTimer);
         const t = explainable(e.target);
@@ -2261,7 +2335,7 @@ async function buildSettings(): Promise<void> {
     choice('rules_engine_page_colours', 'pageColours', ['light', 'dark'], () => { applyLook(); drawNotes(); showBox(); });
     choice('rules_engine_box_picture', 'boxPicture', ['none', 'large'], showBox);
     choice('rules_engine_box_look', 'boxLook', ['night', 'page'], showBox);
-    choice('rules_engine_box_voice', 'boxVoice', ['natural', 'robotic', 'blips', 'off'], () => { if (settings().boxVoice === 'robotic') void loadSpeech().catch(() => undefined); if (settings().boxVoice === 'natural') void loadNatural().catch(() => undefined); });
+    choice('rules_engine_box_voice', 'boxVoice', ['natural', 'robotic', 'blips', 'off'], () => { const v = settings().boxVoice; if (v !== 'off') lastBoxVoice = v; if (v === 'robotic') void loadSpeech().catch(() => undefined); if (v === 'natural') void loadNatural().catch(() => undefined); showBox(); });
     choice('rules_engine_keyboard', 'keyboardLayout', ['auto', 'qwerty', 'qwertz', 'azerty', 'dvorak', 'colemak'], () => undefined);
     // The music: on or off, the volume, songs added from the device, and the list of songs and areas.
     if (document.getElementById('rules_engine_music')) bind('rules_engine_music', 'musicOn', musicNow);

@@ -363,6 +363,24 @@ body.rules-box:not(.rules-box-log) #chat .rules-stage-fig:not([hidden]) { displa
 /* Letters not yet shown (index.ts typeUnit): a highlight drawn without ink, so the lines stand where they will and nothing
    moves as the letters appear. */
 ::highlight(rules-unshown) { color: transparent; background-color: transparent; text-decoration-color: transparent; text-shadow: none; }
+/* Leading-edge fade trail (6-step ease-out sweep): uses --rules-ink instead of currentColor because Chromium does not resolve
+   currentColor inside color-mix() on ::highlight() against child elements. */
+#chat .mes_text { --rules-ink: var(--SmartThemeBodyColor); }
+#chat .mes_text em { --rules-ink: var(--SmartThemeEmColor); }
+body.rules-page #chat span.rules-unit[data-said="false"] { --rules-ink: darkslateblue; }
+body.rules-page.rules-page-dark #chat span.rules-unit[data-said="false"],
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now span.rules-unit[data-said="false"] { --rules-ink: lightskyblue; }
+mark.rules-key { --rules-ink: black; }
+body.rules-page.rules-page-dark #chat mark.rules-key,
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now mark.rules-key { --rules-ink: gold; }
+body.rules-distinct .rules-v-add-feeling[data-feeling],
+body.rules-distinct .rules-v-feel[data-feeling] { --rules-ink: var(--rules-felt); }
+::highlight(rules-fade-1) { color: color-mix(in srgb, var(--rules-ink) 12%, transparent); text-decoration-color: color-mix(in srgb, var(--rules-ink) 12%, transparent); text-shadow: none; }
+::highlight(rules-fade-2) { color: color-mix(in srgb, var(--rules-ink) 28%, transparent); text-decoration-color: color-mix(in srgb, var(--rules-ink) 28%, transparent); text-shadow: none; }
+::highlight(rules-fade-3) { color: color-mix(in srgb, var(--rules-ink) 48%, transparent); text-decoration-color: color-mix(in srgb, var(--rules-ink) 48%, transparent); text-shadow: none; }
+::highlight(rules-fade-4) { color: color-mix(in srgb, var(--rules-ink) 68%, transparent); text-decoration-color: color-mix(in srgb, var(--rules-ink) 68%, transparent); text-shadow: none; }
+::highlight(rules-fade-5) { color: color-mix(in srgb, var(--rules-ink) 85%, transparent); text-decoration-color: color-mix(in srgb, var(--rules-ink) 85%, transparent); text-shadow: none; }
+::highlight(rules-fade-6) { color: color-mix(in srgb, var(--rules-ink) 96%, transparent); text-decoration-color: color-mix(in srgb, var(--rules-ink) 96%, transparent); text-shadow: none; }
 /* Key words (index.ts markKeys; box.ts keyPhrase): the words that name what the engine decided, as the reference sets important
    words in yellow. A ground of gold under black letters (14.97:1; darkslateblue on gold 6.72:1) where the page is light or the
    theme's own; gold letters on the dark page and in the night box. Neither is the voice marks' channel (weight, spacing, rules under the words) nor
@@ -435,6 +453,10 @@ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-w
     min-width: 0; overflow-wrap: anywhere;
 }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .rules-mode { background: white; color: black; border-color: white; }
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now button.rules-mode { position: relative; font-family: inherit; cursor: pointer; }
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now button.rules-mode::after { content: ''; position: absolute; inset: -14px -2px; }
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now button.rules-mode[aria-pressed="true"] { background: var(--rules-accent); color: white; border-color: var(--rules-accent); }
+body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now button.rules-mode:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: 2px; }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_buttons { display: none; }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .swipes-counter { display: none; }
 body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { color: white; }
@@ -497,6 +519,15 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-log::before { cont
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button[aria-pressed="true"] { color: var(--rules-accent-ink); background: transparent; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus { outline: none; box-shadow: none; }
 body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-bar button:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -6px; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-bar { justify-content: flex-end; gap: 0; padding: 0 14px; background: var(--rules-night-ground); border-color: rgba(255, 255, 255, 0.16); }
+body.rules-box-night.rules-box.rules-box-log #rules-box-bar button { width: 44px; min-width: 44px; min-height: 44px; padding: 0; font-size: 0; color: rgba(255, 255, 255, 0.92); background: transparent; border: 0; border-radius: 0; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-bar button::before { font: 900 max(18px, calc(var(--mainFontSize) * 18 / 15))/1 'Font Awesome 6 Free'; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-music::before { content: '\f001'; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-story::before { content: '\f518'; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-log::before { content: '\f1da'; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-bar button[aria-pressed="true"] { color: var(--rules-accent-ink); background: transparent; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-bar button:focus { outline: none; box-shadow: none; }
+body.rules-box-night.rules-box.rules-box-log #rules-box-bar button:focus-visible { outline: 2px solid var(--rules-accent-ink); outline-offset: -6px; }
 @media (max-height: 500px) {
     body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now { margin-top: 24px; padding: 18px 18px 52px; }
     body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_text { min-height: min(calc(var(--rules-box-lines) * 1.7em), 36vh); max-height: 36vh; }
