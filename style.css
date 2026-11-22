@@ -998,24 +998,12 @@ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_tex
     bottom: 58px;
 }
 
-/* 2. Static Past-History Brackets Only (blinking waiting bars removed) */
+/* 2. Static White Brackets Everywhere (blinking overlay and past-history tint removed) */
 .rules-top-pulse {
     display: none !important;
 }
-body.rules-box-night.rules-box.rules-box-past:not(.rules-box-log) #chat .mes.rules-now {
-    background:
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) top left / 34px 3px no-repeat,
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) top left / 3px 34px no-repeat,
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) top right / 34px 3px no-repeat,
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) top right / 3px 34px no-repeat,
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) bottom left / 34px 3px no-repeat,
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) bottom left / 3px 34px no-repeat,
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) bottom right / 34px 3px no-repeat,
-        linear-gradient(var(--rules-accent-ink), var(--rules-accent-ink)) bottom right / 3px 34px no-repeat,
-        linear-gradient(180deg, rgba(18, 20, 34, 0.74), rgba(8, 9, 16, 0.82));
-}
 
-/* 3. Slanted Accent Tag Clock Chip (matching v2 mockup) + Closable X */
+/* 3. Slanted Accent Tag Clock Chip + Closable X */
 body.rules-scene-hidden #rules-box-scene {
     display: none !important;
 }
@@ -1165,15 +1153,41 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene .rules-scene
     border-color: var(--rules-accent);
 }
 
-/* 5. Direct Button Pulse (pulses the button/icon itself, zero floating shockwave, no position override) */
-.rules-tap-ring {
-    animation: rules-btn-pulse 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+/* 5. Icon-Only Spring Pop (Twitter/X pattern — pops only the icon glyph, zero circle/shockwave) */
+#rules-box-bar button,
+#rules-top-fold,
+.rules-time-point,
+.rules-time-pin,
+.rules-sheet-tabs button,
+.rules-sheet-close,
+button.rules-mode,
+.rules-interstitial-btn,
+.rules-scene-close {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
-@keyframes rules-btn-pulse {
-    0% { scale: 1; filter: none; }
-    35% { scale: 0.82; filter: drop-shadow(0 0 8px var(--rules-accent-ink)); }
-    72% { scale: 1.08; filter: drop-shadow(0 0 4px var(--rules-accent-ink)); }
-    100% { scale: 1; filter: none; }
+#rules-box-bar button::before,
+.rules-sheet-tabs button i {
+    display: inline-block;
+    transform-origin: center;
+}
+#rules-box-bar button.rules-tap-ring::before,
+.rules-sheet-tabs button.rules-tap-ring i,
+.rules-time-point.rules-tap-ring::before,
+#rules-top-fold.rules-tap-ring,
+.rules-time-pin.rules-tap-ring,
+.rules-sheet-close.rules-tap-ring,
+button.rules-mode.rules-tap-ring,
+.rules-interstitial-btn.rules-tap-ring,
+.rules-scene-close.rules-tap-ring {
+    animation: rules-icon-pop 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes rules-icon-pop {
+    0% { scale: 1; }
+    25% { scale: 0.78; }
+    60% { scale: 1.22; }
+    82% { scale: 0.95; }
+    100% { scale: 1; }
 }
 
 /* 6. Stage Atmosphere (Subtle Vignette + Fine SVG Film Grain behind the box) */
@@ -1273,7 +1287,15 @@ body.rules-box.rules-interstitial-on:not(.rules-box-log) #rules-interstitial {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .rules-tap-ring,
+    #rules-box-bar button.rules-tap-ring::before,
+    .rules-sheet-tabs button.rules-tap-ring i,
+    .rules-time-point.rules-tap-ring::before,
+    #rules-top-fold.rules-tap-ring,
+    .rules-time-pin.rules-tap-ring,
+    .rules-sheet-close.rules-tap-ring,
+    button.rules-mode.rules-tap-ring,
+    .rules-interstitial-btn.rules-tap-ring,
+    .rules-scene-close.rules-tap-ring,
     body.rules-box.rules-interstitial-on:not(.rules-box-log) #rules-interstitial {
         animation: none;
     }
