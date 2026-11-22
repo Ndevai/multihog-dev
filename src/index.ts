@@ -1281,6 +1281,7 @@ function showBox(): void {
     }
     const count = document.getElementById('rules-box-count');
     if (count) count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
+    syncBoxPolish(mes, all.indexOf(mes), all.length, unit);
     const log = document.getElementById('rules-box-log');
     if (log) { log.textContent = boxLog ? 'Box' : 'Log'; log.setAttribute('aria-pressed', String(boxLog)); }
     document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', String(settings().boxAuto));
@@ -1345,6 +1346,7 @@ function fitCardName(el: HTMLElement): void {
     el.style.overflowWrap = ''; el.style.transform = '';
 }
 function hideCard(): boolean {
+    if (hideInterstitial()) return true;
     if (!document.body.classList.contains('rules-card-on')) return false;
     document.body.classList.remove('rules-card-on'); showBox();
     return true;
@@ -1393,6 +1395,10 @@ function openSheet(head: string, parts: Node[], tab?: SheetTab): void {
     close.addEventListener('click', () => hideWhy());
     const body = el('div', 'rules-sheet-body'); body.append(...parts);
     frame.append(el('div', 'rules-sheet-title', head), close, body);
+    const sRail = el('div', 'rules-scroll-rail rules-sheet-rail'); sRail.append(el('span', 'rules-scroll-fill'));
+    frame.append(sRail);
+    body.addEventListener('scroll', () => updateScrollRail(body, sRail), { passive: true });
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => updateScrollRail(body, sRail));
     const tabs = tab ? sheetTabs() : [];
     if (tabs.length > 1) {
         const bar = el('div', 'rules-sheet-tabs');
@@ -1547,20 +1553,27 @@ function openTab(tab: SheetTab): void {
     let active = -1;
     for (let i = 0; i < points.length; i++) if (points[i]!.index <= curMes) active = i;
     const head = el('div', 'rules-time-head');
-    const readout = el('div', 'rules-time-readout', active >= 0 ? formatStoryTime(points[active]!.time) : (storyTime() !== null ? formatStoryTime(storyTime()!) : ''));
+    const readoutWrap = el('div', 'rules-time-meta');
+    const activeTime = active >= 0 ? points[active]!.time : storyTime();
+    const readout = el('div', 'rules-time-readout', activeTime !== null ? formatStoryTime(activeTime) : '');
+    const subPlace = [scenePlace(), activeTime !== null ? sceneSky(activeTime)?.label : null].filter(Boolean).join(' · ');
+    const sub = el('div', 'rules-time-sub', subPlace);
+    readoutWrap.append(readout, sub);
     const pin = document.createElement('button');
     pin.type = 'button'; pin.id = 'rules-scene-toggle'; pin.className = 'rules-time-pin'; pin.textContent = 'Clock';
     pin.title = 'Show or hide the top story clock banner';
     pin.setAttribute('aria-pressed', String(!document.body.classList.contains('rules-scene-hidden')));
     pin.addEventListener('click', () => setSceneHidden(!document.body.classList.contains('rules-scene-hidden')));
-    head.append(readout, pin);
+    head.append(readoutWrap, pin);
     // A point's clock stands under it when it lies 14 % of the strip or more from the last one labelled (the newest always).
     let labelled = -Infinity;
     const dots: HTMLButtonElement[] = [];
+    let activeLeft = 0;
     points.forEach((p, i) => {
         const b = document.createElement('button'); b.type = 'button'; b.className = 'rules-time-point';
         const left = points.length > 1 ? (t1 > t0 ? 4 + 92 * (p.time - t0) / (t1 - t0) : 4 + 92 * i / (points.length - 1)) : 50;
         b.style.left = `${left}%`;
+        if (i === active) activeLeft = left;
         b.setAttribute('aria-pressed', String(i === active));
         const clock = /\d{1,2}:\d{2}/.exec(formatStoryTime(p.time))?.[0] ?? '', last = i === points.length - 1;
         b.title = formatStoryTime(p.time); b.setAttribute('aria-label', `Go to the line at ${formatStoryTime(p.time)}`);
@@ -1568,7 +1581,9 @@ function openTab(tab: SheetTab): void {
         b.addEventListener('click', () => {
             if (b.getAttribute('aria-pressed') === 'true') { hideWhy(); return; }
             for (const d of dots) d.setAttribute('aria-pressed', String(d === b));
+            strip.style.setProperty('--rules-tl-progress', `${left}%`);
             readout.textContent = formatStoryTime(p.time);
+            sub.textContent = [scenePlace(), sceneSky(p.time)?.label].filter(Boolean).join(' · ');
             if (settings().boxAuto) {
                 const s = settings(); s.boxAuto = false; clearTimeout(autoTimer); ctx().saveSettingsDebounced();
                 document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', 'false');
@@ -1580,12 +1595,89 @@ function openTab(tab: SheetTab): void {
         dots.push(b);
         strip.append(b);
     });
+    strip.style.setProperty('--rules-tl-progress', `${activeLeft}%`);
     openSheet('The story\'s time', [head, strip], tab);
 }
 function setSceneHidden(hidden: boolean): void {
     document.body.classList.toggle('rules-scene-hidden', hidden);
     try { localStorage.setItem('rules_scene_hidden', hidden ? '1' : '0'); } catch { /* private mode */ }
     document.getElementById('rules-scene-toggle')?.setAttribute('aria-pressed', String(!hidden));
+}
+let lastScenePlace: string | null = null, lastSceneTime: number | null = null;
+let boxScrollObserver: ResizeObserver | null = null, observedTextEl: Element | null = null;
+function updateScrollRail(scroller: HTMLElement | null, rail: HTMLElement | null): void {
+    if (!scroller || !rail) return;
+    const max = scroller.scrollHeight - scroller.clientHeight;
+    const scrollable = max > 4;
+    rail.setAttribute('data-scrollable', String(scrollable));
+    if (!scrollable) { rail.style.removeProperty('--rules-scroll'); return; }
+    const pct = Math.max(0.12, Math.min(1, scroller.scrollTop / max));
+    rail.style.setProperty('--rules-scroll', `${(pct * 100).toFixed(1)}%`);
+}
+function showInterstitial(lines: string[], status: string): void {
+    let screen = document.getElementById('rules-interstitial');
+    if (!screen) {
+        screen = document.createElement('div'); screen.id = 'rules-interstitial'; screen.setAttribute('role', 'dialog');
+        screen.addEventListener('click', e => { if (e.target === screen) hideInterstitial(); });
+        document.body.appendChild(screen);
+    }
+    const col = el('div', 'rules-interstitial-col');
+    for (const line of lines) if (line) col.append(el('p', 'rules-interstitial-p', line));
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'rules-interstitial-btn';
+    btn.innerHTML = '<span class="rules-interstitial-mark" aria-hidden="true">▸</span><span>Continue</span>';
+    btn.addEventListener('click', e => { e.stopPropagation(); hideInterstitial(); });
+    col.append(btn);
+    const foot = el('div', 'rules-interstitial-status', status);
+    screen.replaceChildren(col, foot);
+    document.body.classList.add('rules-interstitial-on');
+}
+function hideInterstitial(): boolean {
+    if (!document.body.classList.contains('rules-interstitial-on')) return false;
+    document.body.classList.remove('rules-interstitial-on');
+    return true;
+}
+function syncBoxPolish(mes: Element, mesIdx: number, totalMes: number, unit: number): void {
+    const isPast = mesIdx >= 0 && mesIdx < totalMes - 1;
+    document.body.classList.toggle('rules-box-past', isPast);
+    if (!mes.querySelector(':scope > .rules-top-pulse')) {
+        const pulse = el('div', 'rules-top-pulse'); pulse.setAttribute('aria-hidden', 'true');
+        mes.append(pulse);
+    }
+    const textEl = mes.querySelector('.mes_text') as HTMLElement | null;
+    const rail = document.getElementById('rules-box-scroll-rail');
+    updateScrollRail(textEl, rail);
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => updateScrollRail(textEl, rail));
+    if (typeof ResizeObserver !== 'undefined' && textEl && observedTextEl !== textEl) {
+        boxScrollObserver?.disconnect();
+        boxScrollObserver = new ResizeObserver(() => updateScrollRail(textEl, document.getElementById('rules-box-scroll-rail')));
+        boxScrollObserver.observe(textEl);
+        observedTextEl = textEl;
+    }
+    const place = scenePlace() || null, t = storyTime();
+    if (mesIdx === totalMes - 1 && unit === 0 && stepDir !== -1 && boxOn() && !boxLog) {
+        const placeChanged = !!place && !!lastScenePlace && place !== lastScenePlace;
+        const dt = t !== null && lastSceneTime !== null ? t - lastSceneTime : 0;
+        const dayChanged = t !== null && lastSceneTime !== null && Math.floor(t / 1440) > Math.floor(lastSceneTime / 1440);
+        const timeSkipped = dt >= 60 || (dayChanged && dt > 0);
+        if (placeChanged || timeSkipped) {
+            const sky = t !== null ? sceneSky(t)?.label : null;
+            const when = t !== null ? formatStoryTime(t) : '';
+            const lines: string[] = [];
+            if (placeChanged) {
+                lines.push(place!);
+                if (when || sky) lines.push([when, sky].filter(Boolean).join(' · '));
+                showInterstitial(lines, 'Arriving..');
+            } else {
+                const hrs = Math.floor(dt / 60), mins = Math.round(dt % 60);
+                const span = hrs >= 24 ? `${Math.floor(hrs / 24)} day${Math.floor(hrs / 24) === 1 ? '' : 's'} later` : hrs > 0 ? `${hrs} hour${hrs === 1 ? '' : 's'}${mins ? ` ${mins} min` : ''} later` : `${mins} minutes later`;
+                lines.push(span + '.');
+                if (when) lines.push([when, place, sky].filter(Boolean).join(' · '));
+                showInterstitial(lines, 'Passing..');
+            }
+        }
+    }
+    if (place) lastScenePlace = place;
+    if (t !== null) lastSceneTime = t;
 }
 /** A person's report card, a screen of its own (2026-11-17, section 92, the player's pick from Danganronpa's handbook, in the
  * extension's own look): over the whole page as the first-meeting card, their picture with its shadow, their trade (or age)
@@ -1674,6 +1766,7 @@ function drawWhy(span: string, steps: WhyStep[]): void {
 function hideWhy(): boolean {
     let was = false;
     for (const id of ['rules-why', 'rules-sheet', 'rules-report']) { const panel = document.getElementById(id); if (panel && !panel.hidden) { panel.hidden = true; was = true; } }
+    if (hideInterstitial()) was = true;
     return was;
 }
 /** One unit on (1) or back (−1); past a message's last or first unit, the neighbouring message's nearest one. Going on while
@@ -1724,7 +1817,35 @@ function buildBox(): void {
     button('rules-box-log', 'Log', 'The whole chat, or one box at a time', () => { boxLog = !boxLog; showBox(); if (boxLog) document.querySelector('#chat .rules-now')?.scrollIntoView({ block: 'center' }); });
     const explain = document.createElement('span'); explain.id = 'rules-box-explain'; explain.setAttribute('aria-live', 'polite'); bar.appendChild(explain);
     form.before(bar);
+    const scrollRail = el('div', 'rules-scroll-rail'); scrollRail.id = 'rules-box-scroll-rail'; scrollRail.append(el('span', 'rules-scroll-fill')); bar.append(scrollRail);
+    chat.addEventListener('scroll', e => { const t = e.target as HTMLElement | null; if (t?.classList?.contains('mes_text') && t.closest('.rules-now')) updateScrollRail(t, document.getElementById('rules-box-scroll-rail')); }, { passive: true, capture: true });
+    const sheld = document.getElementById('sheld');
+    if (sheld && !document.getElementById('rules-stage-atmo')) { const atmo = document.createElement('div'); atmo.id = 'rules-stage-atmo'; atmo.setAttribute('aria-hidden', 'true'); sheld.prepend(atmo); }
     const scene = document.createElement('div'); scene.id = 'rules-box-scene'; scene.setAttribute('aria-live', 'off'); chat.before(scene);
+    const syncGenerating = () => {
+        const stop = document.getElementById('mes_stop');
+        const busy = !!stop && getComputedStyle(stop).display !== 'none';
+        document.body.classList.toggle('rules-generating', busy);
+    };
+    const stopBtn = document.getElementById('mes_stop');
+    if (stopBtn && typeof MutationObserver !== 'undefined') new MutationObserver(syncGenerating).observe(stopBtn, { attributes: true, attributeFilter: ['style', 'class'] });
+    const rawCtx = ctx() as unknown as { eventSource?: { on?: (t: string, fn: () => void) => void }; eventTypes?: Record<string, string> };
+    const ev = rawCtx.eventSource, et = rawCtx.eventTypes;
+    if (ev?.on && et) {
+        if (et.GENERATION_STARTED) ev.on(et.GENERATION_STARTED, () => document.body.classList.add('rules-generating'));
+        if (et.GENERATION_ENDED) ev.on(et.GENERATION_ENDED, () => document.body.classList.remove('rules-generating'));
+        if (et.GENERATION_STOPPED) ev.on(et.GENERATION_STOPPED, () => document.body.classList.remove('rules-generating'));
+        if (et.CHAT_CHANGED) ev.on(et.CHAT_CHANGED, () => { lastScenePlace = null; lastSceneTime = null; hideInterstitial(); });
+    }
+    syncGenerating();
+    document.addEventListener('pointerdown', e => {
+        const btn = (e.target as Element | null)?.closest?.('#rules-box-bar button, #rules-top-fold, .rules-time-point, .rules-time-pin, .rules-sheet-tabs button, .rules-sheet-close, button.rules-mode, .rules-interstitial-btn, .rules-scene-close') as HTMLElement | null;
+        if (!btn) return;
+        btn.classList.remove('rules-tap-ring');
+        void btn.getClientRects();
+        btn.classList.add('rules-tap-ring');
+        window.setTimeout(() => btn.classList.remove('rules-tap-ring'), 420);
+    }, { passive: true });
     try { if (localStorage.getItem('rules_scene_hidden') === '1') document.body.classList.add('rules-scene-hidden'); } catch { /* private mode */ }
     if (!document.getElementById('rules-top-fold')) {
         const fold = document.createElement('button');

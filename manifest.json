@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "author": "Ndevai",
     "js": "src/index.js",
-    "css": "style.css?v=11",
+    "css": "style.css?v=12",
     "loading_order": 30,
     "generate_interceptor": "rulesEngineInterceptor",
     "homePage": "https://github.com/Ndevai/multihog-dev/tree/rules-standalone",
