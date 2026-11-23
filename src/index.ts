@@ -312,7 +312,8 @@ function storyState(): string {
     // While the box is on, the narrator names the speaker before each quotation (box.ts SPEAKER_RULE), for the box's plate.
     // How closely the reply follows the player's line: its knob's stop (faith.ts).
     const line = [...(c.chat ?? [])].reverse().find(m => m.is_user), follow = line ? faithLine(faithOf(line.extra?.rulesFaith), playerName()) : '';
-    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), whereInjection(), societyNow(), decided, follow, takeAuditNote() ?? '', TELLING_RULE, structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : ''];
+    const VN_BEAT_RULE = '<vn_pacing>\nWrite in crisp visual-novel beats: short dialogue lines and 1–2 sentence action or thought beats separated by paragraph breaks. Keep each paragraph concise so it lands cleanly in a single text box.\n</vn_pacing>';
+    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), whereInjection(), societyNow(), decided, follow, takeAuditNote() ?? '', TELLING_RULE, structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : '', boxOn() ? VN_BEAT_RULE : ''];
     // The narrator's prompt carries no hidden tag character (voice-code.ts untagged).
     c.setExtensionPrompt(KEY, untagged(parts.filter(Boolean).join('\n\n')), IN_CHAT, DEPTH, false, SYSTEM);
 };
@@ -876,6 +877,8 @@ function typeUnit(unit: Element): void {
     const times = natural ? scaleTimes(read, 1000 * natural.length / POCKET_MODEL.sampleRate) : spoken ?? read, total = times.at(-1) ?? 0;
     if (natural) playNatural(natural);
     if (!settings().boxTyping || reducedMotion() || !hl || !Hl || !text.trim()) { hl?.delete(UNSHOWN); for (const f of FADES) hl?.delete(f); scheduleAuto(unit, spoken || natural ? total : 0); return; }
+    const scroller = unit.closest('.mes_text') as HTMLElement | null;
+    if (scroller) { scroller.scrollTop = 0; updateScrollRail(scroller, document.getElementById('rules-box-scroll-rail')); }
     const nodes: Text[] = [];
     const walk = document.createTreeWalker(unit, NodeFilter.SHOW_TEXT);
     for (let n = walk.nextNode(); n; n = walk.nextNode()) nodes.push(n as Text);
@@ -1238,7 +1241,7 @@ function showBox(): void {
     document.body.classList.toggle('rules-box-night', on && settings().boxLook === 'night'); toneLook();
     const bar = document.getElementById('rules-box-bar');
     if (bar) bar.hidden = !on;
-    if (!on || boxLog) { stopTyping(); clearTimeout(autoTimer); shownKey = ''; }
+    if (!on || boxLog) { stopTyping(); clearTimeout(autoTimer); shownKey = ''; document.body.classList.remove('rules-box-nvl'); }
     if (!on) return;
     unitChat();
     const all = [...document.querySelectorAll('#chat .mes')];
@@ -1267,8 +1270,10 @@ function showBox(): void {
     if (scene) {
         const t = storyTime(), args = [scenePlace(), t === null ? null : formatStoryTime(t), t === null ? null : sceneSky(t)?.label] as const;
         const line = sceneLine(...args), b = sceneBadge(...args);
+        const shortDate = b.date.replace(/^([A-Za-z]{3})[a-z]+\b/, '$1').replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]+\b/i, '$1');
+        const chip = { clock: b.clock, date: shortDate, where: (scenePlace() ?? '').trim() };
         // Three lines for the night look's corner badge (clock, date, where); the page look runs them on one line.
-        const kids: Node[] = line ? (['clock', 'date', 'where'] as const).filter(k => b[k]).map(k => { const e = document.createElement('span'); e.className = `rules-scene-${k}`; e.textContent = b[k]; return e; }) : [];
+        const kids: Node[] = line ? (['clock', 'date', 'where'] as const).filter(k => chip[k]).map(k => { const e = document.createElement('span'); e.className = `rules-scene-${k}`; e.textContent = chip[k]; return e; }) : [];
         if (kids.length) {
             const x = document.createElement('button');
             x.type = 'button'; x.className = 'rules-scene-close'; x.textContent = '×';
@@ -1281,6 +1286,8 @@ function showBox(): void {
     }
     const count = document.getElementById('rules-box-count');
     if (count) count.textContent = `${all.indexOf(mes) + 1} / ${all.length}${units.length > 1 ? ` · ${unit + 1} / ${units.length}` : ''}`;
+    const isNvl = !boxLog && !!now && (now.textContent?.trim().length ?? 0) >= 340;
+    document.body.classList.toggle('rules-box-nvl', isNvl);
     syncBoxPolish(mes, all.indexOf(mes), all.length, unit);
     const log = document.getElementById('rules-box-log');
     if (log) { log.textContent = boxLog ? 'Box' : 'Log'; log.setAttribute('aria-pressed', String(boxLog)); }
@@ -1413,11 +1420,11 @@ function openSheet(head: string, parts: Node[], tab?: SheetTab): void {
     wrap.hidden = false;
     document.getElementById('rules-box-story')?.setAttribute('aria-pressed', 'true');
 }
-type SheetTab = 'memory' | 'map' | 'time' | 'world';
-const TAB_NAME: Record<SheetTab, string> = { memory: 'Memory', map: 'Map', time: 'Time', world: 'World' };
-const TAB_ICON: Record<SheetTab, string> = { memory: 'fa-brain', map: 'fa-map', time: 'fa-clock', world: 'fa-earth-europe' };
+type SheetTab = 'memory' | 'chronicle' | 'map' | 'time' | 'world';
+const TAB_NAME: Record<SheetTab, string> = { memory: 'Memory', chronicle: 'Book', map: 'Map', time: 'Time', world: 'World' };
+const TAB_ICON: Record<SheetTab, string> = { memory: 'fa-brain', chronicle: 'fa-book-open', map: 'fa-map', time: 'fa-clock', world: 'fa-earth-europe' };
 /** The tabs the story holds now: the map with a plan that places the player's character, the timeline with a line's time. */
-const sheetTabs = (): SheetTab[] => ['memory', ...mapNow() ? ['map' as const] : [], ...timelineOf(ctx().chat ?? []).length ? ['time' as const] : [], ...worldNow() ? ['world' as const] : []];
+const sheetTabs = (): SheetTab[] => ['memory', 'chronicle', ...mapNow() ? ['map' as const] : [], ...timelineOf(ctx().chat ?? []).length ? ['time' as const] : [], ...worldNow() ? ['world' as const] : []];
 /** The narrator's [SOCIETY] block for a seeded story (society.ts): how the country lives with the kind in the story's year. */
 function societyNow(): string {
     const code = ctx().chatMetadata ? store().state.seed : undefined;
@@ -1548,14 +1555,93 @@ function openTab(tab: SheetTab): void {
         const note = el('p', 'rules-world-note', `Births and deaths as the Registrar General recorded them from 1850 (the 1840s at 1850's rates), the censuses of 1841–1921, and those who left between them; the kind's number follows its sheet.${now.year === 1921 && (storyYearNow() ?? 0) > 1921 ? ' The records held end in 1921.' : ''}`);
         openSheet('The world', [head, table, life, kind, note], tab); return;
     }
+    if (tab === 'chronicle') {
+        const c = ctx(), chat = c.chat ?? [], pts = timelineOf(chat);
+        const timeAt = new Map<number, number>(pts.map(p => [p.index, p.time]));
+        const curMes = boxOn() && !boxLog && boxAt ? Number(boxAt.mes) : chat.length - 1;
+        const wrap = el('div', 'rules-chronicle');
+        const head = el('div', 'rules-chron-head');
+        const place = scenePlace(), stTime = storyTime();
+        head.append(el('div', 'rules-chron-meta', [place, stTime !== null ? formatStoryTime(stTime) : ''].filter(Boolean).join(' · ') || 'Story chronicle'));
+        const weaveBtn = document.createElement('button');
+        weaveBtn.type = 'button'; weaveBtn.className = 'rules-time-pin rules-chron-weave'; weaveBtn.textContent = 'Weave chapter';
+        weaveBtn.title = 'Weave recent turns into a literary book entry in the background';
+        head.append(weaveBtn);
+        wrap.append(head);
+        const saved = ((c.chatMetadata?.rulesChronicle as { at: string; prose: string }[] | undefined) ?? []);
+        const wovenBox = el('div', 'rules-chron-woven');
+        const renderWoven = () => {
+            wovenBox.replaceChildren();
+            const list = ((ctx().chatMetadata?.rulesChronicle as { at: string; prose: string }[] | undefined) ?? []);
+            for (const ch of list) {
+                const sec = el('article', 'rules-chron-chapter');
+                if (ch.at) sec.append(el('div', 'rules-chron-stamp', ch.at));
+                for (const p of ch.prose.split(/\n+/).map(x => x.trim()).filter(Boolean)) sec.append(el('p', 'rules-chron-p', p));
+                wovenBox.append(sec);
+            }
+        };
+        renderWoven();
+        wrap.append(wovenBox);
+        weaveBtn.addEventListener('click', async () => {
+            const recent = (ctx().chat ?? []).filter(m => !m.is_system && String(m.mes ?? '').trim()).slice(-12);
+            if (!recent.length) return;
+            weaveBtn.disabled = true; weaveBtn.textContent = 'Weaving…';
+            try {
+                const transcript = recent.map(m => `${m.is_user ? playerName() : (m.name || 'Narrator')}: ${untagged(String(m.mes ?? '')).trim()}`).join('\n');
+                const out = await send(
+                    'Rewrite these visual-novel turns into 1–2 concise literary book paragraphs in plain prose. Keep only what happened; invent no new events.',
+                    transcript,
+                );
+                const prose = String(out ?? '').trim();
+                if (prose && ctx().chatMetadata) {
+                    const arr = ((ctx().chatMetadata!.rulesChronicle ??= []) as { at: string; prose: string }[]);
+                    const tNow = storyTime();
+                    arr.push({ at: [tNow !== null ? formatStoryTime(tNow) : '', scenePlace()].filter(Boolean).join(' · '), prose });
+                    void ctx().saveMetadata();
+                    renderWoven();
+                }
+            } catch (err) {
+                console.warn('[Rules engine] chronicle weave skipped:', err);
+                toastr?.warning('Could not weave chapter right now.', 'Book');
+            } finally {
+                weaveBtn.disabled = false; weaveBtn.textContent = 'Weave chapter';
+            }
+        });
+        const log = el('div', 'rules-chron-log');
+        let shownAny = false;
+        chat.forEach((m, i) => {
+            if (m.is_system) return;
+            const raw = untagged(String(m.mes ?? '')).trim();
+            if (!raw) return;
+            shownAny = true;
+            const stamp = timeAt.get(i);
+            if (stamp != null) log.append(el('div', 'rules-chron-stamp', formatStoryTime(stamp)));
+            const entry = el('div', `rules-chron-entry${i === curMes ? ' is-now' : ''}${m.is_user ? ' is-user' : ''}`);
+            const who = m.is_user ? playerName() : (m.name || '');
+            if (who) entry.append(el('span', 'rules-chron-who', who));
+            entry.append(el('p', 'rules-chron-p', raw));
+            entry.addEventListener('click', () => {
+                boxAt = { mes: String(i), unit: 0 };
+                hideWhy();
+                if (boxOn() && !boxLog) { stepDir = -1; showBox(); }
+                else document.querySelector(`#chat .mes[mesid="${i}"]`)?.scrollIntoView({ block: 'center' });
+            });
+            log.append(entry);
+        });
+        if (!shownAny && !saved.length) log.append(el('p', 'rules-mem-none', 'No story passages yet.'));
+        wrap.append(log);
+        openSheet('The book', [wrap], tab); return;
+    }
     const chat = ctx().chat ?? [], points = timelineOf(chat), t0 = points[0]?.time ?? 0, t1 = points.at(-1)?.time ?? 1, strip = el('div', 'rules-time');
     const curMes = boxOn() && !boxLog && boxAt ? Number(boxAt.mes) : chat.length - 1;
     let active = -1;
     for (let i = 0; i < points.length; i++) if (points[i]!.index <= curMes) active = i;
+    if (active < 0 && points.length) active = 0;
     const head = el('div', 'rules-time-head');
     const readoutWrap = el('div', 'rules-time-meta');
     const activeTime = active >= 0 ? points[active]!.time : storyTime();
     const readout = el('div', 'rules-time-readout', activeTime !== null ? formatStoryTime(activeTime) : '');
+    readout.setAttribute('aria-live', 'polite');
     const subPlace = [scenePlace(), activeTime !== null ? sceneSky(activeTime)?.label : null].filter(Boolean).join(' · ');
     const sub = el('div', 'rules-time-sub', subPlace);
     readoutWrap.append(readout, sub);
@@ -1565,38 +1651,127 @@ function openTab(tab: SheetTab): void {
     pin.setAttribute('aria-pressed', String(!document.body.classList.contains('rules-scene-hidden')));
     pin.addEventListener('click', () => setSceneHidden(!document.body.classList.contains('rules-scene-hidden')));
     head.append(readoutWrap, pin);
+    // Single-pointer moment steppers (WCAG 2.2 SC 2.5.7) for crowded clusters without closing the sheet.
+    const nav = el('div', 'rules-time-nav');
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button'; prevBtn.className = 'rules-time-step'; prevBtn.textContent = '‹';
+    prevBtn.title = 'Previous moment'; prevBtn.setAttribute('aria-label', 'Go to previous moment');
+    const stepCount = el('span', 'rules-time-step-count', points.length ? `${active + 1} / ${points.length}` : '0 / 0');
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button'; nextBtn.className = 'rules-time-step'; nextBtn.textContent = '›';
+    nextBtn.title = 'Next moment'; nextBtn.setAttribute('aria-label', 'Go to next moment');
+    nav.append(prevBtn, stepCount, nextBtn);
+    strip.tabIndex = 0;
+    strip.setAttribute('role', 'slider');
+    strip.setAttribute('aria-label', 'Story timeline');
+    strip.setAttribute('aria-valuemin', '1');
+    strip.setAttribute('aria-valuemax', String(Math.max(1, points.length)));
     // A point's clock stands under it when it lies 14 % of the strip or more from the last one labelled (the newest always).
     let labelled = -Infinity;
-    const dots: HTMLButtonElement[] = [];
+    const pts: { p: (typeof points)[number]; left: number; b: HTMLButtonElement }[] = [];
     let activeLeft = 0;
+    const syncNav = (idx: number) => {
+        const item = pts[idx];
+        stepCount.textContent = pts.length ? `${idx + 1} / ${pts.length}` : '0 / 0';
+        prevBtn.disabled = idx <= 0;
+        nextBtn.disabled = !pts.length || idx >= pts.length - 1;
+        strip.setAttribute('aria-valuenow', String(idx + 1));
+        if (item) strip.setAttribute('aria-valuetext', formatStoryTime(item.p.time));
+    };
+    const previewIdx = (idx: number) => {
+        const item = pts[idx];
+        if (!item) return;
+        for (let j = 0; j < pts.length; j++) pts[j]!.b.setAttribute('aria-pressed', String(j === idx));
+        strip.style.setProperty('--rules-tl-progress', `${item.left}%`);
+        readout.textContent = formatStoryTime(item.p.time);
+        sub.textContent = [scenePlace(), sceneSky(item.p.time)?.label].filter(Boolean).join(' · ');
+        syncNav(idx);
+    };
+    const jumpTo = (idx: number) => {
+        const item = pts[idx];
+        if (!item) return;
+        active = idx;
+        previewIdx(idx);
+        if (settings().boxAuto) {
+            const s = settings(); s.boxAuto = false; clearTimeout(autoTimer); ctx().saveSettingsDebounced();
+            document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', 'false');
+        }
+        boxAt = { mes: String(item.p.index), unit: 0 };
+        if (boxOn() && !boxLog) { stepDir = -1; showBox(); }
+        else document.querySelector(`#chat .mes[mesid="${item.p.index}"]`)?.scrollIntoView({ block: 'center' });
+    };
+    const stepBy = (delta: number) => {
+        if (!pts.length) return;
+        const next = Math.max(0, Math.min(pts.length - 1, (active < 0 ? 0 : active) + delta));
+        if (next !== active) jumpTo(next);
+    };
+    prevBtn.addEventListener('click', () => stepBy(-1));
+    nextBtn.addEventListener('click', () => stepBy(1));
+    const nearestAt = (clientX: number): number => {
+        const r = strip.getBoundingClientRect();
+        if (!r.width || !pts.length) return Math.max(0, active);
+        const pct = Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100));
+        let best = 0, dist = Infinity;
+        for (let i = 0; i < pts.length; i++) {
+            const d = Math.abs(pts[i]!.left - pct);
+            if (d < dist) { dist = d; best = i; }
+        }
+        return best;
+    };
     points.forEach((p, i) => {
         const b = document.createElement('button'); b.type = 'button'; b.className = 'rules-time-point';
+        b.tabIndex = -1; b.setAttribute('aria-hidden', 'true');
         const left = points.length > 1 ? (t1 > t0 ? 4 + 92 * (p.time - t0) / (t1 - t0) : 4 + 92 * i / (points.length - 1)) : 50;
         b.style.left = `${left}%`;
         if (i === active) activeLeft = left;
         b.setAttribute('aria-pressed', String(i === active));
         const clock = /\d{1,2}:\d{2}/.exec(formatStoryTime(p.time))?.[0] ?? '', last = i === points.length - 1;
-        b.title = formatStoryTime(p.time); b.setAttribute('aria-label', `Go to the line at ${formatStoryTime(p.time)}`);
         if (last || left - labelled >= 14) { b.append(el('span', 'rules-time-label', clock)); labelled = left; }
-        b.addEventListener('click', () => {
-            if (b.getAttribute('aria-pressed') === 'true') { hideWhy(); return; }
-            for (const d of dots) d.setAttribute('aria-pressed', String(d === b));
-            strip.style.setProperty('--rules-tl-progress', `${left}%`);
-            readout.textContent = formatStoryTime(p.time);
-            sub.textContent = [scenePlace(), sceneSky(p.time)?.label].filter(Boolean).join(' · ');
-            if (settings().boxAuto) {
-                const s = settings(); s.boxAuto = false; clearTimeout(autoTimer); ctx().saveSettingsDebounced();
-                document.getElementById('rules-box-auto')?.setAttribute('aria-pressed', 'false');
-            }
-            boxAt = { mes: String(p.index), unit: 0 };
-            if (boxOn() && !boxLog) { stepDir = -1; showBox(); }
-            else document.querySelector(`#chat .mes[mesid="${p.index}"]`)?.scrollIntoView({ block: 'center' });
-        });
-        dots.push(b);
+        pts.push({ p, left, b });
         strip.append(b);
     });
+    let scrubPtr: number | null = null, scrubCurIdx = Math.max(0, active);
+    // Stop Android Chrome inside .rules-sheet-body from canceling drags or firing delayed synthetic clicks.
+    strip.addEventListener('touchstart', (e: TouchEvent) => { if (pts.length) e.preventDefault(); }, { passive: false });
+    strip.addEventListener('pointerdown', (e: PointerEvent) => {
+        if (!pts.length || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        e.preventDefault();
+        scrubPtr = e.pointerId;
+        strip.classList.add('rules-scrubbing');
+        try { strip.setPointerCapture?.(e.pointerId); } catch { /* synthetic */ }
+        const hit = nearestAt(e.clientX);
+        scrubCurIdx = hit;
+        previewIdx(hit);
+    });
+    strip.addEventListener('pointermove', (e: PointerEvent) => {
+        if (scrubPtr !== e.pointerId) return;
+        const hit = nearestAt(e.clientX);
+        if (hit !== scrubCurIdx) {
+            scrubCurIdx = hit;
+            previewIdx(hit);
+            try { navigator.vibrate?.(8); } catch { /* unsupported */ }
+        }
+    });
+    const finishScrub = (e: PointerEvent, commit: boolean) => {
+        if (scrubPtr !== e.pointerId) return;
+        strip.classList.remove('rules-scrubbing');
+        try { strip.releasePointerCapture?.(e.pointerId); } catch { /* synthetic */ }
+        scrubPtr = null;
+        if (commit) jumpTo(scrubCurIdx);
+        else if (active >= 0) previewIdx(active);
+    };
+    strip.addEventListener('pointerup', (e: PointerEvent) => finishScrub(e, true));
+    strip.addEventListener('pointercancel', (e: PointerEvent) => finishScrub(e, false));
+    strip.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (!pts.length) return;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); stepBy(-1); }
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); stepBy(1); }
+        else if (e.key === 'Home') { e.preventDefault(); jumpTo(0); }
+        else if (e.key === 'End') { e.preventDefault(); jumpTo(pts.length - 1); }
+    });
     strip.style.setProperty('--rules-tl-progress', `${activeLeft}%`);
-    openSheet('The story\'s time', [head, strip], tab);
+    if (active >= 0) syncNav(active);
+    openSheet('The story\'s time', [head, strip, nav], tab);
 }
 function setSceneHidden(hidden: boolean): void {
     document.body.classList.toggle('rules-scene-hidden', hidden);
@@ -1766,6 +1941,8 @@ function drawWhy(span: string, steps: WhyStep[]): void {
 function hideWhy(): boolean {
     let was = false;
     for (const id of ['rules-why', 'rules-sheet', 'rules-report']) { const panel = document.getElementById(id); if (panel && !panel.hidden) { panel.hidden = true; was = true; } }
+    const draft = document.getElementById('rules-draft-sheet');
+    if (draft && !draft.hidden) { draft.hidden = true; was = true; }
     if (hideInterstitial()) was = true;
     return was;
 }
@@ -1791,6 +1968,109 @@ function stepBox(d: 1 | -1): void {
     showBox();
 }
 /** The box's bar above the message box (back, the count, on, auto, the log) and its keys and taps; built once. */
+function buildComposerPolish(): void {
+    const form = document.getElementById('send_form'), ta = document.getElementById('send_textarea') as HTMLTextAreaElement | null;
+    if (!form || !ta || document.getElementById('rules-input-rail')) return;
+    form.classList.add('rules-voice-form');
+    const rail = el('div', 'rules-scroll-rail'); rail.id = 'rules-input-rail'; rail.append(el('span', 'rules-scroll-fill'));
+    const cmdBar = el('div', 'rules-cmd-bar'); cmdBar.id = 'rules-cmd-bar'; cmdBar.setAttribute('aria-hidden', 'true');
+    const expand = document.createElement('button');
+    expand.type = 'button'; expand.id = 'rules-draft-expand'; expand.className = 'rules-draft-expand';
+    expand.textContent = '⤢'; expand.title = 'Open full-stage draft editor'; expand.setAttribute('aria-label', 'Expand draft editor');
+    expand.hidden = true;
+    form.append(rail, cmdBar, expand);
+
+    const syncComposer = () => {
+        const w = ta.getBoundingClientRect().width, h = ta.offsetHeight, l = ta.offsetLeft, t = ta.offsetTop;
+        rail.style.left = `${l}px`; rail.style.top = `${t + Math.max(0, h - 2)}px`; rail.style.width = `${w}px`;
+        cmdBar.style.left = `${l}px`; cmdBar.style.top = `${t}px`; cmdBar.style.width = `${w}px`;
+        expand.style.left = `${l + Math.max(0, w - 30)}px`; expand.style.top = `${t + 4}px`;
+        const overflow = ta.scrollHeight - ta.clientHeight > 4;
+        expand.hidden = !overflow;
+        updateScrollRail(ta, rail);
+    };
+
+    const openDraftSheet = () => {
+        let sheet = document.getElementById('rules-draft-sheet');
+        if (!sheet) {
+            sheet = document.createElement('div'); sheet.id = 'rules-draft-sheet';
+            sheet.addEventListener('click', e => { if (e.target === sheet) { sheet!.hidden = true; ta.focus(); } });
+            (document.getElementById('sheld') ?? document.body).appendChild(sheet);
+        }
+        const frame = el('div', 'rules-sheet-frame rules-draft-frame');
+        frame.setAttribute('role', 'dialog'); frame.setAttribute('aria-label', 'Draft');
+        const close = document.createElement('button'); close.type = 'button'; close.className = 'rules-sheet-close'; close.setAttribute('aria-label', 'Close');
+        close.addEventListener('click', () => { sheet!.hidden = true; ta.focus(); });
+        const area = document.createElement('textarea');
+        area.className = 'rules-draft-area'; area.placeholder = ta.placeholder || 'Write your reply…';
+        area.value = ta.value;
+        const foot = el('div', 'rules-draft-foot');
+        const count = el('span', 'rules-draft-count', '');
+        const updateCount = () => {
+            const words = area.value.trim() ? area.value.trim().split(/\s+/).length : 0;
+            count.textContent = `${words} word${words === 1 ? '' : 's'}`;
+        };
+        area.addEventListener('input', () => {
+            ta.value = area.value;
+            ta.dispatchEvent(new Event('input', { bubbles: true }));
+            updateCount();
+            syncComposer();
+        });
+        area.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { e.preventDefault(); sheet!.hidden = true; ta.focus(); }
+            else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); sendBtn.click(); }
+        });
+        const doneBtn = document.createElement('button'); doneBtn.type = 'button'; doneBtn.className = 'rules-draft-btn'; doneBtn.textContent = 'Done';
+        doneBtn.addEventListener('click', () => { sheet!.hidden = true; ta.focus(); });
+        const sendBtn = document.createElement('button'); sendBtn.type = 'button'; sendBtn.className = 'rules-draft-btn rules-draft-send'; sendBtn.textContent = 'Send';
+        sendBtn.addEventListener('click', () => {
+            ta.value = area.value;
+            ta.dispatchEvent(new Event('input', { bubbles: true }));
+            sheet!.hidden = true;
+            document.getElementById('send_but')?.click();
+        });
+        foot.append(count, doneBtn, sendBtn);
+        frame.append(el('div', 'rules-sheet-title', 'Draft'), close, area, foot);
+        sheet.replaceChildren(frame);
+        sheet.hidden = false;
+        updateCount();
+        area.focus();
+        area.setSelectionRange(ta.selectionStart, ta.selectionEnd);
+    };
+    expand.addEventListener('click', openDraftSheet);
+
+    // 2B: Slash-command top-edge indicator (pink while running, vermillion on error, blank on success/abort)
+    let cmdRunningAt = 0, cmdTimer: ReturnType<typeof setTimeout> | undefined;
+    const startSlash = () => {
+        if (!ta.value.trim().startsWith('/')) return;
+        cmdRunningAt = Date.now();
+        cmdBar.setAttribute('data-cmd', 'running');
+        clearTimeout(cmdTimer);
+        cmdTimer = setTimeout(() => { if (cmdBar.getAttribute('data-cmd') === 'running') cmdBar.removeAttribute('data-cmd'); }, 2200);
+    };
+    document.getElementById('send_but')?.addEventListener('click', startSlash, true);
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) startSlash(); }, true);
+    if (typeof MutationObserver !== 'undefined') {
+        new MutationObserver(muts => {
+            if (Date.now() - cmdRunningAt > 5000) return;
+            for (const m of muts) {
+                for (const n of m.addedNodes) {
+                    if (n instanceof Element && (n.classList.contains('toast-error') || n.querySelector?.('.toast-error'))) {
+                        clearTimeout(cmdTimer);
+                        cmdBar.setAttribute('data-cmd', 'error');
+                        return;
+                    }
+                }
+            }
+        }).observe(document.body, { childList: true, subtree: true });
+    }
+    ta.addEventListener('input', () => { if (cmdBar.getAttribute('data-cmd') === 'error') cmdBar.removeAttribute('data-cmd'); syncComposer(); });
+    ta.addEventListener('scroll', syncComposer, { passive: true });
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(syncComposer).observe(ta);
+    window.addEventListener('resize', syncComposer, { passive: true });
+    syncComposer();
+}
+
 function buildBox(): void {
     const form = document.getElementById('form_sheld'), chat = document.getElementById('chat');
     if (!form || !chat || document.getElementById('rules-box-bar')) return;
@@ -1847,6 +2127,7 @@ function buildBox(): void {
         window.setTimeout(() => btn.classList.remove('rules-tap-ring'), 420);
     }, { passive: true });
     try { if (localStorage.getItem('rules_scene_hidden') === '1') document.body.classList.add('rules-scene-hidden'); } catch { /* private mode */ }
+    try { buildComposerPolish(); } catch (e) { console.warn('[Rules engine] composer polish skipped:', e); }
     if (!document.getElementById('rules-top-fold')) {
         const fold = document.createElement('button');
         fold.type = 'button';
