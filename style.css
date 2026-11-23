@@ -998,7 +998,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) #chat .mes.rules-now .mes_tex
     bottom: 58px;
 }
 
-/* 2. Static White Brackets Everywhere (blinking overlay and past-history tint removed) */
+/* 2. Static White Brackets Everywhere */
 .rules-top-pulse {
     display: none !important;
 }
@@ -1153,7 +1153,7 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene .rules-scene
     border-color: var(--rules-accent);
 }
 
-/* 5. Icon-Only Spring Pop (Twitter/X pattern — pops only the icon glyph, zero circle/shockwave) */
+/* 5. Control-Type Tap Feedback (Apple HIG / SF Symbols / M3 Standard / Emil Kowalski) */
 #rules-box-bar button,
 #rules-top-fold,
 .rules-time-point,
@@ -1166,37 +1166,47 @@ button.rules-mode,
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
-#rules-box-bar button::before,
+/* Tier 1: High-frequency steppers (< >) — zero bounce, quiet press dim; edge chrome (#rules-top-fold) stays still */
+#rules-box-back,
+#rules-box-next {
+    transition: opacity 120ms ease-out;
+}
+#rules-box-back:active,
+#rules-box-next:active {
+    opacity: 0.55;
+    transition: opacity 40ms ease-out;
+}
+/* Tier 2: Text pills & dialog buttons — critically damped 0.97 press, zero bounce */
+button.rules-mode,
+.rules-time-pin,
+.rules-interstitial-btn,
+.rules-sheet-close,
+.rules-scene-close {
+    transition: scale 120ms ease-out;
+}
+button.rules-mode:active,
+.rules-time-pin:active,
+.rules-interstitial-btn:active,
+.rules-sheet-close:active,
+.rules-scene-close:active {
+    scale: 0.97;
+    transition: scale 60ms ease-out;
+}
+/* Tier 3: Standalone action & tab icons — SF Symbols style glyph-only pop (7% overshoot ceiling) */
+#rules-box-bar button:not(#rules-box-back):not(#rules-box-next)::before,
 .rules-sheet-tabs button i {
     display: inline-block;
     transform-origin: center;
 }
 #rules-box-bar button:not(#rules-box-back):not(#rules-box-next).rules-tap-ring::before,
 .rules-sheet-tabs button.rules-tap-ring i,
-.rules-time-point.rules-tap-ring::before,
-.rules-time-pin.rules-tap-ring,
-.rules-sheet-close.rules-tap-ring,
-.rules-interstitial-btn.rules-tap-ring,
-.rules-scene-close.rules-tap-ring {
-    animation: rules-icon-pop 320ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-#rules-box-back.rules-tap-ring::before,
-#rules-box-next.rules-tap-ring::before,
-button.rules-mode.rules-tap-ring {
-    animation: rules-icon-pop-soft 280ms cubic-bezier(0.22, 1, 0.36, 1);
+.rules-time-point.rules-tap-ring::before {
+    animation: rules-icon-pop 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes rules-icon-pop {
     0% { scale: 1; }
-    25% { scale: 0.80; }
-    60% { scale: 1.20; }
-    82% { scale: 0.955; }
-    100% { scale: 1; }
-}
-@keyframes rules-icon-pop-soft {
-    0% { scale: 1; }
-    25% { scale: 0.88; }
-    60% { scale: 1.12; }
-    82% { scale: 0.973; }
+    30% { scale: 0.92; }
+    65% { scale: 1.07; }
     100% { scale: 1; }
 }
 
@@ -1297,15 +1307,18 @@ body.rules-box.rules-interstitial-on:not(.rules-box-log) #rules-interstitial {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    #rules-box-bar button.rules-tap-ring::before,
+    #rules-box-back,
+    #rules-box-next,
+    button.rules-mode,
+    .rules-time-pin,
+    .rules-interstitial-btn,
+    .rules-sheet-close,
+    .rules-scene-close {
+        transition: none;
+    }
+    #rules-box-bar button:not(#rules-box-back):not(#rules-box-next).rules-tap-ring::before,
     .rules-sheet-tabs button.rules-tap-ring i,
     .rules-time-point.rules-tap-ring::before,
-    #rules-top-fold.rules-tap-ring,
-    .rules-time-pin.rules-tap-ring,
-    .rules-sheet-close.rules-tap-ring,
-    button.rules-mode.rules-tap-ring,
-    .rules-interstitial-btn.rules-tap-ring,
-    .rules-scene-close.rules-tap-ring,
     body.rules-box.rules-interstitial-on:not(.rules-box-log) #rules-interstitial {
         animation: none;
     }
