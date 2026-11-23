@@ -1026,4 +1026,38 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
   ok(/const old = book\.find\(e => e\.what === plan\.law\.what\);\s*if \(!old \|\| JSON\.stringify\(old\) !== JSON\.stringify\(plan\.law\)\)\s*await saveBook\(\[\.\.\.book\.filter\(e => e\.what !== plan\.law\.what\), plan\.law\]\);/.test(idx),
      "a seed's law replaces an older entry of its kind", '');
 }
+// R70: the Book's scenes (section 199; src/rules/book.js; src/index.js bookView, weaveScene): split where the place changes or an
+// hour passes, as the "Arriving.."/"Passing.." screens; each finished scene woven once with its turns' hash; the live one not.
+{
+  const B = await import('../src/rules/book.js');
+  const chat = [{ is_user: true, mes: 'I wait.', extra: { rulesScene: { t: 840, place: 'Recife' } } },
+    { mes: '"At three," says Ana.', name: 'Ana', extra: { rulesScene: { 0: { t: 845, place: 'Recife' } }, rulesKeys: { 0: [{ phrase: 'At three', tool: 'Ask' }] } } },
+    { is_system: true, mes: 'x' }, { is_user: true, mes: 'I board.', extra: { rulesScene: { t: 880, place: 'Olinda' } } },
+    { is_user: true, mes: 'I sleep.', extra: { rulesScene: { t: 1500, place: 'Olinda' } } }, { is_user: true, mes: 'Old line.', extra: { rulesPass: { time: 1510 } } }];
+  const sc = B.scenesOf(chat);
+  ok(JSON.stringify(sc.map(x => [x.cause, x.from, x.to, x.place, x.marks.length, x.live])) === JSON.stringify([['start', 0, 1, 'Recife', 1, false], ['arrive', 3, 3, 'Olinda', 0, false], ['pass', 4, 5, 'Olinda', 0, true]])
+      && B.sceneBreak({ t: 0, place: null }, { t: 59, place: 'X' }) === null && B.sceneBreak({ t: 1430, place: null }, { t: 1445, place: null }) === 'pass',
+     "the book's scenes", JSON.stringify(sc.map(x => [x.cause, x.from, x.to, x.place, x.marks.length, x.live])));
+  const w = B.readWeave('TITLE: The Quay\nAna said, "At three."\nOPEN:\n- the ferry at three'), q = B.weavePrompt('novel', 'Ann', 'Chapter 2', 'Ann (the player): I board.', 'Chapter one.');
+  ok(w.title === 'The Quay' && w.prose === 'Ana said, "At three."' && w.threads[0] === 'the ferry at three' && B.readWeave('Prose.\nOPEN: none').threads.length === 0
+      && /third person and the past tense/.test(q.system) && /<telling>/.test(q.system) && /^THE CHAPTER BEFORE\nChapter one\./.test(q.user) && B.hashOf('abc') === '1a47e90b',
+     'the weave asked and read back', JSON.stringify(w));
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/const br = sceneBreak\(\{ t: lastSceneTime, place: lastScenePlace \}, \{ t, place \}\);/.test(idx) && /if \(sc\.live\)\s*row\.append/.test(idx) && /if \(weaving\.has\(sc\.from\)\)\s*return;/.test(idx)
+      && /hash: hashOf\(text\)/.test(idx), "the book's wiring", '');
+}
+// R71: Book story memory, non-destructive ghosting, separate weave profile, chat-switch guard and dark mode picker.
+{
+  const B = await import('../src/rules/book.js'), idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const chs = [{ at: 'Chapter 1 · Recife', title: 'The Key', prose: 'Rain fell on Recife.', from: 0, to: 1, hash: B.hashOf('Ann (the player): I wait.\nAna: "At three."'), threads: ['ferry at three', 'brass key'], done: ['brass key'] }];
+  const chat = [{ is_user: true, mes: 'I wait.', extra: { rulesScene: { t: 840, place: 'Recife' } } },
+    { mes: '"At three."', name: 'Ana', extra: { rulesScene: { 0: { t: 845, place: 'Recife' } } } },
+    { is_user: true, mes: 'Later.', extra: { rulesScene: { t: 1000, place: 'Recife' } } }];
+  ok(JSON.stringify(B.openThreadsOf(chs)) === JSON.stringify(['ferry at three']) && /\[BOOK\][\s\S]*The Key · Chapter 1 · Recife[\s\S]*- ferry at three[\s\S]*\[\/BOOK\]/.test(B.bookBlock(chs)) && !B.bookBlock(chs).includes('brass key'),
+     'book memory keeps open threads and omits resolved ones', B.bookBlock(chs));
+  ok(JSON.stringify(B.ghostIndices(chat, chs, 'Ann')) === JSON.stringify([0, 1]) && B.ghostIndices(chat, [{ ...chs[0], hash: 'stale' }], 'Ann').length === 0,
+     'ghosting skips live and stale scenes', JSON.stringify(B.ghostIndices(chat, chs, 'Ann')));
+  ok(/bookInjection\(\)/.test(idx) && /ghostIndices\(c\.chat/.test(idx) && /s\.bookProfile \|\| s\.profile/.test(idx) && /ctx\(\)\.chatMetadata !== meta/.test(idx) && /\.rules-chron-mode \{[^}]*color-scheme: dark;/.test(css),
+     'book memory, ghosting, profile, race guard and dark picker wired', '');
+}
 console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

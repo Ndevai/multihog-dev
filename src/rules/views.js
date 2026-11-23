@@ -52,7 +52,8 @@ export function reportRows(p, voice) {
 export const pictureFeeling = (p) => { const f = feelingNow(p); return f ? VOCAL_FAMILY[f.type] ?? null : null; };
 /** The story's timeline: each player's line whose question pass kept the story's time, in chat order. */
 export function timelineOf(chat) {
-    return chat.flatMap((m, index) => { const t = (m.is_user ? m.extra?.rulesPass?.time : null); return typeof t === 'number' ? [{ index, time: t }] : []; });
+    // The line's stamp first (book.ts; kept past the pruning of passes 30 messages back), then its pass.
+    return chat.flatMap((m, index) => { const t = !m.is_user ? null : m.extra?.rulesScene?.t ?? m.extra?.rulesPass?.time; return typeof t === 'number' ? [{ index, time: t }] : []; });
 }
 export function mapView(st, player, heard = [], seen = []) {
     const spots = st.map?.spots ?? {}, at = (p) => p?.at ? spots[p.at] : undefined;

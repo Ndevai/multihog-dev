@@ -26,6 +26,7 @@ import { registerRulesEvalCommand } from './rules/eval.js';
 import { bodyBlock, trackedPeople } from './rules/body-sheet.js';
 import { VOCAL_FAMILY } from './rules/emotion.js';
 import { parseStoryTime, formatStoryTime } from './rules/clock.js';
+import { sceneBreak, scenesOf, spanText, hashOf, weavePrompt, readWeave, sceneHead, bookMarkdown, bookBlock, ghostIndices, MODE_NAME } from './rules/book.js';
 import { sendModel } from './send.js';
 import { worldBlock, applyWorld, checkEntry, parseEntry, FILL_SYSTEM } from './rules/world.js';
 import { drawStart, rollSeed, knownStart, startParts, seedCalls, kindGrowth } from './rules/seed.js';
@@ -49,7 +50,7 @@ const NAME = 'rules-engine', KEY = 'rules_engine';
 const IN_CHAT = 1, SYSTEM = 0;
 // The engine's message sits this many messages above the end of the chat: 1 = just above the player's last message.
 const DEPTH = 1;
-const DEFAULTS = { keyboardLayout: 'auto', enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxLook: 'night', boxVoice: 'natural', boxTyping: true, boxAuto: false, musicOn: true, musicVolume: 0.6, songs: [], musicAreaNames: {}, profile: '', maxTokens: 0, effort: 'low' };
+const DEFAULTS = { keyboardLayout: 'auto', enabled: true, questionPass: true, ruleCheck: true, structured: true, suggest: false, distinct: true, page: true, pageColours: 'light', box: true, boxUnit: 'voice', boxPicture: 'none', boxLook: 'night', boxVoice: 'natural', boxTyping: true, boxAuto: false, musicOn: true, musicVolume: 0.6, songs: [], musicAreaNames: {}, profile: '', maxTokens: 0, effort: 'low', bookMemory: true, bookGhost: false, bookProfile: '' };
 const ctx = () => SillyTavern.getContext();
 const toastr = globalThis.toastr;
 /** The stored settings, a default filled in for each key the store lacks. The store's own object is returned, so a value set
@@ -65,6 +66,7 @@ function settings() {
 }
 // A connection that refuses the plan's schema (a 400, an unknown field) is asked again without it, and the plan goes back to
 // being read from free text for the rest of the session.
+const sendBook = (system, user) => { const s = settings(); return sendModel(system, user, { profile: s.bookProfile || s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' }); };
 const send = async (system, user, o = {}) => {
     const s = settings(), base = { profile: s.profile, maxTokens: s.maxTokens, effort: s.effort ?? 'low' };
     if (!o.schema)
@@ -316,7 +318,15 @@ globalThis.rulesEngineInterceptor = async (chat, _size, abort, type) => {
     // How closely the reply follows the player's line: its knob's stop (faith.ts).
     const line = [...(c.chat ?? [])].reverse().find(m => m.is_user), follow = line ? faithLine(faithOf(line.extra?.rulesFaith), playerName()) : '';
     const VN_BEAT_RULE = '<vn_pacing>\nWrite in crisp visual-novel beats: short dialogue lines and 1–2 sentence action or thought beats separated by paragraph breaks. Keep each paragraph concise so it lands cleanly in a single text box.\n</vn_pacing>';
-    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), whereInjection(), societyNow(), decided, follow, takeAuditNote() ?? '', TELLING_RULE, structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : '', boxOn() ? VN_BEAT_RULE : ''];
+    if (s.bookGhost && chat.length === (c.chat?.length ?? 0)) {
+        const drop = ghostIndices(c.chat ?? [], chaptersNow(), playerName(), untagged);
+        for (let i = drop.length - 1; i >= 0; i--) {
+            const idx = drop[i];
+            if (idx >= 0 && idx < chat.length - 1)
+                chat.splice(idx, 1);
+        }
+    }
+    const parts = [!questionPassRan() ? rulesBrief() : suggest ? SUGGEST_BRIEF : RULES_BRIEF_DECIDED, storyState(), knowledgeInjection(), whereInjection(), societyNow(), decided, follow, takeAuditNote() ?? '', TELLING_RULE, structuredNow() ? NARRATION_RULE : '', boxOn() ? SPEAKER_RULE : '', boxOn() ? VN_BEAT_RULE : '', bookInjection()];
     // The narrator's prompt carries no hidden tag character (voice-code.ts untagged).
     c.setExtensionPrompt(KEY, untagged(parts.filter(Boolean).join('\n\n')), IN_CHAT, DEPTH, false, SYSTEM);
 };
@@ -1899,6 +1909,252 @@ function mapNow() {
     const chat = ctx().chat ?? [], line = [...chat].reverse().find(m => m.is_user), sensed = sensedThisTurn(line?.extra?.rulesPass, playerName());
     return ctx().chatMetadata ? mapView(store().state, playerName(), sensed.heard, sensed.seen) : null;
 }
+// The Book tab (section 199, book.ts): the chat as scenes split where the place or the hour changes, each finished scene woven
+// once into a chapter in the background; the live scene stays as its turns until it ends.
+const chaptersNow = () => ctx().chatMetadata?.rulesChronicle ?? [];
+/** Story memory from woven chapters and open threads, sent to the narrator when enabled. */
+const bookInjection = () => (settings().bookMemory || settings().bookGhost) ? bookBlock(chaptersNow()) : '';
+/** The scenes being woven now per chat, by their first line: a second tap waits for the first, and switching chats never collides. */
+const weavingByMeta = new WeakMap();
+const weavingFor = (meta) => {
+    if (!meta)
+        return new Set();
+    let set = weavingByMeta.get(meta);
+    if (!set) {
+        set = new Set();
+        weavingByMeta.set(meta, set);
+    }
+    return set;
+};
+const bookOpen = () => !!document.querySelector('#rules-sheet:not([hidden]) .rules-chronicle');
+const bookMode = () => settings().bookMode ?? 'novel';
+/** Weaves one finished scene: its turns, the chapter before as known, the chosen mode; the chapter replaces any earlier one
+ * of the same turns. Runs on after the sheet closes; ignores stale results if the player switched chats mid-request. */
+async function weaveScene(sc) {
+    const meta = ctx().chatMetadata, chatId = ctx().getCurrentChatId?.();
+    if (!meta)
+        return;
+    const weaving = weavingFor(meta);
+    if (weaving.has(sc.from))
+        return;
+    weaving.add(sc.from);
+    if (bookOpen())
+        openTab('chronicle');
+    try {
+        const chat = ctx().chat ?? [], player = playerName(), text = spanText(chat, sc, player, untagged);
+        const prevList = meta.rulesChronicle ?? [];
+        const prevCh = prevList.find(c => c.from === sc.from);
+        const prior = prevList.filter(c => c.to != null && c.to < sc.from).sort((x, y) => x.to - y.to).at(-1)?.prose ?? null;
+        const head = sceneHead(sc, formatStoryTime), mode = bookMode(), q = weavePrompt(mode, player, head, text, prior);
+        const w = readWeave(String(await sendBook(q.system, q.user) ?? ''));
+        if (ctx().chatMetadata !== meta || (chatId && ctx().getCurrentChatId?.() !== chatId))
+            return;
+        if (!w.prose)
+            throw new Error('empty chapter');
+        const keptDone = (prevCh?.done ?? []).filter(d => w.threads.includes(d));
+        const list = (meta.rulesChronicle ??= []).filter(c => c.from !== sc.from);
+        list.push({ at: head, prose: w.prose, from: sc.from, to: sc.to, hash: hashOf(text), mode, threads: w.threads, ...keptDone.length ? { done: keptDone } : {}, ...w.title ? { title: w.title } : {} });
+        list.sort((x, y) => (x.from ?? -1) - (y.from ?? -1));
+        meta.rulesChronicle = list;
+        await ctx().saveMetadata();
+        toastr?.info(`Chapter ${sc.n}${w.title ? `: ${w.title}` : ''} is in the book.`, 'Book');
+    }
+    catch (err) {
+        if (ctx().chatMetadata !== meta || (chatId && ctx().getCurrentChatId?.() !== chatId))
+            return;
+        console.warn('[Rules engine] chapter not woven:', err);
+        toastr?.warning(`Chapter ${sc.n} could not be woven; tap Weave to try again.`, 'Book');
+    }
+    finally {
+        weaving.delete(sc.from);
+        if (ctx().chatMetadata === meta && bookOpen())
+            openTab('chronicle');
+    }
+}
+/** Marks an open thread resolved or active again so [BOOK] stops reminding the narrator once resolved. */
+async function toggleThread(ch, thread) {
+    const done = new Set(ch.done ?? []);
+    if (done.has(thread))
+        done.delete(thread);
+    else
+        done.add(thread);
+    ch.done = [...done];
+    await ctx().saveMetadata();
+    if (bookOpen())
+        openTab('chronicle');
+}
+/** A chapter's prose edited in place (a wrong name fixed before the next chapter reads it as known). */
+async function editChapter(from) {
+    const c = ctx(), list = chaptersNow(), ch = list.find(x => x.from === from);
+    if (!ch)
+        return;
+    const edited = await c.callGenericPopup('<h3>Edit the chapter</h3><small>OK saves; Cancel keeps it as it was.</small>', c.POPUP_TYPE.INPUT, ch.prose, { wide: true, large: true, rows: 18 });
+    if (typeof edited !== 'string' || !edited.trim())
+        return;
+    ch.prose = edited.trim();
+    await c.saveMetadata();
+    if (bookOpen())
+        openTab('chronicle');
+}
+/** The woven chapters as a Markdown file the player keeps. */
+function exportBook() {
+    const list = chaptersNow();
+    if (!list.length) {
+        toastr?.info('No chapters woven yet.', 'Book');
+        return;
+    }
+    const title = `${playerName()}'s story`, blob = new Blob([bookMarkdown(title, list)], { type: 'text/markdown' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${title.replace(/[^\w-]+/g, '_')}.md`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+function bookView() {
+    const c = ctx(), chat = c.chat ?? [], scenes = scenesOf(chat), list = chaptersNow(), player = playerName(), weaving = weavingFor(c.chatMetadata);
+    const curMes = boxOn() && !boxLog && boxAt ? Number(boxAt.mes) : chat.length - 1;
+    const wrap = el('div', 'rules-chronicle'), head = el('div', 'rules-chron-head');
+    const place = scenePlace(), stTime = storyTime();
+    head.append(el('div', 'rules-chron-meta', [place, stTime !== null ? formatStoryTime(stTime) : '', `${scenes.length} scene${scenes.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ')));
+    const tools = el('div', 'rules-chron-tools');
+    const mode = document.createElement('select');
+    mode.className = 'rules-chron-mode';
+    mode.title = 'How new chapters are written';
+    for (const m of Object.keys(MODE_NAME)) {
+        const o = document.createElement('option');
+        o.value = m;
+        o.textContent = MODE_NAME[m];
+        o.selected = m === bookMode();
+        mode.append(o);
+    }
+    mode.addEventListener('change', () => { settings().bookMode = mode.value; ctx().saveSettingsDebounced?.(); });
+    const exp = document.createElement('button');
+    exp.type = 'button';
+    exp.className = 'rules-time-pin';
+    exp.textContent = 'Export';
+    exp.title = 'Save the woven chapters as a Markdown file';
+    exp.addEventListener('click', exportBook);
+    tools.append(mode, exp);
+    head.append(tools);
+    wrap.append(head);
+    // Chapters woven before section 199 hold no turns; they stand first, as they were.
+    const old = list.filter(x => x.from == null);
+    if (old.length) {
+        const d = document.createElement('details'), s = document.createElement('summary');
+        d.className = 'rules-chron-scene';
+        s.textContent = 'Earlier chapters';
+        d.append(s);
+        for (const ch of old)
+            d.append(chapterEl(ch));
+        wrap.append(d);
+    }
+    if (!scenes.length)
+        wrap.append(el('p', 'rules-mem-none', 'No story passages yet.'));
+    for (const sc of scenes) {
+        const ch = list.find(x => x.from === sc.from), text = spanText(chat, sc, player, untagged), stale = !!ch && (ch.to !== sc.to || ch.hash !== hashOf(text));
+        const box = document.createElement('details');
+        box.className = `rules-chron-scene${sc.live ? ' is-live' : ''}`;
+        box.open = sc.live || !ch;
+        const sum = document.createElement('summary');
+        sum.append(el('span', 'rules-chron-cause', sc.cause === 'arrive' ? 'Arriving..' : sc.cause === 'pass' ? 'Passing..' : 'Beginning'), el('span', 'rules-chron-title', sceneHead(sc, formatStoryTime, ch?.title)));
+        box.append(sum);
+        if (ch)
+            box.append(chapterEl(ch, stale));
+        const row = el('div', 'rules-chron-actions');
+        if (sc.live)
+            row.append(el('span', 'rules-chron-note', 'This scene is still being played; it is woven once the place or the hour changes.'));
+        else {
+            const w = document.createElement('button');
+            w.type = 'button';
+            w.className = 'rules-time-pin rules-chron-weave';
+            w.textContent = weaving.has(sc.from) ? 'Weaving…' : ch ? 'Weave again' : 'Weave chapter';
+            w.disabled = weaving.has(sc.from);
+            w.title = 'Write this scene as a chapter in the background; you can close the book and play on';
+            w.addEventListener('click', () => { void weaveScene(sc); });
+            row.append(w);
+            if (ch) {
+                const e = document.createElement('button');
+                e.type = 'button';
+                e.className = 'rules-time-pin';
+                e.textContent = 'Edit';
+                e.addEventListener('click', () => { void editChapter(sc.from); });
+                row.append(e);
+            }
+        }
+        box.append(row);
+        // What the engine decided in the scene: its key words, the turning points, with no model call.
+        if (sc.marks.length) {
+            const ul = el('ul', 'rules-chron-marks');
+            for (const mk of sc.marks.slice(0, 12)) {
+                const li = el('li', '');
+                li.append(el('mark', 'rules-key', mk.phrase));
+                if (mk.tool)
+                    li.title = mk.tool;
+                ul.append(li);
+            }
+            box.append(ul);
+        }
+        const turns = document.createElement('details'), tsSum = document.createElement('summary');
+        turns.className = 'rules-chron-turns';
+        turns.open = sc.live && !ch;
+        tsSum.textContent = `The turns (${sc.lines.length})`;
+        if (settings().bookGhost && !sc.live && !!ch && !stale)
+            tsSum.append(el('span', 'rules-chron-archived', 'Archived from AI'));
+        turns.append(tsSum);
+        const log = el('div', 'rules-chron-log');
+        for (const i of sc.lines) {
+            const m = chat[i], entry = el('div', `rules-chron-entry${i === curMes ? ' is-now' : ''}${m.is_user ? ' is-user' : ''}`), who = m.is_user ? player : (m.name || '');
+            if (who)
+                entry.append(el('span', 'rules-chron-who', who));
+            entry.append(el('p', 'rules-chron-p', untagged(String(m.mes ?? '')).trim()));
+            entry.addEventListener('click', () => {
+                boxAt = { mes: String(i), unit: 0 };
+                hideWhy();
+                if (boxOn() && !boxLog) {
+                    stepDir = -1;
+                    showBox();
+                }
+                else
+                    document.querySelector(`#chat .mes[mesid="${i}"]`)?.scrollIntoView({ block: 'center' });
+            });
+            log.append(entry);
+        }
+        turns.append(log);
+        box.append(turns);
+        wrap.append(box);
+    }
+    return wrap;
+}
+function chapterEl(ch, stale = false) {
+    const sec = el('article', 'rules-chron-chapter');
+    if (stale)
+        sec.append(el('div', 'rules-chron-note', 'Its turns changed since it was woven; weave it again to match.'));
+    for (const p of ch.prose.split(/\n+/).map(x => x.trim()).filter(Boolean))
+        sec.append(el('p', 'rules-chron-p', p));
+    if (ch.threads?.length) {
+        const done = new Set(ch.done ?? []), openCount = ch.threads.filter(t => !done.has(t)).length;
+        const d = document.createElement('details'), s = document.createElement('summary');
+        d.className = 'rules-chron-threads';
+        s.textContent = openCount === ch.threads.length ? `Left open (${openCount})` : `Left open (${openCount} of ${ch.threads.length})`;
+        const ul = el('ul', '');
+        for (const t of ch.threads) {
+            const li = el('li', ''), btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'rules-chron-thread';
+            btn.textContent = t;
+            btn.setAttribute('aria-pressed', String(done.has(t)));
+            btn.title = done.has(t) ? 'Marked resolved; tap to reopen' : 'Tap to mark resolved';
+            btn.addEventListener('click', () => { void toggleThread(ch, t); });
+            li.append(btn);
+            ul.append(li);
+        }
+        d.append(s, ul);
+        sec.append(d);
+    }
+    return sec;
+}
 /** One of the story's tabs: what the player's character remembers, the scene's map, or the story's timeline. */
 function openTab(tab) {
     const player = playerName();
@@ -1986,96 +2242,7 @@ function openTab(tab) {
         return;
     }
     if (tab === 'chronicle') {
-        const c = ctx(), chat = c.chat ?? [], pts = timelineOf(chat);
-        const timeAt = new Map(pts.map(p => [p.index, p.time]));
-        const curMes = boxOn() && !boxLog && boxAt ? Number(boxAt.mes) : chat.length - 1;
-        const wrap = el('div', 'rules-chronicle');
-        const head = el('div', 'rules-chron-head');
-        const place = scenePlace(), stTime = storyTime();
-        head.append(el('div', 'rules-chron-meta', [place, stTime !== null ? formatStoryTime(stTime) : ''].filter(Boolean).join(' · ') || 'Story chronicle'));
-        const weaveBtn = document.createElement('button');
-        weaveBtn.type = 'button';
-        weaveBtn.className = 'rules-time-pin rules-chron-weave';
-        weaveBtn.textContent = 'Weave chapter';
-        weaveBtn.title = 'Weave recent turns into a literary book entry in the background';
-        head.append(weaveBtn);
-        wrap.append(head);
-        const saved = (c.chatMetadata?.rulesChronicle ?? []);
-        const wovenBox = el('div', 'rules-chron-woven');
-        const renderWoven = () => {
-            wovenBox.replaceChildren();
-            const list = (ctx().chatMetadata?.rulesChronicle ?? []);
-            for (const ch of list) {
-                const sec = el('article', 'rules-chron-chapter');
-                if (ch.at)
-                    sec.append(el('div', 'rules-chron-stamp', ch.at));
-                for (const p of ch.prose.split(/\n+/).map(x => x.trim()).filter(Boolean))
-                    sec.append(el('p', 'rules-chron-p', p));
-                wovenBox.append(sec);
-            }
-        };
-        renderWoven();
-        wrap.append(wovenBox);
-        weaveBtn.addEventListener('click', async () => {
-            const recent = (ctx().chat ?? []).filter(m => !m.is_system && String(m.mes ?? '').trim()).slice(-12);
-            if (!recent.length)
-                return;
-            weaveBtn.disabled = true;
-            weaveBtn.textContent = 'Weaving…';
-            try {
-                const transcript = recent.map(m => `${m.is_user ? playerName() : (m.name || 'Narrator')}: ${untagged(String(m.mes ?? '')).trim()}`).join('\n');
-                const out = await send('Rewrite these visual-novel turns into 1–2 concise literary book paragraphs in plain prose. Keep only what happened; invent no new events.', transcript);
-                const prose = String(out ?? '').trim();
-                if (prose && ctx().chatMetadata) {
-                    const arr = (ctx().chatMetadata.rulesChronicle ??= []);
-                    const tNow = storyTime();
-                    arr.push({ at: [tNow !== null ? formatStoryTime(tNow) : '', scenePlace()].filter(Boolean).join(' · '), prose });
-                    void ctx().saveMetadata();
-                    renderWoven();
-                }
-            }
-            catch (err) {
-                console.warn('[Rules engine] chronicle weave skipped:', err);
-                toastr?.warning('Could not weave chapter right now.', 'Book');
-            }
-            finally {
-                weaveBtn.disabled = false;
-                weaveBtn.textContent = 'Weave chapter';
-            }
-        });
-        const log = el('div', 'rules-chron-log');
-        let shownAny = false;
-        chat.forEach((m, i) => {
-            if (m.is_system)
-                return;
-            const raw = untagged(String(m.mes ?? '')).trim();
-            if (!raw)
-                return;
-            shownAny = true;
-            const stamp = timeAt.get(i);
-            if (stamp != null)
-                log.append(el('div', 'rules-chron-stamp', formatStoryTime(stamp)));
-            const entry = el('div', `rules-chron-entry${i === curMes ? ' is-now' : ''}${m.is_user ? ' is-user' : ''}`);
-            const who = m.is_user ? playerName() : (m.name || '');
-            if (who)
-                entry.append(el('span', 'rules-chron-who', who));
-            entry.append(el('p', 'rules-chron-p', raw));
-            entry.addEventListener('click', () => {
-                boxAt = { mes: String(i), unit: 0 };
-                hideWhy();
-                if (boxOn() && !boxLog) {
-                    stepDir = -1;
-                    showBox();
-                }
-                else
-                    document.querySelector(`#chat .mes[mesid="${i}"]`)?.scrollIntoView({ block: 'center' });
-            });
-            log.append(entry);
-        });
-        if (!shownAny && !saved.length)
-            log.append(el('p', 'rules-mem-none', 'No story passages yet.'));
-        wrap.append(log);
-        openSheet('The book', [wrap], tab);
+        openSheet('The book', [bookView()], tab);
         return;
     }
     const chat = ctx().chat ?? [], points = timelineOf(chat), t0 = points[0]?.time ?? 0, t1 = points.at(-1)?.time ?? 1, strip = el('div', 'rules-time');
@@ -2358,11 +2525,10 @@ function syncBoxPolish(mes, mesIdx, totalMes, unit) {
     }
     const place = scenePlace() || null, t = storyTime();
     if (mesIdx === totalMes - 1 && unit === 0 && stepDir !== -1 && boxOn() && !boxLog) {
-        const placeChanged = !!place && !!lastScenePlace && place !== lastScenePlace;
-        const dt = t !== null && lastSceneTime !== null ? t - lastSceneTime : 0;
-        const dayChanged = t !== null && lastSceneTime !== null && Math.floor(t / 1440) > Math.floor(lastSceneTime / 1440);
-        const timeSkipped = dt >= 60 || (dayChanged && dt > 0);
-        if (placeChanged || timeSkipped) {
+        // The Book's chapters split on the same rule (book.ts sceneBreak).
+        const br = sceneBreak({ t: lastSceneTime, place: lastScenePlace }, { t, place });
+        const placeChanged = br === 'arrive', dt = t !== null && lastSceneTime !== null ? t - lastSceneTime : 0;
+        if (br) {
             const sky = t !== null ? sceneSky(t)?.label : null;
             const when = t !== null ? formatStoryTime(t) : '';
             const lines = [];
@@ -3677,6 +3843,18 @@ async function buildSettings() {
         profile.add(new Option(p.name, p.id));
     profile.value = profiles.some(p => p.id === s.profile) ? s.profile : '';
     profile.addEventListener('change', () => { settings().profile = profile.value; ctx().saveSettingsDebounced(); });
+    if (document.getElementById('rules_engine_book_memory'))
+        bind('rules_engine_book_memory', 'bookMemory');
+    if (document.getElementById('rules_engine_book_ghost'))
+        bind('rules_engine_book_ghost', 'bookGhost', () => { if (bookOpen())
+            openTab('chronicle'); });
+    const bookProfile = document.getElementById('rules_engine_book_profile');
+    if (bookProfile) {
+        for (const p of profiles)
+            bookProfile.add(new Option(p.name, p.id));
+        bookProfile.value = profiles.some(p => p.id === s.bookProfile) ? s.bookProfile : '';
+        bookProfile.addEventListener('change', () => { settings().bookProfile = bookProfile.value; ctx().saveSettingsDebounced(); });
+    }
     const hordeKey = document.getElementById('rules_engine_horde_key');
     if (hordeKey) {
         hordeKey.value = s.hordeKey ?? '';
@@ -3752,8 +3930,12 @@ function readReply(id) {
     const people = castNames(), keys = decidedResults().flatMap(r => { const phrase = keyPhrase(r.result, msg.mes, people); return phrase ? [{ phrase, result: r.result, tool: r.tool }] : []; });
     if (keys.length)
         (msg.extra.rulesKeys ??= {})[swipe] = keys;
-    if (msg.mes === before && !keys.length)
+    // Where and when the reply stands, per swipe (book.ts stampOf): the narrator's own calls can move the scene.
+    (msg.extra.rulesScene ??= {})[swipe] = { t: storyTime(), place: scenePlace() };
+    if (msg.mes === before && !keys.length) {
+        c.saveChatDebounced?.();
         return;
+    }
     // The swipe keeps the text shown, so swiping back to it shows prose, not the reply's raw form.
     if (Array.isArray(msg.swipes) && msg.swipes[swipe] === before)
         msg.swipes[swipe] = msg.mes;

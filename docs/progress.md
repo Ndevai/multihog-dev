@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, model, what changed (plain words), what was checked, what is next.
 
+## 2026-11-23 (199), Claude
+- The Book tab by scenes (the player: "continue" from the research on SillyTavern memory and chat-to-novel tools; chosen: the scene ledger with scene-bounded, editable chapters, since the ledger gives the spans the weave needs).
+- Changed: new `book.ts`: `sceneBreak` (one rule for the Book and the "Arriving.."/"Passing.." screens; `sceneGapMin` 60 registered [ASSUMED], 30–120), `scenesOf`, `stampOf`, `spanText`, `hashOf` (FNV-1a), `weavePrompt` (plain-prose system prompt with TELLING_RULE, spoken lines kept, the chapter before as known, three modes: Faithful, Novel, Condensed), `readWeave` (title, prose, open threads), `bookMarkdown`. Each line keeps `extra.rulesScene` (place and minute; replies per swipe), past the 30-message pruning of passes; `timelineOf` reads it, so the Time tab keeps old points. `index.ts` `bookView`: one folded block per scene with its cause, heading, chapter, turning points (the engine's key words, no model call) and turns; Weave per finished scene in the background with a toast; Edit; a stale mark when the turns changed; Export as Markdown. The old 12-message weave is gone; its chapters stand under "Earlier chapters".
+- Checked: tsc, no errors; ui 136 (R70 new: scenes, weave asked and read back, wiring), engine 245, size 9, all 0 misses; sequences 60 chats, 0 failing (shortened at the player's request); prompt audit unchanged. Not run: negative controls, the long sequences, a real model's weave.
+- Open: open threads are shown, not sent to the narrator; old turns are not left out of the prompt once woven; a separate fast connection for the weave.
+- Next: the player weaves a finished scene on the phone and says how it reads.
+
 ## 2026-11-20 (198), Claude
 - Families (the player: "do it", parents recorded so colouring is inherited).
 - Changed: NewCharacter takes mother, father and sibling_of; `rules-tools.ts` `recordKin` keeps them on the person (`kin`); `colouring.ts` `genotypeOf`: one copy from each parent, the family's unseen parents built on its first member's genes so a described look stands; the narrator's colouring and the portrait take them.

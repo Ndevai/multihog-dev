@@ -59,6 +59,12 @@
             <div id="rules_engine_music_areas"></div>
 
             <div class="rules-set-head">Story</div>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_book_memory" /><span>Book memory</span></label>
+            <small class="rules-set-hint">Send woven chapters and open threads to the narrator so earlier scenes stay in mind.</small>
+            <label class="checkbox_label"><input type="checkbox" id="rules_engine_book_ghost" /><span>Ghost woven turns</span></label>
+            <small class="rules-set-hint">Omit raw turns of woven scenes from the prompt; they stay visible in the chat and Book.</small>
+            <label for="rules_engine_book_profile" class="rules-set-label">Connection for Book chapters</label>
+            <select id="rules_engine_book_profile" class="text_pole"><option value="">Same as rules calls</option></select>
             <label for="rules_engine_time" class="rules-set-label">Story time of this chat</label>
             <input id="rules_engine_time" class="text_pole" type="text" placeholder="1850-03-14 18:40" />
             <small class="rules-set-hint rules-set-under">A date and time, or Day 3 07:15. PassTime moves it on.</small>

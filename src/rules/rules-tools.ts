@@ -206,6 +206,8 @@ export function keepPass(i: number, asked: NonNullable<EngineStore['asked']>): v
     if (!m) return;
     m.extra ??= {};
     m.extra.rulesPass = structuredClone(asked);
+    // Where and when the line stands, kept past the snapshots' pruning: the Book tab's scenes and the timeline read it.
+    m.extra.rulesScene = { t: asked.time ?? storyTime(), place: scenePlace() };
 }
 export const keptPass = (i: number) => SillyTavern.getContext().chat?.[i]?.extra?.rulesPass as EngineStore['asked'] | undefined;
 /** Whether the player's line at chat index `i` has had a first pass (it keeps its start). */

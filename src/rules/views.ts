@@ -63,7 +63,8 @@ export const pictureFeeling = (p: Person | undefined): string | null => { const 
 
 /** The story's timeline: each player's line whose question pass kept the story's time, in chat order. */
 export function timelineOf(chat: { is_user?: boolean; extra?: Record<string, unknown> }[]): { index: number; time: number }[] {
-    return chat.flatMap((m, index) => { const t = (m.is_user ? (m.extra?.rulesPass as { time?: number | null } | undefined)?.time : null); return typeof t === 'number' ? [{ index, time: t }] : []; });
+    // The line's stamp first (book.ts; kept past the pruning of passes 30 messages back), then its pass.
+    return chat.flatMap((m, index) => { const t = !m.is_user ? null : (m.extra?.rulesScene as { t?: number | null } | undefined)?.t ?? (m.extra?.rulesPass as { time?: number | null } | undefined)?.time; return typeof t === 'number' ? [{ index, time: t }] : []; });
 }
 
 /** The scene's plan on the player's floor: rooms by their corners, people at their placed spots, the player among them, those
