@@ -1082,34 +1082,69 @@ body.rules-box-night.rules-box:not(.rules-box-log) #rules-box-scene .rules-scene
     color: var(--rules-accent-ink);
 }
 
-/* 4. Timeline Progress Rail + Active Halo + Pink/White Balls + Clock Pin */
+/* 4. Timeline Scrubber: Option D (Architectural 2px Ticks + Active Diamond) + Clock Pin */
+#rules-sheet .rules-time::before {
+    top: 21px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.2);
+}
 .rules-time::after {
     content: '';
     position: absolute;
+    z-index: 1;
     left: 0;
-    top: 20px;
-    height: 3px;
+    top: 21px;
+    height: 2px;
     width: var(--rules-tl-progress, 0%);
     background: var(--rules-accent);
     border-radius: 999px;
     pointer-events: none;
     transition: width 180ms ease;
 }
-.rules-time-point::before {
-    background: white;
-    border-color: #777;
-    transition: background-color 140ms ease, border-color 140ms ease, box-shadow 160ms ease, transform 140ms ease;
+#rules-sheet .rules-time-point {
+    z-index: 2;
 }
+#rules-sheet .rules-time-point[aria-pressed="true"] {
+    z-index: 3;
+}
+.rules-time-point::before,
 #rules-sheet .rules-time-point::before {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(255, 255, 255, 0.92);
+    box-sizing: border-box;
+    width: 2px;
+    height: 12px;
+    border: 0;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.72);
+    rotate: 0deg;
+    transform: none;
+    box-shadow: none;
+    transition: width 140ms ease, height 140ms ease, rotate 160ms cubic-bezier(0.22, 1, 0.36, 1), background-color 140ms ease, border-color 140ms ease, box-shadow 160ms ease;
+}
+#rules-sheet .rules-time-point:hover::before,
+#rules-sheet .rules-time-point:focus-visible::before {
+    background: white;
 }
 .rules-time-point[aria-pressed="true"]::before,
 #rules-sheet .rules-time-point[aria-pressed="true"]::before {
+    width: 12px;
+    height: 12px;
+    border: 2px solid white;
+    border-radius: 1px;
     background: var(--rules-accent);
-    border-color: white;
-    transform: scale(1.14);
-    box-shadow: 0 0 0 5px color-mix(in oklch, var(--rules-accent) 36%, transparent);
+    rotate: 45deg;
+    transform: none;
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--rules-accent) 32%, transparent);
+}
+#rules-sheet .rules-time-point[aria-pressed="true"]:has(.rules-time-label)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 32px;
+    width: 1px;
+    height: 8px;
+    translate: -50% 0;
+    background: color-mix(in oklch, var(--rules-accent-ink) 72%, transparent);
+    pointer-events: none;
 }
 #rules-sheet .rules-time-point[aria-pressed="true"] .rules-time-label {
     color: var(--rules-accent-ink);
