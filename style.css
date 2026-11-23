@@ -1171,22 +1171,33 @@ button.rules-mode,
     display: inline-block;
     transform-origin: center;
 }
-#rules-box-bar button.rules-tap-ring::before,
+#rules-box-bar button:not(#rules-box-back):not(#rules-box-next).rules-tap-ring::before,
 .rules-sheet-tabs button.rules-tap-ring i,
 .rules-time-point.rules-tap-ring::before,
-#rules-top-fold.rules-tap-ring,
 .rules-time-pin.rules-tap-ring,
 .rules-sheet-close.rules-tap-ring,
-button.rules-mode.rules-tap-ring,
 .rules-interstitial-btn.rules-tap-ring,
 .rules-scene-close.rules-tap-ring {
     animation: rules-icon-pop 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+#rules-box-back.rules-tap-ring::before,
+#rules-box-next.rules-tap-ring::before,
+#rules-top-fold.rules-tap-ring,
+button.rules-mode.rules-tap-ring {
+    animation: rules-icon-pop-soft 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes rules-icon-pop {
     0% { scale: 1; }
     25% { scale: 0.78; }
     60% { scale: 1.22; }
     82% { scale: 0.95; }
+    100% { scale: 1; }
+}
+@keyframes rules-icon-pop-soft {
+    0% { scale: 1; }
+    25% { scale: 0.87; }
+    60% { scale: 1.13; }
+    82% { scale: 0.97; }
     100% { scale: 1; }
 }
 
