@@ -1,0 +1,5 @@
+Game_name:Glade;
+Game_key:glade0001;
+Title_img:bg.jpg;
+Default_Language:en;
+Enable_flowchart:true;

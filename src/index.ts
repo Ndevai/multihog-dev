@@ -533,8 +533,12 @@ function buildVoice(): void {
         layer.hidden = false;
         const cs = getComputedStyle(box);
         for (const k of COPY) (layer.style as unknown as Record<string, string>)[k] = cs[k];
-        layer.style.left = `${box.offsetLeft + box.clientLeft}px`; layer.style.top = `${box.offsetTop + box.clientTop}px`;
-        layer.style.width = `${box.clientWidth}px`; layer.style.height = `${box.clientHeight}px`;
+        // Placed from the two boxes as drawn: the layer's own containing block, not the box's offsetParent, which can be another
+        // element (v30: in SillyTavern 1.19.1 the two stood 5 px apart, so each underline fell 5 px left of its word). The layer
+        // copies the box's left and top borders, so it spans them and the box's padding box, scrollbar left out.
+        const br = box.getBoundingClientRect(), holder = layer.offsetParent as HTMLElement | null, hr = (holder ?? form).getBoundingClientRect();
+        layer.style.left = `${br.left - hr.left - (holder?.clientLeft ?? 0)}px`; layer.style.top = `${br.top - hr.top - (holder?.clientTop ?? 0)}px`;
+        layer.style.width = `${box.clientLeft + box.clientWidth}px`; layer.style.height = `${box.clientTop + box.clientHeight}px`;
         layer.replaceChildren(...mirrorParts(v).map(p => { if (!p.family) return document.createTextNode(p.text); const s = document.createElement('span'); s.className = `rules-hl rules-hl-${p.family}`; s.textContent = p.text; return s; }));
         layer.scrollTop = box.scrollTop;
     };
@@ -566,7 +570,10 @@ function typesetChat(): void {
 // unit the next message's first; ‹ and ← go back. "Auto" moves on by itself; "Log" shows the whole chat, scrolling, and "Box"
 // returns. A message being written or edited has no units yet and shows whole.
 let boxAt: { mes: string; unit: number } | null = null, boxLog = false;
-const boxOn = () => settings().enabled && settings().box;
+// SillyTavern's welcome screen (no character and no group chosen) holds no story: the box stays off there, so its menu does not
+// stand over the recent chats (v26, seen in SillyTavern 1.19.1). A context without the key (a stand-in) counts as a chat.
+const onWelcome = () => { const c = ctx() as unknown as Record<string, unknown>; return 'characterId' in c && c.characterId === undefined && !c.groupId; };
+const boxOn = () => settings().enabled && settings().box && !onWelcome();
 const unitsIn = (mes: Element) => settings().boxUnit === 'message' ? [] : [...mes.querySelectorAll('.mes_text .rules-unit')];
 const playerName = () => String((ctx() as Ctx & { name1?: string }).name1 || 'You');
 /** The cast by name: the player's character, the character of a one-to-one chat and a group's members. */
@@ -850,7 +857,9 @@ function playNatural(audio: Float32Array): void {
 function stopTyping(): void {
     stopBlips(); stopSpeech(); voiceWait = null;
     if (typing) cancelAnimationFrame(typing.raf);
-    typing = null; document.body?.classList?.remove('rules-typing');
+    // The typing state is a data attribute, not a class: SillyTavern's keyboard.js rescans the whole page for focusable controls on
+    // every class change of an element (v31: 9 rescans over 6 steps from this one, 269 ms at a phone's speed).
+    typing = null; if (document.body?.dataset) delete document.body.dataset.rulesTyping;
     highlights()?.delete(UNSHOWN);
     for (const f of FADES) highlights()?.delete(f);
 }
@@ -922,7 +931,7 @@ function typeUnit(unit: Element): void {
         for (let b = 0; b < FADE_STEPS; b++) place(fadeRanges[b]!, cuts[b + 1]!, cuts[b]!);
         typing.raf = requestAnimationFrame(frame);
     };
-    typing = { unit, raf: 0, total }; document.body.classList.add('rules-typing');
+    typing = { unit, raf: 0, total }; document.body.dataset.rulesTyping = '';
     if (!spoken && !natural) playBlips(unit, text, times);
     frame();
 }
@@ -1175,7 +1184,22 @@ function showPlate(mes: Element, unit: Element | undefined): void {
         e.className = `rules-mode rules-mode-${w}`; e.textContent = w; e.title = titles[w];
         return e;
     }));
-    fitTag(who as HTMLElement);
+    clearFold(); fitTag(who as HTMLElement);
+}
+/** ▲ stands over the chat's top right corner (style.css #rules-top-fold), and a box that reaches the chat's top (a short screen,
+ * the keyboard open, a long stretch) put the plate's word under it, where ▲'s layer took its taps (v26, SillyTavern 1.19.1 at
+ * 360 × 340: the right end of SPEAKING went to ▲). The plate's row then ends 4 px before ▲'s layer, read once from its ::before.
+ * The clearance stands on the row itself and is written only when it changes (v31: set on <body> and taken off before each
+ * measure, it made the whole page's style be worked out again on every step, 31 ms a step at a phone's speed). */
+let foldLayer: { side: number; below: number } | null = null;
+function clearFold(): void {
+    const fold = document.getElementById('rules-top-fold'), row = document.querySelector('#chat .mes.rules-now .ch_name') as HTMLElement | null;
+    if (!fold || !row || !fold.getClientRects().length || !row.getClientRects().length) return;
+    if (!foldLayer) { const layer = getComputedStyle(fold, '::before'); foldLayer = { side: Math.max(0, -parseFloat(layer.left) || 0), below: Math.max(0, -parseFloat(layer.bottom) || 0) }; }
+    const was = parseFloat(row.style.getPropertyValue('--rules-fold-clear')) || 0;
+    const f = fold.getBoundingClientRect(), r = row.getBoundingClientRect(), edge = f.left - foldLayer.side - 4, right = r.right + was;
+    const need = r.top < f.bottom + foldLayer.below && r.bottom > f.top && right > edge ? Math.ceil(right - edge) : 0;
+    if (need !== was) { if (need) row.style.setProperty('--rules-fold-clear', `${need}px`); else row.style.removeProperty('--rules-fold-clear'); }
 }
 /** A face's capitals' height as a share of its size (a canvas measures "H" in it), kept per face once the face has loaded. */
 const capShares = new Map<string, number>();
@@ -1254,6 +1278,10 @@ function showBox(): void {
     const mes = all.find(m => m.getAttribute('mesid') === boxAt?.mes) ?? all.at(-1);
     if (!mes) return;
     for (const m of all) m.classList.toggle('rules-now', m === mes);
+    // The box's text scrolls when a stretch is longer than the box: it takes the keyboard's focus, so its arrows scroll it
+    // (v32, axe-core scrollable-region-focusable; WCAG 2.1.1).
+    document.querySelectorAll('#chat .mes_text[tabindex="0"]').forEach(t => { if (!t.closest('.rules-now')) t.removeAttribute('tabindex'); });
+    mes.querySelector('.mes_text')?.setAttribute('tabindex', '0');
     fitUnits(mes); prepareVoices(mes);
     const units = unitsIn(mes), unit = Math.min(mes.getAttribute('mesid') === boxAt?.mes ? boxAt!.unit : 0, Math.max(0, units.length - 1));
     boxAt = { mes: mes.getAttribute('mesid') ?? '', unit };
@@ -1403,6 +1431,10 @@ function openSheet(head: string, parts: Node[], tab?: SheetTab): void {
         if (typeof MutationObserver !== 'undefined') new MutationObserver(() => document.getElementById('rules-box-story')?.setAttribute('aria-pressed', String(!wrap!.hidden))).observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
     }
     const path = document.getElementById('rules-why'); if (path) path.hidden = true;
+    // The same tab drawn again in place (a thread ticked, a chapter woven or edited) keeps the folds the player had open and
+    // where they had scrolled (v28: ticking a thread folded its chapter and went back to the top).
+    const same = !wrap.hidden && wrap.querySelector('.rules-sheet-frame')?.getAttribute('aria-label') === head;
+    const opened = same ? [...wrap.querySelectorAll('details')].map(d => d.open) : null, scrolled = same ? wrap.querySelector('.rules-sheet-body')?.scrollTop ?? 0 : 0;
     const frame = el('div', 'rules-sheet-frame'); frame.setAttribute('role', 'dialog'); frame.setAttribute('aria-label', head);
     const close = document.createElement('button'); close.type = 'button'; close.className = 'rules-sheet-close'; close.setAttribute('aria-label', 'Close');
     close.addEventListener('click', () => hideWhy());
@@ -1424,6 +1456,8 @@ function openSheet(head: string, parts: Node[], tab?: SheetTab): void {
     }
     wrap.replaceChildren(frame);
     wrap.hidden = false;
+    const folds = [...wrap.querySelectorAll('details')];
+    if (opened && folds.length === opened.length) { folds.forEach((d, i) => { d.open = opened[i]!; }); body.scrollTop = scrolled; }
     document.getElementById('rules-box-story')?.setAttribute('aria-pressed', 'true');
 }
 type SheetTab = 'memory' | 'chronicle' | 'map' | 'time' | 'world';
@@ -1581,7 +1615,7 @@ function bookView(): HTMLElement {
     const place = scenePlace(), stTime = storyTime();
     head.append(el('div', 'rules-chron-meta', [place, stTime !== null ? formatStoryTime(stTime) : '', `${scenes.length} scene${scenes.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ')));
     const tools = el('div', 'rules-chron-tools');
-    const mode = document.createElement('select'); mode.className = 'rules-chron-mode'; mode.title = 'How new chapters are written';
+    const mode = document.createElement('select'); mode.className = 'rules-chron-mode'; mode.title = 'How new chapters are written'; mode.setAttribute('aria-label', 'How new chapters are written');
     for (const m of Object.keys(MODE_NAME) as BookMode[]) { const o = document.createElement('option'); o.value = m; o.textContent = MODE_NAME[m]; o.selected = m === bookMode(); mode.append(o); }
     mode.addEventListener('change', () => { (settings() as Settings & { bookMode?: BookMode }).bookMode = mode.value as BookMode; ctx().saveSettingsDebounced?.(); });
     const exp = document.createElement('button'); exp.type = 'button'; exp.className = 'rules-time-pin'; exp.textContent = 'Export';
@@ -1760,7 +1794,7 @@ function openTab(tab: SheetTab): void {
     strip.setAttribute('aria-valuemax', String(Math.max(1, points.length)));
     // A point's clock stands under it when it lies 14 % of the strip or more from the last one labelled (the newest always).
     let labelled = -Infinity;
-    const pts: { p: (typeof points)[number]; left: number; b: HTMLButtonElement }[] = [];
+    const pts: { p: (typeof points)[number]; left: number; b: HTMLElement }[] = [];
     let activeLeft = 0;
     const syncNav = (idx: number) => {
         const item = pts[idx];
@@ -1811,8 +1845,9 @@ function openTab(tab: SheetTab): void {
         return best;
     };
     points.forEach((p, i) => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'rules-time-point';
-        b.tabIndex = -1; b.setAttribute('aria-hidden', 'true');
+        // A mark on the slider, not a button: the strip takes every press, and a control inside the slider is reached by assistive
+        // technology whatever its tabindex (v32, axe-core nested-interactive).
+        const b = document.createElement('span'); b.className = 'rules-time-point'; b.setAttribute('aria-hidden', 'true');
         const left = points.length > 1 ? (t1 > t0 ? 4 + 92 * (p.time - t0) / (t1 - t0) : 4 + 92 * i / (points.length - 1)) : 50;
         b.style.left = `${left}%`;
         if (i === active) activeLeft = left;
@@ -1868,6 +1903,7 @@ function openTab(tab: SheetTab): void {
 function setSceneHidden(hidden: boolean): void {
     document.body.classList.toggle('rules-scene-hidden', hidden);
     try { localStorage.setItem('rules_scene_hidden', hidden ? '1' : '0'); } catch { /* private mode */ }
+    const box = document.getElementById('rules_engine_scene_clock') as HTMLInputElement | null; if (box) box.checked = !hidden;
     document.getElementById('rules-scene-toggle')?.setAttribute('aria-pressed', String(!hidden));
 }
 let lastScenePlace: string | null = null, lastSceneTime: number | null = null;
@@ -1896,6 +1932,8 @@ function showInterstitial(lines: string[], status: string): void {
     col.append(btn);
     const foot = el('div', 'rules-interstitial-status', status);
     screen.replaceChildren(col, foot);
+    // Named by what it says, for a screen reader (v32, axe-core aria-dialog-name).
+    screen.setAttribute('aria-label', [status.replace(/\.+$/, ''), lines[0]].filter(Boolean).join(': '));
     document.body.classList.add('rules-interstitial-on');
 }
 function hideInterstitial(): boolean {
@@ -1912,8 +1950,8 @@ function syncBoxPolish(mes: Element, mesIdx: number, totalMes: number, unit: num
     }
     const textEl = mes.querySelector('.mes_text') as HTMLElement | null;
     const rail = document.getElementById('rules-box-scroll-rail');
-    updateScrollRail(textEl, rail);
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => updateScrollRail(textEl, rail));
+    // Measured in the next frame, after the step's writes (v31: also measured at once, a second forced layout each step).
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => updateScrollRail(textEl, rail)); else updateScrollRail(textEl, rail);
     if (typeof ResizeObserver !== 'undefined' && textEl && observedTextEl !== textEl) {
         boxScrollObserver?.disconnect();
         boxScrollObserver = new ResizeObserver(() => updateScrollRail(textEl, document.getElementById('rules-box-scroll-rail')));
@@ -2073,8 +2111,9 @@ function buildComposerPolish(): void {
 
     const syncComposer = () => {
         const w = ta.getBoundingClientRect().width, h = ta.offsetHeight, l = ta.offsetLeft, t = ta.offsetTop;
-        rail.style.left = `${l}px`; rail.style.top = `${t + Math.max(0, h - 2)}px`; rail.style.width = `${w}px`;
-        cmdBar.style.left = `${l}px`; cmdBar.style.top = `${t}px`; cmdBar.style.width = `${w}px`;
+        // The threads stand just outside the box, under and over it (v28: 2 px inside, the scroll thread crossed the last line typed).
+        rail.style.left = `${l}px`; rail.style.top = `${t + h}px`; rail.style.width = `${w}px`;
+        cmdBar.style.left = `${l}px`; cmdBar.style.top = `${Math.max(0, t - 2)}px`; cmdBar.style.width = `${w}px`;
         expand.style.left = `${l + Math.max(0, w - 30)}px`; expand.style.top = `${t + 4}px`;
         const overflow = ta.scrollHeight - ta.clientHeight > 4;
         expand.hidden = !overflow;
@@ -2130,30 +2169,41 @@ function buildComposerPolish(): void {
     };
     expand.addEventListener('click', openDraftSheet);
 
-    // 2B: Slash-command top-edge indicator (pink while running, vermillion on error, blank on success/abort)
-    let cmdRunningAt = 0, cmdTimer: ReturnType<typeof setTimeout> | undefined;
+    // 2B: Slash-command top-edge indicator (pink while running, vermillion on error, blank on success/abort). A run ends where
+    // SillyTavern marks it on #form_sheld (script_success, script_error, script_aborted); its error is that mark, or an error toast
+    // first seen during the run (v29, SillyTavern 1.19.1: an unknown command is marked a success, its error a toast; toasts already
+    // shown, re-inserted as they fade, turned a later /abort red).
+    let cmdRunning = false, cmdErr = false, cmdTimer: ReturnType<typeof setTimeout> | undefined, seenErrors = new WeakSet<Element>();
+    const formSheld = document.getElementById('form_sheld');
+    const endSlash = (mark: string | null) => {
+        if (!cmdRunning) return;
+        cmdRunning = false; clearTimeout(cmdTimer);
+        if (mark === 'script_error' || (mark !== 'script_aborted' && cmdErr)) cmdBar.setAttribute('data-cmd', 'error'); else cmdBar.removeAttribute('data-cmd');
+    };
     const startSlash = () => {
         if (!ta.value.trim().startsWith('/')) return;
-        cmdRunningAt = Date.now();
+        cmdRunning = true; cmdErr = false; seenErrors = new WeakSet(document.querySelectorAll('.toast-error'));
         cmdBar.setAttribute('data-cmd', 'running');
         clearTimeout(cmdTimer);
-        cmdTimer = setTimeout(() => { if (cmdBar.getAttribute('data-cmd') === 'running') cmdBar.removeAttribute('data-cmd'); }, 2200);
+        // A SillyTavern that marks no end (or an Enter the command list took): the run ends after 2.2 s [ASSUMED].
+        cmdTimer = setTimeout(() => endSlash(null), 2200);
     };
     document.getElementById('send_but')?.addEventListener('click', startSlash, true);
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) startSlash(); }, true);
     if (typeof MutationObserver !== 'undefined') {
         new MutationObserver(muts => {
-            if (Date.now() - cmdRunningAt > 5000) return;
-            for (const m of muts) {
-                for (const n of m.addedNodes) {
-                    if (n instanceof Element && (n.classList.contains('toast-error') || n.querySelector?.('.toast-error'))) {
-                        clearTimeout(cmdTimer);
-                        cmdBar.setAttribute('data-cmd', 'error');
-                        return;
-                    }
-                }
+            if (!cmdRunning) return;
+            for (const m of muts) for (const n of m.addedNodes) {
+                if (!(n instanceof Element)) continue;
+                const errs = n.classList.contains('toast-error') ? [n] : [...n.querySelectorAll('.toast-error')];
+                if (errs.some(e => !seenErrors.has(e))) { cmdErr = true; cmdBar.setAttribute('data-cmd', 'error'); }
             }
         }).observe(document.body, { childList: true, subtree: true });
+        // The mark is read 50 ms on, after the toasts of the same run (both observers report in one checkpoint, in no set order).
+        if (formSheld) new MutationObserver(() => {
+            const mark = [...formSheld.classList].find(c => c === 'script_success' || c === 'script_error' || c === 'script_aborted');
+            if (mark && cmdRunning) setTimeout(() => endSlash(mark), 50);
+        }).observe(formSheld, { attributes: true, attributeFilter: ['class'] });
     }
     ta.addEventListener('input', () => { if (cmdBar.getAttribute('data-cmd') === 'error') cmdBar.removeAttribute('data-cmd'); syncComposer(); });
     ta.addEventListener('scroll', syncComposer, { passive: true });
@@ -2206,7 +2256,6 @@ function buildBox(): void {
         if (et.GENERATION_STARTED) ev.on(et.GENERATION_STARTED, () => document.body.classList.add('rules-generating'));
         if (et.GENERATION_ENDED) ev.on(et.GENERATION_ENDED, () => document.body.classList.remove('rules-generating'));
         if (et.GENERATION_STOPPED) ev.on(et.GENERATION_STOPPED, () => document.body.classList.remove('rules-generating'));
-        if (et.CHAT_CHANGED) ev.on(et.CHAT_CHANGED, () => { lastScenePlace = null; lastSceneTime = null; hideInterstitial(); });
     }
     syncGenerating();
     document.addEventListener('pointerdown', e => {
@@ -2216,9 +2265,32 @@ function buildBox(): void {
         void btn.getClientRects();
         btn.classList.add('rules-tap-ring');
         window.setTimeout(() => btn.classList.remove('rules-tap-ring'), 420);
+        // Pressed while the finger is down (v29: headless Chromium set no :active on a touch, so the steppers' dim and the
+        // pills' press never showed there); with :active, the class shows the press either way.
+        btn.classList.add('rules-pressed');
+        const lift = () => { btn.classList.remove('rules-pressed'); document.removeEventListener('pointerup', lift, true); document.removeEventListener('pointercancel', lift, true); };
+        document.addEventListener('pointerup', lift, true); document.addEventListener('pointercancel', lift, true);
     }, { passive: true });
     try { if (localStorage.getItem('rules_scene_hidden') === '1') document.body.classList.add('rules-scene-hidden'); } catch { /* private mode */ }
+    // A flag on <body> while a sheet stands over the page (style.css hides the clock chip under it): a data attribute, as
+    // SillyTavern's keyboard.js rescans the page on class changes; read from the sheets whenever one is added or its hidden changes.
+    const SHEETS = ['rules-sheet', 'rules-draft-sheet', 'rules-report'];
+    const syncSheet = () => { const open = SHEETS.some(id => { const e = document.getElementById(id); return !!e && !e.hidden; }); if (open !== ('rulesSheet' in document.body.dataset)) { if (open) document.body.dataset.rulesSheet = ''; else delete document.body.dataset.rulesSheet; } };
+    if (typeof MutationObserver !== 'undefined') new MutationObserver(syncSheet).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
     try { buildComposerPolish(); } catch (e) { console.warn('[Rules engine] composer polish skipped:', e); }
+    // A press moves the focus to what it lands on, and a message box that loses the focus closes the phone's keyboard (the
+    // player's run, v25). Pressed while the box has the focus, these controls cancel the press: the focus stays and the click
+    // still comes (Pointer Events 3, compatibility mapping: a cancelled pointerdown holds back mousedown and mouseup, not click;
+    // the ♪ toolbar's buttons already do this on mousedown). The Story sheet, the clock badge and a person's card are left out,
+    // so opening them closes the keyboard; ⤢ is kept, since its sheet takes the focus into its own text box.
+    const KEEP_COMPOSER = '#rules-top-fold, #rules-box-bar button:not(#rules-box-story), #chat .rules-now button.rules-mode, #rules-faith, .rules-scene-close, #rules-voice-open, #rules-voice button, #rules-draft-expand';
+    const keepComposer = (e: Event) => {
+        const ta = document.getElementById('send_textarea');
+        if (!ta || document.activeElement !== ta || !(e.target as Element | null)?.closest?.(KEEP_COMPOSER)) return;
+        e.preventDefault();
+    };
+    document.addEventListener('pointerdown', keepComposer, { passive: false, capture: true });
+    document.addEventListener('mousedown', keepComposer, { passive: false, capture: true });
     if (!document.getElementById('rules-top-fold')) {
         const fold = document.createElement('button');
         fold.type = 'button';
@@ -2231,8 +2303,15 @@ function buildBox(): void {
             const folded = document.body.classList.toggle('rules-top-folded');
             fold.textContent = folded ? '▼' : '▲';
             fold.setAttribute('aria-expanded', String(!folded));
+            // Folding moves the chat and ▲ up together; the plate is placed against ▲ again.
+            const w = document.querySelector('#chat .rules-now .rules-who'); if (w) { clearFold(); fitTag(w as HTMLElement); }
         });
         document.body.appendChild(fold);
+        // ▲ stands at the top right of SillyTavern's column, which fills a phone's width and is centred on a desktop (v30: on a
+        // 1280 px window it stood at the window's corner, 330 px off the column); read from the column, so a phone keeps 10 px.
+        const placeFold = () => { const col = document.getElementById('sheld')?.getBoundingClientRect(); if (col?.width) fold.style.right = `${Math.max(10, Math.round(innerWidth - col.right + 10))}px`; };
+        placeFold(); globalThis.addEventListener?.('resize', placeFold);
+        const col = document.getElementById('sheld'); if (col && typeof ResizeObserver !== 'undefined') new ResizeObserver(placeFold).observe(col);
     }
     let rulesSwipeX: number | null = null, rulesSwipeY: number | null = null;
     chat.addEventListener('touchstart', e => {
@@ -2300,7 +2379,7 @@ function buildBox(): void {
     let whyTimer: ReturnType<typeof setTimeout> | undefined;
     document.addEventListener('selectionchange', () => { clearTimeout(whyTimer); whyTimer = setTimeout(showWhy, 150); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') hideWhy(); });
-    globalThis.addEventListener?.('resize', () => { const w = document.querySelector('#chat .rules-now .rules-who'); if (w) fitTag(w as HTMLElement); });
+    globalThis.addEventListener?.('resize', () => { const w = document.querySelector('#chat .rules-now .rules-who'); if (w) { clearFold(); fitTag(w as HTMLElement); } });
     chat.addEventListener('click', e => {
         const t = e.target as Element | null;
         if (performance.now() < swallowUntil) return;
@@ -2479,8 +2558,11 @@ function drawSongs(): void {
  * lookVars), so the stylesheet draws the engine's quantities. */
 function applyLook(): void {
     if (typeof document === 'undefined') return;
-    document.body?.classList?.toggle('rules-page', settings().page);
-    document.body?.classList?.toggle('rules-page-dark', settings().page && settings().pageColours === 'dark');
+    // The page is the story's; SillyTavern's welcome screen keeps its own look (v26: its text in the theme's light grey stood
+    // on the light page's ivory).
+    const paged = settings().page && !onWelcome();
+    document.body?.classList?.toggle('rules-page', paged);
+    document.body?.classList?.toggle('rules-page-dark', paged && settings().pageColours === 'dark');
     // The box's type: the page's size, or the size the farthest phone reader needs (box.ts boxFontPx); its lines hold the
     // letters boxLines lines of the page's size hold.
     const page = (parseFloat(getComputedStyle(document.body).getPropertyValue('--mainFontSize')) || 15) * 1.19, box = boxFontPx(page);
@@ -2502,8 +2584,10 @@ function toneLook(): void {
     document.body.setAttribute('data-rules-tone', toneNow());
     const chat = document.getElementById('chat');
     if (!chat) return;
-    for (const c of [...chat.classList]) if (c.startsWith('rules-era-')) chat.classList.remove(c);
-    if (settings().page) chat.classList.add(`rules-era-${eraOf(storyYearNow())}`);
+    // Changed only when it differs (v31: removed and added again each step, each a rescan of the chat by SillyTavern's keyboard.js).
+    const era = settings().page ? `rules-era-${eraOf(storyYearNow())}` : '';
+    for (const c of [...chat.classList]) if (c.startsWith('rules-era-') && c !== era) chat.classList.remove(c);
+    if (era && !chat.classList.contains(era)) chat.classList.add(era);
 }
 
 // The seed (seed.ts): a code, given or rolled, written into the engine's records through the tools, as the story would
@@ -2858,6 +2942,13 @@ async function buildSettings(): Promise<void> {
     // The notes are drawn again with the page: their kind colours take the tone of what they stand on.
     if (document.getElementById('rules_engine_page')) bind('rules_engine_page', 'page', () => { applyLook(); drawNotes(); showBox(); });
     if (document.getElementById('rules_engine_box_typing')) bind('rules_engine_box_typing', 'boxTyping');
+    // The story clock's ×, the Time tab's CLOCK and this box set one switch (v29: a chat with no stamped lines has no Time tab,
+    // so a clock hidden there had no way back).
+    const clockBox = document.getElementById('rules_engine_scene_clock') as HTMLInputElement | null;
+    if (clockBox) {
+        try { clockBox.checked = localStorage.getItem('rules_scene_hidden') !== '1'; } catch { clockBox.checked = true; }
+        clockBox.addEventListener('change', () => setSceneHidden(!clockBox.checked));
+    }
     // A setting given as a choice of named values: the select shows the saved one and saves the one picked.
     const choice = <K extends 'pageColours' | 'boxPicture' | 'boxLook' | 'boxVoice' | 'keyboardLayout'>(id: string, key: K, values: Settings[K][], after: () => void) => {
         const el = document.getElementById(id) as HTMLSelectElement | null;
@@ -3009,7 +3100,9 @@ function wireEvents(): void {
     // The tracked people's voices are simulated in the background from the chat's opening, and the plates redrawn once known.
     for (const e of [ev.CHAT_CHANGED, ev.MESSAGE_RECEIVED]) if (e) on(e, () => { void voicesReady(trackedPeople()).then(() => { if (boxOn()) showBox(); }).catch(err => console.warn('[Rules engine] voice skipped:', err)); });
     on(ev.CHAT_CHANGED, () => { void refreshLinks(); });
-    on(ev.CHAT_CHANGED, () => { document.body.classList.remove('rules-card-on'); if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
+    // The scene last seen is the opened chat's: reset before showBox draws it (v28: a second handler, registered later, reset it
+    // after, so the first new place or hour after opening a chat drew no "Arriving.." or "Passing.." screen).
+    on(ev.CHAT_CHANGED, () => { lastScenePlace = null; lastSceneTime = null; hideInterstitial(); document.body.classList.remove('rules-card-on'); applyLook(); if (live()) syncRulesToChat(); refreshTime(); applyWorld(getBook()); renderBook(); drawNotes(); typesetChat(); boxAt = null; figureSrc = null; showBox(); });
     on(ev.MESSAGE_DELETED, () => { if (live()) syncRulesToChat(); drawNotes(); showBox(); });
     // The reading notes follow the chat as it is drawn: a new or re-drawn message, older messages loaded, an edit (a line
     // edited since its reading shows no note, ui.ts notesOf).

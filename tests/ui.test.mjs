@@ -582,12 +582,12 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
   const night = 'body.rules-box-night.rules-box:not(.rules-box-log)';
   const has = t => css.includes(t);
   ok(/boxLook: 'night',/.test(idx) && /settings\(\)\.boxLook === 'night' \? 'dark'/.test(idx) && /classList\.toggle\('rules-box-night', on && settings\(\)\.boxLook === 'night'\);\s*toneLook\(\);/.test(idx)
-      && /classList\.add\('rules-typing'\)/.test(idx) && /classList\?\.remove\('rules-typing'\)/.test(idx) && /id="rules_engine_box_look"/.test(html),
+      && /document\.body\.dataset\.rulesTyping = '';/.test(idx) && /delete document\.body\.dataset\.rulesTyping;/.test(idx) && /id="rules_engine_box_look"/.test(html),
       'the night look is the default and dark while it shows', '');
   const foot = over([8, 9, 16, 0.8], [255, 255, 255]), accent = /--rules-accent: (#[0-9a-f]{6});/.exec(css)?.[1] ?? '', ink = /--rules-accent-ink: (#[0-9a-f]{6});/.exec(css)?.[1] ?? '';
   ok(contrast([255, 255, 255], panel) >= 4.5 && contrast(sky, panel) >= 4.5 && accent === '#d93167' && contrast([255, 255, 255], hex(accent)) >= 4.5 && contrast([255, 215, 0], panel) >= 4.5 && !!ink && contrast(hex(ink), foot) >= 4.5
       && has(`${night} #chat .mes.rules-now {\n    --SmartThemeBodyColor: white;`) && has('background: var(--rules-accent); color: white; font: 700 max(19px, ')
-      && /:not\(\.rules-typing\) #chat \.mes\.rules-now \.rules-advance-tri \{\s*display: inline-block; margin-left: 6px; font-size: 14px; color: #e0336a;/.test(css) && /tri\.className = 'rules-advance-tri'/.test(idx) && /button\[aria-pressed="true"\] \{ color: var\(--rules-accent-ink\);/.test(css)
+      && /:not\(\[data-rules-typing\]\) #chat \.mes\.rules-now \.rules-advance-tri \{\s*display: inline-block; margin-left: 6px; font-size: 14px; color: #e0336a;/.test(css) && /tri\.className = 'rules-advance-tri'/.test(idx) && /button\[aria-pressed="true"\] \{ color: var\(--rules-accent-ink\);/.test(css)
       && has(`${night} #chat .mes.rules-now mark.rules-key { background-color: transparent; color: gold; padding: 0; }`)
       && has('rules-page-dark:not(.rules-box-log):not(.rules-box-night) #rules-box-scene:not(:empty)') && has('.ch_name { position: absolute; bottom: calc(100% - 16px);') && has(`${night} #chat .mes.rules-now span.rules-unit[data-said="false"] { color: lightskyblue; }`)
       && /prefers-reduced-motion: reduce\) \{ body\.rules-box-night[^}]*\.rules-advance-tri \{ animation: none; \}/.test(css)
@@ -627,7 +627,7 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
       'the tag floor and the explanation', JSON.stringify([B.tagFloorPx(0.73), parts]));
   ok(/floor = Math\.min\(full, tagFloorPx\(capShare\(cs\.fontFamily\)\)\)/.test(idx) && /const w = slot\?\.getBoundingClientRect\(\)\.width \?\? 0, word = w \? w \+ 8 : 0;\s*el\.style\.maxWidth = `\$\{Math\.max\(0, row\.clientWidth - word\)\}px`;/.test(idx)
       && /fitCardName\(n\);/.test(idx) && /el\.style\.overflowWrap = 'normal';\s*el\.style\.transform = 'none';/.test(idx)
-      && /e\.pointerType === 'mouse'/.test(idx) && /if \(performance\.now\(\) < swallowUntil\)\s*return;/.test(idx) && /hintHold\(now\);/.test(idx)
+      && /e\.pointerType === 'mouse'/.test(idx) && /const t = e\.target;\s*if \(performance\.now\(\) < swallowUntil\)\s*return;\s*if \(!boxOn\(\) \|\| boxLog \|\| !t\?\.closest\?\.\('\.rules-now \.mes_text'\)/.test(idx) && /e\.stopPropagation\(\);\s*if \(performance\.now\(\) < swallowUntil\)\s*return;\s*const s = settings\(\);/.test(idx) && /hintHold\(now\);/.test(idx)
       && /#rules-box-bar\.rules-explaining > :not\(#rules-box-explain\) \{ visibility: hidden; \}/.test(css),
       'hold to explain', '');
 }
@@ -734,7 +734,9 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
   const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), night = 'body.rules-box-night.rules-box:not(.rules-box-log)', rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
   const signs = { back: 'f053', next: 'f054', auto: 'f04e', music: 'f001', story: 'f518', log: 'f1da' };
   const signOk = Object.entries(signs).every(([b, c]) => rules.includes(`${night} #rules-box-${b}::before { content: '\\${c}'; }`));
-  const btn = /#rules-box-bar button \{ width: 44px; min-width: 44px; min-height: 44px; padding: 0; font-size: 0;/.test(rules) && /#rules-box-bar button::before \{ font: 900 [^;]*'Font Awesome 6 Free'; \}/.test(rules);
+  // The box's own rule, not the log's copy of it (v26: the log's rule repeats the text, so a test on the text alone held with
+  // the box's signs at 36 px; NB62).
+  const btn = rules.includes(`${night} #rules-box-bar button { width: 44px; min-width: 44px; min-height: 44px; padding: 0; font-size: 0;`) && /#rules-box-bar button::before \{ font: 900 [^;]*'Font Awesome 6 Free'; \}/.test(rules);
   const pinks = (rules.match(/#[0-9a-fA-F]{6}\b/g) ?? []).filter(h => ['#d93167', '#8e1240', '#ff79a3', '#ff5c8f'].includes(h.toLowerCase()));
   const strayPink = /#ff5c8f|224, 51, 106/i.test(rules);
   const tag = rules.includes(`${night} #chat .mes.rules-now .rules-who {\n    white-space: nowrap; max-width: none; width: max-content; flex: 0 0 auto; overflow: hidden; text-overflow: ellipsis;\n}`) && !/\.rules-who \{ width: max-content; max-width: 100%; flex: 0 1 auto; \}/.test(rules);
@@ -1059,5 +1061,184 @@ ok(P.readProsody('I SHOUT AT WILL TO RUN!', ['Will', 'Mara']).plain === 'I shout
      'ghosting skips live and stale scenes', JSON.stringify(B.ghostIndices(chat, chs, 'Ann')));
   ok(/bookInjection\(\)/.test(idx) && /ghostIndices\(c\.chat/.test(idx) && /s\.bookProfile \|\| s\.profile/.test(idx) && /ctx\(\)\.chatMetadata !== meta/.test(idx) && /\.rules-chron-mode \{[^}]*color-scheme: dark;/.test(css),
      'book memory, ghosting, profile, race guard and dark picker wired', '');
+}
+// R72: the keyboard stays open (v25; src/index.js keepComposer): while the message box has the focus, a press on the box's bar
+// (not Story), ▲, a pill, the knob, the clock's ×, ♪ or ⤢ is cancelled, so the focus stays and the click still comes; a press
+// elsewhere, or with the box unfocused, goes on. The guard is read from the compiled file and run on a stand-in document.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const sel = /const KEEP_COMPOSER = '([^']*)';/.exec(idx)?.[1] ?? '', body = /const keepComposer = (\(e\) => \{\n[\s\S]*?\n    \});\n/.exec(idx)?.[1] ?? '';
+  const ta = { id: 'send_textarea' }, d = { activeElement: ta, getElementById: id => (id === 'send_textarea' ? ta : null) };
+  const keep = body ? new Function('document', 'KEEP_COMPOSER', `return ${body}`)(d, sel) : () => {};
+  // A stand-in target matches the one selector it is drawn with, as Element.closest would for the list it is given.
+  const press = (piece, focus = ta) => { d.activeElement = focus; let cancelled = false; keep({ target: { closest: s => (s.split(/,\s*/).includes(piece) ? {} : null) }, preventDefault() { cancelled = true; } }); return cancelled; };
+  const kept = ['#rules-top-fold', '#rules-box-bar button:not(#rules-box-story)', '#chat .rules-now button.rules-mode', '#rules-faith', '.rules-scene-close', '#rules-voice-open', '#rules-voice button', '#rules-draft-expand'];
+  ok(kept.every(p => press(p)) && !press('#rules-box-story') && !press('#chat .rules-now .rules-who') && !kept.some(p => press(p, { id: 'rules-top-fold' })) && !press(kept[0], null),
+     'a press on the HUD keeps the message box focused', JSON.stringify(kept.map(p => press(p))));
+  ok(/document\.addEventListener\('pointerdown', keepComposer, \{ passive: false, capture: true \}\);/.test(idx) && /document\.addEventListener\('mousedown', keepComposer, \{ passive: false, capture: true \}\);/.test(idx),
+     'the keyboard guard listens before the controls do', '');
+}
+// R73: the box on a short screen (v26; style.css): the night frame's chrome is the sum of its margins, paddings and border, on a
+// tall screen and on one 500 px tall or less (held sideways, or upright with the keyboard open), and the text's least and
+// greatest heights stop at the room that chrome leaves in the chat, the NVL box's too, so the name tag stays in the chat.
+{
+  const px = (s, re) => (re.exec(s)?.slice(1) ?? []).map(Number);
+  const night = /body\.rules-box-night\.rules-box:not\(\.rules-box-log\) #chat \.mes\.rules-now \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const [mt, , mb] = px(night, /margin: (\d+)px (\d+)px (\d+)px;/), [pt, , pb] = px(night, /padding: (\d+)px (\d+)px (\d+)px;/), [bw] = px(night, /border: (\d+)px solid/);
+  const tall = Number(/body\.rules-box-night \{[^}]*--rules-box-chrome: (\d+)px/.exec(css)?.[1]);
+  const short = /@media \(max-height: 500px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  const [smt] = px(short, /\.mes\.rules-now \{ margin-top: (\d+)px;/), [spt, , spb] = px(short, /padding: (\d+)px (\d+)px (\d+)px;/);
+  const shortChrome = Number(/body\.rules-box-night \{ --rules-box-chrome: (\d+)px; \}/.exec(short)?.[1]);
+  ok(tall === mt + pt + pb + 2 * bw + mb && shortChrome === smt + spt + spb + 2 * bw + mb, "the box's chrome sums its frame",
+     `${tall} vs ${mt + pt + pb + 2 * bw + mb}, ${shortChrome} vs ${smt + spt + spb + 2 * bw + mb}`);
+  const nvl = /\.rules-box-nvl #chat \.mes\.rules-now \.mes_text \{\s*max-height: ([^;]*);/.exec(css)?.[1] ?? '';
+  ok(/\.mes_text \{ min-height: min\([^;]*, var\(--rules-box-room\)\); max-height: min\(36vh, var\(--rules-box-room\)\); \}/.test(short) && /var\(--rules-box-room\)/.test(nvl),
+     'the box fits a short screen', nvl);
+}
+// R74: SillyTavern's welcome screen (v26; src/index.js onWelcome, boxOn, applyLook): no character and no group chosen is no
+// story, so neither the box nor the page look is drawn there; a context without the key (a stand-in) counts as a chat, and the
+// look is set again when a chat opens.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const src = /const onWelcome = (\(\) => \{[^\n]*\});\n/.exec(idx)?.[1] ?? '';
+  const welcome = c => (src ? new Function('ctx', `return (${src})()`)(() => c) : null);
+  ok(welcome({ characterId: undefined, groupId: null }) === true && welcome({ characterId: 0, groupId: null }) === false && welcome({ characterId: undefined, groupId: 'g1' }) === false
+      && welcome({}) === false && /const boxOn = \(\) => settings\(\)\.enabled && settings\(\)\.box && !onWelcome\(\);/.test(idx)
+      && /const paged = settings\(\)\.page && !onWelcome\(\);\n\s*document\.body\?\.classList\?\.toggle\('rules-page', paged\);/.test(idx)
+      && /on\(ev\.CHAT_CHANGED, \(\) => \{ lastScenePlace = null; lastSceneTime = null; hideInterstitial\(\); document\.body\.classList\.remove\('rules-card-on'\); applyLook\(\);/.test(idx),
+     'no box and no page on the welcome screen', String(src));
+}
+// R75: ▲ keeps clear of the plate (v26; src/index.js clearFold; style.css the night plate's row): where the plate's row reaches
+// ▲'s layer (its ::before: 4 px past each side, 21 px below), the row ends 4 px before it; a row below the layer keeps its
+// place. The function is read from the compiled file and run on stand-in elements of the 360 px phone measured.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const src = /\nlet foldLayer = null;\nfunction clearFold\(\) \{\n[\s\S]*?\n\}\n/.exec(idx)?.[0] ?? '';
+  // rowTop: the row's top; was: the clearance it already carries (the row then ends that much further left).
+  const run = (rowTop, was = 0) => {
+    const vars = was ? { '--rules-fold-clear': `${was}px` } : {}, rect = (left, top, w, h) => ({ left, top, right: left + w, bottom: top + h, width: w, height: h });
+    const el = r => ({ getBoundingClientRect: () => r, getClientRects: () => [r] });
+    const row = { ...el(rect(26, rowTop, 310 - was, 30)), style: { getPropertyValue: k => vars[k] ?? '', setProperty: (k, v) => { vars[k] = v; }, removeProperty: k => { delete vars[k]; } } };
+    const doc = { getElementById: id => (id === 'rules-top-fold' ? el(rect(312, 41, 38, 24)) : null), querySelector: () => row };
+    if (src) new Function('document', 'getComputedStyle', `${src}; clearFold();`)(doc, () => ({ left: '-4px', bottom: '-21px' }));
+    return vars['--rules-fold-clear'];
+  };
+  ok(run(45) === '32px' && run(70) === '32px' && run(90) === undefined && run(45, 32) === '32px' && run(90, 32) === undefined
+      && /clearFold\(\);\s*fitTag\(who\);\n\}/.test(idx) && (idx.match(/clearFold\(\);\s*fitTag\(w\);/g) ?? []).length === 2 && !/document\.body\.style\.setProperty\('--rules-fold-clear'/.test(idx)
+      && /\.ch_name \{ position: absolute; bottom: calc\(100% - 16px\); left: 12px; right: calc\(12px \+ var\(--rules-fold-clear, 0px\)\);/.test(css),
+     "the plate keeps clear of ▲", `${run(45)} ${run(70)} ${run(90)} ${run(45, 32)} ${run(90, 32)}`);
+}
+// R76: v20–v24 seen in real SillyTavern (v28): (1) the chat's CHAT_CHANGED handler resets the scene last seen before it draws
+// the box, and no other handler resets it, so the first new place or hour after opening a chat brings its screen; (2) the
+// clock chip steps back while a sheet is open; (3) the input's scroll thread stands under the text box, the command thread
+// over it, so neither crosses a line typed.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const main = /on\(ev\.CHAT_CHANGED, \(\) => \{([^}]*?rules-card-on[\s\S]*?showBox\(\);)/.exec(idx)?.[1] ?? '';
+  const resets = (idx.match(/lastScenePlace = null;/g) ?? []).length;
+  ok(/^ lastScenePlace = null; lastSceneTime = null; hideInterstitial\(\);/.test(main) && main.indexOf('lastScenePlace = null') < main.indexOf('showBox()') && resets === 1,
+     'the first scene screen after opening a chat', `${resets} reset(s); ${main.slice(0, 80)}`);
+  ok(/\nbody\[data-rules-sheet\] #rules-box-scene \{ visibility: hidden; \}/.test(css) && !/\nbody:has\(/.test(css)
+      && /const SHEETS = \['rules-sheet', 'rules-draft-sheet', 'rules-report'\];/.test(idx) && /\.observe\(document\.body, \{ subtree: true, childList: true, attributes: true, attributeFilter: \['hidden'\] \}\);/.test(idx),
+     'the clock chip steps back under a sheet', '');
+  ok(/rail\.style\.top = `\$\{t \+ h\}px`;/.test(idx) && /cmdBar\.style\.top = `\$\{Math\.max\(0, t - 2\)\}px`;/.test(idx),
+     "the input's threads stand outside the text box", '');
+}
+// R77: the Story sheet drawn again in place keeps its folds and scroll (v28; src/index.js openSheet): ticking a thread redraws
+// the Book, which folded the chapter and went back to the top. And the scene screen ("Arriving..", "Passing..") stands alone:
+// the box's light sky blue behind it, at the screen's least opacity, reads under 1.5:1 against the panel [ASSUMED: text reads
+// as texture there], and the screen's white over it holds WCAG 1.4.6's 7:1.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/const same = !wrap\.hidden && wrap\.querySelector\('\.rules-sheet-frame'\)\?\.getAttribute\('aria-label'\) === head;/.test(idx)
+      && /if \(opened && folds\.length === opened\.length\) \{\s*folds\.forEach\(\(d, i\) => \{ d\.open = opened\[i\]; \}\);\s*body\.scrollTop = scrolled;/.test(idx),
+     'a redrawn tab keeps its folds and scroll', '');
+  const screen = /rules-interstitial-on:not\(\.rules-box-log\) #rules-interstitial \{[^}]*?background: radial-gradient\(ellipse at 50% 45%, rgba\((\d+), (\d+), (\d+), ([\d.]+)\)[^}]*?backdrop-filter: blur\((\d+)px\);/.exec(css);
+  const lum = c => { const f = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  const over = (c, ground, a) => c.map((v, i) => a * ground[i] + (1 - a) * v);
+  const [r, g, b, a, blur] = screen ? screen.slice(1).map(Number) : [0, 0, 0, 0, 0], ground = [r, g, b];
+  const sky = over([135, 206, 250], ground, a), panel = over([18, 20, 34], ground, a);
+  ok(!!screen && ratio(sky, panel) < 1.5 && ratio([255, 255, 255], sky) >= 7 && blur >= 6, 'the scene screen stands alone',
+     screen ? `behind ${ratio(sky, panel).toFixed(2)}:1, white ${ratio([255, 255, 255], sky).toFixed(1)}:1, blur ${blur}px` : 'no rule');
+}
+// R78: a press shows while the finger is down (v29; src/index.js the document's pointerdown; style.css tiers 1 and 2): the class
+// set on pointerdown and taken off on pointerup or pointercancel stands with :active, so ◀ ▶ dim to 0.55 and the pills press to
+// 0.97 on a touch too. And the story clock comes back from the settings: its box, the ×, and the Time tab's CLOCK set one switch.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), html = fs.readFileSync(`${ROOT}/settings.html`, 'utf8');
+  ok(/btn\.classList\.add\('rules-pressed'\);\s*const lift = \(\) => \{ btn\.classList\.remove\('rules-pressed'\); document\.removeEventListener\('pointerup', lift, true\); document\.removeEventListener\('pointercancel', lift, true\); \};\s*document\.addEventListener\('pointerup', lift, true\);\s*document\.addEventListener\('pointercancel', lift, true\);/.test(idx)
+      && /#rules-box-back\.rules-pressed,\n#rules-box-next\.rules-pressed \{\n    opacity: 0\.55;/.test(css) && /\.rules-scene-close\.rules-pressed \{\n    scale: 0\.97;/.test(css),
+     'a press shows while the finger is down', '');
+  ok(/<input type="checkbox" id="rules_engine_scene_clock" \/><span>Story clock<\/span>/.test(html) && /clockBox\.addEventListener\('change', \(\) => setSceneHidden\(!clockBox\.checked\)\);/.test(idx)
+      && /function setSceneHidden\(hidden\) \{[\s\S]{0,300}?if \(box\)\s*box\.checked = !hidden;/.test(idx),
+     'the story clock comes back from the settings', '');
+}
+// R79: the slash command's line (v29; src/index.js endSlash, startSlash): a run ends at SillyTavern's mark on #form_sheld; it is red
+// for script_error, or for an error toast first seen during the run unless the run was aborted, and blank otherwise; toasts on
+// screen when the run began do not count. endSlash is read from the compiled file and run on each case.
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  const src = /const endSlash = (\(mark\) => \{\n[\s\S]*?\n    \});\n/.exec(idx)?.[1] ?? '';
+  const end = (mark, err) => {
+    const bar = { a: { 'data-cmd': 'running' }, setAttribute(k, v) { this.a[k] = v; }, removeAttribute(k) { delete this.a[k]; } };
+    if (src) new Function('cmdBar', 'clearTimeout', `let cmdRunning = true, cmdErr = ${err}, cmdTimer; (${src})(${JSON.stringify(mark)});`)(bar, () => {});
+    return bar.a['data-cmd'] ?? 'blank';
+  };
+  const cases = [['script_error', false, 'error'], ['script_success', true, 'error'], ['script_success', false, 'blank'], ['script_aborted', true, 'blank'], [null, true, 'error'], [null, false, 'blank']];
+  ok(cases.every(([m, e, want]) => end(m, e) === want) && /cmdErr = false;\s*seenErrors = new WeakSet\(document\.querySelectorAll\('\.toast-error'\)\);/.test(idx)
+      && /if \(errs\.some\(e => !seenErrors\.has\(e\)\)\)/.test(idx) && /\}\)\.observe\(formSheld, \{ attributes: true, attributeFilter: \['class'\] \}\);/.test(idx),
+     "the slash command's line ends at SillyTavern's mark", cases.map(([m, e]) => `${m}/${e}:${end(m, e)}`).join(' '));
+}
+// R80: the box's bar on a narrow phone (v29; style.css): the count keeps one line, and 400 px wide or less the page look's bar
+// takes less room so its seven parts fit (measured in SillyTavern: the last ends at 356 of 360 px and 316 of 320), the count
+// cut with "…" before a button leaves the screen; each button keeps 44 px.
+{
+  const narrow = /@media \(max-width: 400px\) \{\n    #rules-box-bar \{ gap: 0\.15em; padding: 0\.2em 0\.2em; \}\n    #rules-box-bar button \{ padding: 0 0\.3em; \}\n[\s\S]*?#rules-box-count \{[^}]*min-width: 0; overflow: hidden; text-overflow: ellipsis; \}\n\}/.test(css);
+  ok(/\n#rules-box-count \{ flex: 1 1 auto; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; \}/.test(css) && narrow
+      && /#rules-box-bar button \{ min-width: 44px; min-height: 44px;/.test(css), "the box's bar fits a narrow phone", '');
+}
+// R81: ▲ stands at the top right of SillyTavern's column (v30; src/index.js placeFold): its right edge is read from #sheld on
+// drawing, on resize and when the column's size changes, 10 px in from it and never less than 10 px from the window
+// (measured in SillyTavern: 330 px from a 1280 px window's edge, the column ending at 320; 10 px on a phone).
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/fold\.style\.right = `\$\{Math\.max\(10, Math\.round\(innerWidth - col\.right \+ 10\)\)\}px`;/.test(idx) && /placeFold\(\);\s*globalThis\.addEventListener\?\.\('resize', placeFold\);/.test(idx)
+      && /new ResizeObserver\(placeFold\)\.observe\(col\);/.test(idx), "▲ stands at the column's top right", '');
+}
+// R82: the voice marks' layer stands on the message box (v31; src/index.js buildVoice paint): placed from the two boxes as drawn,
+// in the layer's own containing block, and as wide as the box's text area, so an underline falls under its word (measured in
+// SillyTavern: "open" at 26.7 px, its underline at 26.8, before at 21.8; the text's top and width equal, before 3 px and 1 px off).
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8');
+  ok(/const br = box\.getBoundingClientRect\(\), holder = layer\.offsetParent, hr = \(holder \?\? form\)\.getBoundingClientRect\(\);/.test(idx)
+      && /layer\.style\.left = `\$\{br\.left - hr\.left - \(holder\?\.clientLeft \?\? 0\)\}px`;/.test(idx) && /layer\.style\.width = `\$\{box\.clientLeft \+ box\.clientWidth\}px`;/.test(idx)
+      && !/layer\.style\.left = `\$\{box\.offsetLeft/.test(idx), 'the voice layer stands on the message box', '');
+}
+// R83: what axe-core 4.10.2 found on the extension's own elements in SillyTavern (v32), each fixed, and none found after: the box's
+// text takes the keyboard's focus so a long stretch scrolls (scrollable-region-focusable); the timeline's points are marks, not
+// buttons, inside its slider (nested-interactive); the Book's weave picker and the scene screen are named (label-title-only,
+// aria-dialog-name); the settings' chevron, which SillyTavern makes a button, is named (aria-command-name).
+{
+  const idx = fs.readFileSync(`${ROOT}/src/index.js`, 'utf8'), html = fs.readFileSync(`${ROOT}/settings.html`, 'utf8');
+  ok(/mes\.querySelector\('\.mes_text'\)\?\.setAttribute\('tabindex', '0'\);/.test(idx) && /const b = document\.createElement\('span'\);\s*b\.className = 'rules-time-point';/.test(idx)
+      && /mode\.setAttribute\('aria-label', 'How new chapters are written'\);/.test(idx) && /screen\.setAttribute\('aria-label', \[status\.replace\(/.test(idx)
+      && /class="inline-drawer-icon[^"]*" aria-label="Open or close the Rules Engine settings"/.test(html), "the extension's elements pass axe-core", '');
+}
+// R84: the question stands apart from the story (v33; style.css): over it the page dims 72 % and its edge takes the accent's ink,
+// 3:1 at least against the night panel (WCAG 1.4.11). And a page 260 px tall or less (a phone held sideways with the keyboard
+// open) folds SillyTavern's top bar away, steps the chip and ▲ back, and thins the frame to its own sum, so the box keeps its
+// lines (measured in SillyTavern at 915 × 180: the text 10 px → 54 px tall, the tag inside the chat).
+{
+  const lum = c => { const f = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  const ink = /--rules-accent-ink: #([0-9a-f]{6});/.exec(css)?.[1] ?? '000000', inkRgb = [0, 2, 4].map(i => parseInt(ink.slice(i, i + 2), 16));
+  const tiny = /@media \(max-height: 260px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  const px = re => (re.exec(tiny)?.slice(1) ?? []).map(Number);
+  const [mt, mb] = px(/\.mes\.rules-now \{ margin-top: (\d+)px; margin-bottom: (\d+)px;/), [pt, , pb] = px(/padding: (\d+)px (\d+)px (\d+)px; \}/), chrome = Number(/--rules-box-chrome: (\d+)px;/.exec(tiny)?.[1]);
+  ok(/\.popup\[open\]:has\(\.rules-ask\)::backdrop \{ background-color: rgba\(4, 5, 10, 0\.72\); \}/.test(css) && /\.popup:has\(\.rules-ask\) \{ border-color: var\(--rules-accent-ink\); \}/.test(css)
+      && ratio(inkRgb, [18, 20, 34]) >= 3, 'the question stands apart from the story', ratio(inkRgb, [18, 20, 34]).toFixed(2));
+  ok(chrome === mt + pt + pb + 2 * 2 + mb && /#top-bar, body\.rules-box:not\(\.rules-box-log\) #top-settings-holder, body\.rules-box:not\(\.rules-box-log\) #rules-top-fold \{ display: none !important; \}/.test(tiny)
+      && /#rules-box-scene \{ display: none !important; \}/.test(tiny) && /--topBarBlockSize: 0px !important;/.test(tiny), 'the box keeps its lines on a page 260 px tall', `${chrome} vs ${mt + pt + pb + 4 + mb}`);
 }
 console.log(`ui: ${n - miss} of ${n}`); process.exitCode = miss ? 1 : 0; // exitCode lets output queued for a pipe finish (process.exit() can cut it)

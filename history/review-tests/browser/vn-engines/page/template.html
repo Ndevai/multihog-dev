@@ -1,0 +1,318 @@
+<meta charset="utf-8">
+<title>Box Beside the Genre</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: cards; in each, real screens from two open-source engines beside the extension's real screen; tap a screen to enlarge it. */
+:root {
+  --bg: #f5f4f8; --fg: #18161e; --muted: #5c5767; --card: #ffffff; --line: #e1dee8; --accent: #c2255c;
+  --ok: #0f766e; --plus: #4338ca; --diff: #a15c07; --miss: #be123c;
+  --ok-bg: #ccfbf1; --plus-bg: #e0e7ff; --diff-bg: #fef3c7; --miss-bg: #ffe4e6;
+  --display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; --body: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121018; --fg: #ece9f2; --muted: #a8a2b4; --card: #1b1823; --line: #2d2937; --accent: #ff79a3;
+  --ok: #5eead4; --plus: #a5b4fc; --diff: #fcd34d; --miss: #fda4af; --ok-bg: #0f2f2c; --plus-bg: #222547; --diff-bg: #352a0c; --miss-bg: #3b1520; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121018; --fg: #ece9f2; --muted: #a8a2b4; --card: #1b1823; --line: #2d2937; --accent: #ff79a3;
+  --ok: #5eead4; --plus: #a5b4fc; --diff: #fcd34d; --miss: #fda4af; --ok-bg: #0f2f2c; --plus-bg: #222547; --diff-bg: #352a0c; --miss-bg: #3b1520; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; letter-spacing: -0.01em; }
+h2.sec { font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+.lede { color: var(--muted); max-width: 68ch; margin: 8px 0 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters button { font: 500 13px/1 var(--body); padding: 9px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.filters button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.cmp { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; }
+.cmp > header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.cmp h3 { font: 700 20px/1.2 var(--display); margin: 0; }
+.chip { font: 600 12px/1 var(--body); letter-spacing: 0.04em; text-transform: uppercase; padding: 6px 9px; border-radius: 6px; white-space: nowrap; }
+.same { color: var(--ok); background: var(--ok-bg); } .further { color: var(--plus); background: var(--plus-bg); }
+.diff { color: var(--diff); background: var(--diff-bg); } .missing { color: var(--miss); background: var(--miss-bg); }
+.phones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.phones.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 560px; }
+.phones.one { grid-template-columns: minmax(0, 1fr); max-width: 260px; }
+.wides { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 12px; }
+.wides.small { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.shot figcaption a { color: var(--accent); }
+.shot { margin: 0; display: grid; gap: 6px; min-width: 0; justify-items: center; }
+.shot button { display: block; padding: 0; border: 3px solid #0a0a0e; border-radius: 12px; overflow: hidden; background: #0a0a0e; cursor: zoom-in; width: 100%; }
+.phones .shot button { max-width: 240px; }
+.shot img { display: block; width: 100%; height: auto; }
+.shot figcaption { font-size: 12.5px; line-height: 1.35; color: var(--muted); text-align: center; max-width: 34ch; }
+.shot figcaption b { color: var(--fg); font-weight: 600; display: block; }
+.shot.yours button { border-color: var(--accent); }
+.note { margin: 0; max-width: 74ch; } .note b { font-weight: 600; }
+.nums { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.nums th, .nums td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); }
+.nums th { font: 600 12px/1.2 var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.tblwrap { overflow-x: auto; }
+.src { margin: 0; font-size: 13px; color: var(--muted); } .src a { color: var(--accent); }
+.swatch { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); max-width: 420px; }
+.ground { background: #fff; border-radius: 10px; padding: 14px; border: 1px solid var(--line); }
+.panel { border-radius: 8px; padding: 14px 16px; font: 19px/1.45 Georgia, serif; color: lightskyblue; }
+.controls label { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; font-size: 13px; }
+.controls input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.readout { font-variant-numeric: tabular-nums; font-weight: 600; }
+.ok-t { color: var(--ok); } .bad-t { color: var(--miss); }
+dialog#zoom { padding: 0; border: 0; background: transparent; max-width: 96vw; max-height: 96vh; }
+dialog#zoom::backdrop { background: rgba(5, 5, 10, 0.86); }
+dialog#zoom img { display: block; max-width: 96vw; max-height: 92vh; width: auto; height: auto; border-radius: 10px; }
+dialog#zoom p { margin: 6px 0 0; color: #ece9f2; font-size: 13px; text-align: center; }
+@media (max-width: 520px) { .cmp { padding: 14px; } .phones { gap: 8px; } .shot button { border-width: 2px; border-radius: 9px; } .shot figcaption { font-size: 11.5px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Box Beside the Genre</h1>
+    <p class="lede">Two open-source visual-novel engines, WebGAL 4.6.7 (MPL-2.0) and Monogatari 2.8.1 (MIT), run here in the same emulated phone as your extension, with SillyTavern's own background, Seraphina's sprites and the lines from your test chat. Each card puts their real default screens beside yours (pink frame). Tap a screen to enlarge it. Your sourced values (box type for 58 cm, AUTO at 260 words a minute) stay as they are.</p>
+  </header>
+
+  <nav class="filters" aria-label="Show cards by status">
+    <button type="button" data-f="all" aria-pressed="true">All <span class="count" data-c="all"></span></button>
+    <button type="button" data-f="same" aria-pressed="false">Same <span class="count" data-c="same"></span></button>
+    <button type="button" data-f="further" aria-pressed="false">Yours goes further <span class="count" data-c="further"></span></button>
+    <button type="button" data-f="diff" aria-pressed="false">Different on purpose <span class="count" data-c="diff"></span></button>
+    <button type="button" data-f="missing" aria-pressed="false">Not in yours <span class="count" data-c="missing"></span></button>
+  </nav>
+
+  <h2 class="sec">Run side by side</h2>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>Phone held upright</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="phones">
+      <figure class="shot"><button type="button"><img src="{{wg_port}}" alt="WebGAL on an upright phone: the whole stage turned sideways"></button><figcaption><b>WebGAL</b>Turns the 16:9 stage sideways; you rotate the phone</figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{mo_box}}" alt="Monogatari on an upright phone: the scene cropped, a box at the foot"></button><figcaption><b>Monogatari</b>Crops the scene to the phone; box at the foot</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{box}}" alt="Your night box on an upright phone"></button><figcaption><b>Yours</b>Built for the upright phone</figcaption></figure>
+    </div>
+    <p class="note">Both engines are made for a landscape 16:9 screen: Monogatari's own default setting is <code>Orientation: 'landscape'</code>, and WebGAL rotates its stage when the phone stands upright (*measured* here at 412 × 915). <b>Yours:</b> laid out for the upright phone from the start, inside SillyTavern's chat column.</p>
+  </article>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>Type size and line length</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="wides"><figure class="shot"><button type="button"><img src="{{wg_box}}" alt="WebGAL in landscape: Seraphina's line on one row of a long box"></button><figcaption><b>WebGAL, phone turned sideways</b>14.6 px; the 77-character line fits on one row</figcaption></figure></div>
+    <div class="phones two">
+      <figure class="shot"><button type="button"><img src="{{mo_box}}" alt="Monogatari's box: 16 px text"></button><figcaption><b>Monogatari</b>16 px, 55 characters a line</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{nvl}}" alt="Your box: 27.5 px text"></button><figcaption><b>Yours</b>27.5 px, 25 characters a line</figcaption></figure>
+    </div>
+    <div class="tblwrap"><table class="nums">
+      <thead><tr><th>Engine</th><th>Box text</th><th>Characters a line</th><th>Where the size comes from</th></tr></thead>
+      <tbody>
+        <tr><td>WebGAL</td><td>14.6 px (51.2 px on its 2560-wide stage × 0.286)</td><td>77–78 (landscape)</td><td>Engine default ("Medium")</td></tr>
+        <tr><td>Monogatari</td><td>16 px Open Sans</td><td>55 (upright, 412 px)</td><td>Browser default size</td></tr>
+        <tr><td>Yours</td><td>27.5 px</td><td>25 (412 px), 20 (360 px)</td><td>0.2° x-height at 58 cm, the farthest a phone was held (Bababekova et al. 2011)</td></tr>
+      </tbody></table></div>
+    <p class="note">All sizes *measured* in the same browser. Reading guidance puts 45–75 characters in a line (Bringhurst, via UXPin); both engines sit in that range, yours sits under it because its type is sized for the far reader. You kept that value; the table only shows the gap.</p>
+    <p class="src">Sources: <a href="https://www.uxpin.com/studio/blog/optimal-line-length-for-readability/" target="_blank" rel="noopener">UXPin, optimal line length</a> · Bababekova et al. 2011, Optom Vis Sci 88(7):795–797</p>
+  </article>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>A long passage (NVL)</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="wides"><figure class="shot"><button type="button"><img src="{{wg_long}}" alt="WebGAL: two rows of the long sentence; the rest below the screen edge"></button><figcaption><b>WebGAL</b>Shows 2 of the sentence's 5 rows; rows 3–5 fall under the menu bar and off the screen</figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_fsn}}" alt="Fate/stay night: the passage set over the whole dimmed screen"></button><figcaption><b>Fate/stay night</b>NVL: the text over the whole dimmed screen · <a href="https://en.wikipedia.org/wiki/File:Fatestaynightgameplay.png" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure></div>
+    <div class="phones two">
+      <figure class="shot"><button type="button"><img src="{{mo_nvl}}" alt="Monogatari's NVL page: dark screen, the passage at the top"></button><figcaption><b>Monogatari</b>NVL page: the screen dims, lines gather from the top</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{nvl}}" alt="Your tall NVL box"></button><figcaption><b>Yours</b>The box grows tall and scrolls</figcaption></figure>
+    </div>
+    <p class="note">The engines got a 342-character sentence (long enough to turn your box tall: 340 or more); your screen shows the 444-character test sentence. WebGAL draws its sentence on 5 rows in a box with room for 2; after 30 s, 62 of its 132 word pieces sit inside the box (*measured*), so the author has to split long lines. Monogatari switches to NVL only when the script says <code>nvl</code>. <b>Yours:</b> a sentence of 340 characters or more turns the box tall by itself, chosen by length.</p>
+    <p class="src">Sources: <a href="https://dev.to/codefatale/adv-vs-nvl-style-in-renpy-2a8m" target="_blank" rel="noopener">DEV, ADV vs NVL</a> · <a href="https://forums.fuwanovel.moe/blogs/entry/3731-nvl-vs-adv-–-an-anatomy-of-visual-novels" target="_blank" rel="noopener">Fuwanovel, NVL vs ADV</a></p>
+  </article>
+
+  <article class="cmp" data-status="missing">
+    <header><h3>Hide the box</h3><span class="chip missing">Not in yours</span></header>
+    <div class="wides"><figure class="shot"><button type="button"><img src="{{wg_hide}}" alt="WebGAL with its box hidden: only the scene and Seraphina"></button><figcaption><b>WebGAL</b>Hide in the menu bar; a tap brings the box back</figcaption></figure></div>
+    <div class="phones two">
+      <figure class="shot"><button type="button"><img src="{{mo_hide}}" alt="Monogatari with its box hidden"></button><figcaption><b>Monogatari</b>The eye icon at the top hides the box</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{box}}" alt="Your box, which has no hide button"></button><figcaption><b>Yours</b>No way to hide the box</figcaption></figure>
+    </div>
+    <p class="note">Both engines put Hide in their default menu (*measured*: each screen above came from pressing it). <b>Yours:</b> the box stays; the scene and the character's picture behind it cannot be seen whole.</p>
+    <p class="src">Source: <a href="https://itch.io/post/12355246" target="_blank" rel="noopener">itch.io, hiding the box on touch</a></p>
+  </article>
+
+  <article class="cmp" data-status="missing">
+    <header><h3>Box opacity</h3><span class="chip missing">Not in yours</span></header>
+    <div class="wides"><figure class="shot"><button type="button"><img src="{{wg_disp}}" alt="WebGAL Options, Display: Text Size, Text Font, Text Speed, Textbox Opacity, with a preview"></button><figcaption><b>WebGAL, Options › Display</b>A Textbox Opacity slider with a live preview</figcaption></figure></div>
+    <div class="swatch">
+      <div class="ground" aria-hidden="true"><div class="panel" id="op-panel">The glade is quiet in the late light.</div></div>
+      <div class="controls"><label for="op">Your panel's opacity over a white scene <span class="readout" id="op-v">74 %</span><input id="op" type="range" min="30" max="100" value="74"></label></div>
+      <p class="note" style="font-size: 14px;">Light sky blue on your panel: <span class="readout" id="op-c"></span></p>
+    </div>
+    <p class="note">WebGAL lets the player set the box's opacity. Monogatari's default box is black at 50 %; white text on it over a white scene gives 4.0:1, under the 4.5:1 that WCAG asks for (*derived*). <b>Yours:</b> fixed at 74 %, the least at which light sky blue keeps 4.5:1 over white; drag the slider to see where it breaks.</p>
+    <p class="src">Sources: <a href="https://www.w3.org/TR/WCAG22/#contrast-minimum" target="_blank" rel="noopener">WCAG 2.2, 1.4.3</a> · <a href="https://itch.io/post/11061780" target="_blank" rel="noopener">itch.io, textbox opacity</a></p>
+  </article>
+
+  <article class="cmp" data-status="missing">
+    <header><h3>Text speed and AUTO settings</h3><span class="chip missing">Not in yours</span></header>
+    <div class="wides"><figure class="shot"><button type="button"><img src="{{wg_sys}}" alt="WebGAL Options, System: Autoplay Speed, Skip Mode, Language"></button><figcaption><b>WebGAL, Options › System</b>Autoplay Speed; Text Speed sits under Display</figcaption></figure></div>
+    <div class="phones two">
+      <figure class="shot"><button type="button"><img src="{{mo_set}}" alt="Monogatari Settings: volumes, Text Speed, Autoplay Speed"></button><figcaption><b>Monogatari</b>Text Speed and Autoplay Speed sliders</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{settings}}" alt="Your settings: Letters appear one by one, Story clock"></button><figcaption><b>Yours</b>One switch: letters one by one, on or off</figcaption></figure>
+    </div>
+    <p class="note">Both engines give two sliders, one for how fast letters appear and one for how long AUTO waits. <b>Yours:</b> said words appear at the speaker's own syllable rate, other text at silent-reading pace, and AUTO waits reading time at 260 words a minute (Brysbaert 2019), about 42 ms a letter (*derived*); no slider changes these.</p>
+    <p class="src">Sources: <a href="https://itch.io/post/9958687" target="_blank" rel="noopener">itch.io, auto-advance timing</a> · Brysbaert 2019, J Mem Lang 109:104047</p>
+  </article>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>Backlog</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="wides">
+      <figure class="shot"><button type="button"><img src="{{wg_log}}" alt="WebGAL Backlog: lines with a return button beside each"></button><figcaption><b>WebGAL</b>A ↺ button beside each line</figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{wg_jump}}" alt="WebGAL after pressing a line's return button: the story back at that line"></button><figcaption><b>WebGAL, after ↺</b>The story returns to that line and plays on from it</figcaption></figure>
+    </div>
+    <div class="phones two">
+      <figure class="shot"><button type="button"><img src="{{mo_log}}" alt="Monogatari Log: a list of names and lines"></button><figcaption><b>Monogatari</b>A plain list of the lines so far</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{log}}" alt="Your Log view"></button><figcaption><b>Yours</b>The whole chat typeset; ◀ steps back</figcaption></figure>
+    </div>
+    <p class="note">WebGAL's ↺ returns the story to the chosen line (*measured*: pressed here, the box went back to Seraphina's first line), and its menu bar has Replay for the current line's voice. <b>Yours:</b> Log shows the whole chat as it sounds, and ◀ steps back through the boxes; no replay of a spoken line.</p>
+    <p class="src">Sources: <a href="https://giantbomb.com/wiki/Concepts/Backlog" target="_blank" rel="noopener">Giant Bomb, Backlog</a> · <a href="https://itch.io/blog/689356/polishing-your-release-the-little-features-that-could" target="_blank" rel="noopener">itch.io, polishing your release</a></p>
+  </article>
+
+  <article class="cmp" data-status="missing">
+    <header><h3>Text size and font choice</h3><span class="chip missing">Not in yours</span></header>
+    <div class="wides"><figure class="shot"><button type="button"><img src="{{wg_disp}}" alt="WebGAL Display options: Text Size Small, Medium, Large; three fonts"></button><figcaption><b>WebGAL</b>Text Size: Small, Medium, Large; Text Font: three choices</figcaption></figure></div>
+    <div class="phones two">
+      <figure class="shot"><button type="button"><img src="{{mo_set}}" alt="Monogatari Settings without size or font options"></button><figcaption><b>Monogatari</b>No size or font option in its settings</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{settings}}" alt="Your settings"></button><figcaption><b>Yours</b>SillyTavern's font scale enlarges the box</figcaption></figure>
+    </div>
+    <p class="note">Ren'Py also offers a dyslexia font, high contrast and self-voicing (its docs). <b>Yours:</b> SillyTavern's own font scale and the system's forced colours apply; axe-core finds no violation; there is no size, font or contrast switch of its own.</p>
+    <p class="src">Sources: <a href="https://quandtuniverse.itch.io/beaconing/devlog/1028254/accessible-design-in-visual-novels-renpy-and-beyond" target="_blank" rel="noopener">Accessible design in visual novels</a> · <a href="https://ladyicepaw.itch.io/invisible-seams/devlog/415360/tips-on-making-your-vn-more-accessible" target="_blank" rel="noopener">Tips on making your VN more accessible</a></p>
+  </article>
+
+  <article class="cmp" data-status="further">
+    <header><h3>Continue mark</h3><span class="chip further">Yours goes further</span></header>
+    <div class="phones">
+      <figure class="shot"><button type="button"><img src="{{wg_port}}" alt="WebGAL's finished line without a continue mark"></button><figcaption><b>WebGAL</b>No mark after the line ends</figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{mo_box}}" alt="Monogatari's finished line without a continue mark"></button><figcaption><b>Monogatari</b>No mark after the line ends</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{box}}" alt="Your box with the blinking triangle"></button><figcaption><b>Yours</b>A blinking ▼ in the frame's corner</figcaption></figure>
+    </div>
+    <p class="note">Neither engine shows a mark in these default screens, each taken after its line had finished (*measured*). <b>Yours:</b> a blinking ▼, still for readers who ask for less motion.</p>
+  </article>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>Touch gestures</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="tblwrap"><table class="nums">
+      <thead><tr><th>Gesture</th><th>Common in the genre</th><th>Yours</th></tr></thead>
+      <tbody>
+        <tr><td>Tap</td><td>Next line</td><td>Next box</td></tr>
+        <tr><td>Tap while letters appear</td><td>Show the rest</td><td>Show the rest</td></tr>
+        <tr><td>Hold</td><td>Skip read text</td><td>Explain the held word</td></tr>
+        <tr><td>Swipe down</td><td>Hide the box</td><td>Nothing</td></tr>
+        <tr><td>Swipe sideways</td><td>Rare</td><td>Step on or back</td></tr>
+      </tbody></table></div>
+    <p class="note">Hold means explain here, not skip: each reply is new, so there is no read text to skip. Every gesture also has a button.</p>
+    <p class="src">Sources: <a href="https://itch.io/post/12355246" target="_blank" rel="noopener">itch.io, touch controls</a> · <a href="https://uxplanet.org/how-to-communicate-hidden-gestures-in-mobile-app-e55397f4006b" target="_blank" rel="noopener">UX Planet, hidden gestures</a></p>
+  </article>
+
+  <h2 class="sec">Published games (screenshots from Wikipedia)</h2>
+
+  <article class="cmp" data-status="same">
+    <header><h3>Text box and name</h3><span class="chip same">Same</span></header>
+    <div class="wides small">
+      <figure class="shot"><button type="button"><img src="{{c_ddlc}}" alt="Doki Doki Literature Club: a pink name tab above a rounded box"></button><figcaption><b>Doki Doki Literature Club (Ren'Py)</b>Name tab over the box's left edge · <a href="https://en.wikipedia.org/wiki/File:DokiDokiLiteratureClubGameplay.png" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_wt}}" alt="A Ren'Py scene: a blue name box above a blue text box"></button><figcaption><b>Ren'Py example (free licence)</b>Name box above the text, at the left · <a href="https://commons.wikimedia.org/wiki/File:Wikipe-tan_visual_novel_(Ren%27Py).png" target="_blank" rel="noopener">Wikimedia Commons</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_cg}}" alt="Camelia Girls: the speaker's name in pink above the line"></button><figcaption><b>Camelia Girls (free licence)</b>The name in colour above the line · <a href="https://commons.wikimedia.org/wiki/File:Cameliagirls1_0.55a.png" target="_blank" rel="noopener">Wikimedia Commons</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_ks}}" alt="Katawa Shoujo: narration in the box with no name"></button><figcaption><b>Katawa Shoujo (Ren'Py)</b>Narration carries no name · <a href="https://en.wikipedia.org/wiki/File:Katawa_Shoujo_screenshot.png" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_cl}}" alt="Clannad: the speaker named inside the line, before Japanese quote marks"></button><figcaption><b>Clannad</b>Japanese style: the name inside the line, before 「 」 · <a href="https://en.wikipedia.org/wiki/File:Nagisa_Furukawa_Key_screenshot.png" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+    </div>
+    <div class="phones one"><figure class="shot yours"><button type="button"><img src="{{box}}" alt="Your night box with the SERAPHINA tag"></button><figcaption><b>Yours</b>Slanted tag at the left; narration has no name</figcaption></figure></div>
+    <p class="note">Four of the five put the name in its own tab or line above the text, at the left; Clannad names the speaker inside the line, the Japanese way. Narration goes unnamed (Katawa Shoujo). <b>Yours:</b> the same: a slanted tag at the left for said words, no name for narration.</p>
+  </article>
+
+  <article class="cmp" data-status="same">
+    <header><h3>Date on screen</h3><span class="chip same">Same</span></header>
+    <div class="wides small">
+      <figure class="shot"><button type="button"><img src="{{c_sg}}" alt="Steins;Gate: 7/28 (THU) at the top left, a phone mail with blue words"></button><figcaption><b>Steins;Gate</b>"7/28 (THU)" at the top left · <a href="https://en.wikipedia.org/wiki/File:Steins_Gate_screenshot.jpg" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_cl}}" alt="Clannad: an April 15 badge at the top left"></button><figcaption><b>Clannad</b>An "April 15" badge at the top left · <a href="https://en.wikipedia.org/wiki/File:Nagisa_Furukawa_Key_screenshot.png" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_p5}}" alt="Persona 5: 6/15 Wed and Afternoon at the top left"></button><figcaption><b>Persona 5</b>"6/15 Wed", "Afternoon" at the top left · <a href="https://en.wikipedia.org/wiki/File:Persona_5_Classroom.jpg" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+    </div>
+    <div class="phones two">
+      <figure class="shot yours"><button type="button"><img src="{{box}}" alt="Your clock chip: 15:35 Sun 15 Jul 1990 Olinda"></button><figcaption><b>Yours</b>The clock chip at the top left: time, date, place</figcaption></figure>
+      <figure class="shot yours"><button type="button"><img src="{{time}}" alt="Your Time tab"></button><figcaption><b>Yours, Time tab</b>The story's stamped turns</figcaption></figure>
+    </div>
+    <p class="note">All three keep the story's date in the top-left corner; Persona 5 adds the time of day ("Afternoon"). <b>Yours:</b> the clock chip in the same corner gives the hour and adds the place, read from the engine's clock; the Story clock setting hides it.</p>
+  </article>
+
+  <article class="cmp" data-status="further">
+    <header><h3>Glossary (TIPS)</h3><span class="chip further">Yours goes further</span></header>
+    <div class="phones one"><figure class="shot yours"><button type="button"><img src="{{path}}" alt="Your path view for warm broth"></button><figcaption><b>Yours</b>A word's path</figcaption></figure></div>
+    <p class="note">Steins;Gate's TIPS list the story's terms, written ahead and unlocked as they appear. <b>Yours:</b> select a word for its path (what the engine decided and why), hold a marked word for its marks; Memory lists what the player's character knows with its source.</p>
+    <p class="src">Sources: <a href="https://towardstheendsky.blogspot.com/2023/12/in-game-encyclopedia-anatomy-of-visual.html" target="_blank" rel="noopener">In-game encyclopedia anatomy</a> · <a href="https://www.trueachievements.com/game/Steins-Gate/walkthrough/2" target="_blank" rel="noopener">Steins;Gate TIPS</a></p>
+  </article>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>Flowchart and timeline</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="phones one"><figure class="shot yours"><button type="button"><img src="{{time}}" alt="Your Time tab"></button><figcaption><b>Yours</b>The Time tab</figcaption></figure></div>
+    <p class="note">Zero Escape's flowchart jumps to any finished section; critics note it gives away what lies ahead. WebGAL has a Flowchart screen too; it needs chapters marked in the script, so it was not set up here. <b>Yours:</b> one line of what happened, dragged or stepped; nothing ahead is shown.</p>
+    <p class="src">Sources: <a href="https://www.gamedeveloper.com/design/no-escape-i-zero-time-dilemma-i-and-the-narrative-design-of-kotaro-uchikoshi" target="_blank" rel="noopener">Game Developer, Zero Time Dilemma</a> · <a href="https://forums.fuwanovel.moe/blogs/entry/3923-built-in-flowcharts-%E2%80%93-an-anatomy-of-visual-novels" target="_blank" rel="noopener">Fuwanovel, built-in flowcharts</a></p>
+  </article>
+
+  <article class="cmp" data-status="same">
+    <header><h3>Meeting a character</h3><span class="chip same">Same</span></header>
+    <div class="phones one"><figure class="shot yours"><button type="button"><img src="{{card}}" alt="Your first-meeting card for Seraphina"></button><figcaption><b>Yours</b>The first-meeting card</figcaption></figure></div>
+    <p class="note">Danganronpa and Persona introduce a character full-screen: portrait, name, role. <b>Yours:</b> the same family: picture with its shadow, tilted white label, trade above it; once a chat.</p>
+    <p class="src">Sources: <a href="https://gamesradar.com/games/rpg/how-did-persona-5-persona-3-and-now-metaphor-refantazio-achieve-some-of-the-best-ui-in-jrpg-history-its-veteran-atlus-director-stresses-unity-and-support-for-dev-teams" target="_blank" rel="noopener">GamesRadar, Atlus UI</a> · <a href="https://www.hardcoregaming101.net/danganronpa/amp/" target="_blank" rel="noopener">Hardcore Gaming 101, Danganronpa</a></p>
+  </article>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>Highlighted words</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="wides small">
+      <figure class="shot"><button type="button"><img src="{{c_pw}}" alt="Phoenix Wright: testimony in green, Press and Present buttons below"></button><figcaption><b>Phoenix Wright: Ace Attorney</b>Testimony in green; Press or Present it · <a href="https://en.wikipedia.org/wiki/File:Phoenix_Wright_Ace_Attorney_cross-examination.png" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_sg}}" alt="Steins;Gate: blue words in a phone mail"></button><figcaption><b>Steins;Gate</b>Blue words in a mail, chosen to reply · <a href="https://en.wikipedia.org/wiki/File:Steins_Gate_screenshot.jpg" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+      <figure class="shot"><button type="button"><img src="{{c_dr}}" alt="Danganronpa: a statement in orange crossing the screen during a debate"></button><figcaption><b>Danganronpa</b>The statement to attack in orange · <a href="https://en.wikipedia.org/wiki/File:Danganronpagameplay.jpg" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure>
+    </div>
+    <div class="phones one"><figure class="shot yours"><button type="button"><img src="{{logkeys}}" alt="Your log with warm broth in gold"></button><figcaption><b>Yours</b>Gold marks what the engine decided</figcaption></figure></div>
+    <p class="note">Ace Attorney colours the testimony a player can challenge; Steins;Gate colours the words in a mail that the player can answer; Danganronpa colours the statements to attack, and critics say the colour points at the answer. <b>Yours:</b> gold marks words the engine decided, with nothing to answer or attack.</p>
+    <p class="src">Sources: <a href="https://kotaku.com/danganronpa-captures-the-feeling-of-real-life-arguments-1821589146" target="_blank" rel="noopener">Kotaku, Danganronpa</a> · <a href="https://www.giantbomb.com/reviews/danganronpa-trigger-happy-havoc-review/1900-631/" target="_blank" rel="noopener">Giant Bomb review</a></p>
+  </article>
+
+  <article class="cmp" data-status="same">
+    <header><h3>Scene change card</h3><span class="chip same">Same</span></header>
+    <div class="phones one"><figure class="shot yours"><button type="button"><img src="{{arrive}}" alt="Your Arriving screen for Igarassu"></button><figcaption><b>Yours</b>"Arriving.."</figcaption></figure></div>
+    <p class="note">Many games show a title card for a new place or a jump in time; the two engines above only fade the scene. <b>Yours:</b> "Arriving.." for a new place, "Passing.." for an hour or more, with the date and light.</p>
+  </article>
+
+  <article class="cmp" data-status="diff">
+    <header><h3>Dialogue as a column (desktop)</h3><span class="chip diff">Different on purpose</span></header>
+    <div class="wides"><figure class="shot"><button type="button"><img src="{{c_de}}" alt="Disco Elysium: the dialogue in a tall column at the right"></button><figcaption><b>Disco Elysium</b>Dialogue in a tall column at the right · <a href="https://en.wikipedia.org/wiki/File:Disco_Elysium_interface.jpg" target="_blank" rel="noopener">Wikipedia</a></figcaption></figure><figure class="shot yours"><button type="button"><img src="{{desktop}}" alt="Your box on a desktop window"></button><figcaption><b>Yours on a 1280 × 800 window</b>The box at the foot of SillyTavern's column</figcaption></figure></div>
+    <p class="note">Disco Elysium sets its dialogue in a tall column at the right of a 16:9 screen. <b>Yours:</b> the box at the foot on every screen; a phone has no room for a side column.</p>
+    <p class="src">Sources: <a href="https://80.lv/articles/disco-elysium-working-on-ui-design" target="_blank" rel="noopener">80.lv, Disco Elysium UI</a> · <a href="https://gamermatters.com/disco-elysiums-text-box-design-is-inspired-by-how-we-use-computers-and-twitter/" target="_blank" rel="noopener">Disco Elysium's text box</a></p>
+  </article>
+
+  <p class="src">Engines: <a href="https://www.npmjs.com/package/webgal-engine" target="_blank" rel="noopener">webgal-engine 4.6.7</a> (MPL-2.0) and <a href="https://www.npmjs.com/package/@monogatari/core" target="_blank" rel="noopener">@monogatari/core 2.8.1</a> (MIT), default themes, served locally and driven by Playwright Chromium at 412 × 915 (WebGAL also at 915 × 412). Background "landscape autumn great tree" and Seraphina's sprites from SillyTavern 1.19.1's default content.</p>
+</div>
+
+<dialog id="zoom" aria-label="Enlarged screen"><img alt=""><p></p></dialog>
+
+<script>
+(() => {
+  const cards = [...document.querySelectorAll('.cmp')], buttons = [...document.querySelectorAll('.filters button')];
+  for (const b of buttons) b.querySelector('.count').textContent = cards.filter(c => b.dataset.f === 'all' || c.dataset.status === b.dataset.f).length;
+  for (const b of buttons) b.addEventListener('click', () => {
+    for (const c of cards) c.hidden = !(b.dataset.f === 'all' || c.dataset.status === b.dataset.f);
+    for (const o of buttons) o.setAttribute('aria-pressed', String(o === b));
+  });
+
+  // Tap a screen to see it large.
+  const dlg = document.getElementById('zoom'), big = dlg.querySelector('img'), cap = dlg.querySelector('p');
+  for (const btn of document.querySelectorAll('.shot button')) {
+    const img = btn.querySelector('img'); btn.setAttribute('aria-label', 'Enlarge: ' + img.alt);
+    btn.addEventListener('click', () => { big.src = img.src; big.alt = img.alt; cap.textContent = btn.parentElement.querySelector('figcaption')?.textContent ?? ''; dlg.showModal(); });
+  }
+  dlg.addEventListener('click', () => dlg.close());
+
+  // Light sky blue on the panel at the chosen opacity over white (WCAG 2 relative luminance).
+  const lum = c => { const f = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  const op = document.getElementById('op'), panel = document.getElementById('op-panel'), out = document.getElementById('op-c');
+  const setOp = () => {
+    const a = op.value / 100, ground = [18, 20, 34].map(v => a * v + (1 - a) * 255), r = ratio([135, 206, 250], ground);
+    panel.style.background = `rgba(18, 20, 34, ${a})`; document.getElementById('op-v').textContent = `${op.value} %`;
+    out.textContent = `${r.toFixed(1)}:1 ${r >= 4.5 ? '(meets 4.5:1)' : '(under 4.5:1)'}`; out.className = 'readout ' + (r >= 4.5 ? 'ok-t' : 'bad-t');
+  };
+  op.addEventListener('input', setOp); setOp();
+})();
+</script>

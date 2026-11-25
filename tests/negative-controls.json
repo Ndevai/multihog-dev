@@ -5827,7 +5827,7 @@
   "id": "BX9",
   "name": "the next marker waits for the stretch",
   "file": "style.css",
-  "find": ":not\\(\\.rules-typing\\) #chat \\.mes\\.rules-now \\.rules-advance-tri \\{",
+  "find": ":not\\(\\[data-rules-typing\\]\\) #chat \\.mes\\.rules-now \\.rules-advance-tri \\{",
   "replace": " #chat .mes.rules-now .rules-advance-tri {",
   "miss": "the night look's colours and parts",
   "test": "ui"
@@ -6844,8 +6844,8 @@
   "id": "NB67",
   "name": "the ▼ after the last word, in the accent's ink",
   "file": "style.css",
-  "find": ":not\\(\\.rules-typing\\) #chat \\.mes\\.rules-now \\.rules-advance-tri \\{",
-  "replace": ":not(.rules-typing) #chat .mes.rules-now .rules-advance-tri-off {",
+  "find": ":not\\(\\[data-rules-typing\\]\\) #chat \\.mes\\.rules-now \\.rules-advance-tri \\{",
+  "replace": ":not([data-rules-typing]) #chat .mes.rules-now .rules-advance-tri-off {",
   "miss": "the night look's colours and parts",
   "test": "ui"
  },
@@ -7168,8 +7168,8 @@
   "id": "NB103",
   "name": "the report card over the whole page",
   "file": "src/index.js",
-  "find": "document\\.body\\.appendChild\\(screen\\);",
-  "replace": "(document.getElementById('sheld') ?? document.body).appendChild(screen);",
+  "find": "screen\\.id = 'rules-report';\\s*screen\\.setAttribute\\('role', 'dialog'\\);\\s*document\\.body\\.appendChild\\(screen\\);",
+  "replace": "screen.id = 'rules-report'; screen.setAttribute('role', 'dialog'); (document.getElementById('sheld') ?? document.body).appendChild(screen);",
   "miss": "the report card as a screen of its own",
   "test": "ui"
  },
@@ -9277,6 +9277,339 @@
   "find": ", p\\.age, genotypeOf\\(who, id, trackedPeople\\(\\)\\)\\)",
   "replace": ", p.age)",
   "miss": "the narrator told how they look",
+  "test": "ui"
+ },
+ {
+  "id": "NB338",
+  "name": "a press on the HUD is cancelled while the box has the focus",
+  "file": "src/index.js",
+  "find": "\\n        e\\.preventDefault\\(\\);\\n    \\};\\n    document\\.addEventListener\\('pointerdown', keepComposer",
+  "replace": "\n    };\n    document.addEventListener('pointerdown', keepComposer",
+  "miss": "a press on the HUD keeps the message box focused",
+  "test": "ui"
+ },
+ {
+  "id": "NB339",
+  "name": "the press goes on when the box does not have the focus",
+  "file": "src/index.js",
+  "find": "!ta \\|\\| document\\.activeElement !== ta \\|\\| !e\\.target\\?\\.closest\\?\\.\\(KEEP_COMPOSER\\)",
+  "replace": "!ta || !e.target?.closest?.(KEEP_COMPOSER)",
+  "miss": "a press on the HUD keeps the message box focused",
+  "test": "ui"
+ },
+ {
+  "id": "NB340",
+  "name": "the keyboard guard can cancel (not passive)",
+  "file": "src/index.js",
+  "find": "\\('pointerdown', keepComposer, \\{ passive: false, capture: true \\}\\)",
+  "replace": "('pointerdown', keepComposer, { passive: true, capture: true })",
+  "miss": "the keyboard guard listens before the controls do",
+  "test": "ui"
+ },
+ {
+  "id": "NB341",
+  "name": "Story is left out of the kept controls",
+  "file": "src/index.js",
+  "find": "#rules-box-bar button:not\\(#rules-box-story\\), ",
+  "replace": "#rules-box-bar button, ",
+  "miss": "a press on the HUD keeps the message box focused",
+  "test": "ui"
+ },
+ {
+  "id": "NB342",
+  "name": "a short screen's least height stops at the room",
+  "file": "style.css",
+  "find": "min-height: min\\(calc\\(var\\(--rules-box-lines\\) \\* 1\\.7em\\), 36vh, var\\(--rules-box-room\\)\\);",
+  "replace": "min-height: min(calc(var(--rules-box-lines) * 1.7em), 36vh);",
+  "miss": "the box fits a short screen",
+  "test": "ui"
+ },
+ {
+  "id": "NB343",
+  "name": "a short screen's chrome is its own frame's sum",
+  "file": "style.css",
+  "find": "body\\.rules-box-night \\{ --rules-box-chrome: 106px; \\}",
+  "replace": "body.rules-box-night { --rules-box-chrome: 140px; }",
+  "miss": "the box's chrome sums its frame",
+  "test": "ui"
+ },
+ {
+  "id": "NB344",
+  "name": "the NVL box stops at the room",
+  "file": "style.css",
+  "find": "max-height: min\\(74dvh, var\\(--rules-box-room\\)\\);",
+  "replace": "max-height: min(74dvh, calc(100cqh - 140px));",
+  "miss": "the box fits a short screen",
+  "test": "ui"
+ },
+ {
+  "id": "NB345",
+  "name": "no box on the welcome screen",
+  "file": "src/index.js",
+  "find": "settings\\(\\)\\.box && !onWelcome\\(\\);",
+  "replace": "settings().box;",
+  "miss": "no box and no page on the welcome screen",
+  "test": "ui"
+ },
+ {
+  "id": "NB346",
+  "name": "a stand-in context counts as a chat",
+  "file": "src/index.js",
+  "find": "'characterId' in c && ",
+  "replace": "",
+  "miss": "no box and no page on the welcome screen",
+  "test": "ui"
+ },
+ {
+  "id": "NB347",
+  "name": "no page look on the welcome screen",
+  "file": "src/index.js",
+  "find": "const paged = settings\\(\\)\\.page && !onWelcome\\(\\);",
+  "replace": "const paged = settings().page;",
+  "miss": "no box and no page on the welcome screen",
+  "test": "ui"
+ },
+ {
+  "id": "NB348",
+  "name": "the plate is placed against ▲ when drawn",
+  "file": "src/index.js",
+  "find": "clearFold\\(\\);\\s*fitTag\\(who\\);",
+  "replace": "fitTag(who);",
+  "miss": "the plate keeps clear of ▲",
+  "test": "ui"
+ },
+ {
+  "id": "NB349",
+  "name": "▲'s layer below it counts",
+  "file": "src/index.js",
+  "find": "below: Math\\.max\\(0, -parseFloat\\(layer\\.bottom\\) \\|\\| 0\\)",
+  "replace": "below: 0",
+  "miss": "the plate keeps clear of ▲",
+  "test": "ui"
+ },
+ {
+  "id": "NB350",
+  "name": "the plate's row takes the clearance",
+  "file": "style.css",
+  "find": "right: calc\\(12px \\+ var\\(--rules-fold-clear, 0px\\)\\);",
+  "replace": "right: 12px;",
+  "miss": "the plate keeps clear of ▲",
+  "test": "ui"
+ },
+ {
+  "id": "NB351",
+  "name": "the opened chat's scene is reset before the box draws it",
+  "file": "src/index.js",
+  "find": "on\\(ev\\.CHAT_CHANGED, \\(\\) => \\{ lastScenePlace = null; lastSceneTime = null; hideInterstitial\\(\\); ",
+  "replace": "on(ev.CHAT_CHANGED, () => { ",
+  "miss": "the first scene screen after opening a chat",
+  "test": "ui"
+ },
+ {
+  "id": "NB352",
+  "name": "no later handler wipes the scene the box drew",
+  "file": "src/index.js",
+  "find": "const ev = rawCtx\\.eventSource, et = rawCtx\\.eventTypes;\\n    if \\(ev\\?\\.on && et\\) \\{\\n",
+  "replace": "const ev = rawCtx.eventSource, et = rawCtx.eventTypes;\n    if (ev?.on && et) {\n        if (et.CHAT_CHANGED) ev.on(et.CHAT_CHANGED, () => { lastScenePlace = null; lastSceneTime = null; hideInterstitial(); });\n",
+  "miss": "the first scene screen after opening a chat",
+  "test": "ui"
+ },
+ {
+  "id": "NB353",
+  "name": "the clock chip steps back under a sheet",
+  "file": "style.css",
+  "find": "\\nbody\\[data-rules-sheet\\] #rules-box-scene \\{ visibility: hidden; \\}",
+  "replace": "\nbody[data-rules-sheet] #rules-box-scene { }",
+  "miss": "the clock chip steps back under a sheet",
+  "test": "ui"
+ },
+ {
+  "id": "NB354",
+  "name": "the scroll thread stands under the text box",
+  "file": "src/index.js",
+  "find": "rail\\.style\\.top = `\\$\\{t \\+ h\\}px`;",
+  "replace": "rail.style.top = `${t + Math.max(0, h - 2)}px`;",
+  "miss": "the input's threads stand outside the text box",
+  "test": "ui"
+ },
+ {
+  "id": "NB355",
+  "name": "a redrawn tab keeps its folds",
+  "file": "src/index.js",
+  "find": "folds\\.forEach\\(\\(d, i\\) => \\{ d\\.open = opened\\[i\\]; \\}\\);",
+  "replace": "",
+  "miss": "a redrawn tab keeps its folds and scroll",
+  "test": "ui"
+ },
+ {
+  "id": "NB356",
+  "name": "the scene screen hides the box behind it",
+  "file": "style.css",
+  "find": "rgba\\(10, 12, 20, 0\\.9\\), rgba\\(4, 5, 10, 0\\.96\\)\\);",
+  "replace": "rgba(10, 12, 20, 0.58), rgba(4, 5, 10, 0.86));",
+  "miss": "the scene screen stands alone",
+  "test": "ui"
+ },
+ {
+  "id": "NB357",
+  "name": "a touch sets the pressed class",
+  "file": "src/index.js",
+  "find": "btn\\.classList\\.add\\('rules-pressed'\\);",
+  "replace": "",
+  "miss": "a press shows while the finger is down",
+  "test": "ui"
+ },
+ {
+  "id": "NB358",
+  "name": "the steppers dim on the pressed class",
+  "file": "style.css",
+  "find": "#rules-box-back\\.rules-pressed,\\n#rules-box-next\\.rules-pressed \\{",
+  "replace": "#rules-box-back.rules-held-x,\n#rules-box-next.rules-held-x {",
+  "miss": "a press shows while the finger is down",
+  "test": "ui"
+ },
+ {
+  "id": "NB359",
+  "name": "the settings box shows the clock again",
+  "file": "src/index.js",
+  "find": "clockBox\\.addEventListener\\('change', \\(\\) => setSceneHidden\\(!clockBox\\.checked\\)\\);",
+  "replace": "",
+  "miss": "the story clock comes back from the settings",
+  "test": "ui"
+ },
+ {
+  "id": "NB360",
+  "name": "an aborted run is no error",
+  "file": "src/index.js",
+  "find": "\\(mark !== 'script_aborted' && cmdErr\\)",
+  "replace": "cmdErr",
+  "miss": "the slash command's line ends at SillyTavern's mark",
+  "test": "ui"
+ },
+ {
+  "id": "NB361",
+  "name": "toasts shown before the run do not count",
+  "file": "src/index.js",
+  "find": "if \\(errs\\.some\\(e => !seenErrors\\.has\\(e\\)\\)\\)",
+  "replace": "if (errs.length)",
+  "miss": "the slash command's line ends at SillyTavern's mark",
+  "test": "ui"
+ },
+ {
+  "id": "NB362",
+  "name": "the run ends at SillyTavern's mark",
+  "file": "src/index.js",
+  "find": "\\}\\)\\.observe\\(formSheld, \\{ attributes: true, attributeFilter: \\['class'\\] \\}\\);",
+  "replace": "});",
+  "miss": "the slash command's line ends at SillyTavern's mark",
+  "test": "ui"
+ },
+ {
+  "id": "NB363",
+  "name": "the count keeps one line",
+  "file": "style.css",
+  "find": "font-variant-numeric: tabular-nums; white-space: nowrap; \\}",
+  "replace": "font-variant-numeric: tabular-nums; }",
+  "miss": "the box's bar fits a narrow phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB364",
+  "name": "the page look's bar takes less room on a narrow phone",
+  "file": "style.css",
+  "find": "    #rules-box-bar \\{ gap: 0\\.15em; padding: 0\\.2em 0\\.2em; \\}\\n",
+  "replace": "",
+  "miss": "the box's bar fits a narrow phone",
+  "test": "ui"
+ },
+ {
+  "id": "NB365",
+  "name": "▲ is placed against the column",
+  "file": "src/index.js",
+  "find": "placeFold\\(\\);\\s*globalThis\\.addEventListener\\?\\.\\('resize', placeFold\\);",
+  "replace": "",
+  "miss": "▲ stands at the column's top right",
+  "test": "ui"
+ },
+ {
+  "id": "NB366",
+  "name": "the voice layer is placed from the boxes as drawn",
+  "file": "src/index.js",
+  "find": "layer\\.style\\.left = `\\$\\{br\\.left - hr\\.left - \\(holder\\?\\.clientLeft \\?\\? 0\\)\\}px`;",
+  "replace": "layer.style.left = `${box.offsetLeft + box.clientLeft}px`;",
+  "miss": "the voice layer stands on the message box",
+  "test": "ui"
+ },
+ {
+  "id": "NB367",
+  "name": "the tap that ends a hold does not step the box on",
+  "file": "src/index.js",
+  "find": "const t = e\\.target;\\s*if \\(performance\\.now\\(\\) < swallowUntil\\)\\s*return;",
+  "replace": "const t = e.target;",
+  "miss": "hold to explain",
+  "test": "ui"
+ },
+ {
+  "id": "NB368",
+  "name": "the sheet flag follows the sheets",
+  "file": "src/index.js",
+  "find": "\\.observe\\(document\\.body, \\{ subtree: true, childList: true, attributes: true, attributeFilter: \\['hidden'\\] \\}\\);",
+  "replace": ";",
+  "miss": "the clock chip steps back under a sheet",
+  "test": "ui"
+ },
+ {
+  "id": "NB369",
+  "name": "the box's text takes the keyboard's focus",
+  "file": "src/index.js",
+  "find": "mes\\.querySelector\\('\\.mes_text'\\)\\?\\.setAttribute\\('tabindex', '0'\\);",
+  "replace": "",
+  "miss": "the extension's elements pass axe-core",
+  "test": "ui"
+ },
+ {
+  "id": "NB370",
+  "name": "the timeline's points are marks",
+  "file": "src/index.js",
+  "find": "const b = document\\.createElement\\('span'\\);",
+  "replace": "const b = document.createElement('button');",
+  "miss": "the extension's elements pass axe-core",
+  "test": "ui"
+ },
+ {
+  "id": "NB371",
+  "name": "the scene screen is named",
+  "file": "src/index.js",
+  "find": "screen\\.setAttribute\\('aria-label', \\[status\\.replace\\(",
+  "replace": "void ([status.replace(",
+  "miss": "the extension's elements pass axe-core",
+  "test": "ui"
+ },
+ {
+  "id": "NB372",
+  "name": "the page dims under the question",
+  "file": "style.css",
+  "find": "\\.popup\\[open\\]:has\\(\\.rules-ask\\)::backdrop \\{ background-color: rgba\\(4, 5, 10, 0\\.72\\); \\}",
+  "replace": ".popup[open]:has(.rules-ask)::backdrop { }",
+  "miss": "the question stands apart from the story",
+  "test": "ui"
+ },
+ {
+  "id": "NB373",
+  "name": "the thin frame's chrome is its own sum",
+  "file": "style.css",
+  "find": "body\\.rules-box-night \\{ --rules-box-chrome: 76px; \\}",
+  "replace": "body.rules-box-night { --rules-box-chrome: 106px; }",
+  "miss": "the box keeps its lines on a page 260 px tall",
+  "test": "ui"
+ },
+ {
+  "id": "NB374",
+  "name": "the top bar folds away on a page 260 px tall",
+  "file": "style.css",
+  "find": "    body\\.rules-box:not\\(\\.rules-box-log\\) \\{ --topBarBlockSize: 0px !important; \\}\\n",
+  "replace": "",
+  "miss": "the box keeps its lines on a page 260 px tall",
   "test": "ui"
  }
 ]

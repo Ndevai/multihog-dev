@@ -1,0 +1,9 @@
+changeBg:bg.jpg -next;
+changeFigure:sera.png;
+:You wake with a start in a room of warm light.;
+Seraphina:Ah, you are awake at last. You were hurt in the forest, but you are safe now.;
+Mara:Where am I?;
+changeFigure:sera2.png -next;
+Seraphina:You are in my glade. Rest a while longer.;
+:The glade is quiet in the late light, with moss over the roots of the old oaks and a thin stream running past the cottage door, bright where the sun falls through the leaves and dark under the ferns, and somewhere past the window a bird keeps calling the same two notes as if it had a question nobody in the cottage would answer before night.;
+Seraphina:Eat. It will help.;
